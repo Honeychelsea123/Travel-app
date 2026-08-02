@@ -1,0 +1,13 @@
+# 여기에는 비밀이 들어가면 안 됩니다. 공개 저장소입니다.
+# anon key 는 공개돼도 되지만(RLS 가 지킵니다) service_role key 는 절대 안 됩니다.
+.env
+.env.*
+*.local
+secrets*
+service-role*
+
+# 편집기 · OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
