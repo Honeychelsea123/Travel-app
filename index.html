@@ -610,7 +610,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
       </div>
       <div class="card">
-        <h2>도시</h2>
+        <!-- 무엇으로 걸러 보고 있는지 여기 적습니다. 프로필에서 눌러 들어오면
+             칩에는 표시가 안 나서 왜 목록이 짧은지 알 수가 없습니다. -->
+        <h2 id="r_head">도시</h2>
         <div id="ratelist"><div class="empty">불러오는 중…</div></div>
 
         <!-- 세상의 도시를 다 넣을 수는 없습니다. 없으면 직접 넣습니다.
@@ -1363,7 +1365,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b79</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b80</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2069,7 +2071,7 @@ async function loadRatings(){
   await loadCities();
   fillCityList();
   const [mine, stats, vis] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,want').eq('user_id', me.id),
+    sb.from('city_ratings').select('city_id,stars,want,comment').eq('user_id', me.id),
     sb.rpc('city_stats'),
     sb.rpc('my_visited'),
   ]);
@@ -2118,6 +2120,10 @@ function drawRatings(){
   const rank = c => (visited.has(c.id) && myRates[c.id]?.stars == null) ? 999
                   : (myRates[c.id]?.stars ?? -1);
   list.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name, 'ko'));
+
+  $('r_head').textContent = { been:'다녀온 곳', want:'가보고 싶은 곳',
+                              mine:'내가 매긴 곳', comment:'한줄평 남긴 곳',
+                              todo:'매길 곳' }[rateFilter] || '도시';
 
   /* 찾는 이름이 목록에 없으면 직접 넣을 수 있게 안내합니다. */
   const exact = q && (cities || []).some(c => c.name.toLowerCase() === q);
@@ -2248,7 +2254,7 @@ async function saveRate(cityId, patch, quiet){
   const r = await sb.from('city_ratings')
     .upsert({ user_id: me.id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })
-    .select('city_id,stars,want').maybeSingle();
+    .select('city_id,stars,want,comment').maybeSingle();
   if (r.error) return fail(r.error, 'rate');
   myRates[cityId] = { ...(myRates[cityId] || {}), ...r.data };
   /* 방금 매긴 것은 이번 화면에서는 남겨둡니다 — 잘못 눌렀으면 바로 고쳐야 합니다. */
@@ -5122,6 +5128,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
