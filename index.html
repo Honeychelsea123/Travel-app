@@ -351,25 +351,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
     <!-- 기록 -->
     <div id="rateview" class="hide">
-      <!-- 다녀왔는데 아직 안 매긴 곳. 여행이 끝나면 여기로 올라옵니다. -->
-      <div class="card hide" id="todocard" style="cursor:pointer">
-        <div class="row" style="border:0; padding:0; margin:0">
-          <span class="ic" style="font-size:calc(19px * var(--ts)); color:#f5a623">★</span>
-          <span class="label"><b id="todotext">—</b>
-            <div class="memo">다녀온 곳을 별점으로 남겨두면 기록이 쌓입니다.</div></span>
-          <span class="val">매기러 가기 ›</span>
-        </div>
-      </div>
-
       <div class="card" style="padding:12px">
         <input id="r_q" placeholder="도시 찾기 (로마 / rome / ㄹㅁ)" autocomplete="off"
                maxlength="30">
         <div class="days" id="r_filter" style="margin:10px 0 0">
           <button class="day on" data-rf="all">전체</button>
-          <button class="day" data-rf="todo">평가 대기</button>
-          <button class="day" data-rf="been">다녀온 곳</button>
           <button class="day" data-rf="want">가보고 싶어요</button>
-          <button class="day" data-rf="mine">내가 매긴 것</button>
+        </div>
+        <!-- 프로필 보관함에서 걸러 들어왔을 때만 나옵니다.
+             안 그러면 걸러진 목록에 갇혀서 나올 길이 없습니다. -->
+        <div class="row hide" id="r_narrow" style="margin-top:10px; padding-top:10px">
+          <span class="label memo" id="r_narrowtext">—</span>
+          <button class="ghost" data-rf="all" style="color:var(--primary)">전체 보기</button>
         </div>
       </div>
       <div class="card">
@@ -944,7 +937,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b40</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b41</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1601,23 +1594,21 @@ async function loadRatings(){
   /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
      켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
   visited = new Set((vis.data || []).map(v => v.city_id));
-
-  /* 다녀왔는데 아직 안 매긴 곳. 여행이 끝나면 여기로 올라옵니다. */
-  const todo = [...visited].filter(id => myRates[id]?.stars == null);
-  $('todocard').classList.toggle('hide', !todo.length);
-  if (todo.length){
-    $('todotext').textContent = `다녀온 ${todo.length}곳이 아직 평가 전입니다`;
-    $('todocard').onclick = () => setRateFilter('todo');
-  }
   drawRatings();
 }
+
+/* 칩으로 놔둔 것은 둘뿐입니다. 나머지는 프로필 보관함에서 걸러 들어옵니다.
+   그때는 무엇으로 걸렀는지 알려주고 풀 길을 같이 줍니다. */
+const NARROW = { todo:'아직 평가 안 한 다녀온 곳', been:'다녀온 곳', mine:'내가 매긴 곳' };
 
 function setRateFilter(f){
   rateFilter = f;
   document.querySelectorAll('#r_filter button').forEach(x =>
     x.classList.toggle('on', x.dataset.rf === f));
+  $('r_narrow').classList.toggle('hide', !NARROW[f]);
+  if (NARROW[f]) $('r_narrowtext').textContent = `${NARROW[f]}만 보는 중`;
   drawRatings();
-  $('r_filter').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  $('r_q').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 function drawRatings(){
@@ -1706,10 +1697,11 @@ $('ac_add').addEventListener('click', async () => {
 });
 
 $('r_q').addEventListener('input', drawRatings);
-$('r_filter').addEventListener('click', e => {
-  const b = e.target.closest('button[data-rf]');
-  if (b) setRateFilter(b.dataset.rf);
-});
+for (const id of ['r_filter', 'r_narrow'])
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('button[data-rf]');
+    if (b) setRateFilter(b.dataset.rf);
+  });
 
 $('ratelist').addEventListener('click', async e => {
   /* 별 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 — 왓챠피디아와 같은 방식입니다. */
@@ -1745,10 +1737,6 @@ async function saveRate(cityId, patch){
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
   if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
-
-  const todo = [...visited].filter(id => myRates[id]?.stars == null);
-  $('todocard').classList.toggle('hide', !todo.length);
-  if (todo.length) $('todotext').textContent = `다녀온 ${todo.length}곳이 아직 평가 전입니다`;
   drawRatings();
 }
 
@@ -1966,7 +1954,8 @@ async function loadTrips(){
   const today = ymd(new Date());
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,archived_at,trip_members(user_id,role)');
+            'transit_factor,archived_at,trip_members(user_id,role),' +
+            'trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
   if (tripFilter === 'arch')
     q = q.not('archived_at', 'is', null).order('start_date', { ascending:false });
@@ -2003,7 +1992,12 @@ async function loadTrips(){
       <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일<br>
       ${esc(t.currency)} · ${esc(t.timezone)} · 이동 ×${esc(t.transit_factor)}</span>
       <div style="margin-top:4px">${acts}</div>
-    </div><span class="badge">${esc(role)}</span></div>`;
+    </div>${
+      /* 다녀왔는데 아직 후기를 안 남긴 여행. 여기가 평가로 들어가는 입구입니다. */
+      t.end_date < today && !(t.trip_reviews || []).some(r => r.user_id === me.id)
+        ? '<span class="badge" style="background:#fdf3e6; color:#f5a623; font-weight:600">' +
+          '후기 전</span>'
+        : `<span class="badge">${esc(role)}</span>`}</div>`;
   }).join('');
 }
 
@@ -3415,6 +3409,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
