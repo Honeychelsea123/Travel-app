@@ -79,10 +79,9 @@ input, select{ font:inherit; width:100%; padding:10px 12px; border-radius:11px;
 .badge{ font-size:calc(11px * var(--ts)); padding:2px 8px; border-radius:999px;
         background:var(--sunk); border:1px solid var(--line); color:var(--dim); flex:none; }
 
-/* 날짜 칩 — 가로로 밀어서 봅니다. 긴 여행이면 줄바꿈보다 이게 낫습니다 */
-.days{ display:flex; gap:6px; overflow-x:auto; padding-bottom:10px; margin-bottom:4px;
-       scrollbar-width:none; }
-.days::-webkit-scrollbar{ display:none; }
+/* 날짜 칩 — 줄바꿈으로 둡니다.
+   가로 스크롤로 뒀더니 마우스로는 밀 방법이 없었습니다(스크롤바도 숨겨서). */
+.days{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
 .day{ flex:none; padding:6px 12px; border-radius:999px; border:1px solid var(--line);
       background:var(--sunk); color:var(--dim); cursor:pointer;
       font-size:calc(13px * var(--ts)); white-space:nowrap; }
@@ -271,7 +270,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b11</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b12</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -638,6 +637,11 @@ $('trips').addEventListener('click', async e => {
 
 /* ── 여행 상세 ──────────────────────────────────────────────────── */
 const D1 = 864e5;
+/* 날짜는 UTC 자정으로 다뤄야 합니다.
+   'T00:00:00' 으로 파싱하면 한국 시각 자정이 되고, toISOString() 이 UTC 로
+   되돌리면서 하루 앞으로 밀립니다. 그래서 여행 첫날 앞에 유령 칩이 하나 생겼습니다.
+   시각이 아니라 날짜를 다루는 자리이므로 처음부터 UTC 로 통일합니다. */
+const asDate = s => new Date(s + 'T00:00:00Z');
 const ymd = d => d.toISOString().slice(0,10);
 const hm  = t => t ? String(t).slice(0,5) : '';
 
@@ -647,10 +651,9 @@ const hm  = t => t ? String(t).slice(0,5) : '';
      끝난 뒤       9월 18일 · 여행 후
    Day 번호는 start_date 로 계산합니다. 저장하지 않습니다. */
 function dayLabel(dateStr, t){
-  const d = new Date(dateStr + 'T00:00:00');
-  const s = new Date(t.start_date + 'T00:00:00');
-  const e = new Date(t.end_date   + 'T00:00:00');
-  const f = d.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'long' });
+  const d = asDate(dateStr), s = asDate(t.start_date), e = asDate(t.end_date);
+  const f = d.toLocaleDateString('ko-KR',
+    { month:'long', day:'numeric', weekday:'long', timeZone:'UTC' });
   if (d < s) return `${f} · 여행 전`;
   if (d > e) return `${f} · 여행 후`;
   return `Day ${Math.round((d - s) / D1) + 1} · ${f}`;
@@ -705,7 +708,7 @@ function drawDays(){
   /* 여행 기간의 날짜 + 기간 밖에 일정이 있는 날짜를 합쳐 칩을 만듭니다.
      한국에서 미리 산 항공권처럼 기간 밖 일정이 실제로 생깁니다. */
   const set = new Set();
-  for (let d = new Date(trip.start_date + 'T00:00:00');
+  for (let d = asDate(trip.start_date);
        ymd(d) <= trip.end_date; d = new Date(d.getTime() + D1)) set.add(ymd(d));
   plans.forEach(p => set.add(p.date));
   const list = [...set].sort();
@@ -872,6 +875,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
