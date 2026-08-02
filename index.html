@@ -196,7 +196,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b9</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b10</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -504,15 +504,26 @@ $('trips').addEventListener('click', async e => {
   if (!b) return;
   const { act, id, title } = b.dataset;
 
-  if (act === 'delete'){
-    /* 되돌릴 수 없는 일입니다. 무엇이 같이 사라지는지 적어서 묻습니다. */
-    if (!confirm(`"${title}" 여행을 지웁니다.\n\n` +
-                 `일정 · 지출 · 예약 · 준비물 · 사진이 함께 사라지고\n` +
-                 `되돌릴 수 없습니다.\n\n계속할까요?`)) return;
-  }
-  if (act === 'leave'){
-    if (!confirm(`"${title}" 여행에서 나갑니다.\n` +
-                 `내가 넣은 지출은 정산을 위해 남습니다.\n\n계속할까요?`)) return;
+  if (act === 'cancelact') return loadTrips();
+
+  /* 되돌릴 수 없는 일은 그 자리에서 한 번 더 묻습니다.
+     window.confirm 은 내장 브라우저나 iframe 안에서 조용히 막혀 false 를
+     돌려줍니다. 그러면 요청도 안 보내고 아무 말도 없이 끝납니다 —
+     실제로 그래서 "삭제가 안 먹는다"가 됐습니다. 화면 안에서 묻습니다. */
+  if ((act === 'delete' || act === 'leave') && b.dataset.armed !== '1'){
+    const wrap = b.parentElement;
+    const msg = act === 'delete'
+      ? '일정 · 지출 · 예약 · 준비물 · 사진이 함께 사라집니다. 되돌릴 수 없습니다.'
+      : '목록에서 사라집니다. 넣은 지출은 정산을 위해 남습니다.';
+    wrap.innerHTML =
+      `<div style="color:var(--bad); font-size:calc(12px * var(--ts)); margin-bottom:4px">
+         ${esc(msg)}</div>
+       <button class="ghost" data-act="cancelact">취소</button>
+       <button class="ghost" data-act="${esc(act)}" data-armed="1"
+               data-id="${esc(id)}" data-title="${esc(title)}"
+               style="color:var(--bad); font-weight:600">
+         정말 ${act === 'delete' ? '삭제' : '나가기'}</button>`;
+    return;
   }
 
   b.disabled = true;
@@ -591,6 +602,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
