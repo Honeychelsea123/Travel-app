@@ -210,6 +210,11 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <div class="row" style="margin:0; padding:0; border:0">
           <button class="ghost" id="backbtn" style="padding-left:0">← 내 여행</button>
           <span class="label"></span>
+          <!-- 실시간이 붙어 있는지 보여줍니다. 안 보이면 새로고침해야 최신입니다. -->
+          <span id="live" class="hide"
+                style="display:flex; align-items:center; gap:5px; color:var(--dim);
+                       font-size:calc(11px * var(--ts))">
+            <span class="dot ok"></span>실시간</span>
           <button class="ghost" id="editbtn">수정</button>
         </div>
         <div style="font-weight:650; font-size:calc(17px * var(--ts)); margin-top:6px"
@@ -337,7 +342,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b16</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b17</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -360,7 +365,8 @@ const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
     picked = null, hitList = [], cursor = 0, showArchived = false,
-    trip = null, plans = [], pickedDay = null;
+    trip = null, plans = [], pickedDay = null,
+    channel = null, bumpTimer = null, bumpPending = null;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -726,22 +732,19 @@ function dayLabel(dateStr, t){
   return `Day ${Math.round((d - s) / D1) + 1} · ${f}`;
 }
 
-async function openTrip(id){
+async function fetchTrip(id){
   const { data, error } = await sb.from('trips')
     .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle();
-  if (error || !data) return fail(error || '여행을 열지 못했습니다.', 'trip');
-
+  if (error) { fail(error, 'trip'); return false; }
+  /* 행이 안 오면 내보내졌거나 여행이 지워진 것입니다. RLS 가 그렇게 만듭니다. */
+  if (!data) return false;
   trip = data;
   trip.myRole = (data.trip_members || []).find(m => m.user_id === me.id)?.role || '';
-  pickedDay = null;
+  return true;
+}
 
-  $('listview').classList.add('hide');
-  $('acctcard').classList.add('hide');
-  $('tripview').classList.remove('hide');
-  $('plancard').classList.add('hide');
-  $('editcard').classList.add('hide');
-
-  const days = Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / D1) + 1;
+function drawTripHeader(){
+  const days = Math.round((asDate(trip.end_date) - asDate(trip.start_date)) / D1) + 1;
   $('t_title').textContent = trip.title;
   $('t_meta').innerHTML =
     `${esc(trip.destination)} · ${esc(trip.start_date)} ~ ${esc(trip.end_date)} · ${days}일<br>` +
@@ -750,8 +753,65 @@ async function openTrip(id){
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
   $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
   $('editbtn').classList.toggle('hide', trip.myRole === 'viewer');
+}
+
+async function openTrip(id){
+  if (!await fetchTrip(id)) return fail('여행을 열지 못했습니다.', 'trip');
+  pickedDay = null;
+
+  $('listview').classList.add('hide');
+  $('acctcard').classList.add('hide');
+  $('tripview').classList.remove('hide');
+  $('plancard').classList.add('hide');
+  $('editcard').classList.add('hide');
   $('invitebox').classList.add('hide');
+
+  drawTripHeader();
   await Promise.all([loadPlans(), loadMembers()]);
+  watch();
+}
+
+/* ── 실시간 ─────────────────────────────────────────────────────────
+ * 도쿄 앱은 8초마다 getRevision 을 물어보고 다르면 화면을 통째로 덮었습니다.
+ * 여기서는 바뀐 표만 듣고 그 부분만 다시 그립니다. REV 는 없앴습니다.
+ * 여러 변경이 몰아쳐 올 때 매번 다시 그리면 화면이 떨리므로 잠깐 모았다 한 번 그립니다. */
+function watch(){
+  unwatch();
+  const f = 'trip_id=eq.' + trip.id;
+  channel = sb.channel('trip:' + trip.id)
+    .on('postgres_changes', { event:'*', schema:'public', table:'plans',        filter:f },
+        () => bump('plans'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'trip_members', filter:f },
+        () => bump('members'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'trips',
+                              filter:'id=eq.' + trip.id },
+        () => bump('trip'))
+    .subscribe(st => {
+      $('live').classList.toggle('hide', st !== 'SUBSCRIBED');
+    });
+}
+function unwatch(){
+  if (channel){ sb.removeChannel(channel); channel = null; }
+  clearTimeout(bumpTimer); bumpPending = null;
+  $('live').classList.add('hide');
+}
+function bump(what){
+  (bumpPending ||= new Set()).add(what);
+  clearTimeout(bumpTimer);
+  bumpTimer = setTimeout(async () => {
+    const s = bumpPending; bumpPending = null;
+    if (!trip) return;
+    if (s.has('trip')){
+      /* 여행 자체가 바뀌었습니다. 내가 빠졌거나 지워졌으면 목록으로 돌려보냅니다. */
+      if (!await fetchTrip(trip.id)){
+        backToList();
+        return fail('이 여행에서 나갔거나 여행이 지워졌습니다.', 'trip');
+      }
+      drawTripHeader();
+    }
+    if (s.has('plans') || s.has('trip')) await loadPlans();
+    if (s.has('members')) await loadMembers();
+  }, 250);
 }
 
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
@@ -826,12 +886,15 @@ $('e_save').addEventListener('click', async () => {
   await openTrip(trip.id);
 });
 
-$('backbtn').addEventListener('click', () => {
+function backToList(){
+  unwatch();
   trip = null;
   $('tripview').classList.add('hide');
   $('listview').classList.remove('hide');
   $('acctcard').classList.remove('hide');
-});
+  loadTrips();
+}
+$('backbtn').addEventListener('click', backToList);
 
 async function loadPlans(){
   $('planerr').classList.add('hide');
@@ -1146,6 +1209,7 @@ $('plans').addEventListener('click', async e => {
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
   if (!session){
+    unwatch(); trip = null;
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
     me = null;
@@ -1170,6 +1234,7 @@ async function render(session){
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
+  unwatch(); trip = null;
   $('tripview').classList.add('hide');           /* 다시 그릴 때는 목록부터 */
   $('listview').classList.remove('hide');
   $('acctcard').classList.remove('hide');
@@ -1223,6 +1288,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
