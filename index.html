@@ -130,6 +130,9 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <button class="ghost" id="archbtn">보관함</button>
         <button class="small" id="newbtn">+ 새 여행</button></h2>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
+      <!-- 목록에서 난 오류는 여기 바로 뜹니다.
+           페이지 맨 아래 오류 칸에 적으면 누른 사람 눈에 안 들어옵니다. -->
+      <pre id="triperr" class="hide"></pre>
     </div>
 
     <!-- 새 여행 -->
@@ -193,7 +196,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b8</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b9</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -225,8 +228,8 @@ function mark(id, ok, text){
   $('v'+id).textContent = text;
 }
 function fail(e, where){
-  const box = where === 'form' ? $('formerr') : $('err');
-  if (where !== 'form') $('errcard').classList.remove('hide');
+  const box = where === 'form' ? $('formerr') : where === 'trip' ? $('triperr') : $('err');
+  if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
   box.textContent = typeof e === 'string' ? e
@@ -513,17 +516,30 @@ $('trips').addEventListener('click', async e => {
   }
 
   b.disabled = true;
+  $('triperr').classList.add('hide');
+
+  /* .select() 를 붙여 실제로 몇 줄이 바뀌었는지 받습니다.
+     RLS 가 막으면 Postgres 는 오류를 내지 않고 0건을 처리합니다.
+     이걸 안 세면 "눌러도 아무 일도 안 일어남"이 되고 원인을 알 수 없습니다. */
   let r;
-  if (act === 'delete')          r = await sb.from('trips').delete().eq('id', id);
+  if (act === 'delete')          r = await sb.from('trips').delete().eq('id', id).select('id');
   else if (act === 'archive')    r = await sb.from('trips')
-                                      .update({ archived_at: new Date().toISOString() }).eq('id', id);
+                                      .update({ archived_at: new Date().toISOString() })
+                                      .eq('id', id).select('id');
   else if (act === 'unarchive')  r = await sb.from('trips')
-                                      .update({ archived_at: null }).eq('id', id);
+                                      .update({ archived_at: null }).eq('id', id).select('id');
   else if (act === 'leave')      r = await sb.from('trip_members')
                                       .update({ left_at: new Date().toISOString() })
-                                      .eq('trip_id', id).eq('user_id', me.id);
+                                      .eq('trip_id', id).eq('user_id', me.id).select('trip_id');
   b.disabled = false;
-  if (r?.error) return fail(r.error);
+
+  if (r?.error) return fail(r.error, 'trip');
+  if (!r?.data?.length){
+    return fail(
+      `아무것도 바뀌지 않았습니다 (0건).\n` +
+      `서버가 거부했습니다 — 이 여행의 소유자가 아닐 수 있습니다.\n` +
+      `동작: ${act} · 여행: ${id}`, 'trip');
+  }
   await loadTrips();
 });
 
@@ -575,6 +591,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
