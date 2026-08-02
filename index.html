@@ -255,6 +255,29 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              border:0; border-radius:999px; padding:10px 18px; font-weight:650;
              font-size:calc(14px * var(--ts)); cursor:pointer; }
 
+/* AI 카드 — 이 앱이 내세우는 기능인데 흰 카드에 글자만 있으면 눌러볼 이유가
+   없습니다. 홈에서 유일하게 색을 쓰는 자리로 두어 눈이 먼저 가게 합니다. */
+.aicard{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+         padding:16px 18px; margin-bottom:12px; color:#fff; cursor:pointer;
+         display:flex; align-items:center; gap:14px;
+         background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
+         box-shadow:0 10px 24px rgba(90,63,240,.30); }
+/* 오른쪽 위에 빛이 도는 느낌만 얹습니다. 사진을 쓰면 무거워집니다. */
+.aicard::after{ content:''; position:absolute; right:-46px; top:-66px;
+                width:180px; height:180px; border-radius:50%;
+                background:radial-gradient(circle,rgba(255,255,255,.24),transparent 70%); }
+.aicard > *{ position:relative; z-index:1 }
+.aicard .ic{ flex:none; width:44px; height:44px; border-radius:14px;
+             background:rgba(255,255,255,.20); display:flex;
+             align-items:center; justify-content:center; }
+.aicard .tx{ flex:1; min-width:0 }
+.aicard .tx b{ font-size:calc(16.5px * var(--ts)); font-weight:700;
+               letter-spacing:calc(-.3px * var(--ts)); display:block }
+.aicard .tx span{ display:block; font-size:calc(12.5px * var(--ts));
+                  opacity:.92; margin-top:3px; line-height:1.45 }
+.aicard .go{ flex:none; background:#fff; color:#5a3ff0; border-radius:999px;
+             padding:9px 15px; font-weight:700; font-size:calc(13px * var(--ts)); }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -1190,7 +1213,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b60</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b61</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2280,17 +2303,21 @@ async function loadHome(){
 /* AI 일정 만들기 — 이 앱이 내세우는 기능이라 홈 위쪽에 둡니다. */
 function renderAiCard(){
   const box = document.createElement('div');
-  box.className = 'card';
+  box.className = 'aicard';
   box.id = 'homeaicard';
-  box.style.cursor = 'pointer';
   box.innerHTML =
-    `<div class="row" style="border:0; padding:0; margin:0">
-       <span class="label">
-         <b style="font-size:calc(17px * var(--ts))">AI와 함께 떠나볼까요?</b>
-         <div class="memo">취향만 누르면 첫날부터 마지막 날까지 짜드립니다</div>
-       </span>
-       <span class="val">시작 ›</span>
-     </div>`;
+    `<span class="ic">
+       <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+         <path d="M11 2l1.8 5.2L18 9l-5.2 1.8L11 16l-1.8-5.2L4 9l5.2-1.8L11 2z"/>
+         <path d="M18.5 13.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z"
+               opacity=".75"/>
+       </svg>
+     </span>
+     <span class="tx">
+       <b>AI와 함께 떠나볼까요?</b>
+       <span>취향만 누르면 첫날부터 마지막 날까지 짜드립니다</span>
+     </span>
+     <span class="go">시작</span>`;
   box.onclick = openDraft;
   $('home').appendChild(box);
 }
@@ -2307,18 +2334,23 @@ async function fillQuiz(){
   if (quizPool.length >= QUIZ_ROWS || quizFilling) return;
   quizFilling = true;
   try {
-    const [cnt, mine] = await Promise.all([
-      sb.from('cities').select('id', { count:'exact', head:true }).not('image_url','is',null),
-      sb.from('city_ratings').select('city_id').eq('user_id', me.id)
-    ]);
+    /* 도시는 이미 다 받아 두었습니다. 서버에서 잘라 오면 id 순으로 붙어 있는
+       구간이 나와서 오타루 · 오타와 · 옥스퍼드처럼 이름이 몰립니다.
+       여기서 통째로 섞습니다. */
+    await loadCities();
+    const mine = await sb.from('city_ratings').select('city_id').eq('user_id', me.id);
     const rated = new Set((mine.data || []).map(r => r.city_id));
-    const total = cnt.count || 0;
-    const k = Math.max(0, Math.floor(Math.random() * Math.max(1, total - 20)));
-    const cs = await sb.from('cities').select('id,name,country,image_url')
-      .not('image_url','is',null).order('id').range(k, k + 19);
-    const have = new Set(quizPool.map(c => c.id));
-    quizPool = quizPool.concat(
-      (cs.data || []).filter(c => !rated.has(c.id) && !have.has(c.id)));
+    const have  = new Set(quizPool.map(c => c.id));
+    let pool = (cities || []).filter(c => !rated.has(c.id) && !have.has(c.id));
+    /* 사진 있는 곳을 먼저 씁니다. 사진 칸을 못 받아온 경우에는 그냥 다 씁니다. */
+    const withImg = pool.filter(c => c.image_url);
+    if (withImg.length) pool = withImg;
+    /* 피셔–예이츠. sort(() => Math.random()-0.5) 로 섞으면 앞쪽이 덜 움직입니다. */
+    for (let i = pool.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    quizPool = quizPool.concat(pool.slice(0, 40));
   } finally { quizFilling = false; }
 }
 
@@ -4646,6 +4678,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
