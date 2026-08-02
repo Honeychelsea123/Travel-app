@@ -917,10 +917,24 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
       <div class="card" id="card-plans">
         <h2><span class="grow">일정</span>
+          <button class="small" id="candbtn">후보</button>
           <button class="small" id="addplanbtn">+ 추가</button></h2>
         <div class="days" id="days"></div>
         <div id="plans"><div class="empty">불러오는 중…</div></div>
         <pre id="planerr" class="hide"></pre>
+      </div>
+
+      <!-- 후보 — 가고 싶은 곳을 모아두고, 일정의 빈 시간에 끼워 넣습니다 -->
+      <div class="card hide" id="card-cand">
+        <h2><span class="grow">가고 싶은 곳</span>
+          <button class="ghost" id="candclose">닫기</button></h2>
+        <div id="fits"></div>
+        <div id="cands"><div class="empty">불러오는 중…</div></div>
+        <div style="display:flex; gap:8px; margin-top:10px">
+          <input id="c_title" placeholder="예: 판테온" maxlength="60" enterkeyhint="done">
+          <button class="small" id="c_add" style="flex:none">담기</button>
+        </div>
+        <pre id="canderr" class="hide"></pre>
       </div>
 
       <!-- 지출 -->
@@ -1171,7 +1185,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b58</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b59</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1217,7 +1231,7 @@ function fail(e, where){
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
-                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'),
+                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), cand:$('canderr'),
                 draft:$('drafterr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
@@ -2413,6 +2427,162 @@ async function loadFootprint(){
        <span class="n">${n}</span></span>`).join('');
 }
 
+/* ── 후보와 빈 시간 ──────────────────────────────────────────────────
+ * 도쿄 앱에서 가장 잘 굴러가던 기능입니다. 가고 싶은 곳을 모아두고,
+ * 일정 사이에 뜬 시간에 "여기 넣을 수 있어요"라고 알려줍니다.
+ *
+ * 도쿄에서 겪은 세 가지를 그대로 가져와 막습니다.
+ *   1. 밤에서 아침으로 걸친 구간을 빈 시간으로 잡던 것 (Day2 02:38~10:00)
+ *      → 낮 시간대로 잘라내고, 그러고도 한 시간이 남을 때만 씁니다.
+ *   2. 앞뒤 일정과 사실상 같은 자리를 또 제안하던 것
+ *      (우에노 공원을 우에노 온시 공원 옆에)  → 0.3km 안쪽이면 거릅니다.
+ *   3. 체류 시간으로 자르면 아무것도 안 남던 것
+ *      → 오가는 시간을 뺀 "머물 수 있는 시간"을 보여주고 사용자가 정하게 합니다.
+ *
+ * 이동 시간은 도쿄의 고정식 대신 v2 의 구간별 상수를 씁니다. 이쪽이 낫습니다. */
+const STAY = { 카페:40, 식사:60, 관광:90, 쇼핑:60, 이동:30, 숙소:0, 기타:60 };
+const stayMin = c => STAY[c] ?? 60;
+const DAY_START = 9 * 60, DAY_END = 21 * 60;   /* 이 밖은 자거나 쉬는 시간으로 봅니다 */
+const SAME_KM = 0.3;                           /* 이보다 가까우면 사실상 같은 자리 */
+let cands = [], fitList = [];
+
+const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+                     return m ? +m[1] * 60 + +m[2] : 9999; };
+const hhmm = m => { m = Math.max(0, Math.round(m));
+                    return ('0' + Math.floor(m / 60) % 24).slice(-2) +
+                           ':' + ('0' + (m % 60)).slice(-2); };
+const legOf = d => (legs || []).find(l => d >= l.start_date && d <= l.end_date) || (legs || [])[0];
+const tmin = (km, d) => { const g = legOf(d); const t = travel(km, g);
+                          return t ? t.min : Math.round(km * 3.5 + 13); };
+
+function planGaps(){
+  const byDay = {}, out = [];
+  (plans || []).forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
+  Object.keys(byDay).forEach(d => {
+    const list = byDay[d].slice().sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
+    for (let i = 0; i < list.length - 1; i++){
+      const a = list[i], b = list[i + 1];
+      const t1 = toMin(a.start_time), t2 = toMin(b.start_time);
+      if (t1 >= 9999 || t2 >= 9999) continue;
+      /* v2 는 끝 시각을 받으므로 있으면 그걸 씁니다. 도쿄는 없어서 늘 어림했습니다. */
+      const e = toMin(a.end_time);
+      const aEnd = e < 9999 ? e : t1 + stayMin(a.category);
+      if (t2 - aEnd < 60) continue;              /* 한 시간도 안 남으면 넣을 자리가 아닙니다 */
+      const from = Math.max(aEnd, DAY_START), to = Math.min(t2, DAY_END);
+      if (to - from < 60) continue;
+      out.push({ date:d, after:a, before:b, from, to });
+    }
+  });
+  return out;
+}
+
+function findFits(){
+  const gaps = planGaps();
+  const cs = cands.filter(c => c.lat != null && c.lng != null);
+  const best = {};
+  gaps.forEach(g => {
+    if (g.after.lat == null || g.before.lat == null) return;
+    cs.forEach(c => {
+      const dA = distKm(g.after.lat, g.after.lng, c.lat, c.lng);
+      const dB = distKm(c.lat, c.lng, g.before.lat, g.before.lng);
+      if (dA == null || dB == null) return;
+      if (dA < SAME_KM || dB < SAME_KM) return;
+      const go = tmin(dA, g.date), back = tmin(dB, g.date);
+      const avail = (g.to - g.from) - go - back;
+      if (avail < 40) return;                    /* 40분도 안 되면 갈 만하지 않습니다 */
+      if (best[c.id] && best[c.id].avail >= avail) return;
+      best[c.id] = { cand:c, date:g.date, at:g.from + go, go, back, avail,
+                     tight: avail < stayMin(c.category), after:g.after.title };
+    });
+  });
+  return Object.values(best)
+    .sort((a, b) => (b.avail - a.avail) || (a.go - b.go)).slice(0, 3);
+}
+
+function drawCands(){
+  fitList = findFits();
+  $('fits').innerHTML = fitList.length
+    ? `<div class="daysep">빈 시간에 넣기 좋은 곳</div>` + fitList.map((f, i) =>
+        `<div class="picked" style="align-items:flex-start; margin-bottom:8px">
+           <div class="p" style="min-width:0">
+             <b>${esc(f.cand.title)}</b>
+             <div class="c">${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</div>
+             <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
+               <b>${f.avail}분</b> · 다음까지 ${f.back}분${
+               f.tight ? ' · 짧게 보고 나와야 합니다' : ''}</div>
+           </div>
+           <button class="small" data-fit="${i}">넣기</button>
+         </div>`).join('')
+    : '';
+
+  $('cands').innerHTML = cands.length
+    ? cands.map(c => `<div class="row">
+        <span class="label"><b>${esc(c.title)}</b>${
+          c.lat == null ? ' <span class="val">좌표 없음</span>' : ''}
+          ${c.memo ? `<div class="memo">${esc(c.memo)}</div>` : ''}</span>
+        <button class="ghost" data-canddel="${esc(c.id)}"
+                style="color:var(--bad)">×</button></div>`).join('')
+    : '<div class="empty">담아둔 곳이 없습니다. AI 제안에서 담거나 아래에 적으세요.</div>';
+}
+
+async function loadCands(){
+  if (!trip) return;
+  const r = await sb.from('candidates')
+    .select('id,title,title_local,category,memo,lat,lng')
+    .eq('trip_id', trip.id).is('deleted_at', null).order('created_at');
+  if (r.error) return fail(r.error, 'cand');
+  cands = r.data || [];
+  drawCands();
+}
+
+$('candbtn').addEventListener('click', async () => {
+  $('card-cand').classList.remove('hide');
+  $('card-cand').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  await loadCands();
+});
+$('candclose').addEventListener('click', () => $('card-cand').classList.add('hide'));
+
+$('c_add').addEventListener('click', async () => {
+  const t = $('c_title').value.trim();
+  if (!t) return;
+  /* 좌표는 안 받습니다. AI 제안으로 담으면 좌표가 같이 옵니다.
+     손으로 적은 것은 좌표가 없어 빈 시간 계산에서는 빠집니다. */
+  const r = await sb.from('candidates')
+    .insert({ trip_id: trip.id, title: t, source: 'manual' }).select('id');
+  if (r.error) return fail(r.error, 'cand');
+  if (!r.data?.length) return fail('저장되지 않았습니다 (0건).', 'cand');
+  $('c_title').value = '';
+  await loadCands();
+});
+$('c_title').addEventListener('keydown', e => { if (e.key === 'Enter') $('c_add').click(); });
+
+$('card-cand').addEventListener('click', async e => {
+  const f = e.target.closest('[data-fit]');
+  if (f){
+    /* 제안한 자리 그대로 일정 칸을 채워 엽니다. 날짜와 시각까지 미리 넣습니다. */
+    const x = fitList[+f.dataset.fit]; if (!x) return;
+    $('addplanbtn').click();
+    $('p_title').value = x.cand.title;
+    $('p_date').value  = x.date;
+    $('p_start').value = hhmm(x.at);
+    $('p_end').value   = hhmm(x.at + Math.min(x.avail, stayMin(x.cand.category)));
+    $('p_cat').value   = x.cand.category || '';
+    $('p_memo').value  = x.cand.memo || '';
+    $('card-cand').classList.add('hide');
+    $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+  const d = e.target.closest('[data-canddel]');
+  if (d){
+    const r = await sb.from('candidates')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', d.dataset.canddel).select('id');
+    if (r.error) return fail(r.error, 'cand');
+    if (!r.data?.length) return fail('지워지지 않았습니다 (0건).', 'cand');
+    await loadCands();
+  }
+});
+
 /* ── AI 일정 초안 ────────────────────────────────────────────────────
  * 문서가 "P를 끌어오는 핵심"이라고 한 자리입니다.
  * 짜준 것을 바로 넣지 않습니다. 계산으로 한 번 검사해서 보여주고,
@@ -3552,13 +3722,13 @@ $('days').addEventListener('click', e => {
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
 const TABS = {
-  plans: ['card-plans', 'plancard'],
+  plans: ['card-plans', 'card-cand', 'plancard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
   prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
   mem:   ['card-mem']
 };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
-const FORMS = ['plancard', 'expcard', 'bookcard'];
+const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand'];
 
 function showTab(t){
   tab = t;
@@ -4365,6 +4535,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
