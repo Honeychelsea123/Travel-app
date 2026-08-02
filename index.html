@@ -340,14 +340,25 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div id="home"><div class="empty">불러오는 중…</div></div>
     </div>
 
-    <!-- 평가 -->
+    <!-- 기록 -->
     <div id="rateview" class="hide">
+      <!-- 다녀왔는데 아직 안 매긴 곳. 여행이 끝나면 여기로 올라옵니다. -->
+      <div class="card hide" id="todocard" style="cursor:pointer">
+        <div class="row" style="border:0; padding:0; margin:0">
+          <span class="ic" style="font-size:calc(19px * var(--ts)); color:#f5a623">★</span>
+          <span class="label"><b id="todotext">—</b>
+            <div class="memo">다녀온 곳을 별점으로 남겨두면 기록이 쌓입니다.</div></span>
+          <span class="val">매기러 가기 ›</span>
+        </div>
+      </div>
+
       <div class="card" style="padding:12px">
         <input id="r_q" placeholder="도시 찾기 (로마 / rome / ㄹㅁ)" autocomplete="off"
                maxlength="30">
         <div class="days" id="r_filter" style="margin:10px 0 0">
           <button class="day on" data-rf="all">전체</button>
-          <button class="day" data-rf="been">가봤어요</button>
+          <button class="day" data-rf="todo">평가 대기</button>
+          <button class="day" data-rf="been">다녀온 곳</button>
           <button class="day" data-rf="want">가보고 싶어요</button>
           <button class="day" data-rf="mine">내가 매긴 것</button>
         </div>
@@ -883,7 +894,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.7" stroke-linejoin="round"><path
              d="M12 3.8l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 10l5.9-.9z"/>
-        </svg><span>평가</span></button>
+        </svg><span>기록</span></button>
       <button data-a="set">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12"
@@ -897,7 +908,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b37</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b38</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -923,7 +934,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', suggested = { actions:[], places:[] };
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -1542,14 +1553,34 @@ function starHtml(v){
 async function loadRatings(){
   $('rateerr').classList.add('hide');
   await loadCities();
-  const [mine, stats] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,been,want').eq('user_id', me.id),
+  const [mine, stats, vis] = await Promise.all([
+    sb.from('city_ratings').select('city_id,stars,want').eq('user_id', me.id),
     sb.rpc('city_stats'),
+    sb.rpc('my_visited'),
   ]);
   if (mine.error) return fail(mine.error, 'rate');
   myRates  = Object.fromEntries((mine.data || []).map(r => [r.city_id, r]));
   cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
+  /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
+     켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
+  visited = new Set((vis.data || []).map(v => v.city_id));
+
+  /* 다녀왔는데 아직 안 매긴 곳. 여행이 끝나면 여기로 올라옵니다. */
+  const todo = [...visited].filter(id => myRates[id]?.stars == null);
+  $('todocard').classList.toggle('hide', !todo.length);
+  if (todo.length){
+    $('todotext').textContent = `다녀온 ${todo.length}곳이 아직 평가 전입니다`;
+    $('todocard').onclick = () => setRateFilter('todo');
+  }
   drawRatings();
+}
+
+function setRateFilter(f){
+  rateFilter = f;
+  document.querySelectorAll('#r_filter button').forEach(x =>
+    x.classList.toggle('on', x.dataset.rf === f));
+  drawRatings();
+  $('r_filter').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
 function drawRatings(){
@@ -1558,14 +1589,17 @@ function drawRatings(){
   let list = (cities || []).filter(c => {
     if (q && !(cho ? c._cho.includes(q) : c._hay.includes(q))) return false;
     const r = myRates[c.id];
-    if (rateFilter === 'been') return !!r?.been;
+    if (rateFilter === 'todo') return visited.has(c.id) && r?.stars == null;
+    if (rateFilter === 'been') return visited.has(c.id);
     if (rateFilter === 'want') return !!r?.want;
     if (rateFilter === 'mine') return r?.stars != null;
     return true;
   });
-  /* 내가 매긴 것을 위로 올립니다. 평가 화면에 왔으면 그게 먼저 궁금합니다. */
-  list.sort((a, b) => (myRates[b.id]?.stars ?? -1) - (myRates[a.id]?.stars ?? -1)
-                    || a.name.localeCompare(b.name, 'ko'));
+  /* 아직 안 매긴 다녀온 곳을 맨 위로, 그다음 높은 별점 순.
+     기록 화면에 왔으면 "매길 게 남았나"가 먼저 궁금합니다. */
+  const rank = c => (visited.has(c.id) && myRates[c.id]?.stars == null) ? 999
+                  : (myRates[c.id]?.stars ?? -1);
+  list.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name, 'ko'));
 
   const n = Object.values(myRates).filter(r => r.stars != null).length;
   $('r_count').textContent = n ? `${n}곳 매김` : '';
@@ -1575,14 +1609,15 @@ function drawRatings(){
 
   $('ratelist').innerHTML = list.slice(0, 80).map(c => {
     const r = myRates[c.id] || {}, s = cityStat[c.id];
+    const todo = visited.has(c.id) && r.stars == null;
     return `<div class="rrow">
       <div class="t"><b>${esc(c.name)}</b>
+        ${todo ? '<span class="ktag" style="--kc:#f5a623">평가 대기</span>' : ''}
         <span class="memo">${esc(countryName[c.country] || c.country)}${
+          visited.has(c.id) ? ' · 다녀옴' : ''}${
           s?.n_rated ? ` · 평균 ${Number(s.avg_stars).toFixed(1)} (${s.n_rated}명)` : ''}</span>
       </div>
       <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
-      <button class="ghost been${r.been ? ' on' : ''}" data-been="${esc(c.id)}"
-              title="가봤어요">✓</button>
       <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}"
               title="가보고 싶어요">♡</button>
     </div>`;
@@ -1592,11 +1627,8 @@ function drawRatings(){
 
 $('r_q').addEventListener('input', drawRatings);
 $('r_filter').addEventListener('click', e => {
-  const b = e.target.closest('button[data-rf]'); if (!b) return;
-  rateFilter = b.dataset.rf;
-  document.querySelectorAll('#r_filter button').forEach(x =>
-    x.classList.toggle('on', x.dataset.rf === rateFilter));
-  drawRatings();
+  const b = e.target.closest('button[data-rf]');
+  if (b) setRateFilter(b.dataset.rf);
 });
 
 $('ratelist').addEventListener('click', async e => {
@@ -1607,16 +1639,12 @@ $('ratelist').addEventListener('click', async e => {
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
     /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다.
-       점수를 매기면 가봤어요도 같이 켜고, 지우면 같이 끕니다 —
-       매길 때 켜놓고 지울 때 안 끄면 지운 도시가 가봤어요에 남습니다. */
+       "다녀옴"은 따로 켜지 않습니다 — 별점이 있으면 다녀온 것으로 계산됩니다. */
     const cur = myRates[cityId]?.stars;
     const next = Number(cur) === v ? null : v;
-    await saveRate(cityId, { stars: next, been: next != null });
+    await saveRate(cityId, { stars: next });
     return;
   }
-  const b = e.target.closest('button[data-been]');
-  if (b) return saveRate(b.dataset.been, { been: !myRates[b.dataset.been]?.been });
-
   const w = e.target.closest('button[data-want]');
   if (w) await saveRate(w.dataset.want, { want: !myRates[w.dataset.want]?.want });
 });
@@ -1625,12 +1653,22 @@ async function saveRate(cityId, patch){
   const r = await sb.from('city_ratings')
     .upsert({ user_id: me.id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })
-    .select('city_id,stars,been,want').maybeSingle();
+    .select('city_id,stars,want').maybeSingle();
   if (r.error) return fail(r.error, 'rate');
   myRates[cityId] = { ...(myRates[cityId] || {}), ...r.data };
+  /* 별점을 매기면 그 도시는 다녀온 것이 됩니다. 지우면 여행 기록이 없는 한 빠집니다. */
+  if ('stars' in patch){
+    if (patch.stars != null) visited.add(cityId);
+    else { const v = await sb.rpc('my_visited');
+           visited = new Set((v.data || []).map(x => x.city_id)); }
+  }
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
   if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
+
+  const todo = [...visited].filter(id => myRates[id]?.stars == null);
+  $('todocard').classList.toggle('hide', !todo.length);
+  if (todo.length) $('todotext').textContent = `다녀온 ${todo.length}곳이 아직 평가 전입니다`;
   drawRatings();
 }
 
@@ -3207,6 +3245,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
