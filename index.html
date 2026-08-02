@@ -600,10 +600,11 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
       <!-- 프로필 화면 -->
       <div id="profpane">
-        <div class="card">
-          <div class="row" style="border:0; padding:0; margin:0">
-            <span class="label"></span>
-            <button class="ghost" id="gear" style="padding:6px 8px">
+        <div class="card" style="position:relative">
+          <!-- 톱니는 카드 우상단에 띄웁니다. 한 줄을 통째로 차지할 이유가 없습니다. -->
+          <div>
+            <button class="ghost" id="gear"
+                    style="position:absolute; top:12px; right:12px; padding:6px 8px">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2
@@ -617,39 +618,47 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             </button>
           </div>
 
-          <div style="text-align:center; padding:4px 0 2px">
+          <!-- 사진은 왼쪽, 이름과 메일은 그 옆에 붙여 세로로 맞춥니다. -->
+          <div style="display:flex; align-items:center; gap:14px; padding:2px 0 4px">
             <!-- 사진을 눌러 바꿉니다. 따로 버튼을 두는 것보다 찾기 쉽습니다. -->
             <button id="avatarbtn" class="ghost"
-                    style="position:relative; padding:0; border-radius:50%">
-              <img id="avatar" alt="" style="width:88px; height:88px; border-radius:50%;
+                    style="position:relative; padding:0; border-radius:50%; flex:none">
+              <img id="avatar" alt="" style="width:72px; height:72px; border-radius:50%;
                    background:var(--parchment); object-fit:cover; display:block">
-              <span style="position:absolute; right:0; bottom:0; width:28px; height:28px;
+              <span style="position:absolute; right:-2px; bottom:-2px; width:26px; height:26px;
                     border-radius:50%; background:var(--primary); color:#fff;
                     display:flex; align-items:center; justify-content:center;
-                    font-size:15px; box-shadow:var(--lift-1)">✎</span>
+                    font-size:14px; box-shadow:var(--lift-1)">✎</span>
             </button>
             <input type="file" id="avatarfile" accept="image/*" class="hide">
-            <!-- 이름을 눌러 바로 고칩니다. 설정까지 들어가게 하면 아무도 안 바꿉니다. -->
-            <button class="ghost" id="editname" style="margin-top:8px; padding:2px 8px">
-              <span style="font-size:calc(21px * var(--ts)); font-weight:650"
-                    id="name">—</span>
-              <span style="color:var(--ink-48); font-size:calc(14px * var(--ts))"> ✎</span>
-            </button>
-            <div class="memo" id="mail">—</div>
 
-            <div id="namebox" class="hide" style="margin-top:12px; text-align:left">
-              <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
-              <div style="margin-top:10px; display:flex; gap:8px">
-                <button class="primary" id="n_save">저장</button>
-                <button class="small" id="n_cancel">취소</button>
-              </div>
-              <div class="empty" style="padding:8px 0 0; text-align:left">
-                한줄평과 일행 목록에 이 이름으로 보입니다.
-                처음에는 구글 계정 이름이 들어와 있습니다.
-              </div>
+            <!-- 오른쪽 여백은 위에 뜬 톱니 자리입니다. 긴 이름이 밑으로 들어가면 안 됩니다. -->
+            <div style="flex:1; min-width:0; padding-right:34px">
+              <!-- 이름을 눌러 바로 고칩니다. 설정까지 들어가게 하면 아무도 안 바꿉니다. -->
+              <button class="ghost" id="editname"
+                      style="display:block; width:100%; padding:0; text-align:left">
+                <span style="font-size:calc(20px * var(--ts)); font-weight:650"
+                      id="name">—</span>
+                <span style="color:var(--ink-48); font-size:calc(13px * var(--ts))"> ✎</span>
+              </button>
+              <div class="memo" id="mail"
+                   style="margin-top:2px; overflow:hidden; text-overflow:ellipsis;
+                          white-space:nowrap">—</div>
             </div>
-            <pre id="avaerr" class="hide"></pre>
           </div>
+
+          <div id="namebox" class="hide" style="margin-bottom:4px">
+            <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
+            <div style="margin-top:10px; display:flex; gap:8px">
+              <button class="primary" id="n_save">저장</button>
+              <button class="small" id="n_cancel">취소</button>
+            </div>
+            <div class="empty" style="padding:8px 0 0; text-align:left">
+              한줄평과 일행 목록에 이 이름으로 보입니다.
+              처음에는 구글 계정 이름이 들어와 있습니다.
+            </div>
+          </div>
+          <pre id="avaerr" class="hide"></pre>
 
           <!-- 왓챠의 "696 평가 | 27 코멘트" 줄과 같은 자리입니다 -->
           <div class="stats">
@@ -1051,7 +1060,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b55</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b56</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -3905,6 +3914,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
