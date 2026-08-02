@@ -223,6 +223,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .t b{ display:block; }
 .rrow .memo{ display:block; color:var(--ink-48); font-size:calc(13px * var(--ts)); }
 .rrow .stars{ margin-top:6px; }
+/* 후기 — 별과 한 줄을 나란히 */
+.rvme{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.rvme input{ flex:1; min-width:180px; }
 /* 왓챠의 포스터 자리. 사진이 없으면 첫 글자로 대신합니다. */
 .thumb{ width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; flex:none;
         background:var(--parchment); }
@@ -626,6 +629,20 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div class="days" id="t_legs" style="margin:10px 0 0"></div>
       </div>
 
+      <!-- 후기 — 끝난 여행에만 나옵니다 -->
+      <div class="card hide" id="reviewbox">
+        <h2><span class="grow">다녀오셨네요</span>
+          <span class="val" id="rv_when"></span></h2>
+        <div class="rvme">
+          <span class="stars" id="rv_stars">★★★★★</span>
+          <input id="rv_note" placeholder="한 줄로 남겨두세요 (선택)" maxlength="200">
+        </div>
+        <!-- 이 여행의 구간 도시들. 여기서 바로 매기면 기록으로 넘어갑니다. -->
+        <div id="rv_cities"></div>
+        <div id="rv_others"></div>
+        <pre id="rverr" class="hide"></pre>
+      </div>
+
       <!-- 여행 정보 수정 -->
       <div class="card hide" id="editcard">
         <h2>여행 정보</h2>
@@ -927,7 +944,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b39</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b40</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -953,7 +970,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), suggested = { actions:[], places:[] };
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), myReview = {}, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -971,7 +988,7 @@ function mark(id, ok, text){
 function fail(e, where){
   const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
-                exp:$('experr'), expform:$('expformerr'),
+                exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
                 pack:$('packerr'), link:$('linkerr'), rate:$('rateerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
@@ -2123,6 +2140,7 @@ async function openTrip(id){
   /* 구간을 먼저 읽어야 날짜 칩에 도시가 붙고 지출 통화가 맞습니다.
      지출은 일행 이름을 쓰므로 일행도 먼저 읽습니다. */
   await loadLegs();
+  await loadReview();
   /* 준비물은 담당 이름을 쓰므로 일행 뒤에 붙입니다. */
   await Promise.all([
     loadPlans(), loadBookings(), loadLinks(), loadCities(),
@@ -2181,7 +2199,8 @@ function bump(what){
       drawTripHeader();
     }
     /* 구간이 바뀌면 날짜 칩의 도시와 지출 통화가 따라 바뀝니다. */
-    if (s.has('legs')) await loadLegs();
+    if (s.has('legs')){ await loadLegs(); await loadReview(); }
+    if (s.has('trip')) await loadReview();   /* 날짜가 바뀌면 끝난 여행인지도 바뀝니다 */
     if (s.has('plans') || s.has('trip') || s.has('legs')) await loadPlans();
     /* 일행이 바뀌면 지출에 찍힌 이름과 정산 인원도 따라 바뀝니다. */
     if (s.has('members')) { await loadMembers(); await loadExpenses(); await loadPacking(); }
@@ -2271,6 +2290,7 @@ $('g_add').addEventListener('click', async () => {
 
   $('g_dest').value = ''; $('g_countrywrap').classList.add('hide');
   await loadLegs();
+  await loadReview();
   await fetchTrip(trip.id); drawTripHeader();   /* 대표값이 바뀌었을 수 있습니다 */
   drawDays(); drawPlans();
 });
@@ -2287,9 +2307,94 @@ $('legs').addEventListener('click', async e => {
   if (r.error) return fail(r.error, 'leg');
   if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'leg');
   await loadLegs();
+  await loadReview();
   await fetchTrip(trip.id); drawTripHeader();
   drawDays(); drawPlans();
 });
+
+/* ── 여행 후기 ──────────────────────────────────────────────────────
+ * 끝난 여행에만 나옵니다. 일정을 쓰던 사람이 그대로 평가로 넘어가는 자리라,
+ * 기록 탭을 따로 찾아가게 하지 않습니다.
+ * 같은 여행도 사람마다 느낌이 다르므로 후기는 한 사람에 한 줄입니다. */
+async function loadReview(){
+  const ended = trip.end_date < ymd(new Date());
+  $('reviewbox').classList.toggle('hide', !ended);
+  if (!ended) return;
+
+  const ids = legs.map(l => l.city_id).filter(Boolean);
+  const [mine, rates, all] = await Promise.all([
+    sb.from('trip_reviews').select('stars,comment')
+      .eq('trip_id', trip.id).eq('user_id', me.id).maybeSingle(),
+    ids.length ? sb.from('city_ratings').select('city_id,stars')
+                   .eq('user_id', me.id).in('city_id', ids)
+               : Promise.resolve({ data: [] }),
+    sb.from('trip_reviews').select('user_id,stars,comment').eq('trip_id', trip.id),
+  ]);
+
+  myReview = mine.data || {};
+  $('rv_when').textContent = `${trip.end_date} 종료`;
+  $('rv_stars').innerHTML = starHtml(myReview.stars);
+  $('rv_note').value = myReview.comment || '';
+
+  const got = Object.fromEntries((rates.data || []).map(r => [r.city_id, r.stars]));
+  $('rv_cities').innerHTML = ids.length
+    ? `<div class="daysep">다녀온 곳</div>` + legs.filter(l => l.city_id).map(l =>
+        `<div class="rrow" style="padding:9px 0">
+           <div class="t"><b>${esc(l.destination)}</b>
+             <span class="stars" data-rvcity="${esc(l.city_id)}">${
+               starHtml(got[l.city_id])}</span></div>
+         </div>`).join('')
+    : '';
+
+  /* 일행이 남긴 후기. 같이 간 사람끼리는 서로 봅니다. */
+  const others = (all.data || []).filter(r => r.user_id !== me.id && (r.stars || r.comment));
+  $('rv_others').innerHTML = others.length
+    ? `<div class="daysep">일행의 후기</div>` + others.map(r =>
+        `<div class="rrow" style="padding:9px 0">
+           <div class="t"><b>${esc(nameOf(r.user_id))}</b>
+             ${r.comment ? `<span class="memo">${esc(r.comment)}</span>` : ''}
+             <span class="stars" style="pointer-events:none">${starHtml(r.stars)}</span></div>
+         </div>`).join('')
+    : '';
+}
+
+async function saveReview(patch){
+  const r = await sb.from('trip_reviews')
+    .upsert({ trip_id: trip.id, user_id: me.id, ...myReview, ...patch },
+            { onConflict: 'trip_id,user_id' })
+    .select('stars,comment').maybeSingle();
+  if (r.error) return fail(r.error, 'rv');
+  myReview = r.data || myReview;
+  $('rv_stars').innerHTML = starHtml(myReview.stars);
+}
+
+$('reviewbox').addEventListener('click', async e => {
+  const st = e.target.closest('.st'); if (!st) return;
+  const wrap = st.closest('.stars');
+  const box = st.getBoundingClientRect();
+  const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+
+  if (wrap.dataset.rvcity){
+    /* 여기서 매긴 것이 곧 기록 탭의 도시 별점입니다. 두 벌로 두지 않습니다. */
+    const cur = [...wrap.querySelectorAll('.st i')]
+      .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
+    const next = Math.abs(cur - v) < 0.01 ? null : v;
+    const up = await sb.from('city_ratings')
+      .upsert({ user_id: me.id, city_id: wrap.dataset.rvcity, stars: next },
+              { onConflict: 'user_id,city_id' }).select('stars').maybeSingle();
+    if (up.error) return fail(up.error, 'rv');
+    wrap.innerHTML = starHtml(next);
+    return;
+  }
+  if (wrap.id === 'rv_stars'){
+    const next = Number(myReview.stars) === v ? null : v;
+    await saveReview({ stars: next });
+  }
+});
+
+/* 한 줄 후기는 칸을 벗어날 때 저장합니다. 글자마다 보내면 요청이 쏟아집니다. */
+$('rv_note').addEventListener('change', () =>
+  saveReview({ comment: $('rv_note').value.trim() || null }));
 
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
 $('editbtn').addEventListener('click', () => {
@@ -3310,6 +3415,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
