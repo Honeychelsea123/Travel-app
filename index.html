@@ -125,6 +125,13 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
   <section id="signedout" class="hide">
     <div class="card">
       <h2>시작하기</h2>
+      <!-- 초대 링크로 들어왔으면 무슨 여행인지 먼저 보여줍니다.
+           그냥 "로그인하세요"만 뜨면 왜 로그인해야 하는지 모릅니다. -->
+      <div id="joinnote" class="picked hide" style="margin-bottom:12px; display:block">
+        <div class="c">초대받았습니다</div>
+        <b id="joinname">—</b>
+        <div class="c" id="joinwhen"></div>
+      </div>
       <button class="google" id="login">
         <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 7l7.2 5.6c4.2-3.9 6.6-9.6 6.6-16.4z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.3 0 20 0 24s1 7.7 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.6 2.2-8.7 2.2-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
         구글로 계속하기
@@ -243,6 +250,36 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <pre id="planerr" class="hide"></pre>
       </div>
 
+      <!-- 일행 -->
+      <div class="card">
+        <h2><span class="grow">일행</span>
+          <button class="small" id="invbtn">+ 초대</button></h2>
+        <div id="members"><div class="empty">불러오는 중…</div></div>
+
+        <div id="invitebox" class="hide" style="margin-top:12px">
+          <label for="i_role">권한</label>
+          <select id="i_role">
+            <option value="editor">편집자 — 일정과 지출을 고칠 수 있음</option>
+            <option value="viewer">보기만 — 읽기만 가능</option>
+          </select>
+          <div style="margin-top:12px; display:flex; gap:8px">
+            <button class="primary" id="i_make">초대 링크 만들기</button>
+            <button class="small" id="i_cancel">닫기</button>
+          </div>
+          <div id="i_result" class="hide" style="margin-top:12px">
+            <div class="picked" style="align-items:flex-start">
+              <div class="p">
+                <div class="c">이 링크를 보내세요 · 14일 뒤 만료</div>
+                <div id="i_link" style="word-break:break-all; font-size:calc(12px * var(--ts));
+                     margin-top:4px"></div>
+              </div>
+              <button class="small" id="i_copy">복사</button>
+            </div>
+          </div>
+        </div>
+        <pre id="memerr" class="hide"></pre>
+      </div>
+
       <div class="card hide" id="plancard">
         <h2>일정 추가</h2>
         <label for="p_title">무엇을</label>
@@ -300,7 +337,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b14</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b15</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -333,7 +370,7 @@ function mark(id, ok, text){
   $('v'+id).textContent = text;
 }
 function fail(e, where){
-  const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'),
+  const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
                 plan:$('planerr'), planform:$('planformerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
@@ -713,7 +750,8 @@ async function openTrip(id){
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
   $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
   $('editbtn').classList.toggle('hide', trip.myRole === 'viewer');
-  await loadPlans();
+  $('invitebox').classList.add('hide');
+  await Promise.all([loadPlans(), loadMembers()]);
 }
 
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
@@ -879,6 +917,143 @@ $('days').addEventListener('click', e => {
   drawDays(); drawPlans();
 });
 
+/* ── 일행 ───────────────────────────────────────────────────────── */
+const ROLE_KO = { owner:'소유자', editor:'편집자', viewer:'보기만' };
+
+async function loadMembers(){
+  $('memerr').classList.add('hide');
+  const { data, error } = await sb.from('trip_members')
+    .select('user_id,role,nickname,left_at,joined_at,profiles(display_name,avatar_url)')
+    .eq('trip_id', trip.id)
+    .order('joined_at');
+  if (error){ $('members').innerHTML = ''; return fail(error, 'mem'); }
+
+  const owner = trip.myRole === 'owner';
+  $('members').innerHTML = data.map(m => {
+    const p = m.profiles || {};
+    const name = m.nickname || p.display_name || '이름 없음';
+    const self = m.user_id === me.id;
+    const gone = !!m.left_at;
+    /* 나간 사람도 지웁니다가 아니라 남깁니다 — 빼면 정산이 어긋납니다. */
+    const tag = gone ? '<span class="badge">탈퇴함</span>'
+                     : `<span class="badge">${esc(ROLE_KO[m.role] || m.role)}</span>`;
+    /* 소유자만 남의 권한을 바꾸거나 내보냅니다. 자기 자신은 못 건드립니다. */
+    const admin = (owner && !self && !gone)
+      ? `<select data-mrole="${esc(m.user_id)}" style="width:auto; padding:4px 8px;
+                 font-size:calc(12px * var(--ts))">
+           <option value="editor"${m.role === 'editor' ? ' selected' : ''}>편집자</option>
+           <option value="viewer"${m.role === 'viewer' ? ' selected' : ''}>보기만</option>
+         </select>
+         <button class="ghost" data-mact="kick" data-id="${esc(m.user_id)}"
+                 data-name="${esc(name)}" style="color:var(--bad)">내보내기</button>`
+      : '';
+    const mine = self && !gone
+      ? `<button class="ghost" data-mact="nick" data-nick="${esc(m.nickname || '')}">별명</button>`
+      : '';
+    return `<div class="trip" style="cursor:default">
+      <img src="${esc(p.avatar_url || '')}" alt=""
+           style="width:32px;height:32px;border-radius:50%;background:var(--sunk);flex:none"
+           onerror="this.style.visibility='hidden'">
+      <div class="t"><b style="${gone ? 'opacity:.5' : ''}">${esc(name)}${self ? ' (나)' : ''}</b>
+        <div style="margin-top:2px">${mine}${admin}</div></div>${tag}</div>`;
+  }).join('');
+
+  /* 초대는 소유자만 만듭니다. */
+  $('invbtn').classList.toggle('hide', !owner);
+}
+
+$('invbtn').addEventListener('click', () => {
+  $('invitebox').classList.toggle('hide');
+  $('i_result').classList.add('hide');
+});
+$('i_cancel').addEventListener('click', () => $('invitebox').classList.add('hide'));
+
+$('i_make').addEventListener('click', async () => {
+  const btn = $('i_make');
+  $('memerr').classList.add('hide');
+  btn.disabled = true; btn.textContent = '만드는 중…';
+  const { data, error } = await sb.from('trip_invites')
+    .insert({ trip_id: trip.id, role: $('i_role').value })
+    .select('code').maybeSingle();
+  btn.disabled = false; btn.textContent = '초대 링크 만들기';
+  if (error) return fail(error, 'mem');
+  if (!data)  return fail('초대를 만들지 못했습니다 (0건). 소유자만 만들 수 있습니다.', 'mem');
+
+  const link = location.origin + location.pathname + '?join=' + data.code;
+  $('i_link').textContent = link;
+  $('i_result').classList.remove('hide');
+});
+
+$('i_copy').addEventListener('click', async () => {
+  const t = $('i_link').textContent;
+  try { await navigator.clipboard.writeText(t); $('i_copy').textContent = '복사됨'; }
+  catch { $('i_copy').textContent = '길게 눌러 복사'; }   /* 권한이 없으면 손으로 */
+  setTimeout(() => { $('i_copy').textContent = '복사'; }, 2000);
+});
+
+$('members').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-mact]'); if (!b) return;
+
+  /* prompt 도 confirm 과 같이 내장 브라우저에서 막힙니다. 화면 안에서 받습니다. */
+  if (b.dataset.mact === 'nick'){
+    b.outerHTML =
+      `<input id="nickin" value="${esc(b.dataset.nick)}" maxlength="20"
+              placeholder="비우면 계정 이름" style="width:auto; max-width:160px;
+              padding:4px 10px; font-size:calc(12px * var(--ts))">
+       <button class="ghost" data-mact="nicksave">저장</button>`;
+    $('nickin').focus();
+    return;
+  }
+  if (b.dataset.mact === 'nicksave'){
+    b.disabled = true;
+    const r = await sb.from('trip_members')
+      .update({ nickname: $('nickin').value.trim() || null })
+      .eq('trip_id', trip.id).eq('user_id', me.id).select('user_id');
+    b.disabled = false;
+    if (r.error) return fail(r.error, 'mem');
+    return loadMembers();
+  }
+
+  if (b.dataset.mact === 'kick'){
+    if (b.dataset.armed !== '1'){       /* 확인창을 안 쓰는 이유는 앞과 같습니다 */
+      b.dataset.armed = '1';
+      b.textContent = `정말 ${b.dataset.name} 내보내기?`;
+      return;
+    }
+    b.disabled = true;
+    /* 지우지 않고 나간 것으로 표시합니다. 지출에 이름이 남아야 정산이 맞습니다. */
+    const r = await sb.from('trip_members')
+      .update({ left_at: new Date().toISOString() })
+      .eq('trip_id', trip.id).eq('user_id', b.dataset.id).select('user_id');
+    b.disabled = false;
+    if (r.error) return fail(r.error, 'mem');
+    if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'mem');
+    return loadMembers();
+  }
+});
+
+$('members').addEventListener('change', async e => {
+  const s = e.target.closest('select[data-mrole]'); if (!s) return;
+  const r = await sb.from('trip_members').update({ role: s.value })
+    .eq('trip_id', trip.id).eq('user_id', s.dataset.mrole).select('user_id');
+  if (r.error) return fail(r.error, 'mem');
+  if (!r.data?.length) return fail('권한을 바꾸지 못했습니다 (0건).', 'mem');
+  await loadMembers();
+});
+
+/* ── 초대 링크로 들어왔을 때 ────────────────────────────────────── */
+async function handleJoin(){
+  const code = sessionStorage.getItem('t2:join');
+  if (!code) return false;
+  sessionStorage.removeItem('t2:join');
+
+  const { data, error } = await sb.rpc('redeem_invite', { p_code: code });
+  if (error){ fail(error, 'trip'); return false; }
+  await loadTrips();
+  await openTrip(data);
+  return true;
+}
+
 /* ── 일정 추가 · 삭제 ───────────────────────────────────────────── */
 $('addplanbtn').addEventListener('click', () => {
   $('plancard').classList.toggle('hide');
@@ -950,7 +1125,23 @@ async function render(session){
   if (!session){
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
-    me = null; return;
+    me = null;
+
+    /* 초대 링크로 왔으면 어떤 여행인지 먼저 보여줍니다.
+       아직 참여자가 아니라 trips 를 못 읽으므로 이름과 날짜만 주는 함수를 씁니다. */
+    const code = sessionStorage.getItem('t2:join');
+    if (code){
+      const { data } = await sb.rpc('peek_invite', { p_code: code });
+      if (data){
+        $('joinnote').classList.remove('hide');
+        $('joinname').textContent = data.title;
+        $('joinwhen').textContent = data.expired
+          ? '만료된 초대입니다'
+          : `${data.destination} · ${data.start_date} ~ ${data.end_date} · ` +
+            `${ROLE_KO[data.role] || data.role}로 참여`;
+      }
+    }
+    return;
   }
   if (me?.id === session.user.id) return;      /* 토큰 갱신마다 다시 그리지 않습니다 */
   me = session.user;
@@ -975,9 +1166,22 @@ async function render(session){
   mark('u', !!prefs.data, prefs.data ? ('배율 ' + prefs.data.text_scale) : '없음');
 
   await loadTrips();
+  /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
+     목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
+  await handleJoin();
 }
 
 /* ── 시작 ───────────────────────────────────────────────────────── */
+/* 초대 링크(?join=CODE)로 들어왔을 수 있습니다. 로그인을 거쳐야 쓸 수 있으므로
+   먼저 담아두고 주소는 지웁니다 — 구글에 다녀오는 동안 사라지면 안 됩니다. */
+{
+  const code = new URLSearchParams(location.search).get('join');
+  if (code){
+    sessionStorage.setItem('t2:join', code.trim().toUpperCase());
+    history.replaceState(null, '', location.pathname);
+  }
+}
+
 try {
   const q = t => sb.from(t).select('*', { count:'exact', head:true });
   const [co, ci, gr] = await Promise.all([q('countries'), q('cities'), q('transit_grades')]);
@@ -996,6 +1200,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
