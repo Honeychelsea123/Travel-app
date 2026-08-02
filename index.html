@@ -199,8 +199,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .t{ flex:1; min-width:0; }
 .rrow .t b{ display:block; }
 .rrow .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
-.want{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px; color:var(--ink-48); }
+.want, .been{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px;
+              color:var(--hairline); }
 .want.on{ color:#e0245e; }
+.been.on{ color:var(--k-see); }
 
 /* 예약번호 — 여행 중에 눈으로 찾는 것이라 티나게 둡니다 */
 .refno{ display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -817,7 +819,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b35</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b36</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1501,6 +1503,8 @@ function drawRatings(){
           s?.n_rated ? ` · 평균 ${Number(s.avg_stars).toFixed(1)} (${s.n_rated}명)` : ''}</span>
       </div>
       <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
+      <button class="ghost been${r.been ? ' on' : ''}" data-been="${esc(c.id)}"
+              title="가봤어요">✓</button>
       <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}"
               title="가보고 싶어요">♡</button>
     </div>`;
@@ -1524,11 +1528,17 @@ $('ratelist').addEventListener('click', async e => {
     const cityId = st.closest('.stars').dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다. */
+    /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다.
+       점수를 매기면 가봤어요도 같이 켜고, 지우면 같이 끕니다 —
+       매길 때 켜놓고 지울 때 안 끄면 지운 도시가 가봤어요에 남습니다. */
     const cur = myRates[cityId]?.stars;
-    await saveRate(cityId, { stars: Number(cur) === v ? null : v, been: true });
+    const next = Number(cur) === v ? null : v;
+    await saveRate(cityId, { stars: next, been: next != null });
     return;
   }
+  const b = e.target.closest('button[data-been]');
+  if (b) return saveRate(b.dataset.been, { been: !myRates[b.dataset.been]?.been });
+
   const w = e.target.closest('button[data-want]');
   if (w) await saveRate(w.dataset.want, { want: !myRates[w.dataset.want]?.want });
 });
@@ -3068,6 +3078,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
