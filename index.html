@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -675,7 +675,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <span class="empty grow" style="text-align:left; padding:0">
             한줄평은 다른 사람에게도 보입니다.</span>
           <!-- .primary 는 flex:1 이라 그대로 쓰면 줄을 다 먹습니다. 여기선 붙박이로. -->
-          <button class="primary small" id="cv_save" style="flex:none" disabled>등록</button>
+          <button class="primary small" id="cv_save"
+                  style="flex:none; margin-left:auto" disabled>등록</button>
         </div>
         <div id="cv_comments"></div>
       </div>
@@ -920,6 +921,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             <button data-shelf="been"><b id="s_country">0</b><span>국가</span></button>
             <button data-shelf="been"><b id="s_city">0</b><span>도시</span></button>
             <button data-shelf="mine"><b id="s_rated">0</b><span>평가</span></button>
+            <!-- 한줄평은 남에게 보이는 것이라 몇 개 썼는지 따로 셉니다. -->
+            <button data-shelf="comment"><b id="s_comment">0</b><span>코멘트</span></button>
           </div>
 
           <div id="s_prog" class="memo" style="text-align:center; margin-top:10px"></div>
@@ -1360,7 +1363,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b78</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b79</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2104,6 +2107,7 @@ function drawRatings(){
     if (rateFilter === 'been') return visited.has(c.id);
     if (rateFilter === 'want') return !!r?.want;
     if (rateFilter === 'mine') return r?.stars != null;
+    if (rateFilter === 'comment') return !!r?.comment;
     /* 기본 목록에는 아직 안 매긴 곳만 둡니다. 매긴 것이 계속 쌓여 있으면
        남은 게 안 보여서 더 안 매기게 됩니다. 매긴 것은 프로필에서 봅니다.
        방금 매긴 것은 남겨둡니다 — 잘못 눌렀을 때 그 자리에서 고쳐야 합니다. */
@@ -2669,6 +2673,10 @@ async function loadFootprint(){
   $('s_country').textContent = f.countries;
   $('s_city').textContent    = f.cities;
   $('s_rated').textContent   = f.rated;
+  /* 한줄평 수는 my_footprint 에 없습니다. 개수만 따로 셉니다. */
+  sb.from('city_ratings').select('city_id', { count:'exact', head:true })
+    .eq('user_id', me.id).not('comment', 'is', null)
+    .then(r => { $('s_comment').textContent = r.count ?? 0; });
   $('s_rated2').textContent  = f.rated;
   $('s_been').textContent    = f.cities;
   $('s_want').textContent    = f.wants;
@@ -5114,6 +5122,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
