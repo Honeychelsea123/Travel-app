@@ -106,6 +106,12 @@ grant execute on function public.mark_visited(uuid) to authenticated;
 
 
 -- ── 5. updated_at ────────────────────────────────────────────────────
+-- 001 의 touch_row() 는 updated_by 도 채웁니다. 이 두 표에는 그 칸이 없어서
+-- 그걸 쓰면 실행할 때 터집니다. 시각만 건드리는 것을 따로 둡니다.
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at = now(); return new; end $$;
+
 drop trigger if exists ratings_touch on public.city_ratings;
 create trigger ratings_touch before update on public.city_ratings
   for each row execute function public.touch_updated_at();
