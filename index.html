@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -232,6 +232,25 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ margin-left:auto; }
 .rrow .st{ font-size:calc(28px * var(--ts)); }
+/* 별이 차는 것과 줄이 밀려나는 것이 보여야 내가 눌렀다는 걸 압니다. */
+.st i{ transition:width .18s ease-out; }
+.rrow{ transition:opacity .28s, transform .28s; }
+.rrow.gone{ opacity:0; transform:translateX(30px); }
+/* 왼쪽부터 차례로 톡 튀며 반짝입니다. 채운 별에만 겁니다. */
+@keyframes starpop{
+  0%   { transform:scale(1);    filter:none; }
+  35%  { transform:scale(1.36); filter:drop-shadow(0 0 7px rgba(245,166,35,.9)); }
+  100% { transform:scale(1);    filter:none; }
+}
+.st.pop{ animation:starpop .36s ease-out both; }
+@keyframes tagin{ from{ opacity:0; transform:translateY(-3px) scale(.9) }
+                  to  { opacity:1; transform:none } }
+.rtag{ animation:tagin .22s ease-out both; }
+/* 움직임을 꺼둔 기기에서는 튀지 않게 합니다. */
+@media (prefers-reduced-motion: reduce){
+  .st.pop{ animation:none } .rtag{ animation:none }
+  .rrow, .st i{ transition:none }
+}
 
 /* ── 홈 ──────────────────────────────────────────────────────────────
  * 도시 사진을 받아두고 홈에서 한 장도 안 쓰고 있었습니다.
@@ -1229,7 +1248,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b63</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b65</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2030,14 +2049,17 @@ $('ratelist').addEventListener('click', async e => {
   /* 별 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 — 왓챠피디아와 같은 방식입니다. */
   const st = e.target.closest('.st');
   if (st){
-    const cityId = st.closest('.stars').dataset.city;
+    const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
     /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다.
        "다녀옴"은 따로 켜지 않습니다 — 별점이 있으면 다녀온 것으로 계산됩니다. */
     const cur = myRates[cityId]?.stars;
     const next = Number(cur) === v ? null : v;
-    await saveRate(cityId, { stars: next });
+    /* 저장을 기다리지 않고 먼저 칠합니다. 여기서는 줄을 옮기지도 지우지도 않습니다. */
+    paintStars(wrap, next, true);
+    markRated(st.closest('.rrow'), next);
+    await saveRate(cityId, { stars: next }, true);
     return;
   }
   const w = e.target.closest('button[data-want]');
@@ -2048,7 +2070,34 @@ $('ratelist').addEventListener('click', async e => {
   if (row) await openCity(row.dataset.cityopen);
 });
 
-async function saveRate(cityId, patch){
+/* 별을 누르면 그 자리에서 바로 칠합니다. 저장을 기다렸다 다시 그리면
+   그 사이에 아무 일도 안 일어난 것처럼 보이고, 다시 그리는 순간
+   정렬이 바뀌어 줄이 위로 튀어 오릅니다 — 눌렀는지 알 수가 없습니다. */
+function paintStars(wrap, v, animate){
+  [...wrap.querySelectorAll('.st')].forEach((st, n) => {
+    const f = Math.max(0, Math.min(1, (v ?? 0) - n));
+    st.querySelector('i').style.width = (f * 100).toFixed(0) + '%';
+    if (!animate) return;
+    st.classList.remove('pop');
+    if (f <= 0){ st.style.animationDelay = ''; return; }
+    /* 같은 애니메이션을 다시 틀려면 한 번 끊어줘야 합니다.
+       offsetWidth 를 읽으면 브라우저가 그 자리에서 계산해 흐름이 끊깁니다. */
+    void st.offsetWidth;
+    st.style.animationDelay = (n * 55) + 'ms';   /* 왼쪽부터 차례로 */
+    st.classList.add('pop');
+  });
+}
+function markRated(row, v){
+  if (!row) return;
+  const box = row.querySelector('.t') || row;
+  let t = box.querySelector('.rtag');
+  if (v == null){ t?.remove(); return; }
+  if (!t){ t = document.createElement('span'); t.className = 'ktag rtag';
+           t.style.cssText = '--kc:#f5a623; margin-left:6px'; box.querySelector('b')?.after(t); }
+  t.textContent = `★ ${v} 기록`;
+}
+
+async function saveRate(cityId, patch, quiet){
   const r = await sb.from('city_ratings')
     .upsert({ user_id: me.id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })
@@ -2066,7 +2115,12 @@ async function saveRate(cityId, patch){
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
   if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
-  drawRatings();
+  /* 조용히 저장할 때는 다시 그리지 않습니다. 누른 줄이 제자리에 있어야 합니다.
+     숫자만 맞춰둡니다. */
+  if (quiet){
+    const n = Object.values(myRates).filter(r => r.stars != null).length;
+    $('r_count').textContent = n ? `${n}곳 매김` : '';
+  } else drawRatings();
 }
 
 /* ── 도시 상세 ──────────────────────────────────────────────────────
@@ -2420,17 +2474,31 @@ async function renderFoot(){
 $('home').addEventListener('click', async e => {
   const st = e.target.closest('#quizlist .st');
   if (st){
-    const cityId = st.closest('.stars').dataset.city;
+    const wrap = st.closest('.stars'), row = st.closest('.rrow');
+    const cityId = wrap.dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    await saveRate(cityId, { stars: v });
+    if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
+    row.dataset.done = '1';
+
+    /* 별이 차는 것을 먼저 보여주고, 잠깐 두었다가 밀어냅니다.
+       바로 지우면 내가 몇 점을 줬는지 볼 새가 없습니다. */
+    paintStars(wrap, v, true);
+    markRated(row, v);
+    await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
-    st.closest('.rrow').remove();
-    await fillQuiz();
-    const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-      .map(r => r.dataset.cityopen));
-    const nx = quizPool.find(c => !shown.has(c.id));
-    if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
+
+    setTimeout(() => {
+      row.classList.add('gone');
+      setTimeout(async () => {
+        row.remove();
+        await fillQuiz();
+        const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+          .map(r => r.dataset.cityopen));
+        const nx = quizPool.find(c => !shown.has(c.id));
+        if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
+      }, 280);
+    }, 620);
     return;
   }
   const w = e.target.closest('#quizlist button[data-want]');
@@ -2732,6 +2800,29 @@ $('card-cand').addEventListener('click', async e => {
  * 넣을지는 사람이 정합니다 — AI 는 쓰지 않고 제안만 합니다. */
 let draftTrip = null, draftOut = null;
 
+/* 짜준 것을 기기에 남겨둡니다. 화면을 나갔다 오면 사라지던 것을 막습니다 —
+   AI 횟수를 써서 받은 결과인데 넣기도 전에 날리면 안 됩니다.
+   서버에 두지 않는 것은 아직 내 것도 아닌 초안이기 때문입니다.
+   넣거나 지우면 그때 없앱니다. */
+const DKEY = id => 't2:draft:' + id;
+function saveDraft(id, out){
+  try { localStorage.setItem(DKEY(id), JSON.stringify({ ...out, at: Date.now() })); }
+  catch {}                              /* 저장 공간이 꽉 차도 초안 자체는 살아 있습니다 */
+}
+function readDraft(id){
+  try {
+    const s = localStorage.getItem(DKEY(id));
+    if (!s) return null;
+    const d = JSON.parse(s);
+    /* 두 주가 지난 초안은 여행 날짜가 지났을 수 있습니다. 붙들고 있지 않습니다. */
+    if (!d?.actions?.length || Date.now() - (d.at || 0) > 14 * 864e5){
+      localStorage.removeItem(DKEY(id)); return null;
+    }
+    return d;
+  } catch { return null; }
+}
+const dropDraft = id => { try { localStorage.removeItem(DKEY(id)); } catch {} };
+
 async function openDraft(){
   const today = ymd(new Date());
   const { data } = await sb.from('trips')
@@ -2759,8 +2850,15 @@ async function openDraft(){
   fillCityList();
   $('d_new').classList.toggle('hide', draftTrip !== 'new');
   if (!$('d_start').value) $('d_start').value = ymd(new Date(Date.now() + 14 * D1));
-  $('d_result').innerHTML = '';
   $('drafterr').classList.add('hide');
+  showSavedDraft();
+}
+
+/* 저장해 둔 초안이 있으면 되살립니다. 없으면 결과 자리를 비웁니다. */
+function showSavedDraft(){
+  const d = draftTrip && draftTrip !== 'new' ? readDraft(draftTrip) : null;
+  if (d){ draftOut = d; drawDraft(); $('d_go').textContent = '다시 짜기'; }
+  else  { draftOut = null; $('d_result').innerHTML = ''; $('d_go').textContent = '일정 짜기'; }
 }
 
 /* 새 여행을 골랐으면 먼저 만듭니다. 만들어야 구간이 생기고,
@@ -2802,6 +2900,7 @@ $('draftview').addEventListener('click', e => {
     document.querySelectorAll('#d_trips .day').forEach(x =>
       x.classList.toggle('on', x.dataset.dtrip === draftTrip));
     $('d_new').classList.toggle('hide', draftTrip !== 'new');
+    showSavedDraft();          /* 여행마다 초안이 따로 있습니다 */
     return;
   }
   for (const [box, key] of [['d_pace','pace'], ['d_morning','morning']]){
@@ -2854,6 +2953,7 @@ $('d_go').addEventListener('click', async () => {
     return fail('일정을 만들지 못했습니다. 다시 눌러보세요.', 'draft');
 
   draftOut = data;
+  saveDraft(draftTrip, data);
   drawDraft();
 });
 
@@ -2901,9 +3001,14 @@ function drawDraft(){
 
        <button class="primary" id="d_apply" style="width:100%; margin-top:14px">
          이대로 ${acts.length}개 넣기</button>
+       <button class="ghost" id="d_drop" style="width:100%; margin-top:6px">
+         이 초안 지우기</button>
        <div class="memo" style="text-align:center; margin-top:8px">
-         넣은 뒤에도 하나씩 고치거나 지울 수 있습니다.</div>
+         넣은 뒤에도 하나씩 고치거나 지울 수 있습니다.
+         넣기 전까지는 이 초안이 기기에 남아 있습니다.</div>
      </div>`;
+
+  $('d_drop').onclick = () => { dropDraft(draftTrip); showSavedDraft(); };
 
   $('d_apply').onclick = async () => {
     $('d_apply').disabled = true; $('d_apply').textContent = '넣는 중…';
@@ -2919,6 +3024,7 @@ function drawDraft(){
       $('d_apply').disabled = false;
       return fail('하나도 넣지 못했습니다. 이 여행에 쓸 권한이 있는지 확인해주세요.', 'draft');
     }
+    dropDraft(draftTrip);          /* 넣었으니 더 들고 있을 이유가 없습니다 */
     closeDraft();
     openTrip(draftTrip);
   };
@@ -4818,6 +4924,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
