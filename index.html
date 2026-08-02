@@ -79,6 +79,11 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
 }
 h1{ font-size:calc(19px * var(--ts)); margin:0; font-weight:650;
     letter-spacing:calc(-0.5px * var(--ts)); }
+/* 알림은 종 바로 아래에 붙습니다 */
+#notifpanel{ position:absolute; top:100%; right:8px; margin-top:8px; z-index:30;
+             width:min(320px, calc(100vw - 40px)); max-height:60vh; overflow-y:auto;
+             background:var(--canvas); border-radius:var(--r-lg);
+             padding:14px 16px; box-shadow:var(--lift-2); text-align:left; }
 .sub{ color:var(--ink-48); font-size:calc(13px * var(--ts)); margin:0;
       flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis;
       white-space:nowrap; }
@@ -227,6 +232,36 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ margin-left:auto; }
 .rrow .st{ font-size:calc(28px * var(--ts)); }
+
+/* ── 홈 ──────────────────────────────────────────────────────────────
+ * 도시 사진을 받아두고 홈에서 한 장도 안 쓰고 있었습니다.
+ * 사진을 카드 가득 깔고 글자는 그 위에 얹습니다. */
+.hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+       min-height:210px; display:flex; flex-direction:column; justify-content:flex-end;
+       padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
+       box-shadow:var(--lift-1); margin-bottom:12px; }
+.hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+/* 사진이 밝으면 흰 글자가 안 보입니다. 아래쪽을 확실히 어둡게 깝니다. */
+.hero::after{ content:''; position:absolute; inset:0; background:
+  linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.22) 45%, rgba(0,0,0,.72) 100%); }
+.hero > *{ position:relative; z-index:1; }
+.hero .dd{ font-size:calc(44px * var(--ts)); font-weight:750; line-height:1;
+           letter-spacing:calc(-2px * var(--ts)); text-shadow:0 2px 12px rgba(0,0,0,.35); }
+.hero .ht{ font-size:calc(20px * var(--ts)); font-weight:650; margin-top:8px;
+           text-shadow:0 1px 8px rgba(0,0,0,.4); }
+.hero .hm{ font-size:calc(13px * var(--ts)); opacity:.88; margin-top:3px;
+           text-shadow:0 1px 8px rgba(0,0,0,.4); }
+.hero .hbtn{ align-self:flex-start; margin-top:12px; background:#fff; color:var(--ink);
+             border:0; border-radius:999px; padding:10px 18px; font-weight:650;
+             font-size:calc(14px * var(--ts)); cursor:pointer; }
+
+/* 여기 가봤어요? — 왓챠 홈의 그 자리입니다. 여행이 없는 날에도 열 이유. */
+#quizimg{ width:100%; height:150px; object-fit:cover; border-radius:var(--r-md);
+          background:var(--line); display:block; }
+#quizstars{ display:flex; justify-content:center; gap:6px; margin:12px 0 2px;
+            font-size:calc(38px * var(--ts)); }
+.fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
+.fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 /* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
 .facts{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:14px; }
 .facts div{ display:flex; justify-content:space-between; gap:8px;
@@ -345,6 +380,16 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             background:var(--bad); color:#fff; font-size:10px; line-height:16px;
             font-weight:700">0</span>
     </button>
+
+    <!-- 종 바로 아래에 펼쳐집니다. 어느 탭에 있든 여기서 봅니다. -->
+    <div id="notifpanel" class="hide">
+      <div class="row" style="border:0; padding:0 0 8px; margin:0">
+        <span class="label" style="font-weight:650">알림</span>
+        <button class="ghost hide" id="readall"
+                style="color:var(--primary); padding:2px 6px">모두 읽음</button>
+      </div>
+      <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
+    </div>
   </div>
 
   <!-- 로그인 전 -->
@@ -616,12 +661,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
           <div id="s_prog" class="memo" style="text-align:center; margin-top:10px"></div>
           <div class="days" id="s_cont" style="justify-content:center; margin:10px 0 0"></div>
-        </div>
-
-        <div class="card hide" id="notifcard">
-          <h2><span class="grow">알림</span>
-            <button class="ghost hide" id="readall">모두 읽음</button></h2>
-          <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
         </div>
 
         <div class="card">
@@ -1013,7 +1052,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b50</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b52</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1851,7 +1890,9 @@ async function openCity(id){
   cityOpen = c;
   if (history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
 
+  /* 홈에서도 도시를 열 수 있습니다 — 열린 탭이 뭐든 다 덮어야 합니다. */
   $('rateview').classList.add('hide');
+  $('homeview').classList.add('hide');
   $('cityview').classList.remove('hide');
   window.scrollTo({ top:0 });
 
@@ -1943,8 +1984,9 @@ function closeCity(fromPop){
   if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
   cityOpen = null;
   $('cityview').classList.add('hide');
-  $('rateview').classList.remove('hide');
-  drawRatings();
+  /* 열었던 탭으로 돌아갑니다. 홈에서 열고 기록 탭에 떨어지면 이상합니다. */
+  if (appTab === 'home'){ $('homeview').classList.remove('hide'); loadHome(); }
+  else { $('rateview').classList.remove('hide'); drawRatings(); }
 }
 
 $('cityview').addEventListener('click', async e => {
@@ -1968,10 +2010,40 @@ $('cv_note').addEventListener('change', () =>
   saveRate(cityOpen.id, { comment: $('cv_note').value.trim() || null }));
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
- * 앱을 열면 제일 먼저 궁금한 것은 "다음 여행이 언제고 뭐가 잡혀 있나"입니다.
- * 가장 가까운 여행 하나와 그 여행의 앞으로 올 일정 몇 개만 보여줍니다. */
+ * 세 덩어리입니다.
+ *   ① 히어로   — 다음 여행을 도시 사진 위에. 여행이 없으면 가고 싶은 곳.
+ *   ② 가봤어요 — 안 매긴 도시 한 곳에 별을 매깁니다.
+ *   ③ 발자국   — 195개국 중 몇 곳인지.
+ *
+ * ①은 1년에 두세 번만 의미가 있습니다. 나머지 360일을 ②③이 채웁니다.
+ * 일정과 검토는 홈에서 뺐습니다 — 여행 탭과 AI 탭에 이미 있습니다. */
+
+/* 사진은 구간에 붙은 도시에서 가져옵니다.
+   예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
+async function tripPhoto(t){
+  const lg = await sb.from('trip_legs')
+    .select('city_id, cities(image_url)').eq('trip_id', t.id).order('start_date');
+  const hit = (lg.data || []).find(l => l.cities?.image_url);
+  if (hit) return hit.cities.image_url;
+  /* 구간에 도시가 안 붙어 있으면 이름으로 마지막 한 번 찾아봅니다. */
+  const c = await sb.from('cities').select('image_url')
+    .eq('name', t.destination).not('image_url', 'is', null).limit(1);
+  return c.data?.[0]?.image_url || null;
+}
+
+function heroHtml(photo, dd, title, memo, btn){
+  return `<div class="hero" id="hero">
+    ${photo ? `<img src="${esc(photo)}" alt="" onerror="this.remove()">` : ''}
+    ${dd ? `<div class="dd">${esc(dd)}</div>` : ''}
+    <div class="ht">${esc(title)}</div>
+    <div class="hm">${esc(memo)}</div>
+    ${btn ? `<button class="hbtn" id="herobtn">${esc(btn)}</button>` : ''}
+  </div>`;
+}
+
 async function loadHome(){
   const today = ymd(new Date());
+  await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
   const { data, error } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
     .is('archived_at', null).gte('end_date', today)
@@ -1979,79 +2051,133 @@ async function loadHome(){
   if (error) return fail(error, 'trip');
 
   if (!data.length){
-    $('home').innerHTML =
-      `<div class="card"><div class="empty">앞으로 갈 여행이 없습니다.<br>
-         새 여행을 만들어보세요.</div>
-       <button class="primary" id="homenew" style="width:100%">+ 새 여행</button></div>`;
-    $('homenew').onclick = () => { showApp('trips'); $('newbtn').click(); };
+    /* 여행이 없으면 가고 싶다고 표시한 곳을 겁니다. 그것도 없으면 아무 곳이나 —
+       빈 화면보다는 사진 한 장이 훨씬 낫습니다. */
+    const w = await sb.from('city_ratings').select('cities(name,country,image_url)')
+      .eq('user_id', me.id).eq('want', true).limit(20);
+    const pool = (w.data || []).map(r => r.cities).filter(c => c?.image_url);
+    let pick = pool[Math.floor(Math.random() * pool.length)] || null;
+    const wanted = !!pick;
+    if (!pick){
+      const any = await sb.from('cities').select('name,country,image_url')
+        .not('image_url', 'is', null).limit(60);
+      const l = any.data || [];
+      pick = l[Math.floor(Math.random() * l.length)] || null;
+    }
+    $('home').innerHTML = heroHtml(
+      pick?.image_url, '',
+      pick ? `${pick.name}, 어때요?` : '아직 잡아둔 여행이 없습니다',
+      !pick   ? '첫 여행을 만들어보세요'
+      : wanted ? '가보고 싶다고 표시해둔 곳입니다'
+               : (countryName[pick.country] || pick.country),
+      '+ 새 여행');
+    $('herobtn').onclick = e => { e.stopPropagation(); showApp('trips'); $('newbtn').click(); };
+    await renderQuiz(); await renderFoot();
     return;
   }
 
   const t = data[0];
   const dday = Math.round((asDate(t.start_date) - asDate(today)) / D1);
   const days = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
-  /* 여행 중이면 남은 날이 아니라 며칠째인지가 궁금합니다. */
+  /* 여행 중이면 남은 날이 아니라 며칠째인지가 궁금합니다.
+     사진 위에 크게 올라가는 자리라 짧아야 합니다. */
   const badge = dday > 0 ? `D-${dday}`
-              : dday === 0 ? '오늘 출발'
-              : `여행 중 · Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
+              : dday === 0 ? 'D-DAY'
+              : `Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
 
-  /* 검토에 쓰려고 전부 받습니다. 화면에는 앞으로 올 것 넷만 보여줍니다. */
-  const [{ data: all }, { data: lg }] = await Promise.all([
-    sb.from('plans').select('date,start_time,end_time,category,title,lat,lng')
-      .eq('trip_id', t.id).is('deleted_at', null)
-      .order('date').order('start_time', { nullsFirst:false }),
-    sb.from('trip_legs').select('destination,start_date,end_date,walk_max_km,' +
-      'walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
-      .eq('trip_id', t.id).order('start_date')
+  /* 여행 중이면 오늘 몇 개인지만 한 줄로 얹습니다.
+     일정 목록 자체는 여행 탭에 있으니 홈에서 또 늘어놓지 않습니다. */
+  const [photo, cnt] = await Promise.all([
+    tripPhoto(t),
+    sb.from('plans').select('id', { count:'exact', head:true })
+      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today)
   ]);
-  const ps = (all || []).filter(p => p.date >= today).slice(0, 4);
-  const found = review(t, all || [], lg || []);
-  const bad = found.filter(f => f.lv === '심각').length;
-  const warn = found.filter(f => f.lv === '주의').length;
 
-  $('home').innerHTML =
-    `<div class="card" style="cursor:pointer" id="homecard">
-       <div class="row" style="border:0; padding:0; margin:0">
-         <span class="label" style="font-size:calc(21px * var(--ts)); font-weight:650">
-           ${esc(t.title)}</span>
-         <span class="badge" style="background:var(--primary); color:#fff; font-weight:600">
-           ${esc(badge)}</span>
-       </div>
-       <div class="meta" style="margin-top:2px">
-         ${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일</div>
-     </div>
-     <!-- 홈에서는 짧게만 알려주고 자세한 것은 AI 탭에서 봅니다. -->
-     <div class="card" style="cursor:pointer" id="homeai">
-       <div class="row" style="border:0; padding:0; margin:0">
-         <span class="kdot" style="margin-top:6px; background:${
-           bad ? 'var(--bad)' : warn ? 'var(--k-food)' : 'var(--k-see)'}"></span>
-         <span class="label"><b>${
-           bad  ? `짚어볼 것이 ${bad}가지 있습니다`
-           : warn ? `살펴볼 것이 ${warn}가지 있습니다`
-           : found.length ? '큰 문제는 없습니다'
-           : '아직 볼 게 없습니다'}</b>
-           <div class="memo">${esc(
-             found.length ? found[0].t : '일정을 넣으면 겹침과 무리한 일정을 찾아드립니다')}</div>
-         </span>
-         <span class="val">자세히 ›</span>
-       </div>
-     </div>
+  const n = cnt.count || 0;
+  $('home').innerHTML = heroHtml(photo, badge, t.title,
+    `${t.destination} · ${t.start_date} ~ ${t.end_date} · ${days}일` +
+    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있습니다') : ''), '');
+  $('hero').onclick = () => openTrip(t.id);
 
-     <div class="card"><h2>앞으로 할 것</h2>${
-       ps.length
-         ? ps.map(p => {
-             const k = p.category ? 'k-' + p.category : '';
-             return `<div class="plan"><div class="when">${esc(hm(p.start_time) || '–')}</div>
-               <span class="kdot ${esc(k)}"></span>
-               <div class="body"><b>${esc(p.title)}</b>
-                 <span class="memo">${esc(dayLabel(p.date, t))}</span></div></div>`;
-           }).join('')
-         : '<div class="empty">아직 잡아둔 일정이 없습니다.</div>'}
-     </div>`;
-  $('homecard').onclick = () => openTrip(t.id);
-  /* 홈에서 "자세히"로 왔으면 검토를 펼친 채로 엽니다 — 그걸 보러 온 것이니까요. */
-  $('homeai').onclick = () => { aiTripId = t.id; openReview = true; showApp('ai'); };
+  await renderQuiz();
+  await renderFoot();
 }
+
+/* ── 여기 가봤어요? ──────────────────────────────────────────────────
+ * 안 매긴 도시를 한 곳씩 물어봅니다. 별을 누르면 바로 다음 도시로 넘어갑니다.
+ * 전부 받아오면 무거우니 임의의 구간에서 열두 곳만 집어 씁니다. */
+let quizPool = [], quizAt = 0;
+
+async function nextQuiz(){
+  if (quizAt < quizPool.length) return quizPool[quizAt];
+  const [cnt, mine] = await Promise.all([
+    sb.from('cities').select('id', { count:'exact', head:true }).not('image_url','is',null),
+    sb.from('city_ratings').select('city_id').eq('user_id', me.id)
+  ]);
+  const rated = new Set((mine.data || []).map(r => r.city_id));
+  const total = cnt.count || 0;
+  const k = Math.max(0, Math.floor(Math.random() * Math.max(1, total - 12)));
+  const cs = await sb.from('cities').select('id,name,country,image_url')
+    .not('image_url','is',null).order('id').range(k, k + 11);
+  quizPool = (cs.data || []).filter(c => !rated.has(c.id));
+  quizAt = 0;
+  return quizPool[0] || null;
+}
+
+async function renderQuiz(){
+  const c = await nextQuiz();
+  const box = document.createElement('div');
+  box.className = 'card';
+  box.innerHTML = c
+    ? `<h2>여기 가봤어요?</h2>
+       <img id="quizimg" src="${esc(c.image_url)}" alt="" data-cityopen="${esc(c.id)}"
+            style="cursor:pointer" onerror="this.remove()">
+       <div style="text-align:center; margin-top:10px">
+         <b style="font-size:calc(18px * var(--ts))">${esc(c.name)}</b>
+         <div class="memo">${esc(countryName[c.country] || c.country)}</div>
+       </div>
+       <div id="quizstars" class="stars" data-city="${esc(c.id)}">${starHtml(null)}</div>
+       <div class="memo" style="text-align:center">별을 누르면 기록됩니다</div>
+       <button class="ghost" id="quiznext" style="width:100%; margin-top:10px">
+         안 가봤어요 · 다음</button>`
+    : `<h2>여기 가봤어요?</h2><div class="empty">물어볼 도시를 다 봤습니다.</div>`;
+  $('home').appendChild(box);
+}
+
+async function renderFoot(){
+  const { data: f } = await sb.rpc('my_footprint');
+  if (!f) return;
+  const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
+  const box = document.createElement('div');
+  box.className = 'card'; box.id = 'homefp'; box.style.cursor = 'pointer';
+  box.innerHTML =
+    `<div class="row" style="border:0; padding:0; margin:0">
+       <span class="label" style="font-weight:650">내 발자국</span>
+       <span class="val">더보기 ›</span></div>
+     <div style="margin-top:8px; font-size:calc(15px * var(--ts))">${
+       f.countries
+         ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%`
+         : '별점을 매기면 여기에 쌓입니다.'}</div>
+     ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}`;
+  box.onclick = () => showApp('set');
+  $('home').appendChild(box);
+}
+
+/* 별을 누르면 기록하고 곧바로 다음 도시로 넘깁니다 — 연달아 매기게 됩니다. */
+$('home').addEventListener('click', async e => {
+  const st = e.target.closest('#quizstars .st');
+  if (st){
+    const cityId = st.closest('.stars').dataset.city;
+    const box = st.getBoundingClientRect();
+    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    await saveRate(cityId, { stars: v });
+    quizAt++;
+    return loadHome();
+  }
+  if (e.target.closest('#quiznext')){ quizAt++; return loadHome(); }
+  const img = e.target.closest('#quizimg');
+  if (img) return openCity(img.dataset.cityopen);
+});
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
 /* ── 내 발자국 ──────────────────────────────────────────────────────
@@ -2104,13 +2230,17 @@ $('setview').addEventListener('click', e => {
   showApp('rate');
 });
 
-/* 종은 상단바에 있습니다 — 어느 탭에 있든 보여야 합니다.
-   누르면 프로필로 가서 알림을 펼칩니다. 목록은 한 군데만 둡니다. */
-$('bell').addEventListener('click', async () => {
-  if (appTab !== 'set') showApp('set'); else showProfile(false);
-  await loadNotifs();
-  $('notifcard').classList.remove('hide');
-  $('notifcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+/* 종을 누르면 그 자리에서 펼쳐집니다. 프로필로 넘어가게 하면
+   보던 화면을 잃고 돌아오기도 번거롭습니다. */
+$('bell').addEventListener('click', async e => {
+  e.stopPropagation();
+  const open = $('notifpanel').classList.toggle('hide');
+  if (!open) await loadNotifs();
+});
+/* 바깥을 누르면 닫힙니다. */
+document.addEventListener('click', e => {
+  if (!$('notifpanel').classList.contains('hide') &&
+      !e.target.closest('#notifpanel')) $('notifpanel').classList.add('hide');
 });
 
 async function loadNotifs(){
@@ -3718,6 +3848,8 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
+
 
 
 
