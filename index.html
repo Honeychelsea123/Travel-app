@@ -255,11 +255,6 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              border:0; border-radius:999px; padding:10px 18px; font-weight:650;
              font-size:calc(14px * var(--ts)); cursor:pointer; }
 
-/* 여기 가봤어요? — 왓챠 홈의 그 자리입니다. 여행이 없는 날에도 열 이유. */
-#quizimg{ width:100%; height:150px; object-fit:cover; border-radius:var(--r-md);
-          background:var(--line); display:block; }
-#quizstars{ display:flex; justify-content:center; gap:6px; margin:12px 0 2px;
-            font-size:calc(38px * var(--ts)); }
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 /* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
@@ -1052,7 +1047,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b52</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b53</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2104,43 +2099,55 @@ async function loadHome(){
 }
 
 /* ── 여기 가봤어요? ──────────────────────────────────────────────────
- * 안 매긴 도시를 한 곳씩 물어봅니다. 별을 누르면 바로 다음 도시로 넘어갑니다.
- * 전부 받아오면 무거우니 임의의 구간에서 열두 곳만 집어 씁니다. */
-let quizPool = [], quizAt = 0;
+ * 안 매긴 도시를 몇 곳씩 늘어놓고 아는 곳에만 별을 답니다.
+ * 한 곳씩 크게 물어보면 모르는 도시가 나왔을 때 할 일이 없습니다.
+ * 줄 모양은 기록 탭과 같게 맞춥니다.
+ * 전부 받아오면 무거우니 임의의 구간에서 스무 곳만 집어 씁니다. */
+const QUIZ_ROWS = 5;
+let quizPool = [], quizFilling = false;
 
-async function nextQuiz(){
-  if (quizAt < quizPool.length) return quizPool[quizAt];
-  const [cnt, mine] = await Promise.all([
-    sb.from('cities').select('id', { count:'exact', head:true }).not('image_url','is',null),
-    sb.from('city_ratings').select('city_id').eq('user_id', me.id)
-  ]);
-  const rated = new Set((mine.data || []).map(r => r.city_id));
-  const total = cnt.count || 0;
-  const k = Math.max(0, Math.floor(Math.random() * Math.max(1, total - 12)));
-  const cs = await sb.from('cities').select('id,name,country,image_url')
-    .not('image_url','is',null).order('id').range(k, k + 11);
-  quizPool = (cs.data || []).filter(c => !rated.has(c.id));
-  quizAt = 0;
-  return quizPool[0] || null;
+async function fillQuiz(){
+  if (quizPool.length >= QUIZ_ROWS || quizFilling) return;
+  quizFilling = true;
+  try {
+    const [cnt, mine] = await Promise.all([
+      sb.from('cities').select('id', { count:'exact', head:true }).not('image_url','is',null),
+      sb.from('city_ratings').select('city_id').eq('user_id', me.id)
+    ]);
+    const rated = new Set((mine.data || []).map(r => r.city_id));
+    const total = cnt.count || 0;
+    const k = Math.max(0, Math.floor(Math.random() * Math.max(1, total - 20)));
+    const cs = await sb.from('cities').select('id,name,country,image_url')
+      .not('image_url','is',null).order('id').range(k, k + 19);
+    const have = new Set(quizPool.map(c => c.id));
+    quizPool = quizPool.concat(
+      (cs.data || []).filter(c => !rated.has(c.id) && !have.has(c.id)));
+  } finally { quizFilling = false; }
 }
 
+const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
+  ${c.image_url
+    ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
+           onerror="this.replaceWith(Object.assign(document.createElement('span'),
+             {className:'thumb ph', textContent:'${esc(c.name.slice(0,1))}'}))">`
+    : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
+  <div class="t"><b>${esc(c.name)}</b>
+    <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
+  <span class="stars" data-city="${esc(c.id)}">${starHtml(null)}</span>
+  <button class="ghost want" data-want="${esc(c.id)}" title="가보고 싶어요">♡</button>
+</div>`;
+
 async function renderQuiz(){
-  const c = await nextQuiz();
+  await fillQuiz();
+  const list = quizPool.slice(0, QUIZ_ROWS);
   const box = document.createElement('div');
   box.className = 'card';
-  box.innerHTML = c
-    ? `<h2>여기 가봤어요?</h2>
-       <img id="quizimg" src="${esc(c.image_url)}" alt="" data-cityopen="${esc(c.id)}"
-            style="cursor:pointer" onerror="this.remove()">
-       <div style="text-align:center; margin-top:10px">
-         <b style="font-size:calc(18px * var(--ts))">${esc(c.name)}</b>
-         <div class="memo">${esc(countryName[c.country] || c.country)}</div>
-       </div>
-       <div id="quizstars" class="stars" data-city="${esc(c.id)}">${starHtml(null)}</div>
-       <div class="memo" style="text-align:center">별을 누르면 기록됩니다</div>
-       <button class="ghost" id="quiznext" style="width:100%; margin-top:10px">
-         안 가봤어요 · 다음</button>`
-    : `<h2>여기 가봤어요?</h2><div class="empty">물어볼 도시를 다 봤습니다.</div>`;
+  box.innerHTML = `<h2>여기 가봤어요?</h2>
+    <div id="quizlist">${
+      list.length ? list.map(quizRow).join('')
+                  : '<div class="empty">물어볼 도시를 다 봤습니다.</div>'}</div>
+    ${list.length ? `<button class="ghost" id="quizmore" style="width:100%; margin-top:6px">
+        다른 도시 보기</button>` : ''}`;
   $('home').appendChild(box);
 }
 
@@ -2163,20 +2170,38 @@ async function renderFoot(){
   $('home').appendChild(box);
 }
 
-/* 별을 누르면 기록하고 곧바로 다음 도시로 넘깁니다 — 연달아 매기게 됩니다. */
+/* 별을 매긴 줄은 빠지고 그 자리에 다음 도시가 들어옵니다.
+   화면을 통째로 다시 그리지 않아야 매기던 흐름이 안 끊깁니다. */
 $('home').addEventListener('click', async e => {
-  const st = e.target.closest('#quizstars .st');
+  const st = e.target.closest('#quizlist .st');
   if (st){
     const cityId = st.closest('.stars').dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
     await saveRate(cityId, { stars: v });
-    quizAt++;
+    quizPool = quizPool.filter(c => c.id !== cityId);
+    st.closest('.rrow').remove();
+    await fillQuiz();
+    const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+      .map(r => r.dataset.cityopen));
+    const nx = quizPool.find(c => !shown.has(c.id));
+    if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
+    return;
+  }
+  const w = e.target.closest('#quizlist button[data-want]');
+  if (w){
+    const on = !myRates[w.dataset.want]?.want;
+    await saveRate(w.dataset.want, { want: on });
+    w.classList.toggle('on', on);
+    return;
+  }
+  /* 다섯 곳 다 모르는 곳일 수 있습니다. 통째로 갈아치웁니다. */
+  if (e.target.closest('#quizmore')){
+    quizPool = quizPool.slice(QUIZ_ROWS);
     return loadHome();
   }
-  if (e.target.closest('#quiznext')){ quizAt++; return loadHome(); }
-  const img = e.target.closest('#quizimg');
-  if (img) return openCity(img.dataset.cityopen);
+  const row = e.target.closest('#quizlist .rrow');
+  if (row) return openCity(row.dataset.cityopen);
 });
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
@@ -3848,6 +3873,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
