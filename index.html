@@ -261,9 +261,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* ── 세계지도 ────────────────────────────────────────────────────────
  * 지도는 CDN 에서 안 받고 파일에 심었습니다. 비행기모드에서도 나와야 합니다.
  * 등장방형 도법이라 위경도에서 화면 좌표가 바로 나옵니다. */
+/* 높이를 CSS 로 못박아야 확대가 됩니다. height:auto 로 두면 높이가 viewBox 에서
+   나오고, viewBox 를 다시 높이에서 계산해야 해서 서로 물립니다. */
 .mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
-          padding:6px 0; }
-#worldsvg{ width:100%; height:auto; display:block; touch-action:manipulation; }
+          height:clamp(200px, 42vh, 380px); }
+/* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
+#worldsvg{ width:100%; height:100%; display:block; touch-action:none;
+           cursor:grab; user-select:none; }
+#worldsvg.drag{ cursor:grabbing }
 #worldsvg path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5;
                 transition:fill .3s; }
 /* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다. */
@@ -788,7 +793,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           </div>
           <div class="days" id="mapzoom" style="margin-top:10px"></div>
           <div class="memo" style="text-align:center; margin-top:6px">
-            핀을 누르면 그 도시가 열립니다</div>
+            끌어서 옮기고 두 손가락으로 키웁니다 · 핀을 누르면 그 도시가 열립니다</div>
         </div>
 
         <div class="card"><h2>전체</h2><div id="m_total"></div></div>
@@ -1185,7 +1190,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b59</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b60</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2754,11 +2759,17 @@ function drawDraft(){
  * 분모는 UN 기준 195개국(회원 193 + 옵서버 2)을 대륙별로 나눈 수입니다. */
 const CONT = [['아시아', 48], ['유럽', 44], ['아프리카', 54],
               ['북아메리카', 23], ['남아메리카', 12], ['오세아니아', 14]];
-/* 지도를 대륙으로 당겨 보는 자리. 등장방형 좌표 그대로입니다. */
+/* 대륙별로 당겨 보는 자리. 가운데와 폭만 정하고 높이는 화면 비율에서 냅니다 —
+   그래야 viewBox 비율이 화면과 같아져서 여백 없이 딱 맞고, 손가락 좌표를
+   지도 좌표로 바꾸는 계산도 한 줄로 끝납니다. */
 const CONT_VIEW = {
-  '전체':'0 19 1000 387', '아시아':'560 88 380 210', '유럽':'452 40 195 130',
-  '아프리카':'432 136 225 225', '북아메리카':'15 40 360 210',
-  '남아메리카':'260 200 160 215', '오세아니아':'790 258 215 140' };
+  '전체':      { cx:500, cy:212, w:1000 },
+  '아시아':    { cx:750, cy:193, w:380 },
+  '유럽':      { cx:549, cy:105, w:195 },
+  '아프리카':  { cx:544, cy:248, w:225 },
+  '북아메리카':{ cx:195, cy:145, w:360 },
+  '남아메리카':{ cx:340, cy:307, w:160 },
+  '오세아니아':{ cx:897, cy:328, w:215 } };
 
 const px = v => (Number(v) + 180) * (1000 / 360);   /* 경도 → x */
 const py = v => (90 - Number(v)) * (500 / 180);     /* 위도 → y */
@@ -2766,21 +2777,121 @@ let mapCities = [], mapView = '전체';
 
 /* 확대하면 핀이 같이 커집니다. 화면에서 늘 같은 크기로 보이게 다시 그립니다. */
 function drawPins(){
-  const w = Number($('worldsvg').getAttribute('viewBox').split(' ')[2]);
-  const r = Math.max(1.6, w / 260);
+  const r = Math.max(0.8, vb.w / 260);
   $('pins').innerHTML = mapCities
     .filter(c => c.center_lat != null && c.center_lng != null)
-    .map(c => `<circle r="${r.toFixed(1)}" cx="${px(c.center_lng).toFixed(1)}"
+    .map(c => `<circle r="${r.toFixed(2)}" cx="${px(c.center_lng).toFixed(1)}"
                  cy="${py(c.center_lat).toFixed(1)}" data-pin="${esc(c.id)}"><title>${
                  esc(c.name)}</title></circle>`).join('');
 }
+
+/* 보이는 창. 가운데와 폭만 들고 있고 높이는 화면 비율에서 냅니다. */
+let vb = { ...CONT_VIEW['전체'] };
+const MAP_TOP = 15, MAP_BOT = 410;      /* 남극을 뺀 세로 범위 */
+
+function applyView(){
+  const el = $('worldsvg'), r = el.getBoundingClientRect();
+  const aspect = (r.width && r.height) ? r.height / r.width : 0.4;
+  vb.w = Math.min(1000, Math.max(40, vb.w));        /* 40 이면 도시 하나가 꽉 찹니다 */
+  let h = vb.w * aspect;
+  /* 세로가 지도보다 커지면 가로를 줄여 맞춥니다. 안 그러면 위아래로 헛돕니다. */
+  if (h > MAP_BOT - MAP_TOP){ h = MAP_BOT - MAP_TOP; vb.w = h / aspect; }
+  vb.cx = Math.min(1000 - vb.w / 2, Math.max(vb.w / 2, vb.cx));
+  vb.cy = Math.min(MAP_BOT - h / 2, Math.max(MAP_TOP + h / 2, vb.cy));
+  el.setAttribute('viewBox',
+    `${(vb.cx - vb.w / 2).toFixed(1)} ${(vb.cy - h / 2).toFixed(1)} ` +
+    `${vb.w.toFixed(1)} ${h.toFixed(1)}`);
+  drawPins();
+}
+
 function setMapView(name){
   mapView = name;
-  $('worldsvg').setAttribute('viewBox', CONT_VIEW[name] || CONT_VIEW['전체']);
-  drawPins();
+  vb = { ...(CONT_VIEW[name] || CONT_VIEW['전체']) };
+  applyView();
   $('mapzoom').innerHTML = ['전체', ...CONT.map(c => c[0])]
     .map(k => `<span class="day${k === mapView ? ' on' : ''}" data-zoom="${esc(k)}">${
       esc(k)}</span>`).join('');
+}
+
+/* ── 손가락과 휠 ─────────────────────────────────────────────────────
+ * 대륙 칩만으로는 원하는 데를 못 봅니다. 끌어서 옮기고 오므려서 키웁니다.
+ * viewBox 비율을 화면 비율과 같게 맞춰뒀으므로 화면 픽셀 하나가
+ * 지도 좌표 (폭/화면폭) 만큼입니다 — 변환이 곱셈 한 번입니다. */
+{
+  const el = $('worldsvg');
+  const pts = new Map();          /* 지금 눌린 손가락들 */
+  let last = null, moved = 0;
+
+  const perPx = () => vb.w / (el.getBoundingClientRect().width || 1);
+  const mid = () => {
+    const a = [...pts.values()];
+    return { x: a.reduce((s, p) => s + p.x, 0) / a.length,
+             y: a.reduce((s, p) => s + p.y, 0) / a.length };
+  };
+  const spread = () => {
+    const a = [...pts.values()];
+    return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) || 1;
+  };
+
+  el.addEventListener('pointerdown', e => {
+    pts.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('drag');
+    moved = 0;
+    last = pts.size === 2 ? { ...mid(), d: spread() } : { ...mid(), d: null };
+  });
+
+  el.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    const m = mid();
+    if (!last){ last = { ...m, d: pts.size === 2 ? spread() : null }; return; }
+
+    const k = perPx();
+    vb.cx -= (m.x - last.x) * k;         /* 끄는 방향과 지도가 같이 움직여야 합니다 */
+    vb.cy -= (m.y - last.y) * k;
+    moved += Math.abs(m.x - last.x) + Math.abs(m.y - last.y);
+
+    if (pts.size === 2 && last.d){
+      const d = spread();
+      vb.w *= last.d / d;                /* 벌리면 폭이 줄고 = 확대 */
+      last.d = d;
+    }
+    last.x = m.x; last.y = m.y;
+    applyView();
+  });
+
+  const up = e => {
+    pts.delete(e.pointerId);
+    last = pts.size ? { ...mid(), d: pts.size === 2 ? spread() : null } : null;
+    if (!pts.size) el.classList.remove('drag');
+  };
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = el.getBoundingClientRect(), k = perPx();
+    /* 커서가 가리키던 지점이 제자리에 있어야 확대가 자연스럽습니다. */
+    const ux = vb.cx + (e.clientX - r.left - r.width / 2) * k;
+    const uy = vb.cy + (e.clientY - r.top - r.height / 2) * k;
+    const f = e.deltaY > 0 ? 1.2 : 1 / 1.2;
+    const before = vb.w;
+    vb.w = Math.min(1000, Math.max(40, vb.w * f));
+    const s = vb.w / before;
+    vb.cx = ux + (vb.cx - ux) * s;
+    vb.cy = uy + (vb.cy - uy) * s;
+    applyView();
+  }, { passive:false });
+
+  /* 끌고 나서 손을 떼는 순간 핀이 눌리면 안 됩니다. */
+  el.addEventListener('click', e => {
+    if (moved > 8){ e.stopPropagation(); moved = 0; }
+  }, true);
+
+  addEventListener('resize', () => {
+    if (!$('mappane').classList.contains('hide')) applyView();
+  });
 }
 
 async function openMap(){
@@ -4535,6 +4646,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
