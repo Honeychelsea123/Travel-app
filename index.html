@@ -60,8 +60,17 @@ input, select{
   padding:10px 12px; border-radius:11px;
   border:1px solid var(--line); background:var(--sunk); color:var(--fg);
 }
-/* iOS 는 date · time 을 자기 방식으로 그리면서 width 를 무시해 카드 밖으로 나갑니다. */
-input[type=date], input[type=time]{ -webkit-appearance:none; appearance:none; }
+/* iOS 는 date · time 을 자기 방식으로 그립니다.
+   width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
+   빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */
+input[type=date], input[type=time]{
+  -webkit-appearance:none; appearance:none;
+  display:block;
+  min-height:calc(1.4em + 22px);          /* 다른 입력칸과 같은 높이 */
+}
+/* 값이 가운데로 몰려 다른 칸과 어긋나던 것 */
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .two > div{ min-width:0; }        /* 칸 내용이 그리드를 늘리지 못하게 막습니다 */
 
@@ -355,7 +364,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b18</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b19</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1316,6 +1325,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
