@@ -73,13 +73,15 @@ grant execute on function public.my_footprint() to authenticated;
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
 select * from (
-  select 1 as ord, '대륙 채움'::text as check,
+  select 1 as ord, '대륙이 빠진 나라'::text as check,
          case when (select count(*) from public.countries where continent is null) = 0
               then 'OK' else 'X' end as result,
+         '나라 ' ||
          (select count(*) from public.countries where continent is not null)::text ||
-         '/' || (select count(*) from public.countries)::text || '개' as note
+         '개 전부 대륙에 넣었습니다 (총 ' ||
+         (select count(*) from public.countries)::text || '개국)' as note
   union all
-  select 2, '대륙 종류',
+  select 2, '대륙 ' || (select count(distinct continent)::text from public.countries) || '개',
          'OK',
          (select string_agg(distinct continent, ' · ') from public.countries)
   union all
