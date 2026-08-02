@@ -278,21 +278,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
   <!-- 로그인 후 -->
   <section id="signedin" class="hide">
-    <div class="card">
-      <div class="me">
-        <img id="avatar" alt="">
-        <div class="name" style="min-width:0">
-          <div id="name">—</div>
-          <div class="mail" id="mail">—</div>
-        </div>
-        <button class="ghost" id="logout">로그아웃</button>
-      </div>
-    </div>
-
     <div id="listview">
     <div class="card">
       <h2><span class="grow" id="listtitle">내 여행</span>
-        <button class="ghost" id="archbtn">보관함</button>
         <button class="small" id="newbtn">+ 새 여행</button></h2>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
       <!-- 목록에서 난 오류는 여기 바로 뜹니다.
@@ -339,6 +327,47 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <pre id="formerr" class="hide"></pre>
     </div>
     </div><!-- /listview -->
+
+    <!-- 설정 -->
+    <div id="setview" class="hide">
+      <div class="card">
+        <div class="me">
+          <img id="avatar" alt="">
+          <div class="name" style="min-width:0">
+            <div id="name">—</div>
+            <div class="mail" id="mail">—</div>
+          </div>
+          <button class="ghost" id="logout">로그아웃</button>
+        </div>
+      </div>
+
+      <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
+           한 명이 키우면 전원 화면이 커졌습니다. -->
+      <div class="card">
+        <h2>글자 크기</h2>
+        <div class="days" id="tsbtns">
+          <button class="day" data-ts="0.9">작게</button>
+          <button class="day" data-ts="1">보통</button>
+          <button class="day" data-ts="1.15">크게</button>
+          <button class="day" data-ts="1.3">아주 크게</button>
+        </div>
+        <div class="empty" style="padding:4px 0 0; text-align:left">
+          이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.
+        </div>
+      </div>
+
+      <div class="card" id="acctcard">
+        <h2>계정</h2>
+        <div class="row"><span class="dot" id="dp"></span>
+          <span class="label">프로필</span><span class="val" id="vp">—</span></div>
+        <div class="row"><span class="dot" id="du"></span>
+          <span class="label">개인 설정</span><span class="val" id="vu">—</span></div>
+        <div class="row"><span class="dot" id="d0"></span>
+          <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
+        <div class="row"><span class="dot" id="d1"></span>
+          <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
+      </div>
+    </div><!-- /setview -->
 
     <!-- 여행 상세 -->
     <section id="tripview" class="hide">
@@ -530,29 +559,32 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       </nav>
     </section>
 
-    <div class="card" id="acctcard">
-      <h2>계정 확인</h2>
-      <div class="row"><span class="dot" id="dp"></span>
-        <span class="label">프로필 자동 생성</span><span class="val" id="vp">—</span></div>
-      <div class="row"><span class="dot" id="du"></span>
-        <span class="label">개인 설정 자동 생성</span><span class="val" id="vu">—</span></div>
-    </div>
+    <!-- 앱 전체 하단바. 여행 안에서는 위 탭바가 대신 나옵니다. -->
+    <nav class="tabbar" id="appbar">
+      <button data-a="trips" class="is-on">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+             d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10"
+             r="2.6"/></svg><span>여행</span></button>
+      <button data-a="arch">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4"
+             width="18" height="4.5" rx="1.6"/><path d="M5 8.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5
+             0 0 0 19 19V8.5M10 12h4"/></svg><span>보관함</span></button>
+      <button data-a="set">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12"
+             cy="9" r="3.6"/><path d="M4.5 20.5c.8-4 3.8-6.2 7.5-6.2s6.7 2.2 7.5 6.2"/></svg>
+        <span>설정</span></button>
+    </nav>
   </section>
-
-  <div class="card">
-    <h2>연결</h2>
-    <div class="row"><span class="dot" id="d0"></span>
-      <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
-    <div class="row"><span class="dot" id="d1"></span>
-      <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
-  </div>
 
   <div class="card hide" id="errcard">
     <h2>오류</h2>
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b22</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b23</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -577,7 +609,13 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     picked = null, hitList = [], cursor = 0, showArchived = false,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
-    tab = 'plans', settleOn = false;
+    tab = 'plans', settleOn = false, appTab = 'trips';
+
+/* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
+{
+  const v = localStorage.getItem('t2:ts');
+  if (v) document.documentElement.style.setProperty('--ts', v);
+}
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -812,12 +850,44 @@ $('create').addEventListener('click', async () => {
 });
 
 /* ── 여행 목록 ──────────────────────────────────────────────────── */
-$('archbtn').addEventListener('click', () => {
-  showArchived = !showArchived;
-  $('archbtn').textContent = showArchived ? '진행 중' : '보관함';
-  $('listtitle').textContent = showArchived ? '보관한 여행' : '내 여행';
-  $('newbtn').classList.toggle('hide', showArchived);
-  loadTrips();
+/* ── 앱 하단바 ─────────────────────────────────────────────────────
+ * 여행 안에서는 일정/지출/일행 탭바가, 밖에서는 이 바가 나옵니다.
+ * 로그아웃과 보관함이 목록 위에 얹혀 있던 것을 여기로 내렸습니다. */
+function showApp(t){
+  appTab = t;
+  showArchived = t === 'arch';
+  $('listview').classList.toggle('hide', t === 'set');
+  $('setview').classList.toggle('hide', t !== 'set');
+  $('listtitle').textContent = t === 'arch' ? '보관한 여행' : '내 여행';
+  $('newbtn').classList.toggle('hide', t !== 'trips');
+  $('newcard').classList.add('hide');
+  document.querySelectorAll('#appbar button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.a === t));
+  if (t !== 'set') loadTrips();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+$('appbar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]');
+  if (b) showApp(b.dataset.a);
+});
+
+/* ── 글자 크기 ──────────────────────────────────────────────────────
+ * 사람마다 다릅니다. 도쿄 앱은 공유값이라 한 명이 키우면 전원 화면이 커졌습니다.
+ * 기기에도 저장해서 다음에 열 때 깜빡이지 않고 바로 그 크기로 뜨게 합니다. */
+function applyTs(v){
+  document.documentElement.style.setProperty('--ts', v);
+  document.querySelectorAll('#tsbtns button').forEach(b =>
+    b.classList.toggle('on', Number(b.dataset.ts) === Number(v)));
+}
+$('tsbtns').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-ts]'); if (!b) return;
+  const v = Number(b.dataset.ts);
+  applyTs(v);
+  localStorage.setItem('t2:ts', v);
+  const r = await sb.from('user_prefs')
+    .update({ text_scale: v, updated_at: new Date().toISOString() })
+    .eq('user_id', me.id).select('user_id');
+  if (r.error) fail(r.error, 'trip');
 });
 
 async function loadTrips(){
@@ -973,7 +1043,9 @@ async function openTrip(id){
   pickedDay = null;
 
   $('listview').classList.add('hide');
-  $('acctcard').classList.add('hide');
+  $('setview').classList.add('hide');
+  $('appbar').classList.add('hide');
+  $('tabbar').classList.remove('hide');
   $('tripview').classList.remove('hide');
   $('plancard').classList.add('hide');
   $('editcard').classList.add('hide');
@@ -1110,11 +1182,10 @@ $('e_save').addEventListener('click', async () => {
 function backToList(){
   unwatch();
   trip = null;
-  document.body.classList.remove('hastab');
   $('tripview').classList.add('hide');
-  $('listview').classList.remove('hide');
-  $('acctcard').classList.remove('hide');
-  loadTrips();
+  $('tabbar').classList.add('hide');
+  $('appbar').classList.remove('hide');
+  showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', backToList);
 
@@ -1641,6 +1712,7 @@ async function render(session){
   if (!session){
     unwatch(); trip = null; document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
+    $('errcard').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
     me = null;
 
@@ -1664,11 +1736,12 @@ async function render(session){
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
-  unwatch(); trip = null; document.body.classList.remove('hastab');
+  unwatch(); trip = null;
   $('tripview').classList.add('hide');           /* 다시 그릴 때는 목록부터 */
-  $('listview').classList.remove('hide');
-  $('acctcard').classList.remove('hide');
-  $('sub').textContent = '로그인됨.';
+  $('appbar').classList.remove('hide');
+  $('tabbar').classList.add('hide');
+  document.body.classList.add('hastab');
+  $('sub').textContent = '';
 
   const meta = me.user_metadata || {};
   $('mail').textContent = me.email || '';
@@ -1682,8 +1755,13 @@ async function render(session){
   ]);
   mark('p', !!prof.data, prof.data ? (prof.data.display_name || '생성됨') : '없음');
   mark('u', !!prefs.data, prefs.data ? ('배율 ' + prefs.data.text_scale) : '없음');
+  /* 다른 기기에서 바꾼 값이 있으면 그걸 따릅니다. */
+  if (prefs.data?.text_scale){
+    applyTs(prefs.data.text_scale);
+    localStorage.setItem('t2:ts', prefs.data.text_scale);
+  } else applyTs(localStorage.getItem('t2:ts') || 1);
 
-  await loadTrips();
+  showApp('trips');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
      목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
   await handleJoin();
@@ -1733,6 +1811,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
