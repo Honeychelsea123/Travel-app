@@ -458,6 +458,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div style="font-weight:650; font-size:calc(17px * var(--ts)); margin-top:6px"
              id="t_title">—</div>
         <div class="meta" id="t_meta"></div>
+        <!-- 구간이 둘 이상일 때만 나옵니다. 하나면 위 줄이 이미 그 도시입니다. -->
+        <div class="days" id="t_legs" style="margin:10px 0 0"></div>
       </div>
 
       <!-- 여행 정보 수정 -->
@@ -483,7 +485,27 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <button class="small" id="e_cancel">취소</button>
         </div>
         <pre id="editerr" class="hide"></pre>
+
+        <!-- 구간 — 여러 도시·나라를 도는 여행.
+             경계는 그날 밤 자는 곳으로 나눕니다. -->
+        <h2 style="margin-top:var(--s-lg)">구간</h2>
+        <div id="legs"></div>
+        <div style="margin-top:10px">
+          <label for="g_dest">도시</label>
+          <input id="g_dest" list="citylist" placeholder="로마 / Rome / ㄹㅁ" maxlength="40">
+          <div id="g_countrywrap" class="hide">
+            <label for="g_country">나라 <span style="color:var(--bad)">— 목록에 없는 도시입니다</span></label>
+            <select id="g_country"></select>
+          </div>
+          <div class="two">
+            <div><label for="g_start">시작</label><input type="date" id="g_start"></div>
+            <div><label for="g_end">끝</label><input type="date" id="g_end"></div>
+          </div>
+          <button class="small" id="g_add" style="width:100%; margin-top:12px">+ 구간 넣기</button>
+          <pre id="legerr" class="hide"></pre>
+        </div>
       </div>
+      <datalist id="citylist"></datalist>
 
       <div class="card" id="card-plans">
         <h2><span class="grow">일정</span>
@@ -662,7 +684,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b27</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b28</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -688,7 +710,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null;
+    tripFilter = 'up', aiTripId = null, legs = [];
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -705,7 +727,7 @@ function mark(id, ok, text){
 }
 function fail(e, where){
   const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
-                plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'),
+                plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
                 exp:$('experr'), expform:$('expformerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
@@ -1483,8 +1505,11 @@ async function openTrip(id){
   drawTripHeader();
   document.body.classList.add('hastab');
   showTab('plans');
-  /* 지출은 일행 이름을 쓰므로 일행을 먼저 읽습니다. */
-  await Promise.all([loadPlans(), loadMembers().then(loadExpenses)]);
+  /* 구간을 먼저 읽어야 날짜 칩에 도시가 붙고 지출 통화가 맞습니다.
+     지출은 일행 이름을 쓰므로 일행도 먼저 읽습니다. */
+  await loadLegs();
+  await Promise.all([loadPlans(), loadMembers().then(loadExpenses), loadCities()]);
+  fillCityList();
   watch();
 }
 
@@ -1500,6 +1525,8 @@ function watch(){
         () => bump('plans'))
     .on('postgres_changes', { event:'*', schema:'public', table:'expenses',     filter:f },
         () => bump('expenses'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'trip_legs',    filter:f },
+        () => bump('legs'))
     .on('postgres_changes', { event:'*', schema:'public', table:'trip_members', filter:f },
         () => bump('members'))
     .on('postgres_changes', { event:'*', schema:'public', table:'trips',
@@ -1528,12 +1555,112 @@ function bump(what){
       }
       drawTripHeader();
     }
-    if (s.has('plans') || s.has('trip')) await loadPlans();
+    /* 구간이 바뀌면 날짜 칩의 도시와 지출 통화가 따라 바뀝니다. */
+    if (s.has('legs')) await loadLegs();
+    if (s.has('plans') || s.has('trip') || s.has('legs')) await loadPlans();
     /* 일행이 바뀌면 지출에 찍힌 이름과 정산 인원도 따라 바뀝니다. */
     if (s.has('members')) { await loadMembers(); await loadExpenses(); }
     else if (s.has('expenses')) await loadExpenses();
   }, 250);
 }
+
+/* ── 구간 ───────────────────────────────────────────────────────────
+ * 여행 하나가 여러 도시·나라를 도는 경우입니다.
+ * 일정과 지출은 날짜로 저절로 구간에 붙습니다 — 하나하나 고를 필요가 없습니다. */
+async function loadLegs(){
+  const { data, error } = await sb.from('trip_legs')
+    .select('id,city_id,destination,country,start_date,end_date,timezone,currency,' +
+            'transit_factor,transit_base_min,walk_max_km')
+    .eq('trip_id', trip.id).order('start_date');
+  if (error) return fail(error, 'leg');
+  legs = data || [];
+  drawLegs();
+}
+
+/* 그날 어디에 있는지. 구간 밖 날짜(여행 전후)는 가장 가까운 구간을 씁니다. */
+function legFor(date){
+  if (!legs.length) return null;
+  return legs.find(l => date >= l.start_date && date <= l.end_date)
+      || (date < legs[0].start_date ? legs[0] : legs[legs.length - 1]);
+}
+
+function drawLegs(){
+  /* 헤더에는 둘 이상일 때만 보여줍니다. 하나면 위 줄이 이미 그 도시입니다. */
+  $('t_legs').innerHTML = legs.length > 1
+    ? legs.map(l => `<span class="day" style="cursor:default">${esc(l.destination)}
+        <span class="n">${esc(l.start_date.slice(5).replace('-','/'))}~${
+        esc(l.end_date.slice(5).replace('-','/'))}</span></span>`).join('')
+    : '';
+
+  $('legs').innerHTML = legs.map(l =>
+    `<div class="row"><span class="label"><b>${esc(l.destination)}</b>
+       <div class="memo">${esc(l.start_date)} ~ ${esc(l.end_date)} ·
+         ${esc(l.currency)} · ${esc(l.timezone)} · 이동 ×${esc(l.transit_factor)}</div></span>
+     ${legs.length > 1
+       ? `<button class="ghost" data-lact="del" data-id="${esc(l.id)}"
+                  style="color:var(--bad)">×</button>` : ''}</div>`).join('')
+    || '<div class="empty">구간이 없습니다.</div>';
+}
+
+/* 도시 목록은 native datalist 로 답니다. 폼이 여럿이라 직접 만든 검색을
+   또 붙이면 코드가 두 벌이 됩니다. 모바일에서도 native 가 더 편합니다. */
+function fillCityList(){
+  if (!cities || $('citylist').children.length) return;
+  $('citylist').innerHTML = cities.map(c =>
+    `<option value="${esc(c.name)}">${esc(countryName[c.country] || c.country)}</option>`).join('');
+  $('g_country').innerHTML = Object.entries(countryName)
+    .sort((a,b) => a[1].localeCompare(b[1], 'ko'))
+    .map(([code, nm]) => `<option value="${esc(code)}">${esc(nm)}</option>`).join('');
+}
+
+/* 목록에 없는 도시를 치면 나라를 물어봅니다. */
+$('g_dest').addEventListener('input', () => {
+  const v = $('g_dest').value.trim();
+  const hit = cities?.find(c => c.name === v);
+  $('g_countrywrap').classList.toggle('hide', !v || !!hit);
+});
+
+$('g_add').addEventListener('click', async () => {
+  $('legerr').classList.add('hide');
+  const v = $('g_dest').value.trim();
+  const s = $('g_start').value, e = $('g_end').value;
+  if (!v)        return fail('도시를 적어주세요.', 'leg');
+  if (!s || !e)  return fail('구간 날짜를 골라주세요.', 'leg');
+  if (e < s)     return fail('끝나는 날이 시작보다 빠릅니다.', 'leg');
+
+  const hit = cities?.find(c => c.name === v);
+  const row = { trip_id: trip.id, destination: v, start_date: s, end_date: e };
+  if (hit) row.city_id = hit.id;
+  else     row.country = $('g_country').value;
+
+  const btn = $('g_add');
+  btn.disabled = true; btn.textContent = '넣는 중…';
+  const { data, error } = await sb.from('trip_legs').insert(row).select('id');
+  btn.disabled = false; btn.textContent = '+ 구간 넣기';
+  if (error) return fail(error, 'leg');
+  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'leg');
+
+  $('g_dest').value = ''; $('g_countrywrap').classList.add('hide');
+  await loadLegs();
+  await fetchTrip(trip.id); drawTripHeader();   /* 대표값이 바뀌었을 수 있습니다 */
+  drawDays(); drawPlans();
+});
+
+$('legs').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-lact]'); if (!b) return;
+  if (b.dataset.armed !== '1'){
+    b.dataset.armed = '1'; b.textContent = '정말?'; b.style.fontWeight = '600'; return;
+  }
+  b.disabled = true;
+  /* 구간은 진짜로 지웁니다. 일정과 지출은 날짜로 붙으므로 같이 사라지지 않습니다. */
+  const r = await sb.from('trip_legs').delete().eq('id', b.dataset.id).select('id');
+  b.disabled = false;
+  if (r.error) return fail(r.error, 'leg');
+  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'leg');
+  await loadLegs();
+  await fetchTrip(trip.id); drawTripHeader();
+  drawDays(); drawPlans();
+});
 
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
 $('editbtn').addEventListener('click', () => {
@@ -1545,6 +1672,12 @@ $('editbtn').addEventListener('click', () => {
   $('e_end').value   = trip.end_date;
   $('e_shift').checked = true;
   syncShiftText();
+  fillCityList();
+  /* 새 구간 기본값: 마지막 구간 다음 날부터 여행 끝까지 */
+  const last = legs[legs.length - 1];
+  $('g_start').value = last ? ymd(new Date(asDate(last.end_date).getTime() + D1))
+                            : trip.start_date;
+  $('g_end').value = trip.end_date;
 });
 $('e_cancel').addEventListener('click', () => {
   $('editcard').classList.add('hide'); $('editerr').classList.add('hide');
@@ -1637,8 +1770,11 @@ async function loadPlans(){
 
 function shortLabel(d){
   const lab = dayLabel(d, trip);
-  return lab.startsWith('Day') ? lab.split(' · ')[0]
-                               : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
+  const base = lab.startsWith('Day') ? lab.split(' · ')[0]
+                                     : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
+  /* 도시를 여럿 도는 여행이면 Day 번호만으로는 어디인지 모릅니다. */
+  const l = legs.length > 1 ? legFor(d) : null;
+  return l ? `${base} · ${l.destination}` : base;
 }
 
 function drawDays(){
@@ -1684,7 +1820,11 @@ function drawPlans(){
   let html = '', last = null;
   for (const p of show){
     if (p.date !== last){                       /* 전체 보기에서 날짜가 바뀌면 머리글 */
-      if (!pickedDay) html += `<div class="daysep">${esc(dayLabel(p.date, trip))}</div>`;
+      if (!pickedDay){
+        const l = legs.length > 1 ? legFor(p.date) : null;
+        html += `<div class="daysep">${esc(dayLabel(p.date, trip))}` +
+                `${l ? ' · ' + esc(l.destination) : ''}</div>`;
+      }
       last = p.date;
     }
     const when = p.start_time ? hm(p.start_time) + (p.end_time ? `<br>~${hm(p.end_time)}` : '')
@@ -1854,16 +1994,25 @@ function drawSettle(){
 $('addexpbtn').addEventListener('click', () => {
   $('expcard').classList.toggle('hide');
   if ($('expcard').classList.contains('hide')) return;
-  /* 통화는 현지가 기본입니다. 집 통화도 함께 둡니다 — 한국에서 미리 결제한 것들 때문입니다. */
-  const curs = [...new Set([trip.currency, trip.home_currency, 'USD', 'EUR'])];
+  /* 통화는 그날 있는 곳이 기본입니다. 구간마다 나라가 다르면 통화도 다릅니다.
+     집 통화도 함께 둡니다 — 한국에서 미리 결제한 것들 때문입니다. */
+  const curs = [...new Set([...legs.map(l => l.currency),
+                            trip.currency, trip.home_currency, 'USD', 'EUR'])];
   $('x_cur').innerHTML = curs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   $('x_payer').innerHTML = members.map(m =>
     `<option value="${esc(m.user_id)}"${m.user_id === me.id ? ' selected' : ''}>` +
     `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
     `<option value="">공동 (결제자 없음)</option>`;
   $('x_date').value = pickedDay || ymd(new Date());
+  syncExpCur();
   $('x_title').focus();
 });
+/* 날짜를 바꾸면 그날 있는 곳의 통화로 맞춥니다. */
+function syncExpCur(){
+  const l = legFor($('x_date').value);
+  if (l) $('x_cur').value = l.currency;
+}
+$('x_date').addEventListener('change', syncExpCur);
 $('x_cancel').addEventListener('click', () => {
   $('expcard').classList.add('hide'); $('expformerr').classList.add('hide');
 });
@@ -2244,6 +2393,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 

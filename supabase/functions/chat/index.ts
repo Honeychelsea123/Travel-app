@@ -87,6 +87,13 @@ Deno.serve(async (req) => {
         .eq('id', trip_id).maybeSingle();
 
       if (trip) {
+        // 여러 도시·나라를 도는 여행이면 구간마다 통화·시간대·이동방식이 다릅니다.
+        // 이걸 안 주면 AI 가 여행 전체를 한 도시로 보고 답합니다.
+        const { data: legs } = await asUser.from('trip_legs')
+          .select('destination,country,start_date,end_date,timezone,currency,' +
+                  'walk_max_km,transit_factor,transit_base_min')
+          .eq('trip_id', trip_id).order('start_date');
+
         const { data: plans } = await asUser.from('plans')
           .select('date,start_time,end_time,category,title,memo')
           .eq('trip_id', trip_id).is('deleted_at', null)
@@ -97,11 +104,15 @@ Deno.serve(async (req) => {
           .order('date', { ascending: false }).limit(30);
 
         ctx = [
-          `[여행] ${trip.title} · ${trip.destination}(${trip.country})`,
-          `기간 ${trip.start_date} ~ ${trip.end_date} · 시간대 ${trip.timezone}`,
-          `통화 ${trip.currency} (정산 ${trip.home_currency})`,
-          `이동 어림: ${trip.walk_max_km}km 미만은 도보, 그 위는 거리×${trip.transit_factor}` +
-          `+${trip.transit_base_min}분`,
+          `[여행] ${trip.title}`,
+          `기간 ${trip.start_date} ~ ${trip.end_date} · 정산 통화 ${trip.home_currency}`,
+          '',
+          '[구간] 언제 어디에 있는지. 날짜로 일정·지출이 여기 붙는다.',
+          (legs ?? []).map((l) =>
+            `- ${l.start_date}~${l.end_date} ${l.destination}(${l.country}) · ` +
+            `${l.currency} · ${l.timezone} · 이동 어림 ${l.walk_max_km}km 미만 도보, ` +
+            `그 위는 거리×${l.transit_factor}+${l.transit_base_min}분`).join('\n') ||
+            `- ${trip.start_date}~${trip.end_date} ${trip.destination}(${trip.country})`,
           '',
           '[일정]',
           (plans ?? []).map((p) =>
@@ -127,7 +138,9 @@ Deno.serve(async (req) => {
       '  아니면 "직접 확인이 필요합니다"라고 적는다.',
       '- 일정을 직접 고치지 않는다. 제안만 하고 사용자가 앱에서 넣게 한다.',
       '- 하루에 4~5개를 넘겨 채우지 않는다. 빈 시간을 남기는 편이 낫다.',
-      '- 이동 시간을 무시하지 않는다. 위 이동 어림값을 쓴다.',
+      '- 이동 시간을 무시하지 않는다. 그날이 속한 구간의 이동 어림값을 쓴다.',
+      '- 도시가 여러 곳이면 그날 어느 구간인지 보고 답한다.',
+      '  로마 일정에 피렌체 식당을 넣지 않는다.',
       '- 예약번호 · 주소 · 전화번호를 새로 지어내지 않는다.',
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
