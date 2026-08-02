@@ -292,14 +292,16 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div id="review"><div class="empty">불러오는 중…</div></div>
       </div>
 
-      <!-- 대화는 서버 쪽이 있어야 합니다. 무엇이 남았는지 숨기지 않고 적어둡니다. -->
       <div class="card">
-        <h2>AI에게 물어보기</h2>
-        <div class="empty" style="text-align:left; padding:0">
-          아직 준비 중입니다. 위 검토는 <b>기기에서 계산</b>하는 것이라 지금 되고
-          공짜지만, 대화와 일정 초안 생성은 <b>Edge Function</b>과 <b>API 키</b>가
-          있어야 합니다. 키를 화면 코드에 두면 그대로 공개되므로 서버 뒤에 둡니다.
+        <h2><span class="grow">물어보기</span>
+          <span class="val" id="ai_left"></span></h2>
+        <div id="chat"><div class="empty">이 여행에 대해 물어보세요.</div></div>
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <input id="ai_msg" placeholder="예: 둘째 날이 너무 빡빡한가요?"
+                 maxlength="500" enterkeyhint="send">
+          <button class="primary" id="ai_send" style="flex:none; padding:11px 18px">보내기</button>
         </div>
+        <pre id="aierr" class="hide"></pre>
       </div>
     </div>
 
@@ -369,6 +371,16 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             <div id="name">—</div>
             <div class="mail" id="mail">—</div>
           </div>
+          <button class="ghost" id="bell" style="position:relative; padding:6px 8px">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+                 d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path
+                 d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+            <span id="belldot" class="hide" style="position:absolute; top:2px; right:2px;
+                  min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+                  background:var(--bad); color:#fff; font-size:10px; line-height:16px;
+                  font-weight:700"></span>
+          </button>
           <button class="ghost" id="editname">이름</button>
         </div>
         <div id="namebox" class="hide" style="margin-top:12px">
@@ -384,8 +396,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
       </div>
 
-      <!-- 알림 — 만드는 쪽은 아직 없습니다. 자리를 먼저 잡아둡니다. -->
-      <div class="card">
+      <!-- 알림 — 위 종을 눌러야 펼쳐집니다. 만드는 쪽은 아직 없습니다. -->
+      <div class="card hide" id="notifcard">
         <h2><span class="grow">알림</span>
           <button class="ghost hide" id="readall">모두 읽음</button></h2>
         <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
@@ -643,7 +655,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b25</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b26</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -686,7 +698,7 @@ function mark(id, ok, text){
 }
 function fail(e, where){
   const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
-                plan:$('planerr'), planform:$('planformerr'),
+                plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'),
                 exp:$('experr'), expform:$('expformerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
@@ -1033,8 +1045,77 @@ async function loadAi(){
     `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
   if (aiTripId && data.some(t => t.id === aiTripId)) $('ai_trip').value = aiTripId;
   await runReview($('ai_trip').value);
+  await loadChats($('ai_trip').value);
 }
-$('ai_trip').addEventListener('change', () => runReview($('ai_trip').value));
+$('ai_trip').addEventListener('change', () => {
+  runReview($('ai_trip').value);
+  loadChats($('ai_trip').value);
+});
+
+/* ── AI 대화 ────────────────────────────────────────────────────────
+ * 키는 화면에 없습니다. Edge Function 뒤에 있고 우리는 그 함수만 부릅니다.
+ * 대화는 사람별로 나눠 저장합니다 — 섞이면 AI 가 남의 질문을 맥락으로 씁니다
+ * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
+async function loadChats(tripId){
+  if (!tripId) return;
+  const { data } = await sb.from('chats')
+    .select('role,content').eq('trip_id', tripId).eq('user_id', me.id)
+    .order('created_at').limit(40);
+  drawChats(data || []);
+  const { data: left } = await sb.rpc('ai_left');
+  if (left) $('ai_left').textContent = `오늘 ${left.used}/${left.limit}회`;
+}
+
+function drawChats(rows){
+  $('chat').innerHTML = rows.length
+    ? rows.map(m => `<div class="plan" style="border:0; padding:6px 0">
+        <div class="body">
+          <b style="color:${m.role === 'user' ? 'var(--ink)' : 'var(--primary)'}">
+            ${m.role === 'user' ? '나' : 'AI'}</b>
+          <span class="memo" style="color:var(--ink-80); white-space:pre-wrap">${
+            esc(m.content)}</span></div></div>`).join('')
+    : '<div class="empty">이 여행에 대해 물어보세요.</div>';
+  $('chat').scrollTop = $('chat').scrollHeight;
+}
+
+$('ai_msg').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); $('ai_send').click(); }
+});
+
+$('ai_send').addEventListener('click', async () => {
+  const msg = $('ai_msg').value.trim();
+  const tripId = $('ai_trip').value;
+  $('aierr').classList.add('hide');
+  if (!msg) return;
+  if (!tripId) return fail('먼저 여행을 고르세요.', 'ai');
+
+  $('ai_msg').value = '';
+  $('ai_send').disabled = true; $('ai_send').textContent = '…';
+
+  /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다. */
+  await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
+                                  role: 'user', content: msg });
+  await loadChats(tripId);
+
+  const { data, error } = await sb.functions.invoke('chat',
+    { body: { trip_id: tripId, message: msg } });
+
+  $('ai_send').disabled = false; $('ai_send').textContent = '보내기';
+
+  if (error){
+    /* 함수가 오류를 내면 본문에 이유가 들어 있습니다. 그대로 보여줍니다. */
+    let why = error.message;
+    try { why = (await error.context?.json())?.error || why; } catch {}
+    return fail(/not found|Failed to send/i.test(why)
+      ? 'chat 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+      : why, 'ai');
+  }
+  if (data?.error) return fail(data.error, 'ai');
+
+  await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
+                                  role: 'model', content: data.reply });
+  await loadChats(tripId);
+});
 
 async function runReview(id){
   aiTripId = id;
@@ -1138,16 +1219,26 @@ async function loadHome(){
 }
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
+/* 종은 프로필 우상단에 있고 안 읽은 수를 배지로 답니다. 눌러야 목록이 펼쳐집니다. */
+$('bell').addEventListener('click', () => {
+  $('notifcard').classList.toggle('hide');
+  if (!$('notifcard').classList.contains('hide'))
+    $('notifcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+
 async function loadNotifs(){
   const { data, error } = await sb.from('notifications')
     .select('id,kind,body,created_at,read_at')
     .order('created_at', { ascending:false }).limit(30);
+  const unread = (data || []).filter(n => !n.read_at).length;
+  $('belldot').textContent = unread > 9 ? '9+' : unread;
+  $('belldot').classList.toggle('hide', !unread);
+
   if (error || !data?.length){
     $('notifs').innerHTML = '<div class="empty">알림이 없습니다.</div>';
     $('readall').classList.add('hide');
     return;
   }
-  const unread = data.filter(n => !n.read_at).length;
   $('readall').classList.toggle('hide', !unread);
   $('notifs').innerHTML = data.map(n =>
     `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
@@ -2137,6 +2228,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
