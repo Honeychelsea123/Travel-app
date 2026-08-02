@@ -581,7 +581,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
       </div>
       <div class="card">
-        <h2><span class="grow">도시</span><span class="val" id="r_count"></span></h2>
+        <h2>도시</h2>
         <div id="ratelist"><div class="empty">불러오는 중…</div></div>
 
         <!-- 세상의 도시를 다 넣을 수는 없습니다. 없으면 직접 넣습니다.
@@ -1331,7 +1331,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b73</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b74</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2096,9 +2096,6 @@ function drawRatings(){
                   : (myRates[c.id]?.stars ?? -1);
   list.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name, 'ko'));
 
-  const n = Object.values(myRates).filter(r => r.stars != null).length;
-  $('r_count').textContent = n ? `${n}곳 매김` : '';
-
   /* 찾는 이름이 목록에 없으면 직접 넣을 수 있게 안내합니다. */
   const exact = q && (cities || []).some(c => c.name.toLowerCase() === q);
   const canAdd = q.length >= 2 && !cho && !exact;
@@ -2242,12 +2239,8 @@ async function saveRate(cityId, patch, quiet){
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
   if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
-  /* 조용히 저장할 때는 다시 그리지 않습니다. 누른 줄이 제자리에 있어야 합니다.
-     숫자만 맞춰둡니다. */
-  if (quiet){
-    const n = Object.values(myRates).filter(r => r.stars != null).length;
-    $('r_count').textContent = n ? `${n}곳 매김` : '';
-  } else drawRatings();
+  /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다. */
+  if (!quiet) drawRatings();
 }
 
 /* ── 도시 상세 ──────────────────────────────────────────────────────
@@ -5101,6 +5094,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
