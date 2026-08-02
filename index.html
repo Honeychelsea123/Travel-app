@@ -421,7 +421,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <h2>한 줄평</h2>
         <input id="cv_note" placeholder="이 도시, 한 줄로 남긴다면?" maxlength="200">
         <div class="empty" style="text-align:left; padding:8px 0 0">
-          한 줄평을 쓰면 <b>이름과 함께 다른 사람에게도 보입니다.</b>
+          <b id="cv_asname">—</b> 이름으로 다른 사람에게 보입니다.
+          <button class="ghost" id="cv_rename"
+                  style="padding:0 4px; color:var(--primary)">바꾸기</button><br>
           별점만 매기면 평균에만 들어가고 이름은 안 나갑니다.
         </div>
         <div id="cv_comments"></div>
@@ -602,18 +604,23 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
 
         <div class="card">
-          <h2><span class="grow">이름</span>
+          <h2><span class="grow">닉네임</span>
             <button class="ghost" id="editname">바꾸기</button></h2>
           <div class="memo" id="curname">—</div>
+          <div class="empty" style="padding:6px 0 0; text-align:left">
+            <b>한 줄평과 일행 목록에 이 이름으로 보입니다.</b>
+            처음에는 구글 계정 이름이 들어와 있습니다 — 본명을 남기고 싶지 않으면
+            여기서 바꾸세요.
+          </div>
           <div id="namebox" class="hide" style="margin-top:12px">
-            <input id="n_name" maxlength="30" placeholder="여행에서 보일 이름">
+            <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
             <div style="margin-top:10px; display:flex; gap:8px">
               <button class="primary" id="n_save">저장</button>
               <button class="small" id="n_cancel">취소</button>
             </div>
             <div class="empty" style="padding:8px 0 0; text-align:left">
-              모든 여행에서 쓰는 이름입니다. 특정 여행에서만 다르게 부르려면
-              그 여행의 <b>일행</b> 탭에서 별명을 정하세요.
+              특정 여행에서만 다르게 부르려면 그 여행의 <b>일행</b> 탭에서
+              따로 별명을 정할 수 있습니다.
             </div>
           </div>
         </div>
@@ -986,7 +993,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b42</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b43</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1822,6 +1829,8 @@ async function openCity(id){
   $('cv_stars').innerHTML  = starHtml(r.stars);
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
+  /* 어떤 이름으로 남는지 쓰기 전에 보여줍니다. 쓰고 나서 알면 늦습니다. */
+  $('cv_asname').textContent = $('name').textContent || '이름 없음';
 
   /* 남들 한 줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
   const { data: cm } = await sb.rpc('city_comments', { p_city: id });
@@ -1886,6 +1895,10 @@ function closeCity(fromPop){
 }
 
 $('cityview').addEventListener('click', async e => {
+  /* 여기서 바로 프로필 설정으로 보냅니다. 닉네임을 고치러 헤매지 않게. */
+  if (e.target.closest('#cv_rename')){
+    closeCity(); showApp('set'); showProfile(true); $('editname').click(); return;
+  }
   const t = e.target.closest('[data-cvtrip]');
   if (t){ closeCity(); return openTrip(t.dataset.cvtrip); }
 
@@ -3577,6 +3590,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 

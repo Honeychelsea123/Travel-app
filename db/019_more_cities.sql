@@ -39,6 +39,8 @@ insert into public.countries
   ('CU','쿠바','Cuba','CUP','es','북아메리카','America/Havana'),
   ('CR','코스타리카','Costa Rica','CRC','es','북아메리카','America/Costa_Rica'),
   ('CO','콜롬비아','Colombia','COP','es','남아메리카','America/Bogota'),
+  -- 에콰도르는 자국 통화가 없고 미국 달러를 씁니다.
+  ('EC','에콰도르','Ecuador','USD','es','남아메리카','America/Guayaquil'),
   ('BO','볼리비아','Bolivia','BOB','es','남아메리카','America/La_Paz'),
   ('UY','우루과이','Uruguay','UYU','es','남아메리카','America/Montevideo'),
   ('TZ','탄자니아','Tanzania','TZS','sw','아프리카','Africa/Dar_es_Salaam'),
@@ -51,6 +53,24 @@ on conflict (code) do update set
   default_timezone = excluded.default_timezone;
 
 -- 일본은 나라별 맛집 사이트가 이미 붙어 있습니다. 새 나라는 비워 둡니다.
+
+
+-- ── 나라를 빠뜨리지 않았는지 먼저 봅니다 ────────────────────────────
+-- 도시에 없는 나라 코드를 쓰면 통화가 안 채워져 not-null 로 실패합니다.
+-- 그때 나오는 오류만 봐서는 어느 나라가 빠졌는지 알기 어려워 여기서 미리 막습니다.
+do $$
+declare v_missing text;
+begin
+  select string_agg(distinct x.code, ', ') into v_missing
+    from (values ('EC'),('CO'),('BO'),('UY'),('CU'),('CR'),('TZ'),('TN'),
+                 ('FJ'),('PF'),('NP'),('LK'),('MV'),('BN'),('MN'),('UZ'),
+                 ('KZ'),('GE'),('AZ'),('JO'),('SA'),('OM'),('BG'),('RO'),
+                 ('RS'),('SI'),('SK'),('EE'),('LV'),('LT'),('MT')) as x(code)
+   where not exists (select 1 from public.countries n where n.code = x.code);
+  if v_missing is not null then
+    raise exception '나라가 빠졌습니다: %. 위 countries insert 를 먼저 확인하세요.', v_missing;
+  end if;
+end $$;
 
 
 -- ── 도시 ─────────────────────────────────────────────────────────────
