@@ -86,7 +86,8 @@ input, select{ font:inherit; width:100%; padding:10px 12px; border-radius:11px;
       background:var(--sunk); color:var(--dim); cursor:pointer;
       font-size:calc(13px * var(--ts)); white-space:nowrap; }
 .day.on{ background:var(--accent); color:#fff; border-color:transparent; font-weight:600; }
-.day .n{ opacity:.7; font-size:.9em; margin-left:4px; }
+/* 긴 여행에서는 칩 대신 이 칸으로 고릅니다 */
+.days select{ width:auto; flex:1; min-width:180px; padding:6px 12px; border-radius:999px; }
 
 .plan{ display:flex; gap:12px; padding:12px 0; }
 .plan + .plan{ border-top:1px solid var(--line); }
@@ -270,7 +271,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b12</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b13</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -704,8 +705,14 @@ async function loadPlans(){
   drawPlans();
 }
 
+function shortLabel(d){
+  const lab = dayLabel(d, trip);
+  return lab.startsWith('Day') ? lab.split(' · ')[0]
+                               : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
+}
+
 function drawDays(){
-  /* 여행 기간의 날짜 + 기간 밖에 일정이 있는 날짜를 합쳐 칩을 만듭니다.
+  /* 여행 기간의 날짜 + 기간 밖에 일정이 있는 날짜를 합칩니다.
      한국에서 미리 산 항공권처럼 기간 밖 일정이 실제로 생깁니다. */
   const set = new Set();
   for (let d = asDate(trip.start_date);
@@ -713,18 +720,29 @@ function drawDays(){
   plans.forEach(p => set.add(p.date));
   const list = [...set].sort();
 
-  const count = d => plans.filter(p => p.date === d).length;
-  $('days').innerHTML =
-    `<button class="day${pickedDay === null ? ' on' : ''}" data-day="">전체
-       <span class="n">${plans.length}</span></button>` +
-    list.map(d => {
-      const n = count(d), lab = dayLabel(d, trip);
-      const short = lab.startsWith('Day') ? lab.split(' · ')[0]
-                                          : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
-      return `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">${esc(short)}` +
-             (n ? `<span class="n">${n}</span>` : '') + `</button>`;
-    }).join('');
+  const all = `<button class="day${pickedDay === null ? ' on' : ''}" data-day="">전체</button>`;
+
+  /* 짧은 여행은 칩이 한눈에 들어와서 낫습니다.
+     길어지면 칩이 벽이 됩니다 — 29일짜리는 세 줄을 잡아먹었습니다.
+     그때는 고르는 칸 하나로 바꿉니다. */
+  if (list.length <= 12){
+    $('days').innerHTML = all + list.map(d =>
+      `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">` +
+      `${esc(shortLabel(d))}</button>`).join('');
+  } else {
+    $('days').innerHTML = all +
+      `<select id="daysel"><option value="">날짜 고르기…</option>` +
+      list.map(d => `<option value="${esc(d)}"${pickedDay === d ? ' selected' : ''}>` +
+                    `${esc(dayLabel(d, trip))}</option>`).join('') +
+      `</select>`;
+  }
 }
+
+$('days').addEventListener('change', e => {
+  if (e.target.id !== 'daysel') return;
+  pickedDay = e.target.value || null;
+  drawDays(); drawPlans();
+});
 
 function drawPlans(){
   const show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
@@ -875,6 +893,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
