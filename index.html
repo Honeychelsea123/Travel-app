@@ -421,10 +421,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <h2>한 줄평</h2>
         <input id="cv_note" placeholder="이 도시, 한 줄로 남긴다면?" maxlength="200">
         <div class="empty" style="text-align:left; padding:8px 0 0">
-          <b id="cv_asname">—</b> 이름으로 다른 사람에게 보입니다.
-          <button class="ghost" id="cv_rename"
-                  style="padding:0 4px; color:var(--primary)">바꾸기</button><br>
-          별점만 매기면 평균에만 들어가고 이름은 안 나갑니다.
+          한 줄평은 다른 사람에게도 보입니다.
         </div>
         <div id="cv_comments"></div>
       </div>
@@ -993,7 +990,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b43</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b44</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1829,8 +1826,6 @@ async function openCity(id){
   $('cv_stars').innerHTML  = starHtml(r.stars);
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
-  /* 어떤 이름으로 남는지 쓰기 전에 보여줍니다. 쓰고 나서 알면 늦습니다. */
-  $('cv_asname').textContent = $('name').textContent || '이름 없음';
 
   /* 남들 한 줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
   const { data: cm } = await sb.rpc('city_comments', { p_city: id });
@@ -1895,10 +1890,6 @@ function closeCity(fromPop){
 }
 
 $('cityview').addEventListener('click', async e => {
-  /* 여기서 바로 프로필 설정으로 보냅니다. 닉네임을 고치러 헤매지 않게. */
-  if (e.target.closest('#cv_rename')){
-    closeCity(); showApp('set'); showProfile(true); $('editname').click(); return;
-  }
   const t = e.target.closest('[data-cvtrip]');
   if (t){ closeCity(); return openTrip(t.dataset.cvtrip); }
 
@@ -3590,6 +3581,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
