@@ -340,6 +340,17 @@ body.sheeton{ overflow:hidden; }
 .thead .days .day{ background:rgba(255,255,255,.18); color:#fff; border-color:transparent; }
 .thead .days .day.on{ background:#fff; color:var(--ink); }
 
+/* ── AI 채팅 ─────────────────────────────────────────────────────────
+ * 대화는 위에서 흐르고 입력칸은 아래에 붙어 있어야 합니다.
+ * 카드 높이를 화면에 맞춰 늘려 두면 입력칸이 저절로 아래에 붙습니다.
+ * 고정 위치를 쓰지 않는 이유는 키보드가 올라올 때 어긋나기 때문입니다. */
+#aiview{ display:flex; flex-direction:column; }
+.aichat{ flex:1; display:flex; flex-direction:column; min-height:0;
+         /* 위 고른 줄과 아래 떠 있는 바를 뺀 만큼 */
+         min-height:calc(100dvh - 250px); }
+.aichat #chat{ flex:1; overflow-y:auto; min-height:120px; }
+.aichat .aibar{ margin-top:12px; }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -731,17 +742,25 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div id="review"><div class="empty">불러오는 중…</div></div>
       </div>
 
-      <div class="card">
-        <div id="chat"><div class="empty">이 여행에 대해 물어보세요.</div></div>
+      <!-- 채팅은 위가 흐르고 입력칸은 아래에 붙어 있어야 합니다.
+           카드 안에 같이 두면 빈 자리가 생기고 입력칸이 화면 가운데에 뜹니다. -->
+      <div class="card aichat" id="aichat">
+        <div id="chat"><div class="empty">불러오는 중…</div></div>
         <!-- AI 가 낸 제안. 담는 것은 사용자가 합니다 (문서 7장). -->
         <div id="cards"></div>
-        <div style="display:flex; gap:8px; margin-top:12px">
-          <input id="ai_msg" placeholder="예: 둘째 날이 너무 빡빡한가요?"
-                 maxlength="500" enterkeyhint="send">
-          <button class="primary" id="ai_send" style="flex:none; padding:11px 18px">보내기</button>
+        <div class="aibar">
+          <div style="display:flex; gap:8px">
+            <input id="ai_msg" placeholder="예: 둘째 날이 너무 빡빡한가요?"
+                   maxlength="500" enterkeyhint="send">
+            <!-- 입력칸과 같은 높이로 붙습니다. 크기는 글자에 맞게만. -->
+            <button class="primary" id="ai_send"
+                    style="flex:none; padding:0 14px; font-size:calc(14px * var(--ts))">
+              보내기</button>
+          </div>
+          <div class="val" id="ai_left"
+               style="text-align:right; margin-top:5px; font-size:calc(11px * var(--ts))"></div>
+          <pre id="aierr" class="hide"></pre>
         </div>
-        <div class="val" id="ai_left" style="text-align:right; margin-top:6px"></div>
-        <pre id="aierr" class="hide"></pre>
       </div>
     </div>
 
@@ -1312,7 +1331,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b72</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b73</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1791,14 +1810,13 @@ async function loadAi(){
   const { data, error } = await sb.from('trips')
     .select('id,title').is('archived_at', null).order('start_date');
   if (error) return fail(error, 'trip');
-  if (!data.length){
-    $('ai_trip').innerHTML = '';
-    $('review').innerHTML = '<div class="empty">검토할 여행이 없습니다.</div>';
-    return;
-  }
-  $('ai_trip').innerHTML = data.map(t =>
-    `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
-  if (aiTripId && data.some(t => t.id === aiTripId)) $('ai_trip').value = aiTripId;
+
+  /* 여행을 안 고르고도 물어볼 수 있어야 합니다. 어디로 갈지 정하기 전에
+     묻는 것이 오히려 더 많습니다. 그때는 여행 자료 없이 그냥 답합니다. */
+  $('ai_trip').innerHTML =
+    `<option value="">여행 없이 물어보기</option>` +
+    (data || []).map(t => `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
+  $('ai_trip').value = (aiTripId && data.some(t => t.id === aiTripId)) ? aiTripId : '';
   /* 들어올 때는 채팅부터 보입니다. 홈에서 "자세히"로 온 경우만 펼칩니다. */
   $('reviewcard').classList.toggle('hide', !openReview);
   openReview = false;
@@ -1814,8 +1832,17 @@ $('ai_trip').addEventListener('change', () => {
  * 키는 화면에 없습니다. Edge Function 뒤에 있고 우리는 그 함수만 부릅니다.
  * 대화는 사람별로 나눠 저장합니다 — 섞이면 AI 가 남의 질문을 맥락으로 씁니다
  * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
+/* 여행을 안 골랐을 때 나눈 대화. chats 는 여행에 매달려 있어서 저장할 자리가
+   없습니다. 이번 접속 동안만 들고 있고, 새로고침하면 사라집니다. */
+let freeChat = [];
+
 async function loadChats(tripId){
-  if (!tripId) return;
+  if (!tripId){
+    drawChats(freeChat);
+    const { data: l } = await sb.rpc('ai_left');
+    if (l) $('ai_left').textContent = `오늘 ${l.used}/${l.limit}회`;
+    return;
+  }
   const { data } = await sb.from('chats')
     .select('role,content').eq('trip_id', tripId).eq('user_id', me.id)
     .order('created_at').limit(40);
@@ -1841,7 +1868,7 @@ function drawChats(rows){
         <b class="who" style="color:${m.role === 'user' ? 'var(--ink-48)' : 'var(--primary)'}">
           ${m.role === 'user' ? '나' : 'AI'}</b>
         <div class="txt">${md(m.content)}</div></div>`).join('')
-    : '<div class="empty">이 여행에 대해 물어보세요.</div>';
+    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
   $('chat').scrollTop = $('chat').scrollHeight;
 }
 
@@ -1854,18 +1881,18 @@ $('ai_send').addEventListener('click', async () => {
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
-  if (!tripId) return fail('먼저 여행을 고르세요.', 'ai');
-
   $('ai_msg').value = ''; $('cards').innerHTML = '';
   $('ai_send').disabled = true; $('ai_send').textContent = '…';
 
-  /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다. */
-  await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
-                                  role: 'user', content: msg });
+  /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다.
+     여행을 안 골랐으면 저장할 자리가 없어 이번 접속 동안만 들고 있습니다. */
+  if (tripId) await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
+                                              role: 'user', content: msg });
+  else freeChat.push({ role:'user', content: msg });
   await loadChats(tripId);
 
   const { data, error } = await sb.functions.invoke('chat',
-    { body: { trip_id: tripId, message: msg } });
+    { body: { trip_id: tripId || null, message: msg } });
 
   $('ai_send').disabled = false; $('ai_send').textContent = '보내기';
 
@@ -1879,8 +1906,9 @@ $('ai_send').addEventListener('click', async () => {
   }
   if (data?.error) return fail(data.error, 'ai');
 
-  await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
-                                  role: 'model', content: data.reply });
+  if (tripId) await sb.from('chats').insert({ trip_id: tripId, user_id: me.id,
+                                              role: 'model', content: data.reply });
+  else freeChat.push({ role:'model', content: data.reply });
   await loadChats(tripId);
   drawCards(data);
 });
@@ -1963,6 +1991,14 @@ $('reviewclose').addEventListener('click', () => $('reviewcard').classList.add('
 
 async function runReview(id){
   aiTripId = id;
+  /* 여행을 안 골랐으면 검토할 것이 없습니다. 배지도 지웁니다. */
+  if (!id){
+    $('review').innerHTML = '<div class="empty">여행을 고르면 일정을 검토해드립니다.</div>';
+    $('reviewdot').classList.add('hide');
+    $('reviewbtn').classList.add('hide');
+    return;
+  }
+  $('reviewbtn').classList.remove('hide');
   const [{ data:t }, { data:ps }, { data:lg }] = await Promise.all([
     sb.from('trips').select('*').eq('id', id).maybeSingle(),
     sb.from('plans').select('date,start_time,end_time,category,title,lat,lng')
@@ -5065,6 +5101,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
