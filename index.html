@@ -278,6 +278,11 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
   <!-- 로그인 후 -->
   <section id="signedin" class="hide">
+    <!-- 홈 -->
+    <div id="homeview" class="hide">
+      <div id="home"><div class="empty">불러오는 중…</div></div>
+    </div>
+
     <div id="listview">
     <div class="card">
       <h2><span class="grow" id="listtitle">내 여행</span>
@@ -328,7 +333,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     </div>
     </div><!-- /listview -->
 
-    <!-- 설정 -->
+    <!-- 프로필 -->
     <div id="setview" class="hide">
       <div class="card">
         <div class="me">
@@ -337,8 +342,26 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             <div id="name">—</div>
             <div class="mail" id="mail">—</div>
           </div>
-          <button class="ghost" id="logout">로그아웃</button>
+          <button class="ghost" id="editname">이름</button>
         </div>
+        <div id="namebox" class="hide" style="margin-top:12px">
+          <input id="n_name" maxlength="30" placeholder="여행에서 보일 이름">
+          <div style="margin-top:10px; display:flex; gap:8px">
+            <button class="primary" id="n_save">저장</button>
+            <button class="small" id="n_cancel">취소</button>
+          </div>
+          <div class="empty" style="padding:8px 0 0; text-align:left">
+            모든 여행에서 쓰는 이름입니다. 특정 여행에서만 다르게 부르려면
+            그 여행의 <b>일행</b> 탭에서 별명을 정하세요.
+          </div>
+        </div>
+      </div>
+
+      <!-- 알림 — 만드는 쪽은 아직 없습니다. 자리를 먼저 잡아둡니다. -->
+      <div class="card">
+        <h2><span class="grow">알림</span>
+          <button class="ghost hide" id="readall">모두 읽음</button></h2>
+        <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
       </div>
 
       <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
@@ -366,6 +389,10 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
         <div class="row"><span class="dot" id="d1"></span>
           <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
+      </div>
+
+      <div class="card">
+        <button class="ghost" id="logout" style="width:100%; color:var(--bad)">로그아웃</button>
       </div>
     </div><!-- /setview -->
 
@@ -561,21 +588,26 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
     <!-- 앱 전체 하단바. 여행 안에서는 위 탭바가 대신 나옵니다. -->
     <nav class="tabbar" id="appbar">
-      <button data-a="trips" class="is-on">
+      <button data-a="home" class="is-on">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+             d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path
+             d="M9.5 20v-5.5h5V20"/></svg><span>홈</span></button>
+      <button data-a="trips">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
              d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10"
              r="2.6"/></svg><span>여행</span></button>
-      <button data-a="arch">
+      <button data-a="rec">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4"
-             width="18" height="4.5" rx="1.6"/><path d="M5 8.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5
-             0 0 0 19 19V8.5M10 12h4"/></svg><span>보관함</span></button>
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+             d="M5 4.5h11l3 3V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19z"/><path
+             d="M8.5 9.5h6M8.5 13h6M8.5 16.5h3.5"/></svg><span>기록</span></button>
       <button data-a="set">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12"
              cy="9" r="3.6"/><path d="M4.5 20.5c.8-4 3.8-6.2 7.5-6.2s6.7 2.2 7.5 6.2"/></svg>
-        <span>설정</span></button>
+        <span>프로필</span></button>
     </nav>
   </section>
 
@@ -584,7 +616,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b23</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b24</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -606,7 +638,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
-    picked = null, hitList = [], cursor = 0, showArchived = false,
+    picked = null, hitList = [], cursor = 0,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'trips';
@@ -855,20 +887,124 @@ $('create').addEventListener('click', async () => {
  * 로그아웃과 보관함이 목록 위에 얹혀 있던 것을 여기로 내렸습니다. */
 function showApp(t){
   appTab = t;
-  showArchived = t === 'arch';
-  $('listview').classList.toggle('hide', t === 'set');
+  $('homeview').classList.toggle('hide', t !== 'home');
+  $('listview').classList.toggle('hide', t !== 'trips' && t !== 'rec');
   $('setview').classList.toggle('hide', t !== 'set');
-  $('listtitle').textContent = t === 'arch' ? '보관한 여행' : '내 여행';
+  $('listtitle').textContent = t === 'rec' ? '다녀온 여행' : '내 여행';
   $('newbtn').classList.toggle('hide', t !== 'trips');
   $('newcard').classList.add('hide');
+  $('namebox').classList.add('hide');
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === t));
-  if (t !== 'set') loadTrips();
+  if (t === 'home')     loadHome();
+  else if (t === 'set') loadNotifs();
+  else                  loadTrips();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 $('appbar').addEventListener('click', e => {
   const b = e.target.closest('button[data-a]');
   if (b) showApp(b.dataset.a);
+});
+
+/* ── 홈 ─────────────────────────────────────────────────────────────
+ * 앱을 열면 제일 먼저 궁금한 것은 "다음 여행이 언제고 뭐가 잡혀 있나"입니다.
+ * 가장 가까운 여행 하나와 그 여행의 앞으로 올 일정 몇 개만 보여줍니다. */
+async function loadHome(){
+  const today = ymd(new Date());
+  const { data, error } = await sb.from('trips')
+    .select('id,title,destination,start_date,end_date,currency,timezone')
+    .is('archived_at', null).gte('end_date', today)
+    .order('start_date').limit(1);
+  if (error) return fail(error, 'trip');
+
+  if (!data.length){
+    $('home').innerHTML =
+      `<div class="card"><div class="empty">앞으로 갈 여행이 없습니다.<br>
+         새 여행을 만들어보세요.</div>
+       <button class="primary" id="homenew" style="width:100%">+ 새 여행</button></div>`;
+    $('homenew').onclick = () => { showApp('trips'); $('newbtn').click(); };
+    return;
+  }
+
+  const t = data[0];
+  const dday = Math.round((asDate(t.start_date) - asDate(today)) / D1);
+  const days = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
+  /* 여행 중이면 남은 날이 아니라 며칠째인지가 궁금합니다. */
+  const badge = dday > 0 ? `D-${dday}`
+              : dday === 0 ? '오늘 출발'
+              : `여행 중 · Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
+
+  const { data: ps } = await sb.from('plans')
+    .select('date,start_time,category,title')
+    .eq('trip_id', t.id).is('deleted_at', null).gte('date', today)
+    .order('date').order('start_time', { nullsFirst:false }).limit(4);
+
+  $('home').innerHTML =
+    `<div class="card" style="cursor:pointer" id="homecard">
+       <div class="row" style="border:0; padding:0; margin:0">
+         <span class="label" style="font-size:calc(21px * var(--ts)); font-weight:650">
+           ${esc(t.title)}</span>
+         <span class="badge" style="background:var(--primary); color:#fff; font-weight:600">
+           ${esc(badge)}</span>
+       </div>
+       <div class="meta" style="margin-top:2px">
+         ${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일</div>
+     </div>
+     <div class="card"><h2>앞으로 할 것</h2>${
+       (ps || []).length
+         ? ps.map(p => {
+             const k = p.category ? 'k-' + p.category : '';
+             return `<div class="plan"><div class="when">${esc(hm(p.start_time) || '–')}</div>
+               <span class="kdot ${esc(k)}"></span>
+               <div class="body"><b>${esc(p.title)}</b>
+                 <span class="memo">${esc(dayLabel(p.date, t))}</span></div></div>`;
+           }).join('')
+         : '<div class="empty">아직 잡아둔 일정이 없습니다.</div>'}
+     </div>`;
+  $('homecard').onclick = () => openTrip(t.id);
+}
+
+/* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
+async function loadNotifs(){
+  const { data, error } = await sb.from('notifications')
+    .select('id,kind,body,created_at,read_at')
+    .order('created_at', { ascending:false }).limit(30);
+  if (error || !data?.length){
+    $('notifs').innerHTML = '<div class="empty">알림이 없습니다.</div>';
+    $('readall').classList.add('hide');
+    return;
+  }
+  const unread = data.filter(n => !n.read_at).length;
+  $('readall').classList.toggle('hide', !unread);
+  $('notifs').innerHTML = data.map(n =>
+    `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
+       ${esc(n.body)}</span>
+     <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`).join('');
+}
+$('readall').addEventListener('click', async () => {
+  await sb.from('notifications').update({ read_at: new Date().toISOString() })
+    .is('read_at', null);
+  loadNotifs();
+});
+
+/* ── 이름 ── profiles.display_name 은 모든 여행에서 쓰는 이름입니다.
+   여행마다 다르게 부르고 싶으면 그 여행의 trip_members.nickname 을 씁니다. */
+$('editname').addEventListener('click', () => {
+  $('namebox').classList.toggle('hide');
+  if ($('namebox').classList.contains('hide')) return;
+  $('n_name').value = $('name').textContent;
+  $('n_name').focus();
+});
+$('n_cancel').addEventListener('click', () => $('namebox').classList.add('hide'));
+$('n_save').addEventListener('click', async () => {
+  const v = $('n_name').value.trim();
+  if (!v) return fail('이름을 적어주세요.', 'trip');
+  const r = await sb.from('profiles').update({ display_name: v })
+    .eq('id', me.id).select('id');
+  if (r.error) return fail(r.error, 'trip');
+  if (!r.data?.length) return fail('이름을 바꾸지 못했습니다 (0건).', 'trip');
+  $('name').textContent = v;
+  $('namebox').classList.add('hide');
 });
 
 /* ── 글자 크기 ──────────────────────────────────────────────────────
@@ -893,19 +1029,25 @@ $('tsbtns').addEventListener('click', async e => {
 async function loadTrips(){
   /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
      않으면 방금 만든 여행조차 여기 안 나옵니다. */
+  const today = ymd(new Date());
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,trip_members(user_id,role)')
-    .order('start_date', { ascending:false });
-  q = showArchived ? q.not('archived_at','is',null) : q.is('archived_at', null);
+            'transit_factor,archived_at,trip_members(user_id,role)');
+  /* 여행 탭은 앞으로 갈 것(가까운 순), 기록 탭은 다녀왔거나 보관한 것(최근 순).
+     날짜가 지나면 저절로 기록으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
+  q = appTab === 'rec'
+    ? q.or(`end_date.lt.${today},archived_at.not.is.null`)
+       .order('start_date', { ascending:false })
+    : q.is('archived_at', null).gte('end_date', today)
+       .order('start_date', { ascending:true });
   const { data, error } = await q;
 
   if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>';
               return fail(error); }
   if (!data.length){
-    $('trips').innerHTML = showArchived
-      ? '<div class="empty">보관한 여행이 없습니다.</div>'
-      : '<div class="empty">아직 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
+    $('trips').innerHTML = appTab === 'rec'
+      ? '<div class="empty">아직 다녀온 여행이 없습니다.</div>'
+      : '<div class="empty">앞으로 갈 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
     return;
   }
   $('trips').innerHTML = data.map(t => {
@@ -915,8 +1057,8 @@ async function loadTrips(){
     /* 소유자만 지웁니다. 일행은 나갈 뿐입니다 — 남의 여행을 지울 수는 없습니다.
        (RLS 도 같은 규칙을 걸어두었으니 버튼을 숨기는 건 안내일 뿐입니다.) */
     const acts = role === 'owner'
-      ? (showArchived ? `<button class="ghost" data-act="unarchive" ${a}>꺼내기</button>`
-                      : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
+      ? (t.archived_at ? `<button class="ghost" data-act="unarchive" ${a}>꺼내기</button>`
+                       : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
     return `<div class="trip" data-open="${esc(t.id)}"><div class="t">
@@ -1041,6 +1183,9 @@ function drawTripHeader(){
 async function openTrip(id){
   if (!await fetchTrip(id)) return fail('여행을 열지 못했습니다.', 'trip');
   pickedDay = null;
+  /* 기록을 하나 쌓아야 화면 밀어서 뒤로 가기가 됩니다.
+     이미 여행 안이면(다른 여행으로 건너뛴 경우) 또 쌓지 않습니다. */
+  if (history.state?.t2 !== 'trip') history.pushState({ t2:'trip' }, '');
 
   $('listview').classList.add('hide');
   $('setview').classList.add('hide');
@@ -1179,7 +1324,11 @@ $('e_save').addEventListener('click', async () => {
   await openTrip(trip.id);
 });
 
-function backToList(){
+/* 여행에 들어갈 때 브라우저 기록을 하나 쌓아 뒀습니다(openTrip).
+   그래야 아이폰에서 화면을 밀어 뒤로 가기가 됩니다.
+   ← 버튼도 같은 길로 보내야 기록과 화면이 어긋나지 않습니다. */
+function backToList(fromPop){
+  if (!fromPop && history.state?.t2 === 'trip'){ history.back(); return; }
   unwatch();
   trip = null;
   $('tripview').classList.add('hide');
@@ -1187,7 +1336,8 @@ function backToList(){
   $('appbar').classList.remove('hide');
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
-$('backbtn').addEventListener('click', backToList);
+$('backbtn').addEventListener('click', () => backToList());
+window.addEventListener('popstate', () => { if (trip) backToList(true); });
 
 async function loadPlans(){
   $('planerr').classList.add('hide');
@@ -1761,7 +1911,7 @@ async function render(session){
     localStorage.setItem('t2:ts', prefs.data.text_scale);
   } else applyTs(localStorage.getItem('t2:ts') || 1);
 
-  showApp('trips');
+  showApp('home');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
      목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
   await handleJoin();
@@ -1811,6 +1961,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
