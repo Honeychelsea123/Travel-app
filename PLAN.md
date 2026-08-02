@@ -43,11 +43,26 @@ localStorage 와 IndexedDB 는 공유된다.** 서비스워커 스코프는 `/PW
 - [x] Supabase 프로젝트 — `qahqqhjleqfrsjiixnas`, Seoul
 - [x] `db/003_verify.sql` 8줄 전부 OK (표 19 · RLS 전부 · 정책 35 · 시드 22/40)
 
-### 다음
+### 나라·도시 확장 (2026-08-02 완료)
 
-- [ ] GitHub Pages 켜기 → 빈 화면이 뜨는지 확인
-- [ ] anon key 받아 앱에 연결
-- [ ] 구글 OAuth 설정
+- [x] `countries` 56개 — 통화·언어·맛집 사이트는 나라의 성질이라 여기로 옮겼다
+- [x] `cities` 22 → 142개, `transit_grades` 4등급 (`db/004_countries_cities.sql`)
+- [x] `db/005_verify_cities.sql` 9줄 전부 OK — 시간대 142개가 실재하는 IANA 이름임을
+      `pg_timezone_names` 로 직접 확인. 통화도 전부 나라 값과 일치
+
+### 연결 (2026-08-02 완료)
+
+- [x] GitHub Pages 켜짐 → https://honeychelsea123.github.io/Travel-app/
+- [x] publishable key 로 연결. `index.html` 이 로그인 없이 `cities`·`countries` 를 읽는다
+- [x] 로그인 안 한 상태에서 `trips` 가 비어 있는 것 확인 — RLS 가 실제로 일하고 있다는 증거
+- [x] 도쿄 앱 무사 확인 — `BUILD b68`, 작업트리 0건, Supabase 흔적 없음
+
+### 다음 — 구글 로그인
+
+- [ ] Google Cloud Console 에 OAuth 클라이언트 생성
+- [ ] Supabase Authentication → Google 활성화 (Client ID/Secret)
+- [ ] Site URL 과 Redirect URL 설정 — 이걸 빠뜨리면 로그인 후 되돌아오지 못한다
+- [ ] 로그인 버튼 · 세션 유지 · 프로필 자동 생성 확인
 - [ ] Storage 버킷 `trip-files` + 정책
 - [ ] 로그인 · 여행 목록 · 새 여행 · 초대 코드
 - [ ] 일정 화면 (도쿄 앱에서 이식)
