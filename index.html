@@ -487,10 +487,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       </div>
 
       <div class="card">
-        <h2>한 줄평</h2>
+        <h2>한줄평</h2>
         <input id="cv_note" placeholder="이 도시, 한 줄로 남긴다면?" maxlength="200">
-        <div class="empty" style="text-align:left; padding:8px 0 0">
-          한 줄평은 다른 사람에게도 보입니다.
+        <!-- 버튼이 없으면 다 쓰고 나서 뭘 해야 할지 모릅니다.
+             비어 있으면 지우기로 바뀝니다. -->
+        <div class="row" style="border:0; padding:8px 0 0; margin:0; gap:8px">
+          <span class="empty grow" style="text-align:left; padding:0">
+            한줄평은 다른 사람에게도 보입니다.</span>
+          <button class="primary" id="cv_save" style="padding:8px 16px" disabled>등록</button>
         </div>
         <div id="cv_comments"></div>
       </div>
@@ -640,7 +644,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
                 <button class="small" id="n_cancel">취소</button>
               </div>
               <div class="empty" style="padding:8px 0 0; text-align:left">
-                한 줄평과 일행 목록에 이 이름으로 보입니다.
+                한줄평과 일행 목록에 이 이름으로 보입니다.
                 처음에는 구글 계정 이름이 들어와 있습니다.
               </div>
             </div>
@@ -1047,7 +1051,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b54</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b55</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1911,6 +1915,7 @@ async function openCity(id){
   $('cv_stars').innerHTML  = starHtml(r.stars);
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
+  cvNoteDirty();
 
   /* 위키백과 요약. 없는 도시는 아래 사실만 보여줍니다. */
   $('cv_about').classList.toggle('hide', !c.summary);
@@ -1929,7 +1934,7 @@ async function openCity(id){
   ].filter(([, v]) => v).map(([k, v]) =>
     `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
 
-  /* 남들 한 줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
+  /* 남들 한줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
   const { data: cm } = await sb.rpc('city_comments', { p_city: id });
   const others = (cm || []).filter(x => x.user_id !== me.id);
   $('cv_comments').innerHTML = others.length
@@ -2009,8 +2014,24 @@ $('cityview').addEventListener('click', async e => {
     $('cv_want').classList.toggle('on', !!myRates[cityOpen.id]?.want);
   }
 });
-$('cv_note').addEventListener('change', () =>
-  saveRate(cityOpen.id, { comment: $('cv_note').value.trim() || null }));
+/* 쓴 것이 저장된 것과 다를 때만 버튼이 살아납니다 —
+   눌러도 아무 일 없는 버튼이 켜져 있으면 저장됐는지 헷갈립니다. */
+function cvNoteDirty(){
+  const now   = $('cv_note').value.trim();
+  const saved = (myRates[cityOpen?.id]?.comment || '').trim();
+  const b = $('cv_save');
+  b.disabled = now === saved;
+  b.textContent = now ? '등록' : '지우기';
+}
+$('cv_note').addEventListener('input', cvNoteDirty);
+$('cv_save').addEventListener('click', async () => {
+  const v = $('cv_note').value.trim() || null;
+  $('cv_save').disabled = true;
+  await saveRate(cityOpen.id, { comment: v });
+  $('cv_save').textContent = v ? '등록됨' : '지웠습니다';
+  /* 남들 한줄평 목록에 내 것이 바로 끼어들어야 남긴 느낌이 납니다. */
+  await openCity(cityOpen.id);
+});
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * 세 덩어리입니다.
@@ -3884,6 +3905,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
