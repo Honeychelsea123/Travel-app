@@ -976,6 +976,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <input id="c_title" placeholder="예: 판테온" maxlength="60" enterkeyhint="done">
           <button class="small" id="c_add" style="flex:none">담기</button>
         </div>
+        <!-- 좌표가 없으면 빈 시간 계산에서 빠집니다. 한 번에 채웁니다. -->
+        <button class="ghost" id="geobtn" style="width:100%; margin-top:8px"></button>
         <pre id="canderr" class="hide"></pre>
       </div>
 
@@ -1227,7 +1229,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b62</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b63</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2574,7 +2576,97 @@ function drawCands(){
         <button class="ghost" data-canddel="${esc(c.id)}"
                 style="color:var(--bad)">×</button></div>`).join('')
     : '<div class="empty">담아둔 곳이 없습니다. AI 제안에서 담거나 아래에 적으세요.</div>';
+  drawGeoBtn();
 }
+
+/* ── 좌표 채우기 ─────────────────────────────────────────────────────
+ * 좌표가 없으면 빈 시간 계산과 이동 어림에서 그 줄이 통째로 빠집니다.
+ * 도쿄 앱처럼 OpenStreetMap 을 씁니다 — 키도 한도도 없고 AI 횟수도 안 씁니다.
+ * 다만 초당 한 번이 그쪽 규칙이라 사이를 띄우고, 실패하면 더 두드리지 않습니다. */
+let geoBusy = false;
+
+/* 일정 제목은 장소 이름이 아닌 게 많습니다.
+ * "호텔 ➡️ 콜로세움 이동"은 두 지점이고 "트라스테베레 산책 & 저녁"은 할 일입니다.
+ * 찾을 만한 이름을 뽑아 넓혀가며 시도합니다.
+ * 이동 줄은 도착지를 씁니다 — 그 일정이 끝났을 때 서 있는 자리가 도착지입니다. */
+function geoQueries(title){
+  const t = String(title || '').replace(/[➡→⇒]️?|->/g, '>').replace(/\s+/g, ' ').trim();
+  const out = [];
+  const add = s => { s = String(s || '').replace(/\s+/g, ' ').trim();
+                     if (s && !out.includes(s)) out.push(s); };
+  const main = t.includes('>') ? t.split('>').pop() : t;
+  add(main.replace(/\s*이동\s*$/, ''));
+  if (!t.includes('>')) add(t);
+  const base = main.split(/[&/·,]/)[0]
+    .replace(/(쇼핑|점심|저녁|아침|브런치|산책|구경|관람|투어|체험|픽업|이동|출발|도착|입국|출국|체크인|체크아웃)/g, ' ');
+  add(base);
+  add(base.trim().split(' ')[0]);
+  return out.slice(0, 3);
+}
+
+async function osmLookup(q){
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' +
+            encodeURIComponent(q);
+  try {
+    const r = await fetch(u, { headers: { 'Accept-Language': 'ko,en' } });
+    if (!r.ok) return r.status === 429 ? 'stop' : null;
+    const a = await r.json();
+    if (!a?.length) return null;
+    const lat = Number(a[0].lat), lng = Number(a[0].lon);
+    return (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
+  } catch { return null; }
+}
+
+/* 좌표가 없는 것들. 일정과 후보를 한 목록으로 다룹니다 —
+   버튼을 따로 두면 두 번 눌러야 하고 어느 쪽이 남았는지도 헷갈립니다. */
+const needCoord = () => [
+  ...(plans || []).filter(p => p.lat == null)
+    .map(p => ({ kind:'plans', id:p.id, title:p.title, date:p.date })),
+  ...(cands || []).filter(c => c.lat == null)
+    .map(c => ({ kind:'candidates', id:c.id, title:c.title })),
+];
+
+function drawGeoBtn(){
+  const n = needCoord().length;
+  const b = $('geobtn');
+  b.classList.toggle('hide', !n && !geoBusy);
+  b.textContent = geoBusy ? '중단하기' : `좌표 없는 ${n}곳 채우기`;
+}
+
+$('geobtn').addEventListener('click', async () => {
+  if (geoBusy){ geoBusy = false; return; }
+  const list = needCoord();
+  if (!list.length) return;
+  geoBusy = true; drawGeoBtn();
+  let done = 0, miss = 0;
+
+  for (const it of list){
+    if (!geoBusy) break;
+    /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
+    const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
+    let hit = null;
+    for (const q of geoQueries(it.title)){
+      hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
+      if (hit === 'stop'){ geoBusy = false; break; }
+      if (hit) break;
+      await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
+    }
+    if (!geoBusy) break;
+    if (hit && hit !== 'stop'){
+      const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
+        .eq('id', it.id).select('id');
+      if (!r.error && r.data?.length) done++;
+    } else miss++;
+    $('geobtn').textContent = `채우는 중… ${done + miss}/${list.length}`;
+    await new Promise(r => setTimeout(r, 1100));
+  }
+
+  geoBusy = false;
+  await loadPlans();
+  await loadCands();
+  if (miss) fail(`${done}곳을 채웠습니다. ${miss}곳은 못 찾았습니다 — ` +
+                 `이름을 장소 이름으로 고치면 찾을 수 있습니다.`, 'cand');
+}, false);
 
 async function loadCands(){
   if (!trip) return;
@@ -4726,6 +4818,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
