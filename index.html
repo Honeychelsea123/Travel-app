@@ -286,8 +286,11 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 등장방형 도법이라 위경도에서 화면 좌표가 바로 나옵니다. */
 /* 높이를 CSS 로 못박아야 확대가 됩니다. height:auto 로 두면 높이가 viewBox 에서
    나오고, viewBox 를 다시 높이에서 계산해야 해서 서로 물립니다. */
+/* 세로를 vh 로 잡았더니 지도보다 길어져서, 맞추느라 저절로 확대됐습니다.
+   지도와 같은 비율(1000:387)로 두면 세계 전체가 여백 없이 딱 들어갑니다.
+   비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
 .mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
-          height:clamp(200px, 42vh, 380px); }
+          aspect-ratio:1000 / 387; }
 /* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
 #worldsvg{ width:100%; height:100%; display:block; touch-action:none;
            cursor:grab; user-select:none; }
@@ -581,6 +584,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div class="label" style="font-weight:600; margin-top:6px">어느 여행</div>
         <div class="days" id="d_trips" style="margin-top:6px"></div>
 
+        <!-- 여기서 새 여행도 만듭니다. 만들러 갔다가 다시 돌아오게 하면
+             중간에 그만두는 사람이 생깁니다. -->
+        <div id="d_new" class="hide" style="margin-top:10px">
+          <label for="d_city">어디로</label>
+          <input id="d_city" list="citylist" maxlength="40" placeholder="예: 로마">
+          <div class="two">
+            <div><label for="d_start">시작</label><input type="date" id="d_start"></div>
+            <div><label for="d_days">며칠</label>
+              <input type="number" id="d_days" min="1" max="30" value="4"></div>
+          </div>
+        </div>
+
         <div class="label" style="font-weight:600; margin-top:14px">속도</div>
         <div class="days" id="d_pace" style="margin-top:6px">
           <span class="day" data-pace="slow">느긋하게</span>
@@ -814,9 +829,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
               <g id="pins"></g>
             </svg>
           </div>
-          <div class="days" id="mapzoom" style="margin-top:10px"></div>
-          <div class="memo" style="text-align:center; margin-top:6px">
-            끌어서 옮기고 두 손가락으로 키웁니다 · 핀을 누르면 그 도시가 열립니다</div>
+          <!-- 대륙 칩과 안내 문구는 뺐습니다. 대륙으로 당겨 보는 것은 아래
+               "대륙별" 줄을 누르면 되고, 손가락 안내는 눌러 보면 압니다. -->
         </div>
 
         <div class="card"><h2>전체</h2><div id="m_total"></div></div>
@@ -1213,7 +1227,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b61</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b62</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2632,28 +2646,53 @@ async function openDraft(){
     .select('id,title,destination,start_date,end_date')
     .is('archived_at', null).gte('end_date', today).order('start_date').limit(20);
 
-  /* 여행이 없으면 짤 대상이 없습니다. 만드는 화면으로 보냅니다. */
-  if (!data?.length){
-    showApp('trips');
-    $('newbtn').click();
-    return fail('먼저 여행을 만들어주세요. 날짜와 목적지가 있어야 일정을 짤 수 있습니다.',
-                'form');
-  }
-
   ['homeview','listview','rateview','aiview','setview','cityview']
     .forEach(v => $(v).classList.add('hide'));
   $('draftview').classList.remove('hide');
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'draft') history.pushState({ t2:'draft' }, '');
 
-  draftTrip = draftTrip && data.some(t => t.id === draftTrip) ? draftTrip : data[0].id;
-  $('d_trips').innerHTML = data.map(t => {
+  /* 여행이 하나도 없으면 새로 만드는 쪽이 처음부터 열려 있어야 합니다. */
+  const list = data || [];
+  draftTrip = list.some(t => t.id === draftTrip) ? draftTrip
+            : (list[0]?.id || 'new');
+  $('d_trips').innerHTML = list.map(t => {
     const n = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
     return `<span class="day${t.id === draftTrip ? ' on' : ''}" data-dtrip="${esc(t.id)}">
       ${esc(t.title)} <span class="n">${n}일</span></span>`;
-  }).join('');
+  }).join('') +
+    `<span class="day${draftTrip === 'new' ? ' on' : ''}" data-dtrip="new">+ 새 여행</span>`;
+
+  await loadCities();
+  fillCityList();
+  $('d_new').classList.toggle('hide', draftTrip !== 'new');
+  if (!$('d_start').value) $('d_start').value = ymd(new Date(Date.now() + 14 * D1));
   $('d_result').innerHTML = '';
   $('drafterr').classList.add('hide');
+}
+
+/* 새 여행을 골랐으면 먼저 만듭니다. 만들어야 구간이 생기고,
+   구간이 있어야 도시별로 짤 수 있습니다. 만든 여행의 id 를 돌려줍니다. */
+async function makeDraftTrip(){
+  const name = $('d_city').value.trim();
+  const start = $('d_start').value;
+  const n = Math.min(30, Math.max(1, Number($('d_days').value) || 0));
+  if (!name)  { fail('어디로 가는지 골라주세요.', 'draft'); return null; }
+  if (!start) { fail('시작하는 날을 골라주세요.', 'draft'); return null; }
+
+  const city = (cities || []).find(c =>
+    [c.name, c.name_en, c.name_local].some(v => v && v.toLowerCase() === name.toLowerCase()));
+  const end = ymd(new Date(asDate(start).getTime() + (n - 1) * D1));
+
+  const row = { title: `${city ? city.name : name} 여행`,
+                destination: city ? city.name : name,
+                start_date: start, end_date: end };
+  if (city) row.city_id = city.id;      /* 나라·통화·시간대·이동상수는 트리거가 채웁니다 */
+
+  const r = await sb.from('trips').insert(row).select('id').maybeSingle();
+  if (r.error){ fail(r.error, 'draft'); return null; }
+  if (!r.data?.id){ fail('여행이 만들어지지 않았습니다.', 'draft'); return null; }
+  return r.data.id;
 }
 
 function closeDraft(fromPop){
@@ -2670,6 +2709,7 @@ $('draftview').addEventListener('click', e => {
     draftTrip = t.dataset.dtrip;
     document.querySelectorAll('#d_trips .day').forEach(x =>
       x.classList.toggle('on', x.dataset.dtrip === draftTrip));
+    $('d_new').classList.toggle('hide', draftTrip !== 'new');
     return;
   }
   for (const [box, key] of [['d_pace','pace'], ['d_morning','morning']]){
@@ -2689,6 +2729,15 @@ $('d_go').addEventListener('click', async () => {
   $('drafterr').classList.add('hide');
   $('d_go').disabled = true; $('d_go').textContent = '짜는 중… 20초쯤 걸립니다';
   $('d_result').innerHTML = '';
+
+  /* 새 여행이면 먼저 만들고 그 여행에 짭니다. */
+  if (draftTrip === 'new'){
+    $('d_go').textContent = '여행 만드는 중…';
+    const id = await makeDraftTrip();
+    if (!id){ $('d_go').disabled = false; $('d_go').textContent = '일정 짜기'; return; }
+    draftTrip = id;
+    $('d_go').textContent = '짜는 중… 20초쯤 걸립니다';
+  }
 
   const prefs = {
     pace:    document.querySelector('#d_pace .on')?.dataset.pace || 'normal',
@@ -2840,10 +2889,9 @@ function setMapView(name){
   mapView = name;
   vb = { ...(CONT_VIEW[name] || CONT_VIEW['전체']) };
   applyView();
-  $('mapzoom').innerHTML = ['전체', ...CONT.map(c => c[0])]
-    .map(k => `<span class="day${k === mapView ? ' on' : ''}" data-zoom="${esc(k)}">${
-      esc(k)}</span>`).join('');
 }
+/* 두 번 두드리면 세계 전체로 돌아옵니다. 대륙 칩을 뺐으니 되돌릴 길이 있어야 합니다. */
+$('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
 
 /* ── 손가락과 휠 ─────────────────────────────────────────────────────
  * 대륙 칩만으로는 원하는 데를 못 봅니다. 끌어서 옮기고 오므려서 키웁니다.
@@ -4678,6 +4726,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
