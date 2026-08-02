@@ -217,11 +217,17 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
        color:#f5a623; font-style:normal; }
 .st i::before{ content:'★'; }
 
-.rrow{ display:flex; align-items:center; gap:10px; padding:11px 0; }
+.rrow{ display:flex; align-items:flex-start; gap:12px; padding:12px 0; }
 .rrow + .rrow{ border-top:1px solid var(--divider-soft); }
 .rrow .t{ flex:1; min-width:0; }
 .rrow .t b{ display:block; }
-.rrow .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.rrow .memo{ display:block; color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.rrow .stars{ margin-top:6px; }
+/* 왓챠의 포스터 자리. 사진이 없으면 첫 글자로 대신합니다. */
+.thumb{ width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; flex:none;
+        background:var(--parchment); }
+.thumb.ph{ display:flex; align-items:center; justify-content:center;
+           font-size:calc(21px * var(--ts)); font-weight:650; color:var(--ink-48); }
 .want, .been{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px;
               color:var(--hairline); }
 .want.on{ color:#e0245e; }
@@ -366,6 +372,19 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div class="card">
         <h2><span class="grow">도시</span><span class="val" id="r_count"></span></h2>
         <div id="ratelist"><div class="empty">불러오는 중…</div></div>
+
+        <!-- 세상의 도시를 다 넣을 수는 없습니다. 없으면 직접 넣습니다.
+             나라는 목록에서 고릅니다 — 통화·언어·시간대가 거기 붙어 있습니다. -->
+        <div id="addcity" class="hide" style="margin-top:12px">
+          <div class="picked" style="display:block">
+            <div class="c">목록에 없는 도시인가요?</div>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <select id="ac_country" style="flex:1; min-width:0"></select>
+              <button class="small" id="ac_add" style="flex:none">넣기</button>
+            </div>
+            <div class="c" id="ac_hint" style="margin-top:6px"></div>
+          </div>
+        </div>
         <pre id="rateerr" class="hide"></pre>
       </div>
     </div>
@@ -908,7 +927,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b38</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b39</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -996,7 +1015,7 @@ async function loadCities(){
   if (cities) return;
   const [cs, ns] = await Promise.all([
     sb.from('cities')
-      .select('id,name,name_en,name_local,country,currency,timezone,transit_grade')
+      .select('id,name,name_en,name_local,country,currency,timezone,transit_grade,image_url')
       .order('name'),
     sb.from('countries').select('code,name,currency,local_lang,default_timezone').order('name')
   ]);
@@ -1553,6 +1572,7 @@ function starHtml(v){
 async function loadRatings(){
   $('rateerr').classList.add('hide');
   await loadCities();
+  fillCityList();
   const [mine, stats, vis] = await Promise.all([
     sb.from('city_ratings').select('city_id,stars,want').eq('user_id', me.id),
     sb.rpc('city_stats'),
@@ -1604,26 +1624,69 @@ function drawRatings(){
   const n = Object.values(myRates).filter(r => r.stars != null).length;
   $('r_count').textContent = n ? `${n}곳 매김` : '';
 
-  if (!list.length){ $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없습니다.</div>';
-                     return; }
+  /* 찾는 이름이 목록에 없으면 직접 넣을 수 있게 안내합니다. */
+  const exact = q && (cities || []).some(c => c.name.toLowerCase() === q);
+  const canAdd = q.length >= 2 && !cho && !exact;
+  $('addcity').classList.toggle('hide', !canAdd);
+  if (canAdd) $('ac_hint').textContent =
+    `"${$('r_q').value.trim()}" 을(를) 이 나라의 도시로 넣습니다.`;
+
+  if (!list.length && !canAdd){
+    $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없습니다.</div>';
+    return;
+  }
 
   $('ratelist').innerHTML = list.slice(0, 80).map(c => {
     const r = myRates[c.id] || {}, s = cityStat[c.id];
     const todo = visited.has(c.id) && r.stars == null;
     return `<div class="rrow">
+      ${c.image_url
+        ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
+               onerror="this.replaceWith(Object.assign(document.createElement('span'),
+                 {className:'thumb ph', textContent:'${esc(c.name.slice(0,1))}'}))">`
+        : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
       <div class="t"><b>${esc(c.name)}</b>
         ${todo ? '<span class="ktag" style="--kc:#f5a623">평가 대기</span>' : ''}
         <span class="memo">${esc(countryName[c.country] || c.country)}${
           visited.has(c.id) ? ' · 다녀옴' : ''}${
           s?.n_rated ? ` · 평균 ${Number(s.avg_stars).toFixed(1)} (${s.n_rated}명)` : ''}</span>
+        <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
       </div>
-      <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
       <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}"
               title="가보고 싶어요">♡</button>
     </div>`;
   }).join('') + (list.length > 80
     ? `<div class="empty">${list.length - 80}곳 더 있습니다. 검색해서 찾으세요.</div>` : '');
 }
+
+$('ac_add').addEventListener('click', async () => {
+  const name = $('r_q').value.trim();
+  if (name.length < 2) return;
+  $('rateerr').classList.add('hide');
+  $('ac_add').disabled = true;
+
+  /* 나라만 넘기면 통화·언어·시간대는 004 의 트리거가 채웁니다.
+     좌표와 이동 등급은 비워 둡니다 — 나중에 채우면 이동시간 검사가 좋아집니다. */
+  const { data, error } = await sb.from('cities')
+    .insert({ name, country: $('ac_country').value, created_by: me.id })
+    .select('id,name,name_en,name_local,country,currency,timezone,transit_grade,image_url')
+    .maybeSingle();
+  $('ac_add').disabled = false;
+
+  if (error){
+    return fail(/duplicate|unique/i.test(error.message)
+      ? '그 나라에 같은 이름의 도시가 이미 있습니다.' : error, 'rate');
+  }
+  if (!data) return fail('저장되지 않았습니다 (0건).', 'rate');
+
+  /* 목록 뭉치에 바로 끼워 넣습니다. 다시 받아오면 화면이 한 번 껌뻑입니다. */
+  cities.push({ ...data,
+    _hay: [data.name, data.name_en, data.name_local, countryName[data.country]]
+            .filter(Boolean).join(' ').toLowerCase(),
+    _cho: chosung(data.name) });
+  $('r_q').value = data.name;
+  drawRatings();
+});
 
 $('r_q').addEventListener('input', drawRatings);
 $('r_filter').addEventListener('click', e => {
@@ -2169,12 +2232,14 @@ function drawLegs(){
 /* 도시 목록은 native datalist 로 답니다. 폼이 여럿이라 직접 만든 검색을
    또 붙이면 코드가 두 벌이 됩니다. 모바일에서도 native 가 더 편합니다. */
 function fillCityList(){
-  if (!cities || $('citylist').children.length) return;
+  if (!cities) return;
   $('citylist').innerHTML = cities.map(c =>
     `<option value="${esc(c.name)}">${esc(countryName[c.country] || c.country)}</option>`).join('');
-  $('g_country').innerHTML = Object.entries(countryName)
+  const opts = Object.entries(countryName)
     .sort((a,b) => a[1].localeCompare(b[1], 'ko'))
     .map(([code, nm]) => `<option value="${esc(code)}">${esc(nm)}</option>`).join('');
+  $('g_country').innerHTML = opts;
+  $('ac_country').innerHTML = opts;    /* 도시를 직접 넣을 때 고르는 나라 */
 }
 
 /* 목록에 없는 도시를 치면 나라를 물어봅니다. */
@@ -3245,6 +3310,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
