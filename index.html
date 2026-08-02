@@ -71,13 +71,34 @@ input, select{ font:inherit; width:100%; padding:10px 12px; border-radius:11px;
 .me .mail{ color:var(--dim); font-size:calc(12px * var(--ts)); font-weight:400;
            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-.trip{ display:flex; align-items:center; gap:12px; padding:12px 0; }
+.trip{ display:flex; align-items:center; gap:12px; padding:12px 0; cursor:pointer; }
 .trip + .trip{ border-top:1px solid var(--line); }
 .trip .t{ flex:1; min-width:0; }
 .trip .t b{ display:block; }
 .trip .meta{ color:var(--dim); font-size:calc(12px * var(--ts)); }
 .badge{ font-size:calc(11px * var(--ts)); padding:2px 8px; border-radius:999px;
         background:var(--sunk); border:1px solid var(--line); color:var(--dim); flex:none; }
+
+/* 날짜 칩 — 가로로 밀어서 봅니다. 긴 여행이면 줄바꿈보다 이게 낫습니다 */
+.days{ display:flex; gap:6px; overflow-x:auto; padding-bottom:10px; margin-bottom:4px;
+       scrollbar-width:none; }
+.days::-webkit-scrollbar{ display:none; }
+.day{ flex:none; padding:6px 12px; border-radius:999px; border:1px solid var(--line);
+      background:var(--sunk); color:var(--dim); cursor:pointer;
+      font-size:calc(13px * var(--ts)); white-space:nowrap; }
+.day.on{ background:var(--accent); color:#fff; border-color:transparent; font-weight:600; }
+.day .n{ opacity:.7; font-size:.9em; margin-left:4px; }
+
+.plan{ display:flex; gap:12px; padding:12px 0; }
+.plan + .plan{ border-top:1px solid var(--line); }
+.plan .when{ flex:none; width:52px; color:var(--dim); font-size:calc(12px * var(--ts));
+             font-variant-numeric:tabular-nums; padding-top:2px; }
+.plan .body{ flex:1; min-width:0; }
+.plan .body b{ display:block; }
+.plan .body .memo{ color:var(--dim); font-size:calc(12px * var(--ts)); }
+.daysep{ margin:14px 0 2px; color:var(--dim); font-size:calc(12px * var(--ts));
+         font-weight:600; }
+.plan:first-child, .daysep:first-child{ padding-top:0; }
 
 .row{ display:flex; align-items:center; gap:10px; }
 .row + .row{ margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
@@ -125,6 +146,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
       </div>
     </div>
 
+    <div id="listview">
     <div class="card">
       <h2><span class="grow" id="listtitle">내 여행</span>
         <button class="ghost" id="archbtn">보관함</button>
@@ -173,8 +195,61 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
       </div>
       <pre id="formerr" class="hide"></pre>
     </div>
+    </div><!-- /listview -->
 
-    <div class="card">
+    <!-- 여행 상세 -->
+    <section id="tripview" class="hide">
+      <div class="card">
+        <button class="ghost" id="backbtn" style="padding-left:0">← 내 여행</button>
+        <div style="font-weight:650; font-size:calc(17px * var(--ts)); margin-top:6px"
+             id="t_title">—</div>
+        <div class="meta" id="t_meta"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="grow">일정</span>
+          <button class="small" id="addplanbtn">+ 추가</button></h2>
+        <div class="days" id="days"></div>
+        <div id="plans"><div class="empty">불러오는 중…</div></div>
+        <pre id="planerr" class="hide"></pre>
+      </div>
+
+      <div class="card hide" id="plancard">
+        <h2>일정 추가</h2>
+        <label for="p_title">무엇을</label>
+        <input id="p_title" placeholder="예: 센소지" maxlength="60">
+
+        <label for="p_date">언제</label>
+        <input type="date" id="p_date">
+
+        <div class="two">
+          <div><label for="p_start">시작 (선택)</label><input type="time" id="p_start"></div>
+          <div><label for="p_end">끝 (선택)</label><input type="time" id="p_end"></div>
+        </div>
+
+        <label for="p_cat">분류</label>
+        <select id="p_cat">
+          <option value="">없음</option>
+          <option value="식사">식사</option>
+          <option value="관광">관광</option>
+          <option value="쇼핑">쇼핑</option>
+          <option value="이동">이동</option>
+          <option value="숙소">숙소</option>
+          <option value="기타">기타</option>
+        </select>
+
+        <label for="p_memo">메모 (선택)</label>
+        <input id="p_memo" placeholder="예: 긴자선 3정거장" maxlength="200">
+
+        <div style="margin-top:16px; display:flex; gap:8px">
+          <button class="primary" id="p_create">넣기</button>
+          <button class="small" id="p_cancel">취소</button>
+        </div>
+        <pre id="planformerr" class="hide"></pre>
+      </div>
+    </section>
+
+    <div class="card" id="acctcard">
       <h2>계정 확인</h2>
       <div class="row"><span class="dot" id="dp"></span>
         <span class="label">프로필 자동 생성</span><span class="val" id="vp">—</span></div>
@@ -196,7 +271,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b10</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b11</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -218,7 +293,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
-    picked = null, hitList = [], cursor = 0, showArchived = false;
+    picked = null, hitList = [], cursor = 0, showArchived = false,
+    trip = null, plans = [], pickedDay = null;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -228,7 +304,8 @@ function mark(id, ok, text){
   $('v'+id).textContent = text;
 }
 function fail(e, where){
-  const box = where === 'form' ? $('formerr') : where === 'trip' ? $('triperr') : $('err');
+  const box = { form:$('formerr'), trip:$('triperr'),
+                plan:$('planerr'), planform:$('planformerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -488,7 +565,7 @@ async function loadTrips(){
                       : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
-    return `<div class="trip"><div class="t">
+    return `<div class="trip" data-open="${esc(t.id)}"><div class="t">
       <b>${esc(t.title)}</b>
       <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일<br>
       ${esc(t.currency)} · ${esc(t.timezone)} · 이동 ×${esc(t.transit_factor)}</span>
@@ -501,7 +578,12 @@ async function loadTrips(){
    상자 하나에만 붙이고 눌린 버튼을 찾아 씁니다. */
 $('trips').addEventListener('click', async e => {
   const b = e.target.closest('button[data-act]');
-  if (!b) return;
+  if (!b){
+    /* 버튼이 아니면 줄을 누른 것입니다 — 그 여행을 엽니다. */
+    const row = e.target.closest('.trip[data-open]');
+    if (row) await openTrip(row.dataset.open);
+    return;
+  }
   const { act, id, title } = b.dataset;
 
   if (act === 'cancelact') return loadTrips();
@@ -554,6 +636,191 @@ $('trips').addEventListener('click', async e => {
   await loadTrips();
 });
 
+/* ── 여행 상세 ──────────────────────────────────────────────────── */
+const D1 = 864e5;
+const ymd = d => d.toISOString().slice(0,10);
+const hm  = t => t ? String(t).slice(0,5) : '';
+
+/* 문서의 표시 규칙 그대로입니다.
+     여행 기간 안  Day 1 · 9월 12일 토요일
+     시작 전       9월 5일 · 여행 전
+     끝난 뒤       9월 18일 · 여행 후
+   Day 번호는 start_date 로 계산합니다. 저장하지 않습니다. */
+function dayLabel(dateStr, t){
+  const d = new Date(dateStr + 'T00:00:00');
+  const s = new Date(t.start_date + 'T00:00:00');
+  const e = new Date(t.end_date   + 'T00:00:00');
+  const f = d.toLocaleDateString('ko-KR', { month:'long', day:'numeric', weekday:'long' });
+  if (d < s) return `${f} · 여행 전`;
+  if (d > e) return `${f} · 여행 후`;
+  return `Day ${Math.round((d - s) / D1) + 1} · ${f}`;
+}
+
+async function openTrip(id){
+  const { data, error } = await sb.from('trips')
+    .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle();
+  if (error || !data) return fail(error || '여행을 열지 못했습니다.', 'trip');
+
+  trip = data;
+  trip.myRole = (data.trip_members || []).find(m => m.user_id === me.id)?.role || '';
+  pickedDay = null;
+
+  $('listview').classList.add('hide');
+  $('acctcard').classList.add('hide');
+  $('tripview').classList.remove('hide');
+  $('plancard').classList.add('hide');
+
+  const days = Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / D1) + 1;
+  $('t_title').textContent = trip.title;
+  $('t_meta').innerHTML =
+    `${esc(trip.destination)} · ${esc(trip.start_date)} ~ ${esc(trip.end_date)} · ${days}일<br>` +
+    `${esc(trip.currency)} · ${esc(trip.timezone)} · 이동 ×${esc(trip.transit_factor)}` +
+    `+${esc(trip.transit_base_min)}분 · 도보 ${esc(trip.walk_max_km)}km 미만`;
+  /* 보기만 가능한 사람에겐 추가 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
+  $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
+  await loadPlans();
+}
+
+$('backbtn').addEventListener('click', () => {
+  trip = null;
+  $('tripview').classList.add('hide');
+  $('listview').classList.remove('hide');
+  $('acctcard').classList.remove('hide');
+});
+
+async function loadPlans(){
+  $('planerr').classList.add('hide');
+  const { data, error } = await sb.from('plans')
+    .select('id,date,start_time,end_time,category,title,memo,move_note,sort_order')
+    .eq('trip_id', trip.id)
+    .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
+    .order('date').order('start_time', { nullsFirst:false }).order('sort_order');
+  if (error){ $('plans').innerHTML = ''; return fail(error, 'plan'); }
+  plans = data;
+  drawDays();
+  drawPlans();
+}
+
+function drawDays(){
+  /* 여행 기간의 날짜 + 기간 밖에 일정이 있는 날짜를 합쳐 칩을 만듭니다.
+     한국에서 미리 산 항공권처럼 기간 밖 일정이 실제로 생깁니다. */
+  const set = new Set();
+  for (let d = new Date(trip.start_date + 'T00:00:00');
+       ymd(d) <= trip.end_date; d = new Date(d.getTime() + D1)) set.add(ymd(d));
+  plans.forEach(p => set.add(p.date));
+  const list = [...set].sort();
+
+  const count = d => plans.filter(p => p.date === d).length;
+  $('days').innerHTML =
+    `<button class="day${pickedDay === null ? ' on' : ''}" data-day="">전체
+       <span class="n">${plans.length}</span></button>` +
+    list.map(d => {
+      const n = count(d), lab = dayLabel(d, trip);
+      const short = lab.startsWith('Day') ? lab.split(' · ')[0]
+                                          : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
+      return `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">${esc(short)}` +
+             (n ? `<span class="n">${n}</span>` : '') + `</button>`;
+    }).join('');
+}
+
+function drawPlans(){
+  const show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
+  if (!show.length){
+    $('plans').innerHTML = `<div class="empty">${pickedDay ? '이 날은 비어 있습니다.'
+      : '아직 일정이 없습니다.<br>+ 추가를 눌러 넣어보세요.'}</div>`;
+    return;
+  }
+  let html = '', last = null;
+  for (const p of show){
+    if (p.date !== last){                       /* 전체 보기에서 날짜가 바뀌면 머리글 */
+      if (!pickedDay) html += `<div class="daysep">${esc(dayLabel(p.date, trip))}</div>`;
+      last = p.date;
+    }
+    const when = p.start_time ? hm(p.start_time) + (p.end_time ? `<br>~${hm(p.end_time)}` : '')
+                              : '<span style="opacity:.5">–</span>';
+    const sub = [p.category, p.memo, p.move_note].filter(Boolean).join(' · ');
+    html += `<div class="plan"><div class="when">${when}</div>
+      <div class="body"><b>${esc(p.title)}</b>
+        ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
+      ${trip.myRole === 'viewer' ? '' :
+        `<button class="ghost" data-pact="del" data-id="${esc(p.id)}"
+                 style="color:var(--bad); align-self:start">×</button>`}</div>`;
+  }
+  $('plans').innerHTML = html;
+}
+
+$('days').addEventListener('click', e => {
+  const b = e.target.closest('.day'); if (!b) return;
+  pickedDay = b.dataset.day || null;
+  drawDays(); drawPlans();
+});
+
+/* ── 일정 추가 · 삭제 ───────────────────────────────────────────── */
+$('addplanbtn').addEventListener('click', () => {
+  $('plancard').classList.toggle('hide');
+  if ($('plancard').classList.contains('hide')) return;
+  $('p_date').value = pickedDay || trip.start_date;
+  $('p_date').min = '';                    /* 여행 기간 밖도 넣을 수 있어야 합니다 */
+  $('p_title').focus();
+});
+$('p_cancel').addEventListener('click', () => {
+  $('plancard').classList.add('hide'); $('planformerr').classList.add('hide');
+});
+
+$('p_create').addEventListener('click', async () => {
+  const btn = $('p_create');
+  $('planformerr').classList.add('hide');
+  const title = $('p_title').value.trim(), date = $('p_date').value;
+  const st = $('p_start').value, et = $('p_end').value;
+
+  if (!title) return fail('무엇을 하는지 적어주세요.', 'planform');
+  if (!date)  return fail('날짜를 골라주세요.', 'planform');
+  if (st && et && et < st) return fail('끝나는 시각이 시작보다 빠릅니다.', 'planform');
+
+  /* 같은 날 맨 뒤로 보냅니다. 소수를 쓰면 나중에 둘 사이에 끼울 때
+     그 둘만 건드리면 됩니다 — 같이 편집할 때 서로의 순서를 안 덮습니다. */
+  const sameDay = plans.filter(p => p.date === date);
+  const sort = sameDay.length ? Math.max(...sameDay.map(p => +p.sort_order)) + 1 : 0;
+
+  btn.disabled = true; btn.textContent = '넣는 중…';
+  const { data, error } = await sb.from('plans').insert({
+    trip_id: trip.id, title, date, sort_order: sort,
+    start_time: st || null, end_time: et || null,
+    category: $('p_cat').value || null,
+    memo: $('p_memo').value.trim() || null
+  }).select('id');
+  btn.disabled = false; btn.textContent = '넣기';
+
+  if (error) return fail(error, 'planform');
+  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건). 권한을 확인해주세요.',
+                                 'planform');
+
+  $('p_title').value = ''; $('p_memo').value = '';
+  $('p_start').value = ''; $('p_end').value = '';
+  $('plancard').classList.add('hide');
+  await loadPlans();
+});
+
+$('plans').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-pact]'); if (!b) return;
+  const id = b.dataset.id;
+
+  if (b.dataset.armed !== '1'){          /* 확인창을 안 쓰는 이유는 목록 쪽과 같습니다 */
+    b.dataset.armed = '1';
+    b.textContent = '정말 지울까요?';
+    b.style.fontWeight = '600';
+    return;
+  }
+  b.disabled = true;
+  /* 진짜 지우지 않고 숨깁니다. 여럿이 쓰면 남이 지운 것을 되살릴 방법이 필요합니다. */
+  const { data, error } = await sb.from('plans')
+    .update({ deleted_at: new Date().toISOString() }).eq('id', id).select('id');
+  b.disabled = false;
+  if (error) return fail(error, 'plan');
+  if (!data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'plan');
+  await loadPlans();
+});
+
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
   if (!session){
@@ -565,6 +832,9 @@ async function render(session){
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
+  $('tripview').classList.add('hide');           /* 다시 그릴 때는 목록부터 */
+  $('listview').classList.remove('hide');
+  $('acctcard').classList.remove('hide');
   $('sub').textContent = '로그인됨.';
 
   const meta = me.user_metadata || {};
@@ -602,6 +872,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
