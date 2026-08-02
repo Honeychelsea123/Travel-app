@@ -624,7 +624,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div class="row" style="border:0; padding:8px 0 0; margin:0; gap:8px">
           <span class="empty grow" style="text-align:left; padding:0">
             한줄평은 다른 사람에게도 보입니다.</span>
-          <button class="primary" id="cv_save" style="padding:8px 16px" disabled>등록</button>
+          <!-- .primary 는 flex:1 이라 그대로 쓰면 줄을 다 먹습니다. 여기선 붙박이로. -->
+          <button class="primary small" id="cv_save" style="flex:none" disabled>등록</button>
         </div>
         <div id="cv_comments"></div>
       </div>
@@ -1304,7 +1305,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b69</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b70</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -5049,6 +5050,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
