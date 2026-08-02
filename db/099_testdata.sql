@@ -1,8 +1,9 @@
--- =====================================================================
--- 개발용 시험 데이터 — 이탈리아 종단 (로마 → 피렌체 → 베네치아)
+﻿-- =====================================================================
+-- 개발용 시험 데이터 — 로마 → 피렌체 → 베네치아 → 바젤
 --
 -- 손으로 넣기 번거로운 것들을 한 번에 만듭니다.
---   구간 3개(도시가 바뀜) · 좌표가 붙은 일정 27개 · 지출 · 후보
+--   구간 4개 · 나라 2개(IT · CH) · 통화 3개(EUR · CHF · KRW)
+--   좌표가 붙은 일정 · 지출 · 후보
 --
 -- 검토가 걸어야 할 것들을 **일부러** 섞어 뒀습니다:
 --   겹치는 일정 · 하루 7개 · 이동 틈 0분 · 이른 체크인 · 빈 날 · 시각 미정
@@ -10,6 +11,16 @@
 -- 여러 번 실행해도 됩니다. 같은 이름의 시험 여행을 지우고 다시 만듭니다.
 -- **시험 여행만 지웁니다.** 직접 만드신 여행은 건드리지 않습니다.
 -- =====================================================================
+
+-- 바젤은 도시 목록에 없었습니다. 시험용이 아니라 실제로 있어야 할 도시라
+-- cities 에 제대로 넣습니다. (통화·언어는 트리거가 나라에서 채웁니다.)
+insert into public.cities
+  (id, name, name_local, name_en, country, center_lat, center_lng, timezone, transit_grade)
+values ('basel','바젤','Basel','Basel','CH', 47.5596, 7.5886, 'Europe/Zurich','normal')
+on conflict (id) do update set
+  name = excluded.name, center_lat = excluded.center_lat,
+  center_lng = excluded.center_lng, timezone = excluded.timezone,
+  transit_grade = excluded.transit_grade;
 
 do $$
 declare
@@ -24,21 +35,24 @@ begin
   if v_user is null then raise exception '가입한 사용자가 없습니다. 먼저 로그인하세요.'; end if;
 
   delete from public.trips
-   where title = '테스트 · 이탈리아 종단' and created_by = v_user;
+   where title in ('테스트 · 이탈리아 종단', '테스트 · 이탈리아 + 스위스')
+     and created_by = v_user;
 
   insert into public.trips
     (title, city_id, destination, start_date, end_date, home_currency, created_by)
-  values ('테스트 · 이탈리아 종단', 'rome', '로마',
-          date '2026-09-07', date '2026-09-14', 'KRW', v_user)
+  values ('테스트 · 이탈리아 + 스위스', 'rome', '로마',
+          date '2026-09-07', date '2026-09-17', 'KRW', v_user)
   returning id into v_trip;
 
-  -- 트리거가 만든 구간 하나를 지우고 셋으로 다시 넣습니다.
+  -- 트리거가 만든 구간 하나를 지우고 넷으로 다시 넣습니다.
   -- 경계는 그날 밤 자는 곳 기준입니다.
+  -- 바젤에서 나라가 IT → CH 로 바뀌고 통화도 EUR → CHF 로 바뀝니다.
   delete from public.trip_legs where trip_id = v_trip;
   insert into public.trip_legs (trip_id, city_id, destination, start_date, end_date) values
     (v_trip, 'rome',     '로마',     date '2026-09-07', date '2026-09-10'),
     (v_trip, 'florence', '피렌체',   date '2026-09-11', date '2026-09-12'),
-    (v_trip, 'venice',   '베네치아', date '2026-09-13', date '2026-09-14');
+    (v_trip, 'venice',   '베네치아', date '2026-09-13', date '2026-09-14'),
+    (v_trip, 'basel',    '바젤',     date '2026-09-15', date '2026-09-17');
 
   -- ── 일정 ──
   -- 좌표는 널리 알려진 곳의 중심 좌표입니다. 이동 시간 계산 시험용입니다.
@@ -88,7 +102,23 @@ begin
   -- Day 8 (9/14) 베네치아 — 시각 미정이 많은 하루
   (v_trip,'2026-09-14','10:00','13:00','관광','무라노 섬',null,          45.4585, 12.3537, 0),
   (v_trip,'2026-09-14',null,   null,   '쇼핑','기념품','시각 미정 시험',  45.4371, 12.3326, 1),
-  (v_trip,'2026-09-14',null,   null,   '식사','마지막 저녁',null,        45.4340, 12.3388, 2);
+  (v_trip,'2026-09-14',null,   null,   '식사','마지막 저녁',null,        45.4340, 12.3388, 2),
+
+  -- Day 9 (9/15) 베네치아 → 바젤 — 나라가 바뀝니다 (IT → CH, EUR → CHF)
+  (v_trip,'2026-09-15','08:20','15:40','이동','베네치아 → 바젤 기차','밀라노 환승',
+                                                                     null,    null,    0),
+  (v_trip,'2026-09-15','16:30','17:00','숙소','바젤 숙소 체크인',null,   47.5479, 7.5905, 1),
+  (v_trip,'2026-09-15','18:30','20:00','관광','미틀레레 다리 · 라인강',null,
+                                                                     47.5606, 7.5893, 2),
+
+  -- Day 10 (9/16) 바젤 — 미술관 하루
+  (v_trip,'2026-09-16','10:00','13:00','관광','바이엘러 재단',null,      47.5850, 7.6642, 0),
+  (v_trip,'2026-09-16','14:30','16:30','관광','팅겔리 박물관',null,      47.5620, 7.6119, 1),
+  (v_trip,'2026-09-16','18:00',null,   '식사','저녁',null,             47.5583, 7.5878, 2),
+
+  -- Day 11 (9/17) 바젤 — 마지막 날
+  (v_trip,'2026-09-17','09:30','11:00','관광','바젤 대성당',null,        47.5556, 7.5925, 0),
+  (v_trip,'2026-09-17','13:00',null,   '이동','바젤 공항 출발','BSL',    47.5896, 7.5299, 1);
 
   -- ── 지출 ── 통화가 섞인 상태를 봅니다 (선결제는 원화)
   insert into public.expenses
@@ -101,7 +131,12 @@ begin
     (v_trip,'2026-09-08','콜로세오 입장',          36,'EUR','관광', v_user),
     (v_trip,'2026-09-09','바티칸 입장',            40,'EUR','관광', v_user),
     (v_trip,'2026-09-11','기차 로마-피렌체',       58,'EUR','이동', v_user),
-    (v_trip,'2026-09-12','젤라토',                 12,'EUR','카페', v_user);
+    (v_trip,'2026-09-12','젤라토',                 12,'EUR','카페', v_user),
+    -- 여기부터 스위스. 통화가 CHF 로 바뀝니다.
+    (v_trip,'2026-09-15','기차 베네치아-바젤',     142,'CHF','이동', v_user),
+    (v_trip,'2026-09-15','바젤 저녁',               96,'CHF','식사', v_user),
+    (v_trip,'2026-09-16','바이엘러 재단 입장',      50,'CHF','관광', v_user),
+    (v_trip,'2026-09-16','커피',                    11,'CHF','카페', v_user);
 
   -- ── 후보 ── 아직 날짜를 안 정한 곳
   insert into public.candidates
@@ -122,37 +157,38 @@ end $$;
 select * from (
   select 1 as ord, '여행'::text as check,
          (select count(*)::text from public.trips
-           where title = '테스트 · 이탈리아 종단') as n,
-         '테스트 · 이탈리아 종단'::text as note
+           where title = '테스트 · 이탈리아 + 스위스') as n,
+         '테스트 · 이탈리아 + 스위스'::text as note
   union all
   select 2, '구간',
          (select count(*)::text from public.trip_legs l
            join public.trips t on t.id = l.trip_id
-          where t.title = '테스트 · 이탈리아 종단'),
-         '로마 · 피렌체 · 베네치아'
+          where t.title = '테스트 · 이탈리아 + 스위스'),
+         '로마 · 피렌체 · 베네치아 · 바젤 (IT/CH)'
   union all
   select 3, '일정',
          (select count(*)::text from public.plans p
            join public.trips t on t.id = p.trip_id
-          where t.title = '테스트 · 이탈리아 종단' and p.deleted_at is null),
+          where t.title = '테스트 · 이탈리아 + 스위스' and p.deleted_at is null),
          '9/10 은 일부러 비워 뒀습니다'
   union all
   select 4, '좌표 있는 일정',
          (select count(*)::text from public.plans p
            join public.trips t on t.id = p.trip_id
-          where t.title = '테스트 · 이탈리아 종단'
+          where t.title = '테스트 · 이탈리아 + 스위스'
             and p.deleted_at is null and p.lat is not null),
          '이동 시간 계산의 재료'
   union all
   select 5, '지출',
          (select count(*)::text from public.expenses e
            join public.trips t on t.id = e.trip_id
-          where t.title = '테스트 · 이탈리아 종단' and e.deleted_at is null),
-         'KRW 선결제 2건 + EUR 6건'
+          where t.title = '테스트 · 이탈리아 + 스위스' and e.deleted_at is null),
+         'KRW 2 + EUR 6 + CHF 4'
   union all
   select 6, '후보',
          (select count(*)::text from public.candidates c
            join public.trips t on t.id = c.trip_id
-          where t.title = '테스트 · 이탈리아 종단' and c.deleted_at is null),
+          where t.title = '테스트 · 이탈리아 + 스위스' and c.deleted_at is null),
          '날짜 안 정한 곳'
 ) t order by ord;
+
