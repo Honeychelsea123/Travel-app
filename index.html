@@ -6,42 +6,99 @@
 <title>Travel</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
+/* ═══ 토큰 — 도쿄 앱에서 그대로 옮겨왔습니다 ═══
+   애플 가이드에서 색·타입·여백은 유지하고 반경과 깊이만 유리로 바꾼 것입니다.
+   도쿄 앱은 밝은 바탕 하나로만 갑니다. 유리가 굴절할 대상이 있어야
+   흐림이 반투명 사각형으로 안 보이기 때문입니다. */
 :root{
-  color-scheme: light dark;
-  --bg:#0b0d10; --panel:#14171c; --line:#232830; --sunk:#0f1216;
-  --fg:#e7eaee; --dim:#98a2b0; --accent:#4c9aff;
-  --ok:#3fb950; --bad:#f85149;
-  --r:14px; --ts:1;             /* 글자 배율. 나중에 user_prefs 에서 온다 */
+  color-scheme: light;
+  --primary:#0066cc;  --primary-focus:#0071e3;
+  --ink:#1d1d1f;      --ink-80:#333333;   --ink-48:#6b6b70;
+  --divider-soft:#f0f0f0; --hairline:#e0e0e0;
+  --canvas:#ffffff;   --parchment:#f5f5f7; --pearl:#fafafc;
+
+  /* 분류 색 — 목록의 점과 딱지에만 씁니다. 버튼과 링크는 여전히 파랑 하나입니다. */
+  --k-food:#B65724; --k-move:#2F6DA8; --k-stay:#7154A0; --k-see:#2C7D58;
+  --k-shop:#B04A7C; --k-cafe:#866440; --k-etc:#7B7E85;
+
+  --lift-1:0 1px 1px rgba(20,25,45,.04), 0 6px 18px rgba(20,25,45,.06);
+  --lift-2:0 1px 2px rgba(20,25,45,.05), 0 14px 38px rgba(20,25,45,.10);
+
+  --r-sm:12px; --r-md:18px; --r-lg:26px; --r-xl:34px; --r-pill:9999px;
+  --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px;
+
+  --sf:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+       "Apple SD Gothic Neo", "Pretendard Variable", Pretendard, system-ui, sans-serif;
+
+  --ts:1;                       /* 글자 배율. 나중에 user_prefs 에서 온다 */
   --kb:0px;                     /* 키보드 높이. 아래 스크립트가 재서 넣는다 */
+  --sab:env(safe-area-inset-bottom, 0px);
+
+  /* 앞서 쓰던 이름들을 새 토큰에 이어 둡니다 — 화면 코드를 다시 안 써도 됩니다 */
+  --bg:var(--parchment); --panel:var(--canvas); --line:var(--hairline);
+  --sunk:var(--parchment); --fg:var(--ink); --dim:var(--ink-48);
+  --accent:var(--primary); --r:var(--r-lg);
+  --ok:#2C7D58; --bad:#c0392b;
 }
-@media (prefers-color-scheme: light){
-  :root{ --bg:#f7f8fa; --panel:#fff; --line:#e3e6ea; --sunk:#f0f2f5;
-         --fg:#12151a; --dim:#5b6472; }
-}
-*{ box-sizing:border-box; }
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body{
-  margin:0; min-height:100dvh; background:var(--bg); color:var(--fg);
-  font:calc(15px * var(--ts))/1.6 Pretendard,-apple-system,BlinkMacSystemFont,
-       "Segoe UI",system-ui,sans-serif;
-  padding:24px 16px calc(48px + var(--kb));
+  margin:0; min-height:100dvh; color:var(--ink);
+  font-family:var(--sf);
+  font-size:calc(17px * var(--ts)); line-height:1.47;
+  letter-spacing:calc(-0.374px * var(--ts));
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding:0 var(--s-sm) calc(48px + var(--kb) + var(--sab));
   overflow-x:hidden;              /* 어디 하나 삐져나와도 화면이 옆으로 밀리지 않게 */
+  /* 유리가 굴절할 대상. 색조 없이 밝기 차이만 줍니다. */
+  background:
+    radial-gradient(1200px 620px at 8% -8%,  #ffffff 0%, rgba(255,255,255,0) 58%),
+    radial-gradient(900px 640px at 92% 106%, #e8e8ec 0%, rgba(232,232,236,0) 56%),
+    var(--parchment);
+  background-attachment:fixed;
 }
-main{ max-width:520px; margin:0 auto; min-width:0; }
-.card{ min-width:0; }
-h1{ font-size:calc(20px * var(--ts)); margin:0 0 2px; font-weight:650; letter-spacing:-.02em; }
-.sub{ color:var(--dim); font-size:calc(13px * var(--ts)); margin:0 0 22px; }
+main{ max-width:480px; margin:0 auto; min-width:0; }
 .hide{ display:none !important; }
 
-.card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
-       padding:16px; margin-bottom:10px; }
-.card h2{ font-size:calc(14px * var(--ts)); margin:0 0 12px; font-weight:600;
-          display:flex; align-items:center; gap:8px; }
+/* ── 유리 알약 상단바 ── 도쿄 앱의 표식입니다. 스크롤해도 따라옵니다. */
+.topbar{
+  position:sticky; top:var(--s-sm); z-index:20;
+  margin:var(--s-sm) 0 var(--s-md);
+  padding:10px var(--s-md);
+  border-radius:var(--r-pill);
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(158deg, rgba(255,255,255,.62) 0%,
+             rgba(255,255,255,.46) 55%, rgba(255,255,255,.58) 100%);
+  backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+  -webkit-backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:inset 0 1.2px 0 rgba(255,255,255,.92),
+             inset 0 -1px 0 rgba(255,255,255,.34),
+             0 0 0 .5px rgba(16,20,35,.07),
+             0 10px 30px rgba(16,20,35,.10);
+}
+h1{ font-size:calc(19px * var(--ts)); margin:0; font-weight:650;
+    letter-spacing:calc(-0.5px * var(--ts)); }
+.sub{ color:var(--ink-48); font-size:calc(13px * var(--ts)); margin:0;
+      flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis;
+      white-space:nowrap; }
+
+.card{ background:var(--canvas); border:0; border-radius:var(--r-lg);
+       padding:var(--s-md); margin-bottom:var(--s-sm); min-width:0;
+       box-shadow:var(--lift-1); }
+.card h2{ font-size:calc(15px * var(--ts)); margin:0 0 var(--s-sm); font-weight:600;
+          letter-spacing:calc(-0.4px * var(--ts));
+          display:flex; align-items:center; gap:var(--s-xs); }
 .card h2 .grow{ flex:1; }
 
-button{ font:inherit; cursor:pointer; border-radius:11px; border:1px solid var(--line);
-        background:var(--panel); color:var(--fg); padding:11px 16px; }
-button:disabled{ opacity:.5; cursor:default; }
-.primary{ flex:1; background:var(--accent); color:#fff; border-color:transparent; font-weight:600; }
+button{ font:inherit; letter-spacing:inherit; cursor:pointer;
+        border-radius:var(--r-pill); border:1px solid var(--hairline);
+        background:var(--canvas); color:var(--ink); padding:10px var(--s-md); }
+button:active{ transform:scale(.96); }
+button:disabled{ opacity:.45; cursor:default; transform:none; }
+:focus-visible{ outline:2px solid var(--primary-focus); outline-offset:3px; }
+.primary{ flex:1; background:var(--primary); color:#fff; border-color:transparent;
+          font-weight:600; box-shadow:var(--lift-1); }
 .google{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
          background:#fff; color:#1f1f1f; border-color:#dadce0; font-weight:600; padding:13px 16px; }
 .google svg{ width:18px; height:18px; flex:none; }
@@ -57,9 +114,10 @@ input, select{
      그러면 레이아웃이 통째로 깨져 보입니다. 16px 아래로는 안 내려갑니다. */
   font-size:max(16px, calc(15px * var(--ts)));
   width:100%; max-width:100%; min-width:0;
-  padding:10px 12px; border-radius:11px;
-  border:1px solid var(--line); background:var(--sunk); color:var(--fg);
+  padding:11px var(--s-sm); border-radius:var(--r-md);
+  border:1px solid var(--hairline); background:var(--pearl); color:var(--ink);
 }
+input:focus, select:focus{ border-color:var(--primary); background:var(--canvas); }
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
    빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */
@@ -75,73 +133,96 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .two > div{ min-width:0; }        /* 칸 내용이 그리드를 늘리지 못하게 막습니다 */
 
 /* 도시 검색 */
-.hits{ margin-top:6px; border:1px solid var(--line); border-radius:11px; overflow:hidden auto;
-       max-height:252px; background:var(--sunk); }
-.hit{ display:flex; align-items:baseline; gap:8px; padding:10px 12px; cursor:pointer; }
-.hit + .hit{ border-top:1px solid var(--line); }
-.hit.on, .hit:hover{ background:var(--panel); }
-.hit .c{ color:var(--dim); font-size:calc(12px * var(--ts)); }
-.hit .r{ margin-left:auto; color:var(--dim); font-size:calc(11px * var(--ts)); }
-.picked{ display:flex; align-items:center; gap:10px; padding:11px 12px;
-         border:1px solid var(--line); border-radius:11px; background:var(--sunk); }
+.hits{ margin-top:6px; border:1px solid var(--hairline); border-radius:var(--r-md);
+       overflow:hidden auto; max-height:252px; background:var(--pearl); }
+.hit{ display:flex; align-items:baseline; gap:var(--s-xs); padding:11px var(--s-sm);
+      cursor:pointer; }
+.hit + .hit{ border-top:1px solid var(--divider-soft); }
+.hit.on, .hit:hover{ background:var(--canvas); }
+.hit .c{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.hit .r{ margin-left:auto; color:var(--ink-48); font-size:calc(12px * var(--ts)); }
+.picked{ display:flex; align-items:center; gap:10px; padding:12px var(--s-sm);
+         border:1px solid var(--hairline); border-radius:var(--r-md); background:var(--pearl); }
 .picked .p{ flex:1; min-width:0; }
-.picked .c{ color:var(--dim); font-size:calc(12px * var(--ts)); }
+.picked .c{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
 
-.me{ display:flex; align-items:center; gap:12px; }
-.me img{ width:40px; height:40px; border-radius:50%; flex:none; background:var(--sunk); }
+.me{ display:flex; align-items:center; gap:var(--s-sm); }
+.me img{ width:40px; height:40px; border-radius:50%; flex:none; background:var(--parchment); }
 .me .name{ flex:1; min-width:0; font-weight:600; }
-.me .mail{ color:var(--dim); font-size:calc(12px * var(--ts)); font-weight:400;
+.me .mail{ color:var(--ink-48); font-size:calc(13px * var(--ts)); font-weight:400;
            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-.trip{ display:flex; align-items:center; gap:12px; padding:12px 0; cursor:pointer; }
-.trip + .trip{ border-top:1px solid var(--line); }
+.trip{ display:flex; align-items:center; gap:var(--s-sm); padding:var(--s-sm) 0;
+       cursor:pointer; }
+.trip + .trip{ border-top:1px solid var(--divider-soft); }
 .trip .t{ flex:1; min-width:0; }
 .trip .t b{ display:block; }
-.trip .meta{ color:var(--dim); font-size:calc(12px * var(--ts)); }
-.badge{ font-size:calc(11px * var(--ts)); padding:2px 8px; border-radius:999px;
-        background:var(--sunk); border:1px solid var(--line); color:var(--dim); flex:none; }
+.trip .meta{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.badge{ font-size:calc(12px * var(--ts)); padding:3px 10px; border-radius:var(--r-pill);
+        background:var(--parchment); color:var(--ink-48); flex:none; }
 
 /* 날짜 칩 — 줄바꿈으로 둡니다.
    가로 스크롤로 뒀더니 마우스로는 밀 방법이 없었습니다(스크롤바도 숨겨서). */
-.days{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
-.day{ flex:none; padding:6px 12px; border-radius:999px; border:1px solid var(--line);
-      background:var(--sunk); color:var(--dim); cursor:pointer;
-      font-size:calc(13px * var(--ts)); white-space:nowrap; }
-.day.on{ background:var(--accent); color:#fff; border-color:transparent; font-weight:600; }
+.days{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--s-sm); }
+.day{ flex:none; padding:7px 14px; border-radius:var(--r-pill); border:1px solid transparent;
+      background:var(--parchment); color:var(--ink-80); cursor:pointer;
+      font-size:calc(14px * var(--ts)); white-space:nowrap; }
+.day.on{ background:var(--primary); color:#fff; font-weight:600; box-shadow:var(--lift-1); }
 /* 긴 여행에서는 칩 대신 이 칸으로 고릅니다 */
-.days select{ width:auto; flex:1; min-width:180px; padding:6px 12px; border-radius:999px; }
+.days select{ width:auto; flex:1; min-width:180px; padding:7px 14px;
+              border-radius:var(--r-pill); }
 
-.plan{ display:flex; gap:12px; padding:12px 0; }
-.plan + .plan{ border-top:1px solid var(--line); }
-.plan .when{ flex:none; width:52px; color:var(--dim); font-size:calc(12px * var(--ts));
+.plan{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0; align-items:flex-start; }
+.plan + .plan{ border-top:1px solid var(--divider-soft); }
+.plan .when{ flex:none; width:50px; color:var(--ink-48); font-size:calc(13px * var(--ts));
              font-variant-numeric:tabular-nums; padding-top:2px; }
 .plan .body{ flex:1; min-width:0; }
 .plan .body b{ display:block; }
-.plan .body .memo{ color:var(--dim); font-size:calc(12px * var(--ts)); }
-.daysep{ margin:14px 0 2px; color:var(--dim); font-size:calc(12px * var(--ts));
+.plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          font-weight:600; }
 .plan:first-child, .daysep:first-child{ padding-top:0; }
 
+/* 분류 색 — 도쿄 앱에서 옮겨왔습니다.
+   메모를 읽지 않아도 눈으로 "아, 주황색 밥" 하고 찾게 하는 것이 목적입니다.
+   딱지와 점에만 쓰고 버튼·링크는 여전히 파랑 하나입니다. */
+/* 분류마다 색을 --kc 하나에 담고, 점은 배경으로 딱지는 글자색으로 씁니다.
+   한 클래스로 둘을 다 칠하면 딱지가 색 덩어리가 됩니다. */
+.k-식사{ --kc:var(--k-food); } .k-관광{ --kc:var(--k-see);  }
+.k-쇼핑{ --kc:var(--k-shop); } .k-이동{ --kc:var(--k-move); }
+.k-숙소{ --kc:var(--k-stay); } .k-카페{ --kc:var(--k-cafe); }
+.kdot{ width:9px; height:9px; border-radius:50%; flex:none; margin-top:9px;
+       background:var(--kc, var(--k-etc)); }
+.ktag{ font-size:calc(13px * var(--ts)); font-weight:600; margin-right:6px;
+       color:var(--kc, var(--k-etc)); }
+
 .row{ display:flex; align-items:center; gap:10px; }
-.row + .row{ margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
+.row + .row{ margin-top:10px; padding-top:10px; border-top:1px solid var(--divider-soft); }
 .row .label{ flex:1; min-width:0; }
-.row .val{ font-variant-numeric:tabular-nums; color:var(--dim); font-size:calc(13px * var(--ts)); }
-.dot{ width:8px; height:8px; border-radius:50%; background:var(--dim); flex:none; }
+.row .val{ font-variant-numeric:tabular-nums; color:var(--ink-48);
+           font-size:calc(14px * var(--ts)); }
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-48); flex:none; }
 .dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); }
 
-.empty{ text-align:center; color:var(--dim); padding:18px 8px; font-size:calc(13px * var(--ts)); }
-pre{ margin:8px 0 0; padding:11px; background:var(--sunk); border:1px solid var(--line);
-     border-radius:10px; font-size:calc(12px * var(--ts)); overflow-x:auto;
-     white-space:pre-wrap; word-break:break-word; color:var(--bad); }
-.foot{ color:var(--dim); font-size:calc(11px * var(--ts)); text-align:center; margin-top:24px; }
-code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
-      border-radius:5px; font-size:.92em; }
+.empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
+        font-size:calc(14px * var(--ts)); }
+pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
+     border:1px solid #f3d6d3; border-radius:var(--r-md);
+     font-size:calc(13px * var(--ts)); overflow-x:auto;
+     white-space:pre-wrap; word-break:break-word; color:var(--bad);
+     font-family:var(--sf); }
+.foot{ color:var(--ink-48); font-size:calc(12px * var(--ts)); text-align:center;
+       margin-top:var(--s-lg); }
+code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
+      font-size:.92em; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Travel</h1>
-  <p class="sub" id="sub">불러오는 중…</p>
+  <div class="topbar">
+    <h1>Travel</h1>
+    <p class="sub" id="sub">불러오는 중…</p>
+  </div>
 
   <!-- 로그인 전 -->
   <section id="signedout" class="hide">
@@ -324,6 +405,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <select id="p_cat">
           <option value="">없음</option>
           <option value="식사">식사</option>
+          <option value="카페">카페</option>
           <option value="관광">관광</option>
           <option value="쇼핑">쇼핑</option>
           <option value="이동">이동</option>
@@ -364,7 +446,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b19</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b20</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -984,10 +1066,14 @@ function drawPlans(){
       last = p.date;
     }
     const when = p.start_time ? hm(p.start_time) + (p.end_time ? `<br>~${hm(p.end_time)}` : '')
-                              : '<span style="opacity:.5">–</span>';
-    const sub = [p.category, p.memo, p.move_note].filter(Boolean).join(' · ');
+                              : '<span style="opacity:.45">–</span>';
+    /* 분류는 색으로 먼저 읽히게 합니다 — 메모를 안 읽어도 눈으로 찾게 됩니다. */
+    const k = p.category ? 'k-' + p.category : '';
+    const sub = [p.memo, p.move_note].filter(Boolean).join(' · ');
     html += `<div class="plan"><div class="when">${when}</div>
+      <span class="kdot ${esc(k)}"></span>
       <div class="body"><b>${esc(p.title)}</b>
+        ${p.category ? `<span class="ktag ${esc(k)}">${esc(p.category)}</span>` : ''}
         ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-pact="del" data-id="${esc(p.id)}"
@@ -1325,6 +1411,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
