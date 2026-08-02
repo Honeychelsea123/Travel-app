@@ -776,7 +776,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b33</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b34</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2162,26 +2162,38 @@ function money(n, cur){
  *
  * 실패하면 환산을 안 하고 통화별로 나눠 보여줍니다. 틀린 숫자를 내놓느니
  * 안 내놓는 편이 낫습니다. */
-async function fxFor(date, home){
-  const key = `t2:fx:${home}:${date}`;
+/* 기준을 EUR 로 고정합니다.
+   from=KRW 로 받으면 EUR 이 0.0006 처럼 네 자리로 잘려 와서 되돌릴 때
+   1,667원이 됩니다. 실제는 1,658원 — 0.5% 가 틀어집니다.
+   EUR 기준이면 KRW=1657.99 로 제대로 옵니다. */
+async function fxFor(date){
+  const key = `t2:fx:${date}`;
   const hit = localStorage.getItem(key);
   if (hit) return JSON.parse(hit);
-  try {
-    const r = await fetch(`https://api.frankfurter.app/${date}?from=${home}`);
-    if (!r.ok) throw new Error(String(r.status));
-    const j = await r.json();
-    const v = { date: j.date, rates: j.rates || {} };
-    localStorage.setItem(key, JSON.stringify(v));
-    return v;
-  } catch { return null; }
+
+  /* 아직 환율이 안 나온 날짜(미래·오늘)는 404 입니다. 그럴 땐 최신값을 씁니다. */
+  for (const d of [date, 'latest']){
+    try {
+      const r = await fetch(`https://api.frankfurter.app/${d}?from=EUR`);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (!j?.rates) continue;
+      const v = { date: j.date, rates: j.rates };
+      localStorage.setItem(key, JSON.stringify(v));
+      return v;
+    } catch { /* 다음 것으로 */ }
+  }
+  return null;
 }
 
-/* 현지 통화 1 = 집 통화 얼마. 못 구하면 null 을 돌려주고 환산하지 않습니다. */
+/* 현지 통화 1 = 집 통화 얼마. 못 구하면 null 이고 환산하지 않습니다. */
 async function rateOf(cur, home, date){
   if (cur === home) return 1;
-  const fx = await fxFor(date, home);
-  const r = fx?.rates?.[cur];
-  return r ? 1 / r : null;      /* from=home 이라 rates[cur] 는 home→cur 입니다 */
+  const fx = await fxFor(date);
+  if (!fx) return null;
+  const at = c => c === 'EUR' ? 1 : fx.rates[c];   /* 기준이 EUR 이라 EUR 은 1 */
+  const a = at(cur), b = at(home);
+  return (a && b) ? b / a : null;
 }
 
 const nameOf = id => {
@@ -2914,6 +2926,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
