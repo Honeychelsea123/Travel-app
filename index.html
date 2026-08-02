@@ -181,6 +181,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          font-weight:600; }
+
+/* AI 대화 */
+#chat{ max-height:min(52vh, 460px); overflow-y:auto; }
+.msg + .msg{ margin-top:var(--s-md); }
+.msg .who{ display:block; font-size:calc(12px * var(--ts)); margin-bottom:2px; }
+.msg .txt{ font-size:calc(15px * var(--ts)); line-height:1.6; word-break:break-word; }
+.msg .txt b{ font-weight:650; }
 .plan:first-child, .daysep:first-child{ padding-top:0; }
 
 /* 분류 색 — 도쿄 앱에서 옮겨왔습니다.
@@ -655,7 +662,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b26</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b27</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1066,14 +1073,23 @@ async function loadChats(tripId){
   if (left) $('ai_left').textContent = `오늘 ${left.used}/${left.limit}회`;
 }
 
+/* AI 는 마크다운으로 씁니다. 그대로 찍으면 별표가 글자로 보입니다.
+   반드시 먼저 이스케이프하고 나서 태그로 바꿉니다 — 순서를 바꾸면
+   AI 가 돌려준 글이 그대로 HTML 이 됩니다. */
+function md(s){
+  return esc(s)
+    .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
+    .replace(/^\s*[*-]\s+/gm, '· ')
+    .replace(/^\s*(#{1,4})\s+(.+)$/gm, '<b>$2</b>')
+    .replace(/\n/g, '<br>');
+}
+
 function drawChats(rows){
   $('chat').innerHTML = rows.length
-    ? rows.map(m => `<div class="plan" style="border:0; padding:6px 0">
-        <div class="body">
-          <b style="color:${m.role === 'user' ? 'var(--ink)' : 'var(--primary)'}">
-            ${m.role === 'user' ? '나' : 'AI'}</b>
-          <span class="memo" style="color:var(--ink-80); white-space:pre-wrap">${
-            esc(m.content)}</span></div></div>`).join('')
+    ? rows.map(m => `<div class="msg">
+        <b class="who" style="color:${m.role === 'user' ? 'var(--ink-48)' : 'var(--primary)'}">
+          ${m.role === 'user' ? '나' : 'AI'}</b>
+        <div class="txt">${md(m.content)}</div></div>`).join('')
     : '<div class="empty">이 여행에 대해 물어보세요.</div>';
   $('chat').scrollTop = $('chat').scrollHeight;
 }
@@ -2228,6 +2244,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
