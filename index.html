@@ -231,6 +231,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
         background:var(--parchment); }
 .thumb.ph{ display:flex; align-items:center; justify-content:center;
            font-size:calc(21px * var(--ts)); font-weight:650; color:var(--ink-48); }
+/* 도시 페이지 맨 위 사진 */
+.hero{ height:180px; background:var(--parchment) center/cover no-repeat; }
+.hero.ph{ display:flex; align-items:center; justify-content:center;
+          font-size:calc(56px * var(--ts)); font-weight:650; color:var(--hairline); }
 .want, .been{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px;
               color:var(--hairline); }
 .want.on{ color:#e0245e; }
@@ -383,6 +387,51 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
         <pre id="rateerr" class="hide"></pre>
       </div>
+    </div>
+
+    <!-- 도시 상세 — 목록에서 사진이나 이름을 누르면 열립니다 -->
+    <div id="cityview" class="hide">
+      <div class="card" style="padding:0; overflow:hidden">
+        <div id="cv_hero" class="hero"></div>
+        <div style="padding:var(--s-md)">
+          <div class="row" style="border:0; padding:0; margin:0">
+            <span class="label">
+              <span style="font-size:calc(23px * var(--ts)); font-weight:650"
+                    id="cv_name">—</span>
+              <div class="memo" id="cv_sub">—</div></span>
+            <button class="ghost want" id="cv_want" title="가보고 싶어요">♡</button>
+          </div>
+          <div class="stats">
+            <div style="flex:1; text-align:center; padding:6px 0">
+              <b style="font-size:calc(23px * var(--ts)); font-weight:650"
+                 id="cv_avg">—</b>
+              <div style="font-size:calc(12px * var(--ts)); color:var(--ink-48)"
+                   id="cv_avgn">평균</div>
+            </div>
+            <div style="flex:1; text-align:center; padding:6px 0;
+                        border-left:1px solid var(--divider-soft)">
+              <span class="stars" id="cv_stars"></span>
+              <div style="font-size:calc(12px * var(--ts)); color:var(--ink-48)">내 별점</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>한 줄평</h2>
+        <input id="cv_note" placeholder="이 도시, 한 줄로 남긴다면?" maxlength="200">
+        <div class="empty" style="text-align:left; padding:8px 0 0">
+          한 줄평을 쓰면 <b>이름과 함께 다른 사람에게도 보입니다.</b>
+          별점만 매기면 평균에만 들어가고 이름은 안 나갑니다.
+        </div>
+        <div id="cv_comments"></div>
+      </div>
+
+      <div class="card">
+        <h2>여기서 뭘 했더라</h2>
+        <div id="cv_trips"><div class="empty">불러오는 중…</div></div>
+      </div>
+      <pre id="cverr" class="hide"></pre>
     </div>
 
     <!-- AI — 채팅이 본체고 검토는 위 버튼으로 펼칩니다 -->
@@ -937,7 +986,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b41</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b42</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -963,7 +1012,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), myReview = {}, suggested = { actions:[], places:[] };
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -983,7 +1032,7 @@ function fail(e, where){
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
-                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr') }[where] || $('err');
+                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -1214,6 +1263,7 @@ function showApp(t){
   $('homeview').classList.toggle('hide', t !== 'home');
   $('listview').classList.toggle('hide', t !== 'trips');
   $('rateview').classList.toggle('hide', t !== 'rate');
+  $('cityview').classList.add('hide'); cityOpen = null;
   $('aiview').classList.toggle('hide',   t !== 'ai');
   $('setview').classList.toggle('hide',  t !== 'set');
   $('newcard').classList.add('hide');
@@ -1647,7 +1697,9 @@ function drawRatings(){
   $('ratelist').innerHTML = list.slice(0, 80).map(c => {
     const r = myRates[c.id] || {}, s = cityStat[c.id];
     const todo = visited.has(c.id) && r.stars == null;
-    return `<div class="rrow">
+    /* 사진이나 이름을 누르면 그 도시 페이지가 열립니다.
+       별과 하트는 아래 처리에서 먼저 걸러지므로 여기 걸리지 않습니다. */
+    return `<div class="rrow" data-cityopen="${esc(c.id)}">
       ${c.image_url
         ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
                onerror="this.replaceWith(Object.assign(document.createElement('span'),
@@ -1718,7 +1770,11 @@ $('ratelist').addEventListener('click', async e => {
     return;
   }
   const w = e.target.closest('button[data-want]');
-  if (w) await saveRate(w.dataset.want, { want: !myRates[w.dataset.want]?.want });
+  if (w) return saveRate(w.dataset.want, { want: !myRates[w.dataset.want]?.want });
+
+  /* 별과 하트가 아니면 도시 페이지를 엽니다. */
+  const row = e.target.closest('[data-cityopen]');
+  if (row) await openCity(row.dataset.cityopen);
 });
 
 async function saveRate(cityId, patch){
@@ -1739,6 +1795,115 @@ async function saveRate(cityId, patch){
   if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
   drawRatings();
 }
+
+/* ── 도시 상세 ──────────────────────────────────────────────────────
+ * 왓챠는 포스터를 누르면 작품 페이지가 열립니다. 여행앱에서는 그보다 쓸모가
+ * 있는데, **내가 그 도시에서 뭘 했는지**를 같이 보여줄 수 있기 때문입니다.
+ * 일정에 이미 다 적혀 있으니 새로 입력받을 것이 없습니다. */
+async function openCity(id){
+  const c = (cities || []).find(x => x.id === id);
+  if (!c) return;
+  cityOpen = c;
+  if (history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
+
+  $('rateview').classList.add('hide');
+  $('cityview').classList.remove('hide');
+  window.scrollTo({ top:0 });
+
+  const r = myRates[id] || {}, s = cityStat[id];
+  $('cv_hero').style.backgroundImage = c.image_url ? `url("${c.image_url}")` : '';
+  $('cv_hero').classList.toggle('ph', !c.image_url);
+  $('cv_hero').textContent = c.image_url ? '' : c.name.slice(0, 1);
+  $('cv_name').textContent = c.name;
+  $('cv_sub').textContent = [countryName[c.country] || c.country, c.name_local,
+                             visited.has(id) ? '다녀옴' : null].filter(Boolean).join(' · ');
+  $('cv_avg').textContent  = s?.n_rated ? Number(s.avg_stars).toFixed(1) : '–';
+  $('cv_avgn').textContent = s?.n_rated ? `${s.n_rated}명이 매김` : '아직 아무도 안 매김';
+  $('cv_stars').innerHTML  = starHtml(r.stars);
+  $('cv_want').classList.toggle('on', !!r.want);
+  $('cv_note').value = r.comment || '';
+
+  /* 남들 한 줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
+  const { data: cm } = await sb.rpc('city_comments', { p_city: id });
+  const others = (cm || []).filter(x => x.user_id !== me.id);
+  $('cv_comments').innerHTML = others.length
+    ? `<div class="daysep">다른 사람들</div>` + others.map(x =>
+        `<div class="rrow" style="padding:10px 0">
+           <img class="thumb" style="width:36px; height:36px; border-radius:50%"
+                src="${esc(x.avatar_url || '')}" alt=""
+                onerror="this.style.visibility='hidden'">
+           <div class="t"><b>${esc(x.name)}</b>
+             <span class="memo">${esc(x.comment)}</span>
+             <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span></div>
+         </div>`).join('')
+    : '';
+
+  /* 이 도시를 구간으로 가진 내 여행들. RLS 가 내 것만 내려줍니다. */
+  const { data: lg, error } = await sb.from('trip_legs')
+    .select('trip_id,start_date,end_date,trips(id,title,start_date,end_date)')
+    .eq('city_id', id).order('start_date', { ascending:false });
+  if (error) return fail(error, 'cv');
+
+  if (!lg?.length){
+    $('cv_trips').innerHTML =
+      '<div class="empty">아직 이 도시로 간 여행이 없습니다.</div>';
+    return;
+  }
+  /* 그 구간 날짜에 걸린 일정만 가져옵니다 — 다른 도시 일정이 섞이면 안 됩니다. */
+  const { data: ps } = await sb.from('plans')
+    .select('trip_id,date,start_time,category,title')
+    .in('trip_id', lg.map(l => l.trip_id))
+    .is('deleted_at', null).order('date').order('start_time');
+
+  $('cv_trips').innerHTML = lg.map(l => {
+    const t = l.trips;
+    const mine = (ps || []).filter(p => p.trip_id === l.trip_id
+                    && p.date >= l.start_date && p.date <= l.end_date);
+    return `<div style="margin-bottom:var(--s-md)">
+      <div class="row" style="border:0; padding:0; margin:0; cursor:pointer"
+           data-cvtrip="${esc(t.id)}">
+        <span class="label"><b>${esc(t.title)}</b>
+          <div class="memo">${esc(l.start_date)} ~ ${esc(l.end_date)} · ${mine.length}곳</div>
+        </span><span class="val">여행 보기 ›</span></div>
+      ${mine.map(p => {
+        const k = p.category ? 'k-' + p.category : '';
+        return `<div class="plan" style="padding:7px 0">
+          <span class="kdot ${esc(k)}"></span>
+          <div class="body"><b>${esc(p.title)}</b>
+            <span class="memo">${esc(p.date)}${
+              p.start_time ? ' ' + hm(p.start_time) : ''}</span></div></div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function closeCity(fromPop){
+  if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
+  cityOpen = null;
+  $('cityview').classList.add('hide');
+  $('rateview').classList.remove('hide');
+  drawRatings();
+}
+
+$('cityview').addEventListener('click', async e => {
+  const t = e.target.closest('[data-cvtrip]');
+  if (t){ closeCity(); return openTrip(t.dataset.cvtrip); }
+
+  const st = e.target.closest('#cv_stars .st');
+  if (st){
+    const box = st.getBoundingClientRect();
+    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const cur = myRates[cityOpen.id]?.stars;
+    await saveRate(cityOpen.id, { stars: Number(cur) === v ? null : v });
+    return openCity(cityOpen.id);
+  }
+  if (e.target.closest('#cv_want')){
+    await saveRate(cityOpen.id, { want: !myRates[cityOpen.id]?.want });
+    $('cv_want').classList.toggle('on', !!myRates[cityOpen.id]?.want);
+  }
+});
+$('cv_note').addEventListener('change', () =>
+  saveRate(cityOpen.id, { comment: $('cv_note').value.trim() || null }));
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * 앱을 열면 제일 먼저 궁금한 것은 "다음 여행이 언제고 뭐가 잡혀 있나"입니다.
@@ -2481,7 +2646,10 @@ function backToList(fromPop){
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', () => backToList());
-window.addEventListener('popstate', () => { if (trip) backToList(true); });
+window.addEventListener('popstate', () => {
+  if (cityOpen) return closeCity(true);
+  if (trip) backToList(true);
+});
 
 async function loadPlans(){
   $('planerr').classList.add('hide');
@@ -3409,6 +3577,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
