@@ -217,12 +217,21 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
        color:#f5a623; font-style:normal; }
 .st i::before{ content:'★'; }
 
-.rrow{ display:flex; align-items:flex-start; gap:12px; padding:12px 0; }
+/* 별은 오른쪽에 크게 둡니다 — 채우는 맛이 있어야 매기게 됩니다.
+   좁은 화면에서 자리가 모자라면 아랫줄로 내려가되 오른쪽 정렬은 그대로입니다. */
+.rrow{ display:flex; align-items:center; gap:10px; padding:12px 0; flex-wrap:wrap; }
 .rrow + .rrow{ border-top:1px solid var(--divider-soft); }
-.rrow .t{ flex:1; min-width:0; }
+.rrow .t{ flex:1 1 130px; min-width:0; }
 .rrow .t b{ display:block; }
-.rrow .memo{ display:block; color:var(--ink-48); font-size:calc(13px * var(--ts)); }
-.rrow .stars{ margin-top:6px; }
+.rrow .memo{ display:block; color:var(--ink-48); font-size:calc(13px * var(--ts));
+             overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rrow .stars{ margin-left:auto; }
+.rrow .st{ font-size:calc(28px * var(--ts)); }
+/* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
+.facts{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:14px; }
+.facts div{ display:flex; justify-content:space-between; gap:8px;
+            font-size:calc(13px * var(--ts)); }
+.facts span{ color:var(--ink-48); }
 /* 후기 — 별과 한 줄을 나란히 */
 .rvme{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .rvme input{ flex:1; min-width:180px; }
@@ -401,6 +410,15 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
               <div class="memo" id="cv_sub">—</div></span>
             <button class="ghost want" id="cv_want" title="가보고 싶어요">♡</button>
           </div>
+          <!-- 위키백과 요약. 글은 CC BY-SA 라 출처를 반드시 답니다. -->
+          <div id="cv_about" class="hide" style="margin-top:12px">
+            <div class="memo" id="cv_summary" style="line-height:1.6"></div>
+            <a id="cv_src" href="#" target="_blank" rel="noopener noreferrer"
+               class="memo" style="color:var(--primary)">위키백과 ›</a>
+          </div>
+
+          <div class="facts" id="cv_facts"></div>
+
           <div class="stats">
             <div style="flex:1; text-align:center; padding:6px 0">
               <b style="font-size:calc(23px * var(--ts)); font-weight:650"
@@ -990,7 +1008,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b44</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b45</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1011,7 +1029,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
-let me = null, cities = null, countryName = {}, countryInfo = {},
+let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = {},
     picked = null, hitList = [], cursor = 0,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
@@ -1078,14 +1096,17 @@ async function loadCities(){
   if (cities) return;
   const [cs, ns] = await Promise.all([
     sb.from('cities')
-      .select('id,name,name_en,name_local,country,currency,timezone,transit_grade,image_url')
+      .select('id,name,name_en,name_local,country,currency,timezone,transit_grade,' +
+              'image_url,summary,summary_url')
       .order('name'),
-    sb.from('countries').select('code,name,currency,local_lang,default_timezone').order('name')
+    sb.from('countries')
+      .select('code,name,currency,local_lang,default_timezone,continent').order('name')
   ]);
   if (cs.error || ns.error) return fail(cs.error || ns.error, 'form');
 
   countryName = Object.fromEntries(ns.data.map(n => [n.code, n.name]));
   countryInfo = Object.fromEntries(ns.data.map(n => [n.code, n]));
+  continentOf = Object.fromEntries(ns.data.map(n => [n.code, n.continent]));
   /* 검색용 색인을 한 번만 만들어 둡니다. 칠 때마다 만들면 버벅입니다. */
   cities = cs.data.map(c => ({
     ...c,
@@ -1714,8 +1735,8 @@ function drawRatings(){
         <span class="memo">${esc(countryName[c.country] || c.country)}${
           visited.has(c.id) ? ' · 다녀옴' : ''}${
           s?.n_rated ? ` · 평균 ${Number(s.avg_stars).toFixed(1)} (${s.n_rated}명)` : ''}</span>
-        <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
       </div>
+      <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
       <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}"
               title="가보고 싶어요">♡</button>
     </div>`;
@@ -1826,6 +1847,23 @@ async function openCity(id){
   $('cv_stars').innerHTML  = starHtml(r.stars);
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
+
+  /* 위키백과 요약. 없는 도시는 아래 사실만 보여줍니다. */
+  $('cv_about').classList.toggle('hide', !c.summary);
+  if (c.summary){
+    $('cv_summary').textContent = c.summary;
+    $('cv_src').href = c.summary_url || '#';
+  }
+  /* API 없이 이미 아는 것들 — 나라·대륙·통화·시간대·이동 방식. */
+  const GRADE_K = { dense:'지하철 촘촘', normal:'대중교통 보통',
+                    limited:'대중교통 약함', car:'차로 다니는 곳' };
+  $('cv_facts').innerHTML = [
+    ['대륙', continentOf[c.country]],
+    ['통화', c.currency],
+    ['시간대', c.timezone],
+    ['이동', GRADE_K[c.transit_grade]],
+  ].filter(([, v]) => v).map(([k, v]) =>
+    `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
 
   /* 남들 한 줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
   const { data: cm } = await sb.rpc('city_comments', { p_city: id });
@@ -3581,6 +3619,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
