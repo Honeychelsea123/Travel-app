@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -336,8 +336,14 @@ body.sheeton{ overflow:hidden; }
                 transition:fill .3s; }
 /* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다. */
 #worldsvg path.been{ fill:var(--primary); opacity:.85; }
-#pins circle{ fill:#e0245e; stroke:#fff; stroke-width:.8; cursor:pointer; }
-#pins circle.hi{ fill:#f5a623; }
+/* 다녀온 곳은 깃발로 꽂습니다. 동그라미보다 "찍었다" 는 느낌이 납니다.
+   칠해진 나라 위에 올라가므로 흰 테두리를 먼저 깔아야 보입니다. */
+#pins g{ cursor:pointer; }
+#pins .halo{ fill:none; stroke:#fff; stroke-width:2.6; stroke-linejoin:round;
+             stroke-linecap:round; }
+#pins .pole{ fill:none; stroke:#2b3440; stroke-width:1.2; stroke-linecap:round; }
+#pins .flag{ fill:#e0245e; }
+#pins .foot{ fill:#2b3440; }
 
 /* 대륙 줄 — 이름 · 진행바 · 숫자 */
 .crow{ display:flex; align-items:center; gap:10px; padding:9px 0;
@@ -1269,7 +1275,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b66</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b67</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -3075,14 +3081,22 @@ const px = v => (Number(v) + 180) * (1000 / 360);   /* 경도 → x */
 const py = v => (90 - Number(v)) * (500 / 180);     /* 위도 → y */
 let mapCities = [], mapView = '전체';
 
-/* 확대하면 핀이 같이 커집니다. 화면에서 늘 같은 크기로 보이게 다시 그립니다. */
+/* 확대하면 깃발이 같이 커집니다. 화면에서 늘 같은 크기로 보이게 다시 그립니다.
+   깃발 원본은 9칸 높이라, 화면에서 원하는 픽셀 크기를 그걸로 나눠 배율을 냅니다. */
 function drawPins(){
-  const r = Math.max(0.8, vb.w / 260);
+  const wpx = $('worldsvg').getBoundingClientRect().width || 360;
+  const k = 17 / 9 * vb.w / wpx;      /* 화면에서 17픽셀쯤 */
+  const D = 'M0 0V-9M0 -9L7.2 -7.2 0 -5.4Z';
   $('pins').innerHTML = mapCities
     .filter(c => c.center_lat != null && c.center_lng != null)
-    .map(c => `<circle r="${r.toFixed(2)}" cx="${px(c.center_lng).toFixed(1)}"
-                 cy="${py(c.center_lat).toFixed(1)}" data-pin="${esc(c.id)}"><title>${
-                 esc(c.name)}</title></circle>`).join('');
+    .map(c => `<g data-pin="${esc(c.id)}" transform="translate(${
+        px(c.center_lng).toFixed(1)} ${py(c.center_lat).toFixed(1)}) scale(${k.toFixed(3)})">
+        <title>${esc(c.name)}</title>
+        <path class="halo" d="${D}"/>
+        <path class="pole" d="M0 0V-9"/>
+        <path class="flag" d="M0 -9L7.2 -7.2 0 -5.4Z"/>
+        <circle class="foot" r="1.3"/>
+      </g>`).join('');
 }
 
 /* 보이는 창. 가운데와 폭만 들고 있고 높이는 화면 비율에서 냅니다. */
@@ -4972,6 +4986,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
