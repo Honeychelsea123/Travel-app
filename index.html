@@ -776,7 +776,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b32</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b33</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2153,6 +2153,37 @@ function money(n, cur){
       maximumFractionDigits: NO_CENTS.includes(cur) ? 0 : 2 }).format(n);
   } catch { return `${Math.round(n).toLocaleString('ko-KR')} ${cur}`; }
 }
+/* ── 환율 ───────────────────────────────────────────────────────────
+ * 유럽중앙은행이 매일 내는 값을 씁니다. 키가 없어도 되고 공개 자료입니다.
+ *
+ * **쓴 날의 환율을 지출에 못박아 저장합니다.** 볼 때마다 새로 받아오면
+ * 오늘 본 사람과 내일 본 사람의 "너 나한테 얼마"가 달라집니다.
+ * 정산은 사람마다 같은 숫자가 나와야 합니다.
+ *
+ * 실패하면 환산을 안 하고 통화별로 나눠 보여줍니다. 틀린 숫자를 내놓느니
+ * 안 내놓는 편이 낫습니다. */
+async function fxFor(date, home){
+  const key = `t2:fx:${home}:${date}`;
+  const hit = localStorage.getItem(key);
+  if (hit) return JSON.parse(hit);
+  try {
+    const r = await fetch(`https://api.frankfurter.app/${date}?from=${home}`);
+    if (!r.ok) throw new Error(String(r.status));
+    const j = await r.json();
+    const v = { date: j.date, rates: j.rates || {} };
+    localStorage.setItem(key, JSON.stringify(v));
+    return v;
+  } catch { return null; }
+}
+
+/* 현지 통화 1 = 집 통화 얼마. 못 구하면 null 을 돌려주고 환산하지 않습니다. */
+async function rateOf(cur, home, date){
+  if (cur === home) return 1;
+  const fx = await fxFor(date, home);
+  const r = fx?.rates?.[cur];
+  return r ? 1 / r : null;      /* from=home 이라 rates[cur] 는 home→cur 입니다 */
+}
+
 const nameOf = id => {
   const m = members.find(x => x.user_id === id);
   return m ? (m.nickname || m.profiles?.display_name || '이름 없음') : '알 수 없음';
@@ -2161,7 +2192,7 @@ const nameOf = id => {
 async function loadExpenses(){
   $('experr').classList.add('hide');
   const { data, error } = await sb.from('expenses')
-    .select('id,date,title,amount,currency,category,payer_id,memo')
+    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)
     .order('date', { ascending:false }).order('created_at', { ascending:false });
@@ -2177,14 +2208,28 @@ function drawExpenses(){
     $('expenses').innerHTML = '<div class="empty">아직 지출이 없습니다.</div>';
     return;
   }
-  /* 통화별로 따로 더합니다. 환율을 모르는 채로 섞으면 틀린 숫자가 나옵니다. */
   const byCur = {};
   for (const e of expenses) byCur[e.currency] = (byCur[e.currency] || 0) + Number(e.amount);
+  const detail = Object.entries(byCur).map(([c, v]) => money(v, c)).join(' · ');
+
+  /* 환산된 것만 합칩니다. 못 구한 환율을 짐작해 채우면 틀린 총액이 나옵니다. */
+  const done = expenses.filter(e => e.amount_home != null);
+  const missing = expenses.length - done.length;
+  const total = done.reduce((s, e) => s + Number(e.amount_home), 0);
+
   $('exptotal').innerHTML =
     `<div class="picked" style="margin-bottom:var(--s-sm); display:block">
        <div class="c">모두 합쳐</div>
-       <b>${Object.entries(byCur).map(([c, v]) => esc(money(v, c))).join(' · ')}</b>
+       ${done.length
+         ? `<b style="font-size:calc(21px * var(--ts))">${esc(money(total, trip.home_currency))}</b>`
+         : ''}
+       <div class="c">${esc(detail)}</div>
+       ${missing ? `<div class="c" style="color:var(--bad); margin-top:6px">
+            환율을 못 구한 지출 ${missing}건은 합계에서 빠졌습니다.
+            <button class="ghost" id="fxfill" style="padding:2px 8px; color:var(--primary)">
+              환율 채우기</button></div>` : ''}
      </div>`;
+  if (missing) $('fxfill').onclick = fillRates;
 
   let html = '', last = null;
   for (const e of expenses){
@@ -2201,7 +2246,10 @@ function drawExpenses(){
         ${e.category ? `<span class="ktag ${esc(k)}">${esc(e.category)}</span>` : ''}
         ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
       <div style="text-align:right; flex:none">
-        <b style="white-space:nowrap">${esc(money(Number(e.amount), e.currency))}</b></div>
+        <b style="white-space:nowrap">${esc(money(Number(e.amount), e.currency))}</b>
+        ${e.currency !== trip.home_currency && e.amount_home != null
+          ? `<div class="memo" style="white-space:nowrap">${
+              esc(money(Number(e.amount_home), trip.home_currency))}</div>` : ''}</div>
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-xact="del" data-id="${esc(e.id)}"
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
@@ -2210,51 +2258,72 @@ function drawExpenses(){
 }
 
 /* 정산 — 비어 있으면 전원 균등입니다 (문서의 expense_shares 규칙).
-   나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다. */
+   나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다.
+   집 통화 하나로 정산합니다 — 실제로 "너 나한테 12만원" 하고 보내지,
+   유로 따로 프랑 따로 보내지 않습니다. */
 function drawSettle(){
-  if (!expenses.length || members.length < 2){
+  const rows = expenses.filter(e => e.amount_home != null);
+  if (!rows.length || members.length < 2){
     settleOn = false; $('settlecard').classList.add('hide'); return;
   }
   settleOn = true;
   $('settlecard').classList.toggle('hide', tab !== 'exp');
 
-  const curs = [...new Set(expenses.map(e => e.currency))];
-  $('settle').innerHTML = curs.map(cur => {
-    const rows = expenses.filter(e => e.currency === cur);
-    const total = rows.reduce((s, e) => s + Number(e.amount), 0);
-    const share = total / members.length;
+  const cur = trip.home_currency;
+  const total = rows.reduce((s, e) => s + Number(e.amount_home), 0);
+  const share = total / members.length;
 
-    const paid = {};
-    members.forEach(m => paid[m.user_id] = 0);
-    /* 결제자를 안 적은 지출은 공동으로 봅니다 — 아무에게도 안 몰아줍니다. */
-    rows.forEach(e => { if (e.payer_id != null && e.payer_id in paid)
-                          paid[e.payer_id] += Number(e.amount); });
+  const paid = {};
+  members.forEach(m => paid[m.user_id] = 0);
+  /* 결제자를 안 적은 지출은 공동으로 봅니다 — 아무에게도 안 몰아줍니다. */
+  rows.forEach(e => { if (e.payer_id != null && e.payer_id in paid)
+                        paid[e.payer_id] += Number(e.amount_home); });
 
-    const bal = members.map(m => ({ id:m.user_id, v: paid[m.user_id] - share }))
-                       .sort((a, b) => a.v - b.v);
-    /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다. */
-    const moves = [];
-    let i = 0, j = bal.length - 1;
-    while (i < j){
-      const owe = -bal[i].v, get = bal[j].v;
-      if (owe < 0.005){ i++; continue; }
-      if (get < 0.005){ j--; continue; }
-      const v = Math.min(owe, get);
-      moves.push({ from: bal[i].id, to: bal[j].id, v });
-      bal[i].v += v; bal[j].v -= v;
-    }
+  const bal = members.map(m => ({ id:m.user_id, v: paid[m.user_id] - share }))
+                     .sort((a, b) => a.v - b.v);
+  /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다. */
+  const moves = [];
+  let i = 0, j = bal.length - 1;
+  while (i < j){
+    const owe = -bal[i].v, get = bal[j].v;
+    if (owe < 1){ i++; continue; }
+    if (get < 1){ j--; continue; }
+    const v = Math.min(owe, get);
+    moves.push({ from: bal[i].id, to: bal[j].id, v });
+    bal[i].v += v; bal[j].v -= v;
+  }
 
-    return `<div style="margin-bottom:var(--s-sm)">
-      <div class="row" style="border:0; padding:0; margin:0">
-        <span class="label"><b>${esc(money(total, cur))}</b></span>
-        <span class="val">1인 ${esc(money(share, cur))}</span></div>
-      ${moves.length
-        ? moves.map(m => `<div class="row"><span class="label">${esc(nameOf(m.from))}
-             → ${esc(nameOf(m.to))}</span>
-             <span class="val"><b>${esc(money(m.v, cur))}</b></span></div>`).join('')
-        : '<div class="empty" style="padding:10px 0">딱 맞습니다.</div>'}
-    </div>`;
-  }).join('');
+  const left = expenses.length - rows.length;
+  $('settle').innerHTML =
+    `<div class="row" style="border:0; padding:0; margin:0">
+       <span class="label"><b>${esc(money(total, cur))}</b></span>
+       <span class="val">1인 ${esc(money(share, cur))}</span></div>
+     ${moves.length
+       ? moves.map(m => `<div class="row"><span class="label">${esc(nameOf(m.from))}
+            → ${esc(nameOf(m.to))}</span>
+            <span class="val"><b>${esc(money(m.v, cur))}</b></span></div>`).join('')
+       : '<div class="empty" style="padding:10px 0">딱 맞습니다.</div>'}
+     ${left ? `<div class="empty" style="text-align:left; color:var(--bad)">
+          환율을 못 구한 ${left}건은 이 정산에 안 들어갔습니다.</div>` : ''}`;
+}
+
+/* 환율이 비어 있는 지출을 그날 환율로 채웁니다.
+   과거 날짜는 그날 값을, 아직 안 나온 날짜는 가장 최근 값을 씁니다. */
+async function fillRates(){
+  const btn = $('fxfill');
+  btn.disabled = true; btn.textContent = '채우는 중…';
+  let ok = 0, fail_ = 0;
+  for (const e of expenses.filter(x => x.amount_home == null)){
+    const r = await rateOf(e.currency, trip.home_currency, e.date);
+    if (r == null){ fail_++; continue; }
+    const up = await sb.from('expenses')
+      .update({ fx_rate: r, amount_home: Number(e.amount) * r })
+      .eq('id', e.id).select('id');
+    if (up.error || !up.data?.length) fail_++; else ok++;
+  }
+  await loadExpenses();
+  if (fail_) fail(`${ok}건을 채웠습니다. ${fail_}건은 환율을 못 구했습니다 ` +
+                  `(유럽중앙은행이 안 내는 통화일 수 있습니다).`, 'exp');
 }
 
 $('addexpbtn').addEventListener('click', () => {
@@ -2297,9 +2366,14 @@ $('x_create').addEventListener('click', async () => {
   if (!date)                     return fail('날짜를 골라주세요.', 'expform');
 
   btn.disabled = true; btn.textContent = '넣는 중…';
+  /* 쓴 날 환율을 여기서 못박습니다. 나중에 볼 때마다 새로 받아오면
+     사람마다 정산 금액이 달라집니다. */
+  const cur = $('x_cur').value;
+  const rate = await rateOf(cur, trip.home_currency, date);
+
   const { data, error } = await sb.from('expenses').insert({
-    trip_id: trip.id, title, amount, date,
-    currency: $('x_cur').value,
+    trip_id: trip.id, title, amount, date, currency: cur,
+    fx_rate: rate, amount_home: rate == null ? null : amount * rate,
     category: $('x_cat').value || null,
     payer_id: $('x_payer').value || null,
     memo: $('x_memo').value.trim() || null
@@ -2840,6 +2914,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
