@@ -181,6 +181,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          font-weight:600; }
+/* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다. */
+.hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
+          color:var(--ink-48); font-size:calc(12px * var(--ts)); }
+.hopline.bad{ border-left-color:var(--bad); color:var(--bad); font-weight:600; }
 
 /* AI 대화 — 이 탭의 본체입니다. 짧아도 채팅창처럼 보이게 자리를 잡아둡니다. */
 #chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto; }
@@ -694,7 +698,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b30</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b31</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1005,7 +1009,37 @@ const mins  = t => { const [h,m] = String(t).split(':'); return +h*60 + +m; };
 const fmtM  = v => String(Math.floor(v/60)).padStart(2,'0') + ':' +
                    String(v%60).padStart(2,'0');
 
-function review(t, ps){
+/* 두 좌표 사이 직선거리(km). 실제 경로가 아니라 어림입니다. */
+function distKm(a, b, c, d){
+  if ([a,b,c,d].some(v => v == null)) return null;
+  const r = Math.PI/180, R = 6371;
+  const dLat = (c-a)*r, dLng = (d-b)*r;
+  const h = Math.sin(dLat/2)**2 + Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+
+/* 도쿄에서 실제로 재서 쓰던 식입니다. 상수는 그날 있는 구간에서 옵니다 —
+   로마는 대중교통, 오키나와는 차라서 같은 거리도 시간이 다릅니다. */
+function travel(km, g){
+  if (km == null || !g) return null;
+  return km < Number(g.walk_max_km)
+    ? { walk:true,  min: Math.max(1, Math.round(km * Number(g.walk_min_per_km) +
+                                                Number(g.walk_base_min))) }
+    : { walk:false, min: Math.max(1, Math.round(km * Number(g.transit_factor) +
+                                                Number(g.transit_base_min))) };
+}
+
+/* 두 일정 사이 이동. 좌표가 둘 다 있어야 잽니다. */
+function hop(a, b, lgs){
+  const km = distKm(a.lat, a.lng, b.lat, b.lng);
+  if (km == null) return null;
+  const g = (lgs || []).find(l => a.date >= l.start_date && a.date <= l.end_date)
+            || (lgs || [])[0];
+  const tv = travel(km, g);
+  return tv && { km, ...tv };
+}
+
+function review(t, ps, lgs){
   const out = [];
   const byDay = {};
   ps.forEach(p => (byDay[p.date] ||= []).push(p));
@@ -1053,9 +1087,21 @@ function review(t, ps){
           t:`${p.title} 과 ${nx.title} 이 겹칩니다`,
           s:`${hm(p.start_time)}~${guessed ? '(어림 ' + fmtM(end) + ')' : hm(p.end_time)}` +
             ` 인데 다음이 ${hm(nx.start_time)}에 시작합니다.` });
-        else if (nst === end) out.push({ lv:'주의',
-          t:`${p.title} 다음에 이동할 시간이 없습니다`,
-          s:`끝나자마자 ${nx.title} 이 시작합니다.` });
+        else {
+          /* 여기가 남들이 안 하는 자리입니다 — 두 곳 사이를 실제로 가 볼 수 있는가.
+             좌표가 둘 다 있어야 잽니다. */
+          const h = hop(p, nx, lgs);
+          const gap = nst - end;
+          if (h && gap < h.min) out.push({
+            lv: gap < h.min - 15 ? '심각' : '주의',
+            t: `${p.title} → ${nx.title} 이동 시간이 모자랍니다`,
+            s: `${h.km.toFixed(1)}km · ${h.walk ? '도보' : '이동'} 약 ${h.min}분인데 ` +
+               `${gap}분밖에 없습니다.` +
+               (guessed ? ' (앞 일정 끝 시각이 없어 어림잡았습니다)' : '') });
+          else if (!h && gap === 0) out.push({ lv:'주의',
+            t:`${p.title} 다음에 이동할 시간이 없습니다`,
+            s:`끝나자마자 ${nx.title} 이 시작합니다.` });
+        }
       }
     }
 
@@ -1247,13 +1293,17 @@ $('reviewclose').addEventListener('click', () => $('reviewcard').classList.add('
 
 async function runReview(id){
   aiTripId = id;
-  const [{ data:t }, { data:ps }] = await Promise.all([
+  const [{ data:t }, { data:ps }, { data:lg }] = await Promise.all([
     sb.from('trips').select('*').eq('id', id).maybeSingle(),
-    sb.from('plans').select('date,start_time,end_time,category,title')
-      .eq('trip_id', id).is('deleted_at', null).order('date')
+    sb.from('plans').select('date,start_time,end_time,category,title,lat,lng')
+      .eq('trip_id', id).is('deleted_at', null).order('date'),
+    sb.from('trip_legs').select('destination,start_date,end_date,walk_max_km,' +
+      'walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
+      .eq('trip_id', id).order('start_date')
   ]);
   if (!t) return;
-  const found = review(t, ps || []);
+  const found = review(t, ps || [], lg || []);
+  const noCoord = (ps || []).filter(p => p.lat == null).length;
 
   /* 버튼 배지는 짚어봐야 할 것만 셉니다. "비어 있습니다"까지 세면
      새 여행에서 숫자가 크게 뜨는데 실은 아무 문제도 아닙니다. */
@@ -1269,8 +1319,8 @@ async function runReview(id){
         <div class="body"><b>${esc(f.t)}</b>
           <span class="memo">${esc(f.s)}</span></div>
         <span class="badge" style="color:${LVCOLOR[f.lv]}">${esc(f.lv)}</span></div>`).join('')
-      + `<div class="empty" style="text-align:left; padding:12px 0 0">
-           이동 시간은 아직 못 잽니다 — 일정에 장소 좌표가 붙어야 합니다.</div>`
+      + (noCoord ? `<div class="empty" style="text-align:left; padding:12px 0 0">
+           좌표가 없는 일정 ${noCoord}개는 이동 시간을 못 쟀습니다.</div>` : '')
     : `<div class="empty">문제를 못 찾았습니다.<br>지금 일정은 무리가 없어 보입니다.</div>`;
 }
 
@@ -1303,12 +1353,16 @@ async function loadHome(){
               : `여행 중 · Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
 
   /* 검토에 쓰려고 전부 받습니다. 화면에는 앞으로 올 것 넷만 보여줍니다. */
-  const { data: all } = await sb.from('plans')
-    .select('date,start_time,end_time,category,title')
-    .eq('trip_id', t.id).is('deleted_at', null)
-    .order('date').order('start_time', { nullsFirst:false });
+  const [{ data: all }, { data: lg }] = await Promise.all([
+    sb.from('plans').select('date,start_time,end_time,category,title,lat,lng')
+      .eq('trip_id', t.id).is('deleted_at', null)
+      .order('date').order('start_time', { nullsFirst:false }),
+    sb.from('trip_legs').select('destination,start_date,end_date,walk_max_km,' +
+      'walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
+      .eq('trip_id', t.id).order('start_date')
+  ]);
   const ps = (all || []).filter(p => p.date >= today).slice(0, 4);
-  const found = review(t, all || []);
+  const found = review(t, all || [], lg || []);
   const bad = found.filter(f => f.lv === '심각').length;
   const warn = found.filter(f => f.lv === '주의').length;
 
@@ -1858,7 +1912,7 @@ window.addEventListener('popstate', () => { if (trip) backToList(true); });
 async function loadPlans(){
   $('planerr').classList.add('hide');
   const { data, error } = await sb.from('plans')
-    .select('id,date,start_time,end_time,category,title,memo,move_note,sort_order')
+    .select('id,date,start_time,end_time,category,title,memo,move_note,sort_order,lat,lng')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
     .order('date').order('start_time', { nullsFirst:false }).order('sort_order');
@@ -1917,8 +1971,26 @@ function drawPlans(){
       : '아직 일정이 없습니다.<br>+ 추가를 눌러 넣어보세요.'}</div>`;
     return;
   }
-  let html = '', last = null;
+  let html = '', last = null, prev = null;
   for (const p of show){
+    /* 앞 일정과 이 일정 사이에 얼마나 걸리는지. 좌표가 둘 다 있어야 잽니다.
+       시간이 모자라면 빨갛게 — 이게 "이 하루가 물리적으로 가능한가"입니다. */
+    if (prev && prev.date === p.date){
+      const h = hop(prev, p, legs);
+      if (h){
+        let warn = '';
+        if (prev.start_time && p.start_time){
+          const end = prev.end_time ? mins(prev.end_time)
+                    : mins(prev.start_time) + (STAY_MIN[prev.category] ?? 30);
+          const gap = mins(p.start_time) - end;
+          if (gap < h.min) warn = ` · ${gap}분밖에 없습니다`;
+        }
+        html += `<div class="hopline${warn ? ' bad' : ''}">
+          ${h.walk ? '도보' : '이동'} 약 ${h.min}분 · ${h.km.toFixed(1)}km${esc(warn)}</div>`;
+      }
+    }
+    prev = p;
+
     if (p.date !== last){                       /* 전체 보기에서 날짜가 바뀌면 머리글 */
       if (!pickedDay){
         const l = legs.length > 1 ? legFor(p.date) : null;
@@ -2493,6 +2565,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
