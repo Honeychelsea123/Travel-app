@@ -182,8 +182,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          font-weight:600; }
 
-/* AI 대화 */
-#chat{ max-height:min(52vh, 460px); overflow-y:auto; }
+/* AI 대화 — 이 탭의 본체입니다. 짧아도 채팅창처럼 보이게 자리를 잡아둡니다. */
+#chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto; }
 .msg + .msg{ margin-top:var(--s-md); }
 .msg .who{ display:block; font-size:calc(12px * var(--ts)); margin-bottom:2px; }
 .msg .txt{ font-size:calc(15px * var(--ts)); line-height:1.6; word-break:break-word; }
@@ -290,24 +290,32 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div id="home"><div class="empty">불러오는 중…</div></div>
     </div>
 
-    <!-- AI -->
+    <!-- AI — 채팅이 본체고 검토는 위 버튼으로 펼칩니다 -->
     <div id="aiview" class="hide">
-      <div class="card">
+      <div class="card" style="padding:10px 12px">
+        <div class="row" style="border:0; padding:0; margin:0">
+          <select id="ai_trip" style="flex:1; min-width:0; padding:7px 12px;
+                  border-radius:var(--r-pill)"></select>
+          <button class="small" id="reviewbtn" style="flex:none; white-space:nowrap">
+            검토 <span id="reviewdot" class="badge hide"
+                  style="margin-left:2px; padding:1px 7px"></span></button>
+        </div>
+      </div>
+
+      <div class="card hide" id="reviewcard">
         <h2><span class="grow">일정 검토</span>
-          <select id="ai_trip" style="width:auto; max-width:60%; padding:6px 12px;
-                  border-radius:var(--r-pill)"></select></h2>
+          <button class="ghost" id="reviewclose">닫기</button></h2>
         <div id="review"><div class="empty">불러오는 중…</div></div>
       </div>
 
       <div class="card">
-        <h2><span class="grow">물어보기</span>
-          <span class="val" id="ai_left"></span></h2>
         <div id="chat"><div class="empty">이 여행에 대해 물어보세요.</div></div>
         <div style="display:flex; gap:8px; margin-top:12px">
           <input id="ai_msg" placeholder="예: 둘째 날이 너무 빡빡한가요?"
                  maxlength="500" enterkeyhint="send">
           <button class="primary" id="ai_send" style="flex:none; padding:11px 18px">보내기</button>
         </div>
+        <div class="val" id="ai_left" style="text-align:right; margin-top:6px"></div>
         <pre id="aierr" class="hide"></pre>
       </div>
     </div>
@@ -684,7 +692,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b28</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b29</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -710,7 +718,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [];
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false;
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -1073,6 +1081,9 @@ async function loadAi(){
   $('ai_trip').innerHTML = data.map(t =>
     `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
   if (aiTripId && data.some(t => t.id === aiTripId)) $('ai_trip').value = aiTripId;
+  /* 들어올 때는 채팅부터 보입니다. 홈에서 "자세히"로 온 경우만 펼칩니다. */
+  $('reviewcard').classList.toggle('hide', !openReview);
+  openReview = false;
   await runReview($('ai_trip').value);
   await loadChats($('ai_trip').value);
 }
@@ -1155,6 +1166,14 @@ $('ai_send').addEventListener('click', async () => {
   await loadChats(tripId);
 });
 
+/* 검토는 채팅을 가리지 않게 접어둡니다. 버튼에는 몇 건인지만 답니다. */
+$('reviewbtn').addEventListener('click', () => {
+  $('reviewcard').classList.toggle('hide');
+  if (!$('reviewcard').classList.contains('hide'))
+    $('reviewcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
+$('reviewclose').addEventListener('click', () => $('reviewcard').classList.add('hide'));
+
 async function runReview(id){
   aiTripId = id;
   const [{ data:t }, { data:ps }] = await Promise.all([
@@ -1164,6 +1183,15 @@ async function runReview(id){
   ]);
   if (!t) return;
   const found = review(t, ps || []);
+
+  /* 버튼 배지는 짚어봐야 할 것만 셉니다. "비어 있습니다"까지 세면
+     새 여행에서 숫자가 크게 뜨는데 실은 아무 문제도 아닙니다. */
+  const n = found.filter(f => f.lv !== '참고').length;
+  $('reviewdot').textContent = n;
+  $('reviewdot').classList.toggle('hide', !n);
+  $('reviewdot').style.color = found.some(f => f.lv === '심각')
+    ? 'var(--bad)' : 'var(--k-food)';
+
   $('review').innerHTML = found.length
     ? found.map(f => `<div class="plan">
         <span class="kdot" style="background:${LVCOLOR[f.lv]}"></span>
@@ -1253,7 +1281,8 @@ async function loadHome(){
          : '<div class="empty">아직 잡아둔 일정이 없습니다.</div>'}
      </div>`;
   $('homecard').onclick = () => openTrip(t.id);
-  $('homeai').onclick = () => { aiTripId = t.id; showApp('ai'); };
+  /* 홈에서 "자세히"로 왔으면 검토를 펼친 채로 엽니다 — 그걸 보러 온 것이니까요. */
+  $('homeai').onclick = () => { aiTripId = t.id; openReview = true; showApp('ai'); };
 }
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
@@ -2393,6 +2422,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
