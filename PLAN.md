@@ -35,11 +35,18 @@ localStorage 와 IndexedDB 는 공유된다.** 서비스워커 스코프는 `/PW
 
 ## 단계
 
-- [x] 스키마와 RLS (`db/001_schema.sql`) — 18개 테이블
+### 9장 1번 — 프로젝트와 스키마 (2026-08-02 완료)
+
+- [x] 스키마와 RLS (`db/001_schema.sql`)
 - [x] 도시·노선색 시드 (`db/002_seed.sql`)
-- [x] 저장소 생성
+- [x] 저장소 생성 — `Honeychelsea123/Travel-app`
+- [x] Supabase 프로젝트 — `qahqqhjleqfrsjiixnas`, Seoul
+- [x] `db/003_verify.sql` 8줄 전부 OK (표 19 · RLS 전부 · 정책 35 · 시드 22/40)
+
+### 다음
+
 - [ ] GitHub Pages 켜기 → 빈 화면이 뜨는지 확인
-- [ ] Supabase 프로젝트 생성 → SQL 두 개 실행 → URL/anon key
+- [ ] anon key 받아 앱에 연결
 - [ ] 구글 OAuth 설정
 - [ ] Storage 버킷 `trip-files` + 정책
 - [ ] 로그인 · 여행 목록 · 새 여행 · 초대 코드
