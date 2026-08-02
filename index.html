@@ -358,6 +358,60 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <pre id="planerr" class="hide"></pre>
       </div>
 
+      <!-- 지출 -->
+      <div class="card">
+        <h2><span class="grow">지출</span>
+          <button class="small" id="addexpbtn">+ 추가</button></h2>
+        <div id="exptotal"></div>
+        <div id="expenses"><div class="empty">불러오는 중…</div></div>
+        <pre id="experr" class="hide"></pre>
+      </div>
+
+      <div class="card hide" id="expcard">
+        <h2>지출 추가</h2>
+        <label for="x_title">무엇에</label>
+        <input id="x_title" placeholder="예: 점심 라멘" maxlength="60">
+
+        <div class="two">
+          <div><label for="x_amount">얼마</label>
+            <input id="x_amount" type="text" inputmode="decimal" placeholder="0"></div>
+          <div><label for="x_cur">통화</label><select id="x_cur"></select></div>
+        </div>
+
+        <div class="two">
+          <div><label for="x_date">언제</label><input type="date" id="x_date"></div>
+          <div><label for="x_cat">분류</label>
+            <select id="x_cat">
+              <option value="">없음</option>
+              <option value="식사">식사</option>
+              <option value="카페">카페</option>
+              <option value="이동">이동</option>
+              <option value="숙소">숙소</option>
+              <option value="쇼핑">쇼핑</option>
+              <option value="관광">관광</option>
+              <option value="기타">기타</option>
+            </select></div>
+        </div>
+
+        <label for="x_payer">누가 냈나</label>
+        <select id="x_payer"></select>
+
+        <label for="x_memo">메모 (선택)</label>
+        <input id="x_memo" maxlength="200">
+
+        <div style="margin-top:16px; display:flex; gap:8px">
+          <button class="primary" id="x_create">넣기</button>
+          <button class="small" id="x_cancel">취소</button>
+        </div>
+        <pre id="expformerr" class="hide"></pre>
+      </div>
+
+      <!-- 정산 -->
+      <div class="card hide" id="settlecard">
+        <h2>정산</h2>
+        <div id="settle"></div>
+      </div>
+
       <!-- 일행 -->
       <div class="card">
         <h2><span class="grow">일행</span>
@@ -446,7 +500,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b20</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b21</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -469,7 +523,7 @@ const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
     picked = null, hitList = [], cursor = 0, showArchived = false,
-    trip = null, plans = [], pickedDay = null,
+    trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
@@ -481,7 +535,8 @@ function mark(id, ok, text){
 }
 function fail(e, where){
   const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
-                plan:$('planerr'), planform:$('planformerr') }[where] || $('err');
+                plan:$('planerr'), planform:$('planformerr'),
+                exp:$('experr'), expform:$('expformerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -856,6 +911,7 @@ function drawTripHeader(){
     `+${esc(trip.transit_base_min)}분 · 도보 ${esc(trip.walk_max_km)}km 미만`;
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
   $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
+  $('addexpbtn').classList.toggle('hide', trip.myRole === 'viewer');
   $('editbtn').classList.toggle('hide', trip.myRole === 'viewer');
 }
 
@@ -868,10 +924,12 @@ async function openTrip(id){
   $('tripview').classList.remove('hide');
   $('plancard').classList.add('hide');
   $('editcard').classList.add('hide');
+  $('expcard').classList.add('hide');
   $('invitebox').classList.add('hide');
 
   drawTripHeader();
-  await Promise.all([loadPlans(), loadMembers()]);
+  /* 지출은 일행 이름을 쓰므로 일행을 먼저 읽습니다. */
+  await Promise.all([loadPlans(), loadMembers().then(loadExpenses)]);
   watch();
 }
 
@@ -885,6 +943,8 @@ function watch(){
   channel = sb.channel('trip:' + trip.id)
     .on('postgres_changes', { event:'*', schema:'public', table:'plans',        filter:f },
         () => bump('plans'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'expenses',     filter:f },
+        () => bump('expenses'))
     .on('postgres_changes', { event:'*', schema:'public', table:'trip_members', filter:f },
         () => bump('members'))
     .on('postgres_changes', { event:'*', schema:'public', table:'trips',
@@ -914,7 +974,9 @@ function bump(what){
       drawTripHeader();
     }
     if (s.has('plans') || s.has('trip')) await loadPlans();
-    if (s.has('members')) await loadMembers();
+    /* 일행이 바뀌면 지출에 찍힌 이름과 정산 인원도 따라 바뀝니다. */
+    if (s.has('members')) { await loadMembers(); await loadExpenses(); }
+    else if (s.has('expenses')) await loadExpenses();
   }, 250);
 }
 
@@ -1088,6 +1150,180 @@ $('days').addEventListener('click', e => {
   drawDays(); drawPlans();
 });
 
+/* ── 지출 ───────────────────────────────────────────────────────── */
+/* 통화마다 소수 자리가 다릅니다. 엔·원·동은 소수점이 없습니다. */
+const NO_CENTS = ['JPY','KRW','VND','IDR','CLP','HUF','TWD'];
+function money(n, cur){
+  try {
+    return new Intl.NumberFormat('ko-KR', { style:'currency', currency:cur,
+      maximumFractionDigits: NO_CENTS.includes(cur) ? 0 : 2 }).format(n);
+  } catch { return `${Math.round(n).toLocaleString('ko-KR')} ${cur}`; }
+}
+const nameOf = id => {
+  const m = members.find(x => x.user_id === id);
+  return m ? (m.nickname || m.profiles?.display_name || '이름 없음') : '알 수 없음';
+};
+
+async function loadExpenses(){
+  $('experr').classList.add('hide');
+  const { data, error } = await sb.from('expenses')
+    .select('id,date,title,amount,currency,category,payer_id,memo')
+    .eq('trip_id', trip.id)
+    .is('deleted_at', null)
+    .order('date', { ascending:false }).order('created_at', { ascending:false });
+  if (error){ $('expenses').innerHTML = ''; return fail(error, 'exp'); }
+  expenses = data;
+  drawExpenses();
+  drawSettle();
+}
+
+function drawExpenses(){
+  if (!expenses.length){
+    $('exptotal').innerHTML = '';
+    $('expenses').innerHTML = '<div class="empty">아직 지출이 없습니다.</div>';
+    return;
+  }
+  /* 통화별로 따로 더합니다. 환율을 모르는 채로 섞으면 틀린 숫자가 나옵니다. */
+  const byCur = {};
+  for (const e of expenses) byCur[e.currency] = (byCur[e.currency] || 0) + Number(e.amount);
+  $('exptotal').innerHTML =
+    `<div class="picked" style="margin-bottom:var(--s-sm); display:block">
+       <div class="c">모두 합쳐</div>
+       <b>${Object.entries(byCur).map(([c, v]) => esc(money(v, c))).join(' · ')}</b>
+     </div>`;
+
+  let html = '', last = null;
+  for (const e of expenses){
+    if (e.date !== last){
+      html += `<div class="daysep">${esc(dayLabel(e.date, trip))}</div>`;
+      last = e.date;
+    }
+    const k = e.category ? 'k-' + e.category : '';
+    const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : null, e.memo]
+                .filter(Boolean).join(' · ');
+    html += `<div class="plan">
+      <span class="kdot ${esc(k)}"></span>
+      <div class="body"><b>${esc(e.title)}</b>
+        ${e.category ? `<span class="ktag ${esc(k)}">${esc(e.category)}</span>` : ''}
+        ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
+      <div style="text-align:right; flex:none">
+        <b style="white-space:nowrap">${esc(money(Number(e.amount), e.currency))}</b></div>
+      ${trip.myRole === 'viewer' ? '' :
+        `<button class="ghost" data-xact="del" data-id="${esc(e.id)}"
+                 style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
+  }
+  $('expenses').innerHTML = html;
+}
+
+/* 정산 — 비어 있으면 전원 균등입니다 (문서의 expense_shares 규칙).
+   나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다. */
+function drawSettle(){
+  if (!expenses.length || members.length < 2){
+    $('settlecard').classList.add('hide'); return;
+  }
+  $('settlecard').classList.remove('hide');
+
+  const curs = [...new Set(expenses.map(e => e.currency))];
+  $('settle').innerHTML = curs.map(cur => {
+    const rows = expenses.filter(e => e.currency === cur);
+    const total = rows.reduce((s, e) => s + Number(e.amount), 0);
+    const share = total / members.length;
+
+    const paid = {};
+    members.forEach(m => paid[m.user_id] = 0);
+    /* 결제자를 안 적은 지출은 공동으로 봅니다 — 아무에게도 안 몰아줍니다. */
+    rows.forEach(e => { if (e.payer_id != null && e.payer_id in paid)
+                          paid[e.payer_id] += Number(e.amount); });
+
+    const bal = members.map(m => ({ id:m.user_id, v: paid[m.user_id] - share }))
+                       .sort((a, b) => a.v - b.v);
+    /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다. */
+    const moves = [];
+    let i = 0, j = bal.length - 1;
+    while (i < j){
+      const owe = -bal[i].v, get = bal[j].v;
+      if (owe < 0.005){ i++; continue; }
+      if (get < 0.005){ j--; continue; }
+      const v = Math.min(owe, get);
+      moves.push({ from: bal[i].id, to: bal[j].id, v });
+      bal[i].v += v; bal[j].v -= v;
+    }
+
+    return `<div style="margin-bottom:var(--s-sm)">
+      <div class="row" style="border:0; padding:0; margin:0">
+        <span class="label"><b>${esc(money(total, cur))}</b></span>
+        <span class="val">1인 ${esc(money(share, cur))}</span></div>
+      ${moves.length
+        ? moves.map(m => `<div class="row"><span class="label">${esc(nameOf(m.from))}
+             → ${esc(nameOf(m.to))}</span>
+             <span class="val"><b>${esc(money(m.v, cur))}</b></span></div>`).join('')
+        : '<div class="empty" style="padding:10px 0">딱 맞습니다.</div>'}
+    </div>`;
+  }).join('');
+}
+
+$('addexpbtn').addEventListener('click', () => {
+  $('expcard').classList.toggle('hide');
+  if ($('expcard').classList.contains('hide')) return;
+  /* 통화는 현지가 기본입니다. 집 통화도 함께 둡니다 — 한국에서 미리 결제한 것들 때문입니다. */
+  const curs = [...new Set([trip.currency, trip.home_currency, 'USD', 'EUR'])];
+  $('x_cur').innerHTML = curs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  $('x_payer').innerHTML = members.map(m =>
+    `<option value="${esc(m.user_id)}"${m.user_id === me.id ? ' selected' : ''}>` +
+    `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
+    `<option value="">공동 (결제자 없음)</option>`;
+  $('x_date').value = pickedDay || ymd(new Date());
+  $('x_title').focus();
+});
+$('x_cancel').addEventListener('click', () => {
+  $('expcard').classList.add('hide'); $('expformerr').classList.add('hide');
+});
+
+$('x_create').addEventListener('click', async () => {
+  const btn = $('x_create');
+  $('expformerr').classList.add('hide');
+  const title = $('x_title').value.trim();
+  /* 12,000 처럼 쉼표를 넣는 사람이 많습니다. 그대로 받으면 NaN 이 됩니다. */
+  const amount = Number($('x_amount').value.replace(/[,\s]/g, ''));
+  const date = $('x_date').value;
+
+  if (!title)                    return fail('무엇에 썼는지 적어주세요.', 'expform');
+  if (!isFinite(amount) || amount <= 0)
+                                 return fail('금액을 숫자로 적어주세요.', 'expform');
+  if (!date)                     return fail('날짜를 골라주세요.', 'expform');
+
+  btn.disabled = true; btn.textContent = '넣는 중…';
+  const { data, error } = await sb.from('expenses').insert({
+    trip_id: trip.id, title, amount, date,
+    currency: $('x_cur').value,
+    category: $('x_cat').value || null,
+    payer_id: $('x_payer').value || null,
+    memo: $('x_memo').value.trim() || null
+  }).select('id');
+  btn.disabled = false; btn.textContent = '넣기';
+
+  if (error) return fail(error, 'expform');
+  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'expform');
+
+  $('x_title').value = ''; $('x_amount').value = ''; $('x_memo').value = '';
+  $('expcard').classList.add('hide');
+  await loadExpenses();
+});
+
+$('expenses').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-xact]'); if (!b) return;
+  if (b.dataset.armed !== '1'){
+    b.dataset.armed = '1'; b.textContent = '정말?'; b.style.fontWeight = '600'; return;
+  }
+  b.disabled = true;
+  const r = await sb.from('expenses')
+    .update({ deleted_at: new Date().toISOString() }).eq('id', b.dataset.id).select('id');
+  b.disabled = false;
+  if (r.error) return fail(r.error, 'exp');
+  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'exp');
+  await loadExpenses();
+});
+
 /* ── 일행 ───────────────────────────────────────────────────────── */
 const ROLE_KO = { owner:'소유자', editor:'편집자', viewer:'보기만' };
 
@@ -1098,6 +1334,7 @@ async function loadMembers(){
     .eq('trip_id', trip.id)
     .order('joined_at');
   if (error){ $('members').innerHTML = ''; return fail(error, 'mem'); }
+  members = data;
 
   const owner = trip.myRole === 'owner';
   $('members').innerHTML = data.map(m => {
@@ -1411,6 +1648,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
