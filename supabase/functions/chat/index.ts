@@ -38,10 +38,25 @@ async function callGemini(model: string, key: string, contents: unknown) {
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({ contents, generationConfig: { temperature: 0.7 } }),
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          responseMimeType: 'application/json',   // 제안을 카드로 만들려면 형식이 있어야 합니다
+        },
+      }),
     },
   );
   return { code: res.status, body: await res.text() };
+}
+
+/** 두 좌표 사이 거리(km). 이동 시간과 "너무 먼 좌표 버리기"에 씁니다. */
+function distKm(a: number, b: number, c: number, d: number) {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (c - a) * r, dLng = (d - b) * r;
+  const h = Math.sin(dLat / 2) ** 2 +
+            Math.cos(a * r) * Math.cos(c * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
 Deno.serve(async (req) => {
@@ -80,6 +95,9 @@ Deno.serve(async (req) => {
 
     // ── 여행 자료 ── 없으면 없는 대로 답합니다.
     let ctx = '';
+    // 아래 안전장치에서도 씁니다 — 좌표가 구간 중심에서 먼지 봐야 하므로.
+    // deno-lint-ignore no-explicit-any
+    let legs: any[] = [];
     if (trip_id) {
       const { data: trip } = await asUser.from('trips')
         .select('title,destination,country,start_date,end_date,timezone,currency,' +
@@ -89,10 +107,11 @@ Deno.serve(async (req) => {
       if (trip) {
         // 여러 도시·나라를 도는 여행이면 구간마다 통화·시간대·이동방식이 다릅니다.
         // 이걸 안 주면 AI 가 여행 전체를 한 도시로 보고 답합니다.
-        const { data: legs } = await asUser.from('trip_legs')
+        const legRes = await asUser.from('trip_legs')
           .select('destination,country,start_date,end_date,timezone,currency,' +
-                  'walk_max_km,transit_factor,transit_base_min')
+                  'center_lat,center_lng,walk_max_km,transit_factor,transit_base_min')
           .eq('trip_id', trip_id).order('start_date');
+        legs = legRes.data ?? [];
 
         const { data: plans } = await asUser.from('plans')
           .select('date,start_time,end_time,category,title,memo')
@@ -142,6 +161,26 @@ Deno.serve(async (req) => {
       '- 도시가 여러 곳이면 그날 어느 구간인지 보고 답한다.',
       '  로마 일정에 피렌체 식당을 넣지 않는다.',
       '- 예약번호 · 주소 · 전화번호를 새로 지어내지 않는다.',
+      '',
+      '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
+      '{',
+      '  "reply": "사람에게 할 말. 마크다운 써도 된다.",',
+      '  "places": [',
+      '    { "name":"한국어 이름", "name_local":"현지 표기", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
+      '      "lat":숫자, "lng":숫자, "why":"한 줄 이유" }',
+      '  ],',
+      '  "actions": [',
+      '    { "type":"add_plan", "date":"YYYY-MM-DD", "start_time":"HH:MM" 또는 null,',
+      '      "title":"제목", "category":"위와 같음", "memo":"한 줄" 또는 null,',
+      '      "lat":숫자 또는 null, "lng":숫자 또는 null }',
+      '  ]',
+      '}',
+      '',
+      'places · actions 규칙:',
+      '- 단순히 묻는 말이면 places 와 actions 를 빈 배열로 둔다. 억지로 채우지 않는다.',
+      '- 좌표는 아는 곳만 넣는다. 모르면 null 로 둔다. 지어낸 좌표는 넣지 않는다.',
+      '- 날짜는 위 구간을 보고 그 도시에 맞는 날로 넣는다.',
+      '- 한 번에 5개를 넘기지 않는다.',
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
 
@@ -158,14 +197,69 @@ Deno.serve(async (req) => {
 
     const parsed = JSON.parse(r.body);
     const parts = parsed?.candidates?.[0]?.content?.parts ?? [];
-    const reply = parts.map((p: { text?: string }) => p.text ?? '').join('').trim();
-    if (!reply) {
+    const raw = parts.map((p: { text?: string }) => p.text ?? '').join('').trim();
+    if (!raw) {
       const why = parsed?.promptFeedback?.blockReason ??
                   parsed?.candidates?.[0]?.finishReason ?? '알 수 없음';
       return json({ error: `답을 받지 못했습니다 (${why}).` }, 502);
     }
 
-    return json({ reply, used: take.used, limit: take.limit });
+    // JSON 을 못 받아도 말은 전합니다. 형식이 깨졌다고 답까지 버릴 이유는 없습니다.
+    let out: { reply?: string; places?: unknown[]; actions?: unknown[] } = {};
+    try { out = JSON.parse(raw); } catch { out = { reply: raw }; }
+
+    // ── 안전장치 (문서 7장) ──
+    // AI 는 직접 쓰지 않습니다. 여기서 걸러 카드로만 내보내고, 저장은 사용자가 합니다.
+    const CATS = ['식사', '카페', '관광', '쇼핑', '이동', '숙소', '기타'];
+    const inTrip = (d: string) =>
+      typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d);
+
+    // 좌표가 구간 중심에서 너무 멀면 버립니다.
+    // 도쿄를 물었는데 이탈리아 좌표가 오는 일이 실제로 있었습니다.
+    const centers: number[][] = legs
+      .filter((l) => l.center_lat != null && l.center_lng != null)
+      .map((l) => [Number(l.center_lat), Number(l.center_lng)]);
+    const nearOk = (lat: unknown, lng: unknown) => {
+      if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
+      if (!centers.length) return true;              // 중심을 모르면 판단하지 않습니다
+      return centers.some(([a, b]) => distKm(a, b, lat, lng) <= 120);
+    };
+    const coords = (o: Record<string, unknown>) =>
+      nearOk(o.lat, o.lng) ? { lat: o.lat as number, lng: o.lng as number }
+                           : { lat: null, lng: null };
+
+    const places = (Array.isArray(out.places) ? out.places : [])
+      .slice(0, 5)
+      .filter((p): p is Record<string, unknown> => !!p && typeof p === 'object')
+      .map((p) => ({
+        name: String(p.name ?? '').slice(0, 60),
+        name_local: p.name_local ? String(p.name_local).slice(0, 60) : null,
+        category: CATS.includes(String(p.category)) ? String(p.category) : null,
+        why: p.why ? String(p.why).slice(0, 120) : null,
+        ...coords(p),
+      }))
+      .filter((p) => p.name);
+
+    const actions = (Array.isArray(out.actions) ? out.actions : [])
+      .slice(0, 5)
+      .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
+      .filter((a) => a.type === 'add_plan' && inTrip(String(a.date)))
+      .map((a) => ({
+        type: 'add_plan',
+        date: String(a.date),
+        start_time: /^\d{2}:\d{2}$/.test(String(a.start_time)) ? String(a.start_time) : null,
+        title: String(a.title ?? '').slice(0, 60),
+        category: CATS.includes(String(a.category)) ? String(a.category) : null,
+        memo: a.memo ? String(a.memo).slice(0, 200) : null,
+        ...coords(a),
+      }))
+      .filter((a) => a.title);
+
+    return json({
+      reply: String(out.reply ?? raw).slice(0, 4000),
+      places, actions, used: take.used, limit: take.limit,
+    });
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 500);
   }
