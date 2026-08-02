@@ -185,6 +185,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
           color:var(--ink-48); font-size:calc(12px * var(--ts)); }
 .hopline.bad{ border-left-color:var(--bad); color:var(--bad); font-weight:600; }
+/* 예약번호 — 여행 중에 눈으로 찾는 것이라 티나게 둡니다 */
+.refno{ display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size:calc(13px * var(--ts)); letter-spacing:.04em;
+        background:var(--parchment); padding:1px 8px; border-radius:var(--r-sm); }
 
 /* AI 대화 — 이 탭의 본체입니다. 짧아도 채팅창처럼 보이게 자리를 잡아둡니다. */
 #chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto; }
@@ -583,6 +587,74 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div id="settle"></div>
       </div>
 
+      <!-- 준비 — 예약 · 준비물 · 링크 -->
+      <div class="card" id="card-book">
+        <h2><span class="grow">예약</span>
+          <button class="small" id="addbookbtn">+ 추가</button></h2>
+        <div id="bookings"><div class="empty">불러오는 중…</div></div>
+        <pre id="bookerr" class="hide"></pre>
+      </div>
+
+      <div class="card hide" id="bookcard">
+        <h2>예약 추가</h2>
+        <div class="two">
+          <div><label for="b_kind">종류</label>
+            <select id="b_kind">
+              <option>항공</option><option>숙소</option><option>기차</option>
+              <option>식당</option><option>티켓</option><option>렌터카</option>
+              <option>기타</option>
+            </select></div>
+          <div><label for="b_ref">예약번호</label>
+            <input id="b_ref" placeholder="선택" maxlength="40"></div>
+        </div>
+        <label for="b_title">이름</label>
+        <input id="b_title" placeholder="예: 대한항공 KE927" maxlength="60">
+        <div class="two">
+          <div><label for="b_sdate">시작</label><input type="date" id="b_sdate"></div>
+          <div><label for="b_stime">시각</label><input type="time" id="b_stime"></div>
+        </div>
+        <div class="two">
+          <div><label for="b_edate">끝 (선택)</label><input type="date" id="b_edate"></div>
+          <div><label for="b_etime">시각</label><input type="time" id="b_etime"></div>
+        </div>
+        <label for="b_addr">주소 (선택)</label>
+        <input id="b_addr" maxlength="200">
+        <div class="two">
+          <div><label for="b_tel">전화 (선택)</label><input id="b_tel" maxlength="30"></div>
+          <div><label for="b_memo">메모 (선택)</label><input id="b_memo" maxlength="200"></div>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:8px">
+          <button class="primary" id="b_create">넣기</button>
+          <button class="small" id="b_cancel">취소</button>
+        </div>
+        <pre id="bookformerr" class="hide"></pre>
+      </div>
+
+      <div class="card" id="card-pack">
+        <h2><span class="grow">준비물</span>
+          <span class="val" id="packcount"></span></h2>
+        <div id="packing"><div class="empty">불러오는 중…</div></div>
+        <div style="display:flex; gap:8px; margin-top:12px">
+          <input id="k_title" placeholder="챙길 것" maxlength="60" enterkeyhint="done">
+          <select id="k_who" style="width:auto; flex:none; max-width:38%"></select>
+          <button class="small" id="k_add" style="flex:none">넣기</button>
+        </div>
+        <pre id="packerr" class="hide"></pre>
+      </div>
+
+      <div class="card" id="card-link">
+        <h2>링크</h2>
+        <div id="links"><div class="empty">불러오는 중…</div></div>
+        <div style="margin-top:12px">
+          <input id="l_title" placeholder="이름 (예: 숙소 예약 확인)" maxlength="60">
+          <div style="display:flex; gap:8px; margin-top:8px">
+            <input id="l_url" placeholder="https://…" maxlength="500" enterkeyhint="done">
+            <button class="small" id="l_add" style="flex:none">넣기</button>
+          </div>
+        </div>
+        <pre id="linkerr" class="hide"></pre>
+      </div>
+
       <!-- 일행 -->
       <div class="card" id="card-mem">
         <h2><span class="grow">일행</span>
@@ -659,6 +731,12 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
                stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="13"
                rx="3"/><path d="M2.5 10.5h19M6.5 15h4"/></svg><span>지출</span></button>
+        <button data-t="prep">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+               d="M4.5 7.5h15V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19z"/><path
+               d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2"/><path
+               d="M9.5 13.5l1.8 1.8 3.2-3.4"/></svg><span>준비</span></button>
         <button data-t="mem">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
                stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.4"/><path
@@ -698,7 +776,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b31</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b32</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -724,7 +802,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, suggested = { actions:[], places:[] };
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -742,7 +820,9 @@ function mark(id, ok, text){
 function fail(e, where){
   const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
-                exp:$('experr'), expform:$('expformerr') }[where] || $('err');
+                exp:$('experr'), expform:$('expformerr'),
+                book:$('bookerr'), bookform:$('bookformerr'),
+                pack:$('packerr'), link:$('linkerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -1662,7 +1742,11 @@ async function openTrip(id){
   /* 구간을 먼저 읽어야 날짜 칩에 도시가 붙고 지출 통화가 맞습니다.
      지출은 일행 이름을 쓰므로 일행도 먼저 읽습니다. */
   await loadLegs();
-  await Promise.all([loadPlans(), loadMembers().then(loadExpenses), loadCities()]);
+  /* 준비물은 담당 이름을 쓰므로 일행 뒤에 붙입니다. */
+  await Promise.all([
+    loadPlans(), loadBookings(), loadLinks(), loadCities(),
+    loadMembers().then(() => Promise.all([loadExpenses(), loadPacking()])),
+  ]);
   fillCityList();
   watch();
 }
@@ -1678,6 +1762,12 @@ function watch(){
     .on('postgres_changes', { event:'*', schema:'public', table:'plans',        filter:f },
         () => bump('plans'))
     .on('postgres_changes', { event:'*', schema:'public', table:'expenses',     filter:f },
+        () => bump('expenses'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'bookings',     filter:f },
+        () => bump('prep'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'packing',      filter:f },
+        () => bump('prep'))
+    .on('postgres_changes', { event:'*', schema:'public', table:'links',        filter:f },
         () => bump('expenses'))
     .on('postgres_changes', { event:'*', schema:'public', table:'trip_legs',    filter:f },
         () => bump('legs'))
@@ -1713,8 +1803,10 @@ function bump(what){
     if (s.has('legs')) await loadLegs();
     if (s.has('plans') || s.has('trip') || s.has('legs')) await loadPlans();
     /* 일행이 바뀌면 지출에 찍힌 이름과 정산 인원도 따라 바뀝니다. */
-    if (s.has('members')) { await loadMembers(); await loadExpenses(); }
+    if (s.has('members')) { await loadMembers(); await loadExpenses(); await loadPacking(); }
     else if (s.has('expenses')) await loadExpenses();
+    if (s.has('prep'))
+      await Promise.all([loadBookings(), loadPacking(), loadLinks()]);
   }, 250);
 }
 
@@ -2028,9 +2120,11 @@ $('days').addEventListener('click', e => {
 const TABS = {
   plans: ['card-plans', 'plancard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
+  prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
   mem:   ['card-mem']
 };
-const FORMS = ['plancard', 'expcard'];   /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
+/* 탭을 옮기면 열려 있던 폼은 닫습니다 */
+const FORMS = ['plancard', 'expcard', 'bookcard'];
 
 function showTab(t){
   tab = t;
@@ -2233,6 +2327,187 @@ $('expenses').addEventListener('click', async e => {
   if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'exp');
   await loadExpenses();
 });
+
+/* ── 예약 ───────────────────────────────────────────────────────────
+ * 여행 중에 제일 자주 열어보는 것입니다 — 항공편 번호, 숙소 예약번호.
+ * 읽기 전용 공유 링크에는 절대 안 나갑니다 (get_shared_trip 에 아예 없습니다). */
+const KIND_K = { 항공:'이동', 기차:'이동', 렌터카:'이동', 숙소:'숙소',
+                 식당:'식사', 티켓:'관광', 기타:'기타' };
+
+async function loadBookings(){
+  $('bookerr').classList.add('hide');
+  const { data, error } = await sb.from('bookings')
+    .select('id,kind,title,ref,start_date,start_time,end_date,end_time,address,tel,memo')
+    .eq('trip_id', trip.id).is('deleted_at', null)
+    .order('start_date', { nullsFirst:false }).order('start_time', { nullsFirst:false });
+  if (error){ $('bookings').innerHTML = ''; return fail(error, 'book'); }
+  bookings = data;
+
+  $('bookings').innerHTML = data.length ? data.map(b => {
+    const k = 'k-' + (KIND_K[b.kind] || '기타');
+    const when = [b.start_date, hm(b.start_time)].filter(Boolean).join(' ') +
+      (b.end_date && b.end_date !== b.start_date
+        ? ' ~ ' + b.end_date + (b.end_time ? ' ' + hm(b.end_time) : '')
+        : b.end_time ? '~' + hm(b.end_time) : '');
+    const sub = [when, b.address, b.tel, b.memo].filter(Boolean).join(' · ');
+    return `<div class="plan">
+      <span class="kdot ${esc(k)}"></span>
+      <div class="body"><b>${esc(b.title)}</b>
+        <span class="ktag ${esc(k)}">${esc(b.kind)}</span>
+        ${b.ref ? `<span class="refno">${esc(b.ref)}</span>` : ''}
+        ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
+      ${trip.myRole === 'viewer' ? '' :
+        `<button class="ghost" data-bact="del" data-id="${esc(b.id)}"
+                 style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
+  }).join('') : '<div class="empty">항공권·숙소 예약을 넣어두면 여행 중에 찾기 쉽습니다.</div>';
+}
+
+$('addbookbtn').addEventListener('click', () => {
+  $('bookcard').classList.toggle('hide');
+  if ($('bookcard').classList.contains('hide')) return;
+  if (!$('b_sdate').value) $('b_sdate').value = trip.start_date;
+  $('b_title').focus();
+});
+$('b_cancel').addEventListener('click', () => {
+  $('bookcard').classList.add('hide'); $('bookformerr').classList.add('hide');
+});
+
+$('b_create').addEventListener('click', async () => {
+  const btn = $('b_create');
+  $('bookformerr').classList.add('hide');
+  const title = $('b_title').value.trim();
+  if (!title) return fail('무엇을 예약했는지 적어주세요.', 'bookform');
+
+  btn.disabled = true; btn.textContent = '넣는 중…';
+  const { data, error } = await sb.from('bookings').insert({
+    trip_id: trip.id, kind: $('b_kind').value, title,
+    ref: $('b_ref').value.trim() || null,
+    start_date: $('b_sdate').value || null, start_time: $('b_stime').value || null,
+    end_date: $('b_edate').value || null,   end_time: $('b_etime').value || null,
+    address: $('b_addr').value.trim() || null,
+    tel: $('b_tel').value.trim() || null,
+    memo: $('b_memo').value.trim() || null,
+  }).select('id');
+  btn.disabled = false; btn.textContent = '넣기';
+  if (error) return fail(error, 'bookform');
+  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'bookform');
+
+  ['b_title','b_ref','b_addr','b_tel','b_memo','b_stime','b_etime','b_edate']
+    .forEach(id => $(id).value = '');
+  $('bookcard').classList.add('hide');
+  await loadBookings();
+});
+
+$('bookings').addEventListener('click', e => softDel(e, 'bact', 'bookings', loadBookings, 'book'));
+
+/* ── 준비물 ─────────────────────────────────────────────────────────
+ * 담당을 참여자와 이어야 "내가 챙길 것"만 볼 수 있습니다.
+ * 도쿄 앱은 문자열이라 그게 안 됐습니다. */
+async function loadPacking(){
+  $('packerr').classList.add('hide');
+  const { data, error } = await sb.from('packing')
+    .select('id,title,done,assignee_id,category')
+    .eq('trip_id', trip.id).is('deleted_at', null)
+    .order('done').order('created_at');
+  if (error){ $('packing').innerHTML = ''; return fail(error, 'pack'); }
+
+  const done = data.filter(p => p.done).length;
+  $('packcount').textContent = data.length ? `${done}/${data.length}` : '';
+  $('k_who').innerHTML = `<option value="">담당 없음</option>` + members
+    .filter(m => !m.left_at)
+    .map(m => `<option value="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</option>`).join('');
+
+  $('packing').innerHTML = data.length ? data.map(p =>
+    `<div class="row"><input type="checkbox" data-pk="${esc(p.id)}"
+        ${p.done ? 'checked' : ''} ${trip.myRole === 'viewer' ? 'disabled' : ''}
+        style="width:auto; flex:none; margin:0">
+      <span class="label"${p.done ? ' style="opacity:.45; text-decoration:line-through"' : ''}>
+        ${esc(p.title)}</span>
+      ${p.assignee_id ? `<span class="badge">${esc(nameOf(p.assignee_id))}</span>` : ''}
+      ${trip.myRole === 'viewer' ? '' :
+        `<button class="ghost" data-kact="del" data-id="${esc(p.id)}"
+                 style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
+    : '<div class="empty">챙길 것을 적어두세요.</div>';
+}
+
+$('k_add').addEventListener('click', async () => {
+  const t = $('k_title').value.trim();
+  if (!t) return;
+  $('packerr').classList.add('hide');
+  $('k_add').disabled = true;
+  const { data, error } = await sb.from('packing').insert({
+    trip_id: trip.id, title: t, assignee_id: $('k_who').value || null,
+  }).select('id');
+  $('k_add').disabled = false;
+  if (error) return fail(error, 'pack');
+  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'pack');
+  $('k_title').value = '';
+  await loadPacking();
+});
+$('k_title').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); $('k_add').click(); }
+});
+$('packing').addEventListener('change', async e => {
+  const c = e.target.closest('input[data-pk]'); if (!c) return;
+  const r = await sb.from('packing').update({ done: c.checked })
+    .eq('id', c.dataset.pk).select('id');
+  if (r.error){ c.checked = !c.checked; return fail(r.error, 'pack'); }
+  await loadPacking();
+});
+$('packing').addEventListener('click', e => softDel(e, 'kact', 'packing', loadPacking, 'pack'));
+
+/* ── 링크 ── 예약 확인 페이지, 블로그, 지도 같은 것 */
+async function loadLinks(){
+  $('linkerr').classList.add('hide');
+  const { data, error } = await sb.from('links')
+    .select('id,title,url,category').eq('trip_id', trip.id)
+    .is('deleted_at', null).order('created_at');
+  if (error){ $('links').innerHTML = ''; return fail(error, 'link'); }
+  $('links').innerHTML = data.length ? data.map(l =>
+    `<div class="row"><span class="label">
+        <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"
+           style="color:var(--primary)"><b>${esc(l.title)}</b></a>
+        <div class="memo" style="word-break:break-all">${esc(l.url)}</div></span>
+      ${trip.myRole === 'viewer' ? '' :
+        `<button class="ghost" data-lkact="del" data-id="${esc(l.id)}"
+                 style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
+    : '<div class="empty">예약 확인 페이지나 블로그를 담아두세요.</div>';
+}
+
+$('l_add').addEventListener('click', async () => {
+  const t = $('l_title').value.trim(), u = $('l_url').value.trim();
+  $('linkerr').classList.add('hide');
+  if (!u) return fail('주소를 넣어주세요.', 'link');
+  /* http 없이 붙여넣는 일이 많습니다. 그대로 두면 앱 안 경로로 열립니다. */
+  const url = /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  $('l_add').disabled = true;
+  const { data, error } = await sb.from('links')
+    .insert({ trip_id: trip.id, title: t || url, url }).select('id');
+  $('l_add').disabled = false;
+  if (error) return fail(error, 'link');
+  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'link');
+  $('l_title').value = ''; $('l_url').value = '';
+  await loadLinks();
+});
+$('l_url').addEventListener('keydown', e => {
+  if (e.key === 'Enter'){ e.preventDefault(); $('l_add').click(); }
+});
+$('links').addEventListener('click', e => softDel(e, 'lkact', 'links', loadLinks, 'link'));
+
+/* 세 곳이 지우는 방식이 같습니다. 한 번 묻고, 진짜로 안 지우고 숨깁니다. */
+async function softDel(e, attr, table, reload, errBox){
+  const b = e.target.closest(`button[data-${attr}]`); if (!b) return;
+  if (b.dataset.armed !== '1'){
+    b.dataset.armed = '1'; b.textContent = '정말?'; b.style.fontWeight = '600'; return;
+  }
+  b.disabled = true;
+  const r = await sb.from(table).update({ deleted_at: new Date().toISOString() })
+    .eq('id', b.dataset.id).select('id');
+  b.disabled = false;
+  if (r.error) return fail(r.error, errBox);
+  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', errBox);
+  await reload();
+}
 
 /* ── 일행 ───────────────────────────────────────────────────────── */
 const ROLE_KO = { owner:'소유자', editor:'편집자', viewer:'보기만' };
@@ -2565,6 +2840,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
