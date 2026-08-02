@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -155,6 +155,9 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <input id="f_dest" placeholder="예: 치앙라이" maxlength="40">
         <label for="f_country">나라</label>
         <select id="f_country"></select>
+        <!-- 나라만 골라도 무엇이 채워지는지 보여줍니다.
+             안 보이면 통화나 시간대가 엉뚱해도 모르고 지나갑니다. -->
+        <div class="c" id="c_note" style="margin-top:6px"></div>
       </div>
 
       <div class="two">
@@ -191,7 +194,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b5</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b6</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -212,7 +215,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
-let me = null, cities = null, countryName = {}, picked = null, hitList = [], cursor = 0;
+let me = null, cities = null, countryName = {}, countryInfo = {},
+    picked = null, hitList = [], cursor = 0;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -263,13 +267,15 @@ const GRADE = { dense:'지하철 촘촘', normal:'대중교통 보통',
 async function loadCities(){
   if (cities) return;
   const [cs, ns] = await Promise.all([
-    sb.from('cities').select('id,name,name_en,name_local,country,currency,transit_grade')
+    sb.from('cities')
+      .select('id,name,name_en,name_local,country,currency,timezone,transit_grade')
       .order('name'),
-    sb.from('countries').select('code,name').order('name')
+    sb.from('countries').select('code,name,currency,local_lang,default_timezone').order('name')
   ]);
   if (cs.error || ns.error) return fail(cs.error || ns.error, 'form');
 
   countryName = Object.fromEntries(ns.data.map(n => [n.code, n.name]));
+  countryInfo = Object.fromEntries(ns.data.map(n => [n.code, n]));
   /* 검색용 색인을 한 번만 만들어 둡니다. 칠 때마다 만들면 버벅입니다. */
   cities = cs.data.map(c => ({
     ...c,
@@ -279,7 +285,21 @@ async function loadCities(){
   }));
   $('f_country').innerHTML =
     ns.data.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
+  drawCountryNote();
 }
+
+/* 나라만 골랐을 때 무엇이 채워질지 미리 보여줍니다.
+   시간대가 여럿인 나라는 그렇다고 적어줘야 오해가 없습니다. */
+function drawCountryNote(){
+  const n = countryInfo[$('f_country').value];
+  if (!n) return;
+  const many = cities && cities.filter(c => c.country === n.code)
+                              .some(c => c.timezone !== n.default_timezone);
+  $('c_note').textContent =
+    `${n.currency} · ${n.default_timezone || '시간대 미정'}` +
+    (many ? ' — 이 나라는 시간대가 여럿입니다. 정확히 하려면 도시를 고르세요.' : '');
+}
+$('f_country').addEventListener('change', drawCountryNote);
 
 function search(q){
   q = q.trim().toLowerCase();
@@ -489,3 +509,4 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
