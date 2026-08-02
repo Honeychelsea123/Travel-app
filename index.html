@@ -185,6 +185,29 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
           color:var(--ink-48); font-size:calc(12px * var(--ts)); }
 .hopline.bad{ border-left-color:var(--bad); color:var(--bad); font-weight:600; }
+/* 프로필 숫자 줄 — 왓챠의 "696 평가 | 27 코멘트" 자리 */
+.stats{ display:flex; margin-top:var(--s-md); border-top:1px solid var(--divider-soft);
+        padding-top:var(--s-sm); }
+.stats button{ flex:1; border:0; background:none; padding:6px 0;
+               display:flex; flex-direction:column; align-items:center; gap:1px;
+               border-radius:var(--r-sm); }
+.stats button + button{ border-left:1px solid var(--divider-soft); }
+.stats b{ font-size:calc(23px * var(--ts)); font-weight:650; letter-spacing:-.02em; }
+.stats span{ font-size:calc(12px * var(--ts)); color:var(--ink-48); }
+
+/* 채워지는 게 보이면 채우고 싶어집니다 */
+.bar{ height:6px; border-radius:999px; background:var(--parchment); overflow:hidden;
+      margin-top:8px; }
+.bar i{ display:block; height:100%; border-radius:999px; background:var(--primary); }
+
+.shelf{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.shelf button{ display:flex; align-items:center; gap:8px; padding:13px 14px;
+               border:1px solid var(--hairline); border-radius:var(--r-md);
+               background:var(--pearl); font-size:calc(14px * var(--ts)); }
+.shelf .ic{ font-size:calc(17px * var(--ts)); line-height:1; }
+.shelf span:not(.ic){ flex:1; text-align:left; color:var(--ink-80); }
+.shelf b{ font-variant-numeric:tabular-nums; }
+
 /* 별점 — 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 */
 .stars{ display:inline-flex; gap:1px; flex:none; cursor:pointer; user-select:none; }
 .st{ position:relative; width:1.1em; height:1.1em; line-height:1;
@@ -427,74 +450,129 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
     <!-- 프로필 -->
     <div id="setview" class="hide">
-      <div class="card">
-        <div class="me">
-          <img id="avatar" alt="">
-          <div class="name" style="min-width:0">
-            <div id="name">—</div>
-            <div class="mail" id="mail">—</div>
+
+      <!-- 프로필 화면 -->
+      <div id="profpane">
+        <div class="card">
+          <div class="row" style="border:0; padding:0; margin:0">
+            <span class="label"></span>
+            <button class="ghost" id="bell" style="position:relative; padding:6px 8px">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+                   d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path
+                   d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+              <span id="belldot" class="hide" style="position:absolute; top:0; right:0;
+                    min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+                    background:var(--bad); color:#fff; font-size:10px; line-height:16px;
+                    font-weight:700"></span>
+            </button>
+            <button class="ghost" id="gear" style="padding:6px 8px">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2
+                2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4
+                0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7
+                1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 8.4a1.7
+                1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0
+                0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1
+                1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7
+                1.7 0 0 0-1.5 1z"/></svg>
+            </button>
           </div>
-          <button class="ghost" id="bell" style="position:relative; padding:6px 8px">
-            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor"
-                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
-                 d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path
-                 d="M10.5 19a2 2 0 0 0 3 0"/></svg>
-            <span id="belldot" class="hide" style="position:absolute; top:2px; right:2px;
-                  min-width:16px; height:16px; padding:0 4px; border-radius:999px;
-                  background:var(--bad); color:#fff; font-size:10px; line-height:16px;
-                  font-weight:700"></span>
-          </button>
-          <button class="ghost" id="editname">이름</button>
-        </div>
-        <div id="namebox" class="hide" style="margin-top:12px">
-          <input id="n_name" maxlength="30" placeholder="여행에서 보일 이름">
-          <div style="margin-top:10px; display:flex; gap:8px">
-            <button class="primary" id="n_save">저장</button>
-            <button class="small" id="n_cancel">취소</button>
+
+          <div style="text-align:center; padding:4px 0 2px">
+            <img id="avatar" alt="" style="width:88px; height:88px; border-radius:50%;
+                 background:var(--parchment); object-fit:cover">
+            <div style="font-size:calc(21px * var(--ts)); font-weight:650; margin-top:10px"
+                 id="name">—</div>
+            <div class="memo" id="mail">—</div>
           </div>
-          <div class="empty" style="padding:8px 0 0; text-align:left">
-            모든 여행에서 쓰는 이름입니다. 특정 여행에서만 다르게 부르려면
-            그 여행의 <b>일행</b> 탭에서 별명을 정하세요.
+
+          <!-- 왓챠의 "696 평가 | 27 코멘트" 줄과 같은 자리입니다 -->
+          <div class="stats">
+            <button data-shelf="been"><b id="s_country">0</b><span>나라</span></button>
+            <button data-shelf="been"><b id="s_city">0</b><span>도시</span></button>
+            <button data-shelf="mine"><b id="s_rated">0</b><span>평가</span></button>
+          </div>
+
+          <div id="s_prog" class="memo" style="text-align:center; margin-top:10px"></div>
+          <div class="days" id="s_cont" style="justify-content:center; margin:10px 0 0"></div>
+        </div>
+
+        <div class="card hide" id="notifcard">
+          <h2><span class="grow">알림</span>
+            <button class="ghost hide" id="readall">모두 읽음</button></h2>
+          <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
+        </div>
+
+        <div class="card">
+          <h2>보관함</h2>
+          <div class="shelf">
+            <button data-shelf="been"><span class="ic" style="color:var(--k-see)">✓</span>
+              <span>가봤어요</span><b id="s_been">0</b></button>
+            <button data-shelf="want"><span class="ic" style="color:#e0245e">♥</span>
+              <span>가보고 싶어요</span><b id="s_want">0</b></button>
+            <button data-shelf="mine"><span class="ic" style="color:#f5a623">★</span>
+              <span>내 평가</span><b id="s_rated2">0</b></button>
+            <button data-shelf="trips"><span class="ic">🧳</span>
+              <span>다녀온 여행</span><b id="s_trips">0</b></button>
           </div>
         </div>
       </div>
 
-      <!-- 알림 — 위 종을 눌러야 펼쳐집니다. 만드는 쪽은 아직 없습니다. -->
-      <div class="card hide" id="notifcard">
-        <h2><span class="grow">알림</span>
-          <button class="ghost hide" id="readall">모두 읽음</button></h2>
-        <div id="notifs"><div class="empty">알림이 없습니다.</div></div>
-      </div>
-
-      <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
-           한 명이 키우면 전원 화면이 커졌습니다. -->
-      <div class="card">
-        <h2>글자 크기</h2>
-        <div class="days" id="tsbtns">
-          <button class="day" data-ts="0.9">작게</button>
-          <button class="day" data-ts="1">보통</button>
-          <button class="day" data-ts="1.15">크게</button>
-          <button class="day" data-ts="1.3">아주 크게</button>
+      <!-- 설정 — 톱니를 눌러야 나옵니다 -->
+      <div id="setpane" class="hide">
+        <div class="card" style="padding:10px 12px">
+          <button class="ghost" id="setback" style="padding-left:0">← 프로필</button>
         </div>
-        <div class="empty" style="padding:4px 0 0; text-align:left">
-          이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.
+
+        <div class="card">
+          <h2><span class="grow">이름</span>
+            <button class="ghost" id="editname">바꾸기</button></h2>
+          <div class="memo" id="curname">—</div>
+          <div id="namebox" class="hide" style="margin-top:12px">
+            <input id="n_name" maxlength="30" placeholder="여행에서 보일 이름">
+            <div style="margin-top:10px; display:flex; gap:8px">
+              <button class="primary" id="n_save">저장</button>
+              <button class="small" id="n_cancel">취소</button>
+            </div>
+            <div class="empty" style="padding:8px 0 0; text-align:left">
+              모든 여행에서 쓰는 이름입니다. 특정 여행에서만 다르게 부르려면
+              그 여행의 <b>일행</b> 탭에서 별명을 정하세요.
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div class="card" id="acctcard">
-        <h2>계정</h2>
-        <div class="row"><span class="dot" id="dp"></span>
-          <span class="label">프로필</span><span class="val" id="vp">—</span></div>
-        <div class="row"><span class="dot" id="du"></span>
-          <span class="label">개인 설정</span><span class="val" id="vu">—</span></div>
-        <div class="row"><span class="dot" id="d0"></span>
-          <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
-        <div class="row"><span class="dot" id="d1"></span>
-          <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
-      </div>
+        <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
+             한 명이 키우면 전원 화면이 커졌습니다. -->
+        <div class="card">
+          <h2>글자 크기</h2>
+          <div class="days" id="tsbtns">
+            <button class="day" data-ts="0.9">작게</button>
+            <button class="day" data-ts="1">보통</button>
+            <button class="day" data-ts="1.15">크게</button>
+            <button class="day" data-ts="1.3">아주 크게</button>
+          </div>
+          <div class="empty" style="padding:4px 0 0; text-align:left">
+            이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.
+          </div>
+        </div>
 
-      <div class="card">
-        <button class="ghost" id="logout" style="width:100%; color:var(--bad)">로그아웃</button>
+        <div class="card" id="acctcard">
+          <h2>계정</h2>
+          <div class="row"><span class="dot" id="dp"></span>
+            <span class="label">프로필</span><span class="val" id="vp">—</span></div>
+          <div class="row"><span class="dot" id="du"></span>
+            <span class="label">개인 설정</span><span class="val" id="vu">—</span></div>
+          <div class="row"><span class="dot" id="d0"></span>
+            <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
+          <div class="row"><span class="dot" id="d1"></span>
+            <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
+        </div>
+
+        <div class="card">
+          <button class="ghost" id="logout" style="width:100%; color:var(--bad)">로그아웃</button>
+        </div>
       </div>
     </div><!-- /setview -->
 
@@ -796,16 +874,16 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
              d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10"
              r="2.6"/></svg><span>여행</span></button>
-      <button data-a="rate">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-             stroke-width="1.7" stroke-linejoin="round"><path
-             d="M12 3.8l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 10l5.9-.9z"/>
-        </svg><span>평가</span></button>
       <button data-a="ai">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
              d="M12 3.5l1.7 4.3 4.3 1.7-4.3 1.7L12 15.5l-1.7-4.3L6 9.5l4.3-1.7z"/><path
              d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg><span>AI</span></button>
+      <button data-a="rate">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+             stroke-width="1.7" stroke-linejoin="round"><path
+             d="M12 3.8l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3.5 10l5.9-.9z"/>
+        </svg><span>평가</span></button>
       <button data-a="set">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12"
@@ -819,7 +897,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b36</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b37</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1103,7 +1181,7 @@ function showApp(t){
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === t));
   if (t === 'home')      loadHome();
-  else if (t === 'set')  loadNotifs();
+  else if (t === 'set')  { showProfile(false); loadNotifs(); loadFootprint(); }
   else if (t === 'ai')   loadAi();
   else if (t === 'rate') loadRatings();
   else                   loadTrips();
@@ -1643,6 +1721,56 @@ async function loadHome(){
 }
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
+/* ── 내 발자국 ──────────────────────────────────────────────────────
+ * 왓챠의 "696 평가 · 27 코멘트" 줄을 여행판으로 옮긴 것입니다.
+ * 대륙별로 쪼개면 어디가 비었는지 보이고, 진행률은 채우고 싶게 만듭니다. */
+const UN_COUNTRIES = 195;   /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값 */
+
+async function loadFootprint(){
+  const { data, error } = await sb.rpc('my_footprint');
+  if (error || !data) return;
+  const f = data;
+  $('s_country').textContent = f.countries;
+  $('s_city').textContent    = f.cities;
+  $('s_rated').textContent   = f.rated;
+  $('s_rated2').textContent  = f.rated;
+  $('s_been').textContent    = f.cities;
+  $('s_want').textContent    = f.wants;
+  $('s_trips').textContent   = f.trips;
+
+  const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
+  $('s_prog').innerHTML = f.countries
+    ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%
+       <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
+    : '다녀온 곳을 표시하면 여기에 쌓입니다.';
+
+  const by = f.by_continent || {};
+  $('s_cont').innerHTML = Object.entries(by)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `<span class="day" style="cursor:default">${esc(k)}
+       <span class="n">${n}</span></span>`).join('');
+}
+
+/* 톱니를 누르면 설정, 뒤로 누르면 프로필. 설정을 프로필에 다 늘어놓으면
+   정작 보러 온 숫자가 아래로 밀립니다. */
+function showProfile(setting){
+  $('profpane').classList.toggle('hide', setting);
+  $('setpane').classList.toggle('hide', !setting);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+$('gear').addEventListener('click', () => showProfile(true));
+$('setback').addEventListener('click', () => showProfile(false));
+
+/* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
+$('setview').addEventListener('click', e => {
+  const b = e.target.closest('button[data-shelf]'); if (!b) return;
+  if (b.dataset.shelf === 'trips'){ tripFilter = 'past'; return showApp('trips'); }
+  rateFilter = b.dataset.shelf;
+  document.querySelectorAll('#r_filter button').forEach(x =>
+    x.classList.toggle('on', x.dataset.rf === rateFilter));
+  showApp('rate');
+});
+
 /* 종은 프로필 우상단에 있고 안 읽은 수를 배지로 답니다. 눌러야 목록이 펼쳐집니다. */
 $('bell').addEventListener('click', () => {
   $('notifcard').classList.toggle('hide');
@@ -1691,7 +1819,7 @@ $('n_save').addEventListener('click', async () => {
     .eq('id', me.id).select('id');
   if (r.error) return fail(r.error, 'trip');
   if (!r.data?.length) return fail('이름을 바꾸지 못했습니다 (0건).', 'trip');
-  $('name').textContent = v;
+  $('name').textContent = v; $('curname').textContent = v;
   $('namebox').classList.add('hide');
 });
 
@@ -3013,6 +3141,7 @@ async function render(session){
   const meta = me.user_metadata || {};
   $('mail').textContent = me.email || '';
   $('name').textContent = meta.full_name || meta.name || (me.email||'').split('@')[0];
+  $('curname').textContent = $('name').textContent;
   if (meta.avatar_url || meta.picture) $('avatar').src = meta.avatar_url || meta.picture;
 
   /* 가입 트리거가 실제로 돌았는지 봅니다 (001 의 handle_new_user). */
@@ -3078,6 +3207,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
