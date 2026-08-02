@@ -1047,7 +1047,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b53</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b54</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1333,6 +1333,14 @@ $('create').addEventListener('click', async () => {
  * 로그아웃과 보관함이 목록 위에 얹혀 있던 것을 여기로 내렸습니다. */
 function showApp(t){
   appTab = t;
+  /* 여행이 열려 있으면 먼저 닫습니다. 안 닫으면 여행 화면이 탭 화면 아래에
+     그대로 남습니다 — 홈에서 발자국을 누르면 프로필 밑에 여행이 붙어 있었습니다.
+     backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
+  if (trip){ unwatch(); trip = null; }
+  $('tripview').classList.add('hide');
+  $('tabbar').classList.add('hide');
+  $('appbar').classList.remove('hide');
+
   $('homeview').classList.toggle('hide', t !== 'home');
   $('listview').classList.toggle('hide', t !== 'trips');
   $('rateview').classList.toggle('hide', t !== 'rate');
@@ -2575,8 +2583,11 @@ async function openTrip(id){
      이미 여행 안이면(다른 여행으로 건너뛴 경우) 또 쌓지 않습니다. */
   if (history.state?.t2 !== 'trip') history.pushState({ t2:'trip' }, '');
 
-  $('listview').classList.add('hide');
-  $('setview').classList.add('hide');
+  /* 여행은 어느 탭에서든 열립니다 — 홈에서 열면 홈이 아래에 그대로 남아 있었습니다.
+     앱 단계 화면은 하나도 빠짐없이 덮습니다. 돌아갈 탭은 appTab 이 기억합니다. */
+  ['homeview','listview','rateview','aiview','setview','cityview']
+    .forEach(v => $(v).classList.add('hide'));
+  cityOpen = null;
   $('appbar').classList.add('hide');
   $('tabbar').classList.remove('hide');
   $('tripview').classList.remove('hide');
@@ -3873,6 +3884,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
