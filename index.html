@@ -204,6 +204,39 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-48); flex:none; }
 .dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); }
 
+/* ── 떠 있는 유리 탭바 ── 도쿄 앱에서 옮겨왔습니다.
+   상단바보다 한 단계 더 투명해서 아래로 지나가는 내용이 비칩니다. */
+.tabbar{
+  position:fixed; bottom:calc(12px + var(--sab)); z-index:1150;
+  left:50%; transform:translateX(-50%);
+  width:min(calc(100% - 24px), calc(480px - 24px));
+  display:flex; gap:2px; padding:6px; border-radius:var(--r-pill);
+  background:linear-gradient(158deg, rgba(255,255,255,.28) 0%,
+             rgba(255,255,255,.12) 50%, rgba(255,255,255,.24) 100%);
+  backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
+  -webkit-backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
+  box-shadow:inset 0 1.4px 0 rgba(255,255,255,.95),
+             inset 0 -1.4px 0 rgba(255,255,255,.42),
+             0 0 0 .5px rgba(16,20,35,.10),
+             0 14px 38px rgba(16,20,35,.20),
+             0 3px 8px rgba(16,20,35,.08);
+}
+.tabbar button{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 0 6px; min-height:48px; color:var(--ink-48);
+  border:0; background:none; border-radius:var(--r-pill);
+  transition:background .2s, color .2s;
+}
+.tabbar button:active{ transform:none; }
+.tabbar span{ font-size:calc(11px * var(--ts)); letter-spacing:0; }
+.tabbar button.is-on{
+  color:var(--primary); font-weight:600;
+  background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,1), 0 3px 10px rgba(16,20,35,.12);
+}
+/* 탭바가 마지막 카드를 가리지 않게 자리를 비웁니다 */
+body.hastab{ padding-bottom:calc(96px + var(--kb) + var(--sab)); }
+
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }
 pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
@@ -350,7 +383,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <pre id="editerr" class="hide"></pre>
       </div>
 
-      <div class="card">
+      <div class="card" id="card-plans">
         <h2><span class="grow">일정</span>
           <button class="small" id="addplanbtn">+ 추가</button></h2>
         <div class="days" id="days"></div>
@@ -359,7 +392,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       </div>
 
       <!-- 지출 -->
-      <div class="card">
+      <div class="card" id="card-exp">
         <h2><span class="grow">지출</span>
           <button class="small" id="addexpbtn">+ 추가</button></h2>
         <div id="exptotal"></div>
@@ -413,7 +446,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       </div>
 
       <!-- 일행 -->
-      <div class="card">
+      <div class="card" id="card-mem">
         <h2><span class="grow">일행</span>
           <button class="small" id="invbtn">+ 초대</button></h2>
         <div id="members"><div class="empty">불러오는 중…</div></div>
@@ -476,6 +509,25 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
         <pre id="planformerr" class="hide"></pre>
       </div>
+
+      <!-- 떠 있는 유리 탭바 — 도쿄 앱과 같은 부품입니다.
+           카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다. -->
+      <nav class="tabbar" id="tabbar">
+        <button data-t="plans" class="is-on">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16"
+               rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>일정</span></button>
+        <button data-t="exp">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="13"
+               rx="3"/><path d="M2.5 10.5h19M6.5 15h4"/></svg><span>지출</span></button>
+        <button data-t="mem">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.4"/><path
+               d="M2.5 20c.6-3.6 3.3-5.6 6.5-5.6s5.9 2 6.5 5.6"/><path
+               d="M16.5 5.2a3.4 3.4 0 0 1 0 6.4M18 14.8c2.2.6 3.4 2.4 3.8 5.2"/></svg>
+          <span>일행</span></button>
+      </nav>
     </section>
 
     <div class="card" id="acctcard">
@@ -500,7 +552,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b21</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b22</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -524,7 +576,8 @@ const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
     picked = null, hitList = [], cursor = 0, showArchived = false,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
-    channel = null, bumpTimer = null, bumpPending = null;
+    channel = null, bumpTimer = null, bumpPending = null,
+    tab = 'plans', settleOn = false;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -928,6 +981,8 @@ async function openTrip(id){
   $('invitebox').classList.add('hide');
 
   drawTripHeader();
+  document.body.classList.add('hastab');
+  showTab('plans');
   /* 지출은 일행 이름을 쓰므로 일행을 먼저 읽습니다. */
   await Promise.all([loadPlans(), loadMembers().then(loadExpenses)]);
   watch();
@@ -1055,6 +1110,7 @@ $('e_save').addEventListener('click', async () => {
 function backToList(){
   unwatch();
   trip = null;
+  document.body.classList.remove('hastab');
   $('tripview').classList.add('hide');
   $('listview').classList.remove('hide');
   $('acctcard').classList.remove('hide');
@@ -1150,6 +1206,34 @@ $('days').addEventListener('click', e => {
   drawDays(); drawPlans();
 });
 
+/* ── 탭 ─────────────────────────────────────────────────────────────
+ * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
+ * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
+const TABS = {
+  plans: ['card-plans', 'plancard'],
+  exp:   ['card-exp', 'expcard', 'settlecard'],
+  mem:   ['card-mem']
+};
+const FORMS = ['plancard', 'expcard'];   /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
+
+function showTab(t){
+  tab = t;
+  for (const [k, ids] of Object.entries(TABS))
+    for (const id of ids){
+      const on = k === t && !FORMS.includes(id)
+                 && !(id === 'settlecard' && !settleOn);
+      $(id).classList.toggle('hide', !on);
+    }
+  $('editcard').classList.add('hide');
+  document.querySelectorAll('#tabbar button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.t === t));
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+$('tabbar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]');
+  if (b) showTab(b.dataset.t);
+});
+
 /* ── 지출 ───────────────────────────────────────────────────────── */
 /* 통화마다 소수 자리가 다릅니다. 엔·원·동은 소수점이 없습니다. */
 const NO_CENTS = ['JPY','KRW','VND','IDR','CLP','HUF','TWD'];
@@ -1219,9 +1303,10 @@ function drawExpenses(){
    나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다. */
 function drawSettle(){
   if (!expenses.length || members.length < 2){
-    $('settlecard').classList.add('hide'); return;
+    settleOn = false; $('settlecard').classList.add('hide'); return;
   }
-  $('settlecard').classList.remove('hide');
+  settleOn = true;
+  $('settlecard').classList.toggle('hide', tab !== 'exp');
 
   const curs = [...new Set(expenses.map(e => e.currency))];
   $('settle').innerHTML = curs.map(cur => {
@@ -1554,7 +1639,7 @@ $('plans').addEventListener('click', async e => {
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
   if (!session){
-    unwatch(); trip = null;
+    unwatch(); trip = null; document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
     me = null;
@@ -1579,7 +1664,7 @@ async function render(session){
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
-  unwatch(); trip = null;
+  unwatch(); trip = null; document.body.classList.remove('hastab');
   $('tripview').classList.add('hide');           /* 다시 그릴 때는 목록부터 */
   $('listview').classList.remove('hide');
   $('acctcard').classList.remove('hide');
@@ -1648,6 +1733,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
