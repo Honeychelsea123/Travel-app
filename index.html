@@ -308,13 +308,15 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              background:rgba(255,255,255,.20); display:flex;
              align-items:center; justify-content:center; }
 .aicard .tx{ flex:1; min-width:0 }
-/* 글자 크기를 키워둔 기기에서 두 줄로 넘어가 잘려 보였습니다.
-   제목과 설명 모두 화면 폭에 맞춰 위를 막습니다. */
+/* 한 줄로 묶고 말줄임표를 걸었더니 제목이 잘렸습니다.
+   카드는 세로로 늘어날 수 있으니 자를 이유가 없습니다 — 넘치면 줄을 바꿉니다.
+   대신 글자 크기만 화면 폭에 맞춰 위를 막습니다. */
 .aicard .tx b{ font-size:min(calc(16.5px * var(--ts)), 4.6vw); font-weight:700;
                letter-spacing:calc(-.3px * var(--ts)); display:block;
-               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+               word-break:keep-all; }
 .aicard .tx span{ display:block; font-size:min(calc(12.5px * var(--ts)), 3.6vw);
-                  opacity:.92; margin-top:3px; line-height:1.4; }
+                  opacity:.92; margin-top:3px; line-height:1.4;
+                  word-break:keep-all; }
 .aicard .go{ flex:none; background:#fff; color:#5a3ff0; border-radius:999px;
              padding:9px 15px; font-weight:700; white-space:nowrap;
              font-size:min(calc(13px * var(--ts)), 3.6vw); }
@@ -1365,7 +1367,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b80</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b81</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -5128,6 +5130,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
