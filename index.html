@@ -283,10 +283,37 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div id="home"><div class="empty">불러오는 중…</div></div>
     </div>
 
+    <!-- AI -->
+    <div id="aiview" class="hide">
+      <div class="card">
+        <h2><span class="grow">일정 검토</span>
+          <select id="ai_trip" style="width:auto; max-width:60%; padding:6px 12px;
+                  border-radius:var(--r-pill)"></select></h2>
+        <div id="review"><div class="empty">불러오는 중…</div></div>
+      </div>
+
+      <!-- 대화는 서버 쪽이 있어야 합니다. 무엇이 남았는지 숨기지 않고 적어둡니다. -->
+      <div class="card">
+        <h2>AI에게 물어보기</h2>
+        <div class="empty" style="text-align:left; padding:0">
+          아직 준비 중입니다. 위 검토는 <b>기기에서 계산</b>하는 것이라 지금 되고
+          공짜지만, 대화와 일정 초안 생성은 <b>Edge Function</b>과 <b>API 키</b>가
+          있어야 합니다. 키를 화면 코드에 두면 그대로 공개되므로 서버 뒤에 둡니다.
+        </div>
+      </div>
+    </div>
+
     <div id="listview">
     <div class="card">
       <h2><span class="grow" id="listtitle">내 여행</span>
         <button class="small" id="newbtn">+ 새 여행</button></h2>
+      <!-- 기록 탭을 없애고 여기 칩으로 내렸습니다.
+           새 사용자에게 다녀온 여행 탭은 몇 달간 빈 화면입니다. -->
+      <div class="days" id="tripfilter">
+        <button class="day is-f on" data-f="up">다가오는</button>
+        <button class="day is-f" data-f="past">다녀온</button>
+        <button class="day is-f" data-f="arch">보관</button>
+      </div>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
       <!-- 목록에서 난 오류는 여기 바로 뜹니다.
            페이지 맨 아래 오류 칸에 적으면 누른 사람 눈에 안 들어옵니다. -->
@@ -598,11 +625,11 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
              d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10"
              r="2.6"/></svg><span>여행</span></button>
-      <button data-a="rec">
+      <button data-a="ai">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
-             d="M5 4.5h11l3 3V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19z"/><path
-             d="M8.5 9.5h6M8.5 13h6M8.5 16.5h3.5"/></svg><span>기록</span></button>
+             d="M12 3.5l1.7 4.3 4.3 1.7-4.3 1.7L12 15.5l-1.7-4.3L6 9.5l4.3-1.7z"/><path
+             d="M18 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg><span>AI</span></button>
       <button data-a="set">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
              stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12"
@@ -616,7 +643,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b24</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b25</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -641,7 +668,8 @@ let me = null, cities = null, countryName = {}, countryInfo = {},
     picked = null, hitList = [], cursor = 0,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
-    tab = 'plans', settleOn = false, appTab = 'trips';
+    tab = 'plans', settleOn = false, appTab = 'home',
+    tripFilter = 'up', aiTripId = null;
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -888,16 +916,16 @@ $('create').addEventListener('click', async () => {
 function showApp(t){
   appTab = t;
   $('homeview').classList.toggle('hide', t !== 'home');
-  $('listview').classList.toggle('hide', t !== 'trips' && t !== 'rec');
-  $('setview').classList.toggle('hide', t !== 'set');
-  $('listtitle').textContent = t === 'rec' ? '다녀온 여행' : '내 여행';
-  $('newbtn').classList.toggle('hide', t !== 'trips');
+  $('listview').classList.toggle('hide', t !== 'trips');
+  $('aiview').classList.toggle('hide',   t !== 'ai');
+  $('setview').classList.toggle('hide',  t !== 'set');
   $('newcard').classList.add('hide');
   $('namebox').classList.add('hide');
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === t));
   if (t === 'home')     loadHome();
   else if (t === 'set') loadNotifs();
+  else if (t === 'ai')  loadAi();
   else                  loadTrips();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
@@ -905,6 +933,128 @@ $('appbar').addEventListener('click', e => {
   const b = e.target.closest('button[data-a]');
   if (b) showApp(b.dataset.a);
 });
+
+$('tripfilter').addEventListener('click', e => {
+  const b = e.target.closest('button[data-f]'); if (!b) return;
+  tripFilter = b.dataset.f;
+  document.querySelectorAll('#tripfilter button').forEach(x =>
+    x.classList.toggle('on', x.dataset.f === tripFilter));
+  loadTrips();
+});
+
+/* ── 일정 검토 ──────────────────────────────────────────────────────
+ * 계산만 합니다. AI 를 안 부르므로 공짜이고 비행기모드에서도 됩니다.
+ * 문서가 "계산 검사가 공짜라 가능한 구조"라고 한 그것이고,
+ * 남들이 생성만 하고 안 하는 부분입니다.
+ *
+ * 지금은 이동 시간을 못 잽니다 — 일정에 좌표가 안 붙어 있습니다.
+ * 좌표가 붙으면 trips 의 이동 상수로 "이 하루가 물리적으로 가능한가"까지 봅니다. */
+const STAY_MIN = { 식사:60, 카페:40, 관광:60, 쇼핑:60, 이동:0, 숙소:0, 기타:30 };
+const mins  = t => { const [h,m] = String(t).split(':'); return +h*60 + +m; };
+const fmtM  = v => String(Math.floor(v/60)).padStart(2,'0') + ':' +
+                   String(v%60).padStart(2,'0');
+
+function review(t, ps){
+  const out = [];
+  const byDay = {};
+  ps.forEach(p => (byDay[p.date] ||= []).push(p));
+
+  /* 여행 기간인데 아무것도 없는 날 */
+  for (let d = asDate(t.start_date); ymd(d) <= t.end_date; d = new Date(d.getTime() + D1)){
+    const k = ymd(d);
+    if (!byDay[k]) out.push({ lv:'참고',
+      t:`${dayLabel(k, t).split(' · ')[0]}이 비어 있습니다`,
+      s:'아직 아무것도 안 잡혔습니다.' });
+  }
+
+  for (const [d, list] of Object.entries(byDay)){
+    const lab = dayLabel(d, t).split(' · ')[0];
+
+    /* 문서: 하루 4~5개만. 8~10개를 욱여넣는 것이 "그럴듯한데 못 쓴다"의 원인이다. */
+    if (list.length >= 6) out.push({ lv:'주의',
+      t:`${lab}에 ${list.length}개가 잡혀 있습니다`,
+      s:'하루 4~5개를 넘기면 대개 못 지킵니다. 빈 시간을 남기는 편이 낫습니다.' });
+
+    const timed = list.filter(p => p.start_time)
+                      .sort((a,b) => a.start_time.localeCompare(b.start_time));
+
+    for (let i = 0; i < timed.length; i++){
+      const p = timed[i];
+      const st = mins(p.start_time), en = p.end_time ? mins(p.end_time) : null;
+
+      if (en !== null && en < st) out.push({ lv:'심각',
+        t:`${p.title} — 끝나는 시각이 시작보다 빠릅니다`,
+        s:`${hm(p.start_time)} → ${hm(p.end_time)}` });
+
+      /* 도쿄 앱이 실제로 잡아낸 사고입니다 — 체크인 15시인데 11시 35분에 잡혀 있었습니다. */
+      if (p.category === '숙소' && /체크인|check\s*-?in/i.test(p.title) && st < 15*60)
+        out.push({ lv:'주의',
+          t:`${lab} 체크인이 ${hm(p.start_time)}로 잡혀 있습니다`,
+          s:'체크인은 대개 15시부터입니다. 짐만 맡기는 것이면 괜찮습니다.' });
+
+      const nx = timed[i+1];
+      if (nx){
+        const nst = mins(nx.start_time);
+        /* 끝 시각이 없으면 분류별 최소 체류 시간으로 어림합니다. */
+        const guessed = en === null;
+        const end = en ?? st + (STAY_MIN[p.category] ?? 30);
+        if (nst < end) out.push({ lv:'심각',
+          t:`${p.title} 과 ${nx.title} 이 겹칩니다`,
+          s:`${hm(p.start_time)}~${guessed ? '(어림 ' + fmtM(end) + ')' : hm(p.end_time)}` +
+            ` 인데 다음이 ${hm(nx.start_time)}에 시작합니다.` });
+        else if (nst === end) out.push({ lv:'주의',
+          t:`${p.title} 다음에 이동할 시간이 없습니다`,
+          s:`끝나자마자 ${nx.title} 이 시작합니다.` });
+      }
+    }
+
+    const noTime = list.length - timed.length;
+    if (list.length >= 3 && noTime > list.length / 2) out.push({ lv:'참고',
+      t:`${lab}은 시각이 대부분 비어 있습니다`,
+      s:'시각을 넣어야 겹침과 이동을 검사할 수 있습니다.' });
+  }
+
+  const rank = { 심각:0, 주의:1, 참고:2 };
+  return out.sort((a,b) => rank[a.lv] - rank[b.lv]);
+}
+
+const LVCOLOR = { 심각:'var(--bad)', 주의:'var(--k-food)', 참고:'var(--ink-48)' };
+
+async function loadAi(){
+  const { data, error } = await sb.from('trips')
+    .select('id,title').is('archived_at', null).order('start_date');
+  if (error) return fail(error, 'trip');
+  if (!data.length){
+    $('ai_trip').innerHTML = '';
+    $('review').innerHTML = '<div class="empty">검토할 여행이 없습니다.</div>';
+    return;
+  }
+  $('ai_trip').innerHTML = data.map(t =>
+    `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
+  if (aiTripId && data.some(t => t.id === aiTripId)) $('ai_trip').value = aiTripId;
+  await runReview($('ai_trip').value);
+}
+$('ai_trip').addEventListener('change', () => runReview($('ai_trip').value));
+
+async function runReview(id){
+  aiTripId = id;
+  const [{ data:t }, { data:ps }] = await Promise.all([
+    sb.from('trips').select('*').eq('id', id).maybeSingle(),
+    sb.from('plans').select('date,start_time,end_time,category,title')
+      .eq('trip_id', id).is('deleted_at', null).order('date')
+  ]);
+  if (!t) return;
+  const found = review(t, ps || []);
+  $('review').innerHTML = found.length
+    ? found.map(f => `<div class="plan">
+        <span class="kdot" style="background:${LVCOLOR[f.lv]}"></span>
+        <div class="body"><b>${esc(f.t)}</b>
+          <span class="memo">${esc(f.s)}</span></div>
+        <span class="badge" style="color:${LVCOLOR[f.lv]}">${esc(f.lv)}</span></div>`).join('')
+      + `<div class="empty" style="text-align:left; padding:12px 0 0">
+           이동 시간은 아직 못 잽니다 — 일정에 장소 좌표가 붙어야 합니다.</div>`
+    : `<div class="empty">문제를 못 찾았습니다.<br>지금 일정은 무리가 없어 보입니다.</div>`;
+}
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * 앱을 열면 제일 먼저 궁금한 것은 "다음 여행이 언제고 뭐가 잡혀 있나"입니다.
@@ -934,10 +1084,15 @@ async function loadHome(){
               : dday === 0 ? '오늘 출발'
               : `여행 중 · Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
 
-  const { data: ps } = await sb.from('plans')
-    .select('date,start_time,category,title')
-    .eq('trip_id', t.id).is('deleted_at', null).gte('date', today)
-    .order('date').order('start_time', { nullsFirst:false }).limit(4);
+  /* 검토에 쓰려고 전부 받습니다. 화면에는 앞으로 올 것 넷만 보여줍니다. */
+  const { data: all } = await sb.from('plans')
+    .select('date,start_time,end_time,category,title')
+    .eq('trip_id', t.id).is('deleted_at', null)
+    .order('date').order('start_time', { nullsFirst:false });
+  const ps = (all || []).filter(p => p.date >= today).slice(0, 4);
+  const found = review(t, all || []);
+  const bad = found.filter(f => f.lv === '심각').length;
+  const warn = found.filter(f => f.lv === '주의').length;
 
   $('home').innerHTML =
     `<div class="card" style="cursor:pointer" id="homecard">
@@ -950,8 +1105,25 @@ async function loadHome(){
        <div class="meta" style="margin-top:2px">
          ${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일</div>
      </div>
+     <!-- 홈에서는 짧게만 알려주고 자세한 것은 AI 탭에서 봅니다. -->
+     <div class="card" style="cursor:pointer" id="homeai">
+       <div class="row" style="border:0; padding:0; margin:0">
+         <span class="kdot" style="margin-top:6px; background:${
+           bad ? 'var(--bad)' : warn ? 'var(--k-food)' : 'var(--k-see)'}"></span>
+         <span class="label"><b>${
+           bad  ? `짚어볼 것이 ${bad}가지 있습니다`
+           : warn ? `살펴볼 것이 ${warn}가지 있습니다`
+           : found.length ? '큰 문제는 없습니다'
+           : '아직 볼 게 없습니다'}</b>
+           <div class="memo">${esc(
+             found.length ? found[0].t : '일정을 넣으면 겹침과 무리한 일정을 찾아드립니다')}</div>
+         </span>
+         <span class="val">자세히 ›</span>
+       </div>
+     </div>
+
      <div class="card"><h2>앞으로 할 것</h2>${
-       (ps || []).length
+       ps.length
          ? ps.map(p => {
              const k = p.category ? 'k-' + p.category : '';
              return `<div class="plan"><div class="when">${esc(hm(p.start_time) || '–')}</div>
@@ -962,6 +1134,7 @@ async function loadHome(){
          : '<div class="empty">아직 잡아둔 일정이 없습니다.</div>'}
      </div>`;
   $('homecard').onclick = () => openTrip(t.id);
+  $('homeai').onclick = () => { aiTripId = t.id; showApp('ai'); };
 }
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
@@ -1033,21 +1206,24 @@ async function loadTrips(){
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
             'transit_factor,archived_at,trip_members(user_id,role)');
-  /* 여행 탭은 앞으로 갈 것(가까운 순), 기록 탭은 다녀왔거나 보관한 것(최근 순).
-     날짜가 지나면 저절로 기록으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
-  q = appTab === 'rec'
-    ? q.or(`end_date.lt.${today},archived_at.not.is.null`)
-       .order('start_date', { ascending:false })
-    : q.is('archived_at', null).gte('end_date', today)
-       .order('start_date', { ascending:true });
+  /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
+  if (tripFilter === 'arch')
+    q = q.not('archived_at', 'is', null).order('start_date', { ascending:false });
+  else if (tripFilter === 'past')
+    q = q.is('archived_at', null).lt('end_date', today)
+         .order('start_date', { ascending:false });
+  else
+    q = q.is('archived_at', null).gte('end_date', today)
+         .order('start_date', { ascending:true });
   const { data, error } = await q;
 
   if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>';
               return fail(error); }
   if (!data.length){
-    $('trips').innerHTML = appTab === 'rec'
-      ? '<div class="empty">아직 다녀온 여행이 없습니다.</div>'
-      : '<div class="empty">앞으로 갈 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
+    $('trips').innerHTML =
+      tripFilter === 'arch' ? '<div class="empty">보관한 여행이 없습니다.</div>' :
+      tripFilter === 'past' ? '<div class="empty">아직 다녀온 여행이 없습니다.</div>' :
+      '<div class="empty">앞으로 갈 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
     return;
   }
   $('trips').innerHTML = data.map(t => {
@@ -1961,6 +2137,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
