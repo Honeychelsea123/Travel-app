@@ -31,17 +31,27 @@ h1{ font-size:calc(20px * var(--ts)); margin:0 0 2px; font-weight:650; letter-sp
 
 .card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
        padding:16px; margin-bottom:10px; }
-.card h2{ font-size:calc(14px * var(--ts)); margin:0 0 12px; font-weight:600; }
+.card h2{ font-size:calc(14px * var(--ts)); margin:0 0 12px; font-weight:600;
+          display:flex; align-items:center; gap:8px; }
+.card h2 .grow{ flex:1; }
 
 button{ font:inherit; cursor:pointer; border-radius:11px; border:1px solid var(--line);
         background:var(--panel); color:var(--fg); padding:11px 16px; }
 button:disabled{ opacity:.5; cursor:default; }
+.primary{ width:100%; background:var(--accent); color:#fff; border-color:transparent;
+          font-weight:600; }
 .google{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
-         background:#fff; color:#1f1f1f; border-color:#dadce0; font-weight:600;
-         padding:13px 16px; }
+         background:#fff; color:#1f1f1f; border-color:#dadce0; font-weight:600; padding:13px 16px; }
 .google svg{ width:18px; height:18px; flex:none; }
 .ghost{ background:transparent; color:var(--dim); border-color:transparent; padding:6px 10px;
         font-size:calc(13px * var(--ts)); }
+.small{ padding:7px 12px; font-size:calc(13px * var(--ts)); }
+
+label{ display:block; font-size:calc(12px * var(--ts)); color:var(--dim); margin:12px 0 5px; }
+label:first-of-type{ margin-top:0; }
+input, select{ font:inherit; width:100%; padding:10px 12px; border-radius:11px;
+               border:1px solid var(--line); background:var(--sunk); color:var(--fg); }
+.two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
 .me{ display:flex; align-items:center; gap:12px; }
 .me img{ width:40px; height:40px; border-radius:50%; flex:none; background:var(--sunk); }
@@ -49,16 +59,22 @@ button:disabled{ opacity:.5; cursor:default; }
 .me .mail{ color:var(--dim); font-size:calc(12px * var(--ts)); font-weight:400;
            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+.trip{ display:flex; align-items:center; gap:12px; padding:12px 0; }
+.trip + .trip{ border-top:1px solid var(--line); }
+.trip .t{ flex:1; min-width:0; }
+.trip .t b{ display:block; }
+.trip .meta{ color:var(--dim); font-size:calc(12px * var(--ts)); }
+.badge{ font-size:calc(11px * var(--ts)); padding:2px 8px; border-radius:999px;
+        background:var(--sunk); border:1px solid var(--line); color:var(--dim); flex:none; }
+
 .row{ display:flex; align-items:center; gap:10px; }
 .row + .row{ margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
 .row .label{ flex:1; min-width:0; }
-.row .val{ font-variant-numeric:tabular-nums; color:var(--dim);
-           font-size:calc(13px * var(--ts)); }
+.row .val{ font-variant-numeric:tabular-nums; color:var(--dim); font-size:calc(13px * var(--ts)); }
 .dot{ width:8px; height:8px; border-radius:50%; background:var(--dim); flex:none; }
 .dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); }
 
-.empty{ text-align:center; color:var(--dim); padding:18px 8px;
-        font-size:calc(13px * var(--ts)); }
+.empty{ text-align:center; color:var(--dim); padding:18px 8px; font-size:calc(13px * var(--ts)); }
 pre{ margin:8px 0 0; padding:11px; background:var(--sunk); border:1px solid var(--line);
      border-radius:10px; font-size:calc(12px * var(--ts)); overflow-x:auto;
      white-space:pre-wrap; word-break:break-word; color:var(--bad); }
@@ -80,9 +96,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
         <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 7l7.2 5.6c4.2-3.9 6.6-9.6 6.6-16.4z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.3 0 20 0 24s1 7.7 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.6 2.2-8.7 2.2-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
         구글로 계속하기
       </button>
-      <p class="empty" style="padding-bottom:0">
-        여행을 만들고 일행을 부르려면 로그인이 필요합니다.
-      </p>
+      <p class="empty" style="padding-bottom:0">여행을 만들고 일행을 부르려면 로그인이 필요합니다.</p>
     </div>
   </section>
 
@@ -100,8 +114,38 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     </div>
 
     <div class="card">
-      <h2>내 여행</h2>
+      <h2><span class="grow">내 여행</span>
+        <button class="small" id="newbtn">+ 새 여행</button></h2>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
+    </div>
+
+    <!-- 새 여행 -->
+    <div class="card hide" id="newcard">
+      <h2>새 여행</h2>
+      <label for="f_title">제목</label>
+      <input id="f_title" placeholder="예: 도쿄 가을 여행" maxlength="60">
+
+      <label for="f_city">어디로</label>
+      <select id="f_city"></select>
+
+      <!-- 목록에 없는 곳을 골랐을 때만 나옵니다 -->
+      <div id="freewrap" class="hide">
+        <label for="f_dest">도시 이름</label>
+        <input id="f_dest" placeholder="예: 치앙라이" maxlength="40">
+        <label for="f_country">나라</label>
+        <select id="f_country"></select>
+      </div>
+
+      <div class="two">
+        <div><label for="f_start">시작</label><input type="date" id="f_start"></div>
+        <div><label for="f_end">끝</label><input type="date" id="f_end"></div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:8px">
+        <button class="primary" id="create">만들기</button>
+        <button class="small" id="cancel">취소</button>
+      </div>
+      <pre id="formerr" class="hide"></pre>
     </div>
 
     <div class="card">
@@ -113,7 +157,6 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     </div>
   </section>
 
-  <!-- 언제나 보이는 연결 확인 -->
   <div class="card">
     <h2>연결</h2>
     <div class="row"><span class="dot" id="d0"></span>
@@ -127,7 +170,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b3</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b4</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -148,15 +191,21 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
+let me = null, cityCache = null;
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 function mark(id, ok, text){
   $('d'+id).className = 'dot ' + (ok ? 'ok' : 'bad');
   $('v'+id).textContent = text;
 }
-function fail(e){
-  $('errcard').classList.remove('hide');
-  $('err').textContent = (e && (e.message || e.error_description || JSON.stringify(e)))
-                       || String(e);
+function fail(e, where){
+  const box = where === 'form' ? $('formerr') : $('err');
+  if (where !== 'form') $('errcard').classList.remove('hide');
+  box.classList.remove('hide');
+  box.textContent = (e && (e.message || e.error_description || e.hint || JSON.stringify(e)))
+                  || String(e);
 }
 
 /* ── 로그인 ─────────────────────────────────────────────────────── */
@@ -165,64 +214,155 @@ $('login').addEventListener('click', async () => {
   /* 돌아올 주소를 명시합니다. Supabase 의 Redirect URLs 에 이 주소가
      등록돼 있어야 하고, 없으면 Site URL 로 튕겨 엉뚱한 데로 갑니다. */
   const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: location.origin + location.pathname }
+    provider:'google', options:{ redirectTo: location.origin + location.pathname }
   });
-  if (error){
-    $('login').disabled = false;
-    fail(error.message?.match(/provider is not enabled/i)
-      ? '구글 로그인이 아직 켜져 있지 않습니다. Supabase → Authentication → Sign In / Providers → Google 을 켜세요.'
-      : error);
-  }
+  if (error){ $('login').disabled = false; fail(error); }
 });
 
 $('logout').addEventListener('click', async () => {
   await sb.auth.signOut();
-  location.replace(location.pathname);       /* 주소에 붙은 토큰 조각을 지웁니다 */
+  location.replace(location.pathname);      /* 주소에 붙은 토큰 조각을 지웁니다 */
 });
+
+/* ── 새 여행 ────────────────────────────────────────────────────── */
+$('newbtn').addEventListener('click', async () => {
+  $('newcard').classList.toggle('hide');
+  if ($('newcard').classList.contains('hide')) return;
+  await loadCities();
+
+  /* 기본값: 오늘부터 3박 4일. 폼을 비워두면 날짜를 두 번 고르게 되는데
+     대부분은 그대로 두거나 며칠만 옮깁니다. */
+  const d = new Date();
+  const iso = n => new Date(d.getTime() + n*864e5).toISOString().slice(0,10);
+  if (!$('f_start').value) $('f_start').value = iso(0);
+  if (!$('f_end').value)   $('f_end').value   = iso(3);
+  $('f_title').focus();
+});
+
+$('cancel').addEventListener('click', () => {
+  $('newcard').classList.add('hide');
+  $('formerr').classList.add('hide');
+});
+
+$('f_city').addEventListener('change', () => {
+  $('freewrap').classList.toggle('hide', $('f_city').value !== '');
+});
+
+async function loadCities(){
+  if (cityCache) return;
+  const [cs, ns] = await Promise.all([
+    sb.from('cities').select('id,name,country').order('name'),
+    sb.from('countries').select('code,name').order('name')
+  ]);
+  if (cs.error || ns.error) return fail(cs.error || ns.error, 'form');
+  cityCache = cs.data;
+
+  const byCode = Object.fromEntries(ns.data.map(n => [n.code, n.name]));
+  const groups = {};
+  for (const c of cs.data) (groups[c.country] ||= []).push(c);
+
+  /* 나라별로 묶어 보여줍니다. 142개를 한 줄로 늘어놓으면 못 찾습니다. */
+  $('f_city').innerHTML =
+    Object.keys(groups).sort((a,b) => (byCode[a]||a).localeCompare(byCode[b]||b, 'ko'))
+      .map(code => `<optgroup label="${esc(byCode[code] || code)}">` +
+        groups[code].map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('') +
+        `</optgroup>`).join('')
+    + `<optgroup label="—"><option value="">목록에 없어요</option></optgroup>`;
+
+  $('f_country').innerHTML =
+    ns.data.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
+
+  $('f_city').value = 'tokyo';
+  $('freewrap').classList.add('hide');
+}
+
+$('create').addEventListener('click', async () => {
+  const btn = $('create');
+  $('formerr').classList.add('hide');
+
+  const title = $('f_title').value.trim();
+  const cityId = $('f_city').value || null;
+  const dest = cityId
+    ? (cityCache.find(c => c.id === cityId)?.name || '')
+    : $('f_dest').value.trim();
+  const start = $('f_start').value, end = $('f_end').value;
+
+  if (!title)          return fail('제목을 적어주세요.', 'form');
+  if (!dest)           return fail('어디로 가는지 적어주세요.', 'form');
+  if (!start || !end)  return fail('날짜를 골라주세요.', 'form');
+  if (end < start)     return fail('끝나는 날이 시작보다 빠릅니다.', 'form');
+
+  /* 도시를 골랐으면 나라·시간대·통화·이동상수는 DB 트리거가 채웁니다.
+     목록에 없는 곳이면 나라만 넘기고, 통화와 언어는 나라에서 옵니다. */
+  const row = { title, destination: dest, start_date: start, end_date: end };
+  if (cityId) row.city_id = cityId;
+  else        row.country = $('f_country').value;
+
+  btn.disabled = true; btn.textContent = '만드는 중…';
+  const { error } = await sb.from('trips').insert(row);
+  btn.disabled = false; btn.textContent = '만들기';
+
+  if (error) return fail(error, 'form');
+
+  $('newcard').classList.add('hide');
+  $('f_title').value = '';
+  await loadTrips();
+});
+
+/* ── 여행 목록 ──────────────────────────────────────────────────── */
+async function loadTrips(){
+  /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
+     않으면 방금 만든 여행조차 여기 안 나옵니다. */
+  const { data, error } = await sb.from('trips')
+    .select('id,title,destination,start_date,end_date,currency,timezone,' +
+            'transit_factor,trip_members(role)')
+    .is('archived_at', null)
+    .order('start_date', { ascending:false });
+
+  if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>';
+              return fail(error); }
+  if (!data.length){
+    $('trips').innerHTML = '<div class="empty">아직 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
+    return;
+  }
+  $('trips').innerHTML = data.map(t => {
+    const mine = (t.trip_members || []).find(m => m.role);
+    const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
+    return `<div class="trip"><div class="t">
+      <b>${esc(t.title)}</b>
+      <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일<br>
+      ${esc(t.currency)} · ${esc(t.timezone)} · 이동 ×${esc(t.transit_factor)}</span>
+    </div><span class="badge">${esc(mine?.role || '')}</span></div>`;
+  }).join('');
+}
 
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
-  const inA = $('signedin'), outA = $('signedout');
   if (!session){
-    inA.classList.add('hide'); outA.classList.remove('hide');
+    $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
-    return;
+    me = null; return;
   }
-  outA.classList.add('hide'); inA.classList.remove('hide');
+  if (me?.id === session.user.id) return;      /* 토큰 갱신마다 다시 그리지 않습니다 */
+  me = session.user;
+
+  $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
   $('sub').textContent = '로그인됨.';
 
-  const u = session.user;
-  const meta = u.user_metadata || {};
-  $('mail').textContent = u.email || '';
-  $('name').textContent = meta.full_name || meta.name || (u.email||'').split('@')[0];
+  const meta = me.user_metadata || {};
+  $('mail').textContent = me.email || '';
+  $('name').textContent = meta.full_name || meta.name || (me.email||'').split('@')[0];
   if (meta.avatar_url || meta.picture) $('avatar').src = meta.avatar_url || meta.picture;
 
-  /* 가입 트리거가 실제로 돌았는지 봅니다.
-     001 의 handle_new_user 가 profiles 와 user_prefs 를 만들어야 합니다. */
+  /* 가입 트리거가 실제로 돌았는지 봅니다 (001 의 handle_new_user). */
   const [prof, prefs] = await Promise.all([
-    sb.from('profiles').select('display_name').eq('id', u.id).maybeSingle(),
-    sb.from('user_prefs').select('text_scale').eq('user_id', u.id).maybeSingle()
+    sb.from('profiles').select('display_name').eq('id', me.id).maybeSingle(),
+    sb.from('user_prefs').select('text_scale').eq('user_id', me.id).maybeSingle()
   ]);
   mark('p', !!prof.data, prof.data ? (prof.data.display_name || '생성됨') : '없음');
   mark('u', !!prefs.data, prefs.data ? ('배율 ' + prefs.data.text_scale) : '없음');
 
-  /* 내 여행. RLS 가 참여 중인 것만 내려줍니다. */
-  const { data, error } = await sb.from('trips')
-    .select('id,title,destination,start_date,end_date')
-    .is('archived_at', null)
-    .order('start_date', { ascending:false });
-
-  if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>'; fail(error); }
-  else if (!data.length){
-    $('trips').innerHTML =
-      '<div class="empty">아직 여행이 없습니다.<br>다음 단계에서 만들기 화면을 붙입니다.</div>';
-  } else {
-    $('trips').innerHTML = data.map(t =>
-      `<div class="row"><span class="label"><b>${t.title}</b><br>` +
-      `<span class="val">${t.destination} · ${t.start_date} ~ ${t.end_date}</span></span></div>`
-    ).join('');
-  }
+  await loadTrips();
 }
 
 /* ── 시작 ───────────────────────────────────────────────────────── */
@@ -238,8 +378,6 @@ try {
 
 const { data:{ session } } = await sb.auth.getSession();
 await render(session);
-
-/* 로그인에서 돌아오면 여기로 다시 들어옵니다. */
 sb.auth.onAuthStateChange((_e, s) => { render(s); });
 
 $('ms').textContent = Math.round(performance.now() - t0) + 'ms';

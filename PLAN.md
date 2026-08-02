@@ -57,12 +57,32 @@ localStorage 와 IndexedDB 는 공유된다.** 서비스워커 스코프는 `/PW
 - [x] 로그인 안 한 상태에서 `trips` 가 비어 있는 것 확인 — RLS 가 실제로 일하고 있다는 증거
 - [x] 도쿄 앱 무사 확인 — `BUILD b68`, 작업트리 0건, Supabase 흔적 없음
 
-### 다음 — 구글 로그인
+### 구글 로그인 — 9장 4번 (2026-08-02 완료)
 
-- [ ] Google Cloud Console 에 OAuth 클라이언트 생성
-- [ ] Supabase Authentication → Google 활성화 (Client ID/Secret)
-- [ ] Site URL 과 Redirect URL 설정 — 이걸 빠뜨리면 로그인 후 되돌아오지 못한다
-- [ ] 로그인 버튼 · 세션 유지 · 프로필 자동 생성 확인
+- [x] Google Cloud 프로젝트 `travel-app-504306` + OAuth 클라이언트(웹)
+- [x] Supabase Google 활성화. **구글만 켜고 email 포함 24개는 껐다**
+- [x] Site URL `.../Travel-app/`, Redirect URLs `.../Travel-app/**`
+- [x] 로그인 성공. `profiles`·`user_prefs` 자동 생성 확인 — 가입 트리거가 실제로 돈다
+
+구글 콘솔 값:
+
+| 칸 | 값 |
+|---|---|
+| 승인된 JavaScript 원본 | `https://honeychelsea123.github.io` |
+| 승인된 리디렉션 URI | `https://qahqqhjleqfrsjiixnas.supabase.co/auth/v1/callback` |
+
+**동의 화면이 Testing 상태면 테스트 사용자에 등록된 계정만 로그인된다.**
+남에게 열 때 Publish 를 누른다. 이름·이메일·사진만 받는 기본 범위라 구글 심사는 없다.
+
+**켜진 로그인 방법은 이걸로 확인한다** (대시보드를 안 열어도 된다):
+`GET /auth/v1/settings` 에 `apikey` 헤더만 붙이면 provider 목록이 그대로 온다.
+
+### 다음 — 여행 만들기 (9장 2·3번, 읽기와 쓰기)
+
+- [x] 새 여행 폼 · 도시 선택(나라별로 묶음) · 목록에 없는 곳은 자유 입력
+- [ ] 실기기에서 만들어보고 owner 자동 등록 확인
+- [ ] 여행 상세 · 일정 화면
+- [ ] 초대 코드
 - [ ] Storage 버킷 `trip-files` + 정책
 - [ ] 로그인 · 여행 목록 · 새 여행 · 초대 코드
 - [ ] 일정 화면 (도쿄 앱에서 이식)
