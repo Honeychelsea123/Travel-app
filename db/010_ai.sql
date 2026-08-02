@@ -64,7 +64,13 @@ begin
 end $$;
 
 -- 화면에서는 못 부릅니다. 서비스 키(Edge Function)만 부를 수 있습니다.
+--
+-- 주의: Postgres 는 함수를 만들면 PUBLIC 에게 실행 권한을 자동으로 줍니다.
+-- anon · authenticated 에서만 빼면 PUBLIC 권한이 남아 그대로 부를 수 있습니다.
+-- PUBLIC 을 먼저 걷어내고 service_role 에만 다시 줍니다.
+revoke execute on function public.ai_take(uuid, text) from public;
 revoke execute on function public.ai_take(uuid, text) from anon, authenticated;
+grant  execute on function public.ai_take(uuid, text) to service_role;
 
 
 -- ── 남은 횟수 보기 ───────────────────────────────────────────────────
@@ -101,7 +107,13 @@ select * from (
               then 'OK' else 'X' end,
          'authenticated 에 실행 권한이 없어야 한다'
   union all
-  select 4, 'ai_left',
+  select 4, '서버는 부를 수 있음',
+         case when has_function_privilege('service_role',
+                'public.ai_take(uuid, text)', 'execute')
+              then 'OK' else 'X' end,
+         'Edge Function 이 세려면 이건 있어야 한다'
+  union all
+  select 5, 'ai_left',
          case when has_function_privilege('authenticated', 'public.ai_left()', 'execute')
               then 'OK' else 'X' end,
          '남은 횟수는 화면에서 볼 수 있어야 한다'
