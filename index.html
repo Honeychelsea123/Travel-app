@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -348,7 +348,9 @@ body.sheeton{ overflow:hidden; }
 .aichat{ flex:1; display:flex; flex-direction:column; min-height:0;
          /* 위 고른 줄과 아래 떠 있는 바를 뺀 만큼 */
          min-height:calc(100dvh - 250px); }
-.aichat #chat{ flex:1; overflow-y:auto; min-height:120px; }
+/* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 flex 가
+   늘리려 해도 그 선에서 막혀 입력칸 아래가 비어 버립니다. 여기서 풀어줍니다. */
+.aichat #chat{ flex:1; overflow-y:auto; min-height:120px; max-height:none; }
 .aichat .aibar{ margin-top:12px; }
 
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
@@ -1331,7 +1333,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b75</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b76</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -5085,6 +5087,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
