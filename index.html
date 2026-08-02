@@ -585,9 +585,25 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
                     font-size:15px; box-shadow:var(--lift-1)">✎</span>
             </button>
             <input type="file" id="avatarfile" accept="image/*" class="hide">
-            <div style="font-size:calc(21px * var(--ts)); font-weight:650; margin-top:10px"
-                 id="name">—</div>
+            <!-- 이름을 눌러 바로 고칩니다. 설정까지 들어가게 하면 아무도 안 바꿉니다. -->
+            <button class="ghost" id="editname" style="margin-top:8px; padding:2px 8px">
+              <span style="font-size:calc(21px * var(--ts)); font-weight:650"
+                    id="name">—</span>
+              <span style="color:var(--ink-48); font-size:calc(14px * var(--ts))"> ✎</span>
+            </button>
             <div class="memo" id="mail">—</div>
+
+            <div id="namebox" class="hide" style="margin-top:12px; text-align:left">
+              <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
+              <div style="margin-top:10px; display:flex; gap:8px">
+                <button class="primary" id="n_save">저장</button>
+                <button class="small" id="n_cancel">취소</button>
+              </div>
+              <div class="empty" style="padding:8px 0 0; text-align:left">
+                한 줄평과 일행 목록에 이 이름으로 보입니다.
+                처음에는 구글 계정 이름이 들어와 있습니다.
+              </div>
+            </div>
             <pre id="avaerr" class="hide"></pre>
           </div>
 
@@ -627,28 +643,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div id="setpane" class="hide">
         <div class="card" style="padding:10px 12px">
           <button class="ghost" id="setback" style="padding-left:0">← 프로필</button>
-        </div>
-
-        <div class="card">
-          <h2><span class="grow">닉네임</span>
-            <button class="ghost" id="editname">바꾸기</button></h2>
-          <div class="memo" id="curname">—</div>
-          <div class="empty" style="padding:6px 0 0; text-align:left">
-            <b>한 줄평과 일행 목록에 이 이름으로 보입니다.</b>
-            처음에는 구글 계정 이름이 들어와 있습니다 — 본명을 남기고 싶지 않으면
-            여기서 바꾸세요.
-          </div>
-          <div id="namebox" class="hide" style="margin-top:12px">
-            <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
-            <div style="margin-top:10px; display:flex; gap:8px">
-              <button class="primary" id="n_save">저장</button>
-              <button class="small" id="n_cancel">취소</button>
-            </div>
-            <div class="empty" style="padding:8px 0 0; text-align:left">
-              특정 여행에서만 다르게 부르려면 그 여행의 <b>일행</b> 탭에서
-              따로 별명을 정할 수 있습니다.
-            </div>
-          </div>
         </div>
 
         <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
@@ -1019,7 +1013,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b49</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b50</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2220,7 +2214,7 @@ $('n_save').addEventListener('click', async () => {
     .eq('id', me.id).select('id');
   if (r.error) return fail(r.error, 'trip');
   if (!r.data?.length) return fail('이름을 바꾸지 못했습니다 (0건).', 'trip');
-  $('name').textContent = v; $('curname').textContent = v;
+  $('name').textContent = v;
   $('namebox').classList.add('hide');
 });
 
@@ -3654,7 +3648,6 @@ async function render(session){
   const meta = me.user_metadata || {};
   $('mail').textContent = me.email || '';
   $('name').textContent = meta.full_name || meta.name || (me.email||'').split('@')[0];
-  $('curname').textContent = $('name').textContent;
   /* 우리 통에 올린 사진이 있으면 그것을 먼저 씁니다. 없으면 구글 것. */
   const prof0 = await sb.from('profiles').select('avatar_url').eq('id', me.id).maybeSingle();
   myAvatar = prof0.data?.avatar_url || meta.avatar_url || meta.picture || '';
@@ -3725,6 +3718,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
