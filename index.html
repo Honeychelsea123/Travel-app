@@ -334,6 +334,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
   <div class="topbar">
     <h1>Travel</h1>
     <p class="sub" id="sub">불러오는 중…</p>
+    <!-- 알림은 어느 탭에 있든 보여야 합니다. 프로필 안에 두면 안 들어가 봅니다. -->
+    <button class="ghost hide" id="bell" style="position:relative; padding:4px 2px 0">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
+           d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path
+           d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+      <span id="belldot" class="hide" style="position:absolute; top:0; right:-4px;
+            min-width:16px; height:16px; padding:0 4px; border-radius:999px;
+            background:var(--bad); color:#fff; font-size:10px; line-height:16px;
+            font-weight:700">0</span>
+    </button>
   </div>
 
   <!-- 로그인 전 -->
@@ -368,7 +379,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <input id="r_q" placeholder="도시 찾기 (로마 / rome / ㄹㅁ)" autocomplete="off"
                maxlength="30">
         <div class="days" id="r_filter" style="margin:10px 0 0">
-          <button class="day on" data-rf="all">전체</button>
+          <button class="day on" data-rf="all">아직 안 매김</button>
           <button class="day" data-rf="want">가보고 싶어요</button>
         </div>
         <!-- 프로필 보관함에서 걸러 들어왔을 때만 나옵니다.
@@ -520,7 +531,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
       <!-- 목록에 없는 곳이면 나라만 더 물어봅니다. 도시 이름은 위에 이미 쳤습니다. -->
       <div id="freewrap" class="hide">
-        <label for="f_country">나라</label>
+        <label for="f_country">국가</label>
         <select id="f_country"></select>
         <!-- 나라만 골라도 무엇이 채워지는지 보여줍니다.
              안 보이면 통화나 시간대가 엉뚱해도 모르고 지나갑니다. -->
@@ -548,16 +559,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div class="card">
           <div class="row" style="border:0; padding:0; margin:0">
             <span class="label"></span>
-            <button class="ghost" id="bell" style="position:relative; padding:6px 8px">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
-                   d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path
-                   d="M10.5 19a2 2 0 0 0 3 0"/></svg>
-              <span id="belldot" class="hide" style="position:absolute; top:0; right:0;
-                    min-width:16px; height:16px; padding:0 4px; border-radius:999px;
-                    background:var(--bad); color:#fff; font-size:10px; line-height:16px;
-                    font-weight:700"></span>
-            </button>
             <button class="ghost" id="gear" style="padding:6px 8px">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
                    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -573,16 +574,26 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           </div>
 
           <div style="text-align:center; padding:4px 0 2px">
-            <img id="avatar" alt="" style="width:88px; height:88px; border-radius:50%;
-                 background:var(--parchment); object-fit:cover">
+            <!-- 사진을 눌러 바꿉니다. 따로 버튼을 두는 것보다 찾기 쉽습니다. -->
+            <button id="avatarbtn" class="ghost"
+                    style="position:relative; padding:0; border-radius:50%">
+              <img id="avatar" alt="" style="width:88px; height:88px; border-radius:50%;
+                   background:var(--parchment); object-fit:cover; display:block">
+              <span style="position:absolute; right:0; bottom:0; width:28px; height:28px;
+                    border-radius:50%; background:var(--primary); color:#fff;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:15px; box-shadow:var(--lift-1)">✎</span>
+            </button>
+            <input type="file" id="avatarfile" accept="image/*" class="hide">
             <div style="font-size:calc(21px * var(--ts)); font-weight:650; margin-top:10px"
                  id="name">—</div>
             <div class="memo" id="mail">—</div>
+            <pre id="avaerr" class="hide"></pre>
           </div>
 
           <!-- 왓챠의 "696 평가 | 27 코멘트" 줄과 같은 자리입니다 -->
           <div class="stats">
-            <button data-shelf="been"><b id="s_country">0</b><span>나라</span></button>
+            <button data-shelf="been"><b id="s_country">0</b><span>국가</span></button>
             <button data-shelf="been"><b id="s_city">0</b><span>도시</span></button>
             <button data-shelf="mine"><b id="s_rated">0</b><span>평가</span></button>
           </div>
@@ -664,7 +675,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <div class="row"><span class="dot" id="d0"></span>
             <span class="label">Supabase</span><span class="val" id="v0">확인 중…</span></div>
           <div class="row"><span class="dot" id="d1"></span>
-            <span class="label">나라 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
+            <span class="label">국가 · 도시 · 등급</span><span class="val" id="v1">—</span></div>
         </div>
 
         <div class="card">
@@ -739,7 +750,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <label for="g_dest">도시</label>
           <input id="g_dest" list="citylist" placeholder="로마 / Rome / ㄹㅁ" maxlength="40">
           <div id="g_countrywrap" class="hide">
-            <label for="g_country">나라 <span style="color:var(--bad)">— 목록에 없는 도시입니다</span></label>
+            <label for="g_country">국가 <span style="color:var(--bad)">— 목록에 없는 도시입니다</span></label>
             <select id="g_country"></select>
           </div>
           <div class="two">
@@ -1008,7 +1019,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b46</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b47</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1034,7 +1045,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -1050,7 +1061,7 @@ function mark(id, ok, text){
   $('v'+id).textContent = text;
 }
 function fail(e, where){
-  const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'),
+  const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'), ava:$('avaerr'),
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
@@ -1137,7 +1148,7 @@ function drawCountryNote(){
                               .some(c => c.timezone !== n.default_timezone);
   $('c_note').textContent =
     `${n.currency} · ${n.default_timezone || '시간대 미정'}` +
-    (many ? ' — 이 나라는 시간대가 여럿입니다. 정확히 하려면 도시를 고르세요.' : '');
+    (many ? ' — 이 국가는 시간대가 여럿입니다. 정확히 하려면 도시를 고르세요.' : '');
 }
 $('f_country').addEventListener('change', drawCountryNote);
 
@@ -1166,7 +1177,7 @@ function drawHits(){
   ).join('')
   + `<div class="hit${cursor === hitList.length ? ' on' : ''}" data-i="${hitList.length}">
        <b>${esc(q)}</b><span class="c">그대로 쓰기</span>
-       <span class="r">나라만 고르면 됩니다</span></div>`;
+       <span class="r">국가만 고르면 됩니다</span></div>`;
 
   /* 아는 도시가 하나도 없으면 기다릴 것 없이 나라 고르기를 바로 띄웁니다.
      "목록에 없어요"를 찾아 누르게 하는 건 이상합니다 — 친 그대로 쓰면 됩니다. */
@@ -1678,6 +1689,7 @@ async function loadRatings(){
   /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
      켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
   visited = new Set((vis.data || []).map(v => v.city_id));
+  justRated.clear();      /* 다시 들어왔으니 매긴 것은 이제 목록에서 뺍니다 */
   drawRatings();
 }
 
@@ -1705,7 +1717,10 @@ function drawRatings(){
     if (rateFilter === 'been') return visited.has(c.id);
     if (rateFilter === 'want') return !!r?.want;
     if (rateFilter === 'mine') return r?.stars != null;
-    return true;
+    /* 기본 목록에는 아직 안 매긴 곳만 둡니다. 매긴 것이 계속 쌓여 있으면
+       남은 게 안 보여서 더 안 매기게 됩니다. 매긴 것은 프로필에서 봅니다.
+       방금 매긴 것은 남겨둡니다 — 잘못 눌렀을 때 그 자리에서 고쳐야 합니다. */
+    return r?.stars == null || justRated.has(c.id);
   });
   /* 아직 안 매긴 다녀온 곳을 맨 위로, 그다음 높은 별점 순.
      기록 화면에 왔으면 "매길 게 남았나"가 먼저 궁금합니다. */
@@ -1721,7 +1736,7 @@ function drawRatings(){
   const canAdd = q.length >= 2 && !cho && !exact;
   $('addcity').classList.toggle('hide', !canAdd);
   if (canAdd) $('ac_hint').textContent =
-    `"${$('r_q').value.trim()}" 을(를) 이 나라의 도시로 넣습니다.`;
+    `"${$('r_q').value.trim()}" 을(를) 이 국가의 도시로 넣습니다.`;
 
   if (!list.length && !canAdd){
     $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없습니다.</div>';
@@ -1769,7 +1784,7 @@ $('ac_add').addEventListener('click', async () => {
 
   if (error){
     return fail(/duplicate|unique/i.test(error.message)
-      ? '그 나라에 같은 이름의 도시가 이미 있습니다.' : error, 'rate');
+      ? '그 국가에 같은 이름의 도시가 이미 있습니다.' : error, 'rate');
   }
   if (!data) return fail('저장되지 않았습니다 (0건).', 'rate');
 
@@ -1818,6 +1833,8 @@ async function saveRate(cityId, patch){
     .select('city_id,stars,want').maybeSingle();
   if (r.error) return fail(r.error, 'rate');
   myRates[cityId] = { ...(myRates[cityId] || {}), ...r.data };
+  /* 방금 매긴 것은 이번 화면에서는 남겨둡니다 — 잘못 눌렀으면 바로 고쳐야 합니다. */
+  if ('stars' in patch && patch.stars != null) justRated.add(cityId);
   /* 별점을 매기면 그 도시는 다녀온 것이 됩니다. 지우면 여행 기록이 없는 한 빠집니다. */
   if ('stars' in patch){
     if (patch.stars != null) visited.add(cityId);
@@ -2093,11 +2110,13 @@ $('setview').addEventListener('click', e => {
   showApp('rate');
 });
 
-/* 종은 프로필 우상단에 있고 안 읽은 수를 배지로 답니다. 눌러야 목록이 펼쳐집니다. */
-$('bell').addEventListener('click', () => {
-  $('notifcard').classList.toggle('hide');
-  if (!$('notifcard').classList.contains('hide'))
-    $('notifcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+/* 종은 상단바에 있습니다 — 어느 탭에 있든 보여야 합니다.
+   누르면 프로필로 가서 알림을 펼칩니다. 목록은 한 군데만 둡니다. */
+$('bell').addEventListener('click', async () => {
+  if (appTab !== 'set') showApp('set'); else showProfile(false);
+  await loadNotifs();
+  $('notifcard').classList.remove('hide');
+  $('notifcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
 });
 
 async function loadNotifs(){
@@ -2123,6 +2142,66 @@ $('readall').addEventListener('click', async () => {
   await sb.from('notifications').update({ read_at: new Date().toISOString() })
     .is('read_at', null);
   loadNotifs();
+});
+
+/* ── 프로필 사진 ────────────────────────────────────────────────────
+ * 폰 사진은 5MB 가 넘기도 합니다. 그대로 올리면 통을 낭비하고 목록도 느려집니다.
+ * 256px 정사각으로 줄여서 올립니다 — 88px 로 그리는 자리라 그 이상은 필요 없습니다. */
+function shrink(file, size = 256){
+  return new Promise((ok, no) => {
+    const img = new Image();
+    img.onload = () => {
+      /* 가운데를 정사각으로 잘라냅니다. 안 그러면 세로 사진이 찌그러집니다. */
+      const s = Math.min(img.width, img.height);
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = size;
+      cv.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2,
+                                    s, s, 0, 0, size, size);
+      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 바꾸지 못했습니다.')),
+                'image/jpeg', 0.85);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => no(new Error('사진을 읽지 못했습니다.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$('avatarbtn').addEventListener('click', () => $('avatarfile').click());
+
+$('avatarfile').addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  e.target.value = '';                     /* 같은 파일을 또 골라도 걸리게 */
+  if (!f) return;
+  $('avaerr').classList.add('hide');
+  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있습니다.', 'ava');
+
+  const before = $('avatar').src;
+  $('avatar').style.opacity = '.4';
+  try {
+    const blob = await shrink(f);
+    /* 파일 이름을 고정해 옛 사진이 쌓이지 않게 합니다. */
+    const path = `${me.id}/avatar.jpg`;
+    const up = await sb.storage.from('avatars')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (up.error) throw up.error;
+
+    /* 이름이 같으니 주소도 같습니다. 그대로 두면 옛 사진이 캐시에서 나옵니다. */
+    const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl
+              + '?v=' + Date.now();
+    const r = await sb.from('profiles').update({ avatar_url: url })
+      .eq('id', me.id).select('avatar_url').maybeSingle();
+    if (r.error) throw r.error;
+    if (!r.data) throw new Error('저장되지 않았습니다 (0건).');
+
+    $('avatar').src = url;
+    myAvatar = url;
+  } catch (err) {
+    $('avatar').src = before;
+    fail(/bucket|not found/i.test(err.message || '')
+      ? 'avatars 통이 아직 없습니다. 026_avatars.sql 을 먼저 실행하세요.'
+      : err, 'ava');
+  }
+  $('avatar').style.opacity = '';
 });
 
 /* ── 이름 ── profiles.display_name 은 모든 여행에서 쓰는 이름입니다.
@@ -3528,7 +3607,7 @@ async function render(session){
   if (!session){
     unwatch(); trip = null; document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
-    $('errcard').classList.add('hide');
+    $('errcard').classList.add('hide'); $('bell').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있습니다.';
     me = null;
 
@@ -3563,7 +3642,10 @@ async function render(session){
   $('mail').textContent = me.email || '';
   $('name').textContent = meta.full_name || meta.name || (me.email||'').split('@')[0];
   $('curname').textContent = $('name').textContent;
-  if (meta.avatar_url || meta.picture) $('avatar').src = meta.avatar_url || meta.picture;
+  /* 우리 통에 올린 사진이 있으면 그것을 먼저 씁니다. 없으면 구글 것. */
+  const prof0 = await sb.from('profiles').select('avatar_url').eq('id', me.id).maybeSingle();
+  myAvatar = prof0.data?.avatar_url || meta.avatar_url || meta.picture || '';
+  if (myAvatar) $('avatar').src = myAvatar;
 
   /* 가입 트리거가 실제로 돌았는지 봅니다 (001 의 handle_new_user). */
   const [prof, prefs] = await Promise.all([
@@ -3578,6 +3660,8 @@ async function render(session){
     localStorage.setItem('t2:ts', prefs.data.text_scale);
   } else applyTs(localStorage.getItem('t2:ts') || 1);
 
+  $('bell').classList.remove('hide');
+  loadNotifs();
   showApp('home');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
      목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
@@ -3628,6 +3712,8 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
+
 
 
 
