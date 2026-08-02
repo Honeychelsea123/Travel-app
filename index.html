@@ -12,6 +12,7 @@
   --fg:#e7eaee; --dim:#98a2b0; --accent:#4c9aff;
   --ok:#3fb950; --bad:#f85149;
   --r:14px; --ts:1;             /* 글자 배율. 나중에 user_prefs 에서 온다 */
+  --kb:0px;                     /* 키보드 높이. 아래 스크립트가 재서 넣는다 */
 }
 @media (prefers-color-scheme: light){
   :root{ --bg:#f7f8fa; --panel:#fff; --line:#e3e6ea; --sunk:#f0f2f5;
@@ -22,9 +23,11 @@ body{
   margin:0; min-height:100dvh; background:var(--bg); color:var(--fg);
   font:calc(15px * var(--ts))/1.6 Pretendard,-apple-system,BlinkMacSystemFont,
        "Segoe UI",system-ui,sans-serif;
-  padding:24px 16px 48px;
+  padding:24px 16px calc(48px + var(--kb));
+  overflow-x:hidden;              /* 어디 하나 삐져나와도 화면이 옆으로 밀리지 않게 */
 }
-main{ max-width:520px; margin:0 auto; }
+main{ max-width:520px; margin:0 auto; min-width:0; }
+.card{ min-width:0; }
 h1{ font-size:calc(20px * var(--ts)); margin:0 0 2px; font-weight:650; letter-spacing:-.02em; }
 .sub{ color:var(--dim); font-size:calc(13px * var(--ts)); margin:0 0 22px; }
 .hide{ display:none !important; }
@@ -48,9 +51,19 @@ button:disabled{ opacity:.5; cursor:default; }
 
 label{ display:block; font-size:calc(12px * var(--ts)); color:var(--dim); margin:14px 0 5px; }
 label:first-of-type{ margin-top:0; }
-input, select{ font:inherit; width:100%; padding:10px 12px; border-radius:11px;
-               border:1px solid var(--line); background:var(--sunk); color:var(--fg); }
+input, select{
+  font-family:inherit; line-height:1.4;
+  /* iOS 사파리는 글자가 16px 보다 작은 입력칸을 누르면 화면을 확대합니다.
+     그러면 레이아웃이 통째로 깨져 보입니다. 16px 아래로는 안 내려갑니다. */
+  font-size:max(16px, calc(15px * var(--ts)));
+  width:100%; max-width:100%; min-width:0;
+  padding:10px 12px; border-radius:11px;
+  border:1px solid var(--line); background:var(--sunk); color:var(--fg);
+}
+/* iOS 는 date · time 을 자기 방식으로 그리면서 width 를 무시해 카드 밖으로 나갑니다. */
+input[type=date], input[type=time]{ -webkit-appearance:none; appearance:none; }
 .two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.two > div{ min-width:0; }        /* 칸 내용이 그리드를 늘리지 못하게 막습니다 */
 
 /* 도시 검색 */
 .hits{ margin-top:6px; border:1px solid var(--line); border-radius:11px; overflow:hidden auto;
@@ -342,7 +355,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b17</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b18</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1259,6 +1272,21 @@ async function render(session){
   await handleJoin();
 }
 
+/* ── 키보드 ─────────────────────────────────────────────────────────
+ * iOS 에서 키보드가 올라오면 폼 아래 버튼이 가려 아무것도 못 누릅니다.
+ * 보이는 높이를 재서 그만큼 바닥에 여백을 줘 스크롤로 닿게 합니다.
+ * (도쿄 앱이 --kb 로 하던 것과 같은 방식입니다.) */
+if (window.visualViewport){
+  const vv = window.visualViewport;
+  const fit = () => {
+    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+  };
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', fit);
+  fit();
+}
+
 /* ── 시작 ───────────────────────────────────────────────────────── */
 /* 초대 링크(?join=CODE)로 들어왔을 수 있습니다. 로그인을 거쳐야 쓸 수 있으므로
    먼저 담아두고 주소는 지웁니다 — 구글에 다녀오는 동안 사라지면 안 됩니다. */
@@ -1288,6 +1316,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
