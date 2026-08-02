@@ -126,7 +126,8 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     </div>
 
     <div class="card">
-      <h2><span class="grow">내 여행</span>
+      <h2><span class="grow" id="listtitle">내 여행</span>
+        <button class="ghost" id="archbtn">보관함</button>
         <button class="small" id="newbtn">+ 새 여행</button></h2>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
     </div>
@@ -192,7 +193,7 @@ code{ background:var(--panel); border:1px solid var(--line); padding:1px 5px;
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b7</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b8</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -214,7 +215,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {},
-    picked = null, hitList = [], cursor = 0;
+    picked = null, hitList = [], cursor = 0, showArchived = false;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -447,32 +448,84 @@ $('create').addEventListener('click', async () => {
 });
 
 /* ── 여행 목록 ──────────────────────────────────────────────────── */
+$('archbtn').addEventListener('click', () => {
+  showArchived = !showArchived;
+  $('archbtn').textContent = showArchived ? '진행 중' : '보관함';
+  $('listtitle').textContent = showArchived ? '보관한 여행' : '내 여행';
+  $('newbtn').classList.toggle('hide', showArchived);
+  loadTrips();
+});
+
 async function loadTrips(){
   /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
      않으면 방금 만든 여행조차 여기 안 나옵니다. */
-  const { data, error } = await sb.from('trips')
+  let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,trip_members(role)')
-    .is('archived_at', null)
+            'transit_factor,trip_members(user_id,role)')
     .order('start_date', { ascending:false });
+  q = showArchived ? q.not('archived_at','is',null) : q.is('archived_at', null);
+  const { data, error } = await q;
 
   if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>';
               return fail(error); }
   if (!data.length){
-    $('trips').innerHTML =
-      '<div class="empty">아직 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
+    $('trips').innerHTML = showArchived
+      ? '<div class="empty">보관한 여행이 없습니다.</div>'
+      : '<div class="empty">아직 여행이 없습니다.<br>+ 새 여행을 눌러 만들어보세요.</div>';
     return;
   }
   $('trips').innerHTML = data.map(t => {
-    const mine = (t.trip_members || []).find(m => m.role);
+    const role = (t.trip_members || []).find(m => m.user_id === me.id)?.role || '';
     const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
+    const a = `data-id="${esc(t.id)}" data-title="${esc(t.title)}"`;
+    /* 소유자만 지웁니다. 일행은 나갈 뿐입니다 — 남의 여행을 지울 수는 없습니다.
+       (RLS 도 같은 규칙을 걸어두었으니 버튼을 숨기는 건 안내일 뿐입니다.) */
+    const acts = role === 'owner'
+      ? (showArchived ? `<button class="ghost" data-act="unarchive" ${a}>꺼내기</button>`
+                      : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
+        `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
+      : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
     return `<div class="trip"><div class="t">
       <b>${esc(t.title)}</b>
       <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일<br>
       ${esc(t.currency)} · ${esc(t.timezone)} · 이동 ×${esc(t.transit_factor)}</span>
-    </div><span class="badge">${esc(mine?.role || '')}</span></div>`;
+      <div style="margin-top:4px">${acts}</div>
+    </div><span class="badge">${esc(role)}</span></div>`;
   }).join('');
 }
+
+/* 줄마다 버튼을 달면 목록을 다시 그릴 때마다 이벤트를 다시 붙여야 합니다.
+   상자 하나에만 붙이고 눌린 버튼을 찾아 씁니다. */
+$('trips').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const { act, id, title } = b.dataset;
+
+  if (act === 'delete'){
+    /* 되돌릴 수 없는 일입니다. 무엇이 같이 사라지는지 적어서 묻습니다. */
+    if (!confirm(`"${title}" 여행을 지웁니다.\n\n` +
+                 `일정 · 지출 · 예약 · 준비물 · 사진이 함께 사라지고\n` +
+                 `되돌릴 수 없습니다.\n\n계속할까요?`)) return;
+  }
+  if (act === 'leave'){
+    if (!confirm(`"${title}" 여행에서 나갑니다.\n` +
+                 `내가 넣은 지출은 정산을 위해 남습니다.\n\n계속할까요?`)) return;
+  }
+
+  b.disabled = true;
+  let r;
+  if (act === 'delete')          r = await sb.from('trips').delete().eq('id', id);
+  else if (act === 'archive')    r = await sb.from('trips')
+                                      .update({ archived_at: new Date().toISOString() }).eq('id', id);
+  else if (act === 'unarchive')  r = await sb.from('trips')
+                                      .update({ archived_at: null }).eq('id', id);
+  else if (act === 'leave')      r = await sb.from('trip_members')
+                                      .update({ left_at: new Date().toISOString() })
+                                      .eq('trip_id', id).eq('user_id', me.id);
+  b.disabled = false;
+  if (r?.error) return fail(r.error);
+  await loadTrips();
+});
 
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
@@ -522,5 +575,6 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
