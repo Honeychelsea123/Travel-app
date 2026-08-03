@@ -115,6 +115,11 @@ input, select{
   border:1px solid var(--hairline); background:var(--pearl); color:var(--ink);
 }
 input:focus, select:focus{ border-color:var(--primary); background:var(--canvas); }
+/* 16px 은 iOS 가 입력칸을 누를 때 화면을 확대하지 못하게 막으려고 둔 바닥값입니다.
+   손가락이 아닌 화면에서는 그럴 일이 없으므로 둘레 글자와 크기를 맞춥니다. */
+@media (pointer:fine){
+  input, select{ font-size:calc(14px * var(--ts)); padding:9px var(--s-sm); }
+}
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
    빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */
