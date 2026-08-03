@@ -433,26 +433,44 @@ body.sheeton{ overflow:hidden; }
 /* ── 여행 리포트 ─────────────────────────────────────────────────────
  * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다.
  * 옆으로 넘겨 보는 카드로 냅니다 — 한 장에 숫자 하나만 크게. */
-.rpt{ display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
-      margin-top:12px; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
-.rpt::-webkit-scrollbar{ display:none }
-.rptc{ scroll-snap-align:center; flex:0 0 min(78%, 300px);
-       border-radius:var(--r-lg); padding:20px 18px; color:#fff;
-       background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
-       box-shadow:0 10px 24px rgba(90,63,240,.26); min-height:190px;
-       display:flex; flex-direction:column; }
-.rptc:nth-child(2n){ background:linear-gradient(135deg,#0f9d8f 0%,#2b7de9 100%);
-                     box-shadow:0 10px 24px rgba(20,120,200,.24); }
-.rptc:nth-child(3n){ background:linear-gradient(135deg,#f0803c 0%,#e0245e 100%);
-                     box-shadow:0 10px 24px rgba(220,60,90,.24); }
-.rptc .n{ font-size:calc(11px * var(--ts)); opacity:.75 }
-.rptc .k{ font-size:calc(13px * var(--ts)); opacity:.92; margin-top:10px }
-.rptc .b{ font-size:calc(34px * var(--ts)); font-weight:750; line-height:1.15;
-          letter-spacing:calc(-1px * var(--ts)); margin-top:2px }
-.rptc .s{ font-size:calc(12.5px * var(--ts)); opacity:.9; margin-top:6px;
+.rpt1 .hd{ text-align:center; padding:4px 0 2px }
+.rpt1 .ti{ font-size:calc(26px * var(--ts)); font-weight:750;
+           letter-spacing:calc(-.6px * var(--ts)) }
+.rpt1 .dt{ font-size:calc(12.5px * var(--ts)); color:var(--ink-48); margin-top:4px }
+
+.rstats{ display:flex; margin-top:18px; padding:14px 0;
+         border-top:1px solid var(--divider-soft);
+         border-bottom:1px solid var(--divider-soft) }
+.rstats .rs{ flex:1; text-align:center; min-width:0 }
+.rstats .rs + .rs{ border-left:1px solid var(--divider-soft) }
+.rstats .b{ font-size:min(calc(24px * var(--ts)), 6.2vw); font-weight:700;
+            letter-spacing:calc(-.5px * var(--ts)) }
+.rstats .s{ font-size:calc(11.5px * var(--ts)); color:var(--ink-48); margin-top:3px }
+
+/* 한 줄 정의 — 공유하고 싶어지는 자리라 여기만 색을 씁니다. */
+.rdef{ margin-top:16px; padding:16px; border-radius:var(--r-md); text-align:center;
+       color:#fff; background:linear-gradient(135deg,#4b6cff 0%,#a13cff 100%) }
+.rdef .q{ font-size:calc(20px * var(--ts)); font-weight:700; word-break:keep-all }
+.rdef .d{ font-size:calc(12px * var(--ts)); opacity:.92; margin-top:6px;
           word-break:keep-all }
-.rptc .o{ font-size:calc(12px * var(--ts)); opacity:.86; margin-top:auto;
-          padding-top:10px; word-break:keep-all }
+
+.rsec{ margin-top:16px }
+.rsec .h{ font-size:calc(11.5px * var(--ts)); color:var(--ink-48); font-weight:600 }
+.rsec .v{ font-size:calc(14px * var(--ts)); font-weight:600; margin-top:4px;
+          word-break:keep-all }
+.rsec .m{ font-size:calc(12px * var(--ts)); color:var(--ink-48); margin-top:2px }
+.rtwo{ display:flex; gap:12px }
+.rtwo .rsec{ flex:1; min-width:0 }
+
+.rday{ display:flex; align-items:center; gap:8px; padding:5px 0;
+       font-size:calc(12.5px * var(--ts)) }
+.rday .dd{ width:52px; flex:none; color:var(--ink-48) }
+.rday .dots{ flex:1; min-width:0; color:var(--primary); letter-spacing:1px;
+             overflow:hidden; white-space:nowrap; font-size:calc(9px * var(--ts)) }
+.rday .dn{ width:38px; flex:none; text-align:right; color:var(--ink-48) }
+.rday .ds{ width:40px; flex:none; text-align:right; font-weight:600 }
+.rday .dw{ flex:none; font-size:calc(10.5px * var(--ts)); color:#c1440e;
+           background:#fdf0e8; border-radius:999px; padding:2px 7px }
 
 /* 평가 안 한 여행 알림 띠. 히어로 아래에 얇게 붙습니다 —
    앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */
@@ -944,7 +962,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div class="days" id="tripfilter">
         <button class="day is-f on" data-f="up">다가오는</button>
         <button class="day is-f" data-f="past">다녀온</button>
-        <button class="day is-f" data-f="arch">보관</button>
       </div>
       <div id="trips"><div class="empty">불러오는 중…</div></div>
       <!-- 목록에서 난 오류는 여기 바로 뜹니다.
@@ -1535,7 +1552,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b92</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b94</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2013,7 +2030,7 @@ const LVCOLOR = { 심각:'var(--bad)', 주의:'var(--k-food)', 참고:'var(--ink
 
 async function loadAi(){
   const { data, error } = await sb.from('trips')
-    .select('id,title').is('archived_at', null).order('start_date');
+    .select('id,title').order('start_date');
   if (error) return fail(error, 'trip');
 
   /* 여행을 안 고르고도 물어볼 수 있어야 합니다. 어디로 갈지 정하기 전에
@@ -2645,7 +2662,7 @@ async function loadHome(){
 
   const { data, error } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
-    .is('archived_at', null).gte('end_date', today)
+    .gte('end_date', today)
     .order('start_date').limit(1);
   if (error) return fail(error, 'trip');
 
@@ -2730,7 +2747,7 @@ async function pendingTrip(){
   const today = ymd(new Date());
   const { data } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date')
-    .is('archived_at', null).lt('end_date', today)
+    .lt('end_date', today)
     .order('end_date', { ascending:false }).limit(5);
   if (!data?.length) return null;
 
@@ -2839,22 +2856,23 @@ async function drawReport(id){
   const [t, lg, pl, ex, cr, pr] = await Promise.all([
     sb.from('trips').select('title,destination,start_date,end_date,home_currency')
       .eq('id', id).maybeSingle(),
-    sb.from('trip_legs').select('city_id,destination').eq('trip_id', id).order('start_date'),
+    sb.from('trip_legs').select('city_id').eq('trip_id', id).order('start_date'),
     sb.from('plans').select('id,title,category,lat,lng,date,start_time')
       .eq('trip_id', id).is('deleted_at', null).order('date').order('start_time'),
-    sb.from('expenses').select('amount_home,category').eq('trip_id', id).is('deleted_at', null),
-    sb.from('city_ratings').select('city_id,stars,comment').eq('user_id', me.id),
+    sb.from('expenses').select('title,amount,amount_home,currency,category')
+      .eq('trip_id', id).is('deleted_at', null),
+    sb.from('city_ratings').select('city_id,stars').eq('user_id', me.id),
     sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
   ]);
-  const trip_ = t.data || {};
-  const days = Math.round((asDate(trip_.end_date) - asDate(trip_.start_date)) / D1) + 1;
+  const T = t.data || {};
+  const days   = Math.round((asDate(T.end_date) - asDate(T.start_date)) / D1) + 1;
   const plans_ = pl.data || [];
-  const cs  = Object.fromEntries((cr.data || []).map(r => [r.city_id, r]));
-  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, r.stars]));
+  const exps   = ex.data || [];
+  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, Number(r.stars)]));
 
-  /* 걸은 거리는 좌표가 있는 일정 사이만 더합니다. 없으면 그냥 뺍니다. */
-  let km = 0;
-  const byDay = {};
+  /* 움직인 거리. 좌표가 있는 일정 사이만 더합니다 —
+     모르는 구간을 지어내느니 빼는 편이 낫습니다. */
+  let km = 0; const byDay = {};
   plans_.forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
   Object.values(byDay).forEach(list => {
     for (let i = 0; i < list.length - 1; i++){
@@ -2863,45 +2881,226 @@ async function drawReport(id){
     }
   });
 
-  const spend = (ex.data || []).reduce((s, e) => s + (Number(e.amount_home) || 0), 0);
-  const cityIds = [...new Set((lg.data || []).map(l => l.city_id).filter(Boolean))];
-  const cityStars = cityIds.map(i => cs[i]?.stars).filter(v => v != null);
-  const eats = plans_.filter(p => ['식사','카페'].includes(p.category));
-  const rated = eats.filter(p => psr[p.id] != null)
-                    .sort((a, b) => psr[b.id] - psr[a.id]);
-  const best = rated[0];
-  const avg = a => a.length ? (a.reduce((s, v) => s + Number(v), 0) / a.length).toFixed(1) : null;
+  const PLACE = ['식사','카페','관광','쇼핑','기타'];
+  const spots = plans_.filter(p => PLACE.includes(p.category));
+  const eats  = spots.filter(p => ['식사','카페'].includes(p.category));
+  const sees  = spots.filter(p => ['관광','쇼핑'].includes(p.category));
+  const avg = a => a.length ? a.reduce((s,v) => s+v, 0) / a.length : null;
+  const st  = list => avg(list.map(p => psr[p.id]).filter(v => v != null));
+  const eatAvg = st(eats), seeAvg = st(sees);
 
-  const cards = [
-    { k:'다녀왔어요', big:`${days}일`,
-      sub:`${trip_.start_date} ~ ${trip_.end_date}`, note: trip_.destination },
-    { k:'이만큼 다녔어요', big:`${plans_.length}개`,
-      sub:'잡아둔 일정', note: km ? `걸은 거리 약 ${Math.round(km)}km` : null },
-    spend ? { k:'이만큼 썼어요',
-      big:`${Math.round(spend).toLocaleString()}`,
-      sub: trip_.home_currency || '', note:`하루 평균 ${Math.round(spend/days).toLocaleString()}` } : null,
-    { k:'도시 평점', big: avg(cityStars) ? `★ ${avg(cityStars)}` : '–',
-      sub: cityIds.map(i => (cities || []).find(c => c.id === i)?.name).filter(Boolean).join(' · '),
-      note: cs[cityIds[0]]?.comment || null },
-    { k:'맛집', big: rated.length ? `${rated.length}곳` : '–',
-      sub: rated.length ? `평균 ★ ${avg(rated.map(p => psr[p.id]))}` : '평가한 곳이 없어요',
-      note: best ? `최고 ${best.title} ★${psr[best.id]}` : null },
-  ].filter(Boolean);
+  const money = e => Number(e.amount_home) || 0;
+  const spend = exps.reduce((s,e) => s + money(e), 0);
+  const foodPct = spend ? Math.round(
+    exps.filter(e => ['식사','카페'].includes(e.category)).reduce((s,e)=>s+money(e),0)
+    / spend * 100) : 0;
+  const shopPct = spend ? Math.round(
+    exps.filter(e => e.category === '쇼핑').reduce((s,e)=>s+money(e),0) / spend * 100) : 0;
+  const won = n => Math.round(n).toLocaleString();
+  const cur = T.home_currency || '';
+
+  /* 한 줄 정의. AI 를 안 부르고 지출 비중과 별점 차이로 뽑습니다 — 공짜이고 즉시 나옵니다. */
+  const perDay = spots.length / days;
+  const label =
+    (foodPct >= 45 && (eatAvg ?? 0) >= (seeAvg ?? 0)) ? '먹으러 간 사람'
+    : shopPct >= 25                                   ? '사러 간 사람'
+    : perDay >= 6                                     ? '부지런히 본 사람'
+    : perDay <= 3.2                                   ? '느긋하게 쉰 사람'
+    : (km / days) >= 12                               ? '많이 걸은 사람'
+    : (seeAvg ?? 0) > (eatAvg ?? 0)                   ? '보러 간 사람'
+    : '고루 즐긴 사람';
+  const defLine = [
+    foodPct ? `식비 ${foodPct}%` : null,
+    eatAvg != null ? `식당 평균 ★${eatAvg.toFixed(1)}` : null,
+    seeAvg != null ? `관광지 평균 ★${seeAvg.toFixed(1)}` : null,
+  ].filter(Boolean).join(' · ');
+
+  const five = spots.filter(p => psr[p.id] === 5).map(p => p.title);
+  const top  = spots.filter(p => psr[p.id] != null)
+                    .sort((a,b) => psr[b.id] - psr[a.id])[0];
+  const pricey = exps.slice().sort((a,b) => money(b) - money(a))[0];
+
+  /* 하루별 흐름. 점 개수가 일정 수, 옆이 그날 평균 별점입니다. */
+  const dayRows = Object.keys(byDay).sort().map((d, i) => {
+    const list = byDay[d].filter(p => PLACE.includes(p.category));
+    const s = st(list);
+    return { i:i+1, n:list.length, s };
+  });
+  const busiest = dayRows.reduce((a,b) =>
+    (!a || b.n > a.n || (b.n === a.n && (b.s ?? 9) < (a.s ?? 9))) ? b : a, null);
+  const hard = busiest && busiest.n >= 6 && (busiest.s == null || busiest.s <= 3.6)
+             ? busiest.i : null;
+
+  rpt = { title:T.title, dest:T.destination, from:T.start_date, to:T.end_date,
+          days, spend, cur, spots:spots.length, km:Math.round(km), label, defLine };
+
+  const stat = (big, sub) =>
+    `<div class="rs"><div class="b">${esc(big)}</div><div class="s">${esc(sub)}</div></div>`;
 
   $('rv_report').innerHTML =
-    `<div class="card">
-       <h2>${esc(trip_.title || '여행')} 리포트</h2>
-       <div class="memo">옆으로 넘겨 보세요</div>
-       <div class="rpt">${cards.map((c, i) => `<div class="rptc">
-         <div class="n">${i + 1} / ${cards.length}</div>
-         <div class="k">${esc(c.k)}</div>
-         <div class="b">${esc(c.big)}</div>
-         <div class="s">${esc(c.sub || '')}</div>
-         ${c.note ? `<div class="o">${esc(c.note)}</div>` : ''}
-       </div>`).join('')}</div>
-       <button class="ghost" id="rv_home" style="width:100%; margin-top:14px">홈으로</button>
+    `<div class="card rpt1" id="rptcard">
+       <div class="hd">
+         <div class="ti">${esc(T.destination || T.title || '여행')}</div>
+         <div class="dt">${esc(T.from || T.start_date)} – ${esc(T.end_date)}
+           · ${days - 1}박 ${days}일</div>
+       </div>
+
+       <div class="rstats">
+         ${stat(spend ? won(spend) + (cur ? ' ' + cur : '') : '–', '쓴 돈')}
+         ${stat(spots.length + '곳', '다녀온 곳')}
+         ${stat(km ? Math.round(km) + 'km' : '–', '움직인 거리')}
+       </div>
+
+       <div class="rdef">
+         <div class="q">"${esc(label)}"</div>
+         ${defLine ? `<div class="d">${esc(defLine)}</div>` : ''}
+       </div>
+
+       ${five.length ? `<div class="rsec"><div class="h">★5를 준 곳</div>
+         <div class="v">${esc(five.slice(0,6).join(' · '))}</div></div>` : ''}
+
+       <div class="rtwo">
+         <div class="rsec"><div class="h">가장 비쌌던 곳</div>
+           <div class="v">${pricey ? esc(pricey.title) : '–'}</div>
+           <div class="m">${pricey ? esc(won(money(pricey)) + ' ' + cur) : ''}</div></div>
+         <div class="rsec"><div class="h">가장 만족한 곳</div>
+           <div class="v">${top ? esc(top.title) : '–'}</div>
+           <div class="m">${top ? '★' + psr[top.id] : ''}</div></div>
+       </div>
+
+       <div class="rsec"><div class="h">하루별 흐름</div>
+         ${dayRows.map(r => `<div class="rday">
+           <span class="dd">Day ${r.i}</span>
+           <span class="dots">${'●'.repeat(Math.min(r.n, 12))}</span>
+           <span class="dn">${r.n}곳</span>
+           <span class="ds">${r.s != null ? '★' + r.s.toFixed(1) : ''}</span>
+           ${hard === r.i ? '<span class="dw">무리했던 날</span>' : ''}
+         </div>`).join('')}
+       </div>
+
+       <div id="rv_ai" class="rsec hide"></div>
+       <button class="ghost" id="rv_askai" style="width:100%; margin-top:12px">
+         AI 한마디 듣기</button>
+
+       <div style="display:flex; gap:8px; margin-top:8px">
+         <button class="ghost" id="rv_img" style="flex:1">이미지로 저장</button>
+         <button class="ghost" id="rv_share" style="flex:1">공유</button>
+       </div>
+       <button class="ghost" id="rv_home" style="width:100%; margin-top:6px">홈으로</button>
      </div>`;
-  $('rv_home').onclick = () => closeReview();
+
+  $('rv_home').onclick  = () => closeReview();
+  $('rv_share').onclick = () => shareReport();
+  $('rv_img').onclick   = () => saveReportImage();
+  $('rv_askai').onclick = () => askReportAi(id, { label, defLine, dayRows, hard,
+                                                  spend, cur, days, top, pricey, psr });
+}
+
+function reportText(){
+  if (!rpt) return '';
+  return [
+    `${rpt.dest || rpt.title} ${rpt.from} – ${rpt.to} · ${rpt.days}일`,
+    `"${rpt.label}"`,
+    [rpt.spend ? `쓴 돈 ${Math.round(rpt.spend).toLocaleString()}${rpt.cur}` : null,
+     `다녀온 곳 ${rpt.spots}곳`,
+     rpt.km ? `움직인 거리 ${rpt.km}km` : null].filter(Boolean).join(' · '),
+    rpt.defLine,
+  ].filter(Boolean).join('\n');
+}
+
+async function shareReport(){
+  const url = location.origin + location.pathname;
+  const text = reportText();
+  if (navigator.share){
+    try { await navigator.share({ title:'여행 리포트', text, url }); return; }
+    catch (e){ if (e?.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('복사했어요'); }
+  catch { toast(text); }
+}
+
+/* 이미지 저장. 밖에서 라이브러리를 받아오지 않고 캔버스에 직접 그립니다 —
+   비행기모드에서도 되고 파일도 안 무거워집니다. */
+async function saveReportImage(){
+  if (!rpt) return;
+  const W = 1080, H = 1350, s = 1;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+
+  const grd = g.createLinearGradient(0, 0, W, H);
+  grd.addColorStop(0, '#4b6cff'); grd.addColorStop(.55, '#7b4dff'); grd.addColorStop(1, '#a13cff');
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+
+  const F = (w, px) => `${w} ${px}px -apple-system, "Malgun Gothic", sans-serif`;
+  g.fillStyle = '#fff'; g.textAlign = 'center';
+
+  g.font = F(700, 84); g.fillText(rpt.dest || rpt.title || '여행', W/2, 250);
+  g.font = F(400, 34); g.globalAlpha = .9;
+  g.fillText(`${rpt.from} – ${rpt.to} · ${rpt.days}일`, W/2, 305);
+  g.globalAlpha = 1;
+
+  const nums = [
+    [rpt.spend ? Math.round(rpt.spend).toLocaleString() : '–', '쓴 돈'],
+    [rpt.spots + '곳', '다녀온 곳'],
+    [rpt.km ? rpt.km + 'km' : '–', '움직인 거리'],
+  ];
+  nums.forEach(([b, k], i) => {
+    const x = W/2 + (i - 1) * 320;
+    g.font = F(700, 62); g.fillText(b, x, 560);
+    g.font = F(400, 30); g.globalAlpha = .85; g.fillText(k, x, 615); g.globalAlpha = 1;
+  });
+
+  g.font = F(700, 60); g.fillText(`"${rpt.label}"`, W/2, 830);
+  if (rpt.defLine){
+    g.font = F(400, 30); g.globalAlpha = .88;
+    g.fillText(rpt.defLine, W/2, 890); g.globalAlpha = 1;
+  }
+  g.font = F(600, 30); g.globalAlpha = .72; g.fillText('AI.Trip', W/2, H - 90);
+  g.globalAlpha = 1;
+
+  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+  const file = new File([blob], 'trip-report.png', { type:'image/png' });
+  /* 휴대폰은 이미지를 바로 공유창에 넘길 수 있습니다. 안 되면 내려받습니다. */
+  if (navigator.canShare?.({ files:[file] })){
+    try { await navigator.share({ files:[file], title:'여행 리포트' }); return; }
+    catch (e){ if (e?.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'trip-report.png';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('이미지를 저장했어요');
+}
+
+/* AI 한마디. 계산해 둔 사실만 넘기고 문장만 받습니다 —
+   AI 가 숫자를 다시 세면 틀립니다. 부를 때만 부르므로 횟수도 아낍니다. */
+async function askReportAi(id, f){
+  const b = $('rv_askai');
+  b.disabled = true; b.textContent = '듣는 중…';
+  const facts = [
+    `여행 ${f.days}일, 다녀온 곳 ${rpt.spots}곳, 움직인 거리 ${rpt.km}km`,
+    f.spend ? `쓴 돈 ${Math.round(f.spend).toLocaleString()}${f.cur}, 하루 평균 ${
+      Math.round(f.spend / f.days).toLocaleString()}${f.cur}` : null,
+    f.defLine, `한 줄 정의는 "${f.label}"`,
+    f.hard ? `Day ${f.hard}이 가장 빡빡했고 그날 평가가 낮았다` : null,
+    f.top ? `가장 만족한 곳은 ${f.top.title} ★${f.psr[f.top.id]}` : null,
+    f.pricey ? `가장 비쌌던 곳은 ${f.pricey.title}` : null,
+  ].filter(Boolean).join('\n');
+
+  const { data, error } = await sb.functions.invoke('chat', { body: { trip_id: id,
+    message: '아래는 이번 여행을 계산한 결과다. 숫자를 새로 세지 말고 이 사실만 써서 ' +
+             '3~4문장으로 소감과 다음 여행 조언을 해요체로 써줘. ' +
+             '마지막 문장은 다음 여행에 쓸 수 있는 구체적인 제안으로 끝낼 것. ' +
+             'places 와 actions 는 빈 배열로 둘 것.\n\n' + facts } });
+  b.disabled = false; b.textContent = 'AI 한마디 다시 듣기';
+  if (error || data?.error){
+    let why = data?.error || error.message;
+    try { why = (await error?.context?.json())?.error || why; } catch {}
+    return toast(why);
+  }
+  $('rv_ai').classList.remove('hide');
+  $('rv_ai').innerHTML = `<div class="h">AI 한마디</div>
+    <div class="v" style="font-weight:400; line-height:1.7">${md(data.reply || '')}</div>`;
 }
 
 /* AI 일정 만들기 — 이 앱이 내세우는 기능이라 홈 위쪽에 둡니다. */
@@ -3413,7 +3612,7 @@ async function openDraft(){
   const today = ymd(new Date());
   const { data } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date')
-    .is('archived_at', null).gte('end_date', today).order('start_date').limit(20);
+    .gte('end_date', today).order('start_date').limit(20);
 
   ['homeview','listview','rateview','aiview','setview','cityview']
     .forEach(v => $(v).classList.add('hide'));
@@ -4262,16 +4461,14 @@ async function loadTrips(){
   const today = ymd(new Date());
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,archived_at,city_id,cities(image_url),' +
+            'transit_factor,city_id,cities(image_url),' +
             'trip_members(user_id,role),trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
-  if (tripFilter === 'arch')
-    q = q.not('archived_at', 'is', null).order('start_date', { ascending:false });
-  else if (tripFilter === 'past')
-    q = q.is('archived_at', null).lt('end_date', today)
+  if (tripFilter === 'past')
+    q = q.lt('end_date', today)
          .order('start_date', { ascending:false });
   else
-    q = q.is('archived_at', null).gte('end_date', today)
+    q = q.gte('end_date', today)
          .order('start_date', { ascending:true });
   const { data, error } = await q;
 
@@ -4279,7 +4476,6 @@ async function loadTrips(){
               return fail(error); }
   if (!data.length){
     $('trips').innerHTML =
-      tripFilter === 'arch' ? '<div class="empty">보관한 여행이 없어요.</div>' :
       tripFilter === 'past' ? '<div class="empty">아직 다녀온 여행이 없어요.</div>' :
       '<div class="empty">앞으로 갈 여행이 없어요.<br>새 여행을 눌러 만들어보세요.</div>';
     return;
@@ -4290,10 +4486,10 @@ async function loadTrips(){
     const a = `data-id="${esc(t.id)}" data-title="${esc(t.title)}"`;
     /* 소유자만 지웁니다. 일행은 나갈 뿐입니다 — 남의 여행을 지울 수는 없습니다.
        (RLS 도 같은 규칙을 걸어두었으니 버튼을 숨기는 건 안내일 뿐입니다.) */
+    /* 보관은 뺐습니다. 날짜가 지나면 저절로 "다녀온"으로 넘어가는데
+       거기서 또 손으로 치우게 하면 두 곳에 나뉘어 어디 있는지 헷갈립니다. */
     const acts = role === 'owner'
-      ? (t.archived_at ? `<button class="ghost" data-act="unarchive" ${a}>꺼내기</button>`
-                       : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
-        `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
+      ? `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
@@ -4358,11 +4554,6 @@ $('trips').addEventListener('click', async e => {
      이걸 안 세면 "눌러도 아무 일도 안 일어남"이 되고 원인을 알 수 없습니다. */
   let r;
   if (act === 'delete')          r = await sb.from('trips').delete().eq('id', id).select('id');
-  else if (act === 'archive')    r = await sb.from('trips')
-                                      .update({ archived_at: new Date().toISOString() })
-                                      .eq('id', id).select('id');
-  else if (act === 'unarchive')  r = await sb.from('trips')
-                                      .update({ archived_at: null }).eq('id', id).select('id');
   else if (act === 'leave')      r = await sb.from('trip_members')
                                       .update({ left_at: new Date().toISOString() })
                                       .eq('trip_id', id).eq('user_id', me.id).select('trip_id');
@@ -5791,6 +5982,8 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
+
 
 
 
