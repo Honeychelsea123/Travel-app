@@ -18,6 +18,10 @@
 <meta name="apple-mobile-web-app-title" content="AI.Trip">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<!-- 일정 위에 얹는 지도. 세계지도(SVG)는 나라 단위라 도시 안에서는 못 씁니다.
+     Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <style>
 /* ═══ 토큰 — 도쿄 앱에서 그대로 옮겨왔습니다 ═══
    애플 가이드에서 색·타입·여백은 유지하고 반경과 깊이만 유리로 바꾼 것입니다.
@@ -200,7 +204,18 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan .body b{ display:block; }
 .plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
+         display:flex; align-items:baseline; gap:8px;
          font-weight:600; }
+/* 하루 요약 — 곳 수와 이동. 날짜 오른쪽 끝에 붙입니다. */
+.daysep .dstat{ margin-left:auto; font-weight:400; font-size:calc(12px * var(--ts)); }
+/* 일정 지도 — 목록 위에 얹습니다. 좌표가 있는 일정만 찍힙니다. */
+#planmap{ height:190px; border-radius:var(--r-md); overflow:hidden;
+          margin-bottom:10px; background:var(--parchment); z-index:0; }
+.pmk span{ display:flex; align-items:center; justify-content:center;
+           width:26px; height:26px; border-radius:50%; background:var(--primary);
+           color:#fff; font-size:12px; font-weight:700; border:2px solid #fff;
+           box-shadow:0 2px 6px rgba(0,0,0,.28); }
+.leaflet-container{ font:inherit }
 /* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다. */
 .hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
           color:var(--ink-48); font-size:calc(12px * var(--ts)); }
@@ -1285,7 +1300,11 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <h2><span class="grow">일정</span>
           <button class="small" id="candbtn">후보</button>
           <button class="small" id="addplanbtn">추가</button></h2>
+        <!-- 좌표가 있는 일정만 찍힙니다. 하나도 없으면 통째로 접힙니다. -->
+        <div id="planmap" class="hide"></div>
         <div class="days" id="days"></div>
+        <!-- 분류로도 거릅니다. "밥 먹는 데만 보자"가 자주 있는 일입니다. -->
+        <div class="days" id="cats" style="margin-top:6px"></div>
         <div id="plans"><div class="empty">불러오는 중…</div></div>
         <pre id="planerr" class="hide"></pre>
       </div>
@@ -1552,7 +1571,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b94</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b95</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1578,7 +1597,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', catFilter = '', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -4818,7 +4837,7 @@ $('g_add').addEventListener('click', async () => {
   await loadLegs();
   await loadReview();
   await fetchTrip(trip.id); drawTripHeader();   /* 대표값이 바뀌었을 수 있습니다 */
-  drawDays(); drawPlans();
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
 $('legs').addEventListener('click', async e => {
@@ -4835,7 +4854,7 @@ $('legs').addEventListener('click', async e => {
   await loadLegs();
   await loadReview();
   await fetchTrip(trip.id); drawTripHeader();
-  drawDays(); drawPlans();
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
 /* ── 여행 후기 ──────────────────────────────────────────────────────
@@ -5074,11 +5093,89 @@ function drawDays(){
 $('days').addEventListener('change', e => {
   if (e.target.id !== 'daysel') return;
   pickedDay = e.target.value || null;
-  drawDays(); drawPlans();
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
+/* ── 일정 지도 ───────────────────────────────────────────────────────
+ * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.
+ * 좌표가 있는 일정만 찍고, 하나도 없으면 통째로 접습니다.
+ * 글자는 영어 지도를 씁니다 — 현지 문자로만 나오면 어디가 어딘지 못 읽습니다. */
+let lmap = null, lmarks = null;
+
+function drawPlanMap(){
+  const box = $('planmap');
+  if (!window.L){ box.classList.add('hide'); return; }   /* 못 받아왔으면 조용히 생략 */
+  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
+  if (catFilter) show = show.filter(p => p.category === catFilter);
+  const pts = show.filter(p => p.lat != null && p.lng != null);
+  box.classList.toggle('hide', !pts.length);
+  if (!pts.length) return;
+
+  if (!lmap){
+    lmap = L.map(box, { zoomControl:false, attributionControl:false });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+      { maxZoom:19, subdomains:'abcd' }).addTo(lmap);
+    L.control.attribution({ prefix:false })
+      .addAttribution('&copy; OpenStreetMap &copy; CARTO').addTo(lmap);
+    lmarks = L.layerGroup().addTo(lmap);
+  }
+  lmarks.clearLayers();
+
+  /* 번호를 붙여야 그날 어떤 차례로 도는지 보입니다. */
+  pts.forEach((p, i) => {
+    const m = L.marker([p.lat, p.lng], { icon: L.divIcon({
+      className:'pmk', iconSize:[26,26], iconAnchor:[13,13],
+      html:`<span>${i + 1}</span>` }) });
+    m.bindPopup(`<b>${esc(p.title)}</b>` +
+      (p.start_time ? `<br>${esc(hm(p.start_time))}` : ''));
+    m.addTo(lmarks);
+  });
+  /* 하루만 보고 있으면 다니는 순서를 선으로 잇습니다. */
+  if (pickedDay && pts.length > 1)
+    L.polyline(pts.map(p => [p.lat, p.lng]),
+      { color:'#0066cc', weight:2, opacity:.5, dashArray:'4 4' }).addTo(lmarks);
+
+  const b = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
+  lmap.fitBounds(b, { padding:[28,28], maxZoom:15 });
+  setTimeout(() => lmap.invalidateSize(), 50);   /* 접혀 있다 펴지면 크기를 다시 잽니다 */
+}
+
+/* 분류 칩. 실제로 쓰인 분류만 내놓습니다 — 없는 칸을 눌러 빈 목록을 보게 할
+   이유가 없습니다. */
+function drawCats(){
+  const used = [...new Set(plans.map(p => p.category).filter(Boolean))];
+  $('cats').classList.toggle('hide', used.length < 2);
+  $('cats').innerHTML = ['전체', ...used].map(k => {
+    const v = k === '전체' ? '' : k;
+    return `<span class="day${catFilter === v ? ' on' : ''}" data-cat="${esc(v)}">${
+      esc(k)}</span>`;
+  }).join('');
+}
+$('cats').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]'); if (!b) return;
+  catFilter = b.dataset.cat;
+  drawCats(); drawPlans(); drawPlanMap();
+});
+
+/* 그날 몇 곳을 다니고 이동에 얼마나 쓰는지. 좌표가 있는 구간만 셉니다. */
+function dayStat(date){
+  const list = plans.filter(p => p.date === date);
+  let min = 0, km = 0;
+  for (let i = 0; i < list.length - 1; i++){
+    const h = hop(list[i], list[i+1], legs);
+    if (h){ min += h.min; km += h.km; }
+  }
+  /* fmtM 은 시:분 표기라 걸리는 시간에는 안 맞습니다. "2시간 10분"으로 적습니다. */
+  const dur = m => m >= 60 ? `${Math.floor(m/60)}시간${m % 60 ? ' ' + (m%60) + '분' : ''}`
+                           : `${m}분`;
+  return [ `${list.length}곳`,
+           min ? `이동 ${dur(min)}` : null,
+           km  ? `${km.toFixed(1)}km` : null ].filter(Boolean).join(' · ');
+}
+
 function drawPlans(){
-  const show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
+  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
+  if (catFilter) show = show.filter(p => p.category === catFilter);
   if (!show.length){
     $('plans').innerHTML = `<div class="empty">${pickedDay ? '이 날은 비어 있어요.'
       : '아직 일정이 없어요.<br>추가를 눌러 넣어보세요.'}</div>`;
@@ -5107,8 +5204,10 @@ function drawPlans(){
     if (p.date !== last){                       /* 전체 보기에서 날짜가 바뀌면 머리글 */
       if (!pickedDay){
         const l = legs.length > 1 ? legFor(p.date) : null;
+        /* 날짜 옆에 그날 요약을 답니다 — 어느 날이 빡빡한지 여기서 바로 보입니다. */
         html += `<div class="daysep">${esc(dayLabel(p.date, trip))}` +
-                `${l ? ' · ' + esc(l.destination) : ''}</div>`;
+                `${l ? ' · ' + esc(l.destination) : ''}` +
+                `<span class="dstat">${esc(dayStat(p.date))}</span></div>`;
       }
       last = p.date;
     }
@@ -5132,7 +5231,7 @@ function drawPlans(){
 $('days').addEventListener('click', e => {
   const b = e.target.closest('.day'); if (!b) return;
   pickedDay = b.dataset.day || null;
-  drawDays(); drawPlans();
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
 /* ── 폼을 팝업으로 ───────────────────────────────────────────────────
@@ -5982,6 +6081,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
