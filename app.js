@@ -1199,7 +1199,7 @@ async function loadHome(){
 /* ── 여행 끝난 뒤 ────────────────────────────────────────────────────
  * 다녀오고 나면 앱을 안 엽니다. 그때 물어보는 것이 이 앱의 두 번째 축입니다.
  * 끝났는데 아직 별점을 안 매긴 여행이 있으면 홈 맨 위를 그것으로 채웁니다. */
-let rvTrip = null;
+let rvTrip = null, shelfKind = 'mine';
 
 async function pendingTrip(){
   const today = ymd(new Date());
@@ -2748,12 +2748,17 @@ async function openPlaceShelf(kind){
         <div class="t"><b>${esc(p.title)}</b>
           <span class="memo">${esc(p.trips?.title || '')} · ${esc(p.date)}</span></div>
         <span class="stars" data-plan="${esc(p.id)}">${starHtml(rate[p.id])}</span>
+        ${rate[p.id] != null
+          ? `<button class="ghost" data-pdel="${esc(p.id)}"
+                     style="color:var(--bad); flex:none">×</button>`
+          : '<span style="width:26px; flex:none"></span>'}
       </div>`).join('')
     : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
          일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
 async function openShelf(kind){
+  shelfKind = kind;
   $('profpane').classList.add('hide');
   $('mappane').classList.add('hide');
   $('shelfpane').classList.remove('hide');
@@ -2814,6 +2819,18 @@ $('shelfback').addEventListener('click', () => closeShelf());
 
 /* 여기서도 별점을 고칠 수 있습니다. 기록 탭과 같은 방식입니다. */
 $('shelflist').addEventListener('click', async e => {
+  /* 별점을 지우는 길. 별을 0으로 만들 수는 없어서 따로 둡니다.
+     지우면 목록에서 빠지고, 다시 남기고 싶으면 여행 탭에서 그 일정에 별을 답니다. */
+  const del = e.target.closest('[data-pdel]');
+  if (del){
+    if (del.dataset.armed !== '1'){ arm(del, '지울까요?'); return; }
+    const r = await sb.from('plan_ratings').delete()
+      .eq('user_id', me.id).eq('plan_id', del.dataset.pdel).select('plan_id');
+    if (r.error) return fail(r.error, 'trip');
+    loadFootprint();
+    return openShelf(shelfKind);
+  }
+
   const st = e.target.closest('.st');
   /* 식당·카페는 일정 줄에 답니다. 도시 별점과 저장하는 표가 다릅니다. */
   const pw = st?.closest('.stars[data-plan]');
@@ -2823,6 +2840,15 @@ $('shelflist').addEventListener('click', async e => {
     const cur = [...pw.querySelectorAll('.st i')]
       .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
     const next = Math.abs(cur - v) < .01 ? null : v;
+    /* 같은 점수를 다시 누르면 아예 지웁니다. 별점 없는 줄을 남겨두면
+       "지웠는데 그대로 있다"가 됩니다. */
+    if (next == null){
+      const r = await sb.from('plan_ratings').delete()
+        .eq('user_id', me.id).eq('plan_id', pw.dataset.plan).select('plan_id');
+      if (r.error) return fail(r.error, 'trip');
+      loadFootprint();
+      return openShelf(shelfKind);
+    }
     paintStars(pw, next, true);
     const r = await sb.from('plan_ratings')
       .upsert({ user_id: me.id, plan_id: pw.dataset.plan, stars: next },
