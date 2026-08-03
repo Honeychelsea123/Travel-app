@@ -1,0 +1,677 @@
+/* ═══ 토큰 — 도쿄 앱에서 그대로 옮겨왔습니다 ═══
+   애플 가이드에서 색·타입·여백은 유지하고 반경과 깊이만 유리로 바꾼 것입니다.
+   도쿄 앱은 밝은 바탕 하나로만 갑니다. 유리가 굴절할 대상이 있어야
+   흐림이 반투명 사각형으로 안 보이기 때문입니다. */
+:root{
+  color-scheme: light;
+  --primary:#0066cc;  --primary-focus:#0071e3;
+  --ink:#1d1d1f;      --ink-80:#333333;   --ink-48:#6b6b70;
+  --divider-soft:#f0f0f0; --hairline:#e0e0e0;
+  --canvas:#ffffff;   --parchment:#f5f5f7; --pearl:#fafafc;
+
+  /* 분류 색 — 목록의 점과 딱지에만 씁니다. 버튼과 링크는 여전히 파랑 하나입니다. */
+  --k-food:#B65724; --k-move:#2F6DA8; --k-stay:#7154A0; --k-see:#2C7D58;
+  --k-shop:#B04A7C; --k-cafe:#866440; --k-etc:#7B7E85;
+
+  --lift-1:0 1px 1px rgba(20,25,45,.04), 0 6px 18px rgba(20,25,45,.06);
+  --lift-2:0 1px 2px rgba(20,25,45,.05), 0 14px 38px rgba(20,25,45,.10);
+
+  --r-sm:12px; --r-md:18px; --r-lg:26px; --r-xl:34px; --r-pill:9999px;
+  --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px;
+
+  --sf:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+       "Apple SD Gothic Neo", "Pretendard Variable", Pretendard, system-ui, sans-serif;
+
+  --ts:1;                       /* 글자 배율. 나중에 user_prefs 에서 온다 */
+  --kb:0px;                     /* 키보드 높이. 아래 스크립트가 재서 넣는다 */
+  --sab:env(safe-area-inset-bottom, 0px);
+
+  /* 앞서 쓰던 이름들을 새 토큰에 이어 둡니다 — 화면 코드를 다시 안 써도 됩니다 */
+  --bg:var(--parchment); --panel:var(--canvas); --line:var(--hairline);
+  --sunk:var(--parchment); --fg:var(--ink); --dim:var(--ink-48);
+  --accent:var(--primary); --r:var(--r-lg);
+  --ok:#2C7D58; --bad:#c0392b;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body{
+  margin:0; min-height:100dvh; color:var(--ink);
+  font-family:var(--sf);
+  font-size:calc(17px * var(--ts)); line-height:1.47;
+  letter-spacing:calc(-0.374px * var(--ts));
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding:0 var(--s-sm) calc(48px + var(--kb) + var(--sab));
+  overflow-x:hidden;              /* 어디 하나 삐져나와도 화면이 옆으로 밀리지 않게 */
+  /* 유리가 굴절할 대상. 색조 없이 밝기 차이만 줍니다. */
+  background:
+    radial-gradient(1200px 620px at 8% -8%,  #ffffff 0%, rgba(255,255,255,0) 58%),
+    radial-gradient(900px 640px at 92% 106%, #e8e8ec 0%, rgba(232,232,236,0) 56%),
+    var(--parchment);
+  background-attachment:fixed;
+}
+main{ max-width:480px; margin:0 auto; min-width:0; }
+.hide{ display:none !important; }
+
+/* ── 유리 알약 상단바 ── 도쿄 앱의 표식입니다. 스크롤해도 따라옵니다. */
+.topbar{
+  position:sticky; top:var(--s-sm); z-index:20;
+  margin:var(--s-sm) 0 var(--s-md);
+  padding:10px var(--s-md);
+  border-radius:var(--r-pill);
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(158deg, rgba(255,255,255,.62) 0%,
+             rgba(255,255,255,.46) 55%, rgba(255,255,255,.58) 100%);
+  backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+  -webkit-backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:inset 0 1.2px 0 rgba(255,255,255,.92),
+             inset 0 -1px 0 rgba(255,255,255,.34),
+             0 0 0 .5px rgba(16,20,35,.07),
+             0 10px 30px rgba(16,20,35,.10);
+}
+h1{ font-size:calc(19px * var(--ts)); margin:0; font-weight:650;
+    letter-spacing:calc(-0.5px * var(--ts)); }
+/* 알림은 종 바로 아래에 붙습니다 */
+#notifpanel{ position:absolute; top:100%; right:8px; margin-top:8px; z-index:30;
+             width:min(320px, calc(100vw - 40px)); max-height:60vh; overflow-y:auto;
+             background:var(--canvas); border-radius:var(--r-lg);
+             padding:14px 16px; box-shadow:var(--lift-2); text-align:left; }
+.sub{ color:var(--ink-48); font-size:calc(13px * var(--ts)); margin:0;
+      flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis;
+      white-space:nowrap; }
+
+.card{ background:var(--canvas); border:0; border-radius:var(--r-lg);
+       padding:var(--s-md); margin-bottom:var(--s-sm); min-width:0;
+       box-shadow:var(--lift-1); }
+.card h2{ font-size:calc(15px * var(--ts)); margin:0 0 var(--s-sm); font-weight:600;
+          letter-spacing:calc(-0.4px * var(--ts));
+          display:flex; align-items:center; gap:var(--s-xs); }
+.card h2 .grow{ flex:1; }
+
+button{ font:inherit; letter-spacing:inherit; cursor:pointer;
+        border-radius:var(--r-pill); border:1px solid var(--hairline);
+        background:var(--canvas); color:var(--ink); padding:10px var(--s-md); }
+button:active{ transform:scale(.96); }
+button:disabled{ opacity:.45; cursor:default; transform:none; }
+:focus-visible{ outline:2px solid var(--primary-focus); outline-offset:3px; }
+.primary{ flex:1; background:var(--primary); color:#fff; border-color:transparent;
+          font-weight:600; box-shadow:var(--lift-1); }
+.google{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+         background:#fff; color:#1f1f1f; border-color:#dadce0; font-weight:600; padding:13px 16px; }
+.google svg{ width:18px; height:18px; flex:none; }
+.ghost{ background:transparent; color:var(--dim); border-color:transparent; padding:6px 10px;
+        font-size:calc(13px * var(--ts)); }
+.small{ padding:7px 12px; font-size:calc(13px * var(--ts)); }
+
+label{ display:block; font-size:calc(12px * var(--ts)); color:var(--dim); margin:14px 0 5px; }
+label:first-of-type{ margin-top:0; }
+input, select{
+  font-family:inherit; line-height:1.4;
+  /* iOS 사파리는 글자가 16px 보다 작은 입력칸을 누르면 화면을 확대합니다.
+     그러면 레이아웃이 통째로 깨져 보입니다. 16px 아래로는 안 내려갑니다. */
+  font-size:max(16px, calc(15px * var(--ts)));
+  width:100%; max-width:100%; min-width:0;
+  padding:11px var(--s-sm); border-radius:var(--r-md);
+  border:1px solid var(--hairline); background:var(--pearl); color:var(--ink);
+}
+input:focus, select:focus{ border-color:var(--primary); background:var(--canvas); }
+/* iOS 는 date · time 을 자기 방식으로 그립니다.
+   width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
+   빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */
+input[type=date], input[type=time]{
+  -webkit-appearance:none; appearance:none;
+  display:block;
+  min-height:calc(1.4em + 22px);          /* 다른 입력칸과 같은 높이 */
+}
+/* 값이 가운데로 몰려 다른 칸과 어긋나던 것 */
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value{ text-align:left; }
+.two{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.two > div{ min-width:0; }        /* 칸 내용이 그리드를 늘리지 못하게 막습니다 */
+
+/* 도시 검색 */
+.hits{ margin-top:6px; border:1px solid var(--hairline); border-radius:var(--r-md);
+       overflow:hidden auto; max-height:252px; background:var(--pearl); }
+.hit{ display:flex; align-items:baseline; gap:var(--s-xs); padding:11px var(--s-sm);
+      cursor:pointer; }
+.hit + .hit{ border-top:1px solid var(--divider-soft); }
+.hit.on, .hit:hover{ background:var(--canvas); }
+.hit .c{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.hit .r{ margin-left:auto; color:var(--ink-48); font-size:calc(12px * var(--ts)); }
+.picked{ display:flex; align-items:center; gap:10px; padding:12px var(--s-sm);
+         border:1px solid var(--hairline); border-radius:var(--r-md); background:var(--pearl); }
+.picked .p{ flex:1; min-width:0; }
+.picked .c{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+
+.me{ display:flex; align-items:center; gap:var(--s-sm); }
+.me img{ width:40px; height:40px; border-radius:50%; flex:none; background:var(--parchment); }
+.me .name{ flex:1; min-width:0; font-weight:600; }
+.me .mail{ color:var(--ink-48); font-size:calc(13px * var(--ts)); font-weight:400;
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.trip{ display:flex; align-items:center; gap:var(--s-sm); padding:var(--s-sm) 0;
+       cursor:pointer; }
+.trip + .trip{ border-top:1px solid var(--divider-soft); }
+.trip .thumb{ flex:none; width:52px; height:52px; border-radius:var(--r-sm);
+              object-fit:cover; background:var(--parchment); }
+.trip .t{ flex:1; min-width:0; }
+.trip .t b{ display:block; }
+.trip .meta{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.badge{ font-size:calc(12px * var(--ts)); padding:3px 10px; border-radius:var(--r-pill);
+        background:var(--parchment); color:var(--ink-48); flex:none; }
+
+/* 날짜 칩 — 줄바꿈으로 둡니다.
+   가로 스크롤로 뒀더니 마우스로는 밀 방법이 없었습니다(스크롤바도 숨겨서). */
+.days{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--s-sm); }
+.day{ flex:none; padding:7px 14px; border-radius:var(--r-pill); border:1px solid transparent;
+      background:var(--parchment); color:var(--ink-80); cursor:pointer;
+      font-size:calc(14px * var(--ts)); white-space:nowrap; }
+.day.on{ background:var(--primary); color:#fff; font-weight:600; box-shadow:var(--lift-1); }
+/* 긴 여행에서는 칩 대신 이 칸으로 고릅니다 */
+.days select{ width:auto; flex:1; min-width:180px; padding:7px 14px;
+              border-radius:var(--r-pill); }
+
+.plan{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0; align-items:flex-start; }
+.plan + .plan{ border-top:1px solid var(--divider-soft); }
+.plan .when{ flex:none; width:50px; color:var(--ink-48); font-size:calc(13px * var(--ts));
+             font-variant-numeric:tabular-nums; padding-top:2px; }
+.plan .body{ flex:1; min-width:0; }
+.plan .body b{ display:block; }
+.plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+.daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
+         display:flex; align-items:baseline; gap:8px;
+         font-weight:600; }
+/* 하루 요약 — 곳 수와 이동. 날짜 오른쪽 끝에 붙입니다. */
+.daysep .dstat{ margin-left:auto; font-weight:400; font-size:calc(12px * var(--ts)); }
+/* 일정 지도 — 목록 위에 얹습니다. 좌표가 있는 일정만 찍힙니다. */
+#planmap{ height:190px; border-radius:var(--r-md); overflow:hidden;
+          margin-bottom:10px; background:var(--parchment); z-index:0; }
+.pmk span{ display:flex; align-items:center; justify-content:center;
+           width:26px; height:26px; border-radius:50%; background:var(--primary);
+           color:#fff; font-size:12px; font-weight:700; border:2px solid #fff;
+           box-shadow:0 2px 6px rgba(0,0,0,.28); }
+.leaflet-container{ font:inherit }
+/* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다. */
+.hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
+          color:var(--ink-48); font-size:calc(12px * var(--ts)); }
+.hopline.bad{ border-left-color:var(--bad); color:var(--bad); font-weight:600; }
+/* 프로필 숫자 줄 — 왓챠의 "696 평가 | 27 코멘트" 자리 */
+.stats{ display:flex; margin-top:var(--s-md); border-top:1px solid var(--divider-soft);
+        padding-top:var(--s-sm); }
+.stats button{ flex:1; border:0; background:none; padding:6px 0;
+               display:flex; flex-direction:column; align-items:center; gap:1px;
+               border-radius:var(--r-sm); }
+.stats button + button{ border-left:1px solid var(--divider-soft); }
+.stats b{ font-size:calc(23px * var(--ts)); font-weight:650; letter-spacing:-.02em; }
+.stats span{ font-size:calc(12px * var(--ts)); color:var(--ink-48); }
+
+/* 채워지는 게 보이면 채우고 싶어집니다 */
+.bar{ height:6px; border-radius:999px; background:var(--parchment); overflow:hidden;
+      margin-top:8px; }
+.bar i{ display:block; height:100%; border-radius:999px; background:var(--primary); }
+
+.shelf{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.shelf button{ display:flex; align-items:center; gap:8px; padding:13px 14px;
+               border:1px solid var(--hairline); border-radius:var(--r-md);
+               background:var(--pearl); font-size:calc(14px * var(--ts)); }
+.shelf .ic{ font-size:calc(17px * var(--ts)); line-height:1; }
+.shelf span:not(.ic){ flex:1; text-align:left; color:var(--ink-80); }
+.shelf b{ font-variant-numeric:tabular-nums; }
+
+/* 별점 — 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 */
+.stars{ display:inline-flex; gap:1px; flex:none; cursor:pointer; user-select:none; }
+.st{ position:relative; width:1.1em; height:1.1em; line-height:1;
+     font-size:calc(21px * var(--ts)); color:var(--hairline); }
+.st::before{ content:'★'; position:absolute; left:0; top:0; }
+.st i{ position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap;
+       color:#f5a623; font-style:normal; }
+.st i::before{ content:'★'; }
+
+/* 별은 오른쪽에 크게 둡니다 — 채우는 맛이 있어야 매기게 됩니다.
+   좁은 화면에서 자리가 모자라면 아랫줄로 내려가되 오른쪽 정렬은 그대로입니다. */
+/* 한 줄 안에 다 들어가야 합니다. 줄바꿈을 허용했더니 좁은 화면에서 별이
+   아래로 떨어져 한 줄이 250px 씩 먹었습니다. 별 크기를 화면 폭에 묶습니다. */
+.rrow{ display:flex; align-items:center; gap:9px; padding:9px 0; flex-wrap:nowrap; }
+.rrow + .rrow{ border-top:1px solid var(--divider-soft); }
+.rrow .thumb{ flex:none; }
+.rrow .t{ flex:1 1 auto; min-width:0; }
+.rrow .t b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rrow .memo{ display:block; color:var(--ink-48); font-size:calc(13px * var(--ts));
+             overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rrow .stars{ flex:none; margin-left:auto; white-space:nowrap; }
+/* 글자 크기 설정을 따르되 화면 폭을 넘지 않게 위를 막습니다. */
+.rrow .st{ font-size:min(calc(26px * var(--ts)), 6.6vw); }
+.rrow .want{ flex:none; padding:4px 2px; }
+/* 별이 차는 것과 줄이 밀려나는 것이 보여야 내가 눌렀다는 걸 압니다. */
+.st i{ transition:width .18s ease-out; }
+.rrow{ transition:opacity .28s, transform .28s; }
+.rrow.gone{ opacity:0; transform:translateX(30px); }
+/* 왼쪽부터 차례로 톡 튀며 반짝입니다. 채운 별에만 겁니다. */
+@keyframes starpop{
+  0%   { transform:scale(1);    filter:none; }
+  35%  { transform:scale(1.36); filter:drop-shadow(0 0 7px rgba(245,166,35,.9)); }
+  100% { transform:scale(1);    filter:none; }
+}
+.st.pop{ animation:starpop .36s ease-out both; }
+@keyframes tagin{ from{ opacity:0; transform:translateY(-3px) scale(.9) }
+                  to  { opacity:1; transform:none } }
+.rtag{ animation:tagin .22s ease-out both; }
+/* 움직임을 꺼둔 기기에서는 튀지 않게 합니다. */
+@media (prefers-reduced-motion: reduce){
+  .st.pop{ animation:none } .rtag{ animation:none }
+  .rrow, .st i{ transition:none }
+}
+
+/* ── 홈 ──────────────────────────────────────────────────────────────
+ * 도시 사진을 받아두고 홈에서 한 장도 안 쓰고 있었습니다.
+ * 사진을 카드 가득 깔고 글자는 그 위에 얹습니다. */
+.hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+       min-height:210px; display:flex; flex-direction:column; justify-content:flex-end;
+       padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
+       box-shadow:var(--lift-1); margin-bottom:12px; }
+.hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+/* 사진이 밝으면 흰 글자가 안 보입니다. 아래쪽을 확실히 어둡게 깝니다. */
+.hero::after{ content:''; position:absolute; inset:0; background:
+  linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.22) 45%, rgba(0,0,0,.72) 100%); }
+.hero > *{ position:relative; z-index:1; }
+.hero .dd{ font-size:calc(44px * var(--ts)); font-weight:750; line-height:1;
+           letter-spacing:calc(-2px * var(--ts)); text-shadow:0 2px 12px rgba(0,0,0,.35); }
+.hero .ht{ font-size:calc(20px * var(--ts)); font-weight:650; margin-top:8px;
+           text-shadow:0 1px 8px rgba(0,0,0,.4); }
+.hero .hm{ font-size:calc(13px * var(--ts)); opacity:.88; margin-top:3px;
+           text-shadow:0 1px 8px rgba(0,0,0,.4); }
+.hero .hbtn{ align-self:flex-start; margin-top:12px; background:#fff; color:var(--ink);
+             border:0; border-radius:999px; padding:10px 18px; font-weight:650;
+             font-size:calc(14px * var(--ts)); cursor:pointer; }
+
+/* AI 카드 — 이 앱이 내세우는 기능인데 흰 카드에 글자만 있으면 눌러볼 이유가
+   없습니다. 홈에서 유일하게 색을 쓰는 자리로 두어 눈이 먼저 가게 합니다. */
+.aicard{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+         padding:16px 18px; margin-bottom:12px; color:#fff; cursor:pointer;
+         display:flex; align-items:center; gap:14px;
+         background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
+         box-shadow:0 10px 24px rgba(90,63,240,.30); }
+/* 오른쪽 위에 빛이 도는 느낌만 얹습니다. 사진을 쓰면 무거워집니다. */
+.aicard::after{ content:''; position:absolute; right:-46px; top:-66px;
+                width:180px; height:180px; border-radius:50%;
+                background:radial-gradient(circle,rgba(255,255,255,.24),transparent 70%); }
+.aicard > *{ position:relative; z-index:1 }
+.aicard .ic{ flex:none; width:44px; height:44px; border-radius:14px;
+             background:rgba(255,255,255,.20); display:flex;
+             align-items:center; justify-content:center; }
+.aicard .tx{ flex:1; min-width:0 }
+/* 한 줄로 묶고 말줄임표를 걸었더니 제목이 잘렸습니다.
+   카드는 세로로 늘어날 수 있으니 자를 이유가 없습니다 — 넘치면 줄을 바꿉니다.
+   대신 글자 크기만 화면 폭에 맞춰 위를 막습니다. */
+.aicard .tx b{ font-size:min(calc(16.5px * var(--ts)), 4.6vw); font-weight:700;
+               letter-spacing:calc(-.3px * var(--ts)); display:block;
+               word-break:keep-all; }
+.aicard .tx span{ display:block; font-size:min(calc(12.5px * var(--ts)), 3.6vw);
+                  opacity:.92; margin-top:3px; line-height:1.4;
+                  word-break:keep-all; }
+.aicard .go{ flex:none; background:#fff; color:#5a3ff0; border-radius:999px;
+             padding:9px 15px; font-weight:700; white-space:nowrap;
+             font-size:min(calc(13px * var(--ts)), 3.6vw); }
+/* 아주 좁으면 아이콘을 줄여 글자 자리를 내줍니다. */
+@media (max-width:360px){
+  .aicard{ padding:14px; gap:10px }
+  .aicard .ic{ width:38px; height:38px }
+}
+
+/* ── 아래에서 올라오는 폼 ────────────────────────────────────────────
+ * 폼을 카드 아래에 붙이면 화면이 계속 길어져서, 넣으려고 아래로 한참
+ * 내려가야 합니다. 뒤를 덮고 아래에서 올라오게 합니다. */
+#sheetbg{ position:fixed; inset:0; z-index:59; background:rgba(15,18,24,.42); }
+/* 앱 본문이 480px 로 가운데 있습니다. 시트를 화면 끝까지 늘리면
+   넓은 화면에서 혼자 튀어나와 레이아웃이 깨져 보입니다. 같은 폭으로 맞춥니다.
+   left·right 를 0 으로 두고 margin auto 를 주면 fixed 라도 가운데로 옵니다. */
+.assheet{ position:fixed !important; left:0; right:0; bottom:0; z-index:60;
+          margin:0 auto !important; max-width:480px;
+          border-radius:var(--r-lg) var(--r-lg) 0 0;
+          max-height:82vh; overflow-y:auto;
+          /* 아래 떠 있는 탭바에 가리지 않게, 키보드가 올라오면 그만큼 더 */
+          padding-bottom:calc(104px + var(--kb, 0px));
+          box-shadow:0 -12px 40px rgba(0,0,0,.22);
+          animation:sheetup .24s ease-out both; }
+@keyframes sheetup{ from{ transform:translateY(26px); opacity:.5 } to{ transform:none; opacity:1 } }
+/* 잡아 내리는 손잡이 — 닫을 수 있다는 표시입니다 */
+.assheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 12px;
+                  border-radius:999px; background:var(--line); }
+body.sheeton{ overflow:hidden; }
+@media (prefers-reduced-motion: reduce){ .assheet{ animation:none } }
+
+/* ── 여행 머리말 ─────────────────────────────────────────────────────
+ * 흰 카드에 글자만 있으면 여행을 열었다는 느낌이 안 납니다.
+ * 도시 사진을 깔고 그 위에 얹습니다. 사진이 없으면 어두운 판만 남습니다. */
+/* 사진을 크게 깔았더니 일정 위 자리를 다 먹었습니다. 그 자리는 지도가 씁니다.
+   여기는 돌아가는 길과 무슨 여행인지만 짧게 알려줍니다. */
+.thead{ padding:8px 14px 10px; }
+/* 제목과 날짜를 한 줄에. 두 줄을 잡으면 그만큼 지도 자리가 줄어듭니다. */
+.thead .tline{ display:flex; align-items:baseline; gap:8px; margin-top:2px;
+               min-width:0; }
+.thead #t_title{ flex:none; font-weight:700; font-size:calc(16px * var(--ts));
+                 letter-spacing:calc(-.3px * var(--ts)); }
+/* 넘치면 자릅니다. 자세한 것은 수정에서 다 봅니다. */
+.thead .meta{ flex:1; min-width:0; font-size:calc(11.5px * var(--ts));
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* ── AI 채팅 ─────────────────────────────────────────────────────────
+ * 대화는 위에서 흐르고 입력칸은 아래에 붙어 있어야 합니다.
+ * 카드 높이를 화면에 맞춰 늘려 두면 입력칸이 저절로 아래에 붙습니다.
+ * 고정 위치를 쓰지 않는 이유는 키보드가 올라올 때 어긋나기 때문입니다. */
+#aiview{ display:flex; flex-direction:column; }
+.aichat{ flex:1; display:flex; flex-direction:column; min-height:0;
+         /* 위 고른 줄과 아래 떠 있는 바를 뺀 만큼 */
+         min-height:calc(100dvh - 250px); }
+/* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 flex 가
+   늘리려 해도 그 선에서 막혀 입력칸 아래가 비어 버립니다. 여기서 풀어줍니다. */
+.aichat #chat{ flex:1; overflow-y:auto; min-height:120px; max-height:none; }
+.aichat .aibar{ margin-top:12px; }
+
+/* ── 첫 화면 ─────────────────────────────────────────────────────────
+ * 흰 카드에 버튼 하나만 있으면 무슨 앱인지도 모르고,
+ * 왜 구글 계정을 줘야 하는지도 모릅니다. */
+.hello{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+        padding:26px 22px 24px; margin-bottom:12px; color:#fff;
+        background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
+        box-shadow:0 12px 28px rgba(90,63,240,.28); }
+.hello::after{ content:''; position:absolute; right:-60px; top:-80px;
+               width:220px; height:220px; border-radius:50%;
+               background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%); }
+.hello > *{ position:relative; z-index:1 }
+.hello .hi{ font-size:min(calc(25px * var(--ts)), 6.8vw); font-weight:750;
+            line-height:1.34; letter-spacing:calc(-.5px * var(--ts));
+            word-break:keep-all; text-shadow:0 2px 12px rgba(0,0,0,.18); }
+.hello .hisub{ font-size:min(calc(13.5px * var(--ts)), 3.8vw); line-height:1.6;
+               opacity:.94; margin-top:10px; word-break:keep-all; }
+
+/* 무엇을 받고 무엇을 안 받는지. 불안한 자리라 눈에 들어와야 합니다. */
+.safe{ list-style:none; margin:14px 0 0; padding:12px 14px;
+       background:var(--parchment); border-radius:var(--r-md); }
+.safe li{ position:relative; padding-left:20px; margin:0;
+          font-size:calc(12.5px * var(--ts)); line-height:1.62;
+          color:var(--ink-48); word-break:keep-all; }
+.safe li + li{ margin-top:7px }
+.safe li b{ color:var(--ink); font-weight:650 }
+.safe li::before{ content:''; position:absolute; left:2px; top:.52em;
+                  width:9px; height:5px; border-left:2px solid var(--primary);
+                  border-bottom:2px solid var(--primary);
+                  transform:rotate(-45deg); }
+
+/* 홈 발자국 카드 안의 작은 지도. 보기만 하는 것이라 손가락은 안 받습니다. */
+.minimap{ margin-top:12px; background:var(--parchment); border-radius:var(--r-md);
+          overflow:hidden; pointer-events:none; }
+.minimap svg{ width:100%; height:auto; display:block; }
+.minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
+.minimap path.been{ fill:var(--primary); opacity:.85; }
+
+/* 잠깐 뜨는 알림 */
+#toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
+        bottom:calc(96px + env(safe-area-inset-bottom)); z-index:80;
+        max-width:min(88vw, 440px); padding:12px 16px; border-radius:14px;
+        background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
+        font-size:calc(13px * var(--ts)); line-height:1.5; text-align:center;
+        opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
+#toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* ── 여행 리포트 ─────────────────────────────────────────────────────
+ * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다.
+ * 옆으로 넘겨 보는 카드로 냅니다 — 한 장에 숫자 하나만 크게. */
+.rpt1 .hd{ text-align:center; padding:4px 0 2px }
+.rpt1 .ti{ font-size:calc(26px * var(--ts)); font-weight:750;
+           letter-spacing:calc(-.6px * var(--ts)) }
+.rpt1 .dt{ font-size:calc(12.5px * var(--ts)); color:var(--ink-48); margin-top:4px }
+
+.rstats{ display:flex; margin-top:18px; padding:14px 0;
+         border-top:1px solid var(--divider-soft);
+         border-bottom:1px solid var(--divider-soft) }
+.rstats .rs{ flex:1; text-align:center; min-width:0 }
+.rstats .rs + .rs{ border-left:1px solid var(--divider-soft) }
+.rstats .b{ font-size:min(calc(24px * var(--ts)), 6.2vw); font-weight:700;
+            letter-spacing:calc(-.5px * var(--ts)) }
+.rstats .s{ font-size:calc(11.5px * var(--ts)); color:var(--ink-48); margin-top:3px }
+
+/* 한 줄 정의 — 공유하고 싶어지는 자리라 여기만 색을 씁니다. */
+.rdef{ margin-top:16px; padding:16px; border-radius:var(--r-md); text-align:center;
+       color:#fff; background:linear-gradient(135deg,#4b6cff 0%,#a13cff 100%) }
+.rdef .q{ font-size:calc(20px * var(--ts)); font-weight:700; word-break:keep-all }
+.rdef .d{ font-size:calc(12px * var(--ts)); opacity:.92; margin-top:6px;
+          word-break:keep-all }
+
+.rsec{ margin-top:16px }
+.rsec .h{ font-size:calc(11.5px * var(--ts)); color:var(--ink-48); font-weight:600 }
+.rsec .v{ font-size:calc(14px * var(--ts)); font-weight:600; margin-top:4px;
+          word-break:keep-all }
+.rsec .m{ font-size:calc(12px * var(--ts)); color:var(--ink-48); margin-top:2px }
+.rtwo{ display:flex; gap:12px }
+.rtwo .rsec{ flex:1; min-width:0 }
+
+.rday{ display:flex; align-items:center; gap:8px; padding:5px 0;
+       font-size:calc(12.5px * var(--ts)) }
+.rday .dd{ width:52px; flex:none; color:var(--ink-48) }
+.rday .dots{ flex:1; min-width:0; color:var(--primary); letter-spacing:1px;
+             overflow:hidden; white-space:nowrap; font-size:calc(9px * var(--ts)) }
+.rday .dn{ width:38px; flex:none; text-align:right; color:var(--ink-48) }
+.rday .ds{ width:40px; flex:none; text-align:right; font-weight:600 }
+.rday .dw{ flex:none; font-size:calc(10.5px * var(--ts)); color:#c1440e;
+           background:#fdf0e8; border-radius:999px; padding:2px 7px }
+
+/* 평가 안 한 여행 알림 띠. 히어로 아래에 얇게 붙습니다 —
+   앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */
+.rvbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
+        margin:-4px 0 12px; padding:11px 14px; border-radius:var(--r-md);
+        background:#fff6e5; border:1px solid #f6e0b5; }
+.rvbar .t{ flex:1; min-width:0 }
+.rvbar .t b{ display:block; font-size:calc(13.5px * var(--ts)); font-weight:650;
+             color:#8a5a00; word-break:keep-all }
+.rvbar .t span{ display:block; font-size:calc(11.5px * var(--ts)); color:#a2762a;
+                margin-top:1px; word-break:keep-all }
+.rvbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650; color:#8a5a00 }
+
+/* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
+   일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
+.cbar{ display:flex; height:10px; border-radius:999px; overflow:hidden;
+       margin-top:12px; gap:2px; }
+.cbar i{ display:block; height:100%; background:var(--kc, var(--k-etc)); }
+.clegend{ display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:9px }
+.clegend span{ display:inline-flex; align-items:center; gap:5px;
+               font-size:calc(12px * var(--ts)); color:var(--ink-48) }
+.clegend i{ width:8px; height:8px; border-radius:999px;
+            background:var(--kc, var(--k-etc)) }
+.clegend b{ color:var(--ink); font-weight:600 }
+.clegend em{ font-style:normal; opacity:.7 }
+
+/* ── 일정 한 줄 ──────────────────────────────────────────────────────
+ * 메모를 통째로 뿌리면 안 읽힙니다. 접어 두고 누르면 이동·예상·설명으로
+ * 나눠 보여줍니다. 도쿄 앱에서 쓰던 방식입니다. */
+.ev + .ev{ border-top:1px solid var(--divider-soft); }
+.ev__row{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0;
+          align-items:flex-start; cursor:pointer; }
+.ev__chev{ align-self:center; color:var(--ink-48); flex:none;
+           transition:transform .22s; font-size:calc(18px * var(--ts)); }
+.ev.is-open .ev__chev{ transform:rotate(90deg); }
+.ev .when{ flex:none; width:50px; color:var(--ink-48); font-size:calc(13px * var(--ts));
+           font-variant-numeric:tabular-nums; padding-top:2px; }
+.ev .body{ flex:1; min-width:0; }
+.ev .body b{ display:block; }
+.ev .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+/* 노선 딱지 — 색은 그 도시 노선의 공식 색입니다 */
+.ln{ display:inline-block; margin-left:5px; padding:1px 7px; border-radius:var(--r-pill);
+     background:#888; color:#fff; font-size:calc(11px * var(--ts)); font-weight:600;
+     vertical-align:middle; white-space:nowrap; }
+
+.ev .detail{ display:none; padding:0 0 var(--s-sm) calc(50px + var(--s-sm)); }
+.ev.is-open .detail{ display:block; }
+.drow{ background:var(--parchment); border-radius:var(--r-sm);
+       padding:8px 12px; margin-bottom:6px; font-size:calc(13.5px * var(--ts));
+       line-height:1.5; color:var(--ink-80); }
+.drow b{ font-weight:600; color:var(--ink); margin-right:4px; }
+.dnote{ font-size:calc(13.5px * var(--ts)); line-height:1.5; color:var(--ink-80);
+        padding:3px 2px; }
+.dacts{ display:flex; align-items:center; gap:var(--s-md); margin-top:8px; }
+.dacts a{ color:var(--primary); font-size:calc(13px * var(--ts)); text-decoration:none; }
+.dacts button{ font-size:calc(13px * var(--ts)); padding:4px 2px; }
+
+.fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
+.fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
+
+/* ── 세계지도 ────────────────────────────────────────────────────────
+ * 지도는 CDN 에서 안 받고 파일에 심었습니다. 비행기모드에서도 나와야 합니다.
+ * 등장방형 도법이라 위경도에서 화면 좌표가 바로 나옵니다. */
+/* 높이를 CSS 로 못박아야 확대가 됩니다. height:auto 로 두면 높이가 viewBox 에서
+   나오고, viewBox 를 다시 높이에서 계산해야 해서 서로 물립니다. */
+/* 세로를 vh 로 잡았더니 지도보다 길어져서, 맞추느라 저절로 확대됐습니다.
+   지도와 같은 비율(1000:387)로 두면 세계 전체가 여백 없이 딱 들어갑니다.
+   비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
+.mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
+          aspect-ratio:1000 / 387; }
+/* 크게 보기 — 카드 안에 넣었더니 지도가 가로로 긴 비율이라 위아래가 텅 비었습니다.
+   화면을 다 채우고, 열 때 여백이 안 생기는 배율에서 시작합니다. */
+.mapwrap.big{ position:fixed; inset:0; z-index:70; border-radius:0;
+              aspect-ratio:auto; background:var(--parchment); }
+#mapclose{ position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
+           z-index:71; background:var(--canvas); border:1px solid var(--hairline);
+           border-radius:999px; padding:9px 16px; font-weight:650;
+           box-shadow:var(--lift-1); cursor:pointer; }
+/* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다. 단추로도 됩니다. */
+#mapzoombtns{ position:fixed; z-index:71; right:12px;
+              bottom:calc(20px + env(safe-area-inset-bottom));
+              display:flex; flex-direction:column; gap:8px; }
+#mapzoombtns button{ width:44px; height:44px; border-radius:14px;
+                     font-size:calc(15px * var(--ts)); font-weight:650;
+                     background:var(--canvas); border:1px solid var(--hairline);
+                     box-shadow:var(--lift-1); cursor:pointer; line-height:1; }
+/* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
+#worldsvg{ width:100%; height:100%; display:block; touch-action:none;
+           cursor:grab; user-select:none; }
+#worldsvg.drag{ cursor:grabbing }
+#worldsvg path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5;
+                transition:fill .3s; }
+/* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다. */
+#worldsvg path.been{ fill:var(--primary); opacity:.85; }
+/* 다녀온 곳은 깃발로 꽂습니다. 동그라미보다 "찍었다" 는 느낌이 납니다.
+   테두리를 따로 그리면 선이 겹쳐 뭉개집니다. paint-order 로 흰 테두리를
+   칠 뒤쪽에 깔면 한 덩어리 스티커처럼 깔끔하게 떨어집니다. */
+#pins g{ cursor:pointer; }
+#pins path{ paint-order:stroke; stroke:#fff; stroke-width:2;
+            stroke-linejoin:round; stroke-linecap:round; }
+#pins .mkpole{ fill:#3b4453; }
+#pins .mkflag{ fill:#ff4d5e; }
+
+/* 대륙 줄 — 이름 · 진행바 · 숫자 */
+.crow{ display:flex; align-items:center; gap:10px; padding:9px 0;
+       border-top:1px solid var(--line); cursor:pointer; }
+.crow:first-child{ border-top:0 }
+.crow .nm{ width:74px; flex:none; font-weight:600;
+           font-size:calc(14px * var(--ts)); }
+.crow .bar{ flex:1; height:8px; border-radius:999px; background:var(--line);
+            overflow:hidden; }
+.crow .bar > i{ display:block; height:100%; border-radius:999px;
+                background:var(--primary); }
+.crow .n{ width:78px; flex:none; text-align:right; color:var(--ink-48);
+          font-size:calc(12px * var(--ts)); }
+/* 국가별 도시 칩 */
+.cchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px }
+.cchips > button{ border:1px solid var(--line); background:var(--canvas);
+                  border-radius:999px; padding:4px 10px; cursor:pointer;
+                  font-size:calc(12px * var(--ts)); color:var(--ink) }
+/* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
+.facts{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:14px; }
+.facts div{ display:flex; justify-content:space-between; gap:8px;
+            font-size:calc(13px * var(--ts)); }
+.facts span{ color:var(--ink-48); }
+/* 후기 — 별과 한 줄을 나란히 */
+.rvme{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.rvme input{ flex:1; min-width:180px; }
+/* 왓챠의 포스터 자리. 사진이 없으면 첫 글자로 대신합니다. */
+.thumb{ width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; flex:none;
+        background:var(--parchment); }
+.thumb.ph{ display:flex; align-items:center; justify-content:center;
+           font-size:calc(21px * var(--ts)); font-weight:650; color:var(--ink-48); }
+/* 도시 페이지 맨 위 사진 */
+.hero{ height:180px; background:var(--parchment) center/cover no-repeat; }
+.hero.ph{ display:flex; align-items:center; justify-content:center;
+          font-size:calc(56px * var(--ts)); font-weight:650; color:var(--hairline); }
+.want, .been{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px;
+              color:var(--hairline); }
+.want.on{ color:#e0245e; }
+.been.on{ color:var(--k-see); }
+
+/* 예약번호 — 여행 중에 눈으로 찾는 것이라 티나게 둡니다 */
+.refno{ display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size:calc(13px * var(--ts)); letter-spacing:.04em;
+        background:var(--parchment); padding:1px 8px; border-radius:var(--r-sm); }
+
+/* AI 대화 — 이 탭의 본체입니다. 짧아도 채팅창처럼 보이게 자리를 잡아둡니다. */
+#chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto; }
+.msg + .msg{ margin-top:var(--s-md); }
+.msg .who{ display:block; font-size:calc(12px * var(--ts)); margin-bottom:2px; }
+.msg .txt{ font-size:calc(15px * var(--ts)); line-height:1.6; word-break:break-word; }
+.msg .txt b{ font-weight:650; }
+.plan:first-child, .daysep:first-child{ padding-top:0; }
+
+/* 분류 색 — 도쿄 앱에서 옮겨왔습니다.
+   메모를 읽지 않아도 눈으로 "아, 주황색 밥" 하고 찾게 하는 것이 목적입니다.
+   딱지와 점에만 쓰고 버튼·링크는 여전히 파랑 하나입니다. */
+/* 분류마다 색을 --kc 하나에 담고, 점은 배경으로 딱지는 글자색으로 씁니다.
+   한 클래스로 둘을 다 칠하면 딱지가 색 덩어리가 됩니다. */
+.k-식사{ --kc:var(--k-food); } .k-관광{ --kc:var(--k-see);  }
+.k-쇼핑{ --kc:var(--k-shop); } .k-이동{ --kc:var(--k-move); }
+.k-숙소{ --kc:var(--k-stay); } .k-카페{ --kc:var(--k-cafe); }
+.kdot{ width:9px; height:9px; border-radius:50%; flex:none; margin-top:9px;
+       background:var(--kc, var(--k-etc)); }
+.ktag{ font-size:calc(13px * var(--ts)); font-weight:600; margin-right:6px;
+       color:var(--kc, var(--k-etc)); }
+
+.row{ display:flex; align-items:center; gap:10px; }
+.row + .row{ margin-top:10px; padding-top:10px; border-top:1px solid var(--divider-soft); }
+.row .label{ flex:1; min-width:0; }
+.row .val{ font-variant-numeric:tabular-nums; color:var(--ink-48);
+           font-size:calc(14px * var(--ts)); }
+.dot{ width:8px; height:8px; border-radius:50%; background:var(--ink-48); flex:none; }
+.dot.ok{ background:var(--ok); } .dot.bad{ background:var(--bad); }
+
+/* ── 떠 있는 유리 탭바 ── 도쿄 앱에서 옮겨왔습니다.
+   상단바보다 한 단계 더 투명해서 아래로 지나가는 내용이 비칩니다. */
+.tabbar{
+  position:fixed; bottom:calc(12px + var(--sab)); z-index:1150;
+  left:50%; transform:translateX(-50%);
+  width:min(calc(100% - 24px), calc(480px - 24px));
+  display:flex; gap:2px; padding:6px; border-radius:var(--r-pill);
+  background:linear-gradient(158deg, rgba(255,255,255,.28) 0%,
+             rgba(255,255,255,.12) 50%, rgba(255,255,255,.24) 100%);
+  backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
+  -webkit-backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
+  box-shadow:inset 0 1.4px 0 rgba(255,255,255,.95),
+             inset 0 -1.4px 0 rgba(255,255,255,.42),
+             0 0 0 .5px rgba(16,20,35,.10),
+             0 14px 38px rgba(16,20,35,.20),
+             0 3px 8px rgba(16,20,35,.08);
+}
+.tabbar button{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:8px 0 6px; min-height:48px; color:var(--ink-48);
+  border:0; background:none; border-radius:var(--r-pill);
+  transition:background .2s, color .2s;
+}
+.tabbar button:active{ transform:none; }
+.tabbar span{ font-size:calc(11px * var(--ts)); letter-spacing:0; }
+.tabbar button.is-on{
+  color:var(--primary); font-weight:600;
+  background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,1), 0 3px 10px rgba(16,20,35,.12);
+}
+/* 탭바가 마지막 카드를 가리지 않게 자리를 비웁니다 */
+body.hastab{ padding-bottom:calc(96px + var(--kb) + var(--sab)); }
+
+.empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
+        font-size:calc(14px * var(--ts)); }
+pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
+     border:1px solid #f3d6d3; border-radius:var(--r-md);
+     font-size:calc(13px * var(--ts)); overflow-x:auto;
+     white-space:pre-wrap; word-break:break-word; color:var(--bad);
+     font-family:var(--sf); }
+.foot{ color:var(--ink-48); font-size:calc(12px * var(--ts)); text-align:center;
+       margin-top:var(--s-lg); }
+code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
+      font-size:.92em; }
