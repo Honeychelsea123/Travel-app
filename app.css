@@ -359,10 +359,35 @@ body.sheeton{ overflow:hidden; }
  * 대화는 위에서 흐르고 입력칸은 아래에 붙어 있어야 합니다.
  * 카드 높이를 화면에 맞춰 늘려 두면 입력칸이 저절로 아래에 붙습니다.
  * 고정 위치를 쓰지 않는 이유는 키보드가 올라올 때 어긋나기 때문입니다. */
+/* 후보 카드 — 한 줄로 늘어놓으니 답답했습니다. 할 수 있는 일을 다 펼칩니다. */
+.cdc{ background:var(--pearl); border:1px solid var(--hairline);
+      border-radius:var(--r-md); padding:12px 14px; margin-bottom:8px; }
+.cdc .t{ font-size:calc(15px * var(--ts)); }
+.cdc .s{ color:var(--ink-48); font-size:calc(12.5px * var(--ts)); margin-top:2px; }
+.cdc .m{ font-size:calc(13px * var(--ts)); margin-top:6px; line-height:1.5;
+         word-break:keep-all; }
+.cdc .a{ display:flex; align-items:center; gap:var(--s-md); margin-top:8px; }
+.cdc .a a{ color:var(--primary); font-size:calc(13px * var(--ts)); text-decoration:none; }
+.cdc .a button{ font-size:calc(13px * var(--ts)); padding:4px 2px; }
+
+/* ── 여행 비서 시트 ──────────────────────────────────────────────────
+ * 페이지를 옮기면 보던 자리를 잃습니다. 일정을 보다가 물어보고
+ * 그 자리로 돌아가야 하므로 화면 위에 올라오게 합니다. */
+.aisheet{ position:fixed; left:0; right:0; bottom:0; z-index:62;
+          margin:0 auto; max-width:480px; height:min(86vh, 720px);
+          background:var(--parchment); border-radius:var(--r-lg) var(--r-lg) 0 0;
+          box-shadow:0 -12px 40px rgba(0,0,0,.22);
+          padding:10px 12px calc(12px + var(--kb, 0px));
+          animation:sheetup .24s ease-out both; }
+/* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
+.aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
+                  border-radius:999px; background:var(--line); }
+.aihead{ display:flex; align-items:center; gap:6px; padding:2px 2px 8px; }
+.aihead .t{ flex:1; font-weight:700; font-size:calc(17px * var(--ts)); }
+.aihead .ghost{ padding:6px 8px; }
 #aiview{ display:flex; flex-direction:column; }
-.aichat{ flex:1; display:flex; flex-direction:column; min-height:0;
-         /* 위 고른 줄과 아래 떠 있는 바를 뺀 만큼 */
-         min-height:calc(100dvh - 250px); }
+.aichat{ flex:1; display:flex; flex-direction:column; min-height:0; margin-bottom:0;
+         /* 시트 안에서는 남는 높이를 다 씁니다. */ }
 /* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 flex 가
    늘리려 해도 그 선에서 막혀 입력칸 아래가 비어 버립니다. 여기서 풀어줍니다. */
 .aichat #chat{ flex:1; overflow-y:auto; min-height:120px; max-height:none; }

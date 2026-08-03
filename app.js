@@ -324,7 +324,7 @@ function showApp(t){
   $('listview').classList.toggle('hide', t !== 'trips');
   $('rateview').classList.toggle('hide', t !== 'rate');
   $('cityview').classList.add('hide'); cityOpen = null;
-  $('aiview').classList.toggle('hide',   t !== 'ai');
+  $('aiview').classList.add('hide');   /* 비서는 탭이 아니라 시트입니다 */
   $('setview').classList.toggle('hide',  t !== 'set');
   $('newcard').classList.add('hide');
   $('namebox').classList.add('hide');
@@ -1891,13 +1891,28 @@ function drawCands(){
     : '';
 
   $('cands').innerHTML = cands.length
-    ? cands.map(c => `<div class="row">
-        <span class="label"><b>${esc(c.title)}</b>${
-          c.lat == null ? ' <span class="val">좌표 없음</span>' : ''}
-          ${c.memo ? `<div class="memo">${esc(c.memo)}</div>` : ''}</span>
-        <button class="ghost" data-canddel="${esc(c.id)}"
-                style="color:var(--bad)">×</button></div>`).join('')
-    : '<div class="empty">담아둔 곳이 없어요. AI 제안에서 담거나 아래에 적으세요.</div>';
+    /* 한 줄로 늘어놓으니 답답했습니다. 카드로 펼치고 할 수 있는 일을 다 답니다 —
+       일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
+    ? cands.map(c => {
+        const q = encodeURIComponent(c.title_local || c.title);
+        return `<div class="cdc">
+          <div class="t"><b>${esc(c.title)}</b>${
+            c.lat == null ? ' <span class="val">좌표 없음</span>' : ''}</div>
+          ${[c.category, c.title_local].filter(Boolean).length
+            ? `<div class="s">${[c.category, c.title_local].filter(Boolean)
+                 .map(esc).join(' · ')}</div>` : ''}
+          ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
+          <div class="a">
+            <button class="ghost" data-candplan="${esc(c.id)}"
+                    style="color:var(--primary)">일정에 넣기</button>
+            <a href="https://www.google.com/maps/search/?api=1&query=${q}"
+               target="_blank" rel="noopener">지도</a>
+            <button class="ghost" data-canddel="${esc(c.id)}"
+                    style="color:var(--bad); margin-left:auto">삭제</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">담아둔 곳이 없어요.<br>AI 제안에서 담거나 아래에 적으세요.</div>';
   drawGeoBtn();
 }
 
@@ -2040,6 +2055,19 @@ $('card-cand').addEventListener('click', async e => {
     $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
     return;
   }
+  /* 후보를 일정으로. 빈 시간 제안을 안 거치고 바로 넣고 싶을 때 씁니다. */
+  const cp = e.target.closest('[data-candplan]');
+  if (cp){
+    const c = cands.find(x => x.id === cp.dataset.candplan); if (!c) return;
+    $('addplanbtn').click();
+    $('p_title').value = c.title;
+    $('p_cat').value   = c.category || '';
+    $('p_memo').value  = c.memo || '';
+    $('p_date').value  = pickedDay || trip.start_date;
+    $('card-cand').classList.add('hide');
+    return;
+  }
+
   const d = e.target.closest('[data-canddel]');
   if (d){
     const r = await sb.from('candidates')
@@ -2880,10 +2908,38 @@ $('shelflist').addEventListener('click', async e => {
 
 /* AI 는 어디서든 한 번에 갑니다. 여행을 보고 있었으면 그 여행을 물어볼
    대상으로 미리 골라둡니다 — 들어가서 또 고르게 하면 안 씁니다. */
-$('aibtn').addEventListener('click', () => {
+/* 여행 비서는 페이지를 옮기지 않고 보던 화면 위에 올라옵니다.
+   일정을 보다가 물어보고 그 자리로 돌아가야 합니다. */
+function openAi(){
   if (trip) aiTripId = trip.id;
   $('notifpanel').classList.add('hide');
-  showApp('ai');
+  $('aiview').classList.remove('hide');
+  $('sheetbg').classList.remove('hide');
+  document.body.classList.add('sheeton');
+  if (history.state?.t2 !== 'ai') history.pushState({ t2:'ai' }, '');
+  loadAi();
+}
+function closeAi(fromPop){
+  if (!fromPop && history.state?.t2 === 'ai'){ history.back(); return; }
+  $('aiview').classList.add('hide');
+  /* 다른 시트가 열려 있을 수도 있으니 뒷판은 그쪽 규칙에 맡깁니다. */
+  syncSheets();
+}
+$('aibtn').addEventListener('click', openAi);
+$('ai_close').addEventListener('click', () => closeAi());
+
+/* 대화 지우기. 여행 없이 나눈 것은 trip_id 가 비어 있어 is 로 지웁니다. */
+$('ai_wipe').addEventListener('click', async e => {
+  const b = e.currentTarget;
+  if (b.dataset.armed !== '1'){ arm(b, '정말 지울까요?'); return; }
+  const id = $('ai_trip').value;
+  let q = sb.from('chats').delete().eq('user_id', me.id);
+  q = id ? q.eq('trip_id', id) : q.is('trip_id', null);
+  const r = await q.select('id');
+  disarm(b);
+  if (r.error) return fail(r.error, 'ai');
+  await loadChats(id);
+  toast(`${r.data?.length ?? 0}개를 지웠어요`);
 });
 
 /* 종을 누르면 그 자리에서 펼쳐집니다. 프로필로 넘어가게 하면
@@ -3593,6 +3649,7 @@ $('backbtn').addEventListener('click', () => backToList());
 window.addEventListener('popstate', () => {
   if (cityOpen) return closeCity(true);
   if (trip) return backToList(true);
+  if (!$('aiview').classList.contains('hide')) return closeAi(true);
   if (!$('reviewview').classList.contains('hide')) return closeReview(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
@@ -3892,6 +3949,8 @@ function syncSheets(){
     el.classList.toggle('assheet', on);
     if (on) any = true;
   }
+  /* 여행 비서 시트도 뒷판을 씁니다. 여기서 같이 봐야 닫힐 때만 걷힙니다. */
+  if (!$('aiview').classList.contains('hide')) any = true;
   $('sheetbg').classList.toggle('hide', !any);
   document.body.classList.toggle('sheeton', any);
 }
@@ -3901,9 +3960,39 @@ function syncSheets(){
     ob.observe($(id), { attributes:true, attributeFilter:['class'] }));
   /* 뒤를 누르면 열려 있던 것을 닫습니다. 취소 버튼을 못 찾는 사람이 많습니다. */
   $('sheetbg').addEventListener('click', () => {
+    if (!$('aiview').classList.contains('hide')) return closeAi();
     SHEETS.forEach(id => $(id)?.classList.add('hide'));
     syncSheets();
   });
+
+  /* 위에 그려둔 손잡이가 장식이기만 했습니다. 끌어내리면 닫히게 합니다 —
+     그 모양을 보면 누구나 그렇게 해봅니다. */
+  const grab = e => {
+    const sheet = e.target.closest('.assheet, .aisheet');
+    if (!sheet) return;
+    /* 손잡이 자리(위쪽 26px)에서 시작한 것만 잡습니다. 안쪽 스크롤과 안 부딪칩니다. */
+    if (e.clientY - sheet.getBoundingClientRect().top > 26) return;
+    const y0 = e.clientY;
+    let dy = 0;
+    const move = ev => {
+      dy = Math.max(0, ev.clientY - y0);
+      sheet.style.transform = `translateY(${dy}px)`;
+      sheet.style.transition = 'none';
+    };
+    const up = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      sheet.style.transition = 'transform .2s';
+      sheet.style.transform = '';
+      if (dy > 90){                       /* 이만큼 내리면 닫을 뜻으로 봅니다 */
+        if (sheet.id === 'aiview') closeAi();
+        else { sheet.classList.add('hide'); syncSheets(); }
+      }
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  };
+  document.addEventListener('pointerdown', grab);
 }
 
 /* ── 탭 ─────────────────────────────────────────────────────────────
