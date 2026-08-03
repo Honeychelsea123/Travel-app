@@ -370,10 +370,12 @@ body.sheeton{ overflow:hidden; }
  * 도시 사진을 깔고 그 위에 얹습니다. 사진이 없으면 어두운 판만 남습니다. */
 /* 사진을 크게 깔았더니 일정 위 자리를 다 먹었습니다. 그 자리는 지도가 씁니다.
    여기는 돌아가는 길과 무슨 여행인지만 짧게 알려줍니다. */
-.thead{ padding:10px 14px 12px; }
-.thead #t_title{ font-weight:700; font-size:calc(17px * var(--ts)); margin-top:4px;
+.thead{ padding:8px 14px 10px; }
+.thead #t_title{ font-weight:700; font-size:calc(16px * var(--ts)); margin-top:2px;
                  letter-spacing:calc(-.3px * var(--ts)); }
-.thead .meta{ margin-top:2px; font-size:calc(12px * var(--ts)); }
+/* 한 줄로 붙이고 넘치면 자릅니다. 자세한 것은 수정에서 다 봅니다. */
+.thead .meta{ margin-top:1px; font-size:calc(11.5px * var(--ts));
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ── AI 채팅 ─────────────────────────────────────────────────────────
  * 대화는 위에서 흐르고 입력칸은 아래에 붙어 있어야 합니다.
@@ -487,6 +489,19 @@ body.sheeton{ overflow:hidden; }
 .rvbar .t span{ display:block; font-size:calc(11.5px * var(--ts)); color:#a2762a;
                 margin-top:1px; word-break:keep-all }
 .rvbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650; color:#8a5a00 }
+
+/* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
+   일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
+.cbar{ display:flex; height:10px; border-radius:999px; overflow:hidden;
+       margin-top:12px; gap:2px; }
+.cbar i{ display:block; height:100%; background:var(--kc, var(--k-etc)); }
+.clegend{ display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:9px }
+.clegend span{ display:inline-flex; align-items:center; gap:5px;
+               font-size:calc(12px * var(--ts)); color:var(--ink-48) }
+.clegend i{ width:8px; height:8px; border-radius:999px;
+            background:var(--kc, var(--k-etc)) }
+.clegend b{ color:var(--ink); font-weight:600 }
+.clegend em{ font-style:normal; opacity:.7 }
 
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
@@ -1561,7 +1576,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b96</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b97</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -4636,9 +4651,13 @@ function drawTripHeader(){
   const days = Math.round((asDate(trip.end_date) - asDate(trip.start_date)) / D1) + 1;
   $('t_title').textContent = trip.title;
   const now = localTime(trip.timezone);
-  $('t_meta').innerHTML =
-    `${esc(trip.destination)} · ${esc(trip.start_date)} ~ ${esc(trip.end_date)} · ${days}일<br>` +
-    [trip.currency, now].filter(Boolean).map(esc).join(' · ');
+  /* 한 줄로 붙입니다. 지도가 더 잘 보여야 하는 자리라 머리말은 짧을수록 낫습니다.
+     연도는 뻔하니 뺍니다 — 목록에서 이미 봤습니다. */
+  $('t_meta').textContent = [
+    trip.destination,
+    `${trip.start_date.slice(5)} ~ ${trip.end_date.slice(5)} · ${days}일`,
+    trip.currency, now,
+  ].filter(Boolean).join(' · ');
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
   $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
   $('addexpbtn').classList.toggle('hide', trip.myRole === 'viewer');
@@ -5366,6 +5385,23 @@ function drawExpenses(){
   const missing = expenses.length - done.length;
   const total = done.reduce((s, e) => s + Number(e.amount_home), 0);
 
+  /* 분류별로 얼마나 썼는지. 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
+     환산된 것만 셉니다 — 못 구한 환율을 섞으면 비중이 틀립니다. */
+  const byCat = {};
+  done.forEach(e => {
+    const k = e.category || '기타';
+    byCat[k] = (byCat[k] || 0) + Number(e.amount_home);
+  });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const bar = total > 0
+    ? `<div class="cbar">${cats.map(([k, v]) =>
+        `<i class="k-${esc(k)}" style="width:${(v / total * 100).toFixed(2)}%"></i>`).join('')}</div>
+       <div class="clegend">${cats.map(([k, v]) =>
+        `<span><i class="k-${esc(k)}"></i>${esc(k)}
+           <b>${esc(money(v, trip.home_currency))}</b>
+           <em>${Math.round(v / total * 100)}%</em></span>`).join('')}</div>`
+    : '';
+
   $('exptotal').innerHTML =
     `<div class="picked" style="margin-bottom:var(--s-sm); display:block">
        <div class="c">모두 합쳐</div>
@@ -5377,6 +5413,7 @@ function drawExpenses(){
             환율을 못 구한 지출 ${missing}건은 합계에서 빠졌어요.
             <button class="ghost" id="fxfill" style="padding:2px 8px; color:var(--primary)">
               환율 채우기</button></div>` : ''}
+       ${bar}
      </div>`;
   if (missing) $('fxfill').onclick = fillRates;
 
@@ -6071,6 +6108,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
