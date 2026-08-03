@@ -1607,7 +1607,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b98</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b99</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1919,6 +1919,7 @@ $('create').addEventListener('click', async () => {
  * 로그아웃과 보관함이 목록 위에 얹혀 있던 것을 여기로 내렸습니다. */
 function showApp(t){
   appTab = t;
+  shutBigMap();
   /* 여행이 열려 있으면 먼저 닫습니다. 안 닫으면 여행 화면이 탭 화면 아래에
      그대로 남습니다 — 홈에서 발자국을 누르면 프로필 밑에 여행이 붙어 있었습니다.
      backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
@@ -3946,6 +3947,14 @@ $('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
 
 /* 크게 보기 — 지도만 화면을 다 덮습니다. 손바닥만 한 지도에서는
    대륙을 파고들며 보기가 어렵습니다. */
+/* 큰 지도를 켠 채로 화면을 벗어나면 어두운 판과 단추가 그대로 남아
+   앱 전체를 덮어버립니다. 화면을 옮길 때마다 여기서 걷어냅니다. */
+function shutBigMap(){
+  document.querySelector('.mapwrap')?.classList.remove('big');
+  ['mapback','mapclose','mapzoombtns'].forEach(id => $(id)?.remove());
+  document.body.classList.remove('sheeton');
+}
+
 $('mapbig').addEventListener('click', () => {
   const w = document.querySelector('.mapwrap');
   if (w.classList.contains('big')) return;
@@ -3970,12 +3979,7 @@ $('mapbig').addEventListener('click', () => {
     applyView();
   };
 
-  const shut = () => {
-    w.classList.remove('big');
-    document.body.classList.remove('sheeton');
-    [bg, close, zoom].forEach(x => x.remove());
-    setMapView('전체');                          /* 원래 크기·배율로 되돌립니다 */
-  };
+  const shut = () => { shutBigMap(); setMapView('전체'); };
   close.onclick = shut;
   bg.onclick = shut;
 
@@ -4158,6 +4162,7 @@ async function openMap(){
 
 function closeMap(fromPop){
   if (!fromPop && history.state?.t2 === 'map'){ history.back(); return; }
+  shutBigMap();
   $('mappane').classList.add('hide');
   $('profpane').classList.remove('hide');
 }
@@ -4216,6 +4221,7 @@ $('mappane').addEventListener('click', e => {
 /* 톱니를 누르면 설정, 뒤로 누르면 프로필. 설정을 프로필에 다 늘어놓으면
    정작 보러 온 숫자가 아래로 밀립니다. */
 function showProfile(setting){
+  shutBigMap();
   $('shelfpane').classList.add('hide');
   $('mappane').classList.add('hide');        /* 지도가 열려 있었으면 같이 닫습니다 */
   $('profpane').classList.toggle('hide', setting);
@@ -6252,6 +6258,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
