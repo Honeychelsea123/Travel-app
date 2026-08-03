@@ -432,13 +432,26 @@ body.sheeton{ overflow:hidden; }
    비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
 .mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
           aspect-ratio:1000 / 387; }
-/* 크게 보기 — 화면을 다 덮습니다. 세로가 길어져 대륙을 파고들며 볼 수 있습니다. */
-.mapwrap.big{ position:fixed; inset:0; z-index:70; border-radius:0;
-              aspect-ratio:auto; background:var(--canvas); }
+/* 크게 보기 — 화면을 다 덮으면 넓은 화면에서 가로로만 길어져 앱과 따로 놉니다.
+   본문과 같은 폭의 카드로 띄웁니다. */
+#mapback{ position:fixed; inset:0; z-index:69; background:rgba(15,18,24,.45); }
+.mapwrap.big{ position:fixed; z-index:70; left:50%; transform:translateX(-50%);
+              top:calc(56px + env(safe-area-inset-top));
+              width:min(calc(100vw - 20px), 480px);
+              height:min(72vh, 560px);
+              aspect-ratio:auto; background:var(--canvas);
+              box-shadow:0 18px 50px rgba(0,0,0,.30); }
 #mapclose{ position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px;
            z-index:71; background:var(--canvas); border:1px solid var(--hairline);
            border-radius:999px; padding:9px 16px; font-weight:650;
            box-shadow:var(--lift-1); cursor:pointer; }
+/* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다. 단추로도 됩니다. */
+#mapzoombtns{ position:fixed; z-index:71; right:calc(50% - min(50vw - 10px, 240px) + 12px);
+              bottom:calc(100vh - 56px - min(72vh, 560px) + 12px);
+              display:flex; flex-direction:column; gap:8px; }
+#mapzoombtns button{ width:40px; height:40px; border-radius:12px; font-size:20px;
+                     background:var(--canvas); border:1px solid var(--hairline);
+                     box-shadow:var(--lift-1); cursor:pointer; line-height:1; }
 /* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
 #worldsvg{ width:100%; height:100%; display:block; touch-action:none;
            cursor:grab; user-select:none; }
@@ -994,24 +1007,32 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <!-- 통계는 지도 위에 얹어야 재미가 있습니다. 숫자만 있으면 안 봅니다. -->
           <button class="primary" id="openmap"
                   style="width:100%; margin-top:14px">세계지도에서 보기</button>
-          <!-- 여행 초대와는 다릅니다. 이건 앱 자체를 권하는 자리입니다. -->
-          <button class="ghost" id="shareapp" style="width:100%; margin-top:6px">
-            친구에게 앱 알려주기</button>
         </div>
 
         <div class="card">
           <h2>보관함</h2>
           <div class="shelf">
-            <button data-shelf="want"><span class="ic" style="color:#e0245e">♥</span>
-              <span>가보고 싶어요</span><b id="s_want">0</b></button>
-            <button data-shelf="mine"><span class="ic" style="color:#f5a623">★</span>
-              <span>내 기록</span><b id="s_rated2">0</b></button>
-            <!-- 식당·카페는 일정에 이미 들어 있습니다. 여행이 끝나면 그것만 모아
-                 평가하게 하고, 여기서 다시 봅니다. -->
-            <button data-shelf="place"><span class="ic" style="color:var(--k-food)">🍽</span>
-              <span>식당·카페</span><b id="s_place">0</b></button>
+            <!-- 다녀온 것부터 위에. 앞으로 갈 곳(가보고 싶은 곳)은 맨 아래. -->
             <button data-shelf="trips"><span class="ic">🧳</span>
               <span>다녀온 여행</span><b id="s_trips">0</b></button>
+            <!-- 맛집은 일정에 이미 들어 있습니다. 여행이 끝나면 그것만 모아
+                 평가하게 하고, 여기서 다시 봅니다. -->
+            <button data-shelf="place"><span class="ic" style="color:var(--k-food)">🍽</span>
+              <span>다녀온 맛집</span><b id="s_place">0</b></button>
+            <button data-shelf="mine"><span class="ic" style="color:#f5a623">★</span>
+              <span>내 평가</span><b id="s_rated2">0</b></button>
+            <button data-shelf="want"><span class="ic" style="color:#e0245e">♥</span>
+              <span>가보고 싶은 곳</span><b id="s_want">0</b></button>
+          </div>
+        </div>
+
+        <!-- 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
+             이건 앱 자체를 권하는 자리라 카드를 따로 뒀습니다. -->
+        <div class="card">
+          <div class="row" style="border:0; padding:0; margin:0">
+            <span class="label"><b>친구에게 앱 알려주기</b>
+              <div class="memo">같이 여행 짜고 기록 남길 사람에게 보내보세요</div></span>
+            <button class="small" id="shareapp">공유</button>
           </div>
         </div>
       </div>
@@ -1447,7 +1468,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b86</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b87</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -3360,19 +3381,37 @@ $('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
    대륙을 파고들며 보기가 어렵습니다. */
 $('mapbig').addEventListener('click', () => {
   const w = document.querySelector('.mapwrap');
+  if (w.classList.contains('big')) return;
   w.classList.add('big');
   document.body.classList.add('sheeton');        /* 뒤가 밀리지 않게 */
-  if (!$('mapclose')){
-    const b = document.createElement('button');
-    b.id = 'mapclose'; b.textContent = '닫기';
-    b.onclick = () => {
-      w.classList.remove('big');
-      document.body.classList.remove('sheeton');
-      b.remove();
-      applyView();                                /* 원래 크기로 다시 맞춥니다 */
-    };
-    document.body.appendChild(b);
-  }
+
+  const add = (id, html, css) => {
+    const el = document.createElement(id === 'mapzoombtns' ? 'div' : 'button');
+    el.id = id; el.innerHTML = html; if (css) el.style.cssText = css;
+    document.body.appendChild(el); return el;
+  };
+  const bg    = add('mapback', '');
+  const close = add('mapclose', '닫기');
+  const zoom  = add('mapzoombtns',
+                    '<button data-z="in">+</button><button data-z="out">−</button>');
+
+  /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다.
+     가운데를 잡고 폭만 줄이거나 늘립니다. */
+  zoom.onclick = e => {
+    const b = e.target.closest('[data-z]'); if (!b) return;
+    vb.w *= b.dataset.z === 'in' ? 1 / 1.45 : 1.45;
+    applyView();
+  };
+
+  const shut = () => {
+    w.classList.remove('big');
+    document.body.classList.remove('sheeton');
+    [bg, close, zoom].forEach(x => x.remove());
+    setMapView('전체');                          /* 원래 크기·배율로 되돌립니다 */
+  };
+  close.onclick = shut;
+  bg.onclick = shut;
+
   applyView();
 });
 
@@ -3572,7 +3611,7 @@ $('shareapp').addEventListener('click', async () => {
     if (e?.name === 'AbortError') return;
     b.textContent = '복사하지 못했습니다';
   }
-  setTimeout(() => { b.textContent = '친구에게 앱 알려주기'; }, 2500);
+  setTimeout(() => { b.textContent = '공유'; }, 2500);
 });
 $('mapback').addEventListener('click', () => closeMap());
 
@@ -3606,8 +3645,8 @@ $('setview').addEventListener('click', e => {
  * 기록 탭으로 보내면 그 탭이 걸린 목록으로 바뀝니다. 그러면 새로 매길 곳을
  * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
-const SHELF = { want:'가보고 싶어요', mine:'내 기록',
-                comment:'한줄평 남긴 곳', place:'식당 · 카페' };
+const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
+                comment:'한줄평 남긴 곳', place:'다녀온 맛집' };
 
 /* 식당·카페는 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
    따로 적게 하지 않고, 다녀온 여행의 식사·카페만 모아 별점을 받습니다. */
@@ -5404,6 +5443,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
