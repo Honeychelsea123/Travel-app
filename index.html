@@ -412,6 +412,13 @@ body.sheeton{ overflow:hidden; }
                   border-bottom:2px solid var(--primary);
                   transform:rotate(-45deg); }
 
+/* 홈 발자국 카드 안의 작은 지도. 보기만 하는 것이라 손가락은 안 받습니다. */
+.minimap{ margin-top:12px; background:var(--parchment); border-radius:var(--r-md);
+          overflow:hidden; pointer-events:none; }
+.minimap svg{ width:100%; height:auto; display:block; }
+.minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
+.minimap path.been{ fill:var(--primary); opacity:.85; }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -757,8 +764,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       <div class="card">
         <h2>AI 일정 만들기</h2>
         <div class="memo" style="margin-bottom:10px">
-          여행을 고르고 취향만 누르면 첫날부터 마지막 날까지 짜드립니다.
-          넣을지는 보고 정하시면 됩니다.</div>
+          여행을 고르고 뭘 좋아하는지만 알려주세요.
+          넣을지는 보고 정하시면 돼요.</div>
 
         <div class="label" style="font-weight:600; margin-top:6px">어느 여행</div>
         <div class="days" id="d_trips" style="margin-top:6px"></div>
@@ -987,17 +994,22 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           <!-- 통계는 지도 위에 얹어야 재미가 있습니다. 숫자만 있으면 안 봅니다. -->
           <button class="primary" id="openmap"
                   style="width:100%; margin-top:14px">세계지도에서 보기</button>
+          <!-- 여행 초대와는 다릅니다. 이건 앱 자체를 권하는 자리입니다. -->
+          <button class="ghost" id="shareapp" style="width:100%; margin-top:6px">
+            친구에게 앱 알려주기</button>
         </div>
 
         <div class="card">
           <h2>보관함</h2>
           <div class="shelf">
-            <button data-shelf="been"><span class="ic" style="color:var(--k-see)">✓</span>
-              <span>가봤어요</span><b id="s_been">0</b></button>
             <button data-shelf="want"><span class="ic" style="color:#e0245e">♥</span>
               <span>가보고 싶어요</span><b id="s_want">0</b></button>
             <button data-shelf="mine"><span class="ic" style="color:#f5a623">★</span>
-              <span>내 평가</span><b id="s_rated2">0</b></button>
+              <span>내 기록</span><b id="s_rated2">0</b></button>
+            <!-- 식당·카페는 일정에 이미 들어 있습니다. 여행이 끝나면 그것만 모아
+                 평가하게 하고, 여기서 다시 봅니다. -->
+            <button data-shelf="place"><span class="ic" style="color:var(--k-food)">🍽</span>
+              <span>식당·카페</span><b id="s_place">0</b></button>
             <button data-shelf="trips"><span class="ic">🧳</span>
               <span>다녀온 여행</span><b id="s_trips">0</b></button>
           </div>
@@ -1435,7 +1447,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b85</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b86</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2604,7 +2616,7 @@ function renderAiCard(){
      </span>
      <span class="tx">
        <b>AI와 함께 떠나볼까요?</b>
-       <span>취향만 누르면 첫날부터 마지막 날까지 짜드립니다</span>
+       <span>뭘 좋아하는지만 알려주세요</span>
      </span>
      <span class="go">시작</span>`;
   box.onclick = openDraft;
@@ -2660,7 +2672,7 @@ async function renderQuiz(){
   const list = quizPool.slice(0, QUIZ_ROWS);
   const box = document.createElement('div');
   box.className = 'card';
-  box.innerHTML = `<h2>여기 가봤어요?</h2>
+  box.innerHTML = `<h2>여기 가보셨어요?</h2>
     <div id="quizlist">${
       list.length ? list.map(quizRow).join('')
                   : '<div class="empty">물어볼 도시를 다 봤어요.</div>'}</div>
@@ -2670,8 +2682,12 @@ async function renderQuiz(){
 }
 
 async function renderFoot(){
-  const { data: f } = await sb.rpc('my_footprint');
+  const [{ data: f }, vis] = await Promise.all([
+    sb.rpc('my_footprint'),
+    sb.rpc('my_visited'),          /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
+  ]);
   if (!f) return;
+  visited = new Set((vis.data || []).map(v => v.city_id));
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   const box = document.createElement('div');
   box.className = 'card'; box.id = 'homefp'; box.style.cursor = 'pointer';
@@ -2683,8 +2699,16 @@ async function renderFoot(){
        f.countries
          ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%`
          : '별점을 매기면 여기에 쌓입니다.'}</div>
-     ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}`;
-  box.onclick = () => showApp('set');
+     ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}
+     <!-- 막대 아래에 지도도 같이. 숫자보다 칠해진 면적이 더 와닿습니다.
+          지도 좌표는 이미 문서에 있으니 그대로 빌려 씁니다. -->
+     <div class="minimap"><svg viewBox="0 19 1000 387"
+       preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg></div>`;
+  /* 다녀온 나라를 칠합니다. 누르면 큰 지도로 갑니다. */
+  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
+  box.querySelectorAll('.minimap path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
+  box.onclick = () => { showApp('set'); openMap(); };
   $('home').appendChild(box);
 }
 
@@ -2754,7 +2778,10 @@ async function loadFootprint(){
     .eq('user_id', me.id).not('comment', 'is', null)
     .then(r => { $('s_comment').textContent = r.count ?? 0; });
   $('s_rated2').textContent  = f.rated;
-  $('s_been').textContent    = f.cities;
+  /* 식당·카페는 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다. */
+  sb.from('plan_ratings').select('plan_id', { count:'exact', head:true })
+    .eq('user_id', me.id).not('stars', 'is', null)
+    .then(r => { $('s_place').textContent = r.count ?? 0; });
   $('s_want').textContent    = f.wants;
   $('s_trips').textContent   = f.trips;
 
@@ -3307,11 +3334,14 @@ function applyView(){
   const el = $('worldsvg'), r = el.getBoundingClientRect();
   const aspect = (r.width && r.height) ? r.height / r.width : 0.4;
   vb.w = Math.min(1000, Math.max(40, vb.w));        /* 40 이면 도시 하나가 꽉 찹니다 */
-  let h = vb.w * aspect;
-  /* 세로가 지도보다 커지면 가로를 줄여 맞춥니다. 안 그러면 위아래로 헛돕니다. */
-  if (h > MAP_BOT - MAP_TOP){ h = MAP_BOT - MAP_TOP; vb.w = h / aspect; }
+  const h = vb.w * aspect;
+  /* 세로가 지도보다 길면 위아래에 빈 자리를 둡니다.
+     가로를 줄여 맞추던 것이 문제였습니다 — 손가락으로 키워도 여기서 도로
+     계산해 버려서 크게 보기에서는 확대가 아예 안 먹었습니다. */
+  const span = MAP_BOT - MAP_TOP, mid = (MAP_TOP + MAP_BOT) / 2;
   vb.cx = Math.min(1000 - vb.w / 2, Math.max(vb.w / 2, vb.cx));
-  vb.cy = Math.min(MAP_BOT - h / 2, Math.max(MAP_TOP + h / 2, vb.cy));
+  vb.cy = h >= span ? mid
+        : Math.min(MAP_BOT - h / 2, Math.max(MAP_TOP + h / 2, vb.cy));
   el.setAttribute('viewBox',
     `${(vb.cx - vb.w / 2).toFixed(1)} ${(vb.cy - h / 2).toFixed(1)} ` +
     `${vb.w.toFixed(1)} ${h.toFixed(1)}`);
@@ -3526,6 +3556,24 @@ function closeMap(fromPop){
   $('profpane').classList.remove('hide');
 }
 $('openmap').addEventListener('click', openMap);
+
+/* 앱 자체를 권하는 자리. 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
+   휴대폰은 기본 공유창을 띄우고, 안 되는 브라우저는 주소만 복사합니다. */
+$('shareapp').addEventListener('click', async () => {
+  const b = $('shareapp');
+  const url  = location.origin + location.pathname;
+  const text = 'AI가 여행 일정을 짜주고, 다녀온 곳은 지도에 남는 앱이에요.';
+  try {
+    if (navigator.share){ await navigator.share({ title:'AI.Trip', text, url }); return; }
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    b.textContent = '주소를 복사했어요';
+  } catch (e) {
+    /* 사용자가 공유창을 닫은 것은 실패가 아닙니다. */
+    if (e?.name === 'AbortError') return;
+    b.textContent = '복사하지 못했습니다';
+  }
+  setTimeout(() => { b.textContent = '친구에게 앱 알려주기'; }, 2500);
+});
 $('mapback').addEventListener('click', () => closeMap());
 
 $('mappane').addEventListener('click', e => {
@@ -3558,8 +3606,35 @@ $('setview').addEventListener('click', e => {
  * 기록 탭으로 보내면 그 탭이 걸린 목록으로 바뀝니다. 그러면 새로 매길 곳을
  * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
-const SHELF = { been:'가봤어요', want:'가보고 싶어요',
-                mine:'내가 매긴 곳', comment:'한줄평 남긴 곳' };
+const SHELF = { want:'가보고 싶어요', mine:'내 기록',
+                comment:'한줄평 남긴 곳', place:'식당 · 카페' };
+
+/* 식당·카페는 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
+   따로 적게 하지 않고, 다녀온 여행의 식사·카페만 모아 별점을 받습니다. */
+async function openPlaceShelf(){
+  const today = ymd(new Date());
+  const [ps, rs] = await Promise.all([
+    sb.from('plans').select('id,title,memo,category,date,trip_id,trips(title,end_date)')
+      .in('category', ['식사','카페']).is('deleted_at', null)
+      .order('date', { ascending:false }).limit(300),
+    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
+  ]);
+  if (ps.error) return fail(ps.error, 'trip');
+  const rate = Object.fromEntries((rs.data || []).map(r => [r.plan_id, r.stars]));
+  /* 아직 안 끝난 여행은 뺍니다 — 가보지도 않고 별점을 매길 수는 없습니다. */
+  const list = (ps.data || []).filter(p => (p.trips?.end_date || p.date) < today);
+
+  $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
+  $('shelflist').innerHTML = list.length
+    ? list.map(p => `<div class="rrow">
+        <span class="thumb ph">${p.category === '카페' ? '☕' : '🍽'}</span>
+        <div class="t"><b>${esc(p.title)}</b>
+          <span class="memo">${esc(p.trips?.title || '')} · ${esc(p.date)}</span></div>
+        <span class="stars" data-plan="${esc(p.id)}">${starHtml(rate[p.id])}</span>
+      </div>`).join('')
+    : `<div class="empty">다녀온 여행에 식사·카페 일정이 아직 없어요.<br>
+         일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
+}
 
 async function openShelf(kind){
   $('profpane').classList.add('hide');
@@ -3568,6 +3643,7 @@ async function openShelf(kind){
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
+  if (kind === 'place') return openPlaceShelf();
 
   await loadCities();
   const [mine, vis, stats] = await Promise.all([
@@ -3620,6 +3696,22 @@ $('shelfback').addEventListener('click', () => closeShelf());
 /* 여기서도 별점을 고칠 수 있습니다. 기록 탭과 같은 방식입니다. */
 $('shelflist').addEventListener('click', async e => {
   const st = e.target.closest('.st');
+  /* 식당·카페는 일정 줄에 답니다. 도시 별점과 저장하는 표가 다릅니다. */
+  const pw = st?.closest('.stars[data-plan]');
+  if (pw){
+    const box = st.getBoundingClientRect();
+    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const cur = [...pw.querySelectorAll('.st i')]
+      .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
+    const next = Math.abs(cur - v) < .01 ? null : v;
+    paintStars(pw, next, true);
+    const r = await sb.from('plan_ratings')
+      .upsert({ user_id: me.id, plan_id: pw.dataset.plan, stars: next },
+              { onConflict: 'user_id,plan_id' }).select('plan_id');
+    if (r.error) return fail(r.error, 'trip');
+    loadFootprint();
+    return;
+  }
   if (st){
     const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
     const box = st.getBoundingClientRect();
@@ -5312,6 +5404,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
