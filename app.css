@@ -116,9 +116,13 @@ input, select{
 }
 input:focus, select:focus{ border-color:var(--primary); background:var(--canvas); }
 /* 16px 은 iOS 가 입력칸을 누를 때 화면을 확대하지 못하게 막으려고 둔 바닥값입니다.
-   손가락이 아닌 화면에서는 그럴 일이 없으므로 둘레 글자와 크기를 맞춥니다. */
-@media (pointer:fine){
-  input, select{ font-size:calc(14px * var(--ts)); padding:9px var(--s-sm); }
+   그런데 평소에도 둘레 글자보다 커 보였습니다.
+   iOS 는 "누르는 순간"의 크기로 판단하므로, 평소엔 작게 두고 누를 때만 16px 로
+   올리면 확대는 여전히 안 일어납니다. */
+input, select{ font-size:calc(14px * var(--ts)); padding:9px var(--s-sm); }
+input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
+@media (pointer:fine){          /* 마우스만 있는 화면은 확대 자체가 없습니다 */
+  input:focus, select:focus{ font-size:calc(14px * var(--ts)); }
 }
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
@@ -326,11 +330,11 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* ── 아래에서 올라오는 폼 ────────────────────────────────────────────
  * 폼을 카드 아래에 붙이면 화면이 계속 길어져서, 넣으려고 아래로 한참
  * 내려가야 합니다. 뒤를 덮고 아래에서 올라오게 합니다. */
-#sheetbg{ position:fixed; inset:0; z-index:59; background:rgba(15,18,24,.42); }
+#sheetbg{ position:fixed; inset:0; z-index:1200; background:rgba(15,18,24,.42); }
 /* 앱 본문이 480px 로 가운데 있습니다. 시트를 화면 끝까지 늘리면
    넓은 화면에서 혼자 튀어나와 레이아웃이 깨져 보입니다. 같은 폭으로 맞춥니다.
    left·right 를 0 으로 두고 margin auto 를 주면 fixed 라도 가운데로 옵니다. */
-.assheet{ position:fixed !important; left:0; right:0; bottom:0; z-index:60;
+.assheet{ position:fixed !important; left:0; right:0; bottom:0; z-index:1210;
           margin:0 auto !important; max-width:480px;
           border-radius:var(--r-lg) var(--r-lg) 0 0;
           max-height:82vh; overflow-y:auto;
@@ -378,7 +382,7 @@ body.sheeton{ overflow:hidden; }
 /* ── 여행 비서 시트 ──────────────────────────────────────────────────
  * 페이지를 옮기면 보던 자리를 잃습니다. 일정을 보다가 물어보고
  * 그 자리로 돌아가야 하므로 화면 위에 올라오게 합니다. */
-.aisheet{ position:fixed; left:0; right:0; bottom:0; z-index:62;
+.aisheet{ position:fixed; left:0; right:0; bottom:0; z-index:1210;
           margin:0 auto; max-width:480px; height:min(86vh, 720px);
           background:var(--parchment); border-radius:var(--r-lg) var(--r-lg) 0 0;
           box-shadow:0 -12px 40px rgba(0,0,0,.22);
@@ -437,7 +441,7 @@ body.sheeton{ overflow:hidden; }
 
 /* 잠깐 뜨는 알림 */
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
-        bottom:calc(96px + env(safe-area-inset-bottom)); z-index:80;
+        bottom:calc(96px + env(safe-area-inset-bottom)); z-index:1300;
         max-width:min(88vw, 440px); padding:12px 16px; border-radius:14px;
         background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
         font-size:calc(13px * var(--ts)); line-height:1.5; text-align:center;
@@ -557,14 +561,14 @@ body.sheeton{ overflow:hidden; }
           aspect-ratio:1000 / 387; }
 /* 크게 보기 — 카드 안에 넣었더니 지도가 가로로 긴 비율이라 위아래가 텅 비었습니다.
    화면을 다 채우고, 열 때 여백이 안 생기는 배율에서 시작합니다. */
-.mapwrap.big{ position:fixed; inset:0; z-index:70; border-radius:0;
+.mapwrap.big{ position:fixed; inset:0; z-index:1220; border-radius:0;
               aspect-ratio:auto; background:var(--parchment); }
 #mapclose{ position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
-           z-index:71; background:var(--canvas); border:1px solid var(--hairline);
+           z-index:1230; background:var(--canvas); border:1px solid var(--hairline);
            border-radius:999px; padding:9px 16px; font-weight:650;
            box-shadow:var(--lift-1); cursor:pointer; }
 /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다. 단추로도 됩니다. */
-#mapzoombtns{ position:fixed; z-index:71; right:12px;
+#mapzoombtns{ position:fixed; z-index:1230; right:12px;
               bottom:calc(20px + env(safe-area-inset-bottom));
               display:flex; flex-direction:column; gap:8px; }
 #mapzoombtns button{ width:44px; height:44px; border-radius:14px;
