@@ -382,6 +382,36 @@ body.sheeton{ overflow:hidden; }
 .aichat #chat{ flex:1; overflow-y:auto; min-height:120px; max-height:none; }
 .aichat .aibar{ margin-top:12px; }
 
+/* ── 첫 화면 ─────────────────────────────────────────────────────────
+ * 흰 카드에 버튼 하나만 있으면 무슨 앱인지도 모르고,
+ * 왜 구글 계정을 줘야 하는지도 모릅니다. */
+.hello{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+        padding:26px 22px 24px; margin-bottom:12px; color:#fff;
+        background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
+        box-shadow:0 12px 28px rgba(90,63,240,.28); }
+.hello::after{ content:''; position:absolute; right:-60px; top:-80px;
+               width:220px; height:220px; border-radius:50%;
+               background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%); }
+.hello > *{ position:relative; z-index:1 }
+.hello .hi{ font-size:min(calc(25px * var(--ts)), 6.8vw); font-weight:750;
+            line-height:1.34; letter-spacing:calc(-.5px * var(--ts));
+            word-break:keep-all; text-shadow:0 2px 12px rgba(0,0,0,.18); }
+.hello .hisub{ font-size:min(calc(13.5px * var(--ts)), 3.8vw); line-height:1.6;
+               opacity:.94; margin-top:10px; word-break:keep-all; }
+
+/* 무엇을 받고 무엇을 안 받는지. 불안한 자리라 눈에 들어와야 합니다. */
+.safe{ list-style:none; margin:14px 0 0; padding:12px 14px;
+       background:var(--parchment); border-radius:var(--r-md); }
+.safe li{ position:relative; padding-left:20px; margin:0;
+          font-size:calc(12.5px * var(--ts)); line-height:1.62;
+          color:var(--ink-48); word-break:keep-all; }
+.safe li + li{ margin-top:7px }
+.safe li b{ color:var(--ink); font-weight:650 }
+.safe li::before{ content:''; position:absolute; left:2px; top:.52em;
+                  width:9px; height:5px; border-left:2px solid var(--primary);
+                  border-bottom:2px solid var(--primary);
+                  transform:rotate(-45deg); }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -578,6 +608,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
   <!-- 로그인 전 -->
   <section id="signedout" class="hide">
+    <!-- 여행앱답게 첫 화면부터 보여줍니다. 흰 카드에 버튼 하나만 있으면
+         무슨 앱인지도 모르고 왜 구글 계정을 줘야 하는지도 모릅니다. -->
+    <div class="hello">
+      <div class="hi">여행을 짜고,<br>다녀온 곳을 남기세요</div>
+      <div class="hisub">AI가 첫날부터 마지막 날까지 짜드립니다.<br>
+        다녀온 도시는 지도에 깃발로 쌓입니다.</div>
+    </div>
+
     <div class="card">
       <h2>시작하기</h2>
       <!-- 초대 링크로 들어왔으면 무슨 여행인지 먼저 보여줍니다.
@@ -591,7 +629,15 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 7l7.2 5.6c4.2-3.9 6.6-9.6 6.6-16.4z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.9-6.2C1 16.3 0 20 0 24s1 7.7 2.6 10.8l7.9-6.2z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.6 2.2-8.7 2.2-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.2C6.5 42.6 14.6 48 24 48z"/></svg>
         구글로 계속하기
       </button>
-      <p class="empty" style="padding-bottom:0">여행을 만들고 일행을 부르려면 로그인이 필요합니다.</p>
+      <!-- 구글 계정을 넘기는 일이라 불안해하는 것이 당연합니다.
+           무엇을 받고 무엇을 안 받는지 먼저 적습니다.
+           없는 기능을 약속하지는 않습니다 — 탈퇴는 아직 없으므로 안 씁니다. -->
+      <ul class="safe">
+        <li><b>비밀번호는 받지 않습니다.</b> 구글이 대신 확인하고 우리는 결과만 받습니다.</li>
+        <li><b>이름과 이메일, 프로필 사진</b>만 받습니다. 그 외에는 아무것도 안 가져옵니다.</li>
+        <li>여행과 일정은 <b>나와 내가 부른 일행만</b> 봅니다.</li>
+        <li>도시에 남긴 <b>한줄평은 이름과 함께 공개</b>됩니다. 별점만 매기면 공개되지 않습니다.</li>
+      </ul>
     </div>
   </section>
 
@@ -1390,7 +1436,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b82</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b83</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -5267,6 +5313,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
