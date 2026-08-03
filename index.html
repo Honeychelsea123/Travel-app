@@ -395,6 +395,13 @@ body.sheeton{ overflow:hidden; }
    비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
 .mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
           aspect-ratio:1000 / 387; }
+/* 크게 보기 — 화면을 다 덮습니다. 세로가 길어져 대륙을 파고들며 볼 수 있습니다. */
+.mapwrap.big{ position:fixed; inset:0; z-index:70; border-radius:0;
+              aspect-ratio:auto; background:var(--canvas); }
+#mapclose{ position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px;
+           z-index:71; background:var(--canvas); border:1px solid var(--hairline);
+           border-radius:999px; padding:9px 16px; font-weight:650;
+           box-shadow:var(--lift-1); cursor:pointer; }
 /* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
 #worldsvg{ width:100%; height:100%; display:block; touch-action:none;
            cursor:grab; user-select:none; }
@@ -952,6 +959,20 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         </div>
       </div>
 
+      <!-- 보관함 — 프로필의 숫자나 보관함을 누르면 여기서 펼칩니다.
+           기록 탭으로 보내면 그 탭이 걸린 목록으로 바뀌어,
+           새로 별점 매길 곳을 찾을 수가 없었습니다. -->
+      <div id="shelfpane" class="hide">
+        <div class="card" style="padding:10px 12px">
+          <button class="ghost" id="shelfback" style="padding-left:0">← 프로필</button>
+        </div>
+        <div class="card">
+          <h2><span class="grow" id="shelfhead">보관함</span>
+            <span class="val" id="shelfcount"></span></h2>
+          <div id="shelflist"><div class="empty">불러오는 중…</div></div>
+        </div>
+      </div>
+
       <!-- 세계지도 — 프로필의 "세계지도에서 보기"로 들어옵니다 -->
       <div id="mappane" class="hide">
         <div class="card" style="padding:10px 12px">
@@ -968,6 +989,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           </div>
           <!-- 대륙 칩과 안내 문구는 뺐습니다. 대륙으로 당겨 보는 것은 아래
                "대륙별" 줄을 누르면 되고, 손가락 안내는 눌러 보면 압니다. -->
+          <button class="ghost" id="mapbig" style="width:100%; margin-top:8px">
+            크게 보기</button>
         </div>
 
         <div class="card"><h2>전체</h2><div id="m_total"></div></div>
@@ -1367,7 +1390,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b81</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b82</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -3258,6 +3281,26 @@ function setMapView(name){
 /* 두 번 두드리면 세계 전체로 돌아옵니다. 대륙 칩을 뺐으니 되돌릴 길이 있어야 합니다. */
 $('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
 
+/* 크게 보기 — 지도만 화면을 다 덮습니다. 손바닥만 한 지도에서는
+   대륙을 파고들며 보기가 어렵습니다. */
+$('mapbig').addEventListener('click', () => {
+  const w = document.querySelector('.mapwrap');
+  w.classList.add('big');
+  document.body.classList.add('sheeton');        /* 뒤가 밀리지 않게 */
+  if (!$('mapclose')){
+    const b = document.createElement('button');
+    b.id = 'mapclose'; b.textContent = '닫기';
+    b.onclick = () => {
+      w.classList.remove('big');
+      document.body.classList.remove('sheeton');
+      b.remove();
+      applyView();                                /* 원래 크기로 다시 맞춥니다 */
+    };
+    document.body.appendChild(b);
+  }
+  applyView();
+});
+
 /* ── 손가락과 휠 ─────────────────────────────────────────────────────
  * 대륙 칩만으로는 원하는 데를 못 봅니다. 끌어서 옮기고 오므려서 키웁니다.
  * viewBox 비율을 화면 비율과 같게 맞춰뒀으므로 화면 픽셀 하나가
@@ -3450,6 +3493,7 @@ $('mappane').addEventListener('click', e => {
 /* 톱니를 누르면 설정, 뒤로 누르면 프로필. 설정을 프로필에 다 늘어놓으면
    정작 보러 온 숫자가 아래로 밀립니다. */
 function showProfile(setting){
+  $('shelfpane').classList.add('hide');
   $('mappane').classList.add('hide');        /* 지도가 열려 있었으면 같이 닫습니다 */
   $('profpane').classList.toggle('hide', setting);
   $('setpane').classList.toggle('hide', !setting);
@@ -3462,10 +3506,94 @@ $('setback').addEventListener('click', () => showProfile(false));
 $('setview').addEventListener('click', e => {
   const b = e.target.closest('button[data-shelf]'); if (!b) return;
   if (b.dataset.shelf === 'trips'){ tripFilter = 'past'; return showApp('trips'); }
-  rateFilter = b.dataset.shelf;
-  document.querySelectorAll('#r_filter button').forEach(x =>
-    x.classList.toggle('on', x.dataset.rf === rateFilter));
-  showApp('rate');
+  openShelf(b.dataset.shelf);
+});
+
+/* ── 보관함 ──────────────────────────────────────────────────────────
+ * 기록 탭으로 보내면 그 탭이 걸린 목록으로 바뀝니다. 그러면 새로 매길 곳을
+ * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
+ * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
+const SHELF = { been:'가봤어요', want:'가보고 싶어요',
+                mine:'내가 매긴 곳', comment:'한줄평 남긴 곳' };
+
+async function openShelf(kind){
+  $('profpane').classList.add('hide');
+  $('mappane').classList.add('hide');
+  $('shelfpane').classList.remove('hide');
+  window.scrollTo({ top:0 });
+  if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
+  $('shelfhead').textContent = SHELF[kind] || '보관함';
+
+  await loadCities();
+  const [mine, vis, stats] = await Promise.all([
+    sb.from('city_ratings').select('city_id,stars,want,comment').eq('user_id', me.id),
+    sb.rpc('my_visited'),
+    sb.rpc('city_stats'),
+  ]);
+  myRates  = Object.fromEntries((mine.data || []).map(r => [r.city_id, r]));
+  visited  = new Set((vis.data || []).map(v => v.city_id));
+  cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
+
+  const list = (cities || []).filter(c => {
+    const r = myRates[c.id];
+    if (kind === 'been')    return visited.has(c.id);
+    if (kind === 'want')    return !!r?.want;
+    if (kind === 'mine')    return r?.stars != null;
+    if (kind === 'comment') return !!r?.comment;
+    return false;
+  }).sort((a, b) => (myRates[b.id]?.stars ?? -1) - (myRates[a.id]?.stars ?? -1)
+                    || a.name.localeCompare(b.name, 'ko'));
+
+  $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
+  $('shelflist').innerHTML = list.length
+    ? list.map(c => {
+        const r = myRates[c.id] || {};
+        return `<div class="rrow" data-cityopen="${esc(c.id)}">
+          ${c.image_url
+            ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy">`
+            : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
+          <div class="t"><b>${esc(c.name)}</b>
+            <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
+          <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
+          <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}">♡</button>
+        </div>` +
+        /* 한줄평은 줄 아래에 통째로 보여줍니다 — 별점만 봐서는 뭐라 썼는지 모릅니다. */
+        (r.comment ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
+           ${esc(r.comment)}</div>` : '');
+      }).join('')
+    : `<div class="empty">아직 없습니다.</div>`;
+}
+
+function closeShelf(fromPop){
+  if (!fromPop && history.state?.t2 === 'shelf'){ history.back(); return; }
+  $('shelfpane').classList.add('hide');
+  $('profpane').classList.remove('hide');
+  loadFootprint();                  /* 여기서 매긴 것이 숫자에 바로 반영되게 */
+}
+$('shelfback').addEventListener('click', () => closeShelf());
+
+/* 여기서도 별점을 고칠 수 있습니다. 기록 탭과 같은 방식입니다. */
+$('shelflist').addEventListener('click', async e => {
+  const st = e.target.closest('.st');
+  if (st){
+    const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
+    const box = st.getBoundingClientRect();
+    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const next = Number(myRates[cityId]?.stars) === v ? null : v;
+    paintStars(wrap, next, true);
+    markRated(st.closest('.rrow'), next);
+    await saveRate(cityId, { stars: next }, true);
+    return;
+  }
+  const w = e.target.closest('button[data-want]');
+  if (w){
+    const on = !myRates[w.dataset.want]?.want;
+    await saveRate(w.dataset.want, { want: on }, true);
+    w.classList.toggle('on', on);
+    return;
+  }
+  const row = e.target.closest('[data-cityopen]');
+  if (row) await openCity(row.dataset.cityopen);
 });
 
 /* AI 는 어디서든 한 번에 갑니다. 여행을 보고 있었으면 그 여행을 물어볼
@@ -4175,6 +4303,7 @@ window.addEventListener('popstate', () => {
   if (cityOpen) return closeCity(true);
   if (trip) return backToList(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
+  if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
   if (!$('mappane').classList.contains('hide')) return closeMap(true);
 });
 
@@ -5059,9 +5188,12 @@ async function render(session){
 
   const meta = me.user_metadata || {};
   $('mail').textContent = me.email || '';
-  $('name').textContent = meta.full_name || meta.name || (me.email||'').split('@')[0];
-  /* 우리 통에 올린 사진이 있으면 그것을 먼저 씁니다. 없으면 구글 것. */
-  const prof0 = await sb.from('profiles').select('avatar_url').eq('id', me.id).maybeSingle();
+  /* 우리 통에 올린 사진과 바꾼 이름을 먼저 씁니다. 없으면 구글 것.
+     이름을 구글 것만 보고 있어서, 바꿔도 다시 열면 되돌아왔습니다. */
+  const prof0 = await sb.from('profiles')
+    .select('avatar_url,display_name').eq('id', me.id).maybeSingle();
+  $('name').textContent = prof0.data?.display_name ||
+    meta.full_name || meta.name || (me.email||'').split('@')[0];
   myAvatar = prof0.data?.avatar_url || meta.avatar_url || meta.picture || '';
   if (myAvatar) $('avatar').src = myAvatar;
 
@@ -5120,7 +5252,12 @@ try {
   mark(0, true, '연결됨');
   mark(1, co.count >= 56 && ci.count >= 138 && gr.count === 4,
         `${co.count} · ${ci.count} · ${gr.count}`);
-} catch (e) { mark(0, false, '실패'); fail(e); }
+} catch (e) {
+  /* 시작할 때 도는 자체 점검입니다. 개발 중에 쓰려고 둔 것인데
+     실패하면 사용자 화면 맨 아래에 빨간 오류 상자가 계속 떠 있었습니다.
+     점검 줄에만 표시하고 화면은 건드리지 않습니다. */
+  mark(0, false, '실패: ' + (e?.message || e?.code || '알 수 없음'));
+}
 
 const { data:{ session } } = await sb.auth.getSession();
 await render(session);
@@ -5130,6 +5267,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
