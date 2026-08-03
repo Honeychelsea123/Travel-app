@@ -503,6 +503,37 @@ body.sheeton{ overflow:hidden; }
 .clegend b{ color:var(--ink); font-weight:600 }
 .clegend em{ font-style:normal; opacity:.7 }
 
+/* ── 일정 한 줄 ──────────────────────────────────────────────────────
+ * 메모를 통째로 뿌리면 안 읽힙니다. 접어 두고 누르면 이동·예상·설명으로
+ * 나눠 보여줍니다. 도쿄 앱에서 쓰던 방식입니다. */
+.ev + .ev{ border-top:1px solid var(--divider-soft); }
+.ev__row{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0;
+          align-items:flex-start; cursor:pointer; }
+.ev__chev{ align-self:center; color:var(--ink-48); flex:none;
+           transition:transform .22s; font-size:calc(18px * var(--ts)); }
+.ev.is-open .ev__chev{ transform:rotate(90deg); }
+.ev .when{ flex:none; width:50px; color:var(--ink-48); font-size:calc(13px * var(--ts));
+           font-variant-numeric:tabular-nums; padding-top:2px; }
+.ev .body{ flex:1; min-width:0; }
+.ev .body b{ display:block; }
+.ev .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+/* 노선 딱지 — 색은 그 도시 노선의 공식 색입니다 */
+.ln{ display:inline-block; margin-left:5px; padding:1px 7px; border-radius:var(--r-pill);
+     background:#888; color:#fff; font-size:calc(11px * var(--ts)); font-weight:600;
+     vertical-align:middle; white-space:nowrap; }
+
+.ev .detail{ display:none; padding:0 0 var(--s-sm) calc(50px + var(--s-sm)); }
+.ev.is-open .detail{ display:block; }
+.drow{ background:var(--parchment); border-radius:var(--r-sm);
+       padding:8px 12px; margin-bottom:6px; font-size:calc(13.5px * var(--ts));
+       line-height:1.5; color:var(--ink-80); }
+.drow b{ font-weight:600; color:var(--ink); margin-right:4px; }
+.dnote{ font-size:calc(13.5px * var(--ts)); line-height:1.5; color:var(--ink-80);
+        padding:3px 2px; }
+.dacts{ display:flex; align-items:center; gap:var(--s-md); margin-top:8px; }
+.dacts a{ color:var(--primary); font-size:calc(13px * var(--ts)); text-decoration:none; }
+.dacts button{ font-size:calc(13px * var(--ts)); padding:4px 2px; }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -1576,7 +1607,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b97</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b98</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1602,7 +1633,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', catFilter = '', aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', catFilter = '', editPlanId = null, transitLines = [], aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -4772,6 +4803,12 @@ async function loadLegs(){
     .eq('trip_id', trip.id).order('start_date');
   if (error) return fail(error, 'leg');
   legs = data || [];
+  /* 노선 딱지 색. 그 여행에 나오는 도시 것만 받습니다. */
+  const ids = [...new Set(legs.map(l => l.city_id).filter(Boolean))];
+  if (ids.length){
+    const r = await sb.from('transit_lines').select('name,color,dark_text').in('city_id', ids);
+    transitLines = r.data || [];
+  } else transitLines = [];
   drawLegs();
 }
 
@@ -5149,6 +5186,57 @@ function drawPlanMap(){
   setTimeout(() => lmap.invalidateSize(), 50);   /* 접혀 있다 펴지면 크기를 다시 잽니다 */
 }
 
+/* ── 메모 쪼개기 ─────────────────────────────────────────────────────
+ * 메모 한 덩어리를 그대로 뿌리면 읽히지 않습니다. 실제 메모는 이런 꼴입니다.
+ *   "🚇 이동방법: 신바시역 ➡️ [긴자선] 탑승 / 💰 교통비: 약 210엔 / 7번 출구 도보 4분"
+ * 슬래시로 자르되 괄호 안의 슬래시는 건드리지 않습니다.
+ * "이동방법:" "교통비:" 처럼 앞에 이름이 붙은 조각은 따로 모읍니다. */
+function splitParts(s){
+  const raw = String(s).split(/\s+\/\s+/), out = [];
+  let buf = '', depth = 0;
+  for (const piece of raw){
+    buf = buf ? buf + ' / ' + piece : piece;
+    depth += (piece.match(/[([]/g) || []).length - (piece.match(/[)\]]/g) || []).length;
+    if (depth <= 0){ out.push(buf); buf = ''; depth = 0; }
+  }
+  if (buf) out.push(buf);
+  return out;
+}
+function parseMemo(memo){
+  const out = { move:'', cost:'', notes:[] };
+  if (!memo) return out;
+  for (const part of splitParts(memo)){
+    /* 앞에 붙은 이모지와 기호를 걷어냅니다. */
+    const s = part.replace(/^[^가-힣A-Za-z0-9([]+/, '').trim();
+    if (!s) continue;
+    const m = s.match(/^([^:：]{1,16})\s*[:：]\s*([\s\S]+)$/);
+    if (m){
+      const k = m[1].replace(/\s/g, '');
+      if (/이동|가는법/.test(k) && !/비|요금|가격/.test(k)){
+        out.move = out.move ? out.move + ' · ' + m[2] : m[2]; continue;
+      }
+      if (/가격|비용|요금|교통비|입장료|점심|디저트|간식|커피|음료/.test(k)){
+        out.cost = out.cost ? out.cost + ' · ' + m[2] : m[2]; continue;
+      }
+    }
+    out.notes.push(s);
+  }
+  return out;
+}
+/* 화살표 이모지를 글자로 바꿉니다. 줄 안에서 크기가 들쭉날쭉해 보입니다. */
+const nice = s => String(s ?? '').replace(/\s*[➡→⇒]️?\s*/g, ' → ').replace(/\s{2,}/g, ' ').trim();
+
+/* 노선 딱지. 색은 transit_lines 에서 옵니다 — 도쿄 역 안내판과 같은 색입니다. */
+function lineChips(text){
+  const t = String(text || '');
+  let hit = (transitLines || []).filter(L => t.includes(L.name));
+  /* "세이부 신주쿠선"이 걸리면 "신주쿠선"은 버립니다 — 같은 노선을 두 번 세는 것입니다. */
+  hit = hit.filter(L => !hit.some(O => O !== L && O.name.includes(L.name)));
+  return hit.slice(0, 3).map(L =>
+    `<span class="ln" style="background:${esc(L.color)}${
+      L.dark_text ? '; color:#1c1c1e' : ''}">${esc(L.name)}</span>`).join('');
+}
+
 /* 분류 칩. 실제로 쓰인 분류만 내놓습니다 — 없는 칸을 눌러 빈 목록을 보게 할
    이유가 없습니다. */
 function drawCats(){
@@ -5224,18 +5312,52 @@ function drawPlans(){
                               : '<span style="opacity:.45">–</span>';
     /* 분류는 색으로 먼저 읽히게 합니다 — 메모를 안 읽어도 눈으로 찾게 됩니다. */
     const k = p.category ? 'k-' + p.category : '';
-    const sub = [p.memo, p.move_note].filter(Boolean).join(' · ');
-    html += `<div class="plan"><div class="when">${when}</div>
-      <span class="kdot ${esc(k)}"></span>
-      <div class="body"><b>${esc(p.title)}</b>
-        ${p.category ? `<span class="ktag ${esc(k)}">${esc(p.category)}</span>` : ''}
-        ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
-      ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-pact="del" data-id="${esc(p.id)}"
-                 style="color:var(--bad); align-self:start">×</button>`}</div>`;
+    const mm = parseMemo([p.memo, p.move_note].filter(Boolean).join(' / '));
+    /* 부제에는 분류와 값만. 자세한 것은 펼쳐야 나옵니다. */
+    const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null]
+                  .filter(Boolean).join(' · ');
+    const q = encodeURIComponent(p.title || '');
+    const open = openPlans.has(p.id);
+
+    html += `<div class="ev${open ? ' is-open' : ''}" data-ev="${esc(p.id)}">
+      <div class="ev__row">
+        <div class="when">${when}</div>
+        <span class="kdot ${esc(k)}"></span>
+        <div class="body"><b>${esc(p.title)}</b>
+          <span class="memo">${esc(sub)}${
+            /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
+            ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
+        <span class="ev__chev">›</span>
+      </div>
+      <div class="detail">
+        ${mm.move ? `<div class="drow"><b>이동</b> ${esc(nice(mm.move))}</div>` : ''}
+        ${mm.cost ? `<div class="drow"><b>예상</b> ${esc(nice(mm.cost))}</div>` : ''}
+        ${mm.notes.map(n => `<div class="dnote">${esc(nice(n))}</div>`).join('')}
+        <div class="dacts">
+          <a href="https://www.google.com/maps/search/?api=1&query=${q}"
+             target="_blank" rel="noopener">지도에서 보기</a>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=transit"
+             target="_blank" rel="noopener">길찾기</a>
+          ${trip.myRole === 'viewer' ? '' :
+            `<button class="ghost" data-pact="edit" data-id="${esc(p.id)}">수정</button>
+             <button class="ghost" data-pact="del" data-id="${esc(p.id)}"
+                     style="color:var(--bad); margin-left:auto">삭제</button>`}
+        </div>
+      </div>
+    </div>`;
   }
   $('plans').innerHTML = html;
 }
+
+/* 펼친 줄은 기억해 둡니다. 지우거나 고쳐서 다시 그려도 그대로 열려 있어야 합니다. */
+const openPlans = new Set();
+$('plans').addEventListener('click', e => {
+  if (e.target.closest('a, button')) return;      /* 링크와 버튼은 각자 일합니다 */
+  const row = e.target.closest('[data-ev]'); if (!row) return;
+  const id = row.dataset.ev;
+  if (openPlans.has(id)) openPlans.delete(id); else openPlans.add(id);
+  row.classList.toggle('is-open');
+});
 
 $('days').addEventListener('click', e => {
   const b = e.target.closest('.day'); if (!b) return;
@@ -5930,6 +6052,7 @@ async function handleJoin(){
 
 /* ── 일정 추가 · 삭제 ───────────────────────────────────────────── */
 $('addplanbtn').addEventListener('click', () => {
+  editPlanId = null; $('p_create').textContent = '넣기';
   $('plancard').classList.toggle('hide');
   if ($('plancard').classList.contains('hide')) return;
   $('p_date').value = pickedDay || trip.start_date;
@@ -5955,13 +6078,18 @@ $('p_create').addEventListener('click', async () => {
   const sameDay = plans.filter(p => p.date === date);
   const sort = sameDay.length ? Math.max(...sameDay.map(p => +p.sort_order)) + 1 : 0;
 
-  btn.disabled = true; btn.textContent = '넣는 중…';
-  const { data, error } = await sb.from('plans').insert({
-    trip_id: trip.id, title, date, sort_order: sort,
+  const row = {
+    title, date,
     start_time: st || null, end_time: et || null,
     category: $('p_cat').value || null,
-    memo: $('p_memo').value.trim() || null
-  }).select('id');
+    memo: $('p_memo').value.trim() || null,
+  };
+  btn.disabled = true; btn.textContent = editPlanId ? '고치는 중…' : '넣는 중…';
+  /* 고치는 중이면 그 줄만 바꿉니다. 새로 넣으면 같은 것이 두 개가 됩니다. */
+  const { data, error } = editPlanId
+    ? await sb.from('plans').update(row).eq('id', editPlanId).select('id')
+    : await sb.from('plans').insert({ trip_id: trip.id, sort_order: sort, ...row })
+        .select('id');
   btn.disabled = false; btn.textContent = '넣기';
 
   if (error) return fail(error, 'planform');
@@ -5970,6 +6098,7 @@ $('p_create').addEventListener('click', async () => {
 
   $('p_title').value = ''; $('p_memo').value = '';
   $('p_start').value = ''; $('p_end').value = '';
+  editPlanId = null;
   $('plancard').classList.add('hide');
   await loadPlans();
 });
@@ -5977,6 +6106,21 @@ $('p_create').addEventListener('click', async () => {
 $('plans').addEventListener('click', async e => {
   const b = e.target.closest('button[data-pact]'); if (!b) return;
   const id = b.dataset.id;
+
+  /* 고치기 — 일정 칸을 그 줄 내용으로 채워 엽니다. 새로 적게 하지 않습니다. */
+  if (b.dataset.pact === 'edit'){
+    const p = plans.find(x => x.id === id); if (!p) return;
+    $('addplanbtn').click();
+    $('p_title').value = p.title || '';
+    $('p_date').value  = p.date || '';
+    $('p_start').value = p.start_time ? p.start_time.slice(0,5) : '';
+    $('p_end').value   = p.end_time ? p.end_time.slice(0,5) : '';
+    $('p_cat').value   = p.category || '';
+    $('p_memo').value  = p.memo || '';
+    editPlanId = id;
+    $('p_create').textContent = '고치기';
+    return;
+  }
 
   if (b.dataset.armed !== '1'){          /* 확인창을 안 쓰는 이유는 목록 쪽과 같습니다 */
     arm(b, '정말 지울까요?'); return;
@@ -6108,6 +6252,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
