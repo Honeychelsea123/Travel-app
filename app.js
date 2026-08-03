@@ -4304,27 +4304,73 @@ async function loadPacking(){
   const { data, error } = await sb.from('packing')
     .select('id,title,done,assignee_id,category')
     .eq('trip_id', trip.id).is('deleted_at', null)
-    .order('done').order('created_at');
+    .order('sort_order').order('created_at');
   if (error){ $('packing').innerHTML = ''; return fail(error, 'pack'); }
 
   const done = data.filter(p => p.done).length;
   $('packcount').textContent = data.length ? `${done}/${data.length}` : '';
+  /* 다 채우는 맛이 있어야 계속 씁니다. */
+  $('packbar').classList.toggle('hide', !data.length);
+  $('packbar').firstElementChild.style.width =
+    data.length ? (done / data.length * 100).toFixed(1) + '%' : '0%';
+
   $('k_who').innerHTML = `<option value="">담당 없음</option>` + members
     .filter(m => !m.left_at)
     .map(m => `<option value="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</option>`).join('');
+  if (!$('k_cat').options.length)
+    $('k_cat').innerHTML = PACK_CATS.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join('');
 
-  $('packing').innerHTML = data.length ? data.map(p =>
-    `<div class="row"><input type="checkbox" data-pk="${esc(p.id)}"
-        ${p.done ? 'checked' : ''} ${trip.myRole === 'viewer' ? 'disabled' : ''}
-        style="width:auto; flex:none; margin:0">
-      <span class="label"${p.done ? ' style="opacity:.45; text-decoration:line-through"' : ''}>
-        ${esc(p.title)}</span>
-      ${p.assignee_id ? `<span class="badge">${esc(nameOf(p.assignee_id))}</span>` : ''}
-      ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-kact="del" data-id="${esc(p.id)}"
-                 style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
+  /* 빈 목록에서 하나씩 적기 시작하는 것이 제일 귀찮습니다. */
+  $('k_seed').classList.toggle('hide', data.length > 0 || trip.myRole === 'viewer');
+
+  /* 분류로 묶습니다. 스무 개가 한 줄로 늘어서면 뭘 챙겼는지 안 보입니다.
+     칸은 처음부터 있었는데 화면이 안 쓰고 있었습니다. */
+  const g = {};
+  data.forEach(p => (g[p.category || '기타'] = g[p.category || '기타'] || []).push(p));
+  const order = PACK_CATS.filter(k => g[k])
+    .concat(Object.keys(g).filter(k => !PACK_CATS.includes(k)));
+
+  $('packing').innerHTML = data.length
+    ? order.map(k => `<div class="daysep">${esc(k)}
+         <span class="dstat">${g[k].filter(p => p.done).length}/${g[k].length}</span></div>` +
+        g[k].map(p =>
+          `<div class="row"><input type="checkbox" data-pk="${esc(p.id)}"
+              ${p.done ? 'checked' : ''} ${trip.myRole === 'viewer' ? 'disabled' : ''}
+              style="width:auto; flex:none; margin:0">
+            <span class="label"${p.done ? ' style="opacity:.45; text-decoration:line-through"' : ''}>
+              ${esc(p.title)}</span>
+            ${p.assignee_id ? `<span class="badge">${esc(nameOf(p.assignee_id))}</span>` : ''}
+            ${trip.myRole === 'viewer' ? '' :
+              `<button class="ghost" data-kact="del" data-id="${esc(p.id)}"
+                       style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
+      ).join('')
     : '<div class="empty">챙길 것을 적어두세요.</div>';
 }
+
+/* 분류는 짐 싸는 순서대로 둡니다 — 없으면 못 가는 것부터. */
+const PACK_CATS = ['서류', '전자기기', '옷', '세면·약', '기타'];
+/* 어느 여행에나 해당하는 것만 넣습니다. 나라별로 다른 것(어댑터 모양 같은)은
+   AI 에게 물어보는 편이 낫습니다. */
+const PACK_SEED = [
+  ['서류', ['여권', '항공권 · 탑승권', '숙소 예약 확인서', '여행자보험', '해외 되는 카드']],
+  ['전자기기', ['휴대폰 충전기', '보조배터리', '멀티 어댑터', '이어폰']],
+  ['옷', ['속옷 · 양말', '잠옷', '겉옷', '편한 신발']],
+  ['세면·약', ['세면도구', '상비약', '자외선 차단제']],
+];
+
+$('k_seed').addEventListener('click', async () => {
+  const b = $('k_seed');
+  b.disabled = true; b.textContent = '넣는 중…';
+  const rows = PACK_SEED.flatMap(([cat, items], gi) =>
+    items.map((title, i) => ({ trip_id: trip.id, category: cat, title,
+                               sort_order: gi * 100 + i })));
+  const r = await sb.from('packing').insert(rows).select('id');
+  b.disabled = false; b.textContent = '기본 준비물 한 번에 넣기';
+  if (r.error) return fail(r.error, 'pack');
+  if (!r.data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'pack');
+  toast(`${r.data.length}개를 넣었어요`);
+  await loadPacking();
+});
 
 $('k_add').addEventListener('click', async () => {
   const t = $('k_title').value.trim();
@@ -4333,6 +4379,7 @@ $('k_add').addEventListener('click', async () => {
   $('k_add').disabled = true;
   const { data, error } = await sb.from('packing').insert({
     trip_id: trip.id, title: t, assignee_id: $('k_who').value || null,
+    category: $('k_cat').value || null,
   }).select('id');
   $('k_add').disabled = false;
   if (error) return fail(error, 'pack');
