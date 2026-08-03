@@ -1468,7 +1468,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b87</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b88</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -2650,7 +2650,31 @@ function renderAiCard(){
  * 줄 모양은 기록 탭과 같게 맞춥니다.
  * 전부 받아오면 무거우니 임의의 구간에서 스무 곳만 집어 씁니다. */
 const QUIZ_ROWS = 5;
-let quizPool = [], quizFilling = false;
+let quizPool = [], quizFilling = false, quizFilled = 0;
+
+/* 처음 보이는 다섯 곳이 스플리트 · 브뤼헤 · 크레타뿐이면
+   "나 이런 데 안 가봤는데" 하고 바로 닫습니다.
+   누구나 이름은 아는 곳을 먼저 내보내고, 다른 도시 보기를 누를수록
+   생소한 곳이 나오게 합니다. 유행이 아니라 인지도 기준입니다. */
+const FAMOUS = new Set([
+  'seoul','busan','jeju','gyeongju','jeonju','gangneung','sokcho',
+  'tokyo','osaka','kyoto','fukuoka','sapporo','okinawa','nagoya','hakone','nara',
+  'beijing','shanghai','xian','hongkong','macau','taipei','qingdao',
+  'bangkok','chiangmai','phuket','pattaya','singapore','kualalumpur','bali','jakarta',
+  'hanoi','hochiminh','danang','nhatrang','phuquoc','siemreap','manila','cebu','boracay',
+  'guam','saipan','male','kathmandu','delhi','mumbai','agra','jaipur','colombo',
+  'dubai','abudhabi','doha','istanbul','cappadocia','cairo','telaviv','petra',
+  'paris','nice','london','edinburgh','dublin','rome','venice','florence','milan','naples',
+  'barcelona','madrid','seville','granada','lisbon','porto','amsterdam','brussels',
+  'berlin','munich','frankfurt','prague','vienna','salzburg','budapest','zurich',
+  'interlaken','lucerne','zermatt','copenhagen','stockholm','helsinki','oslo','reykjavik',
+  'athens','santorini','dubrovnik','krakow','warsaw',
+  'newyork','losangeles','sanfrancisco','lasvegas','honolulu','seattle','chicago',
+  'boston','washington','orlando','miami','toronto','vancouver','banff',
+  'mexicocity','cancun','rio','buenosaires','lima','cusco',
+  'sydney','melbourne','goldcoast','brisbane','cairns','auckland','queenstown',
+  'capetown','marrakech','nairobi',
+]);
 
 async function fillQuiz(){
   if (quizPool.length >= QUIZ_ROWS || quizFilling) return;
@@ -2672,6 +2696,12 @@ async function fillQuiz(){
       const j = Math.floor(Math.random() * (i + 1));
       [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+    /* 처음 채울 때만 유명한 곳을 앞으로 당깁니다. 안에서는 여전히 무작위라
+       열 때마다 다른 도시가 나옵니다. 다 보고 나면 다음부터는 치우침 없이
+       뽑히므로, 다른 도시 보기를 누를수록 생소한 곳이 나옵니다. */
+    if (!quizFilled)
+      pool.sort((a, b) => (FAMOUS.has(b.id) ? 1 : 0) - (FAMOUS.has(a.id) ? 1 : 0));
+    quizFilled++;
     quizPool = quizPool.concat(pool.slice(0, 40));
   } finally { quizFilling = false; }
 }
@@ -5443,6 +5473,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
