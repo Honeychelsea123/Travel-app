@@ -78,10 +78,24 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: '로그인이 필요합니다.' }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const { trip_id, message, mode, prefs } = body;
+    const { trip_id, message, mode, prefs, image } = body;
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
     const draft = mode === 'draft';
-    if (!draft && (!message || !String(message).trim()))
+
+    // 사진. 간판·메뉴판·티켓을 찍어 물어보는 자리입니다.
+    // 화면에서 이미 긴 쪽 1024px JPEG 으로 줄여 보냅니다. 여기서는 크기만 다시 봅니다 —
+    // 화면 코드는 누구나 고칠 수 있으니 서버에서도 막아야 합니다.
+    let shot: { mimeType: string; data: string } | null = null;
+    if (image?.data) {
+      if (typeof image.data !== 'string' || image.data.length > 3_000_000)
+        return json({ error: '사진이 너무 큽니다.' }, 400);
+      const mt = String(image.mime ?? 'image/jpeg');
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(mt))
+        return json({ error: '지원하지 않는 사진 형식입니다.' }, 400);
+      shot = { mimeType: mt, data: image.data };
+    }
+
+    if (!draft && !shot && (!message || !String(message).trim()))
       return json({ error: '물어볼 말을 적어주세요.' }, 400);
     if (draft && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
@@ -223,9 +237,13 @@ Deno.serve(async (req) => {
       '  로마 일정에 피렌체 식당을 넣지 않는다.',
       '- 예약번호 · 주소 · 전화번호를 새로 지어내지 않는다.',
       '',
+      shot ? '- 사진이 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n' +
+             '  글자가 흐려서 못 읽으면 못 읽는다고 한다.' : '',
+      '',
       '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
       '{',
       '  "reply": "사람에게 할 말. 마크다운 써도 된다.",',
+      '  "sources": ["plans","expenses","legs","trip","general" 중 실제로 근거로 삼은 것만],',
       '  "places": [',
       '    { "name":"한국어 이름", "name_local":"현지 표기", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
       '      "lat":숫자, "lng":숫자, "why":"한 줄 이유" }',
@@ -242,6 +260,12 @@ Deno.serve(async (req) => {
       '- 좌표는 아는 곳만 넣는다. 모르면 null 로 둔다. 지어낸 좌표는 넣지 않는다.',
       '- 날짜는 위 구간을 보고 그 도시에 맞는 날로 넣는다.',
       '- 한 번에 5개를 넘기지 않는다.',
+      '',
+      'sources 규칙 — 이건 사용자에게 그대로 보여준다. 정확해야 한다:',
+      '- 아래 [일정] 을 보고 답했으면 "plans", [최근 지출] 이면 "expenses",',
+      '  [구간] 이면 "legs", [여행] 줄이면 "trip" 을 넣는다.',
+      '- 자료에 없고 네가 원래 알던 것으로 답한 부분이 있으면 "general" 을 반드시 넣는다.',
+      '  사용자는 이걸 보고 직접 확인할지 정한다. 숨기면 안 된다.',
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
 
@@ -256,7 +280,11 @@ Deno.serve(async (req) => {
       : [
           { role: 'user', parts: [{ text: system }] },
           { role: 'model', parts: [{ text: '알겠습니다. 자료를 보고 답하겠습니다.' }] },
-          { role: 'user', parts: [{ text: String(message) }] },
+          // 사진은 물음과 같은 차례에 넣습니다. 사진이 먼저 오면 모델이 잘 봅니다.
+          { role: 'user', parts: [
+              ...(shot ? [{ inlineData: shot }] : []),
+              { text: String(message ?? '이 사진에 대해 알려줘.') },
+            ] },
         ];
 
     let r = await callGemini(MODEL, key, contents);
@@ -274,7 +302,8 @@ Deno.serve(async (req) => {
     }
 
     // JSON 을 못 받아도 말은 전합니다. 형식이 깨졌다고 답까지 버릴 이유는 없습니다.
-    let out: { reply?: string; places?: unknown[]; actions?: unknown[] } = {};
+    let out: { reply?: string; places?: unknown[]; actions?: unknown[];
+               sources?: unknown[] } = {};
     try { out = JSON.parse(raw); } catch { out = { reply: raw }; }
 
     // ── 안전장치 (문서 7장) ──
@@ -330,9 +359,15 @@ Deno.serve(async (req) => {
       }))
       .filter((a) => a.title);
 
+    // 근거는 정해둔 다섯 가지만 통과시킵니다. 모델이 아무 말이나 적어 오면
+    // 사용자는 그게 확인된 것인 줄 압니다.
+    const SRC = ['plans', 'expenses', 'legs', 'trip', 'general'];
+    const sources = [...new Set((Array.isArray(out.sources) ? out.sources : [])
+      .map((s) => String(s)).filter((s) => SRC.includes(s)))];
+
     return json({
       reply: String(out.reply ?? raw).slice(0, 4000),
-      places, actions, used: take.used, limit: take.limit,
+      places, actions, sources, used: take.used, limit: take.limit,
       // 어느 날이 비었는지는 화면에서 알려줍니다. 다시 짜달라고 할지 사용자가 정합니다.
       days: draft ? days : undefined,
     });

@@ -75,6 +75,98 @@ function fail(e, where){
     : (e && (e.message || e.error_description || e.hint)) || JSON.stringify(e);
 }
 
+/* ── 오프라인 · 낙관적 저장 ─────────────────────────────────────────
+ * 여행지에서 데이터가 안 터지면 지금까지는 아무것도 못 했습니다.
+ * 이 층이 그 사이에 들어갑니다.
+ *
+ *   1. 저장을 보내본다
+ *   2. 네트워크 때문에 실패하면 큐에 쌓고 성공한 척한다 (화면은 이미 바뀐 뒤)
+ *   3. 연결이 돌아오면 쌓인 것을 순서대로 흘려보낸다
+ *
+ * 성공한 척해도 되는 것은 **네트워크 실패뿐**입니다.
+ * 권한(RLS)이나 형식 오류는 다시 보내도 똑같이 실패하므로 그대로 알려줍니다 —
+ * 여기서 삼키면 사용자는 저장된 줄 알고 여행을 갑니다.
+ *
+ * 큐는 localStorage 에 둡니다. 앱을 껐다 켜도 남아야 합니다. */
+const QKEY = 't2:queue';
+let queue = [];
+try { queue = JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { queue = []; }
+const qsave = () => { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch {} };
+
+/* 네트워크가 끊겨서 실패한 것인지 가려냅니다.
+   supabase-js 는 연결이 안 되면 fetch 의 TypeError 를 그대로 던집니다. */
+function isOffline(err){
+  if (!navigator.onLine) return true;
+  const m = String(err?.message || err || '');
+  return /Failed to fetch|NetworkError|Load failed|network|timeout|ECONN/i.test(m);
+}
+
+/* 저장 한 건. table·action·payload 만 남기면 나중에 그대로 재생할 수 있습니다. */
+async function send(job){
+  const q = sb.from(job.table);
+  if (job.action === 'insert') return await q.insert(job.row).select('id');
+  if (job.action === 'update') return await q.update(job.row).eq('id', job.id).select('id');
+  if (job.action === 'delete')
+    return await q.update({ deleted_at: new Date().toISOString() })
+                  .eq('id', job.id).select('id');
+  throw new Error('모르는 동작: ' + job.action);
+}
+
+/* 화면에서 부르는 쪽. 성공하면 {ok:true}, 큐에 쌓였으면 {ok:true, queued:true}. */
+async function write(job){
+  try {
+    const r = await send(job);
+    if (r.error) throw r.error;
+    if (!r.data?.length) return { ok:false, why:'아무것도 저장되지 않았어요 (0건). 권한을 확인해주세요.' };
+    return { ok:true, id:r.data[0].id };
+  } catch (e){
+    if (!isOffline(e)) return { ok:false, why:e };
+    queue.push(job); qsave(); drawOffbar();
+    return { ok:true, queued:true };
+  }
+}
+
+let flushing = false;
+async function flushQueue(){
+  if (flushing || !queue.length || !navigator.onLine) return;
+  flushing = true;
+  drawOffbar();
+  while (queue.length){
+    const job = queue[0];
+    try {
+      const r = await send(job);
+      if (r.error) throw r.error;
+      queue.shift();                       /* 보냈으면 뺍니다 */
+    } catch (e){
+      if (isOffline(e)) break;             /* 또 끊겼습니다. 다음 기회에 이어서 */
+      /* 네트워크가 아닌 이유로 실패한 것은 다시 보내도 같습니다.
+         무한히 붙잡고 있으면 뒤에 쌓인 것까지 못 나갑니다. 버리고 알립니다. */
+      queue.shift();
+      toast(`저장 하나가 실패했어요: ${job.table} · ${e?.message || e}`);
+    }
+    qsave();
+  }
+  flushing = false;
+  drawOffbar();
+  /* 큐가 다 나갔으면 서버 쪽 진짜 값으로 화면을 맞춥니다. */
+  if (!queue.length && trip && !$('listview').classList.contains('hide')) await loadPlans();
+}
+
+function drawOffbar(){
+  const bar = $('offbar'); if (!bar) return;
+  const off = !navigator.onLine, n = queue.length;
+  bar.classList.toggle('hide', !off && !n);
+  bar.textContent = off
+    ? (n ? `오프라인 · 저장할 것 ${n}건을 들고 있어요` : '오프라인 · 지금 보고 있는 것은 마지막으로 받아둔 내용이에요')
+    : (n ? `보내는 중… 남은 것 ${n}건` : '');
+}
+addEventListener('online',  () => { drawOffbar(); flushQueue(); });
+addEventListener('offline', drawOffbar);
+
+/* 서비스 워커. 이게 있어야 비행기모드에서 앱이 열립니다. */
+if ('serviceWorker' in navigator)
+  addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+
 /* ── 초성 ───────────────────────────────────────────────────────────
  * 'ㄷㅋ' 로 도쿄를 찾게 합니다. 한글 음절 코드에서 첫 자음만 떼어냅니다. */
 const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ',
@@ -530,28 +622,117 @@ function drawChats(rows){
         <div class="txt">${md(m.content)}</div></div>`).join('')
     : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
   $('chat').scrollTop = $('chat').scrollHeight;
+  drawQasks();                     /* 대화가 생기면 빠른 질문은 물러납니다 */
 }
 
 $('ai_msg').addEventListener('keydown', e => {
   if (e.key === 'Enter'){ e.preventDefault(); $('ai_send').click(); }
 });
 
+/* ── 빠른 질문 ──────────────────────────────────────────────────────
+ * 빈 입력칸 앞에서 사람들은 아무것도 안 씁니다. 뭘 물어도 되는지 모르니까요.
+ * 여행을 골랐을 때와 아닐 때 물어볼 만한 것이 다릅니다. */
+const QASK_TRIP = ['둘째 날이 너무 빡빡한가요?', '비 오면 뭘 하죠?',
+                   '근처에 갈 만한 곳 알려줘', '빠진 게 있을까요?'];
+const QASK_FREE = ['3박 4일 어디가 좋을까요?', '겨울에 따뜻한 곳 추천해줘',
+                   '뭘 챙겨야 할까요?', '환전은 어디서 하죠?'];
+function drawQasks(){
+  const list = $('ai_trip').value ? QASK_TRIP : QASK_FREE;
+  /* 대화가 이미 있으면 안 보입니다 — 자리만 차지합니다. */
+  const empty = !!$('chat').querySelector('.empty');
+  $('qasks').classList.toggle('hide', !empty);
+  $('qasks').innerHTML = empty
+    ? list.map(q => `<button class="qask">${esc(q)}</button>`).join('') : '';
+}
+$('qasks').addEventListener('click', e => {
+  const b = e.target.closest('.qask'); if (!b) return;
+  $('ai_msg').value = b.textContent;
+  $('ai_send').click();
+});
+
+/* ── 사진 첨부 ──────────────────────────────────────────────────────
+ * 간판·메뉴판·티켓을 찍어 물어보는 자리입니다. 글로 옮겨 적는 것보다 빠릅니다.
+ * 그대로 보내면 4MB 짜리가 올라갑니다. 로밍에서 그건 안 됩니다.
+ * 긴 쪽을 1024 로 줄이고 JPEG 로 다시 굽습니다 — 글자를 읽을 만큼은 남습니다.
+ * 프로필 사진용 shrink 를 쓰지 않는 이유는 그건 정사각으로 잘라내기 때문입니다.
+ * 메뉴판이 잘리면 물어볼 것이 사라집니다. */
+let aiShot = null;                       /* {mime, data(base64)} */
+
+function fitJpeg(file, max = 1024){
+  return new Promise((ok, no) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width  = Math.round(img.width  * s);
+      cv.height = Math.round(img.height * s);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      /* dataURL 은 "data:image/jpeg;base64,...." 입니다. 쉼표 뒤가 알맹이입니다. */
+      const url = cv.toDataURL('image/jpeg', 0.82);
+      ok({ mime:'image/jpeg', data:url.slice(url.indexOf(',') + 1), url });
+    };
+    img.onerror = () => no(new Error('사진을 읽지 못했어요.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+$('ai_cam').addEventListener('click', () => $('ai_file').click());
+$('ai_shotx').addEventListener('click', () => { aiShot = null; drawShot(); });
+function drawShot(){
+  $('ai_shotwrap').classList.toggle('hide', !aiShot);
+  if (aiShot) $('ai_shot').src = aiShot.url;
+}
+$('ai_file').addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  e.target.value = '';                   /* 같은 사진을 또 골라도 걸리게 */
+  if (!f) return;
+  $('aierr').classList.add('hide');
+  try { aiShot = await fitJpeg(f); } catch (err){ return fail(err, 'ai'); }
+  /* 여기서도 너무 크면 함수가 거절합니다. 대략 1.4배로 부풀어 오릅니다. */
+  if (aiShot.data.length > 2_600_000){ aiShot = null; return fail('사진이 너무 커요.', 'ai'); }
+  drawShot();
+});
+
+/* ── 출처 ───────────────────────────────────────────────────────────
+ * AI 가 무엇을 보고 답했는지 답니다. 인터넷 검색이 아니라 **이 앱의 자료** 중
+ * 무엇을 근거로 삼았는지입니다 — 그건 우리가 확인할 수 있습니다.
+ * "일반지식"이 붙었다면 우리가 확인해 준 것이 아무것도 없다는 뜻입니다. */
+const SRC_KO = { plans:'이 여행 일정', expenses:'지출 기록', legs:'여행 구간',
+                 trip:'여행 정보', general:'일반 지식 — 직접 확인이 필요해요' };
+function drawSources(list){
+  const box = $('aisrc'); if (!box) return;
+  const arr = (Array.isArray(list) ? list : []).filter(s => SRC_KO[s]);
+  box.classList.toggle('hide', !arr.length);
+  box.innerHTML = arr.length
+    ? '<b>근거</b>' + arr.map(s =>
+        `<span class="srcchip${s === 'general' ? ' warn' : ''}">${esc(SRC_KO[s])}</span>`).join('')
+    : '';
+}
+
 $('ai_send').addEventListener('click', async () => {
-  const msg = $('ai_msg').value.trim();
+  const shot = aiShot;
+  /* 사진만 보내도 됩니다. "이거 뭐야?"를 매번 타이핑하게 할 이유가 없습니다. */
+  const msg = $('ai_msg').value.trim() || (shot ? '이 사진에 대해 알려줘.' : '');
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
   $('ai_msg').value = ''; $('cards').innerHTML = '';
+  aiShot = null; drawShot();
+  $('aisrc').classList.add('hide');
   $('ai_send').disabled = true; $('ai_send').textContent = '…';
 
   /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다.
-     여행을 안 골랐으면 trip_id 를 비워 둡니다 — 그것도 남습니다 (029). */
+     여행을 안 골랐으면 trip_id 를 비워 둡니다 — 그것도 남습니다 (029).
+     사진 자체는 저장하지 않습니다 — 대화 기록이 금방 수십 MB 가 됩니다. */
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
-                                  role: 'user', content: msg });
+                                  role: 'user',
+                                  content: (shot ? '[사진] ' : '') + msg });
   await loadChats(tripId);
 
   const { data, error } = await sb.functions.invoke('chat',
-    { body: { trip_id: tripId || null, message: msg } });
+    { body: { trip_id: tripId || null, message: msg,
+              image: shot ? { mime: shot.mime, data: shot.data } : undefined } });
 
   $('ai_send').disabled = false; $('ai_send').textContent = '보내기';
 
@@ -568,6 +749,7 @@ $('ai_send').addEventListener('click', async () => {
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
                                   role: 'model', content: data.reply });
   await loadChats(tripId);
+  drawSources(data.sources);
   drawCards(data);
 });
 
@@ -577,12 +759,20 @@ $('ai_send').addEventListener('click', async () => {
  * 남겨두면 이미 담은 것을 또 담게 되고, 무엇이 최신인지 헷갈립니다. */
 function drawCards(d){
   const acts = d?.actions || [], places = d?.places || [];
+  lastTake = [];                    /* 새 제안이 나오면 되돌릴 대상도 새로 시작합니다 */
   if (!acts.length && !places.length){ $('cards').innerHTML = ''; return; }
 
   const far = x => x.lat == null ? '<span class="val">좌표 없음</span>' : '';
   suggested = { actions: acts, places };
 
+  /* 하나씩 누르게 하면 제안이 다섯이면 다섯 번을 누릅니다. 초안은 서른 번입니다.
+     한 번에 담고, 아니다 싶으면 방금 담은 것만 되돌립니다. */
   $('cards').innerHTML =
+    (acts.length + places.length > 1
+      ? `<div class="takeall">
+           <button class="small" data-takeall="1">이 ${acts.length + places.length}개 다 담기</button>
+           <button class="ghost hide" id="undotake">방금 담은 것 되돌리기</button>
+         </div>` : '') +
     (acts.length ? `<div class="daysep">일정으로 넣기</div>` : '') +
     acts.map((a, i) => {
       const k = a.category ? 'k-' + a.category : '';
@@ -606,36 +796,102 @@ function drawCards(d){
     }).join('');
 }
 
-$('cards').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-take]'); if (!b) return;
-  const tripId = $('ai_trip').value;
-  const i = +b.dataset.i;
-  b.disabled = true; b.textContent = '담는 중…';
+/* 방금 담은 것들. 되돌리기가 이걸 봅니다.
+   담을 때마다 새로 시작합니다 — 열 번 전에 담은 것까지 지우면 그건 사고입니다. */
+let lastTake = [];
 
-  let r;
-  if (b.dataset.take === 'a'){
+/* 카드 한 장을 담습니다. 담긴 줄의 id 를 돌려줍니다 (되돌리기용). */
+async function takeCard(kind, i, tripId){
+  if (kind === 'a'){
     const a = suggested.actions[i];
     /* 같은 날 맨 뒤로. 좌표가 있으면 같이 넣습니다 — 이동 시간 검사의 재료입니다. */
     const same = plans.filter(p => p.date === a.date);
-    r = await sb.from('plans').insert({
+    const r = await sb.from('plans').insert({
       trip_id: tripId, date: a.date, title: a.title,
       start_time: a.start_time || null, category: a.category,
       memo: a.memo, lat: a.lat, lng: a.lng,
       sort_order: same.length ? Math.max(...same.map(p => +p.sort_order)) + 1 : 0,
     }).select('id');
-  } else {
-    const p = suggested.places[i];
-    r = await sb.from('candidates').insert({
-      trip_id: tripId, title: p.name, title_local: p.name_local,
-      category: p.category, memo: p.why, lat: p.lat, lng: p.lng,
-      source: 'ai',
-    }).select('id');
+    if (r.error) throw r.error;
+    if (!r.data?.length) throw new Error('저장되지 않았어요 (0건).');
+    return { table:'plans', id:r.data[0].id };
+  }
+  const p = suggested.places[i];
+  const r = await sb.from('candidates').insert({
+    trip_id: tripId, title: p.name, title_local: p.name_local,
+    category: p.category, memo: p.why, lat: p.lat, lng: p.lng,
+    source: 'ai',
+  }).select('id');
+  if (r.error) throw r.error;
+  if (!r.data?.length) throw new Error('저장되지 않았어요 (0건).');
+  return { table:'candidates', id:r.data[0].id };
+}
+
+function showUndo(){
+  const u = $('undotake'); if (!u) return;
+  u.classList.toggle('hide', !lastTake.length);
+  u.textContent = `방금 담은 ${lastTake.length}개 되돌리기`;
+}
+
+$('cards').addEventListener('click', async e => {
+  const tripId = $('ai_trip').value;
+
+  /* ── 되돌리기 ── 진짜로 지우지 않고 숨깁니다. 다른 삭제와 같은 방식입니다. */
+  if (e.target.id === 'undotake'){
+    const u = e.target;
+    u.disabled = true; u.textContent = '되돌리는 중…';
+    for (const t of lastTake)
+      await sb.from(t.table).update({ deleted_at: new Date().toISOString() }).eq('id', t.id);
+    lastTake = [];
+    u.disabled = false; showUndo();
+    $('cards').querySelectorAll('button[data-take]').forEach(x => {
+      x.disabled = false; x.textContent = '담기';
+    });
+    const all = $('cards').querySelector('button[data-takeall]');
+    if (all){ all.disabled = false; all.textContent = all.dataset.orig || all.textContent; }
+    toast('되돌렸어요.');
+    await runReview(tripId);
+    if (trip) await loadPlans();
+    return;
   }
 
-  if (r.error){ b.disabled = false; b.textContent = '담기'; return fail(r.error, 'ai'); }
-  if (!r.data?.length){ b.disabled = false; b.textContent = '담기';
-                        return fail('저장되지 않았습니다 (0건).', 'ai'); }
+  /* ── 다 담기 ── */
+  const all = e.target.closest('button[data-takeall]');
+  if (all){
+    all.dataset.orig = all.textContent;
+    all.disabled = true;
+    lastTake = [];
+    const jobs = [
+      ...suggested.actions.map((_, i) => ['a', i]),
+      ...suggested.places.map((_, i) => ['p', i]),
+    ];
+    let done = 0;
+    for (const [kind, i] of jobs){
+      all.textContent = `담는 중… ${++done}/${jobs.length}`;
+      try { lastTake.push(await takeCard(kind, i, tripId)); }
+      catch (err){ all.disabled = false; all.textContent = all.dataset.orig;
+                   showUndo(); return fail(err, 'ai'); }
+    }
+    all.textContent = `${jobs.length}개 담았어요`;
+    $('cards').querySelectorAll('button[data-take]').forEach(x => {
+      x.disabled = true; x.textContent = '담았어요';
+    });
+    showUndo();
+    await runReview(tripId);
+    if (trip) await loadPlans();
+    return;
+  }
+
+  /* ── 한 장씩 ── */
+  const b = e.target.closest('button[data-take]'); if (!b) return;
+  b.disabled = true; b.textContent = '담는 중…';
+  try {
+    lastTake.push(await takeCard(b.dataset.take, +b.dataset.i, tripId));
+  } catch (err){
+    b.disabled = false; b.textContent = '담기'; return fail(err, 'ai');
+  }
   b.textContent = '담았어요';
+  showUndo();
   await runReview(tripId);          /* 넣었으니 검토 배지도 다시 셉니다 */
 });
 
@@ -3663,7 +3919,19 @@ async function loadPlans(){
     .eq('trip_id', trip.id)
     .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
     .order('date').order('start_time', { nullsFirst:false }).order('sort_order');
-  if (error){ $('plans').innerHTML = ''; return fail(error, 'plan'); }
+
+  /* 못 받아왔을 때 마지막으로 받아둔 것을 씁니다.
+     여행 중에 데이터가 끊겼다고 일정이 빈 화면이 되면 안 됩니다.
+     대신 오래된 것을 보고 있다고 위에 띄웁니다 (offbar). */
+  const ck = 't2:cache:plans:' + trip.id;
+  if (error){
+    let old = null;
+    try { old = JSON.parse(localStorage.getItem(ck) || 'null'); } catch {}
+    if (!old){ $('plans').innerHTML = ''; return fail(error, 'plan'); }
+    plans = old; drawDays(); drawCats(); drawPlans(); drawPlanMap(); drawOffbar();
+    return;
+  }
+  try { localStorage.setItem(ck, JSON.stringify(data)); } catch {}
   plans = data;
   drawDays();
   drawCats();
@@ -3898,6 +4166,8 @@ function drawPlans(){
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
+        ${trip.myRole === 'viewer' ? ''
+          : `<span class="grip" data-grip="${esc(p.id)}" title="끌어서 순서 바꾸기">⠿</span>`}
         <span class="ev__chev">›</span>
       </div>
       <div class="detail">
@@ -3920,10 +4190,104 @@ function drawPlans(){
   $('plans').innerHTML = html;
 }
 
+/* ── 끌어서 순서 바꾸기 ─────────────────────────────────────────────
+ * 지금까지는 순서를 바꾸려면 시각을 직접 고쳐 적어야 했습니다.
+ *
+ * 한 가지 정해야 할 것이 있었습니다. 목록은 **시각 순**으로 섭니다.
+ * 14시 일정을 10시 일정 위로 끌어다 놓고 시각을 그대로 두면 다시 그릴 때
+ * 제자리로 튕겨 돌아옵니다. 그래서 자리를 옮기면 **그날의 시각들도 같이 옮깁니다** —
+ * 시각의 집합은 그대로 두고 순서만 바꿔 다시 나눠 줍니다.
+ * 그날의 짜임새(10시·14시·19시)는 지키면서 무엇이 언제인지만 바뀝니다.
+ * 시각이 없는 일정은 계속 없는 채로 sort_order 로만 섭니다.
+ *
+ * 손잡이(⠿)에서 시작한 것만 잡습니다. 줄 아무 데나 잡으면 펼치기와 부딪칩니다. */
+let dragId = null, dragEl = null, dragGroup = [];
+
+$('plans').addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-grip]'); if (!g) return;
+  e.preventDefault();
+  dragId = g.dataset.grip;
+  dragEl = g.closest('[data-ev]');
+  const date = plans.find(p => p.id === dragId)?.date;
+  /* 같은 날 안에서만 옮깁니다. 날짜를 넘기는 것은 "고치기"로 할 일입니다. */
+  dragGroup = [...$('plans').querySelectorAll('[data-ev]')]
+    .filter(el => plans.find(p => p.id === el.dataset.ev)?.date === date);
+  dragEl.classList.add('dragging');
+  g.setPointerCapture(e.pointerId);
+});
+
+$('plans').addEventListener('pointermove', e => {
+  if (!dragEl) return;
+  e.preventDefault();
+  /* 손가락 아래에 있는 줄을 찾습니다. 끌고 있는 줄은 잠깐 숨겨야 밑이 보입니다. */
+  dragEl.style.visibility = 'hidden';
+  const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-ev]');
+  dragEl.style.visibility = '';
+  if (!under || under === dragEl || !dragGroup.includes(under)) return;
+  const rect = under.getBoundingClientRect();
+  const after = e.clientY > rect.top + rect.height / 2;
+  under.parentNode.insertBefore(dragEl, after ? under.nextSibling : under);
+});
+
+async function dropDone(){
+  if (!dragEl) return;
+  dragEl.classList.remove('dragging');
+  const el = dragEl; dragEl = null;
+
+  /* 새 차례. DOM 에서 그대로 읽습니다 — 방금 눈으로 본 순서가 그것입니다. */
+  const order = [...$('plans').querySelectorAll('[data-ev]')]
+    .map(x => x.dataset.ev)
+    .filter(id => dragGroup.some(g => g.dataset.ev === id));
+  const rows = order.map(id => plans.find(p => p.id === id)).filter(Boolean);
+  if (rows.length < 2) return;
+
+  /* 시각이 없는 일정은 목록에서 늘 시각 있는 것들 **뒤에** 섭니다 (정렬 규칙이 그렇습니다).
+     그 사이로 끌어다 놓으면 다시 그릴 때 제자리로 튕겨 돌아옵니다 —
+     고장 난 것처럼 보입니다. 아예 받지 않고 왜 그런지 알려줍니다. */
+  const firstBlank = rows.findIndex(p => !p.start_time);
+  if (firstBlank >= 0 && rows.slice(firstBlank).some(p => p.start_time)){
+    drawPlans();
+    return toast('시각이 없는 일정은 시각이 있는 일정 사이로는 못 가요.');
+  }
+
+  /* 옮기기 전의 시각들. 순서만 바꿔 다시 나눠 줍니다. */
+  const times = dragGroup
+    .map(g => plans.find(p => p.id === g.dataset.ev))
+    .filter(p => p && p.start_time)
+    .map(p => ({ start_time: p.start_time, end_time: p.end_time }));
+
+  let ti = 0;
+  const jobs = [];
+  rows.forEach((p, i) => {
+    const row = { sort_order: i };
+    if (p.start_time) Object.assign(row, times[ti++] || {});
+    /* 안 바뀐 줄은 보내지 않습니다. 여럿이 쓰면 괜히 남의 것을 덮습니다. */
+    const same = +p.sort_order === i &&
+                 (!p.start_time || (row.start_time === p.start_time &&
+                                    (row.end_time ?? null) === (p.end_time ?? null)));
+    if (!same){ Object.assign(p, row); jobs.push({ table:'plans', action:'update', id:p.id, row }); }
+  });
+  if (!jobs.length) return;
+
+  el.classList.add('justmoved');
+  let queued = false;
+  for (const j of jobs){
+    const r = await write(j);
+    if (!r.ok) return fail(r.why, 'plan');
+    queued = queued || r.queued;
+  }
+  toast(times.length > 1 ? '순서를 바꿨어요. 시각도 같이 옮겼습니다.' : '순서를 바꿨어요.');
+  if (!queued) await loadPlans();
+}
+$('plans').addEventListener('pointerup', dropDone);
+$('plans').addEventListener('pointercancel', dropDone);
+
 /* 펼친 줄은 기억해 둡니다. 지우거나 고쳐서 다시 그려도 그대로 열려 있어야 합니다. */
 const openPlans = new Set();
 $('plans').addEventListener('click', e => {
-  if (e.target.closest('a, button')) return;      /* 링크와 버튼은 각자 일합니다 */
+  /* 링크·버튼·손잡이는 각자 일합니다. 손잡이를 빼두지 않으면
+     끌어 놓을 때마다 그 줄이 같이 펼쳐집니다. */
+  if (e.target.closest('a, button, [data-grip]')) return;
   const row = e.target.closest('[data-ev]'); if (!row) return;
   const id = row.dataset.ev;
   if (openPlans.has(id)) openPlans.delete(id); else openPlans.add(id);
@@ -4282,20 +4646,20 @@ $('x_create').addEventListener('click', async () => {
   const cur = $('x_cur').value;
   const rate = await rateOf(cur, trip.home_currency, date);
 
-  const { data, error } = await sb.from('expenses').insert({
+  const r = await write({ table:'expenses', action:'insert', row:{
     trip_id: trip.id, title, amount, date, currency: cur,
     fx_rate: rate, amount_home: rate == null ? null : amount * rate,
     category: $('x_cat').value || null,
     payer_id: $('x_payer').value || null,
     memo: $('x_memo').value.trim() || null
-  }).select('id');
+  }});
   btn.disabled = false; btn.textContent = '넣기';
 
-  if (error) return fail(error, 'expform');
-  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'expform');
+  if (!r.ok) return fail(r.why, 'expform');
 
   $('x_title').value = ''; $('x_amount').value = ''; $('x_memo').value = '';
   $('expcard').classList.add('hide');
+  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
   await loadExpenses();
 });
 
@@ -4305,11 +4669,10 @@ $('expenses').addEventListener('click', async e => {
     arm(b, '정말?'); return;
   }
   b.disabled = true;
-  const r = await sb.from('expenses')
-    .update({ deleted_at: new Date().toISOString() }).eq('id', b.dataset.id).select('id');
+  const r = await write({ table:'expenses', action:'delete', id: b.dataset.id });
   b.disabled = false;
-  if (r.error) return fail(r.error, 'exp');
-  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'exp');
+  if (!r.ok) return fail(r.why, 'exp');
+  if (r.queued){ b.closest('.plan, .ev')?.remove(); return toast('연결이 없어 들고 있어요.'); }
   await loadExpenses();
 });
 
@@ -4714,7 +5077,6 @@ $('p_cancel').addEventListener('click', () => {
 });
 
 $('p_create').addEventListener('click', async () => {
-  const btn = $('p_create');
   $('planformerr').classList.add('hide');
   const title = $('p_title').value.trim(), date = $('p_date').value;
   const st = $('p_start').value, et = $('p_end').value;
@@ -4734,23 +5096,45 @@ $('p_create').addEventListener('click', async () => {
     category: $('p_cat').value || null,
     memo: $('p_memo').value.trim() || null,
   };
-  btn.disabled = true; btn.textContent = editPlanId ? '고치는 중…' : '넣는 중…';
-  /* 고치는 중이면 그 줄만 바꿉니다. 새로 넣으면 같은 것이 두 개가 됩니다. */
-  const { data, error } = editPlanId
-    ? await sb.from('plans').update(row).eq('id', editPlanId).select('id')
-    : await sb.from('plans').insert({ trip_id: trip.id, sort_order: sort, ...row })
-        .select('id');
-  btn.disabled = false; btn.textContent = '넣기';
+  /* ── 낙관적 저장 ──
+     서버 대답을 기다리는 동안 화면을 붙잡아 두지 않습니다. 먼저 반영하고 뒤에서 보냅니다.
+     여행지에서는 이 기다림이 5초씩 걸립니다. 그동안 앱이 멈춘 것처럼 보였습니다.
+     실패하면 되돌립니다 — 되돌릴 수 있게 이전 모습을 들고 있습니다. */
+  const editing = editPlanId;
+  const before  = editing ? { ...plans.find(p => p.id === editing) } : null;
+  const tmpId   = 'tmp:' + Math.random().toString(36).slice(2);
 
-  if (error) return fail(error, 'planform');
-  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건). 권한을 확인해주세요.',
-                                 'planform');
+  if (editing){
+    const i = plans.findIndex(p => p.id === editing);
+    if (i >= 0) plans[i] = { ...plans[i], ...row };
+  } else {
+    plans.push({ id: tmpId, trip_id: trip.id, sort_order: sort,
+                 lat:null, lng:null, move_note:null, ...row });
+  }
+  plans.sort((a, b) => a.date.localeCompare(b.date)
+    || String(a.start_time ?? '~').localeCompare(String(b.start_time ?? '~'))
+    || (+a.sort_order) - (+b.sort_order));
 
   $('p_title').value = ''; $('p_memo').value = '';
   $('p_start').value = ''; $('p_end').value = '';
   editPlanId = null;
   $('plancard').classList.add('hide');
-  await loadPlans();
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
+
+  const r = await write(editing
+    ? { table:'plans', action:'update', id:editing, row }
+    : { table:'plans', action:'insert', row:{ trip_id: trip.id, sort_order: sort, ...row } });
+
+  if (!r.ok){
+    /* 되돌립니다. 저장 안 된 것이 화면에 남아 있으면 여행 중에 그걸 믿고 움직입니다. */
+    if (editing){ const i = plans.findIndex(p => p.id === editing); if (i >= 0) plans[i] = before; }
+    else plans = plans.filter(p => p.id !== tmpId);
+    drawDays(); drawCats(); drawPlans(); drawPlanMap();
+    $('plancard').classList.remove('hide');
+    return fail(r.why, 'planform');
+  }
+  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
+  await loadPlans();                       /* 임시 id 를 진짜 id 로 바꿉니다 */
 });
 
 $('plans').addEventListener('click', async e => {
@@ -4775,13 +5159,19 @@ $('plans').addEventListener('click', async e => {
   if (b.dataset.armed !== '1'){          /* 확인창을 안 쓰는 이유는 목록 쪽과 같습니다 */
     arm(b, '정말 지울까요?'); return;
   }
-  b.disabled = true;
-  /* 진짜 지우지 않고 숨깁니다. 여럿이 쓰면 남이 지운 것을 되살릴 방법이 필요합니다. */
-  const { data, error } = await sb.from('plans')
-    .update({ deleted_at: new Date().toISOString() }).eq('id', id).select('id');
-  b.disabled = false;
-  if (error) return fail(error, 'plan');
-  if (!data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'plan');
+  /* 지우는 것도 먼저 화면에서 뺍니다. 진짜로 지우지는 않고 숨깁니다 —
+     여럿이 쓰면 남이 지운 것을 되살릴 방법이 필요합니다. */
+  const gone = plans.find(p => p.id === id);
+  plans = plans.filter(p => p.id !== id);
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
+
+  const r = await write({ table:'plans', action:'delete', id });
+  if (!r.ok){
+    if (gone) plans.push(gone);
+    drawDays(); drawCats(); drawPlans(); drawPlanMap();
+    return fail(r.why, 'plan');
+  }
+  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
   await loadPlans();
 });
 
@@ -4847,6 +5237,8 @@ async function render(session){
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
   loadNotifs();
+  /* 지난번에 못 보낸 저장이 남아 있을 수 있습니다. 켜자마자 흘려보냅니다. */
+  drawOffbar(); flushQueue();
   showApp('home');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
      목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
