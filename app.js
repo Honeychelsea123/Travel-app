@@ -66,7 +66,7 @@ function fail(e, where){
                 plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
-                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), cand:$('canderr'),
+                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), dump:$('dumperr'), cand:$('canderr'),
                 draft:$('drafterr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
@@ -2650,6 +2650,43 @@ function showProfile(setting){
 }
 $('gear').addEventListener('click', () => showProfile(true));
 $('setback').addEventListener('click', () => showProfile(false));
+
+/* ── 내 자료 내려받기 ────────────────────────────────────────────────
+ * 데이터베이스에는 되돌리기가 없습니다. 잘못 지우면 그냥 사라집니다.
+ * 서버 열쇠를 쓰지 않고 내 권한으로만 읽습니다 — RLS 가 내 것만 내줍니다.
+ * 남의 여행에 초대돼 있으면 그 여행도 같이 받습니다. 볼 수 있는 것이 곧 내 자료입니다. */
+$('dumpbtn').addEventListener('click', async () => {
+  const b = $('dumpbtn');
+  $('dumperr').classList.add('hide');
+  b.disabled = true; b.textContent = '모으는 중…';
+
+  /* 표마다 조건이 다르지 않습니다. RLS 가 이미 걸러 주므로 통째로 받습니다. */
+  const TABLES = ['trips', 'trip_legs', 'trip_members', 'plans', 'expenses',
+                  'expense_shares', 'bookings', 'packing', 'links', 'candidates',
+                  'city_ratings', 'plan_ratings', 'trip_reviews', 'chats',
+                  'profiles', 'user_prefs'];
+  const out = { app:'AI.Trip', savedAt:new Date().toISOString(), user:me.id, data:{} };
+  const failed = [];
+  for (const t of TABLES){
+    const r = await sb.from(t).select('*');
+    if (r.error){ failed.push(`${t}(${r.error.code || '오류'})`); continue; }
+    out.data[t] = r.data || [];
+  }
+  /* 도시 목록은 우리가 만든 자료라 안 넣습니다 — 잃어버릴 것은 내가 쓴 것뿐입니다. */
+
+  const n = Object.values(out.data).reduce((s, v) => s + v.length, 0);
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `aitrip-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+
+  b.disabled = false; b.textContent = '받기';
+  /* 몇 줄을 받았는지 알려줍니다. 빈 파일을 받고 백업했다고 믿으면 안 됩니다. */
+  toast(`${n.toLocaleString()}줄을 저장했어요` +
+        (failed.length ? ` · 못 받은 표: ${failed.join(', ')}` : ''));
+  if (failed.length) fail('못 받은 표: ' + failed.join(', '), 'dump');
+});
 
 /* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
 $('setview').addEventListener('click', e => {
