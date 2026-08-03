@@ -1781,13 +1781,13 @@ async function loadFootprint(){
   /* 맛집은 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다.
      평가 화면에서 관광지도 매기게 했더니 그것까지 세어 18 로 나왔습니다.
      목록은 식사·카페만 보여주므로 세는 것도 같은 기준이어야 합니다. */
-  sb.from('plan_ratings')
-    .select('plan_id, plans!inner(category)', { count:'exact', head:true })
-    .eq('user_id', me.id).not('stars', 'is', null)
-    .in('plans.category', ['식사', '카페'])
-    .then(r => { $('s_place').textContent = r.count ?? 0; });
+  for (const [box, cats] of [['s_place', ['식사','카페']], ['s_spot', ['관광','쇼핑']]])
+    sb.from('plan_ratings')
+      .select('plan_id, plans!inner(category)', { count:'exact', head:true })
+      .eq('user_id', me.id).not('stars', 'is', null)
+      .in('plans.category', cats)
+      .then(r => { $(box).textContent = r.count ?? 0; });
   $('s_want').textContent    = f.wants;
-  $('s_trips').textContent   = f.trips;
 
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   $('s_prog').innerHTML = f.countries
@@ -2709,7 +2709,7 @@ $('dumpbtn').addEventListener('click', async () => {
 /* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
 $('setview').addEventListener('click', e => {
   const b = e.target.closest('button[data-shelf]'); if (!b) return;
-  if (b.dataset.shelf === 'trips'){ tripFilter = 'past'; return showApp('trips'); }
+  /* 다녀온 여행 칸은 없앴습니다. 여행 탭에 이미 있습니다. */
   openShelf(b.dataset.shelf);
 });
 
@@ -2718,15 +2718,18 @@ $('setview').addEventListener('click', e => {
  * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
 const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
-                comment:'한줄평 남긴 곳', place:'다녀온 맛집' };
+                comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 곳' };
+/* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
+const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 
-/* 식당·카페는 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
-   따로 적게 하지 않고, 다녀온 여행의 식사·카페만 모아 별점을 받습니다. */
-async function openPlaceShelf(){
+/* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
+   따로 적게 하지 않고, 다녀온 여행의 그 분류만 모아 별점을 받습니다. */
+async function openPlaceShelf(kind){
   const today = ymd(new Date());
+  const cats = SHELF_CAT[kind] || SHELF_CAT.place;
   const [ps, rs] = await Promise.all([
     sb.from('plans').select('id,title,memo,category,date,trip_id,trips(title,end_date)')
-      .in('category', ['식사','카페']).is('deleted_at', null)
+      .in('category', cats).is('deleted_at', null)
       .order('date', { ascending:false }).limit(300),
     sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
   ]);
@@ -2741,12 +2744,12 @@ async function openPlaceShelf(){
   $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
   $('shelflist').innerHTML = list.length
     ? list.map(p => `<div class="rrow">
-        <span class="thumb ph">${p.category === '카페' ? '☕' : '🍽'}</span>
+        <span class="thumb ph">${({ 식사:'🍽', 카페:'☕', 관광:'📸', 쇼핑:'🛍' })[p.category] || '📍'}</span>
         <div class="t"><b>${esc(p.title)}</b>
           <span class="memo">${esc(p.trips?.title || '')} · ${esc(p.date)}</span></div>
         <span class="stars" data-plan="${esc(p.id)}">${starHtml(rate[p.id])}</span>
       </div>`).join('')
-    : `<div class="empty">다녀온 여행에 식사·카페 일정이 아직 없어요.<br>
+    : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
          일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
@@ -2757,7 +2760,7 @@ async function openShelf(kind){
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
-  if (kind === 'place') return openPlaceShelf();
+  if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
 
   await loadCities();
   const [mine, vis, stats] = await Promise.all([
