@@ -428,6 +428,30 @@ body.sheeton{ overflow:hidden; }
         opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
 #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+/* ── 여행 리포트 ─────────────────────────────────────────────────────
+ * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다.
+ * 옆으로 넘겨 보는 카드로 냅니다 — 한 장에 숫자 하나만 크게. */
+.rpt{ display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory;
+      margin-top:12px; padding-bottom:4px; -webkit-overflow-scrolling:touch; }
+.rpt::-webkit-scrollbar{ display:none }
+.rptc{ scroll-snap-align:center; flex:0 0 min(78%, 300px);
+       border-radius:var(--r-lg); padding:20px 18px; color:#fff;
+       background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
+       box-shadow:0 10px 24px rgba(90,63,240,.26); min-height:190px;
+       display:flex; flex-direction:column; }
+.rptc:nth-child(2n){ background:linear-gradient(135deg,#0f9d8f 0%,#2b7de9 100%);
+                     box-shadow:0 10px 24px rgba(20,120,200,.24); }
+.rptc:nth-child(3n){ background:linear-gradient(135deg,#f0803c 0%,#e0245e 100%);
+                     box-shadow:0 10px 24px rgba(220,60,90,.24); }
+.rptc .n{ font-size:calc(11px * var(--ts)); opacity:.75 }
+.rptc .k{ font-size:calc(13px * var(--ts)); opacity:.92; margin-top:10px }
+.rptc .b{ font-size:calc(34px * var(--ts)); font-weight:750; line-height:1.15;
+          letter-spacing:calc(-1px * var(--ts)); margin-top:2px }
+.rptc .s{ font-size:calc(12.5px * var(--ts)); opacity:.9; margin-top:6px;
+          word-break:keep-all }
+.rptc .o{ font-size:calc(12px * var(--ts)); opacity:.86; margin-top:auto;
+          padding-top:10px; word-break:keep-all }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -774,6 +798,24 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     </div>
 
     <!-- AI — 채팅이 본체고 검토는 위 버튼으로 펼칩니다 -->
+    <!-- 여행 끝난 뒤 — 평가하고 리포트를 봅니다 -->
+    <div id="reviewview" class="hide">
+      <div class="card" style="padding:10px 12px">
+        <button class="ghost" id="rvback" style="padding-left:0">← 홈</button>
+      </div>
+      <div id="rv_rate">
+        <div class="card">
+          <h2 id="rv_head">여행 어땠어요?</h2>
+          <div class="memo" id="rv_sub" style="margin-bottom:10px"></div>
+          <div id="rv_cities"></div>
+          <div id="rv_places"></div>
+          <button class="primary" id="rv_done" style="width:100%; margin-top:14px">
+            리포트 보기</button>
+        </div>
+      </div>
+      <div id="rv_report" class="hide"></div>
+    </div>
+
     <!-- 폼이 열릴 때 뒤를 덮는 판. 눌러서 닫습니다. -->
     <div id="sheetbg" class="hide"></div>
 
@@ -1479,7 +1521,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b89</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b90</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1800,6 +1842,7 @@ function showApp(t){
   $('appbar').classList.remove('hide');
 
   $('draftview').classList.add('hide');
+  $('reviewview').classList.add('hide');
   $('homeview').classList.toggle('hide', t !== 'home');
   $('listview').classList.toggle('hide', t !== 'trips');
   $('rateview').classList.toggle('hide', t !== 'rate');
@@ -2570,6 +2613,24 @@ function heroHtml(photo, dd, title, memo, btn){
 async function loadHome(){
   const today = ymd(new Date());
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
+
+  /* 다녀왔는데 아직 별점을 안 매긴 여행이 있으면 그것부터 묻습니다.
+     다음 여행보다 이게 먼저입니다 — 기억이 남아 있을 때 받아야 합니다. */
+  const pend = await pendingTrip();
+  if (pend){
+    const photo = await tripPhoto(pend.trip);
+    $('home').innerHTML = heroHtml(photo, '',
+      `${pend.trip.title} 어땠어요?`,
+      '다녀오신 곳을 평가해주세요' +
+      (pend.places.length ? ` · 맛집 ${pend.places.length}곳` : ''),
+      '평가하기');
+    $('hero').onclick = () => openReviewTrip(pend.trip.id);
+    $('herobtn').onclick = e => { e.stopPropagation(); openReviewTrip(pend.trip.id); };
+    renderAiCard();
+    await renderQuiz(); await renderFoot();
+    return;
+  }
+
   const { data, error } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
     .is('archived_at', null).gte('end_date', today)
@@ -2631,6 +2692,180 @@ async function loadHome(){
   renderAiCard();
   await renderQuiz();
   await renderFoot();
+}
+
+/* ── 여행 끝난 뒤 ────────────────────────────────────────────────────
+ * 다녀오고 나면 앱을 안 엽니다. 그때 물어보는 것이 이 앱의 두 번째 축입니다.
+ * 끝났는데 아직 별점을 안 매긴 여행이 있으면 홈 맨 위를 그것으로 채웁니다. */
+let rvTrip = null;
+
+async function pendingTrip(){
+  const today = ymd(new Date());
+  const { data } = await sb.from('trips')
+    .select('id,title,destination,start_date,end_date')
+    .is('archived_at', null).lt('end_date', today)
+    .order('end_date', { ascending:false }).limit(5);
+  if (!data?.length) return null;
+
+  for (const t of data){
+    const [lg, ps, cr, pr] = await Promise.all([
+      sb.from('trip_legs').select('city_id').eq('trip_id', t.id).not('city_id','is',null),
+      sb.from('plans').select('id').eq('trip_id', t.id).is('deleted_at', null)
+        .in('category', ['식사','카페']),
+      sb.from('city_ratings').select('city_id').eq('user_id', me.id).not('stars','is',null),
+      sb.from('plan_ratings').select('plan_id').eq('user_id', me.id).not('stars','is',null),
+    ]);
+    const rated = new Set((cr.data || []).map(r => r.city_id));
+    const done  = new Set((pr.data || []).map(r => r.plan_id));
+    const cities = [...new Set((lg.data || []).map(l => l.city_id))].filter(id => !rated.has(id));
+    const places = (ps.data || []).filter(p => !done.has(p.id)).map(p => p.id);
+    if (cities.length || places.length) return { trip: t, cities, places };
+  }
+  return null;
+}
+
+async function openReviewTrip(id){
+  rvTrip = id;
+  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
+    .forEach(v => $(v).classList.add('hide'));
+  $('reviewview').classList.remove('hide');
+  $('rv_report').classList.add('hide');
+  $('rv_rate').classList.remove('hide');
+  window.scrollTo({ top:0 });
+  if (history.state?.t2 !== 'rv') history.pushState({ t2:'rv' }, '');
+
+  await loadCities();
+  const [t, lg, ps, cr, pr] = await Promise.all([
+    sb.from('trips').select('title,start_date,end_date').eq('id', id).maybeSingle(),
+    sb.from('trip_legs').select('city_id').eq('trip_id', id).not('city_id','is',null),
+    sb.from('plans').select('id,title,category,date').eq('trip_id', id)
+      .is('deleted_at', null).in('category', ['식사','카페']).order('date'),
+    sb.from('city_ratings').select('city_id,stars').eq('user_id', me.id),
+    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
+  ]);
+  const cs = Object.fromEntries((cr.data || []).map(r => [r.city_id, r.stars]));
+  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, r.stars]));
+
+  $('rv_head').textContent = `${t.data?.title || '여행'} 어땠어요?`;
+  $('rv_sub').textContent  = '다녀오신 곳을 평가해주세요. 건너뛰어도 괜찮아요.';
+
+  const ids = [...new Set((lg.data || []).map(l => l.city_id))];
+  $('rv_cities').innerHTML = ids.length
+    ? '<div class="daysep">도시</div>' + ids.map(cid => {
+        const c = (cities || []).find(x => x.id === cid); if (!c) return '';
+        return `<div class="rrow">
+          ${c.image_url ? `<img class="thumb" src="${esc(c.image_url)}" alt="">`
+                        : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
+          <div class="t"><b>${esc(c.name)}</b>
+            <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
+          <span class="stars" data-city="${esc(cid)}">${starHtml(cs[cid])}</span>
+        </div>`;
+      }).join('') : '';
+
+  $('rv_places').innerHTML = ps.data?.length
+    ? '<div class="daysep">맛집 · 카페</div>' + ps.data.map(p => `<div class="rrow">
+        <span class="thumb ph">${p.category === '카페' ? '☕' : '🍽'}</span>
+        <div class="t"><b>${esc(p.title)}</b><span class="memo">${esc(p.date)}</span></div>
+        <span class="stars" data-plan="${esc(p.id)}">${starHtml(psr[p.id])}</span>
+      </div>`).join('') : '';
+}
+
+function closeReview(fromPop){
+  if (!fromPop && history.state?.t2 === 'rv'){ history.back(); return; }
+  $('reviewview').classList.add('hide');
+  showApp('home');
+}
+$('rvback').addEventListener('click', () => closeReview());
+
+/* 평가 줄. 도시는 city_ratings, 맛집은 plan_ratings 로 갑니다. */
+$('rv_rate').addEventListener('click', async e => {
+  const st = e.target.closest('.st'); if (!st) return;
+  const wrap = st.closest('.stars');
+  const box = st.getBoundingClientRect();
+  const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+  paintStars(wrap, v, true);
+  if (wrap.dataset.city) await saveRate(wrap.dataset.city, { stars: v }, true);
+  else await sb.from('plan_ratings').upsert(
+    { user_id: me.id, plan_id: wrap.dataset.plan, stars: v },
+    { onConflict: 'user_id,plan_id' });
+});
+
+/* ── 리포트 ──────────────────────────────────────────────────────────
+ * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다. 옆으로 넘겨 보는 카드로 냅니다. */
+$('rv_done').addEventListener('click', () => drawReport(rvTrip));
+
+async function drawReport(id){
+  $('rv_rate').classList.add('hide');
+  $('rv_report').classList.remove('hide');
+  $('rv_report').innerHTML = '<div class="card"><div class="empty">만드는 중…</div></div>';
+  window.scrollTo({ top:0 });
+
+  const [t, lg, pl, ex, cr, pr] = await Promise.all([
+    sb.from('trips').select('title,destination,start_date,end_date,home_currency')
+      .eq('id', id).maybeSingle(),
+    sb.from('trip_legs').select('city_id,destination').eq('trip_id', id).order('start_date'),
+    sb.from('plans').select('id,title,category,lat,lng,date,start_time')
+      .eq('trip_id', id).is('deleted_at', null).order('date').order('start_time'),
+    sb.from('expenses').select('amount_home,category').eq('trip_id', id).is('deleted_at', null),
+    sb.from('city_ratings').select('city_id,stars,comment').eq('user_id', me.id),
+    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
+  ]);
+  const trip_ = t.data || {};
+  const days = Math.round((asDate(trip_.end_date) - asDate(trip_.start_date)) / D1) + 1;
+  const plans_ = pl.data || [];
+  const cs  = Object.fromEntries((cr.data || []).map(r => [r.city_id, r]));
+  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, r.stars]));
+
+  /* 걸은 거리는 좌표가 있는 일정 사이만 더합니다. 없으면 그냥 뺍니다. */
+  let km = 0;
+  const byDay = {};
+  plans_.forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
+  Object.values(byDay).forEach(list => {
+    for (let i = 0; i < list.length - 1; i++){
+      const d = distKm(list[i].lat, list[i].lng, list[i+1].lat, list[i+1].lng);
+      if (d != null) km += d;
+    }
+  });
+
+  const spend = (ex.data || []).reduce((s, e) => s + (Number(e.amount_home) || 0), 0);
+  const cityIds = [...new Set((lg.data || []).map(l => l.city_id).filter(Boolean))];
+  const cityStars = cityIds.map(i => cs[i]?.stars).filter(v => v != null);
+  const eats = plans_.filter(p => ['식사','카페'].includes(p.category));
+  const rated = eats.filter(p => psr[p.id] != null)
+                    .sort((a, b) => psr[b.id] - psr[a.id]);
+  const best = rated[0];
+  const avg = a => a.length ? (a.reduce((s, v) => s + Number(v), 0) / a.length).toFixed(1) : null;
+
+  const cards = [
+    { k:'다녀왔어요', big:`${days}일`,
+      sub:`${trip_.start_date} ~ ${trip_.end_date}`, note: trip_.destination },
+    { k:'이만큼 다녔어요', big:`${plans_.length}개`,
+      sub:'잡아둔 일정', note: km ? `걸은 거리 약 ${Math.round(km)}km` : null },
+    spend ? { k:'이만큼 썼어요',
+      big:`${Math.round(spend).toLocaleString()}`,
+      sub: trip_.home_currency || '', note:`하루 평균 ${Math.round(spend/days).toLocaleString()}` } : null,
+    { k:'도시 평점', big: avg(cityStars) ? `★ ${avg(cityStars)}` : '–',
+      sub: cityIds.map(i => (cities || []).find(c => c.id === i)?.name).filter(Boolean).join(' · '),
+      note: cs[cityIds[0]]?.comment || null },
+    { k:'맛집', big: rated.length ? `${rated.length}곳` : '–',
+      sub: rated.length ? `평균 ★ ${avg(rated.map(p => psr[p.id]))}` : '평가한 곳이 없어요',
+      note: best ? `최고 ${best.title} ★${psr[best.id]}` : null },
+  ].filter(Boolean);
+
+  $('rv_report').innerHTML =
+    `<div class="card">
+       <h2>${esc(trip_.title || '여행')} 리포트</h2>
+       <div class="memo">옆으로 넘겨 보세요</div>
+       <div class="rpt">${cards.map((c, i) => `<div class="rptc">
+         <div class="n">${i + 1} / ${cards.length}</div>
+         <div class="k">${esc(c.k)}</div>
+         <div class="b">${esc(c.big)}</div>
+         <div class="s">${esc(c.sub || '')}</div>
+         ${c.note ? `<div class="o">${esc(c.note)}</div>` : ''}
+       </div>`).join('')}</div>
+       <button class="ghost" id="rv_home" style="width:100%; margin-top:14px">홈으로</button>
+     </div>`;
+  $('rv_home').onclick = () => closeReview();
 }
 
 /* AI 일정 만들기 — 이 앱이 내세우는 기능이라 홈 위쪽에 둡니다. */
@@ -3203,6 +3438,7 @@ async function makeDraftTrip(){
 function closeDraft(fromPop){
   if (!fromPop && history.state?.t2 === 'draft'){ history.back(); return; }
   $('draftview').classList.add('hide');
+  $('reviewview').classList.add('hide');
   showApp('home');
 }
 $('draftback').addEventListener('click', () => closeDraft());
@@ -4176,7 +4412,7 @@ async function openTrip(id){
 
   /* 여행은 어느 탭에서든 열립니다 — 홈에서 열면 홈이 아래에 그대로 남아 있었습니다.
      앱 단계 화면은 하나도 빠짐없이 덮습니다. 돌아갈 탭은 appTab 이 기억합니다. */
-  ['homeview','listview','rateview','aiview','setview','cityview','draftview']
+  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
     .forEach(v => $(v).classList.add('hide'));
   cityOpen = null;
   $('appbar').classList.add('hide');
@@ -4545,6 +4781,7 @@ $('backbtn').addEventListener('click', () => backToList());
 window.addEventListener('popstate', () => {
   if (cityOpen) return closeCity(true);
   if (trip) return backToList(true);
+  if (!$('reviewview').classList.contains('hide')) return closeReview(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
   if (!$('mappane').classList.contains('hide')) return closeMap(true);
@@ -5510,6 +5747,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
