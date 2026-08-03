@@ -173,6 +173,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .trip{ display:flex; align-items:center; gap:var(--s-sm); padding:var(--s-sm) 0;
        cursor:pointer; }
 .trip + .trip{ border-top:1px solid var(--divider-soft); }
+.trip .thumb{ flex:none; width:52px; height:52px; border-radius:var(--r-sm);
+              object-fit:cover; background:var(--parchment); }
 .trip .t{ flex:1; min-width:0; }
 .trip .t b{ display:block; }
 .trip .meta{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
@@ -1533,7 +1535,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b91</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b92</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -4260,8 +4262,8 @@ async function loadTrips(){
   const today = ymd(new Date());
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,archived_at,trip_members(user_id,role),' +
-            'trip_reviews(user_id,stars)');
+            'transit_factor,archived_at,city_id,cities(image_url),' +
+            'trip_members(user_id,role),trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
   if (tripFilter === 'arch')
     q = q.not('archived_at', 'is', null).order('start_date', { ascending:false });
@@ -4293,7 +4295,15 @@ async function loadTrips(){
                        : `<button class="ghost" data-act="archive" ${a}>보관</button>`) +
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
-    return `<div class="trip" data-open="${esc(t.id)}"><div class="t">
+    /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
+       그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
+    const img = t.cities?.image_url;
+    return `<div class="trip" data-open="${esc(t.id)}">
+      ${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy"
+                   onerror="this.replaceWith(Object.assign(document.createElement('span'),
+                     {className:'thumb ph', textContent:'${esc(t.title.slice(0,1))}'}))">`
+            : `<span class="thumb ph">${esc(t.title.slice(0,1))}</span>`}
+      <div class="t">
       <b>${esc(t.title)}</b>
       <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일</span>
       <div style="margin-top:4px">${acts}</div>
@@ -5781,6 +5791,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
