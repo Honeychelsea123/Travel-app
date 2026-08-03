@@ -419,6 +419,15 @@ body.sheeton{ overflow:hidden; }
 .minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
 .minimap path.been{ fill:var(--primary); opacity:.85; }
 
+/* 잠깐 뜨는 알림 */
+#toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
+        bottom:calc(96px + env(safe-area-inset-bottom)); z-index:80;
+        max-width:min(88vw, 440px); padding:12px 16px; border-radius:14px;
+        background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
+        font-size:calc(13px * var(--ts)); line-height:1.5; text-align:center;
+        opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
+#toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
 .fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
 .fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
 
@@ -935,6 +944,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
         <div class="card" style="position:relative">
           <!-- 톱니는 카드 우상단에 띄웁니다. 한 줄을 통째로 차지할 이유가 없습니다. -->
           <div>
+            <!-- 앱 자체를 권하는 자리. 여행 초대와는 다릅니다. -->
+            <button class="ghost" id="shareapp" title="친구에게 앱 알려주기"
+                    style="position:absolute; top:12px; right:48px; padding:6px 8px">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/>
+                <circle cx="18" cy="19" r="2.6"/>
+                <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/>
+              </svg>
+            </button>
             <button class="ghost" id="gear"
                     style="position:absolute; top:12px; right:12px; padding:6px 8px">
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
@@ -1026,15 +1046,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           </div>
         </div>
 
-        <!-- 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
-             이건 앱 자체를 권하는 자리라 카드를 따로 뒀습니다. -->
-        <div class="card">
-          <div class="row" style="border:0; padding:0; margin:0">
-            <span class="label"><b>친구에게 앱 알려주기</b>
-              <div class="memo">같이 여행 짜고 기록 남길 사람에게 보내보세요</div></span>
-            <button class="small" id="shareapp">공유</button>
-          </div>
-        </div>
       </div>
 
       <!-- 보관함 — 프로필의 숫자나 보관함을 누르면 여기서 펼칩니다.
@@ -1468,7 +1479,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b88</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b89</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -3628,20 +3639,44 @@ $('openmap').addEventListener('click', openMap);
 
 /* 앱 자체를 권하는 자리. 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
    휴대폰은 기본 공유창을 띄우고, 안 되는 브라우저는 주소만 복사합니다. */
+/* 잠깐 뜨는 알림. 아이콘 버튼이라 글자를 바꿔 알릴 자리가 없습니다. */
+let toastT = null;
+function toast(msg){
+  let t = $('toast');
+  if (!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('on'), 3200);
+}
+
 $('shareapp').addEventListener('click', async () => {
-  const b = $('shareapp');
   const url  = location.origin + location.pathname;
   const text = 'AI가 여행 일정을 짜주고, 다녀온 곳은 지도에 남는 앱이에요.';
-  try {
-    if (navigator.share){ await navigator.share({ title:'AI.Trip', text, url }); return; }
-    await navigator.clipboard.writeText(`${text}\n${url}`);
-    b.textContent = '주소를 복사했어요';
-  } catch (e) {
-    /* 사용자가 공유창을 닫은 것은 실패가 아닙니다. */
-    if (e?.name === 'AbortError') return;
-    b.textContent = '복사하지 못했습니다';
+  const msg  = `${text}\n${url}`;
+
+  /* 휴대폰은 기본 공유창을 씁니다. */
+  if (navigator.share){
+    try { await navigator.share({ title:'AI.Trip', text, url }); return; }
+    catch (e){ if (e?.name === 'AbortError') return; }   /* 닫은 것은 실패가 아닙니다 */
   }
-  setTimeout(() => { b.textContent = '공유'; }, 2500);
+  /* 클립보드는 창이 포커스를 잃었거나 권한이 없으면 그냥 거절합니다.
+     "복사하지 못했습니다"가 그래서 떴습니다. 옛 방식으로 한 번 더 해봅니다. */
+  let ok = false;
+  try { await navigator.clipboard.writeText(msg); ok = true; } catch {}
+  if (!ok){
+    try {
+      const t = document.createElement('textarea');
+      t.value = msg;
+      t.style.cssText = 'position:fixed; top:-9999px; opacity:0';
+      document.body.appendChild(t); t.select();
+      ok = document.execCommand('copy');
+      t.remove();
+    } catch {}
+  }
+  /* 그래도 안 되면 주소를 눈앞에 띄워 직접 복사하게 합니다.
+     실패했다고만 하고 끝나면 할 수 있는 것이 없습니다. */
+  toast(ok ? '주소를 복사했어요' : url);
 });
 $('mapback').addEventListener('click', () => closeMap());
 
@@ -3747,9 +3782,11 @@ async function openShelf(kind){
           <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
           <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}">♡</button>
         </div>` +
-        /* 한줄평은 줄 아래에 통째로 보여줍니다 — 별점만 봐서는 뭐라 썼는지 모릅니다. */
-        (r.comment ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
-           ${esc(r.comment)}</div>` : '');
+        /* 한줄평은 한줄평 탭에서만 펼칩니다. 내 평가 목록에서는 별점만 봅니다 —
+           어떤 줄만 두 줄이 되면 목록이 들쭉날쭉해집니다. */
+        (kind === 'comment' && r.comment
+          ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
+               ${esc(r.comment)}</div>` : '');
       }).join('')
     : `<div class="empty">아직 없어요.</div>`;
 }
@@ -5473,6 +5510,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
