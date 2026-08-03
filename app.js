@@ -1778,9 +1778,13 @@ async function loadFootprint(){
     .eq('user_id', me.id).not('comment', 'is', null)
     .then(r => { $('s_comment').textContent = r.count ?? 0; });
   $('s_rated2').textContent  = f.rated;
-  /* 식당·카페는 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다. */
-  sb.from('plan_ratings').select('plan_id', { count:'exact', head:true })
+  /* 맛집은 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다.
+     평가 화면에서 관광지도 매기게 했더니 그것까지 세어 18 로 나왔습니다.
+     목록은 식사·카페만 보여주므로 세는 것도 같은 기준이어야 합니다. */
+  sb.from('plan_ratings')
+    .select('plan_id, plans!inner(category)', { count:'exact', head:true })
     .eq('user_id', me.id).not('stars', 'is', null)
+    .in('plans.category', ['식사', '카페'])
     .then(r => { $('s_place').textContent = r.count ?? 0; });
   $('s_want').textContent    = f.wants;
   $('s_trips').textContent   = f.trips;
@@ -2681,10 +2685,24 @@ $('dumpbtn').addEventListener('click', async () => {
   a.download = `aitrip-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click(); URL.revokeObjectURL(a.href);
 
-  b.disabled = false; b.textContent = '받기';
-  /* 몇 줄을 받았는지 알려줍니다. 빈 파일을 받고 백업했다고 믿으면 안 됩니다. */
-  toast(`${n.toLocaleString()}줄을 저장했어요` +
-        (failed.length ? ` · 못 받은 표: ${failed.join(', ')}` : ''));
+  b.disabled = false; b.textContent = '다시 받기';
+  /* 총합만 보면 맞는지 알 수가 없습니다. 표마다 몇 줄인지 늘어놓습니다 —
+     "일정 0" 같은 것이 눈에 띄어야 빈 백업을 붙들고 있지 않습니다. */
+  const NAME = { trips:'여행', trip_legs:'구간', trip_members:'일행', plans:'일정',
+                 expenses:'지출', expense_shares:'분담', bookings:'예약',
+                 packing:'준비물', links:'링크', candidates:'후보',
+                 city_ratings:'도시 별점', plan_ratings:'맛집 별점',
+                 trip_reviews:'여행 후기', chats:'AI 대화',
+                 profiles:'프로필', user_prefs:'설정' };
+  $('dumplist').classList.remove('hide');
+  $('dumplist').innerHTML =
+    `<div class="daysep">받은 것 · 모두 ${n.toLocaleString()}줄</div>` +
+    TABLES.map(t => `<div class="row" style="padding:5px 0">
+        <span class="label memo">${esc(NAME[t] || t)}</span>
+        <span class="val"${(out.data[t]?.length ? '' : ' style="color:var(--ink-48)"')}>${
+          out.data[t] == null ? '못 읽음' : out.data[t].length.toLocaleString()}</span>
+      </div>`).join('');
+  toast(`${n.toLocaleString()}줄을 저장했어요`);
   if (failed.length) fail('못 받은 표: ' + failed.join(', '), 'dump');
 });
 
@@ -2714,8 +2732,11 @@ async function openPlaceShelf(){
   ]);
   if (ps.error) return fail(ps.error, 'trip');
   const rate = Object.fromEntries((rs.data || []).map(r => [r.plan_id, r.stars]));
-  /* 아직 안 끝난 여행은 뺍니다 — 가보지도 않고 별점을 매길 수는 없습니다. */
-  const list = (ps.data || []).filter(p => (p.trips?.end_date || p.date) < today);
+  /* 아직 안 끝난 여행은 뺍니다 — 가보지도 않고 별점을 매길 수는 없습니다.
+     다만 이미 매긴 것은 남깁니다. 매겼다는 것은 갔다는 뜻이고,
+     프로필의 숫자와 여기 목록이 어긋나면 어느 쪽을 믿어야 할지 모릅니다. */
+  const list = (ps.data || []).filter(p =>
+    rate[p.id] != null || (p.trips?.end_date || p.date) < today);
 
   $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
   $('shelflist').innerHTML = list.length
