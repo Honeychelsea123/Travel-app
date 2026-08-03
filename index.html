@@ -547,24 +547,20 @@ body.sheeton{ overflow:hidden; }
    비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
 .mapwrap{ background:var(--parchment); border-radius:var(--r-md); overflow:hidden;
           aspect-ratio:1000 / 387; }
-/* 크게 보기 — 화면을 다 덮으면 넓은 화면에서 가로로만 길어져 앱과 따로 놉니다.
-   본문과 같은 폭의 카드로 띄웁니다. */
-#mapback{ position:fixed; inset:0; z-index:69; background:rgba(15,18,24,.45); }
-.mapwrap.big{ position:fixed; z-index:70; left:50%; transform:translateX(-50%);
-              top:calc(56px + env(safe-area-inset-top));
-              width:min(calc(100vw - 20px), 480px);
-              height:min(72vh, 560px);
-              aspect-ratio:auto; background:var(--canvas);
-              box-shadow:0 18px 50px rgba(0,0,0,.30); }
-#mapclose{ position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px;
+/* 크게 보기 — 카드 안에 넣었더니 지도가 가로로 긴 비율이라 위아래가 텅 비었습니다.
+   화면을 다 채우고, 열 때 여백이 안 생기는 배율에서 시작합니다. */
+.mapwrap.big{ position:fixed; inset:0; z-index:70; border-radius:0;
+              aspect-ratio:auto; background:var(--parchment); }
+#mapclose{ position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
            z-index:71; background:var(--canvas); border:1px solid var(--hairline);
            border-radius:999px; padding:9px 16px; font-weight:650;
            box-shadow:var(--lift-1); cursor:pointer; }
 /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다. 단추로도 됩니다. */
-#mapzoombtns{ position:fixed; z-index:71; right:calc(50% - min(50vw - 10px, 240px) + 12px);
-              bottom:calc(100vh - 56px - min(72vh, 560px) + 12px);
+#mapzoombtns{ position:fixed; z-index:71; right:12px;
+              bottom:calc(20px + env(safe-area-inset-bottom));
               display:flex; flex-direction:column; gap:8px; }
-#mapzoombtns button{ width:40px; height:40px; border-radius:12px; font-size:20px;
+#mapzoombtns button{ width:44px; height:44px; border-radius:14px;
+                     font-size:calc(15px * var(--ts)); font-weight:650;
                      background:var(--canvas); border:1px solid var(--hairline);
                      box-shadow:var(--lift-1); cursor:pointer; line-height:1; }
 /* 손가락 동작을 우리가 직접 처리합니다. 브라우저가 먼저 스크롤하면 지도가 안 움직입니다. */
@@ -1607,7 +1603,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
     <pre id="err"></pre>
   </div>
 
-  <p class="foot">화면 <code id="build">b99</code> · <span id="ms">—</span></p>
+  <p class="foot">화면 <code id="build">b100</code> · <span id="ms">—</span></p>
 </main>
 
 <script type="module">
@@ -1633,7 +1629,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
     tab = 'plans', settleOn = false, appTab = 'home',
-    tripFilter = 'up', catFilter = '', editPlanId = null, transitLines = [], aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', catFilter = '', editPlanId = null, transitLines = [], rateShown = 80, rateObs = null, aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -2381,7 +2377,9 @@ function drawRatings(){
     return;
   }
 
-  $('ratelist').innerHTML = list.slice(0, 80).map(c => {
+  /* 끝까지 내리면 더 불러옵니다. 80곳에서 자르고 "검색하세요" 라고만 하면
+     222곳이 영영 안 보입니다. */
+  $('ratelist').innerHTML = list.slice(0, rateShown).map(c => {
     const r = myRates[c.id] || {}, s = cityStat[c.id];
     const todo = visited.has(c.id) && r.stars == null;
     /* 사진이나 이름을 누르면 그 도시 페이지가 열립니다.
@@ -2402,8 +2400,18 @@ function drawRatings(){
       <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}"
               title="가보고 싶어요">♡</button>
     </div>`;
-  }).join('') + (list.length > 80
-    ? `<div class="empty">${list.length - 80}곳 더 있어요. 검색해서 찾으세요.</div>` : '');
+  }).join('') + (list.length > rateShown
+    ? '<div class="empty" id="ratemore">더 불러오는 중…</div>' : '');
+  /* 바닥에 닿으면 더 그립니다. 스크롤 값을 재는 것보다 어긋날 자리가 적습니다. */
+  const more = $('ratemore');
+  if (more){
+    rateObs?.disconnect();
+    rateObs = new IntersectionObserver(es => {
+      if (!es[0].isIntersecting) return;
+      rateShown += 60; rateObs.disconnect(); drawRatings();
+    }, { rootMargin:'400px' });
+    rateObs.observe(more);
+  }
 }
 
 $('ac_add').addEventListener('click', async () => {
@@ -3214,9 +3222,19 @@ const FAMOUS = new Set([
 ]);
 
 async function fillQuiz(){
-  if (quizPool.length >= QUIZ_ROWS || quizFilling) return;
+  if (quizFilling) return;
   quizFilling = true;
   try {
+    /* 기록 탭에서 별점을 매겨도 여기 남아 있던 것을 막습니다.
+       주머니를 들고 있다가 그대로 다시 그려서 이미 매긴 곳이 또 나왔습니다.
+       매번 매긴 목록을 받아 걸러냅니다. */
+    {
+      const r = await sb.from('city_ratings').select('city_id')
+        .eq('user_id', me.id).not('stars', 'is', null);
+      const done = new Set((r.data || []).map(x => x.city_id));
+      quizPool = quizPool.filter(c => !done.has(c.id));
+    }
+    if (quizPool.length >= QUIZ_ROWS) return;
     /* 도시는 이미 다 받아 두었습니다. 서버에서 잘라 오면 id 순으로 붙어 있는
        구간이 나와서 오타루 · 오타와 · 옥스퍼드처럼 이름이 몰립니다.
        여기서 통째로 섞습니다. */
@@ -3951,7 +3969,7 @@ $('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
    앱 전체를 덮어버립니다. 화면을 옮길 때마다 여기서 걷어냅니다. */
 function shutBigMap(){
   document.querySelector('.mapwrap')?.classList.remove('big');
-  ['mapback','mapclose','mapzoombtns'].forEach(id => $(id)?.remove());
+  ['mapclose','mapzoombtns'].forEach(id => $(id)?.remove());
   document.body.classList.remove('sheeton');
 }
 
@@ -3966,23 +3984,31 @@ $('mapbig').addEventListener('click', () => {
     el.id = id; el.innerHTML = html; if (css) el.style.cssText = css;
     document.body.appendChild(el); return el;
   };
-  const bg    = add('mapback', '');
   const close = add('mapclose', '닫기');
   const zoom  = add('mapzoombtns',
-                    '<button data-z="in">+</button><button data-z="out">−</button>');
+    '<button data-z="in">+</button><button data-z="out">−</button>' +
+    '<button data-z="fit">전체</button>');
 
   /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다.
      가운데를 잡고 폭만 줄이거나 늘립니다. */
   zoom.onclick = e => {
     const b = e.target.closest('[data-z]'); if (!b) return;
+    if (b.dataset.z === 'fit'){ setMapView('전체'); return; }
     vb.w *= b.dataset.z === 'in' ? 1 / 1.45 : 1.45;
     applyView();
   };
+  close.onclick = () => { shutBigMap(); setMapView('전체'); };
 
-  const shut = () => { shutBigMap(); setMapView('전체'); };
-  close.onclick = shut;
-  bg.onclick = shut;
-
+  /* 세로로 긴 화면에서 세계 전체를 펼치면 위아래가 텅 빕니다.
+     열 때는 빈 곳 없이 꽉 차는 배율에서 시작하고, 전체는 단추로 봅니다. */
+  applyView();
+  const r = $('worldsvg').getBoundingClientRect();
+  const aspect = (r.width && r.height) ? r.height / r.width : .4;
+  vb.w = Math.min(1000, (MAP_BOT - MAP_TOP) / aspect);
+  vb.cy = (MAP_TOP + MAP_BOT) / 2;
+  /* 다녀온 곳이 있으면 그쪽을 가운데 둡니다 — 빈 바다를 보여줄 이유가 없습니다. */
+  const xs = mapCities.filter(c => c.center_lng != null).map(c => px(c.center_lng));
+  if (xs.length) vb.cx = (Math.min(...xs) + Math.max(...xs)) / 2;
   applyView();
 });
 
@@ -4691,7 +4717,8 @@ function drawTripHeader(){
   /* 한 줄로 붙입니다. 지도가 더 잘 보여야 하는 자리라 머리말은 짧을수록 낫습니다.
      연도는 뻔하니 뺍니다 — 목록에서 이미 봤습니다. */
   $('t_meta').textContent = [
-    trip.destination,
+    /* 제목과 목적지가 같으면 한 번만 씁니다 — "도쿄 / 도쿄 · 09-12…"는 군더더기입니다. */
+    trip.destination === trip.title ? null : trip.destination,
     `${trip.start_date.slice(5)} ~ ${trip.end_date.slice(5)} · ${days}일`,
     trip.currency, now,
   ].filter(Boolean).join(' · ');
@@ -6258,6 +6285,7 @@ $('ms').textContent = Math.round(performance.now() - t0) + 'ms';
 </script>
 </body>
 </html>
+
 
 
 
