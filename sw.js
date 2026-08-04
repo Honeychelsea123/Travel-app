@@ -8,7 +8,7 @@
  * 그래서 우리 파일은 항상 네트워크를 먼저 봅니다. 캐시는 실패했을 때만 씁니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v1';
+const VER   = 'v2';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */

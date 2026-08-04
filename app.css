@@ -155,6 +155,11 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
 
+/* 홈에서 방금 별점을 준 줄. 사라지지 않고 남아 있어서 다시 눌러 고칠 수 있습니다.
+   남은 줄과 구분은 되어야 하니 아주 옅게만 깔아둡니다. */
+.rrow.rated{ background:linear-gradient(90deg, rgba(245,166,35,.10), transparent 70%);
+             border-radius:var(--r-md); }
+
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
    빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */

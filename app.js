@@ -1977,27 +1977,26 @@ $('home').addEventListener('click', async e => {
     const cityId = wrap.dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
-    row.dataset.done = '1';
-
-    /* 별이 차는 것을 먼저 보여주고, 잠깐 두었다가 밀어냅니다.
-       바로 지우면 내가 몇 점을 줬는지 볼 새가 없습니다. */
+    /* 매긴 줄을 밀어내지 않고 그 자리에 둡니다.
+       예전에는 0.9초 뒤에 사라졌는데, 손이 미끄러져 4점을 3점으로 줘도
+       고칠 새가 없어서 기록 탭까지 가야 했습니다.
+       그대로 두면 다시 눌러 고칠 수 있습니다. 다음에 홈을 열면 없어집니다. */
     paintStars(wrap, v, true);
     markRated(row, v);
     await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
 
-    setTimeout(() => {
-      row.classList.add('gone');
-      setTimeout(async () => {
-        row.remove();
-        await fillQuiz();
-        const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-          .map(r => r.dataset.cityopen));
-        const nx = quizPool.find(c => !shown.has(c.id));
-        if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
-      }, 280);
-    }, 620);
+    /* 새 도시는 처음 매길 때 한 번만 붙입니다. 점수를 고칠 때마다 붙이면
+       목록이 계속 길어집니다. */
+    if (!row.dataset.done){
+      row.dataset.done = '1';
+      row.classList.add('rated');
+      await fillQuiz();
+      const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+        .map(r => r.dataset.cityopen));
+      const nx = quizPool.find(c => !shown.has(c.id));
+      if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
+    }
     return;
   }
   const w = e.target.closest('#quizlist button[data-want]');
@@ -2007,10 +2006,25 @@ $('home').addEventListener('click', async e => {
     w.classList.toggle('on', on);
     return;
   }
-  /* 다섯 곳 다 모르는 곳일 수 있습니다. 통째로 갈아치웁니다. */
-  if (e.target.closest('#quizmore')){
-    quizPool = quizPool.slice(QUIZ_ROWS);
-    return loadHome();
+  /* 다섯 곳 다 모르는 곳일 수 있습니다. 통째로 갈아치웁니다.
+     예전에는 loadHome() 을 불러 홈 전체를 다시 그렸습니다. 그러면 히어로 사진과
+     다음 여행까지 새로 그려지면서 화면이 맨 위로 튀어 올랐습니다.
+     바꿔야 하는 것은 이 목록뿐이므로 여기만 갈아 끼웁니다 — 스크롤이 그대로 있습니다. */
+  const more = e.target.closest('#quizmore');
+  if (more){
+    more.disabled = true;
+    /* 지금 보이는 줄은 매긴 것까지 포함해 전부 물러납니다. */
+    const seen = new Set([...document.querySelectorAll('#quizlist .rrow')]
+      .map(r => r.dataset.cityopen));
+    quizPool = quizPool.filter(c => !seen.has(c.id));
+    await fillQuiz();
+    const list = quizPool.slice(0, QUIZ_ROWS);
+    $('quizlist').innerHTML = list.length
+      ? list.map(quizRow).join('')
+      : '<div class="empty">물어볼 도시를 다 봤어요.</div>';
+    more.disabled = false;
+    more.classList.toggle('hide', !list.length);
+    return;
   }
   const row = e.target.closest('#quizlist .rrow');
   if (row) return openCity(row.dataset.cityopen);
@@ -3006,6 +3020,47 @@ const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
 const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 
+/* ── 보관함 정렬·거르기 ─────────────────────────────────────────────
+ * 매긴 것이 쌓이면 목록이 길어져 찾을 수가 없습니다.
+ * 별점이 없는 보관함(가보고 싶은 곳)에서는 아예 안 나옵니다 — 거를 것이 없습니다. */
+let shelfSort = 'new', shelfStar = null;
+const HAS_STARS = k => k === 'mine' || k === 'comment' || k === 'place' || k === 'spot';
+
+/* 4 는 4.0 과 4.5 를 함께 봅니다. 반 칸씩 나누면 칸이 열 개가 되어 못 씁니다. */
+const starBand = s => s == null ? null : Math.floor(s);
+
+/* 별점 칸은 실제로 있는 점수만 만듭니다. 아무것도 없는 칸을 눌러
+   빈 목록을 보게 하지 않습니다. */
+function drawStarChips(list){
+  const have = new Set(list.map(x => starBand(x.stars)).filter(b => b != null));
+  const bands = [5,4,3,2,1].filter(b => have.has(b));
+  $('shelfstars').innerHTML =
+    `<button class="day${shelfStar == null ? ' on' : ''}" data-sstar="">전체</button>` +
+    bands.map(b => `<button class="day${shelfStar === b ? ' on' : ''}" data-sstar="${b}">
+        ★ ${b}${b < 5 ? '점대' : ''}</button>`).join('');
+}
+
+/* 목록 하나를 정렬·거르기 규칙에 맞게 손봅니다.
+   at 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다. */
+function shelfArrange(list){
+  let out = list;
+  if (shelfStar != null) out = out.filter(x => starBand(x.stars) === shelfStar);
+  const by = {
+    new:  (a, b) => String(b.at || '').localeCompare(String(a.at || '')),
+    high: (a, b) => (b.stars ?? -1) - (a.stars ?? -1),
+    low:  (a, b) => (a.stars ?? 99) - (b.stars ?? 99),
+  }[shelfSort];
+  return [...out].sort((a, b) => by(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
+}
+
+$('shelffilter').addEventListener('click', e => {
+  const s = e.target.closest('[data-ssort]');
+  if (s){ shelfSort = s.dataset.ssort; return openShelf(shelfKind); }
+  const b = e.target.closest('[data-sstar]');
+  if (b){ shelfStar = b.dataset.sstar === '' ? null : +b.dataset.sstar;
+          return openShelf(shelfKind); }
+});
+
 /* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
    따로 적게 하지 않고, 다녀온 여행의 그 분류만 모아 별점을 받습니다. */
 async function openPlaceShelf(kind){
@@ -3015,15 +3070,22 @@ async function openPlaceShelf(kind){
     sb.from('plans').select('id,title,memo,category,date,trip_id,trips(title,end_date)')
       .in('category', cats).is('deleted_at', null)
       .order('date', { ascending:false }).limit(300),
-    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
+    /* updated_at 은 최신순에 씁니다. select 에 안 적으면 undefined 로 와서
+       전부 같은 값이 되고 최신순이 이름순처럼 보입니다. */
+    sb.from('plan_ratings').select('plan_id,stars,updated_at').eq('user_id', me.id),
   ]);
   if (ps.error) return fail(ps.error, 'trip');
   const rate = Object.fromEntries((rs.data || []).map(r => [r.plan_id, r.stars]));
+  const rateAt = Object.fromEntries((rs.data || []).map(r => [r.plan_id, r.updated_at]));
   /* 아직 안 끝난 여행은 뺍니다 — 가보지도 않고 별점을 매길 수는 없습니다.
      다만 이미 매긴 것은 남깁니다. 매겼다는 것은 갔다는 뜻이고,
      프로필의 숫자와 여기 목록이 어긋나면 어느 쪽을 믿어야 할지 모릅니다. */
-  const list = (ps.data || []).filter(p =>
-    rate[p.id] != null || (p.trips?.end_date || p.date) < today);
+  const all = (ps.data || []).filter(p =>
+    rate[p.id] != null || (p.trips?.end_date || p.date) < today)
+    .map(p => ({ ...p, stars: rate[p.id] ?? null, at: rateAt[p.id] || p.date, name: p.title }));
+
+  drawStarChips(all);
+  const list = shelfArrange(all);
 
   $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
   $('shelflist').innerHTML = list.length
@@ -3037,8 +3099,10 @@ async function openPlaceShelf(kind){
                      style="color:var(--bad); flex:none">×</button>`
           : '<span style="width:26px; flex:none"></span>'}
       </div>`).join('')
-    : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
-         일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
+    : all.length
+      ? `<div class="empty">그 별점을 준 곳이 없어요.</div>`
+      : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
+           일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
 async function openShelf(kind){
@@ -3049,11 +3113,20 @@ async function openShelf(kind){
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
+  /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.
+     넘어올 때 걸려 있던 조건도 풀어둡니다 — 다른 보관함의 조건이 남아 있으면
+     왜 목록이 짧은지 알 수가 없습니다. */
+  $('shelffilter').classList.toggle('hide', !HAS_STARS(kind));
+  if (!HAS_STARS(kind)){ shelfStar = null; shelfSort = 'new'; }
+  $('shelffilter').querySelectorAll('[data-ssort]').forEach(b =>
+    b.classList.toggle('on', b.dataset.ssort === shelfSort));
+
   if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
 
   await loadCities();
   const [mine, vis, stats] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,want,comment').eq('user_id', me.id),
+    sb.from('city_ratings').select('city_id,stars,want,comment,updated_at')
+      .eq('user_id', me.id),
     sb.rpc('my_visited'),
     sb.rpc('city_stats'),
   ]);
@@ -3061,15 +3134,19 @@ async function openShelf(kind){
   visited  = new Set((vis.data || []).map(v => v.city_id));
   cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
 
-  const list = (cities || []).filter(c => {
+  const all = (cities || []).filter(c => {
     const r = myRates[c.id];
     if (kind === 'been')    return visited.has(c.id);
     if (kind === 'want')    return !!r?.want;
     if (kind === 'mine')    return r?.stars != null;
     if (kind === 'comment') return !!r?.comment;
     return false;
-  }).sort((a, b) => (myRates[b.id]?.stars ?? -1) - (myRates[a.id]?.stars ?? -1)
-                    || a.name.localeCompare(b.name, 'ko'));
+  }).map(c => ({ ...c, stars: myRates[c.id]?.stars ?? null,
+                        at: myRates[c.id]?.updated_at || '' }));
+
+  drawStarChips(all);
+  const list = HAS_STARS(kind) ? shelfArrange(all)
+    : [...all].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
   $('shelflist').innerHTML = list.length
@@ -3090,7 +3167,8 @@ async function openShelf(kind){
           ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
                ${esc(r.comment)}</div>` : '');
       }).join('')
-    : `<div class="empty">아직 없어요.</div>`;
+    : all.length ? `<div class="empty">그 별점을 준 곳이 없어요.</div>`
+                 : `<div class="empty">아직 없어요.</div>`;
 }
 
 function closeShelf(fromPop){
