@@ -93,6 +93,16 @@ let queue = [];
 try { queue = JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { queue = []; }
 const qsave = () => { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch {} };
 
+/* ── 마지막으로 받아둔 것 ─────────────────────────────────────────────
+ * 비행기모드에서 앱은 열렸는데 화면이 "불러오는 중…"에서 멈춰 있었습니다.
+ * 껍데기(html·js)만 캐시하고 **내용**은 아무것도 안 들고 있었기 때문입니다.
+ * 받아올 때마다 여기 적어두고, 못 받아오면 이걸 씁니다.
+ * 오래된 것을 보고 있다는 사실은 위쪽 띠(offbar)로 알립니다. */
+const cacheGet = k => { try { return JSON.parse(localStorage.getItem('t2:cache:' + k) || 'null'); }
+                        catch { return null; } };
+const cacheSet = (k, v) => { try { localStorage.setItem('t2:cache:' + k, JSON.stringify(v)); }
+                             catch {} };   /* 용량이 차면 조용히 넘어갑니다 */
+
 /* 네트워크가 끊겨서 실패한 것인지 가려냅니다.
    supabase-js 는 연결이 안 되면 fetch 의 TypeError 를 그대로 던집니다. */
 function isOffline(err){
@@ -245,22 +255,32 @@ async function loadCities(){
     .select('code,name,currency,local_lang,default_timezone').order('name');
 
   if (cs.error || ns.error){
+    /* 못 받아왔으면 지난번 것을 씁니다. 도시 목록이 없으면 홈도 여행도 못 그립니다 —
+       비행기모드에서 화면이 "불러오는 중…"에 멈춰 있던 곳이 여기였습니다. */
+    const old = cacheGet('cities');
+    if (old){ useCities(old.cities, old.countries); drawOffbar(); return; }
     fail(cs.error || ns.error, 'rate');
     return fail(cs.error || ns.error, 'form');
   }
+  cacheSet('cities', { cities: cs.data, countries: ns.data });
+  useCities(cs.data, ns.data);
+}
 
-  countryName = Object.fromEntries(ns.data.map(n => [n.code, n.name]));
-  countryInfo = Object.fromEntries(ns.data.map(n => [n.code, n]));
-  continentOf = Object.fromEntries(ns.data.map(n => [n.code, n.continent]));
+/* 받아온 것이든 캐시에서 꺼낸 것이든 여기서 한 번에 세웁니다.
+   검색 색인을 여기서 만드니 캐시로 들어와도 초성 검색이 그대로 됩니다. */
+function useCities(cityRows, countryRows){
+  countryName = Object.fromEntries(countryRows.map(n => [n.code, n.name]));
+  countryInfo = Object.fromEntries(countryRows.map(n => [n.code, n]));
+  continentOf = Object.fromEntries(countryRows.map(n => [n.code, n.continent]));
   /* 검색용 색인을 한 번만 만들어 둡니다. 칠 때마다 만들면 버벅입니다. */
-  cities = cs.data.map(c => ({
+  cities = cityRows.map(c => ({
     ...c,
     _hay: [c.name, c.name_en, c.name_local, countryName[c.country]]
             .filter(Boolean).join(' ').toLowerCase(),
     _cho: chosung(c.name)
   }));
   $('f_country').innerHTML =
-    ns.data.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
+    countryRows.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
   drawCountryNote();
 }
 
@@ -1385,7 +1405,25 @@ function heroHtml(photo, dd, title, memo, btn){
   </div>`;
 }
 
+/* 홈은 받아올 것이 여럿입니다(도시·다음 여행·평가·발자국).
+   하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
+   중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
 async function loadHome(){
+  try { await buildHome(); }
+  catch (e){
+    if ($('home').querySelector('.hero, .card, .rvbar')) return;   /* 이미 뭔가 그렸으면 둡니다 */
+    $('home').innerHTML = navigator.onLine
+      ? `<div class="card"><div class="empty">홈을 불러오지 못했어요.<br>
+           <button class="small" id="homeretry" style="margin-top:10px">다시 시도</button>
+         </div></div>`
+      : `<div class="card"><div class="empty">지금은 연결이 없어요.<br>
+           아래 <b>여행</b> 탭에서 저장해둔 일정을 볼 수 있어요.</div></div>`;
+    if ($('homeretry')) $('homeretry').onclick = loadHome;
+    drawOffbar();
+  }
+}
+
+async function buildHome(){
   const today = ymd(new Date());
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
 
@@ -1404,11 +1442,16 @@ async function loadHome(){
     $('home').appendChild(b);
   };
 
-  const { data, error } = await sb.from('trips')
+  let { data, error } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
     .gte('end_date', today)
     .order('start_date').limit(1);
-  if (error) return fail(error, 'trip');
+  /* 다음 여행은 여행 중에 제일 보고 싶은 것입니다. 캐시로라도 보여줍니다. */
+  if (error){
+    data = cacheGet('nexttrip');
+    if (!data) throw error;
+    drawOffbar();
+  } else cacheSet('nexttrip', data);
 
   /* 앞으로 갈 여행이 없고 평가만 남았으면, 그때는 평가를 크게 겁니다. */
   if (!data.length && pend){
@@ -3193,6 +3236,21 @@ function closeShelf(fromPop){
 }
 $('shelfback').addEventListener('click', () => closeShelf());
 
+/* 지운 줄을 빼는 자리. 곧바로 없애면 눌리자마자 사라져서 뭘 지웠는지 못 봅니다.
+   0.7초 두었다가 밀어냅니다 — 지웠다는 것은 보이고, 기다린다는 느낌은 안 듭니다. */
+function dropRow(row){
+  if (!row) return;
+  setTimeout(() => {
+    row.classList.add('gone');
+    setTimeout(() => {
+      row.remove();
+      const n = $('shelflist').querySelectorAll('.rrow').length;
+      $('shelfcount').textContent = n ? `${n}곳` : '';
+      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
+    }, 260);
+  }, 700);
+}
+
 /* 여기서도 별점을 고칠 수 있습니다. 기록 탭과 같은 방식입니다. */
 $('shelflist').addEventListener('click', async e => {
   /* 별점을 지우는 길. 별을 0으로 만들 수는 없어서 따로 둡니다.
@@ -3247,12 +3305,7 @@ $('shelflist').addEventListener('click', async e => {
        "안 지워진다"로 보였습니다 — 새로고침해야 사라졌습니다.
        여기는 "내 평가"이므로 별점이 없으면 있을 자리가 아닙니다.
        다시 그리지 않고 그 줄만 빼는 이유는, 다시 그리면 화면이 맨 위로 튀기 때문입니다. */
-    if (next == null && shelfKind === 'mine'){
-      row?.remove();
-      const n = $('shelflist').querySelectorAll('.rrow').length;
-      $('shelfcount').textContent = n ? `${n}곳` : '';
-      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
-    }
+    if (next == null && shelfKind === 'mine') dropRow(row);
     loadFootprint();                 /* 프로필 숫자도 같이 맞춥니다 */
     return;
   }
@@ -3262,12 +3315,7 @@ $('shelflist').addEventListener('click', async e => {
     await saveRate(w.dataset.want, { want: on }, true);
     w.classList.toggle('on', on);
     /* 별점과 같은 이유입니다 — "가보고 싶은 곳"에서 하트를 끄면 그 줄도 빠져야 합니다. */
-    if (!on && shelfKind === 'want'){
-      w.closest('.rrow')?.remove();
-      const n = $('shelflist').querySelectorAll('.rrow').length;
-      $('shelfcount').textContent = n ? `${n}곳` : '';
-      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
-    }
+    if (!on && shelfKind === 'want') dropRow(w.closest('.rrow'));
     return;
   }
   const row = e.target.closest('[data-cityopen]');
@@ -3462,10 +3510,18 @@ async function loadTrips(){
   else
     q = q.gte('end_date', today)
          .order('start_date', { ascending:true });
-  const { data, error } = await q;
+  let { data, error } = await q;
 
-  if (error){ $('trips').innerHTML = '<div class="empty">불러오지 못했습니다</div>';
-              return fail(error); }
+  /* 못 받아왔으면 지난번 목록을 씁니다. 여행 목록이 안 나오면 여행 중에
+     일정으로 들어갈 길 자체가 없어집니다. */
+  const ck = 'trips:' + tripFilter;
+  if (error){
+    const old = cacheGet(ck);
+    if (!old){ $('trips').innerHTML = '<div class="empty">불러오지 못했어요</div>';
+               return fail(error); }
+    data = old; error = null; drawOffbar();
+  } else cacheSet(ck, data);
+
   if (!data.length){
     $('trips').innerHTML =
       tripFilter === 'past' ? '<div class="empty">아직 다녀온 여행이 없어요.</div>' :
@@ -3593,9 +3649,18 @@ function dayLabel(dateStr, t){
 async function fetchTrip(id){
   const { data, error } = await sb.from('trips')
     .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle();
-  if (error) { fail(error, 'trip'); return false; }
+  /* 여행 한 줄을 못 받으면 그 안으로 아예 못 들어갑니다 — 일정도 지출도 그 뒤입니다. */
+  if (error){
+    const old = cacheGet('trip:' + id);
+    if (!old){ fail(error, 'trip'); return false; }
+    trip = old;
+    trip.myRole = (old.trip_members || []).find(m => m.user_id === me.id)?.role || '';
+    drawOffbar();
+    return true;
+  }
   /* 행이 안 오면 내보내졌거나 여행이 지워진 것입니다. RLS 가 그렇게 만듭니다. */
   if (!data) return false;
+  cacheSet('trip:' + id, data);
   trip = data;
   trip.myRole = (data.trip_members || []).find(m => m.user_id === me.id)?.role || '';
   return true;
@@ -3739,13 +3804,24 @@ async function loadLegs(){
     .select('id,city_id,destination,country,start_date,end_date,timezone,currency,' +
             'walk_max_km,walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
     .eq('trip_id', trip.id).order('start_date');
-  if (error) return fail(error, 'leg');
+  /* 구간이 없으면 날짜 칩에 도시가 안 붙고 이동 시간도 못 잽니다. 캐시로 버팁니다. */
+  const ck = 'legs:' + trip.id;
+  if (error){
+    const old = cacheGet(ck);
+    if (!old) return fail(error, 'leg');
+    legs = old; transitLines = cacheGet('lines:' + trip.id) || [];
+    drawOffbar(); drawDays(); return;
+  }
+  cacheSet(ck, data || []);
   legs = data || [];
   /* 노선 딱지 색. 그 여행에 나오는 도시 것만 받습니다. */
   const ids = [...new Set(legs.map(l => l.city_id).filter(Boolean))];
   if (ids.length){
     const r = await sb.from('transit_lines').select('name,color,dark_text').in('city_id', ids);
-    transitLines = r.data || [];
+    /* 못 받아오면 지난번 것. 노선 딱지 색이라 없어도 죽지는 않지만,
+       위 구간 캐시가 이걸 꺼내 쓰므로 저장은 해둬야 합니다. */
+    transitLines = r.error ? (cacheGet('lines:' + trip.id) || []) : (r.data || []);
+    if (!r.error) cacheSet('lines:' + trip.id, transitLines);
   } else transitLines = [];
   drawLegs();
 }
