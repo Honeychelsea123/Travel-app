@@ -3235,12 +3235,25 @@ $('shelflist').addEventListener('click', async e => {
   }
   if (st){
     const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
+    const row = st.closest('.rrow');
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
     const next = Number(myRates[cityId]?.stars) === v ? null : v;
     paintStars(wrap, next, true);
-    markRated(st.closest('.rrow'), next);
+    markRated(row, next);
     await saveRate(cityId, { stars: next }, true);
+
+    /* 지웠으면 목록에서도 빼야 합니다. 저장은 되는데 줄이 그대로 남아 있어서
+       "안 지워진다"로 보였습니다 — 새로고침해야 사라졌습니다.
+       여기는 "내 평가"이므로 별점이 없으면 있을 자리가 아닙니다.
+       다시 그리지 않고 그 줄만 빼는 이유는, 다시 그리면 화면이 맨 위로 튀기 때문입니다. */
+    if (next == null && shelfKind === 'mine'){
+      row?.remove();
+      const n = $('shelflist').querySelectorAll('.rrow').length;
+      $('shelfcount').textContent = n ? `${n}곳` : '';
+      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
+    }
+    loadFootprint();                 /* 프로필 숫자도 같이 맞춥니다 */
     return;
   }
   const w = e.target.closest('button[data-want]');
@@ -3248,6 +3261,13 @@ $('shelflist').addEventListener('click', async e => {
     const on = !myRates[w.dataset.want]?.want;
     await saveRate(w.dataset.want, { want: on }, true);
     w.classList.toggle('on', on);
+    /* 별점과 같은 이유입니다 — "가보고 싶은 곳"에서 하트를 끄면 그 줄도 빠져야 합니다. */
+    if (!on && shelfKind === 'want'){
+      w.closest('.rrow')?.remove();
+      const n = $('shelflist').querySelectorAll('.rrow').length;
+      $('shelfcount').textContent = n ? `${n}곳` : '';
+      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
+    }
     return;
   }
   const row = e.target.closest('[data-cityopen]');
