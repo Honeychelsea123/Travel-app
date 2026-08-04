@@ -4465,7 +4465,10 @@ const nameOf = id => {
 async function loadExpenses(){
   $('experr').classList.add('hide');
   const { data, error } = await sb.from('expenses')
-    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo')
+    /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
+       비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
+    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,' +
+            'expense_shares(user_id,weight)')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)
     .order('date', { ascending:false }).order('created_at', { ascending:false });
@@ -4529,7 +4532,11 @@ function drawExpenses(){
       last = e.date;
     }
     const k = e.category ? 'k-' + e.category : '';
-    const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : null, e.memo]
+    /* 몫이 따로 적힌 지출은 그렇다고 적어줍니다. 안 적으면 정산 숫자만 보고
+       왜 나만 많이 나왔는지 알 수가 없습니다. */
+    const sh = (e.expense_shares || []).length;
+    const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : '결제자 없음',
+                 sh ? `${sh}명이 나눠 냄` : null, e.memo]
                 .filter(Boolean).join(' · ');
     html += `<div class="plan">
       <span class="kdot ${esc(k)}"></span>
@@ -4552,8 +4559,27 @@ function drawExpenses(){
    나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다.
    집 통화 하나로 정산합니다 — 실제로 "너 나한테 12만원" 하고 보내지,
    유로 따로 프랑 따로 보내지 않습니다. */
+/* 여럿이 가면 제일 자주 열어보는 자리라 **틀리면 안 됩니다.**
+ * 처음 만든 것에 둘이 틀려 있었습니다. 적어둡니다 — 같은 실수를 또 하지 않게.
+ *
+ *  1. 1인분을 `총액 / 전체 참여자` 로 냈습니다. 나간 사람까지 세어 1인분이 작아졌고,
+ *     "이건 나랑 지훈만" 을 담으라고 만들어 둔 expense_shares 표는 아무도 안 읽었습니다.
+ *  2. **누가 냈는지 안 적은 지출을 총액에는 넣고 낸 사람에는 안 넣었습니다.**
+ *     그러면 갚을 돈 합이 받을 돈 합보다 커집니다. 아래 맞물리기가 짝을 다 못 찾고
+ *     남은 빚이 조용히 사라집니다 — 보이는 만큼 다 보내도 정산이 안 끝납니다.
+ *
+ * 지금 규칙:
+ *   - 나눌 사람 = 그 지출에 몫이 적혀 있으면 그 사람들, 없으면 아직 있는 참여자 전원
+ *   - 낸 사람 = 결제자. 나간 사람이 낸 것도 돌려받을 돈으로 셉니다
+ *   - 환율을 못 구했거나 결제자를 안 적은 지출은 **빼고, 몇 건인지 말합니다**
+ */
 function drawSettle(){
-  const rows = expenses.filter(e => e.amount_home != null);
+  const active = members.filter(m => !m.left_at);
+  /* 애매한 것이 하나라도 섞이면 합이 안 맞습니다. 쓸 수 있는 것만 씁니다. */
+  const rows    = expenses.filter(e => e.amount_home != null && e.payer_id);
+  const noFx    = expenses.filter(e => e.amount_home == null).length;
+  const noPayer = expenses.filter(e => e.amount_home != null && !e.payer_id).length;
+
   if (!rows.length || members.length < 2){
     settleOn = false; $('settlecard').classList.add('hide'); return;
   }
@@ -4562,40 +4588,75 @@ function drawSettle(){
 
   const cur = trip.home_currency;
   const total = rows.reduce((s, e) => s + Number(e.amount_home), 0);
-  const share = total / members.length;
 
-  const paid = {};
-  members.forEach(m => paid[m.user_id] = 0);
-  /* 결제자를 안 적은 지출은 공동으로 봅니다 — 아무에게도 안 몰아줍니다. */
-  rows.forEach(e => { if (e.payer_id != null && e.payer_id in paid)
-                        paid[e.payer_id] += Number(e.amount_home); });
+  /* 낸 돈과 써야 할 돈을 따로 셉니다. 둘의 차이가 그 사람의 잔액입니다. */
+  const paid = {}, owed = {};
+  const bump = (o, k, v) => o[k] = (o[k] || 0) + v;
 
-  const bal = members.map(m => ({ id:m.user_id, v: paid[m.user_id] - share }))
-                     .sort((a, b) => a.v - b.v);
-  /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다. */
+  for (const e of rows){
+    const amt = Number(e.amount_home);
+    bump(paid, e.payer_id, amt);
+
+    const sh = (e.expense_shares || []).filter(s => Number(s.weight) > 0);
+    const split = sh.length
+      ? sh.map(s => [s.user_id, Number(s.weight)])
+      : active.map(m => [m.user_id, 1]);
+    const w = split.reduce((s, [, v]) => s + v, 0);
+    /* 나눌 사람이 아무도 없으면(다 나갔다) 낸 사람이 혼자 쓴 것으로 둡니다.
+       0 으로 나누면 조용히 NaN 이 되고 정산 전체가 무너집니다. */
+    if (!w){ bump(owed, e.payer_id, amt); continue; }
+    for (const [uid, v] of split) bump(owed, uid, amt * v / w);
+  }
+
+  /* 낸 사람과 나눠 낼 사람을 합칩니다 — 나간 사람이 낸 돈도 돌려받아야 합니다. */
+  const ids = [...new Set([...Object.keys(paid), ...Object.keys(owed)])];
+  const bal = ids.map(id => ({ id, paid: paid[id] || 0, owed: owed[id] || 0,
+                               v: (paid[id] || 0) - (owed[id] || 0) }))
+                 .sort((a, b) => a.v - b.v);
+
+  /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다.
+     이제 낸 돈 합과 쓴 돈 합이 같으므로 남는 빚 없이 떨어집니다. */
+  const work = bal.map(b => ({ ...b }));
   const moves = [];
-  let i = 0, j = bal.length - 1;
+  let i = 0, j = work.length - 1;
   while (i < j){
-    const owe = -bal[i].v, get = bal[j].v;
+    const owe = -work[i].v, get = work[j].v;
     if (owe < 1){ i++; continue; }
     if (get < 1){ j--; continue; }
     const v = Math.min(owe, get);
-    moves.push({ from: bal[i].id, to: bal[j].id, v });
-    bal[i].v += v; bal[j].v -= v;
+    moves.push({ from: work[i].id, to: work[j].id, v });
+    work[i].v += v; work[j].v -= v;
   }
 
-  const left = expenses.length - rows.length;
+  const skipped = [
+    noFx    ? `환율을 못 구한 ${noFx}건` : '',
+    noPayer ? `누가 냈는지 안 적은 ${noPayer}건` : '',
+  ].filter(Boolean).join(' · ');
+
   $('settle').innerHTML =
-    `<div class="row" style="border:0; padding:0; margin:0">
-       <span class="label"><b>${esc(money(total, cur))}</b></span>
-       <span class="val">1인 ${esc(money(share, cur))}</span></div>
+    `<div class="row" style="border:0; padding:0 0 4px; margin:0">
+       <span class="label"><b style="font-size:calc(19px * var(--ts))">${
+         esc(money(total, cur))}</b></span>
+       <span class="val">${active.length}명이 나눠요</span></div>
+
+     <div class="daysep">누가 얼마</div>
+     ${bal.slice().reverse().map(b => `<div class="row">
+        <span class="label">${esc(nameOf(b.id))}
+          <div class="memo">낸 돈 ${esc(money(b.paid, cur))} ·
+               쓴 돈 ${esc(money(b.owed, cur))}</div></span>
+        <span class="val" style="color:${b.v >= 0 ? 'var(--ok)' : 'var(--bad)'}">
+          <b>${b.v >= 0 ? '+' : '−'}${esc(money(Math.abs(b.v), cur))}</b></span>
+      </div>`).join('')}
+
+     <div class="daysep">이렇게 보내면 끝나요</div>
      ${moves.length
        ? moves.map(m => `<div class="row"><span class="label">${esc(nameOf(m.from))}
             → ${esc(nameOf(m.to))}</span>
             <span class="val"><b>${esc(money(m.v, cur))}</b></span></div>`).join('')
-       : '<div class="empty" style="padding:10px 0">딱 맞아요.</div>'}
-     ${left ? `<div class="empty" style="text-align:left; color:var(--bad)">
-          환율을 못 구한 ${left}건은 이 정산에 안 들어갔어요.</div>` : ''}`;
+       : '<div class="empty" style="padding:10px 0">딱 맞아요. 주고받을 것이 없어요.</div>'}
+
+     ${skipped ? `<div class="empty" style="text-align:left; color:var(--bad)">
+          ${esc(skipped)}은 이 정산에 안 들어갔어요.</div>` : ''}`;
 }
 
 /* 환율이 비어 있는 지출을 그날 환율로 채웁니다.
@@ -4630,9 +4691,34 @@ $('addexpbtn').addEventListener('click', () => {
     `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
     `<option value="">공동 (결제자 없음)</option>`;
   $('x_date').value = pickedDay || ymd(new Date());
+  drawShareChips();
   syncExpCur();
   $('x_title').focus();
 });
+
+/* ── 누가 나눠 내나 ─────────────────────────────────────────────────
+ * expense_shares 표는 처음부터 있었는데 채울 길이 없었습니다. 여기가 그 길입니다.
+ * 처음에는 전원이 켜져 있습니다 — 대부분은 손댈 일이 없고, 손대지 않으면
+ * 아무 줄도 안 만들어 균등으로 둡니다. 있는 그대로가 기본값입니다.
+ * 혼자 가는 여행에서는 아예 안 보여줍니다. */
+function drawShareChips(){
+  const active = members.filter(m => !m.left_at);
+  $('x_sharebox').classList.toggle('hide', active.length < 2);
+  $('x_shares').innerHTML = active.map(m =>
+    `<button class="day on" data-share="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</button>`
+  ).join('');
+}
+$('x_shares').addEventListener('click', e => {
+  const b = e.target.closest('[data-share]'); if (!b) return;
+  b.classList.toggle('on');
+  /* 아무도 없으면 나눌 수가 없습니다. 마지막 하나는 못 끄게 합니다. */
+  if (!$('x_shares').querySelector('.on')){
+    b.classList.add('on');
+    toast('적어도 한 명은 있어야 해요.');
+  }
+});
+const pickedShares = () =>
+  [...$('x_shares').querySelectorAll('[data-share].on')].map(b => b.dataset.share);
 /* 날짜를 바꾸면 그날 있는 곳의 통화로 맞춥니다. */
 function syncExpCur(){
   const l = legFor($('x_date').value);
@@ -4673,9 +4759,28 @@ $('x_create').addEventListener('click', async () => {
 
   if (!r.ok) return fail(r.why, 'expform');
 
+  /* 몫을 손대지 않았으면(전원 켜짐) 아무 줄도 안 만듭니다 — 그게 곧 균등입니다.
+     줄을 만들어 두면 나중에 일행이 늘었을 때 그 사람이 빠집니다. */
+  const active = members.filter(m => !m.left_at);
+  const picked = $('x_sharebox').classList.contains('hide') ? [] : pickedShares();
+  const partial = picked.length && picked.length < active.length;
+
   $('x_title').value = ''; $('x_amount').value = ''; $('x_memo').value = '';
   $('expcard').classList.add('hide');
-  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
+
+  if (r.queued){
+    /* 큐에 쌓인 지출은 아직 id 가 없어서 몫을 붙일 수가 없습니다.
+       조용히 균등으로 두면 나중에 정산이 틀립니다. 그래서 말합니다. */
+    return toast(partial
+      ? '연결이 없어 들고 있어요. 나눠 낼 사람은 연결된 뒤 다시 지정해주세요.'
+      : '연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
+  }
+  if (partial && r.id){
+    const sh = await sb.from('expense_shares')
+      .insert(picked.map(uid => ({ expense_id: r.id, user_id: uid, weight: 1 })))
+      .select('user_id');
+    if (sh.error) fail(sh.error, 'exp');
+  }
   await loadExpenses();
 });
 
