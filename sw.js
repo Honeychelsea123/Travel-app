@@ -8,7 +8,7 @@
  * 그래서 화면 쪽(app.js 의 checkBuild)이 빌드 번호를 확인해 한 번 새로고침합니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v6';
+const VER   = 'v7';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -16,7 +16,14 @@ const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
 const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
   './manifest.json', './apple-touch-icon.png',
+  './privacy.html', './terms.html',
 ];
+
+/* 앱 화면은 index.html 하나뿐입니다. 약관·처리방침은 **다른 문서**입니다.
+   아래에서 "문서 요청이면 캐시의 index.html 을 준다"고 뭉뚱그리면
+   privacy.html 을 열어도 앱이 나옵니다. 무엇이 앱 문서인지 여기서 가릅니다. */
+const isAppDoc = url =>
+  url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
 
 self.addEventListener('install', e => {
   /* 하나라도 실패하면 addAll 은 전부 버립니다. 하나씩 넣어 나머지는 살립니다. */
@@ -110,8 +117,7 @@ self.addEventListener('fetch', e => {
        **네트워크를 조금이라도 기다리는 설계는 오프라인에서 집니다.**
        그래서 즉시 캐시로 열고, 새것은 뒤에서 받아둡니다.
        새 빌드가 올라온 것은 화면 쪽에서 알아채 한 번 새로고침합니다. */
-    if (req.mode === 'navigate' || url.pathname.endsWith('.html') ||
-        url.pathname.endsWith('/')){
+    if (isAppDoc(url)){
       e.respondWith((async () => {
         const c = await caches.open(SHELL);
         const fresh = () => fetch(url.href, { cache:'no-store', credentials:'same-origin' })
@@ -156,7 +162,10 @@ self.addEventListener('fetch', e => {
         const res = await fetch(req);
         if (res.ok) c.put(req, res.clone());
         return res;
-      } catch { return Response.error(); }
+      } catch {
+        /* 약관·처리방침도 여기로 옵니다. 문서인데 빈 화면을 내면 안 됩니다. */
+        return url.pathname.endsWith('.html') ? offlineNote() : Response.error();
+      }
     })());
     return;
   }

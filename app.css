@@ -102,6 +102,18 @@ button:disabled{ opacity:.45; cursor:default; transform:none; }
 .ghost{ background:transparent; color:var(--dim); border-color:transparent; padding:6px 10px;
         font-size:calc(13px * var(--ts)); }
 .small{ padding:7px 12px; font-size:calc(13px * var(--ts)); }
+/* 단추처럼 보이지만 실제로는 링크인 것 (약관·처리방침).
+   button 규칙이 요소 선택자라 <a> 에는 안 걸립니다. 여기서 같은 모양을 줍니다. */
+a.btn{ display:inline-block; flex:none; text-decoration:none; white-space:nowrap;
+       font:inherit; letter-spacing:inherit; color:var(--ink);
+       background:var(--canvas); border:1px solid var(--hairline);
+       border-radius:var(--r-pill); padding:10px var(--s-md); }
+a.btn:active{ transform:scale(.96); }
+
+/* 로그인 단추 아래 동의 문구. 읽히긴 해야 하고 겁을 주면 안 됩니다. */
+.agree{ margin:14px 0 0; font-size:calc(12px * var(--ts)); line-height:1.6;
+        color:var(--ink-48); word-break:keep-all; }
+.agree a{ color:var(--ink-48); text-decoration:underline; text-underline-offset:2px; }
 
 label{ display:block; font-size:calc(12px * var(--ts)); color:var(--dim); margin:14px 0 5px; }
 label:first-of-type{ margin-top:0; }
@@ -243,16 +255,20 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 /* ── 설정 화면 ──
    항목마다 카드를 하나씩 두었더니 여섯 덩어리가 같은 무게로 늘어서
    무엇이 중요한지 안 보였습니다. 성격별로 묶고 그 안에서 줄로 나눕니다. */
-.srow{ display:flex; align-items:center; gap:12px; padding:12px 0;
+.srow{ display:flex; align-items:center; gap:12px; padding:9px 0;
        border-top:1px solid var(--divider-soft); }
-.srow:first-of-type{ border-top:0; padding-top:2px; }
+.srow:first-of-type{ border-top:0; padding-top:0; }
+.srow:last-child{ padding-bottom:0; }
 .srow .label{ flex:1; min-width:0; }
-.srow .memo{ margin-top:2px; }
+.srow .memo{ margin-top:1px; }
 /* 설명 글. .empty 를 쓰면 위아래 20px 씩 먹어 카드가 쓸데없이 커집니다. */
-.snote{ color:var(--ink-48); font-size:calc(12px * var(--ts)); line-height:1.55;
-        padding:8px 0 2px; }
-/* 마지막 카드가 떠 있는 탭바에 잘리던 것 */
-#setpane{ padding-bottom:8px; }
+.snote{ color:var(--ink-48); font-size:calc(12px * var(--ts)); line-height:1.5;
+        padding:7px 0 0; }
+/* 설정 카드는 줄만 늘어놓는 자리라 안팎 여백을 다른 카드보다 줄입니다.
+   같은 여백을 쓰니 항목 넷에 화면 한 장이 다 갔습니다. */
+#setpane .card{ padding:13px var(--s-md); margin-bottom:9px; }
+#setpane .card h2{ margin-bottom:9px; }
+#setpane{ padding-bottom:8px; }   /* 마지막 카드가 떠 있는 탭바에 잘리던 것 */
 
 /* ── 켬/끔 스위치 ──
    체크박스는 켜졌는지 한눈에 안 들어옵니다. 아이폰 설정과 같은 모양으로 바꿉니다.
@@ -825,6 +841,14 @@ body.kbon .assheet{ padding-bottom:16px; }
 .msg.me a{ color:#fff; }
 /* 대화가 없을 때 안내문은 풍선이 아니라 가운데에 그대로 둡니다. */
 #chat .empty{ align-self:center; margin:auto 0; }
+
+/* ── AI 라는 표시 ──
+   인공지능기본법 제31조가 요구하는 것이라 지우면 안 됩니다.
+   다만 답변마다 붙으니 눈에 걸리면 안 됩니다 — 작게, 흐리게, 줄 하나로. */
+.aitag{ margin-top:7px; padding-top:6px; border-top:1px solid var(--divider-soft);
+        font-size:calc(11px * var(--ts)); line-height:1.45; color:var(--ink-48); }
+.aipre{ margin-top:10px; font-size:calc(12px * var(--ts)); line-height:1.5;
+        color:var(--ink-48); max-width:300px; }
 
 /* 사진·보내기 단추. 글자 대신 그림이라 크기를 정사각으로 잡습니다. */
 .iconbtn{ flex:none; width:40px; height:40px; padding:0;

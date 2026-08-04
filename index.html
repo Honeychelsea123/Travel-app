@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b150">
+<link rel="stylesheet" href="app.css?v=b151">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -144,6 +144,13 @@
         <li>여행과 일정은 <b>나와 내가 부른 일행만</b> 봐요.</li>
         <li>언제든 <b>탈퇴하고 전부 지울 수 있어요.</b></li>
       </ul>
+      <!-- 동의를 받는 자리는 여기 하나뿐입니다. 누르기 **전에** 보여야 하므로
+           단추 뒤가 아니라 단추와 같은 화면에 둡니다.
+           AI 고지와 국외 전송은 여기 안 씁니다 — 첫 화면에 겁주는 문장을 쌓으면
+           아무도 안 읽습니다. AI 화면과 약관·처리방침에 각각 있습니다. -->
+      <p class="agree">계속하면 <a href="./terms.html">이용약관</a>과
+        <a href="./privacy.html">개인정보처리방침</a>에 동의하는 것으로 봅니다.
+        만 14세 이상만 이용할 수 있어요.</p>
     </div>
   </section>
 
@@ -724,6 +731,25 @@
           <pre id="dumperr" class="hide"></pre>
         </div>
 
+        <!-- ── 약속 ── 약관과 처리방침. 앱 밖에서도 열리는 별도 문서라
+             <a> 로 그냥 넘깁니다. 화면 안에 담으면 링크를 남에게 못 줍니다. -->
+        <div class="card">
+          <h2>약속</h2>
+          <div class="srow">
+            <span class="label"><b>이용약관</b>
+              <div class="memo">무엇을 약속하고 무엇을 약속하지 않는지</div></span>
+            <a class="small btn" href="./terms.html">보기</a>
+          </div>
+          <div class="srow">
+            <span class="label"><b>개인정보처리방침</b>
+              <div class="memo">무엇을 받고, 어디로 보내고, 언제 지우는지</div></span>
+            <a class="small btn" href="./privacy.html">보기</a>
+          </div>
+          <div class="snote">AI 답변은 Google Gemini가, 웹 검색은 Tavily가 맡습니다.
+            보내신 질문과 사진은 미국에 있는 두 회사의 서버로 전송돼요.
+            무엇이 어디로 가는지는 처리방침 7번에 표로 적어뒀습니다.</div>
+        </div>
+
         <!-- ── 계정 ── 로그아웃과 탈퇴는 성격이 같아 한 덩어리로 둡니다. -->
         <div class="card">
           <h2>계정</h2>
@@ -1206,10 +1232,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b150</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b151</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b150"></script>
+<script type="module" src="app.js?v=b151"></script>
 </body>
 </html>
 

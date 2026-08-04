@@ -504,6 +504,10 @@ async function loadAdmin(){
   const box = $('admincard');
   const r = await netTimeout(sb.rpc('admin_stats'));
   if (r.error || !r.data){ box.classList.add('hide'); return; }
+  /* 처리방침에 "오류 90일, 신고 1년"이라고 적었으니 실제로 지워져야 합니다(042).
+     따로 도는 장치가 없어서 관리자가 대시보드를 열 때 한 번씩 치웁니다.
+     결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
+  sb.rpc('sweep_retention').then(() => {}, () => {});
   box.classList.remove('hide');
   const d = r.data;
 
@@ -1078,11 +1082,19 @@ function md(s){
 }
 
 function drawChats(rows){
-  /* 이름표를 떼고 좌우로 갈랐습니다. 누가 한 말인지 읽지 않아도 보입니다. */
+  /* 이름표를 떼고 좌우로 갈랐습니다. 누가 한 말인지 읽지 않아도 보입니다.
+     답변마다 붙는 'AI 생성' 꼬리표는 멋이 아니라 의무입니다 —
+     인공지능기본법(2026.1.22 시행) 제31조가 생성형 AI 결과물에 그 사실을
+     표시하라고 정합니다. 화면에 한 번만 적어두는 것으로는 '결과물 표시'가
+     아니라서, 답변 하나하나에 답니다. */
   $('chat').innerHTML = rows.length
-    ? rows.map(m => `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${
-        md(m.content)}</div>`).join('')
-    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
+    ? rows.map(m => m.role === 'user'
+        ? `<div class="msg me">${md(m.content)}</div>`
+        : `<div class="msg ai">${md(m.content)}<div class="aitag">AI가 생성한 답변입니다 · 영업시간·요금은 직접 확인해 주세요</div></div>`
+      ).join('')
+    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}
+        <div class="aipre">답변은 생성형 AI(Google Gemini)가 만듭니다.
+          보내신 질문과 사진은 답변을 만들기 위해 미국의 Google 서버로 전송돼요.</div></div>`;
   $('chat').scrollTop = $('chat').scrollHeight;
   drawQasks();                     /* 대화가 생기면 빠른 질문은 물러납니다 */
 }
