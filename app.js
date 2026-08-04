@@ -922,12 +922,22 @@ $('ai_trip').addEventListener('change', () => {
  * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
 async function loadChats(tripId){
   /* AI 는 서버가 있어야 합니다. 오프라인이면 물어봐도 답이 안 옵니다.
-     
+     "불러오는 중…"을 남겨두면 하루 종일 기다리게 됩니다. 못 쓴다고 적습니다.
+     입력칸도 막습니다 — 쓸 수 있게 두면 써 보고 나서야 안 되는 걸 압니다. */
+  if (!navigator.onLine){
+    $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
+      '일정과 지출은 그대로 보실 수 있어요.</div>';
+    $('qasks').classList.add('hide');
+    $('ai_msg').disabled = true; $('ai_send').disabled = true;
+    return;
+  }
+  $('ai_msg').disabled = false; $('ai_send').disabled = false;
+
   /* 여행을 안 골랐을 때 나눈 대화도 남깁니다 (029). trip_id 가 비어 있는 줄입니다.
      eq 로는 null 을 못 찾습니다 — is 를 써야 합니다. */
   let q = sb.from('chats').select('role,content').eq('user_id', me.id);
   q = tripId ? q.eq('trip_id', tripId) : q.is('trip_id', null);
-  const { data } = await q.order('created_at').limit(40);
+  const { data } = await netTimeout(q.order('created_at').limit(40));
   drawChats(data || []);
   const { data: left } = await sb.rpc('ai_left');
   if (left) $('ai_left').textContent = `오늘 ${left.used}/${left.limit}회`;
