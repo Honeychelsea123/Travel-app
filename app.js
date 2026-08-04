@@ -6257,12 +6257,19 @@ const KIND_K = { 항공:'이동', 기차:'이동', 렌터카:'이동', 숙소:'�
 
 async function loadBookings(){
   $('bookerr').classList.add('hide');
-  const { data, error } = await sb.from('bookings')
+  let { data, error } = await netTimeout(sb.from('bookings')
     .select('id,kind,title,ref,start_date,start_time,end_date,end_time,address,tel,memo')
     .eq('trip_id', trip.id).is('deleted_at', null)
-    .order('start_date', { nullsFirst:false }).order('start_time', { nullsFirst:false });
-  if (error){ $('bookings').innerHTML = ''; return fail(error, 'book'); }
-  bookings = data;
+    .order('start_date', { nullsFirst:false }).order('start_time', { nullsFirst:false }));
+  /* 항공편 번호와 호텔 예약번호는 **여행 중에 제일 자주 여는 것**입니다.
+     공항에서 연결이 안 된다고 못 보면 그때가 제일 곤란합니다. 받아둡니다. */
+  const bck = 'book:' + trip.id;
+  if (error){
+    const old = cacheGet(bck);
+    if (!old){ offNote('bookings'); drawOffbar(); return; }
+    bookings = old; drawOffbar();
+  } else { cacheSet(bck, data); bookings = data; }
+  data = bookings;
 
   $('bookings').innerHTML = data.length ? data.map(b => {
     const k = 'k-' + (KIND_K[b.kind] || '기타');
@@ -6326,11 +6333,16 @@ $('bookings').addEventListener('click', e => softDel(e, 'bact', 'bookings', load
  * 도쿄 앱은 문자열이라 그게 안 됐습니다. */
 async function loadPacking(){
   $('packerr').classList.add('hide');
-  const { data, error } = await sb.from('packing')
+  let { data, error } = await netTimeout(sb.from('packing')
     .select('id,title,done,assignee_id,category')
     .eq('trip_id', trip.id).is('deleted_at', null)
-    .order('sort_order').order('created_at');
-  if (error){ $('packing').innerHTML = ''; return fail(error, 'pack'); }
+    .order('sort_order').order('created_at'));
+  const pck = 'pack:' + trip.id;
+  if (error){
+    const old = cacheGet(pck);
+    if (!old){ offNote('packing'); $('packcount').textContent = ''; drawOffbar(); return; }
+    data = old; drawOffbar();
+  } else cacheSet(pck, data);
 
   const done = data.filter(p => p.done).length;
   $('packcount').textContent = data.length ? `${done}/${data.length}` : '';
@@ -6427,10 +6439,15 @@ $('packing').addEventListener('click', e => softDel(e, 'kact', 'packing', loadPa
 /* ── 링크 ── 예약 확인 페이지, 블로그, 지도 같은 것 */
 async function loadLinks(){
   $('linkerr').classList.add('hide');
-  const { data, error } = await sb.from('links')
+  let { data, error } = await netTimeout(sb.from('links')
     .select('id,title,url,category').eq('trip_id', trip.id)
-    .is('deleted_at', null).order('created_at');
-  if (error){ $('links').innerHTML = ''; return fail(error, 'link'); }
+    .is('deleted_at', null).order('created_at'));
+  const lck = 'link:' + trip.id;
+  if (error){
+    const old = cacheGet(lck);
+    if (!old){ offNote('links'); drawOffbar(); return; }
+    data = old; drawOffbar();
+  } else cacheSet(lck, data);
   $('links').innerHTML = data.length ? data.map(l =>
     `<div class="row"><span class="label">
         <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"
