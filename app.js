@@ -3030,42 +3030,25 @@ const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 /* ── 보관함 정렬·거르기 ─────────────────────────────────────────────
  * 매긴 것이 쌓이면 목록이 길어져 찾을 수가 없습니다.
  * 별점이 없는 보관함(가보고 싶은 곳)에서는 아예 안 나옵니다 — 거를 것이 없습니다. */
-let shelfSort = 'new', shelfStar = null;
+let shelfSort = 'new';
 const HAS_STARS = k => k === 'mine' || k === 'comment' || k === 'place' || k === 'spot';
 
-/* 4 는 4.0 과 4.5 를 함께 봅니다. 반 칸씩 나누면 칸이 열 개가 되어 못 씁니다. */
-const starBand = s => s == null ? null : Math.floor(s);
-
-/* 별점 칸은 실제로 있는 점수만 만듭니다. 아무것도 없는 칸을 눌러
-   빈 목록을 보게 하지 않습니다. */
-function drawStarChips(list){
-  const have = new Set(list.map(x => starBand(x.stars)).filter(b => b != null));
-  const bands = [5,4,3,2,1].filter(b => have.has(b));
-  $('shelfstars').innerHTML =
-    `<button class="day${shelfStar == null ? ' on' : ''}" data-sstar="">전체</button>` +
-    bands.map(b => `<button class="day${shelfStar === b ? ' on' : ''}" data-sstar="${b}">
-        ★ ${b}${b < 5 ? '점대' : ''}</button>`).join('');
-}
-
-/* 목록 하나를 정렬·거르기 규칙에 맞게 손봅니다.
-   at 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다. */
+/* 목록을 정렬 규칙에 맞게 세웁니다.
+   at 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다.
+   별점 칸(★5 · ★4점대 …)도 만들어 봤는데 줄이 둘이 되면서 답답했습니다.
+   목록이 짧아서 정렬만으로 충분합니다. */
 function shelfArrange(list){
-  let out = list;
-  if (shelfStar != null) out = out.filter(x => starBand(x.stars) === shelfStar);
   const by = {
     new:  (a, b) => String(b.at || '').localeCompare(String(a.at || '')),
     high: (a, b) => (b.stars ?? -1) - (a.stars ?? -1),
     low:  (a, b) => (a.stars ?? 99) - (b.stars ?? 99),
   }[shelfSort];
-  return [...out].sort((a, b) => by(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
+  return [...list].sort((a, b) => by(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
 }
 
 $('shelffilter').addEventListener('click', e => {
   const s = e.target.closest('[data-ssort]');
-  if (s){ shelfSort = s.dataset.ssort; return openShelf(shelfKind); }
-  const b = e.target.closest('[data-sstar]');
-  if (b){ shelfStar = b.dataset.sstar === '' ? null : +b.dataset.sstar;
-          return openShelf(shelfKind); }
+  if (s){ shelfSort = s.dataset.ssort; openShelf(shelfKind); }
 });
 
 /* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
@@ -3091,7 +3074,6 @@ async function openPlaceShelf(kind){
     rate[p.id] != null || (p.trips?.end_date || p.date) < today)
     .map(p => ({ ...p, stars: rate[p.id] ?? null, at: rateAt[p.id] || p.date, name: p.title }));
 
-  drawStarChips(all);
   const list = shelfArrange(all);
 
   $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
@@ -3106,9 +3088,7 @@ async function openPlaceShelf(kind){
                      style="color:var(--bad); flex:none">×</button>`
           : '<span style="width:26px; flex:none"></span>'}
       </div>`).join('')
-    : all.length
-      ? `<div class="empty">그 별점을 준 곳이 없어요.</div>`
-      : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
+    : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
            일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
@@ -3124,7 +3104,7 @@ async function openShelf(kind){
      넘어올 때 걸려 있던 조건도 풀어둡니다 — 다른 보관함의 조건이 남아 있으면
      왜 목록이 짧은지 알 수가 없습니다. */
   $('shelffilter').classList.toggle('hide', !HAS_STARS(kind));
-  if (!HAS_STARS(kind)){ shelfStar = null; shelfSort = 'new'; }
+  if (!HAS_STARS(kind)) shelfSort = 'new';
   $('shelffilter').querySelectorAll('[data-ssort]').forEach(b =>
     b.classList.toggle('on', b.dataset.ssort === shelfSort));
 
@@ -3151,7 +3131,6 @@ async function openShelf(kind){
   }).map(c => ({ ...c, stars: myRates[c.id]?.stars ?? null,
                         at: myRates[c.id]?.updated_at || '' }));
 
-  drawStarChips(all);
   const list = HAS_STARS(kind) ? shelfArrange(all)
     : [...all].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
@@ -3174,8 +3153,7 @@ async function openShelf(kind){
           ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
                ${esc(r.comment)}</div>` : '');
       }).join('')
-    : all.length ? `<div class="empty">그 별점을 준 곳이 없어요.</div>`
-                 : `<div class="empty">아직 없어요.</div>`;
+    : `<div class="empty">아직 없어요.</div>`;
 }
 
 function closeShelf(fromPop){
