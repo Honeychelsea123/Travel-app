@@ -193,6 +193,29 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 }
 .pcard .tdest span{ font-weight:400; opacity:.75; }
 
+/* ── 켬/끔 스위치 ──
+   체크박스는 켜졌는지 한눈에 안 들어옵니다. 아이폰 설정과 같은 모양으로 바꿉니다.
+   진짜 체크박스를 숨겨두고 그 위에 그리는 방식이라 키보드로도 그대로 켜집니다. */
+.sw{ position:relative; flex:none; width:50px; height:30px; display:inline-block; }
+.sw input{ position:absolute; opacity:0; width:100%; height:100%; margin:0;
+           cursor:pointer; z-index:1; }
+.sw span{
+  position:absolute; inset:0; border-radius:var(--r-pill);
+  background:#d9d9de; transition:background .2s;
+}
+.sw span::after{
+  content:''; position:absolute; top:3px; left:3px; width:24px; height:24px;
+  border-radius:50%; background:#fff; transition:transform .2s;
+  box-shadow:0 1px 3px rgba(0,0,0,.28);
+}
+.sw input:checked + span{ background:var(--ok); }
+.sw input:checked + span::after{ transform:translateX(20px); }
+.sw input:disabled + span{ opacity:.4; }
+.sw input:focus-visible + span{ outline:2px solid var(--primary-focus); outline-offset:3px; }
+/* 전체를 끄면 종류는 손댈 수 없게 흐려둡니다 — 눌러도 소용없는 것을
+   눌러보게 두면 고장으로 보입니다. */
+#nf_kinds.off{ opacity:.45; pointer-events:none; }
+
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
 

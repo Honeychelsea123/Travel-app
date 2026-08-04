@@ -67,7 +67,7 @@ function fail(e, where){
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
                 pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), dump:$('dumperr'), cand:$('canderr'),
-                draft:$('drafterr'), trash:$('trasherr') }[where] || $('err');
+                draft:$('drafterr'), trash:$('trasherr'), nf:$('nferr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -243,6 +243,45 @@ addEventListener('error', e => {
 addEventListener('unhandledrejection', e => {
   const r = e.reason;
   logError(r?.message || String(r), 'promise', r?.stack);
+});
+
+/* ── 알림 설정 ──────────────────────────────────────────────────────
+ * 끌 수 없는 알림은 결국 앱 자체를 지우게 만듭니다.
+ * **화면에서 숨기는 것이 아니라 서버에서 아예 안 만듭니다** (035 의 notify_wants).
+ * 화면에서 거르면 줄은 계속 쌓이고, 기기를 바꾸면 안 보이던 것이 우르르 나옵니다.
+ *
+ * 나중에 잠금화면 알림(푸시)을 붙일 때 이 스위치들을 그대로 씁니다 —
+ * "무엇을 알릴지"는 여기서 정하고, 그때는 "어떻게 받을지" 하나만 더 붙입니다. */
+const NF_KEYS = ['notify_all', 'notify_expense', 'notify_member', 'notify_depart'];
+const nfBox = k => $('nf_' + k.replace('notify_', ''));
+
+async function loadNotifPrefs(){
+  const { data, error } = await sb.from('user_prefs')
+    .select(NF_KEYS.join(',')).eq('user_id', me.id).maybeSingle();
+  /* 035 를 아직 안 올렸으면 칸이 없어서 질의가 실패합니다.
+     그때는 설정 카드를 아예 숨깁니다 — 눌러도 저장이 안 되는 스위치를 두면 안 됩니다. */
+  if (error){ $('notifprefcard').classList.add('hide'); return; }
+  $('notifprefcard').classList.remove('hide');
+  for (const k of NF_KEYS) nfBox(k).checked = data ? data[k] !== false : true;
+  syncNfKinds();
+}
+function syncNfKinds(){
+  $('nf_kinds').classList.toggle('off', !$('nf_all').checked);
+}
+
+$('notifprefcard').addEventListener('change', async e => {
+  if (!e.target.matches('#nf_all, #nf_expense, #nf_member, #nf_depart')) return;
+  $('nferr').classList.add('hide');
+  syncNfKinds();
+  const row = { user_id: me.id };
+  for (const k of NF_KEYS) row[k] = nfBox(k).checked;
+  /* 설정 줄이 아직 없는 계정도 있어서 upsert 로 넣습니다. */
+  const r = await sb.from('user_prefs')
+    .upsert(row, { onConflict:'user_id' }).select('user_id');
+  if (r.error) return fail(r.error, 'nf');
+  if (!r.data?.length) return fail('저장되지 않았어요 (0건).', 'nf');
+  toast($('nf_all').checked ? '알림 설정을 저장했어요' : '알림을 모두 껐어요');
+  loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
 });
 
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
@@ -3710,7 +3749,7 @@ function showProfile(setting){
   $('setpane').classList.toggle('hide', !setting);
   window.scrollTo({ top:0, behavior:'smooth' });
 }
-$('gear').addEventListener('click', () => showProfile(true));
+$('gear').addEventListener('click', () => { showProfile(true); loadNotifPrefs(); });
 $('setback').addEventListener('click', () => showProfile(false));
 
 /* ── 내 자료 내려받기 ────────────────────────────────────────────────
