@@ -1,3 +1,5 @@
+-- ※ 이메일은 비워뒀습니다. 저장소가 공개라 주소가 그대로 올라갑니다.
+--    실행할 때 '여기에-이메일' 을 본인 계정으로 바꿔 쓰세요.
 -- =====================================================================
 -- 실제 도쿄 일정을 넣는다 (CSV 그대로)
 --
@@ -20,7 +22,7 @@ declare
 begin
   -- 로그인한 사람이 아니라 SQL 편집기에서 도는 것이라 주인을 직접 찾습니다.
   select id into v_user from auth.users
-   where email = 'jinsoo9271@gmail.com' limit 1;
+   where email = '여기에-이메일' limit 1;
   if v_user is null then
     select id into v_user from auth.users order by created_at limit 1;
   end if;
