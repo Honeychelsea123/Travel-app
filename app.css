@@ -110,6 +110,42 @@ a.btn{ display:inline-block; flex:none; text-decoration:none; white-space:nowrap
        border-radius:var(--r-pill); padding:10px var(--s-md); }
 a.btn:active{ transform:scale(.96); }
 
+/* ── 관리자 대시보드 ──
+   숫자를 표로만 늘어놓으면 서른 줄이 같은 무게로 보여서 아무것도 안 읽힙니다.
+   하루에 한 번 볼 때 이것만 봐도 되는 넷을 위에 큼직하게 깔고,
+   돈이 나가는 둘은 막대로, 나머지는 표로 내립니다. */
+.atiles{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:4px 0 2px; }
+.atile{ background:var(--pearl); border:1px solid var(--divider-soft);
+        border-radius:var(--r-md); padding:11px 13px; min-width:0; }
+.atile .k{ font-size:calc(11px * var(--ts)); color:var(--ink-48);
+           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.atile .v{ font-size:calc(21px * var(--ts)); font-weight:700; line-height:1.25;
+           letter-spacing:-.5px; margin-top:1px; }
+.atile .d{ font-size:calc(11px * var(--ts)); color:var(--ink-48); margin-top:1px; }
+
+/* 예산 막대. 70% 부터 노랑, 90% 부터 빨강 — 색이 바뀌는 게 곧 신호입니다. */
+.abar{ margin:10px 0 0; }
+.abar .t{ display:flex; align-items:baseline; gap:8px;
+          font-size:calc(13px * var(--ts)); font-weight:600; }
+.abar .t .p{ margin-left:auto; font-weight:400; color:var(--ink-48);
+             font-size:calc(12px * var(--ts)); }
+.abar .track{ height:7px; border-radius:99px; background:var(--divider-soft);
+              overflow:hidden; margin-top:6px; }
+.abar .track i{ display:block; height:100%; border-radius:99px;
+                background:var(--primary); transition:width .4s ease; }
+.abar.warn .track i{ background:#e0a02a; }
+.abar.bad  .track i{ background:var(--bad); }
+.abar .f{ font-size:calc(11px * var(--ts)); color:var(--ink-48); margin-top:5px; }
+
+.anote{ font-size:calc(11px * var(--ts)); line-height:1.5;
+        color:var(--ink-48); margin-top:10px; }
+.anote code{ font-size:calc(10px * var(--ts)); }
+/* 한도에 막힌 사람이 있을 때만 나옵니다. 표 안에 묻으면 안 봅니다. */
+/* color-mix 는 옛 iOS 에서 통째로 무시돼 배경이 사라집니다. 값을 그대로 씁니다. */
+.awarn{ margin-top:12px; padding:10px 13px; border-radius:var(--r-md);
+        background:rgba(192,57,43,.09); border:1px solid rgba(192,57,43,.28);
+        font-size:calc(12px * var(--ts)); line-height:1.55; }
+
 /* 로그인 단추 아래 동의 문구. 읽히긴 해야 하고 겁을 주면 안 됩니다. */
 .agree{ margin:14px 0 0; font-size:calc(12px * var(--ts)); line-height:1.6;
         color:var(--ink-48); word-break:keep-all; }

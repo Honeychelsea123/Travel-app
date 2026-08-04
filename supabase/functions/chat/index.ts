@@ -104,8 +104,11 @@ async function webSearch(key: string, admin: any, query: string,
   try {
     const { data } = await admin.from('search_cache')
       .select('results,created_at').eq('key', ck).maybeSingle();
-    if (data && Date.now() - new Date(data.created_at).getTime() < 3600_000)
+    if (data && Date.now() - new Date(data.created_at).getTime() < 3600_000) {
+      // 보관함이 막아준 것도 셉니다(043). 이게 곧 "아낀 크레딧"입니다.
+      admin.rpc('search_bump', { p_hit: true }).then(() => {}, () => {});
       return data.results;
+    }
   } catch { /* 보관함이 없어도 검색은 됩니다 */ }
 
   try {
@@ -121,6 +124,9 @@ async function webSearch(key: string, admin: any, query: string,
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
       body: JSON.stringify(body),
     });
+    // 여기까지 왔으면 크레딧이 나갔습니다. 결과가 비거나 실패해도 나간 것은
+    // 나간 것이라 res.ok 와 상관없이 셉니다 — 안 그러면 실제보다 적게 잡힙니다.
+    admin.rpc('search_bump', { p_hit: false }).then(() => {}, () => {});
     if (!res.ok) return null;
     // deno-lint-ignore no-explicit-any
     let raw: any[] = (await res.json())?.results ?? [];

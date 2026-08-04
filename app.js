@@ -502,7 +502,9 @@ $('rp_send').addEventListener('click', async () => {
  * 서버 쪽 함수가 is_admin() 을 확인하므로 화면을 뜯어도 못 봅니다. */
 async function loadAdmin(){
   const box = $('admincard');
-  const r = await netTimeout(sb.rpc('admin_stats'));
+  /* 기본 2.5초로는 모자랍니다 — 표 열몇 개를 세는 함수라 첫 호출이 느립니다.
+     화면을 막고 있는 것이 아니니 넉넉하게 줍니다. */
+  const r = await netTimeout(sb.rpc('admin_stats'), 8000);
   if (r.error || !r.data){ box.classList.add('hide'); return; }
   /* 처리방침에 "오류 90일, 신고 1년"이라고 적었으니 실제로 지워져야 합니다(042).
      따로 도는 장치가 없어서 관리자가 대시보드를 열 때 한 번씩 치웁니다.
@@ -511,42 +513,106 @@ async function loadAdmin(){
   box.classList.remove('hide');
   const d = r.data;
 
-  const n = v => Number(v ?? 0).toLocaleString('ko-KR');
+  const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
+  const num = v => Number(v ?? 0);
+
+  /* 큰 숫자 넷. 하루에 한 번 볼 때 이것만 봐도 되는 것들입니다.
+     delta 는 "어제 대비"가 아니라 "최근 7일에 늘어난 만큼"입니다 — 하루 단위는
+     너무 튀어서 추세가 안 보입니다. */
+  const tile = (label, value, delta) => `<div class="atile">
+    <div class="k">${esc(label)}</div>
+    <div class="v">${esc(value)}</div>
+    ${delta ? `<div class="d">${esc(delta)}</div>` : ''}</div>`;
+
+  /* 예산 막대. 숫자만 늘어놓으면 "많은 건가?"를 판단 못 합니다.
+     80% 를 넘으면 색이 바뀝니다 — 그때부터는 손을 써야 합니다. */
+  const bar = (title, used, budget, pct, foot) => {
+    if (!budget) return '';
+    const p = Math.min(num(pct), 100);
+    const tone = p >= 90 ? 'bad' : p >= 70 ? 'warn' : '';
+    return `<div class="abar ${tone}">
+      <div class="t"><span>${esc(title)}</span>
+        <span class="p">${n(used)} / ${n(budget)} · ${p}%</span></div>
+      <div class="track"><i style="width:${p}%"></i></div>
+      ${foot ? `<div class="f">${esc(foot)}</div>` : ''}</div>`;
+  };
+
   const grp = (title, rows) =>
     `<div class="daysep">${esc(title)}</div>` +
     rows.filter(Boolean).map(([k, v, m]) => `<div class="row">
       <span class="label">${esc(k)}${m ? `<div class="memo">${esc(m)}</div>` : ''}</span>
       <span class="val"><b>${esc(v)}</b></span></div>`).join('');
 
+  /* 예산이 며칠 남았는지. 최근 7일 평균으로 나눈 값이라 어제 갑자기 몰렸으면
+     짧게 나옵니다. 정확한 예언이 아니라 "슬슬 봐야 하나"의 신호입니다. */
+  const days = d.ai_days_left == null ? '아직 쓴 게 없어 계산 못 함'
+    : num(d.ai_days_left) > 60 ? '넉넉합니다'
+    : `이 속도면 ${n(d.ai_days_left)}일치 남음 (하루 평균 ${n(d.ai_avg)}회)`;
+
+  const blocked = num(d.ai_blocked_7d);
+  const saved   = num(d.se_hits_month);
+
   $('adm_stats').innerHTML =
+    `<div class="atiles">
+      ${tile('가입자', n(d.users_total), `7일 +${n(d.users_7d)}`)}
+      ${tile('최근 7일 쓴 사람', n(d.touched_7d), `AI 쓴 사람 ${n(d.active_7d)}`)}
+      ${tile('여행', n(d.trips_total), `진행 중 ${n(d.trips_now)}`)}
+      ${tile('오늘 AI', n(d.ai_today) + '회', `어제 ${n(d.ai_yday)}회`)}
+    </div>` +
+
+    `<div class="daysep">이번 달 예산</div>` +
+    bar('AI (Gemini)', d.ai_month, d.ai_budget, d.ai_pct, days) +
+    bar('검색 (Tavily)', d.se_month, d.se_budget, d.se_pct,
+        saved ? `보관함이 ${n(saved)}번 막아줬습니다 (그만큼 크레딧을 안 썼습니다)`
+              : '보관함이 아직 막아준 적이 없습니다') +
+    `<div class="anote">예산은 <b>내가 정한 값</b>입니다.
+      구글·Tavily 의 실제 잔여량이 아니에요 — 그건 각 콘솔에서 보고
+      <code>app_config</code> 에 옮겨 적습니다.</div>` +
+
+    /* 막힌 사람이 있으면 제일 위로 올립니다. 표 안에 묻으면 안 봅니다. */
+    (blocked ? `<div class="awarn">최근 7일에 <b>${n(blocked)}번</b> 한도에 막혔습니다.
+       ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번. ` : ''}
+       한도는 하루 15회(여행 중 30회)입니다 — 자주 막히면 다시 안 옵니다.</div>` : '') +
+
     grp('사람', [
       ['가입자', n(d.users_total)],
-      ['최근 7일 가입', n(d.users_7d)],
-      ['최근 7일 쓴 사람', n(d.active_7d), 'AI 를 한 번이라도 쓴 기준'],
+      ['오늘 가입', n(d.users_today)],
+      ['최근 30일 가입', n(d.users_30d)],
+      ['최근 7일 손댄 사람', n(d.touched_7d), '일정·지출·별점을 건드린 기준'],
+      ['최근 7일 AI 쓴 사람', n(d.active_7d)],
+      ['아직 아무것도 안 한 사람', n(d.users_idle), '가입만 하고 여행을 안 만든 계정'],
     ]) +
     grp('쌓인 것', [
       ['여행', n(d.trips_total) + ` (7일 +${n(d.trips_7d)})`],
+      ['진행 중 / 앞으로', `${n(d.trips_now)} / ${n(d.trips_soon)}`],
+      ['일행이 있는 여행', n(d.trips_shared), '혼자 쓰는 앱인지 같이 쓰는 앱인지'],
       ['일정', n(d.plans_total)],
       ['지출', n(d.expenses_total)],
       ['도시 별점', n(d.ratings_total)],
+      ['여행 후기', n(d.reviews_total)],
     ]) +
     grp('AI (Gemini)', [
-      ['오늘', n(d.ai_today) + '회'],
-      ['최근 7일', n(d.ai_7d) + '회'],
+      ['오늘 / 어제', `${n(d.ai_today)} / ${n(d.ai_yday)}회`],
+      ['최근 7일', n(d.ai_7d) + '회', `하루 평균 ${n(d.ai_avg)}회`],
       ['최근 30일', n(d.ai_30d) + '회'],
-      ['일정 검토 7일', n(d.ai_review_7d) + '회'],
-      ['오늘 한 사람 최대', n(d.ai_top_today) + '회', '한도에 자주 닿으면 손봐야 합니다'],
+      ['이번 달', `${n(d.ai_month)}회`, `예산 ${n(d.ai_budget)}회 중 ${n(d.ai_left)}회 남음`],
+      ['일정 검토 7일', n(d.ai_review_7d) + '회', '따로 셉니다 (010)'],
+      ['오늘 한 사람 최대', n(d.ai_top_today) + '회'],
+      ['한도에 막힘 (오늘 / 7일)', `${n(d.ai_blocked_today)} / ${n(d.ai_blocked_7d)}회`,
+       '0 이 아니면 한도를 손봐야 합니다'],
     ]) +
     grp('검색 (Tavily)', [
-      ['담아둔 검색', n(d.search_cached) + '건', '6시간마다 치웁니다. 누적이 아닙니다'],
-      ['최근 1시간', n(d.search_fresh) + '건', '이만큼은 크레딧을 안 썼습니다'],
+      ['오늘 / 7일', `${n(d.se_today)} / ${n(d.se_7d)}회`, '실제로 크레딧이 나간 것'],
+      ['이번 달', `${n(d.se_month)}회`, `예산 ${n(d.se_budget)}회 중 ${n(d.se_left)}회 남음`],
+      ['보관함이 막아준 것', n(d.se_hits_month) + '회', '이만큼은 크레딧을 안 썼습니다'],
+      ['지금 담아둔 것', n(d.se_cached) + '건', '6시간마다 치웁니다. 누적이 아닙니다'],
     ]) +
     grp('문제', [
-      ['최근 7일 오류', n(d.errors_7d) + '건'],
-      ['안 읽은 신고', n(d.reports_open) + '건'],
+      ['오늘 / 7일 오류', `${n(d.errors_today)} / ${n(d.errors_7d)}건`],
+      ['안 읽은 신고', n(d.reports_open) + '건', `전체 ${n(d.reports_total)}건`],
     ]);
 
-  const f = await netTimeout(sb.rpc('admin_feed'));
+  const f = await netTimeout(sb.rpc('admin_feed'), 8000);
   $('adm_feed').innerHTML = (f.data || []).length
     ? `<div class="daysep">최근 신고와 오류</div>` +
       f.data.map(x => `<div class="row">
@@ -1079,6 +1145,37 @@ function md(s){
     .replace(/^\s*[*-]\s+/gm, '· ')
     .replace(/^\s*(#{1,4})\s+(.+)$/gm, '<b>$2</b>')
     .replace(/\n/g, '<br>');
+}
+
+/* ── 기본 프로필 그림 ────────────────────────────────────────────────
+ * 구글에서 사진을 안 받기로 했으니(041) 새로 가입하면 그림이 아예 없습니다.
+ * src 가 빈 <img> 는 흰 네모나 깨진 아이콘으로 보입니다 — 실제로 그랬습니다.
+ *
+ * 이름 첫 글자를 그려 채웁니다. **글자로 만드는 것이라 저장소도 네트워크도
+ * 안 씁니다** — 비행기모드에서도 나오고 사진 값도 안 듭니다.
+ * 색은 계정 id 에서 뽑으므로 기기를 바꿔도 같은 사람은 같은 색입니다. */
+const AV_BG = ['#4a7ebb', '#5a9367', '#b4794a', '#8a6bb1',
+               '#c06a6a', '#3f8f93', '#a1783f', '#6b7fa8'];
+function avatarOf(seed, label){
+  const s = String(seed || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  /* 이모지는 서로게이트 쌍이라 [0] 으로 자르면 반쪽만 남아 깨집니다.
+     영문은 대문자로 올립니다 — 한글·이모지는 대소문자가 없어 그대로입니다. */
+  const ch = ([...String(label || '').trim()][0] || '·').toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">`
+    + `<rect width="64" height="64" rx="32" fill="${AV_BG[h % AV_BG.length]}"/>`
+    + `<text x="32" y="34" fill="#fff" font-size="30" font-weight="600"`
+    + ` text-anchor="middle" dominant-baseline="central"`
+    + ` font-family="-apple-system,'Apple SD Gothic Neo',sans-serif">${esc(ch)}</text></svg>`;
+  /* encodeURIComponent 가 따옴표까지 인코딩해서 그대로 속성에 넣어도 안전합니다. */
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+/* 올려둔 사진의 주소가 깨졌을 때 숨기면 흰 구멍이 남습니다. 기본 그림으로 되돌립니다. */
+function avatarImg(url, seed, label, style, cls){
+  const fb = avatarOf(seed, label);
+  return `<img ${cls ? `class="${cls}" ` : ''}src="${esc(url || fb)}" alt="" data-fb="${fb}"
+    onerror="this.onerror=null;this.src=this.dataset.fb"${style ? ` style="${style}"` : ''}>`;
 }
 
 function drawChats(rows){
@@ -1745,9 +1842,8 @@ async function openCity(id){
   $('cv_comments').innerHTML = others.length
     ? `<div class="daysep">다른 사람들</div>` + others.map(x =>
         `<div class="rrow" style="padding:10px 0">
-           <img class="thumb" style="width:36px; height:36px; border-radius:50%"
-                src="${esc(x.avatar_url || '')}" alt=""
-                onerror="this.style.visibility='hidden'">
+           ${avatarImg(x.avatar_url, x.user_id, x.name,
+                       'width:36px; height:36px; border-radius:50%; object-fit:cover', 'thumb')}
            <div class="t"><b>${esc(x.name)}</b>
              <span class="memo">${esc(x.comment)}</span>
              <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span></div>
@@ -4145,7 +4241,13 @@ function showProfile(setting){
   $('setpane').classList.toggle('hide', !setting);
   window.scrollTo({ top:0, behavior:'smooth' });
 }
-$('gear').addEventListener('click', () => { showProfile(true); loadNotifPrefs(); });
+/* loadAdmin 을 여기서 불러야 합니다. 안 그러면 **영영 안 열립니다** —
+   부르는 곳이 adm_refresh 클릭 하나뿐이었는데 그 단추가 admincard 안에 있고,
+   그 카드는 숨은 채로 시작합니다. 자기를 여는 단추가 자기 안에 있었습니다.
+   관리자가 아니면 서버가 막아서 카드는 그대로 숨어 있습니다. */
+$('gear').addEventListener('click', () => {
+  showProfile(true); loadNotifPrefs(); loadAdmin();
+});
 
 /* 상단 홈 단추. 여행 안이든 보관함이든 성향 카드든 한 번에 빠져나옵니다.
    showApp 이 여행을 닫고 큰 지도도 걷어내므로 따로 치울 것이 없습니다.
@@ -4636,6 +4738,8 @@ $('n_save').addEventListener('click', async () => {
   if (r.error) return fail(r.error, 'trip');
   if (!r.data?.length) return fail('이름을 바꾸지 못했습니다 (0건).', 'trip');
   $('name').textContent = v;
+  /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이 바뀝니다. */
+  if (!myAvatar) $('avatar').src = avatarOf(me.id, v);
   $('namebox').classList.add('hide');
 });
 
@@ -6697,9 +6801,8 @@ async function loadMembers(){
       ? `<button class="ghost" data-mact="nick" data-nick="${esc(m.nickname || '')}">별명</button>`
       : '';
     return `<div class="trip" style="cursor:default">
-      <img src="${esc(p.avatar_url || '')}" alt=""
-           style="width:32px;height:32px;border-radius:50%;background:var(--sunk);flex:none"
-           onerror="this.style.visibility='hidden'">
+      ${avatarImg(p.avatar_url, m.user_id, name,
+                  'width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none')}
       <div class="t"><b style="${gone ? 'opacity:.5' : ''}">${esc(name)}${self ? ' (나)' : ''}</b>
         <div style="margin-top:2px">${mine}${admin}</div></div>${tag}</div>`;
   }).join('');
@@ -7054,12 +7157,16 @@ async function render(session){
   $('name').textContent = (me.email || '').split('@')[0];
   applyTs(localStorage.getItem('t2:ts') || 1);
   myAvatar = '';
+  /* 사진을 올린 적이 없으면 여기서 끝입니다. src 를 비워두면 흰 네모가 됩니다 —
+     이름 첫 글자를 그려 넣습니다. 아래에서 진짜 사진이 오면 갈아 끼웁니다. */
+  $('avatar').src = avatarOf(me.id, $('name').textContent);
 
   sb.from('profiles').select('avatar_url,display_name').eq('id', me.id).maybeSingle()
     .then(r => {
       if (!r.data) return;
       if (r.data.display_name) $('name').textContent = r.data.display_name;
       if (r.data.avatar_url){ myAvatar = r.data.avatar_url; $('avatar').src = myAvatar; }
+      else $('avatar').src = avatarOf(me.id, $('name').textContent);  /* 별명이 늦게 와도 맞게 */
     }).catch(() => {});
 
   /* 다른 기기에서 바꾼 글자 크기가 있으면 그걸 따릅니다. 늦게 와도 됩니다. */
