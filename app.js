@@ -6802,6 +6802,10 @@ if (window.visualViewport){
   const fit = () => {
     const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
+       그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
+       펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
+    document.body.classList.toggle('kbon', kb > 60);
   };
   vv.addEventListener('resize', fit);
   vv.addEventListener('scroll', fit);

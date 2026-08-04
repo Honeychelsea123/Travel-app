@@ -477,12 +477,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 앱 본문이 480px 로 가운데 있습니다. 시트를 화면 끝까지 늘리면
    넓은 화면에서 혼자 튀어나와 레이아웃이 깨져 보입니다. 같은 폭으로 맞춥니다.
    left·right 를 0 으로 두고 margin auto 를 주면 fixed 라도 가운데로 옵니다. */
-.assheet{ position:fixed !important; left:0; right:0; bottom:0; z-index:1210;
+.assheet{ position:fixed !important; left:0; right:0; bottom:var(--kb, 0px); z-index:1210;
           margin:0 auto !important; max-width:480px;
           border-radius:var(--r-lg) var(--r-lg) 0 0;
-          max-height:82vh; overflow-y:auto;
-          /* 아래 떠 있는 탭바에 가리지 않게, 키보드가 올라오면 그만큼 더 */
-          padding-bottom:calc(104px + var(--kb, 0px));
+          max-height:min(82vh, calc(100dvh - var(--kb, 0px) - 24px)); overflow-y:auto;
+          /* 아래 떠 있는 탭바에 가리지 않게 둔 여백입니다.
+             키보드가 올라오면 탭바가 그 뒤로 숨으므로 이 여백은 빈 자리만 됩니다.
+             그때는 아래 body.kbon 규칙이 줄입니다. */
+          padding-bottom:104px;
           box-shadow:0 -12px 40px rgba(0,0,0,.22);
           animation:sheetup .24s ease-out both; }
 @keyframes sheetup{ from{ transform:translateY(26px); opacity:.5 } to{ transform:none; opacity:1 } }
@@ -490,6 +492,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .assheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 12px;
                   border-radius:999px; background:var(--line); }
 body.sheeton{ overflow:hidden; }
+/* 키보드가 올라와 있는 동안. 탭바가 키보드 뒤로 숨으니 그만큼 두었던 여백을 걷습니다. */
+body.kbon .assheet{ padding-bottom:16px; }
 @media (prefers-reduced-motion: reduce){ .assheet{ animation:none } }
 
 /* ── 여행 머리말 ─────────────────────────────────────────────────────
@@ -525,11 +529,17 @@ body.sheeton{ overflow:hidden; }
 /* ── 여행 비서 시트 ──────────────────────────────────────────────────
  * 페이지를 옮기면 보던 자리를 잃습니다. 일정을 보다가 물어보고
  * 그 자리로 돌아가야 하므로 화면 위에 올라오게 합니다. */
-.aisheet{ position:fixed; left:0; right:0; bottom:0; z-index:1210;
-          margin:0 auto; max-width:480px; height:min(86vh, 720px);
+/* 키보드가 올라오면 **시트 자체를 그 위에 얹습니다.**
+   전에는 bottom:0 에 두고 안쪽 여백만 키보드만큼 밀었습니다. 그런데 그 0 은
+   키보드 뒤쪽 화면 바닥이라, 시트 상자와 키보드 사이가 벌어지고 그 틈으로
+   아래 화면이 그대로 보였습니다. 높이도 남은 자리에 맞춰 줄입니다 —
+   안 줄이면 시트 위쪽이 화면 밖으로 밀려 올라갑니다. */
+.aisheet{ position:fixed; left:0; right:0; bottom:var(--kb, 0px); z-index:1210;
+          margin:0 auto; max-width:480px;
+          height:min(86vh, 720px, calc(100dvh - var(--kb, 0px) - 24px));
           background:var(--parchment); border-radius:var(--r-lg) var(--r-lg) 0 0;
           box-shadow:0 -12px 40px rgba(0,0,0,.22);
-          padding:10px 12px calc(12px + var(--kb, 0px));
+          padding:10px 12px 12px;
           animation:sheetup .24s ease-out both; }
 /* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
 .aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
