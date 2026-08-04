@@ -43,11 +43,14 @@ grant execute on function public.is_admin() to authenticated;
 
 
 -- ── 관리자 넣기 ──────────────────────────────────────────────────────
--- 아래 한 줄의 주석(--)을 풀고 이메일을 바꿔 실행하세요.
+-- 아래 주석(--)을 풀고 이메일을 채워 실행하세요.
 -- 로그인을 한 번이라도 한 계정이어야 auth.users 에 있습니다.
 --
+-- **이 파일에 실제 이메일을 적어두지 마세요.** 저장소가 공개라 그대로 올라가고,
+-- 이메일 주소는 긁어가는 곳이 많습니다. 실행할 때만 채워 넣으세요.
+--
 -- insert into public.admins (user_id, note)
--- select id, '만든 사람' from auth.users where email = 'qkrthgml8068@gmail.com'
+-- select id, '만든 사람' from auth.users where email = '여기에-이메일'
 -- on conflict (user_id) do nothing;
 
 
