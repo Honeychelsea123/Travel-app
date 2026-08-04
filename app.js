@@ -67,7 +67,7 @@ function fail(e, where){
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
                 pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), dump:$('dumperr'), cand:$('canderr'),
-                draft:$('drafterr') }[where] || $('err');
+                draft:$('drafterr'), trash:$('trasherr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -205,6 +205,81 @@ if ('serviceWorker' in navigator){
     checkBuild();
   });
 }
+
+/* ── 오류 남기기 ────────────────────────────────────────────────────
+ * 남이 쓰기 시작하면 "안 돼요" 한 마디만 오고 무엇이 터졌는지 알 길이 없습니다.
+ * 화면에서 터진 것을 조용히 남겨둡니다.
+ *
+ * 남기는 것: 메시지 · 어느 파일 몇 줄 · 스택 앞부분 · 빌드 번호 · 브라우저.
+ * 안 남기는 것: 일정 · 지출 · 대화 내용. 오류를 고치는 데 필요 없습니다.
+ *
+ * 조심할 것 둘:
+ *   1. 로그인 전에는 못 보냅니다(RLS 가 user_id = auth.uid() 를 요구). 그냥 넘어갑니다.
+ *   2. 오류 하나가 무한히 반복될 수 있습니다 — 같은 메시지는 한 번만,
+ *      한 번 켤 때 최대 다섯 개까지만 보냅니다. 안 그러면 오류가 오류를 부릅니다. */
+const errSeen = new Set();
+let errSent = 0;
+async function logError(message, source, stack){
+  if (!me?.id || errSent >= 5) return;
+  const key = String(message).slice(0, 120);
+  if (errSeen.has(key)) return;
+  errSeen.add(key); errSent++;
+  try {
+    await sb.from('client_errors').insert({
+      user_id: me.id,
+      build: $('build')?.textContent || '',
+      message: String(message).slice(0, 500),
+      source: String(source || '').slice(0, 300),
+      stack: String(stack || '').slice(0, 2000),
+      ua: navigator.userAgent.slice(0, 300),
+    });
+  } catch {}   /* 오류를 남기다 터지면 그건 그냥 놓아줍니다 */
+}
+addEventListener('error', e => {
+  /* 이미지가 안 불러와진 것도 여기로 옵니다. 그건 오류가 아니라 흔한 일입니다. */
+  if (e.target && e.target !== window) return;
+  logError(e.message, `${e.filename}:${e.lineno}:${e.colno}`, e.error?.stack);
+});
+addEventListener('unhandledrejection', e => {
+  const r = e.reason;
+  logError(r?.message || String(r), 'promise', r?.stack);
+});
+
+/* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
+   문의할 때 붙일 수 있게 복사도 됩니다 — 스크린샷보다 이쪽이 고치기 쉽습니다. */
+$('errbtn').addEventListener('click', async () => {
+  const box = $('errlist'), btn = $('errbtn');
+  if (!box.classList.contains('hide')){ box.classList.add('hide'); btn.textContent = '확인'; return; }
+  btn.disabled = true; btn.textContent = '보는 중…';
+  const { data, error } = await sb.from('client_errors')
+    .select('created_at,build,message,source')
+    .order('created_at', { ascending:false }).limit(20);
+  btn.disabled = false; btn.textContent = '닫기';
+  box.classList.remove('hide');
+  if (error){
+    box.innerHTML = `<div class="empty" style="text-align:left">오류 기록을 못 읽었어요.<br>
+      <span class="memo">${esc(error.message || '')}</span></div>`;
+    return;
+  }
+  const rows = data || [];
+  $('errnote').textContent = rows.length
+    ? `최근 ${rows.length}건이 남아 있어요` : '남아 있는 문제가 없어요';
+  box.innerHTML = rows.length
+    ? rows.map(r => `<div class="row">
+        <span class="label"><b style="font-size:calc(13px * var(--ts))">${esc(r.message)}</b>
+          <div class="memo">${esc((r.created_at || '').slice(0, 16).replace('T', ' '))}
+            · ${esc(r.build || '')} · ${esc(r.source || '')}</div></span></div>`).join('') +
+      `<div style="margin-top:10px; display:flex; gap:8px">
+         <button class="small" id="errcopy">복사해서 보내기</button></div>
+       <div class="empty" style="text-align:left; padding-top:8px">
+         복사한 내용을 만든 사람에게 보내주세요. 일정·지출 내용은 들어 있지 않아요.</div>`
+    : `<div class="empty">아직 남아 있는 문제가 없어요.</div>`;
+  if ($('errcopy')) $('errcopy').onclick = async () => {
+    const txt = rows.map(r =>
+      `${(r.created_at || '').slice(0, 19)} [${r.build}] ${r.message} @ ${r.source}`).join('\n');
+    $('errcopy').textContent = await copyText(txt) ? '복사됨' : '복사 실패';
+  };
+});
 
 /* ── 초성 ───────────────────────────────────────────────────────────
  * 'ㄷㅋ' 로 도쿄를 찾게 합니다. 한글 음절 코드에서 첫 자음만 떼어냅니다. */
@@ -4451,6 +4526,148 @@ function syncSheets(){
   document.addEventListener('pointerdown', grab);
 }
 
+/* ── 캘린더로 내보내기 (.ics) ────────────────────────────────────────
+ * 여행 중에는 앱을 안 열어도 다음 일정이 잠금화면에 뜨는 편이 낫습니다.
+ * .ics 는 1998년에 정해진 형식이고 아이폰·안드로이드·구글이 다 읽습니다.
+ *
+ * 조심할 것 셋:
+ *   1. 줄 끝은 반드시 CRLF 입니다. LF 만 쓰면 아이폰이 파일을 통째로 거절합니다.
+ *   2. 쉼표·세미콜론·역슬래시는 값 안에서 escape 해야 합니다.
+ *   3. 시간대. 시각이 있는 일정은 그 구간의 시간대로 적습니다.
+ *      Z(UTC)로 바꾸려면 그 나라의 서머타임까지 알아야 하는데 우리는 모릅니다.
+ *      TZID 를 붙여 두면 그 판단은 캘린더 앱이 합니다 — 그쪽이 정확합니다.
+ *      시각이 없는 일정은 하루짜리(DATE)로 넣습니다. */
+const icsEsc = s => String(s ?? '')
+  .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
+  .replace(/\r?\n/g, '\\n');
+
+/* 75옥텟이 넘는 줄은 접어야 한다고 규격에 적혀 있습니다.
+   한글은 한 자가 3바이트라 금방 넘습니다. 안 접으면 잘리는 앱이 있습니다. */
+function icsFold(line){
+  const b = new TextEncoder().encode(line);
+  if (b.length <= 73) return line;
+  let out = '', cur = 0;
+  for (const ch of line){                       /* 글자 단위로 — 바이트로 자르면 깨집니다 */
+    const n = new TextEncoder().encode(ch).length;
+    if (cur + n > 73){ out += '\r\n '; cur = 1; }
+    out += ch; cur += n;
+  }
+  return out;
+}
+
+function buildIcs(){
+  const pad = n => String(n).padStart(2, '0');
+  const dt = (d, t) => d.replace(/-/g, '') + 'T' + t.slice(0, 5).replace(':', '') + '00';
+  const plus = (d, n) => { const x = new Date(d + 'T00:00:00Z');
+                           x.setUTCDate(x.getUTCDate() + n);
+                           return x.toISOString().slice(0, 10).replace(/-/g, ''); };
+  const now = new Date();
+  const stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate())
+              + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes())
+              + pad(now.getUTCSeconds()) + 'Z';
+
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//AI.Trip//KR', 'CALSCALE:GREGORIAN',
+             'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsEsc(trip.title)];
+
+  for (const p of plans){
+    const leg = legFor(p.date);
+    const tz  = leg?.timezone || trip.timezone;
+    L.push('BEGIN:VEVENT');
+    /* 같은 일정을 두 번 내보내도 캘린더에 두 개가 안 생기게 id 를 고정합니다. */
+    L.push(`UID:${p.id}@ai.trip`);
+    L.push('DTSTAMP:' + stamp);
+    if (p.start_time){
+      const end = p.end_time || null;
+      L.push(`DTSTART;TZID=${tz}:` + dt(p.date, p.start_time));
+      if (end) L.push(`DTEND;TZID=${tz}:` + dt(p.date, end));
+      else {
+        /* 끝나는 시각이 없으면 분류별 기본 체류시간을 씁니다 — 도쿄 앱과 같은 값입니다.
+           길이가 0인 일정은 캘린더에서 안 보이는 앱이 있습니다. */
+        const m = mins(p.start_time) + (STAY_MIN[p.category] ?? 60);
+        L.push(`DTEND;TZID=${tz}:` +
+               dt(p.date, `${pad(Math.floor(m / 60) % 24)}:${pad(m % 60)}`));
+      }
+    } else {
+      /* 하루짜리. DTEND 는 다음 날이어야 그 하루만 잡힙니다 — 규격이 그렇습니다. */
+      L.push('DTSTART;VALUE=DATE:' + p.date.replace(/-/g, ''));
+      L.push('DTEND;VALUE=DATE:' + plus(p.date, 1));
+    }
+    L.push('SUMMARY:' + icsEsc(p.title));
+    const desc = [p.category, p.memo, p.move_note].filter(Boolean).join(' · ');
+    if (desc) L.push('DESCRIPTION:' + icsEsc(desc));
+    if (leg?.destination) L.push('LOCATION:' + icsEsc(p.title + ', ' + leg.destination));
+    if (p.lat != null && p.lng != null) L.push(`GEO:${p.lat};${p.lng}`);
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.map(icsFold).join('\r\n') + '\r\n';
+}
+
+$('icsbtn').addEventListener('click', () => {
+  if (!plans.length) return toast('내보낼 일정이 없어요.');
+  const blob = new Blob([buildIcs()], { type:'text/calendar;charset=utf-8' });
+  const name = (trip.title || '여행').replace(/[\\/:*?"<>|]/g, '') + '.ics';
+  /* 아이폰은 내려받기 폴더가 없어서 공유 시트로 넘기는 편이 낫습니다.
+     캘린더 앱이 바로 목록에 나옵니다. 안 되면 평범한 내려받기로 갑니다. */
+  const file = new File([blob], name, { type:'text/calendar' });
+  if (navigator.canShare?.({ files:[file] })){
+    navigator.share({ files:[file], title: trip.title }).catch(() => {});
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`${plans.length}개 일정을 내보냈어요.`);
+});
+
+/* ── 지운 것 되살리기 ────────────────────────────────────────────────
+ * 지울 때 deleted_at 만 찍고 진짜로는 안 지워 왔습니다. 그런데 되살리는 길이
+ * 없어서 결국 영영 지운 것과 같았습니다. 여기가 그 길입니다.
+ * 표 셋(일정·지출·예약)을 각각 물으면 화면 코드가 세 배가 되므로
+ * 032 의 deleted_items 가 한 번에 모아 줍니다. */
+const TRASH_KO = { plan:'일정', expense:'지출', booking:'예약' };
+const TRASH_TABLE = { plan:'plans', expense:'expenses', booking:'bookings' };
+
+async function loadTrash(){
+  $('trasherr').classList.add('hide');
+  const { data, error } = await sb.rpc('deleted_items', { p_trip: trip.id });
+  if (error){
+    /* 032 를 아직 안 올렸으면 함수가 없습니다. 오류 상자 대신 안내로 둡니다. */
+    $('trash').innerHTML = '<div class="empty">지운 것을 불러오지 못했어요.</div>';
+    $('trashcount').textContent = '';
+    return fail(error, 'trash');
+  }
+  const rows = data || [];
+  $('trashcount').textContent = rows.length ? `${rows.length}개` : '';
+  $('trash').innerHTML = rows.length
+    ? rows.map(r => `<div class="row">
+        <span class="label"><b>${esc(r.title)}</b>
+          <div class="memo">${esc(TRASH_KO[r.kind] || r.kind)} · ${esc(r.sub || '')}</div></span>
+        ${trip.myRole === 'viewer' ? ''
+          : `<button class="ghost" data-undel="${esc(r.kind)}:${esc(r.id)}"
+                     style="color:var(--primary)">되살리기</button>`}</div>`).join('')
+    : '<div class="empty">지운 것이 없어요.</div>';
+}
+
+$('trash').addEventListener('click', async e => {
+  const b = e.target.closest('[data-undel]'); if (!b) return;
+  const [kind, id] = b.dataset.undel.split(':');
+  b.disabled = true; b.textContent = '되살리는 중…';
+  const r = await sb.from(TRASH_TABLE[kind])
+    .update({ deleted_at: null }).eq('id', id).select('id');
+  b.disabled = false; b.textContent = '되살리기';
+  if (r.error) return fail(r.error, 'trash');
+  if (!r.data?.length) return fail('되살리지 못했어요 (0건).', 'trash');
+  toast('되살렸어요.');
+  await loadTrash();
+  /* 되살린 것이 원래 자리에 바로 보여야 합니다. */
+  if (kind === 'plan') await loadPlans();
+  if (kind === 'expense') await loadExpenses();
+  if (kind === 'booking') await loadBookings();
+});
+
 /* ── 탭 ─────────────────────────────────────────────────────────────
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
@@ -4458,7 +4675,7 @@ const TABS = {
   plans: ['card-plans', 'card-cand', 'plancard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
   prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
-  mem:   ['card-mem']
+  mem:   ['card-mem', 'card-trash']
 };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand'];
@@ -4474,6 +4691,8 @@ function showTab(t){
   $('editcard').classList.add('hide');
   document.querySelectorAll('#tabbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.t === t));
+  /* 지운 것은 열 때만 받아옵니다. 대부분은 볼 일이 없어서 미리 받으면 낭비입니다. */
+  if (t === 'mem') loadTrash();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 $('tabbar').addEventListener('click', e => {
@@ -5150,8 +5369,52 @@ async function loadMembers(){
 $('invbtn').addEventListener('click', () => {
   $('invitebox').classList.toggle('hide');
   $('i_result').classList.add('hide');
+  if (!$('invitebox').classList.contains('hide')) drawInvites();
 });
 $('i_cancel').addEventListener('click', () => $('invitebox').classList.add('hide'));
+
+/* ── 만들어 둔 초대 링크 ─────────────────────────────────────────────
+ * 링크는 한 번 만들면 14일간 살아 있고 스무 번까지 쓰입니다.
+ * 그런데 만들고 나면 화면에서 사라져서, 단톡방에 흘린 링크를 거둘 길이 없었습니다.
+ * 여기 늘어놓고 지울 수 있게 합니다. 지우면 그 링크로는 못 들어옵니다. */
+async function drawInvites(){
+  const { data, error } = await sb.from('trip_invites')
+    .select('code,role,expires_at,max_uses,uses')
+    .eq('trip_id', trip.id).order('created_at', { ascending:false });
+  if (error) return fail(error, 'mem');
+
+  const now = new Date();
+  const live = (data || []).filter(i => new Date(i.expires_at) > now && i.uses < i.max_uses);
+  const dead = (data || []).length - live.length;
+
+  $('i_list').innerHTML = live.length
+    ? `<div class="daysep">살아 있는 링크</div>` + live.map(i => {
+        const days = Math.max(0, Math.ceil((new Date(i.expires_at) - now) / 86400000));
+        return `<div class="row">
+          <span class="label"><b style="font-family:ui-monospace,monospace">${esc(i.code)}</b>
+            <div class="memo">${esc(ROLE_KO[i.role] || i.role)} ·
+              ${i.uses}/${i.max_uses}명 · ${days}일 남음</div></span>
+          <button class="ghost" data-ikill="${esc(i.code)}"
+                  style="color:var(--bad)">지우기</button></div>`;
+      }).join('') +
+      (dead ? `<div class="memo" style="padding-top:8px">만료됐거나 다 쓴 링크 ${dead}개는
+                 이미 못 씁니다.</div>` : '')
+    : (data || []).length
+      ? `<div class="memo">만들어 둔 링크가 다 만료됐어요.</div>` : '';
+}
+
+$('i_list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-ikill]'); if (!b) return;
+  if (b.dataset.armed !== '1'){ arm(b, '정말 지울까요?'); return; }
+  b.disabled = true;
+  const r = await sb.from('trip_invites').delete()
+    .eq('code', b.dataset.ikill).select('code');
+  b.disabled = false;
+  if (r.error) return fail(r.error, 'mem');
+  if (!r.data?.length) return fail('지워지지 않았어요 (0건). 소유자만 지울 수 있어요.', 'mem');
+  toast('그 링크로는 이제 못 들어와요.');
+  drawInvites();
+});
 
 $('i_make').addEventListener('click', async () => {
   const btn = $('i_make');
@@ -5167,6 +5430,21 @@ $('i_make').addEventListener('click', async () => {
   const link = location.origin + location.pathname + '?join=' + data.code;
   $('i_link').textContent = link;
   $('i_result').classList.remove('hide');
+  /* 공유 시트를 열 수 있는 기기에서만 보내기 버튼을 답니다.
+     없는데 눌러 놓으면 아무 일도 안 일어나 고장으로 보입니다. */
+  $('i_share').classList.toggle('hide', !navigator.share);
+  drawInvites();
+});
+
+$('i_share').addEventListener('click', async () => {
+  /* 복사해서 어디에 붙이라고 하는 것보다 쓰던 메신저로 바로 보내는 편이 빠릅니다. */
+  try {
+    await navigator.share({
+      title: `${trip.title} 같이 가요`,
+      text: `${trip.title} (${trip.destination}) 일정에 초대합니다.`,
+      url: $('i_link').textContent,
+    });
+  } catch {}   /* 취소를 누르면 거절로 옵니다. 오류가 아닙니다. */
 });
 
 /* 복사는 두 번 시도합니다.
@@ -5433,7 +5711,9 @@ async function render(session){
   } else applyTs(localStorage.getItem('t2:ts') || 1);
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
-  loadNotifs();
+  /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
+     여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
+  sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());
   /* 지난번에 못 보낸 저장이 남아 있을 수 있습니다. 켜자마자 흘려보냅니다. */
   drawOffbar(); flushQueue();
   showApp('home');
