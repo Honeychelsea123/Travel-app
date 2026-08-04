@@ -1634,6 +1634,20 @@ async function pendingTrip(){
   return null;
 }
 
+/* 리포트로 가는 길이 홈의 "평가 안 한 여행" 띠 하나뿐이었습니다.
+   평가를 마치면 그 띠가 사라지고 **리포트를 다시 볼 수 없었습니다.**
+   공유 카드를 만들어 두고 정작 열 길이 없으면 소용이 없습니다.
+   다녀온 여행 목록에서 바로 열 수 있게 합니다. */
+async function openTripReport(id){
+  rvTrip = id;
+  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
+    .forEach(v => $(v).classList.add('hide'));
+  $('reviewview').classList.remove('hide');
+  if (history.state?.t2 !== 'rv') history.pushState({ t2:'rv' }, '');
+  await loadCities();
+  await drawReport(id);
+}
+
 async function openReviewTrip(id){
   rvTrip = id;
   ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
@@ -4032,10 +4046,15 @@ async function loadTrips(){
     /* 보관은 뺐습니다. 날짜가 지나면 저절로 "다녀온"으로 넘어가는데
        거기서 또 손으로 치우게 하면 두 곳에 나뉘어 어디 있는지 헷갈립니다. */
     /* 일정 화면 위에서 사진과 정보를 걷어냈으니 고치는 길이 여기 있어야 합니다. */
-    const acts = role === 'owner'
+    /* 다녀온 여행에는 리포트로 가는 길을 답니다. 전에는 홈의 "평가 안 한 여행" 띠
+       하나뿐이라, 평가를 마치고 나면 리포트를 다시 볼 방법이 없었습니다. */
+    const report = t.end_date < today
+      ? `<button class="ghost" data-act="report" ${a}
+                 style="color:var(--primary)">리포트</button>` : '';
+    const acts = report + (role === 'owner'
       ? `<button class="ghost" data-act="edit" ${a}>수정</button>` +
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
-      : `<button class="ghost" data-act="leave" ${a}>나가기</button>`;
+      : `<button class="ghost" data-act="leave" ${a}>나가기</button>`);
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
     const img = t.cities?.image_url;
@@ -4072,6 +4091,7 @@ $('trips').addEventListener('click', async e => {
   if (act === 'cancelact') return loadTrips();
 
   /* 고치기 — 여행을 열고 수정 칸을 바로 펼칩니다. */
+  if (act === 'report') return openTripReport(id);
   if (act === 'edit'){ await openTrip(id); $('editbtn').click(); return; }
 
   /* 되돌릴 수 없는 일은 그 자리에서 한 번 더 묻습니다.
