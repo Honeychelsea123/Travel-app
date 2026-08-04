@@ -142,30 +142,43 @@ const cacheSet = (k, v) => { try { localStorage.setItem('t2:cache:' + k, JSON.st
  *
  * 그래서 시간을 끊습니다. 시간이 지나면 오류인 척 돌려주고,
  * 아래 isOffline 이 그걸 연결 문제로 알아봐서 캐시로 넘어갑니다.
- * 이미 끊긴 것을 아는 상태(navigator.onLine=false)면 더 짧게 끊습니다 —
- * 어차피 안 올 것을 4초씩 기다릴 이유가 없습니다. */
+  * 어차피 안 올 것을 4초씩 기다릴 이유가 없습니다. */
+/* **브라우저 말을 믿으면 안 됩니다.**
+   비행기모드인데 navigator.onLine 이 true 를 돌려줍니다 (아이폰 홈 화면 앱에서 흔합니다).
+   그래서 "오프라인이면 건너뛰기"가 하나도 안 걸렸고, 오프라인 띠도 안 떴습니다.
+   대신 **실제로 실패했는지**를 기억합니다. 한 번 안 오면 잠시 아무것도 안 물어봅니다 —
+   화면 하나에 요청이 대여섯 개라 그게 다 더해지면 눈에 띄게 굼떠집니다. */
+let netDownUntil = 0;
+const NET_REST = 20000;                 /* 한 번 실패하면 20초간 쉽니다 */
+const netIsDown = () => !navigator.onLine || Date.now() < netDownUntil;
+
 function netTimeout(p, ms){
-  /* **끊긴 걸 아는 상태면 물어보지도 않습니다.**
-     처음에는 400ms 만 기다렸는데, 화면 하나를 그리는 데 요청이 대여섯 개라
-     그게 다 더해져서 눈에 띄게 굼떴습니다. 어차피 캐시를 쓸 거면
-     기다리는 시간은 통째로 낭비입니다.
-     p 를 건드리지 않으므로 요청 자체가 안 나갑니다 —
-     supabase 질의는 await 할 때 비로소 나갑니다. */
-  if (!navigator.onLine)
+  /* 쉬는 중이면 요청 자체를 안 만듭니다.
+     p 를 건드리지 않으므로 나가지 않습니다 — supabase 질의는 await 할 때 나갑니다. */
+  if (netIsDown())
     return Promise.resolve({ data:null, error:{ message:'offline · 연결이 없습니다' } });
-  const wait = ms ?? 4000;
+  /* 처음 한 번은 재봐야 압니다. 그 한 번만 짧게 기다립니다. */
+  const wait = ms ?? 2500;
   return Promise.race([
     Promise.resolve(p).catch(error => ({ data:null, error })),
     new Promise(r => setTimeout(
       () => r({ data:null, error:{ message:'timeout · 응답이 없습니다' } }), wait)),
-  ]);
+  ]).then(r => {
+    if (r?.error && isOffline(r.error)){
+      netDownUntil = Date.now() + NET_REST;
+      drawOffbar();                      /* 이제야 오프라인인 걸 알았으니 띠를 띄웁니다 */
+    } else if (r && !r.error) {
+      netDownUntil = 0;                  /* 하나라도 오면 다시 정상으로 봅니다 */
+    }
+    return r;
+  });
 }
 
 /* 네트워크가 끊겨서 실패한 것인지 가려냅니다.
    supabase-js 는 연결이 안 되면 fetch 의 TypeError 를 그대로 던집니다.
    위 netTimeout 이 만들어 낸 'timeout' 도 같은 것으로 봅니다. */
 function isOffline(err){
-  if (!navigator.onLine) return true;
+  if (netIsDown()) return true;
   const m = String(err?.message || err || '');
   return /Failed to fetch|NetworkError|Load failed|network|timeout|ECONN/i.test(m);
 }
@@ -197,7 +210,7 @@ async function write(job){
 
 let flushing = false;
 async function flushQueue(){
-  if (flushing || !queue.length || !navigator.onLine) return;
+  if (flushing || !queue.length || netIsDown()) return;
   flushing = true;
   drawOffbar();
   while (queue.length){
@@ -223,7 +236,7 @@ async function flushQueue(){
 
 function drawOffbar(){
   const bar = $('offbar'); if (!bar) return;
-  const off = !navigator.onLine, n = queue.length;
+  const off = netIsDown(), n = queue.length;
   bar.classList.toggle('hide', !off && !n);
   bar.textContent = off
     ? (n ? `오프라인 · 저장할 것 ${n}건을 들고 있어요` : '오프라인 · 지금 보고 있는 것은 마지막으로 받아둔 내용이에요')
@@ -442,6 +455,104 @@ $('del_go').addEventListener('click', async () => {
   alert('탈퇴가 끝났습니다. 그동안 감사했습니다.');
   location.replace(location.pathname);
 });
+
+/* ── 버그 신고 ──────────────────────────────────────────────────────
+ * 앱이 스스로 터진 것(client_errors)만 모으면 절반만 압니다.
+ * 제일 흔한 문제는 안 터집니다 — "눌러도 아무 일이 안 나요".
+ * 그건 사람이 적어줘야 알 수 있습니다. */
+$('rpbtn').addEventListener('click', () => {
+  $('rpbox').classList.toggle('hide');
+  $('rperr').classList.add('hide');
+  if (!$('rpbox').classList.contains('hide')) $('rp_body').focus();
+});
+$('rp_cancel').addEventListener('click', () => $('rpbox').classList.add('hide'));
+$('rpkind').addEventListener('click', e => {
+  const b = e.target.closest('[data-rk]'); if (!b) return;
+  $('rpkind').querySelectorAll('.day').forEach(x => x.classList.toggle('on', x === b));
+});
+
+$('rp_send').addEventListener('click', async () => {
+  const b = $('rp_send');
+  $('rperr').classList.add('hide');
+  const body = $('rp_body').value.trim();
+  if (body.length < 5) return fail('무엇이 불편했는지 조금만 더 적어주세요.', 'rp');
+
+  b.disabled = true; b.innerHTML = '<span class="load">보내는 중…</span>';
+  const r = await netTimeout(sb.from('reports').insert({
+    user_id: me.id,
+    kind: $('rpkind').querySelector('.on')?.dataset.rk || '버그',
+    body,
+    /* 어느 빌드에서 났는지가 제일 중요한 단서입니다. 기기 종류도 같이.
+       일정·지출 내용은 안 보냅니다 — 고치는 데 필요 없습니다. */
+    build: $('build')?.textContent || '',
+    ua: navigator.userAgent.slice(0, 300),
+  }).select('id'));
+  b.disabled = false; b.textContent = '보내기';
+
+  if (r.error) return fail(r.error, 'rp');
+  if (!r.data?.length) return fail('보내지지 않았어요 (0건). 040 을 올려주세요.', 'rp');
+  $('rp_body').value = '';
+  $('rpbox').classList.add('hide');
+  toast('보냈어요. 읽고 고치겠습니다.');
+});
+
+/* ── 관리자 대시보드 ────────────────────────────────────────────────
+ * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
+ * **숫자만 냅니다** — 누가 어디를 갔는지는 관리자도 볼 이유가 없습니다.
+ * 서버 쪽 함수가 is_admin() 을 확인하므로 화면을 뜯어도 못 봅니다. */
+async function loadAdmin(){
+  const box = $('admincard');
+  const r = await netTimeout(sb.rpc('admin_stats'));
+  if (r.error || !r.data){ box.classList.add('hide'); return; }
+  box.classList.remove('hide');
+  const d = r.data;
+
+  const n = v => Number(v ?? 0).toLocaleString('ko-KR');
+  const grp = (title, rows) =>
+    `<div class="daysep">${esc(title)}</div>` +
+    rows.filter(Boolean).map(([k, v, m]) => `<div class="row">
+      <span class="label">${esc(k)}${m ? `<div class="memo">${esc(m)}</div>` : ''}</span>
+      <span class="val"><b>${esc(v)}</b></span></div>`).join('');
+
+  $('adm_stats').innerHTML =
+    grp('사람', [
+      ['가입자', n(d.users_total)],
+      ['최근 7일 가입', n(d.users_7d)],
+      ['최근 7일 쓴 사람', n(d.active_7d), 'AI 를 한 번이라도 쓴 기준'],
+    ]) +
+    grp('쌓인 것', [
+      ['여행', n(d.trips_total) + ` (7일 +${n(d.trips_7d)})`],
+      ['일정', n(d.plans_total)],
+      ['지출', n(d.expenses_total)],
+      ['도시 별점', n(d.ratings_total)],
+    ]) +
+    grp('AI (Gemini)', [
+      ['오늘', n(d.ai_today) + '회'],
+      ['최근 7일', n(d.ai_7d) + '회'],
+      ['최근 30일', n(d.ai_30d) + '회'],
+      ['일정 검토 7일', n(d.ai_review_7d) + '회'],
+      ['오늘 한 사람 최대', n(d.ai_top_today) + '회', '한도에 자주 닿으면 손봐야 합니다'],
+    ]) +
+    grp('검색 (Tavily)', [
+      ['담아둔 검색', n(d.search_cached) + '건', '6시간마다 치웁니다. 누적이 아닙니다'],
+      ['최근 1시간', n(d.search_fresh) + '건', '이만큼은 크레딧을 안 썼습니다'],
+    ]) +
+    grp('문제', [
+      ['최근 7일 오류', n(d.errors_7d) + '건'],
+      ['안 읽은 신고', n(d.reports_open) + '건'],
+    ]);
+
+  const f = await netTimeout(sb.rpc('admin_feed'));
+  $('adm_feed').innerHTML = (f.data || []).length
+    ? `<div class="daysep">최근 신고와 오류</div>` +
+      f.data.map(x => `<div class="row">
+        <span class="label"><b>${esc(x.kind)}</b> ${esc(String(x.body).slice(0, 120))}
+          <div class="memo">${esc((x.at || '').slice(0, 16).replace('T', ' '))}
+            ${x.build ? ' · ' + esc(x.build) : ''}</div></span>
+        ${Number(x.n) > 1 ? `<span class="val"><b>${x.n}회</b></span>` : ''}</div>`).join('')
+    : '';
+}
+$('adm_refresh').addEventListener('click', loadAdmin);
 
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
    문의할 때 붙일 수 있게 복사도 됩니다 — 스크린샷보다 이쪽이 고치기 쉽습니다. */
@@ -929,7 +1040,7 @@ async function loadChats(tripId){
   /* AI 는 서버가 있어야 합니다. 오프라인이면 물어봐도 답이 안 옵니다.
      "불러오는 중…"을 남겨두면 하루 종일 기다리게 됩니다. 못 쓴다고 적습니다.
      입력칸도 막습니다 — 쓸 수 있게 두면 써 보고 나서야 안 되는 걸 압니다. */
-  if (!navigator.onLine){
+  if (netIsDown()){
     $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
       '일정과 지출은 그대로 보실 수 있어요.</div>';
     $('qasks').classList.add('hide');
@@ -1334,7 +1445,7 @@ async function loadRatings(){
   /* 도시 목록은 받아둔 것이 있어도 **내 별점은 서버에서** 옵니다.
      별점 없이 도시만 늘어놓으면 뭘 매겼는지 모르고, 눌러도 저장이 안 됩니다.
      오프라인이면 아예 안 물어보고 알립니다. */
-  if (!navigator.onLine){
+  if (netIsDown()){
     $('ratelist').innerHTML =
       `<div class="empty" style="padding:26px 12px">
          연결이 없어 기록은 지금 볼 수 없어요.<br>
@@ -1748,7 +1859,7 @@ async function loadHome(){
   /* 홈은 서버에서 받아올 것이 많습니다 — 다음 여행, 평가할 곳, 발자국, 통계.
      오프라인이면 그 중 하나도 못 옵니다. 하나씩 시간을 재며 실패하느니
      **아예 안 물어보고** 바로 알립니다. 그게 훨씬 빠릅니다. */
-  if (!navigator.onLine){
+  if (netIsDown()){
     $('home').innerHTML =
       `<div class="card"><div class="empty" style="padding:26px 12px">
          연결이 없어 홈은 지금 볼 수 없어요.<br>
@@ -1763,7 +1874,7 @@ async function loadHome(){
   try { await buildHome(); }
   catch (e){
     if ($('home').querySelector('.hero, .card, .rvbar')) return;   /* 이미 뭔가 그렸으면 둡니다 */
-    $('home').innerHTML = navigator.onLine
+    $('home').innerHTML = !netIsDown()
       ? `<div class="card"><div class="empty">홈을 불러오지 못했어요.<br>
            <button class="small" id="homeretry" style="margin-top:10px">다시 시도</button>
          </div></div>`
@@ -2560,7 +2671,7 @@ const UN_COUNTRIES = 195;   /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰�
 async function loadFootprint(){
   /* 발자국 숫자는 서버가 셉니다. 오프라인이면 그대로 둡니다 —
      0 으로 덮으면 다녀온 곳이 사라진 것처럼 보입니다. */
-  if (!navigator.onLine) return;
+  if (netIsDown()) return;
   const { data, error } = await sb.rpc('my_footprint');
   if (error || !data) return;
   const f = data;
@@ -4382,7 +4493,7 @@ document.addEventListener('click', e => {
 
 async function loadNotifs(){
   /* 알림은 서버에만 있습니다. 오프라인이면 종 숫자도 못 셉니다. */
-  if (!navigator.onLine){
+  if (netIsDown()){
     $('notifs').innerHTML = '<div class="empty">연결이 없어 알림은 지금 볼 수 없어요.</div>';
     $('readall').classList.add('hide');
     return;
@@ -4758,7 +4869,7 @@ function drawTripHeader(){
 
 async function openTrip(id){
   if (!await fetchTrip(id))
-    return fail(navigator.onLine
+    return fail(!netIsDown()
       ? '여행을 열지 못했습니다.'
       : '연결이 없어서 못 열어요. 한 번이라도 열어본 여행은 비행기모드에서도 열립니다.',
       'trip');
@@ -6952,7 +7063,7 @@ async function render(session){
   drawOffbar(); flushQueue();
   /* 오프라인이면 홈이 어차피 "볼 수 없어요"입니다. 그럴 땐 여행 목록으로 엽니다 —
      받아둔 일정이 거기 있습니다. 열자마자 쓸 수 있는 화면을 보여주는 것이 맞습니다. */
-  showApp(navigator.onLine ? 'home' : 'trips');
+  showApp(netIsDown() ? 'trips' : 'home');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
      목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다.
      기다리지 않습니다 — 초대 코드가 없으면 아무 일도 안 하는데,
@@ -7024,7 +7135,7 @@ function storedSession(){
 /* 끊긴 걸 이미 아는 상태면 물어보지도 않습니다. 저장해 둔 것을 바로 씁니다.
    3초를 기다렸다 캐시를 쓰나, 바로 캐시를 쓰나 결과가 같은데
    앞의 3초는 화면이 멈춰 있는 시간입니다. 그게 "처음 열 때 느리다"의 정체였습니다. */
-const session = navigator.onLine
+const session = !netIsDown()
   ? await Promise.race([
       sb.auth.getSession().then(r => r.data.session).catch(() => storedSession()),
       new Promise(r => setTimeout(() => r(storedSession()), 3000)),

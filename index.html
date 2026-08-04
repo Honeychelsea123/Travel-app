@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b147">
+<link rel="stylesheet" href="app.css?v=b148">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -640,11 +640,82 @@
           <button class="ghost" id="setback" style="padding-left:0">← 프로필</button>
         </div>
 
-        <!-- 데이터베이스에는 되돌리기가 없습니다. 지운 것은 그냥 사라집니다.
-             내 것을 통째로 파일로 받아 둘 수 있게 합니다. -->
+        <!-- 카드를 항목마다 하나씩 쌓았더니 여섯 덩어리가 같은 무게로 늘어서
+             무엇이 중요한지 안 보였습니다. 성격별로 묶고 소제목을 답니다. -->
+
+        <!-- ── 알림 ── -->
+        <div class="card" id="notifprefcard">
+          <h2>알림</h2>
+          <div class="srow">
+            <span class="label"><b>알림 받기</b>
+              <div class="memo">일행의 지출 · 합류, 출발 하루 전</div></span>
+            <label class="sw"><input type="checkbox" id="nf_all" checked><span></span></label>
+          </div>
+          <div class="snote">잠금화면 알림(푸시)은 아직 없어요.
+            앱을 열었을 때 종 아이콘에 쌓입니다.</div>
+          <pre id="nferr" class="hide"></pre>
+        </div>
+
+        <!-- ── 화면 ── -->
         <div class="card">
-          <div class="row" style="border:0; padding:0; margin:0">
-            <span class="label"><b>내 자료 내려받기</b>
+          <h2>화면</h2>
+          <div class="srow" style="display:block">
+            <span class="label"><b>글자 크기</b></span>
+            <div class="days" id="tsbtns" style="margin-top:8px">
+              <button class="day" data-ts="0.9">작게</button>
+              <button class="day" data-ts="1">보통</button>
+              <button class="day" data-ts="1.15">크게</button>
+              <button class="day" data-ts="1.3">아주 크게</button>
+            </div>
+          </div>
+          <div class="snote">이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.</div>
+        </div>
+
+        <!-- ── 도움 ── 문제를 겪었을 때 갈 곳을 한자리에 모읍니다. -->
+        <div class="card">
+          <h2>도움</h2>
+          <div class="srow">
+            <span class="label"><b>버그 신고 · 의견 보내기</b>
+              <div class="memo">불편한 점을 알려주세요. 만든 사람이 바로 봅니다</div></span>
+            <button class="small" id="rpbtn">보내기</button>
+          </div>
+          <div id="rpbox" class="hide" style="margin-top:12px">
+            <div class="days" id="rpkind" style="margin-bottom:10px">
+              <button class="day on" data-rk="버그">잘 안 돼요</button>
+              <button class="day" data-rk="의견">이런 게 있으면</button>
+            </div>
+            <textarea id="rp_body" rows="5" maxlength="1000"
+              placeholder="어느 화면에서 무엇을 하려다 어떻게 됐는지 적어주세요.&#10;예) 지출 넣기를 눌렀는데 저장이 안 돼요"></textarea>
+            <div class="snote">빌드 번호와 기기 종류가 같이 갑니다.
+              일정·지출 내용은 안 보내요.</div>
+            <div style="margin-top:12px; display:flex; gap:8px">
+              <button class="primary" id="rp_send">보내기</button>
+              <button class="small" id="rp_cancel">취소</button>
+            </div>
+            <pre id="rperr" class="hide"></pre>
+          </div>
+
+          <div class="srow">
+            <span class="label"><b>최근에 생긴 문제</b>
+              <div class="memo" id="errnote">앱에서 터진 것을 모아둡니다</div></span>
+            <button class="small" id="errbtn">확인</button>
+          </div>
+          <div id="errlist" class="hide"></div>
+        </div>
+
+        <!-- ── 관리자 ── 만든 사람만 보입니다 (038 의 admins). -->
+        <div class="card hide" id="admincard">
+          <h2><span class="grow">관리자</span>
+            <button class="small" id="adm_refresh">새로고침</button></h2>
+          <div id="adm_stats"><div class="empty"><span class="load">세는 중…</span></div></div>
+          <div id="adm_feed"></div>
+        </div>
+
+        <!-- ── 내 자료 ── -->
+        <div class="card">
+          <h2>내 자료</h2>
+          <div class="srow">
+            <span class="label"><b>내려받기</b>
               <div class="memo">여행 · 일정 · 지출 · 별점을 파일 하나로 저장해요</div></span>
             <button class="small" id="dumpbtn">받기</button>
           </div>
@@ -652,57 +723,19 @@
           <pre id="dumperr" class="hide"></pre>
         </div>
 
-        <!-- 알림. 끌 수 없는 알림은 결국 앱 자체를 지우게 만듭니다.
-             화면에서 숨기는 것이 아니라 서버에서 아예 안 만들게 합니다. -->
-        <div class="card" id="notifprefcard">
-          <div class="row" style="border:0; padding:0; margin:0">
-            <span class="label"><b>알림 받기</b>
-              <div class="memo">일행의 지출 · 합류, 출발 하루 전</div></span>
-            <label class="sw"><input type="checkbox" id="nf_all" checked><span></span></label>
-          </div>
-          <div class="empty" style="text-align:left; padding-top:10px">
-            잠금화면 알림(푸시)은 아직 없어요. 앱을 열었을 때 종 아이콘에 쌓입니다.
-          </div>
-          <pre id="nferr" class="hide"></pre>
-        </div>
-
-        <!-- 문의와 오류. "안 돼요" 한 마디만 오면 무엇이 터졌는지 알 길이 없습니다.
-             화면에서 터진 것을 남겨두고, 여기서 복사해 보낼 수 있게 합니다. -->
+        <!-- ── 계정 ── 로그아웃과 탈퇴는 성격이 같아 한 덩어리로 둡니다. -->
         <div class="card">
-          <div class="row" style="border:0; padding:0; margin:0">
-            <span class="label"><b>문제가 있나요?</b>
-              <div class="memo" id="errnote">최근에 생긴 문제를 확인해요</div></span>
-            <button class="small" id="errbtn">확인</button>
+          <h2>계정</h2>
+          <div class="srow">
+            <span class="label"><b>로그아웃</b>
+              <div class="memo">자료는 그대로 남아요</div></span>
+            <button class="small" id="logout">로그아웃</button>
           </div>
-          <div id="errlist" class="hide" style="margin-top:10px"></div>
-        </div>
 
-        <!-- 글자 크기는 사람마다 다릅니다. 도쿄 앱은 공유값이라
-             한 명이 키우면 전원 화면이 커졌습니다. -->
-        <div class="card">
-          <h2>글자 크기</h2>
-          <div class="days" id="tsbtns">
-            <button class="day" data-ts="0.9">작게</button>
-            <button class="day" data-ts="1">보통</button>
-            <button class="day" data-ts="1.15">크게</button>
-            <button class="day" data-ts="1.3">아주 크게</button>
-          </div>
-          <div class="empty" style="padding:4px 0 0; text-align:left">
-            이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.
-          </div>
-        </div>
-
-        <div class="card">
-          <button class="ghost" id="logout" style="width:100%; color:var(--bad)">로그아웃</button>
-        </div>
-
-        <!-- 탈퇴. 이메일·이름·사진을 모으고 있으니 지울 길이 반드시 있어야 합니다.
-             무엇이 지워지는지 **누르기 전에** 보여줍니다. -->
-        <div class="card">
-          <div class="row" style="border:0; padding:0; margin:0">
+          <div class="srow">
             <span class="label"><b>탈퇴하기</b>
               <div class="memo">계정과 내 기록을 지웁니다. 되돌릴 수 없어요</div></span>
-            <button class="small" id="delbtn">탈퇴</button>
+            <button class="small" id="delbtn" style="color:var(--bad)">탈퇴</button>
           </div>
 
           <div id="delbox" class="hide" style="margin-top:14px">
@@ -1172,10 +1205,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b147</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b148</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b147"></script>
+<script type="module" src="app.js?v=b148"></script>
 </body>
 </html>
 
