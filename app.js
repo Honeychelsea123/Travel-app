@@ -76,6 +76,15 @@ function fail(e, where){
                 del:$('delerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
+  /* 연결이 끊겨서 못 받아온 것을 빨간 오류로 띄우면 고장으로 보입니다.
+     비행기모드에서 화면마다 빨간 상자가 떴습니다. 그건 오류가 아니라 상태입니다.
+     사용자가 잘못 적어서 나는 오류(문자열로 넘어옵니다)는 그대로 둡니다 —
+     그건 연결과 상관없이 고쳐야 하는 것입니다. */
+  if (typeof e !== 'string' && isOffline(e)){
+    box.textContent = '지금은 연결이 없어요. 받아둔 내용만 보여드려요.';
+    drawOffbar();
+    return;
+  }
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
   box.textContent = typeof e === 'string' ? e
     : (e && (e.message || e.error_description || e.hint)) || JSON.stringify(e);
@@ -4398,7 +4407,17 @@ async function loadTrips(){
     if (!old){ $('trips').innerHTML = '<div class="empty">불러오지 못했어요</div>';
                return fail(error); }
     data = old; error = null; drawOffbar();
-  } else cacheSet(ck, data);
+  } else {
+    cacheSet(ck, data);
+    /* 목록에 있는 여행은 **열어본 적 없어도** 비행기모드에서 열려야 합니다.
+       한 줄씩 미리 담아둡니다 — 목록을 받을 때 이미 필요한 값이 다 왔습니다.
+       이걸 안 하면 "열어본 적 있는 여행만 열림"이 되는데,
+       그건 정작 여행 가서 처음 여는 순간에 안 열린다는 뜻입니다. */
+    for (const t of data){
+      const k = 'trip:' + t.id;
+      if (!cacheGet(k)) cacheSet(k, { ...t, home_currency: t.currency || 'KRW' });
+    }
+  }
 
   if (!data.length){
     $('trips').innerHTML =
@@ -4533,9 +4552,18 @@ function dayLabel(dateStr, t){
 async function fetchTrip(id){
   const { data, error } = await sb.from('trips')
     .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle();
-  /* 여행 한 줄을 못 받으면 그 안으로 아예 못 들어갑니다 — 일정도 지출도 그 뒤입니다. */
+  /* 여행 한 줄을 못 받으면 그 안으로 아예 못 들어갑니다 — 일정도 지출도 그 뒤입니다.
+     캐시는 그 여행을 **한 번 열었을 때** 생깁니다. 비행기모드에서 목록에는 셋이 보이는데
+     열어본 적 없는 것을 누르면 "여행을 열지 못했습니다"가 났습니다.
+     그래서 목록 캐시에서 최소한을 꺼내 만들어서라도 엽니다 —
+     제목·날짜·목적지는 거기 다 있습니다. 빈 화면보다 낫습니다. */
   if (error){
-    const old = cacheGet('trip:' + id);
+    let old = cacheGet('trip:' + id);
+    if (!old){
+      const listed = [...(cacheGet('trips:up') || []), ...(cacheGet('trips:past') || [])]
+        .find(t => t.id === id);
+      if (listed) old = { ...listed, home_currency: listed.currency || 'KRW' };
+    }
     if (!old){ fail(error, 'trip'); return false; }
     trip = old;
     trip.myRole = (old.trip_members || []).find(m => m.user_id === me.id)?.role || '';
@@ -4583,7 +4611,11 @@ function drawTripHeader(){
 }
 
 async function openTrip(id){
-  if (!await fetchTrip(id)) return fail('여행을 열지 못했습니다.', 'trip');
+  if (!await fetchTrip(id))
+    return fail(navigator.onLine
+      ? '여행을 열지 못했습니다.'
+      : '연결이 없어서 못 열어요. 한 번이라도 열어본 여행은 비행기모드에서도 열립니다.',
+      'trip');
   pickedDay = null;
   /* 기록을 하나 쌓아야 화면 밀어서 뒤로 가기가 됩니다.
      이미 여행 안이면(다른 여행으로 건너뛴 경우) 또 쌓지 않습니다. */
@@ -6583,25 +6615,30 @@ async function render(session){
   $('mail').textContent = me.email || '';
   /* 우리 통에 올린 사진과 바꾼 이름을 먼저 씁니다. 없으면 구글 것.
      이름을 구글 것만 보고 있어서, 바꿔도 다시 열면 되돌아왔습니다. */
-  const prof0 = await sb.from('profiles')
-    .select('avatar_url,display_name').eq('id', me.id).maybeSingle();
-  $('name').textContent = prof0.data?.display_name ||
-    meta.full_name || meta.name || (me.email||'').split('@')[0];
-  myAvatar = prof0.data?.avatar_url || meta.avatar_url || meta.picture || '';
+  /* 이름·사진·글자 크기는 **기다리지 않습니다.**
+     비행기모드에서 부팅이 14초 걸렸습니다. 화면은 캐시로 진작 나와 있는데
+     이 질의들을 기다리느라 앱이 멈춰 있었습니다.
+     먼저 아는 값(구글 계정 정보, 지난번 글자 크기)으로 그려두고,
+     서버 값이 오면 그때 덮어씁니다. 안 와도 앱은 돕니다. */
+  $('name').textContent = meta.full_name || meta.name || (me.email || '').split('@')[0];
+  applyTs(localStorage.getItem('t2:ts') || 1);
+  myAvatar = meta.avatar_url || meta.picture || '';
   if (myAvatar) $('avatar').src = myAvatar;
 
-  /* 가입 트리거가 실제로 돌았는지 봅니다 (001 의 handle_new_user). */
-  const [prof, prefs] = await Promise.all([
-    sb.from('profiles').select('display_name').eq('id', me.id).maybeSingle(),
-    sb.from('user_prefs').select('text_scale').eq('user_id', me.id).maybeSingle()
-  ]);
-  mark('p', !!prof.data, prof.data ? (prof.data.display_name || '생성됨') : '없음');
-  mark('u', !!prefs.data, prefs.data ? ('배율 ' + prefs.data.text_scale) : '없음');
-  /* 다른 기기에서 바꾼 값이 있으면 그걸 따릅니다. */
-  if (prefs.data?.text_scale){
-    applyTs(prefs.data.text_scale);
-    localStorage.setItem('t2:ts', prefs.data.text_scale);
-  } else applyTs(localStorage.getItem('t2:ts') || 1);
+  sb.from('profiles').select('avatar_url,display_name').eq('id', me.id).maybeSingle()
+    .then(r => {
+      if (!r.data) return;
+      if (r.data.display_name) $('name').textContent = r.data.display_name;
+      if (r.data.avatar_url){ myAvatar = r.data.avatar_url; $('avatar').src = myAvatar; }
+    }).catch(() => {});
+
+  /* 다른 기기에서 바꾼 글자 크기가 있으면 그걸 따릅니다. 늦게 와도 됩니다. */
+  sb.from('user_prefs').select('text_scale').eq('user_id', me.id).maybeSingle()
+    .then(r => {
+      if (!r.data?.text_scale) return;
+      applyTs(r.data.text_scale);
+      localStorage.setItem('t2:ts', r.data.text_scale);
+    }).catch(() => {});
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
   $('homebtn').classList.remove('hide');
