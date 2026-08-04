@@ -50,6 +50,112 @@ async function callGemini(model: string, key: string, contents: unknown) {
   return { code: res.status, body: await res.text() };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 웹 검색 (Tavily) — 도쿄 앱에서 옮겨왔습니다.
+//
+// 왜 필요한가: 영업시간·휴무·가격·평점은 우리가 가진 자료에 없습니다.
+// 없으면 "직접 확인이 필요합니다"라고만 답하게 되는데, 그건 안 물어본 것과 같습니다.
+//
+// 키가 없으면 검색을 건너뛰고 그냥 답합니다. 검색이 안 된다고 대화가 막히면 안 됩니다.
+// ─────────────────────────────────────────────────────────────────────
+const SEARCH_DEPTH = 'advanced';   // basic 은 스니펫이 100자에서 끊겨 별점이 안 담겼습니다
+const SEARCH_MIN_SCORE = 0.45;     // 도쿄 앱 실측: 맞는 결과는 0.63~0.77 에 몰렸습니다
+
+/** 이 질문에 검색이 필요한가. 내 일정만 보면 되는 것은 안 합니다. */
+function needsSearch(q: string) {
+  const t = String(q || '');
+  // 내 자료만 보면 되는 질문 — 검색은 크레딧만 씁니다
+  if (/일정\s*정리|정리해|요약|비어|빈\s*시간|여유|중복|겹치|예산|얼마나\s*썼|지출|정산|몇\s*시에|우리\s*호텔|예약번호|체크아웃|체크인/.test(t))
+    return false;
+  // 바뀌는 정보 — 검색해야 맞습니다
+  return /영업|휴무|문\s*여|문\s*닫|오픈|마감|예약\s*필요|웨이팅|대기|혼잡|붐비|붐벼|붐빔|사람\s*많|줄\s*서|공사|임시|휴관|휴점|가격|요금|입장료|얼마|환율|날씨|기온|비\s*[와오]|눈\s*[와오]|우산|지금|축제|이벤트|최신|요즘|현재|올해|근처|주변|추천|맛집|평점|후기/.test(t);
+}
+
+/** 물음표와 조사를 걷어내 검색어를 만듭니다. 문장 그대로 넣으면 가게 이름이 묻힙니다. */
+function searchQuery(text: string, dest: string) {
+  const raw = String(text || '').replace(/[?？!！]/g, ' ').replace(/\s+/g, ' ').trim();
+  const isRating = /타베로그|별점|평점|리뷰|후기/.test(raw);
+  let t = raw
+    .replace(/\s*(알려\s*줘|알려\s*주세요|가르쳐\s*줘|추천\s*해\s*줘|궁금해|어때|어떤가|인가요|일까요|맞나요|이야|예요|에요|인가|나요|까요|까|줘)\s*$/, ' ')
+    .replace(/몇\s*점|몇\s*시|얼마나|얼마|어디|언제|어떻게|왜|까지|부터/g, ' ')
+    .replace(/지금|오늘|요즘|현재|최근/g, ' ');
+  if (isRating) t = t.replace(/타베로그|별점|평점|리뷰|후기|점수/g, ' ');
+  // 낱말로 떨어져 있는 조사만. 이름 안의 글자는 건드리지 않습니다.
+  t = t.replace(/\s(은|는|이|가|을|를|의|에|에서|으로|로|와|과|랑|도|만)\s/g, ' ')
+       .replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!t) t = raw.slice(0, 60);              // 다 걷혔으면 원문으로
+  if (isRating) return t;                    // 별점은 가게 이름만. 사이트는 아래에서 좁힙니다
+  return (dest ? dest + ' ' : '') + t;
+}
+
+/** 어느 사이트 안에서 찾을지. 검색어에 'tabelog' 를 적으면 낱말 하나를
+    사이트 이름이 차지해 가게 이름의 비중이 떨어집니다. 그래서 도메인으로 넘깁니다. */
+function searchDomains(text: string, country: string) {
+  if (/타베로그|별점|평점|리뷰|후기/.test(String(text)) && country === 'JP')
+    return ['tabelog.com'];
+  return null;
+}
+
+// deno-lint-ignore no-explicit-any
+async function webSearch(key: string, admin: any, query: string,
+                         n: number, domains: string[] | null) {
+  const ck = query + '|' + (domains?.join(',') ?? '');
+  // 같은 검색은 다시 안 합니다. Tavily 는 한 번이 크레딧 한 개입니다 (037).
+  try {
+    const { data } = await admin.from('search_cache')
+      .select('results,created_at').eq('key', ck).maybeSingle();
+    if (data && Date.now() - new Date(data.created_at).getTime() < 3600_000)
+      return data.results;
+  } catch { /* 보관함이 없어도 검색은 됩니다 */ }
+
+  try {
+    // deno-lint-ignore no-explicit-any
+    const body: Record<string, any> = {
+      query, max_results: n, search_depth: SEARCH_DEPTH,
+      include_answer: false, include_raw_content: false,
+    };
+    if (domains?.length) body.include_domains = domains;
+
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) return null;
+    // deno-lint-ignore no-explicit-any
+    let raw: any[] = (await res.json())?.results ?? [];
+
+    // include_domains 는 강제가 아니라 선호입니다. 건수를 못 채우면 다른 사이트로
+    // 메워서, tabelog 로 좁혔는데 위키백과가 섞여 들어왔습니다. 우리가 부른 곳만 남깁니다.
+    if (domains?.length) {
+      raw = raw.filter((it) => {
+        const host = (String(it.url || '').match(/^https?:\/\/([^\/?#]+)/i)?.[1] ?? '')
+          .toLowerCase();
+        return domains.some((d) =>
+          host === d.toLowerCase() || host.endsWith('.' + d.toLowerCase()));
+      });
+    }
+    // 관련도가 낮은 것도 버립니다. 도쿄를 물었는데 이탈리아 블로그가 나온 적이 있습니다.
+    // score 가 아예 없는 응답이면(형식이 바뀌면) 거르지 않습니다 —
+    // 필터 때문에 검색이 통째로 비는 쪽이 더 나쁩니다.
+    raw = raw.filter((it) => typeof it.score !== 'number' || it.score >= SEARCH_MIN_SCORE);
+
+    const items = raw.map((it) => ({
+      title: String(it.title || '').slice(0, 80),
+      snippet: String(it.content || '').replace(/\s+/g, ' ').slice(0, 600),
+      link: String(it.url || ''),
+    }));
+
+    try {
+      await admin.from('search_cache').upsert({ key: ck, results: items, created_at: new Date() });
+      await admin.rpc('sweep_search_cache');   // 오래된 것 치우기
+    } catch { /* 못 담아도 답은 나갑니다 */ }
+    return items;
+  } catch {
+    return null;
+  }
+}
+
 /** 두 좌표 사이 거리(km). 이동 시간과 "너무 먼 좌표 버리기"에 씁니다. */
 function distKm(a: number, b: number, c: number, d: number) {
   const R = 6371, r = Math.PI / 180;
@@ -223,13 +329,34 @@ Deno.serve(async (req) => {
       ctx ? '\n아래는 이 여행의 자료다. 이미 들어 있는 일정과 겹치게 넣지 않는다.\n' + ctx : '',
     ].filter(Boolean).join('\n');
 
+    // ── 웹 검색 ──
+    // 영업시간·가격·평점처럼 바뀌는 것은 우리 자료에 없습니다.
+    // 사진을 물었을 때는 안 합니다 — 물음이 사진에 대한 것이라 검색어가 엉뚱해집니다.
+    // 초안(draft)도 안 합니다. 하루치가 아니라 여행 전체라 검색 한 번으로 안 됩니다.
+    let hits: { title: string; snippet: string; link: string }[] | null = null;
+    const tavily = Deno.env.get('TAVILY_KEY');
+    if (tavily && !draft && !shot && needsSearch(String(message))) {
+      const dest = tripRow?.destination ?? '';
+      hits = await webSearch(tavily, admin,
+        searchQuery(String(message), dest), 5,
+        searchDomains(String(message), tripRow?.country ?? ''));
+    }
+    const searchBlock = hits?.length
+      ? '\n[방금 검색한 결과] — 아래 내용을 근거로 답한다\n' +
+        hits.map((h, i) => `${i + 1}. ${h.title}\n   ${h.snippet}\n   ${h.link}`).join('\n') +
+        '\n'
+      : '';
+
     const system = [
       '너는 여행 계획을 돕는 조수다. 한국어로, 짧고 구체적으로 답한다.',
       '',
       '규칙:',
       '- 자료에 없는 것을 지어내지 않는다. 모르면 모른다고 한다.',
-      '- 특히 영업시간 · 휴무일 · 가격 · 평점은 확인한 것만 말하고,',
-      '  아니면 "직접 확인이 필요합니다"라고 적는다.',
+      searchBlock
+        ? '- [방금 검색한 결과]에 있는 내용만 근거로 삼는다. 거기 없는 숫자는 지어내지 않는다.\n' +
+          '  검색 결과에도 없으면 "찾지 못했습니다"라고 적는다.'
+        : '- 특히 영업시간 · 휴무일 · 가격 · 평점은 확인한 것만 말하고,\n' +
+          '  아니면 "직접 확인이 필요합니다"라고 적는다.',
       '- 일정을 직접 고치지 않는다. 제안만 하고 사용자가 앱에서 넣게 한다.',
       '- 하루에 4~5개를 넘겨 채우지 않는다. 빈 시간을 남기는 편이 낫다.',
       '- 이동 시간을 무시하지 않는다. 그날이 속한 구간의 이동 어림값을 쓴다.',
@@ -266,6 +393,7 @@ Deno.serve(async (req) => {
       '  [구간] 이면 "legs", [여행] 줄이면 "trip" 을 넣는다.',
       '- 자료에 없고 네가 원래 알던 것으로 답한 부분이 있으면 "general" 을 반드시 넣는다.',
       '  사용자는 이걸 보고 직접 확인할지 정한다. 숨기면 안 된다.',
+      searchBlock,
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
 
@@ -367,7 +495,11 @@ Deno.serve(async (req) => {
 
     return json({
       reply: String(out.reply ?? raw).slice(0, 4000),
-      places, actions, sources, used: take.used, limit: take.limit,
+      places, actions, sources,
+      // 어디서 읽어온 것인지 링크째 돌려줍니다. 눌러서 직접 확인할 수 있어야
+      // "검색해서 답했다"는 말이 확인 가능한 말이 됩니다.
+      web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
+      used: take.used, limit: take.limit,
       // 어느 날이 비었는지는 화면에서 알려줍니다. 다시 짜달라고 할지 사용자가 정합니다.
       days: draft ? days : undefined,
     });

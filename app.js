@@ -952,14 +952,23 @@ $('ai_file').addEventListener('change', async e => {
  * "일반지식"이 붙었다면 우리가 확인해 준 것이 아무것도 없다는 뜻입니다. */
 const SRC_KO = { plans:'이 여행 일정', expenses:'지출 기록', legs:'여행 구간',
                  trip:'여행 정보', general:'일반 지식 — 직접 확인이 필요해요' };
-function drawSources(list){
+function drawSources(list, web){
   const box = $('aisrc'); if (!box) return;
   const arr = (Array.isArray(list) ? list : []).filter(s => SRC_KO[s]);
-  box.classList.toggle('hide', !arr.length);
-  box.innerHTML = arr.length
-    ? '<b>근거</b>' + arr.map(s =>
-        `<span class="srcchip${s === 'general' ? ' warn' : ''}">${esc(SRC_KO[s])}</span>`).join('')
-    : '';
+  const links = Array.isArray(web) ? web.filter(w => w?.link) : [];
+  box.classList.toggle('hide', !arr.length && !links.length);
+  box.innerHTML =
+    (arr.length ? '<b>근거</b>' + arr.map(s =>
+       `<span class="srcchip${s === 'general' ? ' warn' : ''}">${esc(SRC_KO[s])}</span>`).join('')
+     : '') +
+    /* 검색해서 답한 경우에는 어디서 읽었는지 **링크째** 답니다.
+       눌러서 직접 볼 수 있어야 "검색했다"는 말이 확인 가능한 말이 됩니다.
+       영업시간·가격은 틀렸을 때 여행이 어긋나므로 특히 그렇습니다. */
+    (links.length
+      ? `<div class="weblinks"><b>검색해서 답했어요</b>` +
+        links.map((w, i) => `<a href="${esc(w.link)}" target="_blank" rel="noopener">
+             ${i + 1}. ${esc(w.title || w.link)}</a>`).join('') + '</div>'
+      : '');
 }
 
 $('ai_send').addEventListener('click', async () => {
@@ -1003,7 +1012,7 @@ $('ai_send').addEventListener('click', async () => {
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
                                   role: 'model', content: data.reply });
   await loadChats(tripId);
-  drawSources(data.sources);
+  drawSources(data.sources, data.web);
   drawCards(data);
 });
 

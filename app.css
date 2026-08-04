@@ -151,6 +151,12 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 .srcchip{ padding:3px 9px; border-radius:var(--r-pill);
           background:var(--pearl); border:1px solid var(--hairline); }
 .srcchip.warn{ background:#fff6e5; border-color:#f0dcb8; color:#8a5a12; }
+/* 검색 출처. 눌러서 직접 확인할 수 있게 링크로 둡니다.
+   주소가 길어도 한 줄로 자릅니다 — 두 줄이 되면 답변보다 출처가 커 보입니다. */
+.weblinks{ width:100%; margin-top:2px; }
+.weblinks a{ display:block; color:var(--primary); text-decoration:none;
+             margin-top:3px; overflow:hidden; text-overflow:ellipsis;
+             white-space:nowrap; }
 
 /* ── 성향 카드 ──
    한 줄평이 주인공이라 제일 크게, 나머지는 근거로 작게 답니다.
