@@ -502,15 +502,21 @@ $('rp_send').addEventListener('click', async () => {
  * 서버 쪽 함수가 is_admin() 을 확인하므로 화면을 뜯어도 못 봅니다. */
 async function loadAdmin(){
   const box = $('admincard');
+  /* 관리자가 아니면 서버가 막습니다. 그때 프로필의 아이콘도 같이 숨겨야
+     합니다 — 눌러도 아무 일이 없는 단추를 두면 안 됩니다. */
+  const show = on => {
+    box.classList.toggle('hide', !on);
+    $('dashbtn').classList.toggle('hide', !on);
+  };
   /* 기본 2.5초로는 모자랍니다 — 표 열몇 개를 세는 함수라 첫 호출이 느립니다.
      화면을 막고 있는 것이 아니니 넉넉하게 줍니다. */
   const r = await netTimeout(sb.rpc('admin_stats'), 8000);
-  if (r.error || !r.data){ box.classList.add('hide'); return; }
+  if (r.error || !r.data){ show(false); return; }
   /* 처리방침에 "오류 90일, 신고 1년"이라고 적었으니 실제로 지워져야 합니다(042).
      따로 도는 장치가 없어서 관리자가 대시보드를 열 때 한 번씩 치웁니다.
      결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
   sb.rpc('sweep_retention').then(() => {}, () => {});
-  box.classList.remove('hide');
+  show(true);
   const d = r.data;
   admGist(d);
 
@@ -655,16 +661,25 @@ function admGist(d){
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
-/* 통계는 설정 안에 늘어놓지 않고 별도 화면으로 뺐습니다. gear 를 누를 때
-   이미 다 받아뒀으므로 여는 것은 즉시입니다. */
-$('adm_open').addEventListener('click', () => {
-  $('setpane').classList.add('hide');
+
+/* 통계는 설정 안에 늘어놓지 않고 별도 화면으로 뺐습니다. loadAdmin 이 미리
+   다 받아두므로 여는 것은 즉시입니다.
+   들어오는 문이 둘입니다 — 프로필 우상단 아이콘과 설정 안의 줄.
+   나갈 때는 **온 곳으로** 돌려보내야 합니다. 안 그러면 프로필에서 들어왔는데
+   설정으로 튀어나옵니다. */
+let admFrom = 'prof';
+function openAdm(from){
+  admFrom = from;
+  $(from === 'set' ? 'setpane' : 'profpane').classList.add('hide');
+  $('admback').textContent = from === 'set' ? '← 설정' : '← 프로필';
   $('admpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
-});
-$('admback').addEventListener('click', () => {
+}
+$('dashbtn') .addEventListener('click', () => openAdm('prof'));
+$('adm_open').addEventListener('click', () => openAdm('set'));
+$('admback') .addEventListener('click', () => {
   $('admpane').classList.add('hide');
-  $('setpane').classList.remove('hide');
+  $(admFrom === 'set' ? 'setpane' : 'profpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
@@ -7223,6 +7238,11 @@ async function render(session){
       applyTs(r.data.text_scale);
       localStorage.setItem('t2:ts', r.data.text_scale);
     }).catch(() => {});
+
+  /* 대시보드 아이콘은 프로필 화면에 있습니다. 설정을 열 때 켜면 프로필을 봐도
+     안 보입니다 — 로그인하자마자 한 번 확인합니다. 관리자가 아니면 서버가
+     막고 아이콘은 숨은 채로 남습니다. */
+  loadAdmin();
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
   $('homebtn').classList.remove('hide');
