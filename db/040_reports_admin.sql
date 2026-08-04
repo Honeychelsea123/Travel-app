@@ -137,7 +137,16 @@ grant execute on function public.admin_feed() to authenticated;
 
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
+-- 여기서 admin_stats() 를 직접 부르면 안 됩니다.
+-- SQL Editor 는 로그인한 사용자가 없어서 auth.uid() 가 비어 있고,
+-- 그러면 is_admin() 이 false 라 "관리자만 볼 수 있습니다"로 막힙니다.
+-- 그 오류 때문에 앞의 create 까지 통째로 되돌아갑니다. 만들어졌는지만 봅니다.
 select 'reports 표'     as item, to_regclass('public.reports') is not null as ok
 union all select 'admin_stats',  to_regproc('public.admin_stats') is not null
 union all select 'admin_feed',   to_regproc('public.admin_feed')  is not null
-union all select '관리자면 통계가 나옴', (public.admin_stats() ? 'users_total');
+union all select '관리자가 남들 오류도 봄',
+  exists (select 1 from pg_policies
+           where schemaname='public' and tablename='client_errors'
+             and policyname='errors_self' and qual like '%is_admin%')
+union all select '지금 등록된 관리자 수',
+  (select count(*) > 0 from public.admins);
