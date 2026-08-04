@@ -184,6 +184,15 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
   font-size:calc(11px * var(--ts)); font-weight:600; opacity:.6; letter-spacing:.04em;
 }
 
+/* 여행 리포트 카드. 성향 카드와 같은 부품에 목적지 줄만 위에 붙습니다.
+   ★5 준 곳이 여럿이면 세로로 길어져서 아래 여백을 조금 줄입니다. */
+.pcard.tcard{ padding-top:22px; min-height:min(88vw, 420px); }
+.pcard .tdest{
+  font-size:calc(13px * var(--ts)); font-weight:600; opacity:.85;
+  letter-spacing:.02em; margin-bottom:14px;
+}
+.pcard .tdest span{ font-weight:400; opacity:.75; }
+
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
 

@@ -1713,6 +1713,52 @@ $('rv_done').addEventListener('click', () => drawReport(rvTrip));
 
 let rpt = null;                       /* 공유와 이미지 저장에서 다시 씁니다 */
 
+/* ── 여행 리포트의 한 줄평 ───────────────────────────────────────────
+ * 성향 카드와 같은 방식입니다. **계산으로만 정하고 AI 를 안 씁니다** —
+ * 같은 여행을 다시 열면 같은 문구가 나와야 합니다.
+ * 위에서부터 검사해 처음 걸리는 것을 씁니다.
+ *
+ * 같은 사람이라도 여행마다 다르게 나옵니다. 도쿄에서는 먹기만 하고
+ * 파리에서는 걷기만 할 수 있습니다. 그게 오히려 재밌습니다.
+ *
+ * 자료가 모자라면 그 문구는 아예 건너뜁니다. 억지로 판정하면 틀린 말이 됩니다.
+ *   - 예산을 안 적었으면 예산 문구를 건너뜁니다
+ *   - 평가를 절반도 안 했으면 별점 문구를 건너뜁니다
+ *   - 2박 이하면 속도 문구를 건너뜁니다 (하루 이틀은 값이 심하게 흔들립니다)
+ */
+const REPORT_RULES = [
+  /* 특이한 결과 — 희소해서 재밌습니다 */
+  { id:'adhoc', g:'rare', ic:'bolt', t:'즉흥이 더 좋았던 여행',
+    f:r => r.rated && r.adhocN >= 3 && r.adhocRating != null && r.plannedRating != null
+        && r.adhocRating - r.plannedRating >= 0.8 },
+  { id:'oneArea', g:'rare', ic:'pinheart', t:'한 동네에 눌러앉은 여행',
+    f:r => r.days >= 3 && r.areaCount > 0 && r.areaCount <= 2 },
+  { id:'asPlanned', g:'rare', ic:'stamp', t:'계획대로 다 해낸 여행',
+    f:r => r.rated && r.plannedN >= 10 && r.planRate >= 0.95 },
+
+  /* 지출 성향 */
+  { id:'food',   g:'spend', ic:'fork', t:'먹으러 간 여행',      f:r => r.spend > 0 && r.foodRatio >= 0.55 },
+  { id:'shop',   g:'spend', ic:'bag2', t:'쇼핑하러 간 여행',    f:r => r.spend > 0 && r.shopRatio >= 0.35 },
+  { id:'over',   g:'spend', ic:'wallet', t:'지갑이 열린 여행',    f:r => r.budgetRatio != null && r.budgetRatio >= 1.3 },
+  { id:'under',  g:'spend', ic:'coin', t:'알뜰하게 다녀온 여행', f:r => r.budgetRatio != null && r.budgetRatio <= 0.8 },
+
+  /* 속도 */
+  { id:'nonstop',g:'speed', ic:'run', t:'하루도 안 쉰 여행', f:r => r.speedOk && r.perDay >= 7 },
+  { id:'walked', g:'speed', ic:'shoe', t:'많이 걸은 여행',    f:r => r.speedOk && r.kmPerDay >= 12 },
+  { id:'rest',   g:'speed', ic:'cup', t:'쉬러 간 여행',      f:r => r.speedOk && r.perDay <= 4 && r.cafeCount >= 3 },
+  { id:'slow',   g:'speed', ic:'moon', t:'느긋했던 여행',     f:r => r.speedOk && r.perDay <= 4 },
+
+  /* 취향이 드러난 결과 */
+  { id:'eatWin', g:'taste', ic:'fork', t:'미식이 전부였던 여행',
+    f:r => r.rated && r.eatAvg != null && r.seeAvg != null && r.eatAvg - r.seeAvg >= 1.5 },
+  { id:'seeWin', g:'taste', ic:'camera', t:'눈이 즐거웠던 여행',
+    f:r => r.rated && r.eatAvg != null && r.seeAvg != null && r.seeAvg - r.eatAvg >= 1.5 },
+  { id:'cafe',   g:'taste', ic:'cup', t:'카페 투어', f:r => r.cafeCount >= r.days && r.cafeCount >= 3 },
+
+  /* 어디에도 안 걸렸을 때 */
+  { id:'even',   g:'even', ic:'bag', t:'골고루 다녀온 여행', f:() => true },
+];
+
 async function drawReport(id){
   $('rv_rate').classList.add('hide');
   $('rv_report').classList.remove('hide');
@@ -1720,16 +1766,24 @@ async function drawReport(id){
   window.scrollTo({ top:0 });
 
   const [t, lg, pl, ex, cr, pr] = await Promise.all([
-    sb.from('trips').select('title,destination,start_date,end_date,home_currency')
+    /* budget 은 034 에서 붙였습니다. 아직 안 올렸으면 아래에서 한 번 더 물어봅니다. */
+    sb.from('trips').select('title,destination,start_date,end_date,home_currency,budget')
       .eq('id', id).maybeSingle(),
     sb.from('trip_legs').select('city_id').eq('trip_id', id).order('start_date'),
-    sb.from('plans').select('id,title,category,lat,lng,date,start_time')
+    /* created_at 으로 "출발 전에 넣은 것"과 "가서 넣은 것"을 가릅니다.
+       즉흥이 더 좋았는지 보려면 이 구분이 있어야 합니다. */
+    sb.from('plans').select('id,title,category,lat,lng,date,start_time,created_at')
       .eq('trip_id', id).is('deleted_at', null).order('date').order('start_time'),
     sb.from('expenses').select('title,amount,amount_home,currency,category')
       .eq('trip_id', id).is('deleted_at', null),
     sb.from('city_ratings').select('city_id,stars').eq('user_id', me.id),
     sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
   ]);
+  /* 034 를 아직 안 올렸으면 budget 이 없다고 질의가 통째로 실패합니다.
+     리포트가 통째로 안 뜨는 것보다는 예산 문구만 빠지는 편이 낫습니다. */
+  if (t.error) Object.assign(t, await sb.from('trips')
+    .select('title,destination,start_date,end_date,home_currency')
+    .eq('id', id).maybeSingle());
   const T = t.data || {};
   const days   = Math.round((asDate(T.end_date) - asDate(T.start_date)) / D1) + 1;
   const plans_ = pl.data || [];
@@ -1765,16 +1819,53 @@ async function drawReport(id){
   const won = n => Math.round(n).toLocaleString();
   const cur = T.home_currency || '';
 
-  /* 한 줄 정의. AI 를 안 부르고 지출 비중과 별점 차이로 뽑습니다 — 공짜이고 즉시 나옵니다. */
-  const perDay = spots.length / days;
-  const label =
-    (foodPct >= 45 && (eatAvg ?? 0) >= (seeAvg ?? 0)) ? '먹으러 간 사람'
-    : shopPct >= 25                                   ? '사러 간 사람'
-    : perDay >= 6                                     ? '부지런히 본 사람'
-    : perDay <= 3.2                                   ? '느긋하게 쉰 사람'
-    : (km / days) >= 12                               ? '많이 걸은 사람'
-    : (seeAvg ?? 0) > (eatAvg ?? 0)                   ? '보러 간 사람'
-    : '고루 즐긴 사람';
+  /* ── 한 줄 정의에 쓰는 값들 ──
+     AI 를 안 부릅니다. 공짜이고 즉시 나오고, 같은 여행이면 언제나 같습니다. */
+
+  /* 동네 수. "동네"라는 자료가 따로 없어서 좌표를 0.02°(약 2km) 칸으로 묶습니다.
+     좌표가 없는 일정은 못 셉니다 — 그래서 좌표가 아예 없으면 이 문구를 건너뜁니다. */
+  const areas = new Set(spots.filter(p => p.lat != null && p.lng != null)
+    .map(p => `${Math.round(p.lat / 0.02)},${Math.round(p.lng / 0.02)}`));
+
+  /* 출발 전에 넣은 것 = 계획, 가서 넣은 것 = 즉흥.
+     created_at 은 시각까지 있으므로 출발일 0시를 경계로 봅니다. */
+  const startTs = asDate(T.start_date).getTime();
+  const planned = spots.filter(p => new Date(p.created_at).getTime() <  startTs);
+  const adhoc   = spots.filter(p => new Date(p.created_at).getTime() >= startTs);
+
+  const cafeCount = spots.filter(p => p.category === '카페').length;
+  const ratedN = spots.filter(p => psr[p.id] != null).length;
+
+  const R = {
+    days,
+    perDay: spots.length / days,
+    kmPerDay: km / days,
+    areaCount: areas.size,
+    cafeCount,
+    spend,
+    foodRatio: spend ? exps.filter(e => ['식사','카페'].includes(e.category))
+                           .reduce((s,e)=>s+money(e),0) / spend : 0,
+    shopRatio: spend ? exps.filter(e => e.category === '쇼핑')
+                           .reduce((s,e)=>s+money(e),0) / spend : 0,
+    /* 예산을 안 적었으면 null 입니다. null 이면 그 문구를 건너뜁니다 — 0 으로 두면
+       "알뜰하게 다녀온 여행"이 늘 걸립니다. */
+    budgetRatio: (T.budget && spend) ? spend / Number(T.budget) : null,
+    plannedN: planned.length,
+    adhocN: adhoc.length,
+    plannedRating: st(planned),
+    adhocRating: st(adhoc),
+    /* 계획한 곳 중 별점을 남긴 비율. "갔다"를 따로 안 적으므로 별점이 그 표시입니다. */
+    planRate: planned.length
+      ? planned.filter(p => psr[p.id] != null).length / planned.length : 0,
+    eatAvg, seeAvg,
+    /* 절반도 평가 안 했으면 별점 기반 문구는 근거가 약합니다. */
+    rated: spots.length ? ratedN / spots.length >= 0.5 : false,
+    /* 1박 2일은 하루 일정 수가 심하게 흔들립니다. 3일부터만 속도를 말합니다. */
+    speedOk: days >= 3,
+  };
+  const rule = REPORT_RULES.find(r => r.f(R));
+  const label = rule.t;
+
   const defLine = [
     foodPct ? `식비 ${foodPct}%` : null,
     eatAvg != null ? `식당 평균 ★${eatAvg.toFixed(1)}` : null,
@@ -1803,7 +1894,35 @@ async function drawReport(id){
   const stat = (big, sub) =>
     `<div class="rs"><div class="b">${esc(big)}</div><div class="s">${esc(sub)}</div></div>`;
 
-  $('rv_report').innerHTML =
+  /* ── 공유용 카드 ──
+     리포트에는 하루별 흐름과 AI 문단이 있는데 그건 **내가 볼 것**이지
+     남에게 보여줄 것이 아닙니다. 개인적이고 길기도 합니다.
+     그래서 공유용은 따로 만듭니다 — 한 줄평 · 숫자 셋 · ★5 준 곳만.
+     성향 카드와 같은 부품(.pcard)을 씁니다. 둘이 한 벌로 보여야 합니다. */
+  const shareCard = `
+    <div class="pcard tcard" style="background:${REPORT_BG[rule.g]}">
+      <div class="tdest">${esc(T.destination || T.title || '여행')}
+        <span>· ${days - 1}박 ${days}일</span></div>
+
+      <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">${
+             REPORT_ICON[rule.ic] || PERSONA_ICON[rule.ic] || ''}</svg>
+
+      <div class="ptitle">${esc(label)}</div>
+
+      <div class="pnums">${spend ? won(spend) + (cur ? cur : '') : '–'}
+        <i>·</i> ${spots.length}곳${km ? ` <i>·</i> 약 ${Math.round(km)}km` : ''}</div>
+      ${foodPct ? `<div class="pconts" style="margin-top:8px">식비 ${foodPct}%</div>` : ''}
+
+      ${five.length ? `<div class="pbest">
+        <div class="pl">★5를 준 곳</div>
+        ${five.slice(0, 3).map(n => `<div class="pb">${esc(n)}</div>`).join('')}
+      </div>` : ''}
+
+      <div class="pbrand">AI.Trip</div>
+    </div>`;
+
+  $('rv_report').innerHTML = shareCard +
     `<div class="card rpt1" id="rptcard">
        <div class="hd">
          <div class="ti">${esc(T.destination || T.title || '여행')}</div>
@@ -2285,6 +2404,37 @@ const PERSONA_ICON = {
           '<path d="M9 11v5M15 11v5"/>',
   shoot:  '<path d="M4 20 11 13"/><path d="M15.5 3.5 17 7.5l4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>',
   bolt:   '<path d="M13 3 6 13.5h5L11 21l7-10.5h-5z"/>',
+};
+
+/* 여행 리포트 카드도 같은 부품을 씁니다. 유형군만 다릅니다 —
+   둘이 한 벌로 보여야 나란히 올렸을 때 같은 앱에서 나온 것으로 읽힙니다. */
+const REPORT_BG = {
+  rare:  'linear-gradient(160deg,#2b3a67,#6b4fa8)',   /* 특이한 결과 */
+  spend: 'linear-gradient(160deg,#b0533f,#d4784f)',   /* 지출 성향 — 붉은 주황 */
+  speed: 'linear-gradient(160deg,#1f6f7a,#2f9aa8)',   /* 속도 — 청록 */
+  taste: 'linear-gradient(160deg,#8a4a70,#c2688f)',   /* 취향 — 자주 */
+  even:  'linear-gradient(160deg,#4a5568,#6b7688)',   /* 기본 — 무채색 */
+};
+const REPORT_ICON = {
+  fork:   '<path d="M7 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M9.5 10v11"/>' +
+          '<path d="M17.5 3c-1.4 1.6-2 3.4-2 5.5 0 1.6.7 2.5 2 2.5V21"/>',
+  bag2:   '<path d="M4.5 8h15l-1.2 12.5H5.7z"/>' +
+          '<path d="M8.8 8V6.2a3.2 3.2 0 0 1 6.4 0V8"/>',
+  wallet: '<rect x="3" y="6" width="18" height="13" rx="2.5"/>' +
+          '<path d="M3 10h18"/><circle cx="16.5" cy="14" r="1.4"/>',
+  coin:   '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.2v9.6"/>' +
+          '<path d="M14.6 9.4a2.6 2.6 0 0 0-5.2.4c0 2.6 5.2 1.4 5.2 4a2.6 2.6 0 0 1-5.2.4"/>',
+  run:    '<circle cx="15.5" cy="4.8" r="1.9"/>' +
+          '<path d="M13.6 9.2 10 11.4l1.8 3.2L9 21"/>' +
+          '<path d="M13.6 9.2 17 11l2.6-.6"/><path d="M11.8 14.6 16 16l1 5"/>' +
+          '<path d="M10 11.4 5.4 10"/>',
+  shoe:   '<path d="M3 16.5h13.5c2.5 0 4.5-1 4.5-2.6 0-1.4-1.3-2-3.2-2.6-2-.6-3.3-1.3-4.3-2.6L11.6 7 3 10.5z"/>' +
+          '<path d="M3 16.5V19h18v-2.5"/>',
+  cup:    '<path d="M4.5 7h12v6.5a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z"/>' +
+          '<path d="M16.5 9h1.7a2.4 2.4 0 0 1 0 4.8h-1.7"/><path d="M3 21.5h15"/>',
+  moon:   '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
+  camera: '<rect x="3" y="7" width="18" height="13" rx="2.5"/>' +
+          '<circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.4-2.5h4.2L15.5 7"/>',
 };
 
 /* 평생 누적 값. 별점을 매긴 도시만 셉니다 — "가보고 싶어요"는 간 곳이 아닙니다. */
@@ -4352,6 +4502,9 @@ $('editbtn').addEventListener('click', () => {
   $('e_title').value = trip.title;
   $('e_start').value = trip.start_date;
   $('e_end').value   = trip.end_date;
+  /* 예산은 정산 통화 기준입니다. 어느 돈인지 안 적으면 엔인지 원인지 모릅니다. */
+  $('e_budget').value = trip.budget ? Number(trip.budget).toLocaleString('ko-KR') : '';
+  $('e_budgetcur').textContent = trip.home_currency ? `· ${trip.home_currency}` : '';
   $('e_shift').checked = true;
   syncShiftText();
   fillCityList();
@@ -4398,11 +4551,25 @@ $('e_save').addEventListener('click', async () => {
   const days = Math.round((asDate(end) - asDate(start)) / D1) + 1;
   if (days > 365)   return fail(`${days}일은 너무 깁니다. 날짜를 다시 봐주세요.`, 'edit');
 
+  /* 1,500,000 처럼 쉼표를 넣는 사람이 많습니다. 지출 칸과 같은 방식으로 걸러냅니다. */
+  const braw = $('e_budget').value.replace(/[,\s]/g, '');
+  const budget = braw === '' ? null : Number(braw);
+  if (budget !== null && (!isFinite(budget) || budget <= 0))
+    return fail('예산을 숫자로 적어주세요. 비워두셔도 됩니다.', 'edit');
+
   const n = shiftDays();
   btn.disabled = true; btn.textContent = '저장 중…';
 
-  const up = await sb.from('trips')
-    .update({ title, start_date: start, end_date: end }).eq('id', trip.id).select('id');
+  let up = await sb.from('trips')
+    .update({ title, start_date: start, end_date: end, budget }).eq('id', trip.id)
+    .select('id');
+  /* 034 를 아직 안 올렸으면 budget 칸이 없어서 통째로 실패합니다.
+     그때는 예산만 빼고 나머지는 저장되게 합니다. */
+  if (up.error && /budget/i.test(up.error.message || '')){
+    up = await sb.from('trips')
+      .update({ title, start_date: start, end_date: end }).eq('id', trip.id).select('id');
+    if (!up.error) toast('예산 칸이 아직 없어요. 034 를 올리면 저장됩니다.');
+  }
 
   if (!up.error && up.data?.length && n !== 0 && $('e_shift').checked && plans.length){
     /* 한 줄씩 고치면 요청이 여러 번 나가고 중간에 끊기면 반만 옮겨집니다.
