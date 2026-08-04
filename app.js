@@ -90,6 +90,11 @@ function fail(e, where){
     : (e && (e.message || e.error_description || e.hint)) || JSON.stringify(e);
 }
 
+/* 여기까지 왔으면 화면 코드가 살아 있다는 뜻입니다.
+   index.html 의 "화면을 못 불러왔어요" 상자를 걷습니다. */
+window.__t2booted = true;
+document.getElementById('bootfail')?.remove();
+
 /* ── 오프라인 · 낙관적 저장 ─────────────────────────────────────────
  * 여행지에서 데이터가 안 터지면 지금까지는 아무것도 못 했습니다.
  * 이 층이 그 사이에 들어갑니다.

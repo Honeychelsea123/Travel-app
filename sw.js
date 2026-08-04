@@ -8,7 +8,7 @@
  * 그래서 화면 쪽(app.js 의 checkBuild)이 빌드 번호를 확인해 한 번 새로고침합니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v5';
+const VER   = 'v6';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -96,7 +96,23 @@ self.addEventListener('fetch', e => {
       e.respondWith((async () => {
         const c = await caches.open(SHELL);
         const fresh = () => fetch(url.href, { cache:'no-store', credentials:'same-origin' })
-          .then(r => { if (r.ok) c.put('./index.html', r.clone()); return r; });
+          .then(async r => {
+            if (r.ok){
+              /* 문서만 담고 끝내면 안 됩니다. **그 문서가 부르는 파일까지 같이** 담아야 합니다.
+                 안 그러면 새 index.html 은 캐시에 있는데 짝인 app.js?v=b138 은 없는
+                 상태가 생기고, 그때 비행기모드로 들어가면 흰 화면이 됩니다.
+                 실제로 그렇게 터졌습니다. */
+              const html = await r.clone().text();
+              await c.put('./index.html', r.clone());
+              const refs = [...html.matchAll(/(?:src|href)="((?:app|world)\.[a-z]+\?v=[^"]+)"/g)]
+                .map(m => './' + m[1]);
+              await Promise.all(refs.map(async u => {
+                if (await c.match(u)) return;          // 이미 있으면 다시 안 받습니다
+                try { await c.add(u); } catch {}
+              }));
+            }
+            return r;
+          });
         const hit = await c.match('./index.html', { ignoreSearch:true });
         if (hit){ fresh().catch(() => {}); return hit; }
         return await fresh();
