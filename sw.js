@@ -8,7 +8,7 @@
  * 그래서 빌드 번호가 적힌 index.html 은 네트워크를 먼저 봅니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v3';
+const VER   = 'v4';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -82,23 +82,48 @@ self.addEventListener('fetch', e => {
       return;
     }
 
+    /* ── 화면 문서(index.html) ──
+       빌드 번호가 여기 적혀 있으니 이것만 최신이면 나머지가 따라옵니다.
+
+       그런데 재보니 문서가 5ms 만에 왔고 내용은 한 빌드 옛것이었습니다.
+       GitHub Pages 가 html 에 max-age=600 을 붙여서, 브라우저가 10분 동안
+       묻지도 않고 자기 캐시를 내주고 있었습니다. 서비스워커가 부르는 fetch 도
+       그 캐시를 씁니다. 홈 화면 앱은 잘 안 껐다 켜니 옛 빌드에 며칠씩 머물렀습니다.
+       no-store 로 물어 브라우저 캐시를 건너뜁니다. 2.5초 안에 안 오면 캐시로 엽니다. */
+    if (req.mode === 'navigate' || url.pathname.endsWith('.html') ||
+        url.pathname.endsWith('/')){
+      e.respondWith((async () => {
+        const c = await caches.open(SHELL);
+        const fresh = () => fetch(url.href, { cache:'no-store', credentials:'same-origin' });
+        try {
+          return await Promise.race([
+            fresh().then(r => { if (r.ok) c.put('./index.html', r.clone()); return r; }),
+            new Promise((_, no) => setTimeout(() => no(new Error('느림')), 2500)),
+          ]);
+        } catch {
+          /* 느리거나 끊겼습니다. 갖고 있는 것으로 엽니다.
+             네트워크는 뒤에서 계속 받아둡니다 — 다음에 열 때 최신입니다. */
+          fresh().then(r => r.ok && c.put('./index.html', r.clone())).catch(() => {});
+          return (await c.match('./index.html', { ignoreSearch:true })) || Response.error();
+        }
+      })());
+      return;
+    }
+
+    /* ── 나머지 우리 파일 (world.js · manifest · 아이콘) ──
+       거의 안 바뀝니다. 캐시로 바로 주고 새것은 뒤에서 받아둡니다. */
     e.respondWith((async () => {
       const c = await caches.open(SHELL);
-      const cached = () => c.match(req, { ignoreSearch:true })
-        .then(r => r || (req.mode === 'navigate'
-          ? c.match('./index.html', { ignoreSearch:true }) : null));
-      try {
-        const res = await Promise.race([
-          fetch(req).then(r => { if (r.ok) c.put(req, r.clone()); return r; }),
-          new Promise((_, no) => setTimeout(() => no(new Error('느림')), 2500)),
-        ]);
-        return res;
-      } catch {
-        /* 느리거나 끊겼습니다. 갖고 있는 것으로 엽니다.
-           네트워크는 뒤에서 계속 받아 캐시에 넣습니다 — 다음에 열 때 최신입니다. */
+      const hit = await c.match(req, { ignoreSearch:true });
+      if (hit){
         fetch(req).then(r => r.ok && c.put(req, r.clone())).catch(() => {});
-        return (await cached()) || Response.error();
+        return hit;
       }
+      try {
+        const res = await fetch(req);
+        if (res.ok) c.put(req, res.clone());
+        return res;
+      } catch { return Response.error(); }
     })());
     return;
   }
