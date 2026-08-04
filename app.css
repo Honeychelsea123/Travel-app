@@ -155,14 +155,6 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
 
-/* ── 끌어서 순서 바꾸기 ──
-   touch-action:none 이 있어야 손가락으로 끌 때 화면이 같이 스크롤되지 않습니다. */
-.grip{ touch-action:none; cursor:grab; padding:0 6px; color:var(--ink-48);
-       font-size:calc(15px * var(--ts)); line-height:1; user-select:none; }
-.ev.dragging{ opacity:.6; }
-.ev.justmoved{ animation:justmoved 1.1s ease-out; }
-@keyframes justmoved{ from{ background:#eef4ff; } to{ background:transparent; } }
-
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
    빈 칸과 채운 칸의 높이를 맞춰 두 개가 나란히 서게 합니다. */

@@ -4166,8 +4166,6 @@ function drawPlans(){
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
-        ${trip.myRole === 'viewer' ? ''
-          : `<span class="grip" data-grip="${esc(p.id)}" title="끌어서 순서 바꾸기">⠿</span>`}
         <span class="ev__chev">›</span>
       </div>
       <div class="detail">
@@ -4190,104 +4188,10 @@ function drawPlans(){
   $('plans').innerHTML = html;
 }
 
-/* ── 끌어서 순서 바꾸기 ─────────────────────────────────────────────
- * 지금까지는 순서를 바꾸려면 시각을 직접 고쳐 적어야 했습니다.
- *
- * 한 가지 정해야 할 것이 있었습니다. 목록은 **시각 순**으로 섭니다.
- * 14시 일정을 10시 일정 위로 끌어다 놓고 시각을 그대로 두면 다시 그릴 때
- * 제자리로 튕겨 돌아옵니다. 그래서 자리를 옮기면 **그날의 시각들도 같이 옮깁니다** —
- * 시각의 집합은 그대로 두고 순서만 바꿔 다시 나눠 줍니다.
- * 그날의 짜임새(10시·14시·19시)는 지키면서 무엇이 언제인지만 바뀝니다.
- * 시각이 없는 일정은 계속 없는 채로 sort_order 로만 섭니다.
- *
- * 손잡이(⠿)에서 시작한 것만 잡습니다. 줄 아무 데나 잡으면 펼치기와 부딪칩니다. */
-let dragId = null, dragEl = null, dragGroup = [];
-
-$('plans').addEventListener('pointerdown', e => {
-  const g = e.target.closest('[data-grip]'); if (!g) return;
-  e.preventDefault();
-  dragId = g.dataset.grip;
-  dragEl = g.closest('[data-ev]');
-  const date = plans.find(p => p.id === dragId)?.date;
-  /* 같은 날 안에서만 옮깁니다. 날짜를 넘기는 것은 "고치기"로 할 일입니다. */
-  dragGroup = [...$('plans').querySelectorAll('[data-ev]')]
-    .filter(el => plans.find(p => p.id === el.dataset.ev)?.date === date);
-  dragEl.classList.add('dragging');
-  g.setPointerCapture(e.pointerId);
-});
-
-$('plans').addEventListener('pointermove', e => {
-  if (!dragEl) return;
-  e.preventDefault();
-  /* 손가락 아래에 있는 줄을 찾습니다. 끌고 있는 줄은 잠깐 숨겨야 밑이 보입니다. */
-  dragEl.style.visibility = 'hidden';
-  const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-ev]');
-  dragEl.style.visibility = '';
-  if (!under || under === dragEl || !dragGroup.includes(under)) return;
-  const rect = under.getBoundingClientRect();
-  const after = e.clientY > rect.top + rect.height / 2;
-  under.parentNode.insertBefore(dragEl, after ? under.nextSibling : under);
-});
-
-async function dropDone(){
-  if (!dragEl) return;
-  dragEl.classList.remove('dragging');
-  const el = dragEl; dragEl = null;
-
-  /* 새 차례. DOM 에서 그대로 읽습니다 — 방금 눈으로 본 순서가 그것입니다. */
-  const order = [...$('plans').querySelectorAll('[data-ev]')]
-    .map(x => x.dataset.ev)
-    .filter(id => dragGroup.some(g => g.dataset.ev === id));
-  const rows = order.map(id => plans.find(p => p.id === id)).filter(Boolean);
-  if (rows.length < 2) return;
-
-  /* 시각이 없는 일정은 목록에서 늘 시각 있는 것들 **뒤에** 섭니다 (정렬 규칙이 그렇습니다).
-     그 사이로 끌어다 놓으면 다시 그릴 때 제자리로 튕겨 돌아옵니다 —
-     고장 난 것처럼 보입니다. 아예 받지 않고 왜 그런지 알려줍니다. */
-  const firstBlank = rows.findIndex(p => !p.start_time);
-  if (firstBlank >= 0 && rows.slice(firstBlank).some(p => p.start_time)){
-    drawPlans();
-    return toast('시각이 없는 일정은 시각이 있는 일정 사이로는 못 가요.');
-  }
-
-  /* 옮기기 전의 시각들. 순서만 바꿔 다시 나눠 줍니다. */
-  const times = dragGroup
-    .map(g => plans.find(p => p.id === g.dataset.ev))
-    .filter(p => p && p.start_time)
-    .map(p => ({ start_time: p.start_time, end_time: p.end_time }));
-
-  let ti = 0;
-  const jobs = [];
-  rows.forEach((p, i) => {
-    const row = { sort_order: i };
-    if (p.start_time) Object.assign(row, times[ti++] || {});
-    /* 안 바뀐 줄은 보내지 않습니다. 여럿이 쓰면 괜히 남의 것을 덮습니다. */
-    const same = +p.sort_order === i &&
-                 (!p.start_time || (row.start_time === p.start_time &&
-                                    (row.end_time ?? null) === (p.end_time ?? null)));
-    if (!same){ Object.assign(p, row); jobs.push({ table:'plans', action:'update', id:p.id, row }); }
-  });
-  if (!jobs.length) return;
-
-  el.classList.add('justmoved');
-  let queued = false;
-  for (const j of jobs){
-    const r = await write(j);
-    if (!r.ok) return fail(r.why, 'plan');
-    queued = queued || r.queued;
-  }
-  toast(times.length > 1 ? '순서를 바꿨어요. 시각도 같이 옮겼습니다.' : '순서를 바꿨어요.');
-  if (!queued) await loadPlans();
-}
-$('plans').addEventListener('pointerup', dropDone);
-$('plans').addEventListener('pointercancel', dropDone);
-
 /* 펼친 줄은 기억해 둡니다. 지우거나 고쳐서 다시 그려도 그대로 열려 있어야 합니다. */
 const openPlans = new Set();
 $('plans').addEventListener('click', e => {
-  /* 링크·버튼·손잡이는 각자 일합니다. 손잡이를 빼두지 않으면
-     끌어 놓을 때마다 그 줄이 같이 펼쳐집니다. */
-  if (e.target.closest('a, button, [data-grip]')) return;
+  if (e.target.closest('a, button')) return;      /* 링크와 버튼은 각자 일합니다 */
   const row = e.target.closest('[data-ev]'); if (!row) return;
   const id = row.dataset.ev;
   if (openPlans.has(id)) openPlans.delete(id); else openPlans.add(id);
