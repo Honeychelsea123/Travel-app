@@ -184,24 +184,35 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: '로그인이 필요합니다.' }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const { trip_id, message, mode, prefs, image } = body;
+    const { trip_id, message, mode, prefs, image, images } = body;
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
     const draft = mode === 'draft';
 
     // 사진. 간판·메뉴판·티켓을 찍어 물어보는 자리입니다.
     // 화면에서 이미 긴 쪽 1024px JPEG 으로 줄여 보냅니다. 여기서는 크기만 다시 봅니다 —
     // 화면 코드는 누구나 고칠 수 있으니 서버에서도 막아야 합니다.
-    let shot: { mimeType: string; data: string } | null = null;
-    if (image?.data) {
-      if (typeof image.data !== 'string' || image.data.length > 3_000_000)
+    // 여러 장을 받습니다. 메뉴판이 두 장으로 나뉘어 있는 일이 흔합니다.
+    // 옛 화면이 보내던 image(한 장)도 그대로 받습니다 — 배포 순서가 어긋나도 안 깨집니다.
+    const shots: { mimeType: string; data: string }[] = [];
+    const incoming = Array.isArray(images) ? images : (image ? [image] : []);
+    if (incoming.length > 4)
+      return json({ error: '사진은 4장까지입니다.' }, 400);
+    let bytes = 0;
+    for (const im of incoming) {
+      if (!im?.data) continue;
+      if (typeof im.data !== 'string') return json({ error: '사진 형식이 이상합니다.' }, 400);
+      bytes += im.data.length;
+      // 한 장씩도 보고 전체도 봅니다. 작은 것 넷이 모여도 요청이 터질 수 있습니다.
+      if (im.data.length > 3_000_000 || bytes > 8_000_000)
         return json({ error: '사진이 너무 큽니다.' }, 400);
-      const mt = String(image.mime ?? 'image/jpeg');
+      const mt = String(im.mime ?? 'image/jpeg');
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(mt))
         return json({ error: '지원하지 않는 사진 형식입니다.' }, 400);
-      shot = { mimeType: mt, data: image.data };
+      shots.push({ mimeType: mt, data: im.data });
     }
+    const shot = shots.length ? shots[0] : null;   // 아래 검색 건너뛰기 판단에 씁니다
 
-    if (!draft && !shot && (!message || !String(message).trim()))
+    if (!draft && !shots.length && (!message || !String(message).trim()))
       return json({ error: '물어볼 말을 적어주세요.' }, 400);
     if (draft && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
@@ -364,8 +375,11 @@ Deno.serve(async (req) => {
       '  로마 일정에 피렌체 식당을 넣지 않는다.',
       '- 예약번호 · 주소 · 전화번호를 새로 지어내지 않는다.',
       '',
-      shot ? '- 사진이 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n' +
-             '  글자가 흐려서 못 읽으면 못 읽는다고 한다.' : '',
+      shots.length
+        ? `- 사진이 ${shots.length}장 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n` +
+          '  글자가 흐려서 못 읽으면 못 읽는다고 한다.' +
+          (shots.length > 1 ? '\n  여러 장이면 몇 번째 사진 이야기인지 밝힌다.' : '')
+        : '',
       '',
       '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
       '{',
@@ -410,7 +424,7 @@ Deno.serve(async (req) => {
           { role: 'model', parts: [{ text: '알겠습니다. 자료를 보고 답하겠습니다.' }] },
           // 사진은 물음과 같은 차례에 넣습니다. 사진이 먼저 오면 모델이 잘 봅니다.
           { role: 'user', parts: [
-              ...(shot ? [{ inlineData: shot }] : []),
+              ...shots.map((s) => ({ inlineData: s })),
               { text: String(message ?? '이 사진에 대해 알려줘.') },
             ] },
         ];

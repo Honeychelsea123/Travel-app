@@ -34,9 +34,14 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* 자체 점검 표시. 개발 중에 보려고 두었던 "계정" 카드는 화면에서 뺐습니다 —
+   사용자가 알 필요가 없는 내용이었습니다.
+   부르는 곳이 여러 군데라 함수는 남겨두고, 자리가 없으면 조용히 넘어갑니다. */
 function mark(id, ok, text){
-  $('d'+id).className = 'dot ' + (ok ? 'ok' : 'bad');
-  $('v'+id).textContent = text;
+  const d = $('d'+id), v = $('v'+id);
+  if (!d || !v) return;
+  d.className = 'dot ' + (ok ? 'ok' : 'bad');
+  v.textContent = text;
 }
 /* ── 두 번 눌러 지우기 ───────────────────────────────────────────────
  * 확인창(confirm)이 내장 브라우저에서 막히기 때문에 버튼 글자를 바꿔 묻습니다.
@@ -908,7 +913,11 @@ $('qasks').addEventListener('click', e => {
  * 긴 쪽을 1024 로 줄이고 JPEG 로 다시 굽습니다 — 글자를 읽을 만큼은 남습니다.
  * 프로필 사진용 shrink 를 쓰지 않는 이유는 그건 정사각으로 잘라내기 때문입니다.
  * 메뉴판이 잘리면 물어볼 것이 사라집니다. */
-let aiShot = null;                       /* {mime, data(base64)} */
+/* 여러 장을 붙일 수 있습니다. 메뉴판이 두 장으로 나뉘어 있거나
+   가게 앞과 안을 같이 보여줘야 할 때가 있습니다.
+   대신 장수를 막습니다 — 한 번에 다 올리면 함수가 거절하고 요금도 그만큼 듭니다. */
+const SHOT_MAX = 4;
+let aiShots = [];                        /* [{mime, data(base64), url}] */
 
 function fitJpeg(file, max = 1024){
   return new Promise((ok, no) => {
@@ -930,19 +939,31 @@ function fitJpeg(file, max = 1024){
 }
 
 $('ai_cam').addEventListener('click', () => $('ai_file').click());
-$('ai_shotx').addEventListener('click', () => { aiShot = null; drawShot(); });
 function drawShot(){
-  $('ai_shotwrap').classList.toggle('hide', !aiShot);
-  if (aiShot) $('ai_shot').src = aiShot.url;
+  $('ai_shotwrap').classList.toggle('hide', !aiShots.length);
+  $('ai_shotwrap').innerHTML = aiShots.map((s, i) =>
+    `<span class="shot1"><img src="${s.url}" alt="">
+       <button class="x" data-shotx="${i}" aria-label="빼기">×</button></span>`).join('') +
+    (aiShots.length ? `<span class="shotn">${aiShots.length}/${SHOT_MAX}</span>` : '');
 }
+$('ai_shotwrap').addEventListener('click', e => {
+  const b = e.target.closest('[data-shotx]'); if (!b) return;
+  aiShots.splice(+b.dataset.shotx, 1);
+  drawShot();
+});
 $('ai_file').addEventListener('change', async e => {
-  const f = e.target.files?.[0];
+  const files = [...(e.target.files || [])];
   e.target.value = '';                   /* 같은 사진을 또 골라도 걸리게 */
-  if (!f) return;
+  if (!files.length) return;
   $('aierr').classList.add('hide');
-  try { aiShot = await fitJpeg(f); } catch (err){ return fail(err, 'ai'); }
-  /* 여기서도 너무 크면 함수가 거절합니다. 대략 1.4배로 부풀어 오릅니다. */
-  if (aiShot.data.length > 2_600_000){ aiShot = null; return fail('사진이 너무 커요.', 'ai'); }
+  for (const f of files){
+    if (aiShots.length >= SHOT_MAX){ toast(`사진은 ${SHOT_MAX}장까지예요.`); break; }
+    let s;
+    try { s = await fitJpeg(f); } catch (err){ return fail(err, 'ai'); }
+    /* 여기서도 너무 크면 함수가 거절합니다. 대략 1.4배로 부풀어 오릅니다. */
+    if (s.data.length > 2_600_000){ toast('너무 큰 사진 한 장은 건너뛰었어요.'); continue; }
+    aiShots.push(s);
+  }
   drawShot();
 });
 
@@ -972,14 +993,15 @@ function drawSources(list, web){
 }
 
 $('ai_send').addEventListener('click', async () => {
-  const shot = aiShot;
+  const shots = aiShots.slice();
   /* 사진만 보내도 됩니다. "이거 뭐야?"를 매번 타이핑하게 할 이유가 없습니다. */
-  const msg = $('ai_msg').value.trim() || (shot ? '이 사진에 대해 알려줘.' : '');
+  const msg = $('ai_msg').value.trim() ||
+              (shots.length ? '이 사진에 대해 알려줘.' : '');
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
   $('ai_msg').value = ''; $('cards').innerHTML = '';
-  aiShot = null; drawShot();
+  aiShots = []; drawShot();
   $('aisrc').classList.add('hide');
   /* 글자를 갈아끼우면 안에 있는 비행기 그림이 사라집니다.
      흐리게만 하고 그림은 그대로 둡니다. */
@@ -990,12 +1012,14 @@ $('ai_send').addEventListener('click', async () => {
      사진 자체는 저장하지 않습니다 — 대화 기록이 금방 수십 MB 가 됩니다. */
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
                                   role: 'user',
-                                  content: (shot ? '[사진] ' : '') + msg });
+                                  content: (shots.length ? `[사진 ${shots.length}장] ` : '') + msg });
   await loadChats(tripId);
 
   const { data, error } = await sb.functions.invoke('chat',
     { body: { trip_id: tripId || null, message: msg,
-              image: shot ? { mime: shot.mime, data: shot.data } : undefined } });
+              /* 한 장만 보낼 때도 images 로 보냅니다. 서버가 옛 image 도 받아주지만
+                 보내는 쪽이 두 갈래면 언젠가 한쪽만 고칩니다. */
+              images: shots.map(s => ({ mime: s.mime, data: s.data })) } });
 
   $('ai_send').disabled = false; $('ai_send').classList.remove('sending');
 
@@ -3181,6 +3205,34 @@ async function loadCands(){
   drawCands();
 }
 
+/* ── 후보를 AI 에게 추천받기 ─────────────────────────────────────────
+ * 그냥 "추천해줘"라고 물으면 이미 담아둔 곳을 또 말합니다.
+ * 담긴 것과 일정에 넣은 것을 같이 적어 보내 겹치지 않게 합니다.
+ *
+ * 답은 AI 시트에서 받습니다. 여기서 따로 그리면 담기 카드와 되돌리기를
+ * 두 벌로 만들게 되고, 언젠가 한쪽만 고칩니다. */
+$('c_ai').addEventListener('click', async () => {
+  if (!trip) return;
+  const taken = [...cands.map(c => c.title),
+                 ...plans.map(p => p.title)].filter(Boolean);
+  /* 너무 길면 물음이 목록에 묻힙니다. 앞쪽 40개면 겹침을 막기에 충분합니다. */
+  const list = [...new Set(taken)].slice(0, 40);
+
+  const leg = legs.length ? legs[0] : null;
+  const where = leg?.destination || trip.destination || '';
+  const msg = `${where} 에서 가볼 만한 곳을 추천해줘.` +
+    (list.length ? ` 다만 이미 담아뒀거나 일정에 넣은 곳은 빼줘: ${list.join(', ')}` : '');
+
+  /* 후보 시트를 닫고 AI 시트를 엽니다. 둘이 겹쳐 있으면 답을 못 봅니다. */
+  $('card-cand').classList.add('hide');
+  syncSheets();
+  openAi();
+  $('ai_trip').value = trip.id;
+  await loadChats(trip.id);
+  $('ai_msg').value = msg;
+  $('ai_send').click();
+});
+
 $('candbtn').addEventListener('click', async () => {
   $('card-cand').classList.remove('hide');
   $('card-cand').scrollIntoView({ behavior:'smooth', block:'nearest' });
@@ -4974,6 +5026,7 @@ async function loadPlans(){
   drawCats();
   drawPlans();
   drawPlanMap();
+  drawToday();       /* 여행 중이면 맨 위에 오늘 카드 */
 }
 
 function shortLabel(d){
@@ -5225,6 +5278,150 @@ function drawPlans(){
   $('plans').innerHTML = html;
 }
 
+/* ── 분류 짐작 ──────────────────────────────────────────────────────
+ * "라멘"이라고 적었으면 분류는 식사입니다. 매번 고르게 할 이유가 없습니다.
+ * 다만 **짐작일 뿐이라 사용자가 고른 것을 덮지 않습니다.**
+ * 한 번이라도 직접 골랐으면 그때부터는 손대지 않습니다 —
+ * 자동으로 바꿔버리면 고쳐도 고쳐도 되돌아가는 것처럼 느껴집니다. */
+const CAT_HINTS = [
+  ['카페', /커피|카페|디저트|라떼|아메리카노|빵집|베이커리|케이크|아이스크림|젤라또|스타벅스|블루보틀/],
+  ['식사', /라멘|스시|초밥|식당|맛집|점심|저녁|아침|브런치|디너|런치|장어|야키니쿠|야키토리|규카츠|카레|덮밥|정식|코스|오마카세|이자카야|국수|파스타|피자|버거|타코|쌀국수|딤섬|훠궈|바비큐|스테이크|해산물|시장|포차|술집|바\b/],
+  ['숙소', /호텔|숙소|체크인|체크아웃|료칸|게스트하우스|에어비앤비|민박|리조트|숙박/],
+  ['이동', /공항|기차|신칸센|버스|지하철|전철|페리|렌터카|택시|이동|환승|입국|출국|탑승|고속철|KTX|열차/i],
+  ['쇼핑', /쇼핑|백화점|아울렛|면세|마트|드럭스토어|기념품|상점가|편집샵|서점/],
+  ['관광', /신사|절|사원|성\b|박물관|미술관|공원|전망대|타워|궁|유적|해변|해수욕장|산\b|호수|폭포|온천|테마파크|동물원|수족관|야경|다리|광장|성당|모스크/],
+];
+function guessCat(text){
+  const t = String(text || '');
+  for (const [cat, re] of CAT_HINTS) if (re.test(t)) return cat;
+  return '';
+}
+
+/* ── 날씨 ───────────────────────────────────────────────────────────
+ * open-meteo 는 키가 없어도 됩니다. 키를 받아 어딘가에 두는 순간
+ * 그 키가 새는 걱정이 하나 늘어납니다.
+ * 30분 담아둡니다 — 날씨는 그 사이에 안 바뀌고, 탭을 옮길 때마다 부르면 낭비입니다.
+ * 못 받아오면 조용히 없는 대로 갑니다. 날씨 때문에 오늘 화면이 안 뜨면 안 됩니다. */
+const WMO = [
+  [[0], '맑음', '☀'], [[1,2], '구름 조금', '🌤'], [[3], '흐림', '☁'],
+  [[45,48], '안개', '🌫'], [[51,53,55,56,57], '이슬비', '🌦'],
+  [[61,63,65,66,67], '비', '🌧'], [[71,73,75,77], '눈', '🌨'],
+  [[80,81,82], '소나기', '🌦'], [[85,86], '눈 소나기', '🌨'],
+  [[95,96,99], '뇌우', '⛈'],
+];
+async function getWeather(lat, lng){
+  if (lat == null || lng == null) return null;
+  const key = `t2:wx:${lat.toFixed(2)},${lng.toFixed(2)}`;
+  try {
+    const old = JSON.parse(localStorage.getItem(key) || 'null');
+    if (old && Date.now() - old.at < 1800_000) return old.v;
+  } catch {}
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast' +
+      `?latitude=${lat}&longitude=${lng}&current_weather=true`);
+    if (!r.ok) return null;
+    const w = (await r.json())?.current_weather;
+    if (!w) return null;
+    const hit = WMO.find(([codes]) => codes.includes(w.weathercode));
+    const v = { c: Math.round(w.temperature), t: hit?.[1] || '', i: hit?.[2] || '' };
+    try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), v })); } catch {}
+    return v;
+  } catch { return null; }
+}
+
+/* ── 오늘 화면 ──────────────────────────────────────────────────────
+ * 여행 중에 앱을 여는 이유는 사실상 하나입니다: 지금 뭘 할 시간인가.
+ * 그런데 지금까지는 전체 일정에서 오늘을 눈으로 찾아야 했습니다.
+ *
+ * 여행 기간 안일 때만 나옵니다. 여행 전이나 다녀온 뒤에는 쓸모가 없고,
+ * 안 지우면 "오늘 일정 없음"이 계속 붙어 있어 자리만 먹습니다.
+ *
+ * 이동 안내는 **지금과 다음 구간에만** 답니다. 하루 전체에 다 달면 소음입니다. */
+function todayDayNo(){
+  const today = ymd(new Date());
+  if (!trip || today < trip.start_date || today > trip.end_date) return null;
+  return { date: today,
+           n: Math.round((asDate(today) - asDate(trip.start_date)) / D1) + 1 };
+}
+
+async function drawToday(){
+  const box = $('card-today');
+  const t = todayDayNo();
+  if (!t){ box.classList.add('hide'); box.innerHTML = ''; return; }
+
+  const list = plans.filter(p => p.date === t.date);
+  if (!list.length){ box.classList.add('hide'); box.innerHTML = ''; return; }
+
+  const now = new Date();
+  const nowM = now.getHours() * 60 + now.getMinutes();
+  const hhmm = m => `${String(Math.floor(m / 60) % 24).padStart(2,'0')}:${
+                     String(m % 60).padStart(2,'0')}`;
+
+  /* 시각이 없는 일정은 순서를 못 매기니 아래에 따로 둡니다. */
+  const timed = list.filter(p => p.start_time);
+  const blank = list.filter(p => !p.start_time);
+
+  let cur = -1;
+  timed.forEach((p, i) => { if (mins(p.start_time) <= nowM) cur = i; });
+  const next = cur + 1 < timed.length ? cur + 1 : -1;
+
+  const leg = legFor(t.date);
+  const wx = await getWeather(leg?.center_lat ?? trip.center_lat,
+                             leg?.center_lng ?? trip.center_lng);
+
+  /* 맨 위 한 줄: 다음 일정까지 얼마나 남았는지. 이게 제일 궁금한 것입니다. */
+  let head = '';
+  if (next >= 0){
+    const d = mins(timed[next].start_time) - nowM;
+    const when = d <= 0 ? '곧' : d < 60 ? `${d}분 후`
+               : `${Math.floor(d / 60)}시간 ${d % 60}분 후`;
+    head = `<div class="tdnext"><b>${esc(hm(timed[next].start_time))}
+        ${esc(timed[next].title)}</b><span>${esc(when)}</span></div>`;
+  } else if (cur >= 0){
+    head = `<div class="tdnext"><b>오늘 일정은 여기까지예요</b></div>`;
+  }
+
+  const rows = timed.map((p, i) => {
+    const done = i < cur, isCur = i === cur, isNext = i === next;
+    const tag = isCur ? '지금' : isNext ? '다음' : '';
+    let h = `<div class="tdrow${done ? ' is-done' : ''}${isCur ? ' is-cur' : ''}${
+        isNext ? ' is-next' : ''}">
+      <div class="tt">${esc(hm(p.start_time))}${
+        tag ? `<span class="tg">${tag}</span>` : ''}</div>
+      <span class="kdot ${p.category ? 'k-' + esc(p.category) : ''}"></span>
+      <div class="tb">${esc(p.title)}</div></div>`;
+
+    /* 지금·다음 구간에만. 시간이 모자라면 빨갛게 — 여기가 하루가 깨지는 자리입니다. */
+    const nx = timed[i + 1];
+    if (nx && (isCur || isNext)){
+      const mv = hop(p, nx, legs);
+      if (mv){
+        const end = p.end_time ? mins(p.end_time)
+                  : mins(p.start_time) + (STAY_MIN[p.category] ?? 30);
+        const gap = mins(nx.start_time) - end;
+        const tight = gap < mv.min;
+        h += `<div class="tdmv${tight ? ' bad' : ''}">${mv.walk ? '도보' : '이동'}
+          약 ${mv.min}분 · ${mv.km.toFixed(1)}km${
+          tight ? ` · ${gap}분밖에 없어요` : ''}</div>`;
+      }
+    }
+    return h;
+  }).join('');
+
+  box.classList.remove('hide');
+  box.innerHTML =
+    `<div class="tdhead">
+       <b>Day ${t.n}</b>
+       <span>지금 ${hhmm(nowM)}</span>
+       ${leg?.destination ? `<span>${esc(leg.destination)}</span>` : ''}
+       ${wx ? `<span class="tdwx">${wx.i} ${wx.c}° ${esc(wx.t)}</span>` : ''}
+     </div>
+     ${head}
+     <div class="tdlist">${rows}</div>
+     ${blank.length ? `<div class="tdblank">시각 없는 일정 ${blank.length}개 ·
+        ${esc(blank.map(p => p.title).slice(0, 3).join(' · '))}</div>` : ''}`;
+}
+
 /* 펼친 줄은 기억해 둡니다. 지우거나 고쳐서 다시 그려도 그대로 열려 있어야 합니다. */
 const openPlans = new Set();
 $('plans').addEventListener('click', e => {
@@ -5350,7 +5547,7 @@ $('trash').addEventListener('click', async e => {
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
 const TABS = {
-  plans: ['card-plans', 'card-cand', 'plancard'],
+  plans: ['card-today', 'card-plans', 'card-cand', 'plancard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
   prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
   mem:   ['card-mem', 'card-trash']
@@ -6223,8 +6420,19 @@ $('addplanbtn').addEventListener('click', () => {
   if ($('plancard').classList.contains('hide')) return;
   $('p_date').value = pickedDay || trip.start_date;
   $('p_date').min = '';                    /* 여행 기간 밖도 넣을 수 있어야 합니다 */
+  $('p_cat').dataset.touched = '';         /* 새 폼이니 짐작을 다시 켭니다 */
   $('p_title').focus();
 });
+
+/* 제목·메모를 치는 대로 분류를 짐작해 미리 골라둡니다.
+   직접 고른 적이 있으면 그때부터 안 건드립니다. */
+$('p_cat').addEventListener('change', () => { $('p_cat').dataset.touched = '1'; });
+for (const id of ['p_title', 'p_memo'])
+  $(id).addEventListener('input', () => {
+    if ($('p_cat').dataset.touched === '1') return;
+    const g = guessCat($('p_title').value + ' ' + $('p_memo').value);
+    if (g) $('p_cat').value = g;
+  });
 $('p_cancel').addEventListener('click', () => {
   $('plancard').classList.add('hide'); $('planformerr').classList.add('hide');
 });

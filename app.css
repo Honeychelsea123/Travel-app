@@ -140,10 +140,18 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
        border-radius:var(--r-pill); border:1px solid var(--hairline);
        background:var(--pearl); color:var(--ink-80); }
 
-/* ── 보낼 사진 미리보기 ── */
-.shot{ display:flex; align-items:center; gap:10px; margin-bottom:8px;
+/* ── 보낼 사진 미리보기 ── 여러 장을 나란히 둡니다 */
+.shot{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;
        padding:8px; border-radius:var(--r-md); background:var(--pearl); }
-.shot img{ width:44px; height:44px; object-fit:cover; border-radius:10px; flex:none; }
+.shot1{ position:relative; flex:none; }
+.shot1 img{ width:46px; height:46px; object-fit:cover; border-radius:10px; display:block; }
+/* 빼기 단추는 사진 위 모서리에. 아래 줄에 두면 사진마다 줄이 늘어납니다. */
+.shot1 .x{
+  position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0;
+  border-radius:50%; background:var(--ink); color:#fff; border:0;
+  font-size:13px; line-height:20px; text-align:center;
+}
+.shotn{ margin-left:auto; color:var(--ink-48); font-size:calc(11px * var(--ts)); }
 
 /* ── 근거 ── "일반 지식"은 우리가 확인해 준 것이 없다는 뜻이라 눈에 띄게 둡니다 */
 .aisrc{ display:flex; flex-wrap:wrap; align-items:center; gap:6px;
@@ -198,6 +206,38 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
   letter-spacing:.02em; margin-bottom:14px;
 }
 .pcard .tdest span{ font-weight:400; opacity:.75; }
+
+/* ── 오늘 화면 ──
+   여행 중에 제일 먼저 보는 자리라 글자를 조금 크게 둡니다. */
+.tdhead{ display:flex; align-items:baseline; flex-wrap:wrap; gap:8px;
+         font-size:calc(13px * var(--ts)); color:var(--ink-48); }
+.tdhead b{ font-size:calc(17px * var(--ts)); color:var(--ink); font-weight:700; }
+.tdhead .tdwx{ margin-left:auto; }
+.tdnext{ display:flex; align-items:baseline; gap:8px; margin-top:10px;
+         padding:10px 12px; border-radius:var(--r-md); background:var(--pearl); }
+.tdnext b{ font-size:calc(15px * var(--ts)); flex:1; min-width:0; }
+.tdnext span{ color:var(--primary); font-weight:600;
+              font-size:calc(13px * var(--ts)); white-space:nowrap; }
+.tdlist{ margin-top:12px; }
+.tdrow{ display:flex; align-items:center; gap:8px; padding:7px 0;
+        font-size:calc(14px * var(--ts)); }
+.tdrow .tt{ width:66px; flex:none; color:var(--ink-48);
+            font-size:calc(12px * var(--ts)); }
+.tdrow .tb{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+            white-space:nowrap; }
+/* 지나간 것은 흐리게. 지운 게 아니라 "이미 했다"는 표시입니다. */
+.tdrow.is-done{ opacity:.42; }
+.tdrow.is-cur .tb, .tdrow.is-next .tb{ font-weight:650; }
+.tdrow .tg{ margin-left:5px; padding:1px 6px; border-radius:var(--r-pill);
+            background:var(--primary); color:#fff; font-weight:600;
+            font-size:calc(10px * var(--ts)); }
+.tdrow.is-cur .tg{ background:var(--ok); }
+/* 이동 안내는 지금·다음 구간에만. 하루 전체에 달면 소음입니다. */
+.tdmv{ margin:0 0 4px 74px; padding-left:10px; color:var(--ink-48);
+       border-left:2px solid var(--divider-soft);
+       font-size:calc(12px * var(--ts)); }
+.tdmv.bad{ color:var(--bad); border-left-color:var(--bad); font-weight:600; }
+.tdblank{ margin-top:8px; color:var(--ink-48); font-size:calc(12px * var(--ts)); }
 
 /* ── 켬/끔 스위치 ──
    체크박스는 켜졌는지 한눈에 안 들어옵니다. 아이폰 설정과 같은 모양으로 바꿉니다.
