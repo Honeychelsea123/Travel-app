@@ -171,6 +171,10 @@ language sql stable security definer set search_path = public as $$
                      where mine.solo and e.deleted_at is null),
     'city_ratings', (select count(*) from public.city_ratings
                       where user_id = auth.uid() and stars is not null),
+    -- 별점 없이 "가보고 싶어요"만 눌러둔 곳도 같이 지워집니다.
+    -- 안 적어두면 목록에 없는 것이 사라집니다 — 동의를 받는 화면에서 그러면 안 됩니다.
+    'wants',        (select count(*) from public.city_ratings
+                      where user_id = auth.uid() and want and stars is null),
     'plan_ratings', (select count(*) from public.plan_ratings where user_id = auth.uid()),
     'chats',        (select count(*) from public.chats where user_id = auth.uid())
   );

@@ -319,6 +319,7 @@ $('delbtn').addEventListener('click', async () => {
     row('일정', d.plans) +
     row('지출', d.expenses) +
     row('도시 별점', d.city_ratings) +
+    row('가보고 싶은 곳', d.wants) +
     row('맛집·관광지 별점', d.plan_ratings) +
     row('AI 대화', d.chats) +
     `<div class="row"><span class="label">계정
