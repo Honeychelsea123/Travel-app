@@ -512,6 +512,7 @@ async function loadAdmin(){
   sb.rpc('sweep_retention').then(() => {}, () => {});
   box.classList.remove('hide');
   const d = r.data;
+  admGist(d);
 
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
   const num = v => Number(v ?? 0);
@@ -537,92 +538,135 @@ async function loadAdmin(){
       ${foot ? `<div class="f">${esc(foot)}</div>` : ''}</div>`;
   };
 
+  /* 표는 .row 를 쓰다가 글자가 너무 커서 한 줄이 화면을 다 먹었습니다.
+     여기는 숫자를 훑는 자리라 촘촘해야 합니다. 전용 줄을 씁니다. */
   const grp = (title, rows) =>
-    `<div class="daysep">${esc(title)}</div>` +
-    rows.filter(Boolean).map(([k, v, m]) => `<div class="row">
-      <span class="label">${esc(k)}${m ? `<div class="memo">${esc(m)}</div>` : ''}</span>
-      <span class="val"><b>${esc(v)}</b></span></div>`).join('');
+    `<div class="agrp">${esc(title)}</div>` +
+    rows.filter(Boolean).map(([k, v, m]) => `<div class="arow">
+      <span class="k">${esc(k)}${m ? `<span class="m">${esc(m)}</span>` : ''}</span>
+      <span class="v">${esc(v)}</span></div>`).join('');
 
   /* 예산이 며칠 남았는지. 최근 7일 평균으로 나눈 값이라 어제 갑자기 몰렸으면
      짧게 나옵니다. 정확한 예언이 아니라 "슬슬 봐야 하나"의 신호입니다. */
-  const days = d.ai_days_left == null ? '아직 쓴 게 없어 계산 못 함'
-    : num(d.ai_days_left) > 60 ? '넉넉합니다'
-    : `이 속도면 ${n(d.ai_days_left)}일치 남음 (하루 평균 ${n(d.ai_avg)}회)`;
+  const days = d.ai_days_left == null ? '아직 쓴 기록이 없어 계산할 수 없습니다'
+    : num(d.ai_days_left) > 60 ? `하루 평균 ${n(d.ai_avg)}회. 여유 있습니다`
+    : `하루 평균 ${n(d.ai_avg)}회 · 이 속도면 ${n(d.ai_days_left)}일 뒤에 예산을 다 씁니다`;
 
   const blocked = num(d.ai_blocked_7d);
   const saved   = num(d.se_hits_month);
 
   $('adm_stats').innerHTML =
+    /* 손을 써야 하는 것이 있으면 맨 위입니다. 표 안에 묻으면 안 봅니다. */
+    (blocked ? `<div class="awarn">최근 7일 동안 <b>${n(blocked)}번</b> 한도에 막혔습니다.
+       ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번입니다. ` : ''}
+       한도는 하루 15회, 여행 중에는 30회입니다.
+       더 쓰고 싶은데 못 쓴 사람이 있다는 뜻이라 자주 막히면 다시 안 옵니다.</div>` : '') +
+
     `<div class="atiles">
-      ${tile('가입자', n(d.users_total), `7일 +${n(d.users_7d)}`)}
-      ${tile('최근 7일 쓴 사람', n(d.touched_7d), `AI 쓴 사람 ${n(d.active_7d)}`)}
-      ${tile('여행', n(d.trips_total), `진행 중 ${n(d.trips_now)}`)}
-      ${tile('오늘 AI', n(d.ai_today) + '회', `어제 ${n(d.ai_yday)}회`)}
+      ${tile('가입자', n(d.users_total) + '명', `최근 7일에 ${n(d.users_7d)}명 늘었습니다`)}
+      ${tile('최근 7일 쓴 사람', n(d.touched_7d) + '명', `그중 AI까지 쓴 사람 ${n(d.active_7d)}명`)}
+      ${tile('만들어진 여행', n(d.trips_total) + '개', `지금 여행 중인 것 ${n(d.trips_now)}개`)}
+      ${tile('오늘 AI 호출', n(d.ai_today) + '회', `어제는 ${n(d.ai_yday)}회`)}
     </div>` +
 
-    `<div class="daysep">이번 달 예산</div>` +
-    bar('AI (Gemini)', d.ai_month, d.ai_budget, d.ai_pct, days) +
-    bar('검색 (Tavily)', d.se_month, d.se_budget, d.se_pct,
-        saved ? `보관함이 ${n(saved)}번 막아줬습니다 (그만큼 크레딧을 안 썼습니다)`
-              : '보관함이 아직 막아준 적이 없습니다') +
-    `<div class="anote">예산은 <b>내가 정한 값</b>입니다.
-      구글·Tavily 의 실제 잔여량이 아니에요 — 그건 각 콘솔에서 보고
-      <code>app_config</code> 에 옮겨 적습니다.</div>` +
+    `<div class="agrp">이번 달 얼마나 썼나</div>` +
+    bar('AI · Gemini', d.ai_month, d.ai_budget, d.ai_pct, days) +
+    bar('웹 검색 · Tavily', d.se_month, d.se_budget, d.se_pct,
+        saved ? `보관함이 ${n(saved)}번 막아줘서 그만큼 크레딧을 안 썼습니다`
+              : '아직 보관함이 막아준 검색이 없습니다') +
+    `<div class="anote">여기 예산은 <b>직접 정해둔 값</b>이에요.
+      구글·Tavily가 알려주는 실제 잔여량이 아닙니다 — 그건 각 콘솔에서만 볼 수 있어서,
+      거기서 확인한 뒤 <code>app_config</code> 에 옮겨 적어야 맞습니다.</div>` +
 
-    /* 막힌 사람이 있으면 제일 위로 올립니다. 표 안에 묻으면 안 봅니다. */
-    (blocked ? `<div class="awarn">최근 7일에 <b>${n(blocked)}번</b> 한도에 막혔습니다.
-       ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번. ` : ''}
-       한도는 하루 15회(여행 중 30회)입니다 — 자주 막히면 다시 안 옵니다.</div>` : '') +
-
-    grp('사람', [
-      ['가입자', n(d.users_total)],
-      ['오늘 가입', n(d.users_today)],
-      ['최근 30일 가입', n(d.users_30d)],
-      ['최근 7일 손댄 사람', n(d.touched_7d), '일정·지출·별점을 건드린 기준'],
-      ['최근 7일 AI 쓴 사람', n(d.active_7d)],
-      ['아직 아무것도 안 한 사람', n(d.users_idle), '가입만 하고 여행을 안 만든 계정'],
+    grp('쓰는 사람', [
+      ['전체 가입자', n(d.users_total) + '명'],
+      ['오늘 가입', n(d.users_today) + '명'],
+      ['최근 30일 가입', n(d.users_30d) + '명'],
+      ['최근 7일 앱을 쓴 사람', n(d.touched_7d) + '명',
+       '일정·지출·별점 중 하나라도 건드린 사람'],
+      ['그중 AI까지 쓴 사람', n(d.active_7d) + '명'],
+      ['가입만 하고 안 쓴 사람', n(d.users_idle) + '명',
+       '여행을 하나도 안 만든 계정. 많으면 첫 화면이 문제입니다'],
     ]) +
-    grp('쌓인 것', [
-      ['여행', n(d.trips_total) + ` (7일 +${n(d.trips_7d)})`],
-      ['진행 중 / 앞으로', `${n(d.trips_now)} / ${n(d.trips_soon)}`],
-      ['일행이 있는 여행', n(d.trips_shared), '혼자 쓰는 앱인지 같이 쓰는 앱인지'],
-      ['일정', n(d.plans_total)],
-      ['지출', n(d.expenses_total)],
-      ['도시 별점', n(d.ratings_total)],
-      ['여행 후기', n(d.reviews_total)],
+    grp('쌓인 자료', [
+      ['여행', n(d.trips_total) + '개', `최근 7일에 ${n(d.trips_7d)}개 늘었습니다`],
+      ['지금 여행 중', n(d.trips_now) + '개', `출발을 앞둔 여행 ${n(d.trips_soon)}개`],
+      ['일행과 함께 쓰는 여행', n(d.trips_shared) + '개',
+       '혼자 쓰는 앱인지 같이 쓰는 앱인지가 여기서 갈립니다'],
+      ['일정', n(d.plans_total) + '개'],
+      ['지출', n(d.expenses_total) + '건'],
+      ['도시 별점', n(d.ratings_total) + '개'],
+      ['여행 후기', n(d.reviews_total) + '개'],
     ]) +
-    grp('AI (Gemini)', [
-      ['오늘 / 어제', `${n(d.ai_today)} / ${n(d.ai_yday)}회`],
+    grp('AI · Gemini', [
+      ['오늘', n(d.ai_today) + '회', `어제는 ${n(d.ai_yday)}회였습니다`],
       ['최근 7일', n(d.ai_7d) + '회', `하루 평균 ${n(d.ai_avg)}회`],
       ['최근 30일', n(d.ai_30d) + '회'],
-      ['이번 달', `${n(d.ai_month)}회`, `예산 ${n(d.ai_budget)}회 중 ${n(d.ai_left)}회 남음`],
-      ['일정 검토 7일', n(d.ai_review_7d) + '회', '따로 셉니다 (010)'],
-      ['오늘 한 사람 최대', n(d.ai_top_today) + '회'],
-      ['한도에 막힘 (오늘 / 7일)', `${n(d.ai_blocked_today)} / ${n(d.ai_blocked_7d)}회`,
-       '0 이 아니면 한도를 손봐야 합니다'],
+      ['이번 달 누적', n(d.ai_month) + '회',
+       `예산 ${n(d.ai_budget)}회 가운데 ${n(d.ai_left)}회 남았습니다`],
+      ['그중 일정 검토 (7일)', n(d.ai_review_7d) + '회',
+       '일반 대화와 따로 셉니다. 아까워서 안 쓰게 되면 안 되니까요'],
+      ['오늘 가장 많이 쓴 사람', n(d.ai_top_today) + '회', '한 사람 기준. 한도는 15회입니다'],
+      ['한도에 막힌 횟수', `오늘 ${n(d.ai_blocked_today)}회 · 7일 ${n(d.ai_blocked_7d)}회`,
+       '0이 아니면 더 쓰고 싶은데 못 쓴 사람이 있다는 뜻입니다'],
     ]) +
-    grp('검색 (Tavily)', [
-      ['오늘 / 7일', `${n(d.se_today)} / ${n(d.se_7d)}회`, '실제로 크레딧이 나간 것'],
-      ['이번 달', `${n(d.se_month)}회`, `예산 ${n(d.se_budget)}회 중 ${n(d.se_left)}회 남음`],
-      ['보관함이 막아준 것', n(d.se_hits_month) + '회', '이만큼은 크레딧을 안 썼습니다'],
-      ['지금 담아둔 것', n(d.se_cached) + '건', '6시간마다 치웁니다. 누적이 아닙니다'],
+    grp('웹 검색 · Tavily', [
+      ['오늘 나간 검색', n(d.se_today) + '회', '실제로 크레딧을 쓴 횟수입니다'],
+      ['최근 7일', n(d.se_7d) + '회'],
+      ['이번 달 누적', n(d.se_month) + '회',
+       `예산 ${n(d.se_budget)}회 가운데 ${n(d.se_left)}회 남았습니다`],
+      ['보관함이 막아준 검색', n(d.se_hits_month) + '회',
+       '같은 검색을 다시 안 해서 아낀 크레딧입니다'],
+      ['지금 담아둔 검색', n(d.se_cached) + '건',
+       '6시간이 지나면 지웁니다. 누적이 아니라 현재 보관량입니다'],
     ]) +
     grp('문제', [
-      ['오늘 / 7일 오류', `${n(d.errors_today)} / ${n(d.errors_7d)}건`],
-      ['안 읽은 신고', n(d.reports_open) + '건', `전체 ${n(d.reports_total)}건`],
+      ['앱이 터진 횟수', `오늘 ${n(d.errors_today)}건 · 7일 ${n(d.errors_7d)}건`],
+      ['아직 안 읽은 신고', n(d.reports_open) + '건', `지금까지 받은 신고 ${n(d.reports_total)}건`],
     ]);
 
   const f = await netTimeout(sb.rpc('admin_feed'), 8000);
-  $('adm_feed').innerHTML = (f.data || []).length
-    ? `<div class="daysep">최근 신고와 오류</div>` +
-      f.data.map(x => `<div class="row">
-        <span class="label"><b>${esc(x.kind)}</b> ${esc(String(x.body).slice(0, 120))}
-          <div class="memo">${esc((x.at || '').slice(0, 16).replace('T', ' '))}
-            ${x.build ? ' · ' + esc(x.build) : ''}</div></span>
-        ${Number(x.n) > 1 ? `<span class="val"><b>${x.n}회</b></span>` : ''}</div>`).join('')
-    : '';
+  const rows = f.data || [];
+  $('adm_feedcard').classList.toggle('hide', !rows.length);
+  $('adm_feed').innerHTML = rows.map(x => `<div class="arow">
+      <span class="k"><b>${esc(x.kind)}</b> ${esc(String(x.body).slice(0, 120))}
+        <span class="m">${esc((x.at || '').slice(0, 16).replace('T', ' '))}${
+          x.build ? ' · ' + esc(x.build) : ''}</span></span>
+      ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`).join('');
 }
+
+/* 설정에 보이는 한 줄 요약. 대시보드를 안 열어도 이것만 보고 넘어갈 수 있어야
+   합니다 — 매일 여는 화면인데 매번 한 겹 더 들어가게 하면 안 봅니다. */
+function admGist(d){
+  const n = v => Number(v ?? 0).toLocaleString('ko-KR');
+  $('adm_gist').textContent =
+    `가입 ${n(d.users_total)} · 오늘 AI ${n(d.ai_today)}회 · 안 읽은 신고 ${n(d.reports_open)}건`;
+
+  /* 손을 써야 하는 것이 있을 때만 뜹니다. 평소에 아무 말이 없어야
+     떴을 때 눈에 들어옵니다. */
+  const bad = [];
+  if (Number(d.ai_blocked_today))  bad.push(`오늘 한도에 ${n(d.ai_blocked_today)}번 막힘`);
+  if (Number(d.ai_pct)  >= 80)     bad.push(`AI 예산 ${d.ai_pct}% 씀`);
+  if (Number(d.se_pct)  >= 80)     bad.push(`검색 예산 ${d.se_pct}% 씀`);
+  if (Number(d.errors_today) >= 5) bad.push(`오늘 오류 ${n(d.errors_today)}건`);
+  const box = $('adm_alert');
+  box.hidden = !bad.length;
+  box.textContent = bad.length ? '⚠ ' + bad.join(' · ') : '';
+}
+
 $('adm_refresh').addEventListener('click', loadAdmin);
+/* 통계는 설정 안에 늘어놓지 않고 별도 화면으로 뺐습니다. gear 를 누를 때
+   이미 다 받아뒀으므로 여는 것은 즉시입니다. */
+$('adm_open').addEventListener('click', () => {
+  $('setpane').classList.add('hide');
+  $('admpane').classList.remove('hide');
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
+$('admback').addEventListener('click', () => {
+  $('admpane').classList.add('hide');
+  $('setpane').classList.remove('hide');
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
 
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
    문의할 때 붙일 수 있게 복사도 됩니다 — 스크린샷보다 이쪽이 고치기 쉽습니다. */
@@ -4237,6 +4281,9 @@ function showProfile(setting){
   $('shelfpane').classList.add('hide');
   $('personapane').classList.add('hide');
   $('mappane').classList.add('hide');        /* 지도가 열려 있었으면 같이 닫습니다 */
+  /* 대시보드는 설정 위에 한 겹 더 얹힌 화면입니다. 안 닫으면 프로필로 나갔다
+     들어와도 통계가 그대로 남아 있습니다. */
+  $('admpane').classList.add('hide');
   $('profpane').classList.toggle('hide', setting);
   $('setpane').classList.toggle('hide', !setting);
   window.scrollTo({ top:0, behavior:'smooth' });

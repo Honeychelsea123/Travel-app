@@ -137,6 +137,22 @@ a.btn:active{ transform:scale(.96); }
 .abar.bad  .track i{ background:var(--bad); }
 .abar .f{ font-size:calc(11px * var(--ts)); color:var(--ink-48); margin-top:5px; }
 
+/* 통계 줄. 처음에는 .row 를 그대로 썼는데 그건 일정·지출을 누르라고 만든 줄이라
+   글자가 크고 위아래가 넉넉합니다. 스무 줄을 훑는 자리에 쓰면 한 줄이 화면을
+   다 먹습니다. 여기는 눈으로 훑는 표라 촘촘하고 숫자가 오른쪽에 정렬돼야 합니다. */
+.agrp{ margin:20px 0 4px; font-size:calc(12px * var(--ts)); font-weight:700;
+       color:var(--ink-48); letter-spacing:.02em; }
+.agrp:first-child{ margin-top:8px; }
+.arow{ display:flex; align-items:baseline; gap:12px; padding:7px 0;
+       border-top:1px solid var(--divider-soft);
+       font-size:calc(14px * var(--ts)); line-height:1.4; }
+.arow:first-of-type{ border-top:0; }
+.arow .k{ flex:1; min-width:0; }
+.arow .m{ display:block; font-size:calc(11px * var(--ts)); color:var(--ink-48);
+          line-height:1.45; margin-top:1px; }
+/* 자릿수가 달라도 오른쪽 끝이 맞아야 훑을 수 있습니다. */
+.arow .v{ font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums; }
+
 .anote{ font-size:calc(11px * var(--ts)); line-height:1.5;
         color:var(--ink-48); margin-top:10px; }
 .anote code{ font-size:calc(10px * var(--ts)); }
@@ -552,7 +568,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
              키보드가 올라오면 탭바가 그 뒤로 숨으므로 이 여백은 빈 자리만 됩니다.
              그때는 아래 body.kbon 규칙이 줄입니다. */
           padding-bottom:104px;
-          box-shadow:0 -12px 40px rgba(0,0,0,.22);
+          /* 위 .aisheet 과 같은 이유로 아래를 덮습니다. 이쪽은 카드 색입니다. */
+          box-shadow:0 -12px 40px rgba(0,0,0,.22),
+                     0 var(--kb, 0px) 0 var(--canvas);
           animation:sheetup .24s ease-out both; }
 @keyframes sheetup{ from{ transform:translateY(26px); opacity:.5 } to{ transform:none; opacity:1 } }
 /* 잡아 내리는 손잡이 — 닫을 수 있다는 표시입니다 */
@@ -605,7 +623,14 @@ body.kbon .assheet{ padding-bottom:16px; }
           margin:0 auto; max-width:480px;
           height:min(86vh, 720px, calc(100dvh - var(--kb, 0px) - 24px));
           background:var(--parchment); border-radius:var(--r-lg) var(--r-lg) 0 0;
-          box-shadow:0 -12px 40px rgba(0,0,0,.22);
+          /* 뒤 그림자 + **아래를 시트 색으로 덮는 판**.
+             시트 끝과 키보드 사이에 몇십 px 이 비쳐 뒷 화면 글자가 읽히는 일이
+             있었습니다. --kb 를 실제보다 크게 재는 순간이 있어서인데, 재는 쪽을
+             못 믿을 바에는 그 아래를 덮어둡니다. 두 번째 그림자가 시트를 --kb 만큼
+             아래로 복사해 칠합니다 — 제대로 맞았을 때는 키보드에 가려 안 보이고,
+             레이아웃은 건드리지 않으므로 틀려도 손해가 없습니다. */
+          box-shadow:0 -12px 40px rgba(0,0,0,.22),
+                     0 var(--kb, 0px) 0 var(--parchment);
           padding:10px 12px 12px;
           animation:sheetup .24s ease-out both; }
 /* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
