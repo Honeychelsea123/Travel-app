@@ -163,9 +163,38 @@ function drawOffbar(){
 addEventListener('online',  () => { drawOffbar(); flushQueue(); });
 addEventListener('offline', drawOffbar);
 
-/* 서비스 워커. 이게 있어야 비행기모드에서 앱이 열립니다. */
-if ('serviceWorker' in navigator)
-  addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+/* ── 서비스 워커 ────────────────────────────────────────────────────
+ * 이게 있어야 비행기모드에서 앱이 열립니다.
+ * 화면은 캐시로 즉시 엽니다(기다리면 오프라인에서 집니다). 그러면 새 빌드가
+ * 한 박자 늦게 보이므로, 열고 나서 조용히 확인하고 바뀌었으면 한 번만 새로고침합니다.
+ *
+ * 아이폰 홈 화면 앱은 앱 전환기에서 되살릴 때 load 가 다시 안 돕니다.
+ * 그래서 화면이 보일 때마다도 확인합니다 — 안 그러면 며칠씩 옛 빌드에 묶입니다. */
+async function checkBuild(){
+  try {
+    const t = await (await fetch('./index.html', { cache:'no-store' })).text();
+    const now = t.match(/id="build">(b\d+)</)?.[1];
+    const mine = $('build')?.textContent.trim();
+    if (!now || !mine || now === mine) return;
+    /* 같은 번호로 두 번 새로고침하지 않습니다. 캐시가 아직 안 바뀌었으면
+       무한히 돌 수 있습니다 — 그때는 다음에 열 때 따라잡습니다. */
+    const k = 't2:reloaded:' + now;
+    if (sessionStorage.getItem(k)) return;
+    sessionStorage.setItem(k, '1');
+    location.reload();
+  } catch {}
+}
+if ('serviceWorker' in navigator){
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    setTimeout(checkBuild, 1800);        /* 워커가 뒤에서 새 화면을 받아둘 틈 */
+  });
+  addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    navigator.serviceWorker.getRegistration('./').then(r => r?.update()).catch(() => {});
+    checkBuild();
+  });
+}
 
 /* ── 초성 ───────────────────────────────────────────────────────────
  * 'ㄷㅋ' 로 도쿄를 찾게 합니다. 한글 음절 코드에서 첫 자음만 떼어냅니다. */

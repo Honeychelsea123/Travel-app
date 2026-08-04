@@ -8,7 +8,7 @@
  * 그래서 빌드 번호가 적힌 index.html 은 네트워크를 먼저 봅니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v4';
+const VER   = 'v5';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -82,30 +82,28 @@ self.addEventListener('fetch', e => {
       return;
     }
 
-    /* ── 화면 문서(index.html) ──
-       빌드 번호가 여기 적혀 있으니 이것만 최신이면 나머지가 따라옵니다.
+    /* ── 화면 문서(index.html) ── 캐시 먼저. 기다리지 않습니다.
+       여기서 두 가지를 배웠습니다.
 
-       그런데 재보니 문서가 5ms 만에 왔고 내용은 한 빌드 옛것이었습니다.
-       GitHub Pages 가 html 에 max-age=600 을 붙여서, 브라우저가 10분 동안
-       묻지도 않고 자기 캐시를 내주고 있었습니다. 서비스워커가 부르는 fetch 도
-       그 캐시를 씁니다. 홈 화면 앱은 잘 안 껐다 켜니 옛 빌드에 며칠씩 머물렀습니다.
-       no-store 로 물어 브라우저 캐시를 건너뜁니다. 2.5초 안에 안 오면 캐시로 엽니다. */
+       하나, GitHub Pages 가 html 에 max-age=600 을 붙입니다. 브라우저가 10분 동안
+       묻지도 않고 자기 캐시를 내줍니다 — 서비스워커가 부르는 fetch 도 그걸 씁니다.
+       그래서 뒤에서 받아올 때는 no-store 로 물어 그 캐시를 건너뜁니다.
+
+       둘, 처음에는 "네트워크 먼저, 2.5초 넘으면 캐시"로 두었습니다. 그런데 도쿄 앱에서
+       이미 같은 걸 해보고 버린 방식이었습니다 — 비행기모드에서 fetch 가 곧바로
+       거절되지 않고 매달려서 그 몇 초를 통째로 버립니다. 캐시 우선이 30ms 였습니다.
+       **네트워크를 조금이라도 기다리는 설계는 오프라인에서 집니다.**
+       그래서 즉시 캐시로 열고, 새것은 뒤에서 받아둡니다.
+       새 빌드가 올라온 것은 화면 쪽에서 알아채 한 번 새로고침합니다. */
     if (req.mode === 'navigate' || url.pathname.endsWith('.html') ||
         url.pathname.endsWith('/')){
       e.respondWith((async () => {
         const c = await caches.open(SHELL);
-        const fresh = () => fetch(url.href, { cache:'no-store', credentials:'same-origin' });
-        try {
-          return await Promise.race([
-            fresh().then(r => { if (r.ok) c.put('./index.html', r.clone()); return r; }),
-            new Promise((_, no) => setTimeout(() => no(new Error('느림')), 2500)),
-          ]);
-        } catch {
-          /* 느리거나 끊겼습니다. 갖고 있는 것으로 엽니다.
-             네트워크는 뒤에서 계속 받아둡니다 — 다음에 열 때 최신입니다. */
-          fresh().then(r => r.ok && c.put('./index.html', r.clone())).catch(() => {});
-          return (await c.match('./index.html', { ignoreSearch:true })) || Response.error();
-        }
+        const fresh = () => fetch(url.href, { cache:'no-store', credentials:'same-origin' })
+          .then(r => { if (r.ok) c.put('./index.html', r.clone()); return r; });
+        const hit = await c.match('./index.html', { ignoreSearch:true });
+        if (hit){ fresh().catch(() => {}); return hit; }
+        return await fresh();
       })());
       return;
     }
