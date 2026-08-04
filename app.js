@@ -145,10 +145,15 @@ const cacheSet = (k, v) => { try { localStorage.setItem('t2:cache:' + k, JSON.st
  * 이미 끊긴 것을 아는 상태(navigator.onLine=false)면 더 짧게 끊습니다 —
  * 어차피 안 올 것을 4초씩 기다릴 이유가 없습니다. */
 function netTimeout(p, ms){
-  /* 끊긴 걸 아는 상태면 400ms 만 봅니다. 캐시에서 꺼내는 데 그 정도면 충분하고,
-     안 올 것을 1초씩 기다리면 화면이 눈에 띄게 굼떠집니다.
-     여러 화면이 줄줄이 기다리면 그게 다 더해집니다. */
-  const wait = ms ?? (navigator.onLine ? 4000 : 400);
+  /* **끊긴 걸 아는 상태면 물어보지도 않습니다.**
+     처음에는 400ms 만 기다렸는데, 화면 하나를 그리는 데 요청이 대여섯 개라
+     그게 다 더해져서 눈에 띄게 굼떴습니다. 어차피 캐시를 쓸 거면
+     기다리는 시간은 통째로 낭비입니다.
+     p 를 건드리지 않으므로 요청 자체가 안 나갑니다 —
+     supabase 질의는 await 할 때 비로소 나갑니다. */
+  if (!navigator.onLine)
+    return Promise.resolve({ data:null, error:{ message:'offline · 연결이 없습니다' } });
+  const wait = ms ?? 4000;
   return Promise.race([
     Promise.resolve(p).catch(error => ({ data:null, error })),
     new Promise(r => setTimeout(
@@ -1326,10 +1331,17 @@ function starHtml(v){
 }
 
 async function loadRatings(){
-  /* 도시 목록은 받아둔 것이 있지만 내 별점은 서버에서 옵니다.
-     오프라인이면 매길 수도 없으니 그렇게 적습니다. */
-  if (!navigator.onLine && !cities){
-    offNote('ratelist'); drawOffbar(); return;
+  /* 도시 목록은 받아둔 것이 있어도 **내 별점은 서버에서** 옵니다.
+     별점 없이 도시만 늘어놓으면 뭘 매겼는지 모르고, 눌러도 저장이 안 됩니다.
+     오프라인이면 아예 안 물어보고 알립니다. */
+  if (!navigator.onLine){
+    $('ratelist').innerHTML =
+      `<div class="empty" style="padding:26px 12px">
+         연결이 없어 기록은 지금 볼 수 없어요.<br>
+         <span class="memo">별점과 평가는 서버에 저장됩니다.</span></div>`;
+    $('r_head').textContent = '도시';
+    $('addcity').classList.add('hide');
+    drawOffbar(); return;
   }
   $('rateerr').classList.add('hide');
   await loadCities();
@@ -1733,6 +1745,21 @@ function heroHtml(photo, dd, title, memo, btn){
    하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
    중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
 async function loadHome(){
+  /* 홈은 서버에서 받아올 것이 많습니다 — 다음 여행, 평가할 곳, 발자국, 통계.
+     오프라인이면 그 중 하나도 못 옵니다. 하나씩 시간을 재며 실패하느니
+     **아예 안 물어보고** 바로 알립니다. 그게 훨씬 빠릅니다. */
+  if (!navigator.onLine){
+    $('home').innerHTML =
+      `<div class="card"><div class="empty" style="padding:26px 12px">
+         연결이 없어 홈은 지금 볼 수 없어요.<br>
+         <span class="memo">다음 여행 · 평가 · 발자국은 서버에서 가져옵니다.</span>
+         <div style="margin-top:16px">
+           <button class="primary" id="hometotrip">저장해둔 여행 보기</button></div>
+       </div></div>`;
+    $('hometotrip').onclick = () => showApp('trips');
+    drawOffbar();
+    return;
+  }
   try { await buildHome(); }
   catch (e){
     if ($('home').querySelector('.hero, .card, .rvbar')) return;   /* 이미 뭔가 그렸으면 둡니다 */
@@ -2531,6 +2558,9 @@ $('home').addEventListener('click', async e => {
 const UN_COUNTRIES = 195;   /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값 */
 
 async function loadFootprint(){
+  /* 발자국 숫자는 서버가 셉니다. 오프라인이면 그대로 둡니다 —
+     0 으로 덮으면 다녀온 곳이 사라진 것처럼 보입니다. */
+  if (!navigator.onLine) return;
   const { data, error } = await sb.rpc('my_footprint');
   if (error || !data) return;
   const f = data;
@@ -4351,6 +4381,12 @@ document.addEventListener('click', e => {
 });
 
 async function loadNotifs(){
+  /* 알림은 서버에만 있습니다. 오프라인이면 종 숫자도 못 셉니다. */
+  if (!navigator.onLine){
+    $('notifs').innerHTML = '<div class="empty">연결이 없어 알림은 지금 볼 수 없어요.</div>';
+    $('readall').classList.add('hide');
+    return;
+  }
   const { data, error } = await sb.from('notifications')
     .select('id,kind,body,created_at,read_at')
     .order('created_at', { ascending:false }).limit(30);
@@ -6914,10 +6950,14 @@ async function render(session){
   sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());
   /* 지난번에 못 보낸 저장이 남아 있을 수 있습니다. 켜자마자 흘려보냅니다. */
   drawOffbar(); flushQueue();
-  showApp('home');
+  /* 오프라인이면 홈이 어차피 "볼 수 없어요"입니다. 그럴 땐 여행 목록으로 엽니다 —
+     받아둔 일정이 거기 있습니다. 열자마자 쓸 수 있는 화면을 보여주는 것이 맞습니다. */
+  showApp(navigator.onLine ? 'home' : 'trips');
   /* 초대 링크로 들어왔으면 로그인 직후 그 여행으로 바로 보냅니다.
-     목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다. */
-  await handleJoin();
+     목록만 보여주면 어디로 가야 하는지 몰라 헤맵니다.
+     기다리지 않습니다 — 초대 코드가 없으면 아무 일도 안 하는데,
+     오프라인에서 이걸 기다리느라 첫 화면이 늦어졌습니다. */
+  handleJoin();
 }
 
 /* ── 키보드 ─────────────────────────────────────────────────────────
@@ -6981,10 +7021,15 @@ function storedSession(){
     return s?.access_token && s?.user ? s : null;
   } catch { return null; }
 }
-const session = await Promise.race([
-  sb.auth.getSession().then(r => r.data.session).catch(() => storedSession()),
-  new Promise(r => setTimeout(() => r(storedSession()), 3000)),
-]);
+/* 끊긴 걸 이미 아는 상태면 물어보지도 않습니다. 저장해 둔 것을 바로 씁니다.
+   3초를 기다렸다 캐시를 쓰나, 바로 캐시를 쓰나 결과가 같은데
+   앞의 3초는 화면이 멈춰 있는 시간입니다. 그게 "처음 열 때 느리다"의 정체였습니다. */
+const session = navigator.onLine
+  ? await Promise.race([
+      sb.auth.getSession().then(r => r.data.session).catch(() => storedSession()),
+      new Promise(r => setTimeout(() => r(storedSession()), 3000)),
+    ])
+  : storedSession();
 await render(session);
 sb.auth.onAuthStateChange((_e, s) => { render(s); });
 
