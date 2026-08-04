@@ -206,6 +206,21 @@ async function checkBuild(){
     const now = t.match(/id="build">(b\d+)</)?.[1];
     const mine = $('build')?.textContent.trim();
     if (!now || !mine || now === mine) return;
+
+    /* **새 파일이 다 받아진 뒤에만 새로고침합니다.**
+       전에는 번호만 보고 바로 새로고침했습니다. 그러면 새 index.html 은 받았는데
+       짝인 app.js 는 아직 없는 순간이 생기고, 그때 연결이 끊기면
+       화면이 통째로 안 뜹니다. 실제로 비행기모드에서 그렇게 됐습니다. */
+    const refs = [...t.matchAll(/(?:src|href)="((?:app|world)\.[a-z]+\?v=[^"]+)"/g)]
+      .map(m => './' + m[1]);
+    const box = await caches.open('t2-shell-v6').catch(() => null);
+    for (const u of refs){
+      if (box && await box.match(u)) continue;
+      const r = await fetch(u);          /* 못 받으면 여기서 던지고 새로고침 안 합니다 */
+      if (!r.ok) return;
+      if (box) await box.put(u, r.clone());
+    }
+
     /* 같은 번호로 두 번 새로고침하지 않습니다. 캐시가 아직 안 바뀌었으면
        무한히 돌 수 있습니다 — 그때는 다음에 열 때 따라잡습니다. */
     const k = 't2:reloaded:' + now;

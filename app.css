@@ -105,7 +105,8 @@ button:disabled{ opacity:.45; cursor:default; transform:none; }
 
 label{ display:block; font-size:calc(12px * var(--ts)); color:var(--dim); margin:14px 0 5px; }
 label:first-of-type{ margin-top:0; }
-input, select{
+/* textarea 를 빼먹어서 붙여넣기 칸이 좌우로 안 늘어나고 왼쪽에만 작게 붙어 있었습니다. */
+input, select, textarea{
   font-family:inherit; line-height:1.4;
   /* iOS 사파리는 글자가 16px 보다 작은 입력칸을 누르면 화면을 확대합니다.
      그러면 레이아웃이 통째로 깨져 보입니다. 16px 아래로는 안 내려갑니다. */
@@ -550,9 +551,13 @@ body.kbon .assheet{ padding-bottom:16px; }
 #aiview{ display:flex; flex-direction:column; }
 .aichat{ flex:1; display:flex; flex-direction:column; min-height:0; margin-bottom:0;
          /* 시트 안에서는 남는 높이를 다 씁니다. */ }
-/* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 flex 가
-   늘리려 해도 그 선에서 막혀 입력칸 아래가 비어 버립니다. 여기서 풀어줍니다. */
-.aichat #chat{ flex:1; overflow-y:auto; min-height:120px; max-height:none; }
+/* 스크롤은 **이 덩어리 하나**만 합니다. 대화·근거·제안 카드가 다 여기 들어 있습니다.
+   전에는 대화(#chat)만 스크롤됐고 제안 카드는 그 아래 붙어 있어서,
+   카드가 여덟 개 나오면 시트 밖으로 밀려나고 스크롤도 안 돼 먹통이 됐습니다. */
+.aichat .aiscroll{ flex:1; min-height:0; overflow-y:auto; }
+/* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 이 안에서
+   혼자 또 스크롤이 생겨 스크롤 상자가 둘이 됩니다. 여기서 풀어줍니다. */
+.aichat #chat{ flex:none; overflow:visible; min-height:120px; max-height:none; }
 .aichat .aibar{ margin-top:12px; }
 
 /* ── 첫 화면 ─────────────────────────────────────────────────────────
