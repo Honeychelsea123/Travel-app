@@ -5332,6 +5332,136 @@ function guessCat(text){
   return '';
 }
 
+/* ── 일정 불러오기 ──────────────────────────────────────────────────
+ * 이미 짜둔 일정을 손으로 옮겨 적는 것이 제일 귀찮은 일입니다.
+ * 사진·파일·붙여넣은 글 아무 것으로나 받아서 AI 가 읽고 카드로 만듭니다.
+ *
+ * **바로 저장하지 않습니다.** AI 가 잘못 읽을 수 있고, 남의 일정이 통째로
+ * 들어가면 되돌리기가 번거롭습니다. 카드로 보여주고 담는 것은 사용자가 합니다
+ * (담기·되돌리기는 AI 시트에 이미 있는 것을 그대로 씁니다).
+ *
+ * 엑셀(.xlsx)은 그대로 못 읽습니다. 압축된 XML 덩어리라 읽으려면 400KB 짜리
+ * 라이브러리를 붙여야 하는데, 표를 복사해서 붙여넣으면 탭으로 나뉜 글이 그대로
+ * 들어옵니다. 그게 더 빠르고 가볍습니다. */
+let impShots = [], impFiles = [];
+
+/* 엑셀은 압축된 XML 덩어리라 그냥은 못 읽습니다. 읽으려면 도구가 필요한데,
+   그걸 늘 받아두면 앱이 1MB 가까이 무거워집니다. 엑셀을 고른 순간에만 받습니다.
+   한 번 받으면 서비스워커가 담아둬서 다음부터는 비행기모드에서도 됩니다. */
+let xlsxLib = null;
+async function loadXlsx(){
+  if (xlsxLib) return xlsxLib;
+  await new Promise((ok, no) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = ok;
+    s.onerror = () => no(new Error('엑셀 읽는 도구를 못 받았어요. 연결을 확인해주세요.'));
+    document.head.appendChild(s);
+  });
+  xlsxLib = window.XLSX;
+  if (!xlsxLib) throw new Error('엑셀 읽는 도구를 못 받았어요.');
+  return xlsxLib;
+}
+
+/* 엑셀을 글자로 바꿉니다. 시트가 여럿이면 시트 이름을 붙여 이어 씁니다 —
+   "숙소" 시트와 "일정" 시트가 나뉘어 있는 파일이 흔합니다. */
+async function xlsxToText(file){
+  const X = await loadXlsx();
+  const wb = X.read(await file.arrayBuffer(), { type:'array' });
+  return wb.SheetNames.map(name =>
+    `[${name}]\n` + X.utils.sheet_to_csv(wb.Sheets[name])).join('\n\n').slice(0, 8000);
+}
+
+$('impbtn').addEventListener('click', () => {
+  $('importcard').classList.toggle('hide');
+  $('imperr').classList.add('hide');
+  if ($('importcard').classList.contains('hide')) return;
+  impShots = []; impFiles = [];
+  $('imp_text').value = '';
+  drawImpPicked();
+});
+$('imp_cancel').addEventListener('click', () => $('importcard').classList.add('hide'));
+$('imp_pick').addEventListener('click', () => $('imp_file').click());
+
+function drawImpPicked(){
+  $('imp_shots').classList.toggle('hide', !impShots.length);
+  $('imp_shots').innerHTML = impShots.map((s, i) =>
+    `<span class="shot1"><img src="${s.url}" alt="">
+       <button class="x" data-impx="${i}" aria-label="빼기">×</button></span>`).join('');
+  $('imp_files').classList.toggle('hide', !impFiles.length);
+  $('imp_files').textContent = impFiles.length
+    ? '파일 ' + impFiles.map(f => f.name).join(' · ') : '';
+}
+$('imp_shots').addEventListener('click', e => {
+  const b = e.target.closest('[data-impx]'); if (!b) return;
+  impShots.splice(+b.dataset.impx, 1); drawImpPicked();
+});
+
+$('imp_file').addEventListener('change', async e => {
+  const files = [...(e.target.files || [])];
+  e.target.value = '';
+  $('imperr').classList.add('hide');
+  for (const f of files){
+    if (f.type.startsWith('image/')){
+      if (impShots.length >= SHOT_MAX){ toast(`사진은 ${SHOT_MAX}장까지예요.`); continue; }
+      try { impShots.push(await fitJpeg(f)); } catch (err){ fail(err, 'imp'); }
+      continue;
+    }
+    if (/\.xlsx?$/i.test(f.name)){
+      toast('엑셀을 읽는 중…');
+      try { impFiles.push({ name: f.name, text: await xlsxToText(f) }); }
+      catch (err){ fail(err, 'imp'); }
+      continue;
+    }
+    if (/\.pdf$/i.test(f.name)){
+      fail('PDF 는 아직 못 읽어요. 화면을 캡처해서 사진으로 올려주세요.', 'imp');
+      continue;
+    }
+    /* 나머지는 글자 파일로 봅니다. CSV·TSV·메모장이 여기 들어옵니다. */
+    try {
+      const text = await f.text();
+      impFiles.push({ name: f.name, text: text.slice(0, 8000) });
+    } catch { fail(`${f.name} 을 읽지 못했어요.`, 'imp'); }
+  }
+  drawImpPicked();
+});
+
+$('imp_go').addEventListener('click', async () => {
+  const b = $('imp_go');
+  $('imperr').classList.add('hide');
+  const typed = $('imp_text').value.trim();
+  const fileText = impFiles.map(f => `[${f.name}]\n${f.text}`).join('\n\n');
+  const text = [typed, fileText].filter(Boolean).join('\n\n');
+  if (!text && !impShots.length)
+    return fail('사진이나 파일을 고르거나, 일정을 붙여넣어주세요.', 'imp');
+
+  b.disabled = true; b.textContent = '읽는 중…';
+  const { data, error } = await sb.functions.invoke('chat', {
+    body: { trip_id: trip.id, mode: 'import', message: text.slice(0, 8000),
+            images: impShots.map(s => ({ mime: s.mime, data: s.data })) },
+  });
+  b.disabled = false; b.textContent = '읽어오기';
+
+  if (error || data?.error){
+    let why = data?.error || error?.message || '';
+    try { why = (await error?.context?.json())?.error || why; } catch {}
+    return fail(why, 'imp');
+  }
+  if (!data.actions?.length)
+    return fail('일정을 못 찾았어요. 사진이 흐리거나 형식이 낯설 수 있어요.', 'imp');
+
+  /* 결과는 AI 시트에서 봅니다. 담기·되돌리기가 거기 이미 있습니다 —
+     여기서 또 만들면 두 벌이 되고 언젠가 한쪽만 고칩니다. */
+  $('importcard').classList.add('hide');
+  syncSheets();
+  openAi();
+  $('ai_trip').value = trip.id;
+  await loadChats(trip.id);
+  drawSources(data.sources, data.web);
+  drawCards(data);
+  toast(`${data.actions.length}개를 읽었어요. 확인하고 담아주세요.`);
+});
+
 /* ── 날씨 ───────────────────────────────────────────────────────────
  * open-meteo 는 키가 없어도 됩니다. 키를 받아 어딘가에 두는 순간
  * 그 키가 새는 걱정이 하나 늘어납니다.
@@ -5480,7 +5610,8 @@ $('days').addEventListener('click', e => {
  * 폼을 여는 자리가 여기저기라 부르는 쪽을 다 고치는 대신, 이 카드들이
  * 보이게 되는 순간을 지켜보다가 알아서 팝업으로 만듭니다.
  * 여는 쪽 코드는 그대로 두고 모양만 바뀝니다. */
-const SHEETS = ['plancard', 'card-cand', 'expcard', 'bookcard', 'editcard', 'newcard'];
+const SHEETS = ['plancard', 'card-cand', 'expcard', 'bookcard', 'editcard', 'newcard',
+                'importcard'];
 function syncSheets(){
   let any = false;
   for (const id of SHEETS){
@@ -5585,13 +5716,13 @@ $('trash').addEventListener('click', async e => {
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
 const TABS = {
-  plans: ['card-today', 'card-plans', 'card-cand', 'plancard'],
+  plans: ['card-today', 'card-plans', 'card-cand', 'plancard', 'importcard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
   prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
   mem:   ['card-mem', 'card-trash']
 };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
-const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand'];
+const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
 
 function showTab(t){
   tab = t;

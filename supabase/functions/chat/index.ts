@@ -187,6 +187,9 @@ Deno.serve(async (req) => {
     const { trip_id, message, mode, prefs, image, images } = body;
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
     const draft = mode === 'draft';
+    // 불러오기 — 이미 짜둔 일정(엑셀·사진·글)을 읽어 일정 카드로 만듭니다.
+    // 초안과 같은 자리를 씁니다. 둘 다 "날짜가 붙은 여러 개"를 내놓기 때문입니다.
+    const imp = mode === 'import';
 
     // 사진. 간판·메뉴판·티켓을 찍어 물어보는 자리입니다.
     // 화면에서 이미 긴 쪽 1024px JPEG 으로 줄여 보냅니다. 여기서는 크기만 다시 봅니다 —
@@ -214,13 +217,15 @@ Deno.serve(async (req) => {
 
     if (!draft && !shots.length && (!message || !String(message).trim()))
       return json({ error: '물어볼 말을 적어주세요.' }, 400);
-    if (draft && !trip_id)
+    if ((draft || imp) && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
+    if (imp && !shots.length && !String(message ?? '').trim())
+      return json({ error: '읽을 것이 없습니다.' }, 400);
 
     // ── 사용량 ── 서비스 키로만. 화면에서 건너뛸 수 없습니다.
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: take, error: takeErr } =
-      await admin.rpc('ai_take', { p_user: user.id, p_kind: draft ? 'draft' : 'chat' });
+      await admin.rpc('ai_take', { p_user: user.id, p_kind: draft ? 'draft' : imp ? 'import' : 'chat' });
     if (takeErr) return json({ error: takeErr.message }, 500);
     if (!take?.ok)
       return json({
@@ -292,7 +297,7 @@ Deno.serve(async (req) => {
     // 일정을 통째로 만들어 주는 자리입니다. 묻고 답하는 것과는 규칙이 다릅니다.
     // 하루를 꽉 채우지 않는 것, 한 동네로 묶는 것, 이동 시간을 세는 것이 핵심입니다.
     const days: string[] = [];
-    if (draft && tripRow) {
+    if ((draft || imp) && tripRow) {
       const d = new Date(tripRow.start_date + 'T00:00:00Z');
       const end = new Date(tripRow.end_date + 'T00:00:00Z');
       while (d <= end && days.length < 30) {
@@ -411,7 +416,53 @@ Deno.serve(async (req) => {
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
 
-    const contents = draft
+    // ── 불러오기 지시문 ──
+    // 여기서 제일 중요한 것은 **"Day 1" 을 실제 날짜로 바꾸는 것**입니다.
+    // 사람들이 짜둔 일정은 거의 다 Day 번호로 적혀 있는데, 우리는 실제 날짜로 저장합니다.
+    // 그 변환을 사람이 손으로 하면 옮겨 적는 것과 다를 바가 없습니다.
+    const importSystem = [
+      '너는 이미 짜여 있는 여행 일정을 읽어 옮겨 적는 조수다. 한국어로 쓴다.',
+      '',
+      '지켜야 할 것:',
+      '- **주어진 자료에 있는 것만 옮긴다.** 없는 일정을 지어내지 않는다.',
+      '  자료가 비었거나 일정이 아니면 actions 를 빈 배열로 둔다.',
+      '- "Day 1" · "1일차" · "첫째 날" 은 아래 [여행 날짜] 의 첫 번째 날이다.',
+      '  Day 2 는 두 번째 날, 이런 식으로 센다.',
+      '- 실제 날짜(9/12, 2026-09-12, 9월 12일)가 적혀 있으면 그것을 그대로 쓴다.',
+      '- 날짜를 알 수 없는 줄은 버리지 말고 첫날에 넣는다. 사용자가 옮기면 된다.',
+      '- 시각이 있으면 HH:MM 으로. 오전/오후·AM/PM 을 24시간으로 바꾼다.',
+      '  "점심"·"저녁"처럼 시각이 아닌 말은 시각으로 만들지 말고 null 로 둔다.',
+      '- 표에서는 장소 이름이 들어 있는 칸을 제목으로 쓴다.',
+      '  가격·메모·비고 칸은 memo 에 짧게 옮긴다.',
+      '- 숙소·항공편·기차도 일정이다. 분류를 숙소·이동으로 준다.',
+      '- 좌표는 확실히 아는 곳만. 모르면 null. 지어낸 좌표는 넣지 않는다.',
+      '- 같은 일정이 두 번 적혀 있으면 한 번만 낸다.',
+      '',
+      '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
+      '{',
+      '  "reply": "몇 개를 읽었는지, 애매했던 것이 있으면 무엇인지 두세 줄.",',
+      '  "actions": [',
+      '    { "type":"add_plan", "date":"YYYY-MM-DD", "start_time":"HH:MM" 또는 null,',
+      '      "title":"제목", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
+      '      "memo":"한 줄" 또는 null, "lat":숫자 또는 null, "lng":숫자 또는 null }',
+      '  ]',
+      '}',
+      '',
+      `[여행 날짜] ${days.join(', ')}`,
+      ctx ? '\n아래는 이 여행에 이미 들어 있는 자료다. 겹치는 것은 다시 내지 않는다.\n' + ctx
+          : '',
+    ].filter(Boolean).join('\n');
+
+    const contents = imp
+      ? [
+          { role: 'user', parts: [{ text: importSystem }] },
+          { role: 'model', parts: [{ text: '알겠습니다. 자료에 있는 것만 옮기겠습니다.' }] },
+          { role: 'user', parts: [
+              ...shots.map((s) => ({ inlineData: s })),
+              { text: '아래가 옮길 일정이다.\n\n' + String(message ?? '') },
+            ] },
+        ]
+      : draft
       ? [
           { role: 'user', parts: [{ text: draftSystem }] },
           { role: 'model', parts: [{ text: '알겠습니다. 날짜를 빠짐없이 채우겠습니다.' }] },
@@ -455,7 +506,7 @@ Deno.serve(async (req) => {
     const dayset = new Set(days);
     const inTrip = (d: string) => {
       if (typeof d !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
-      return draft ? dayset.has(d) : true;
+      return (draft || imp) ? dayset.has(d) : true;
     };
 
     // 좌표가 구간 중심에서 너무 멀면 버립니다.
@@ -487,7 +538,7 @@ Deno.serve(async (req) => {
 
     // 묻고 답할 때는 5개까지. 초안은 여행 전체를 채우므로 하루 6개까지 봐줍니다.
     const actions = (Array.isArray(out.actions) ? out.actions : [])
-      .slice(0, draft ? Math.max(6, days.length * 6) : 5)
+      .slice(0, (draft || imp) ? Math.max(6, days.length * 8) : 5)
       .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
       .filter((a) => a.type === 'add_plan' && inTrip(String(a.date)))
       .map((a) => ({
@@ -515,7 +566,7 @@ Deno.serve(async (req) => {
       web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
       used: take.used, limit: take.limit,
       // 어느 날이 비었는지는 화면에서 알려줍니다. 다시 짜달라고 할지 사용자가 정합니다.
-      days: draft ? days : undefined,
+      days: (draft || imp) ? days : undefined,
     });
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 500);
