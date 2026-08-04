@@ -605,8 +605,15 @@ $('login').addEventListener('click', async () => {
   $('login').disabled = true;
   /* 돌아올 주소를 명시합니다. Supabase 의 Redirect URLs 에 이 주소가
      등록돼 있어야 하고, 없으면 Site URL 로 튕겨 엉뚱한 데로 갑니다. */
+  /* **이메일만 받습니다.**
+     범위를 안 적으면 구글에 profile 까지 달라고 해서 이름과 프로필 사진이 딸려 옵니다.
+     그건 기본값이라 그랬을 뿐, 우리가 필요해서 요청한 게 아니었습니다.
+     이름은 본인이 정하고 사진도 본인이 올립니다 — 둘 다 앱 안에 이미 있습니다.
+     안 쓰는 남의 정보를 갖고 있을 이유가 없습니다. */
   const { error } = await sb.auth.signInWithOAuth({
-    provider:'google', options:{ redirectTo: location.origin + location.pathname }
+    provider:'google',
+    options:{ redirectTo: location.origin + location.pathname,
+              scopes: 'openid email' }
   });
   if (error){ $('login').disabled = false; fail(error); }
 });
@@ -7030,10 +7037,11 @@ async function render(session){
      이 질의들을 기다리느라 앱이 멈춰 있었습니다.
      먼저 아는 값(구글 계정 정보, 지난번 글자 크기)으로 그려두고,
      서버 값이 오면 그때 덮어씁니다. 안 와도 앱은 돕니다. */
-  $('name').textContent = meta.full_name || meta.name || (me.email || '').split('@')[0];
+  /* 구글에서 이름·사진을 안 받습니다(위 로그인 범위 참고).
+     처음에는 이메일 앞부분을 이름으로 씁니다. 본인이 바꾸면 그게 남습니다. */
+  $('name').textContent = (me.email || '').split('@')[0];
   applyTs(localStorage.getItem('t2:ts') || 1);
-  myAvatar = meta.avatar_url || meta.picture || '';
-  if (myAvatar) $('avatar').src = myAvatar;
+  myAvatar = '';
 
   sb.from('profiles').select('avatar_url,display_name').eq('id', me.id).maybeSingle()
     .then(r => {
