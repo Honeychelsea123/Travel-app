@@ -6599,6 +6599,10 @@ async function render(session){
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
   $('homebtn').classList.remove('hide');
+  /* 빌드 번호는 만든 사람만 봅니다. 앱 안에서는 아무도 자기를 관리자로 못 만듭니다 —
+     admins 표에 쓰기 정책이 아예 없어서 SQL 편집기로만 넣을 수 있습니다 (038). */
+  sb.rpc('is_admin').then(r => $('foot').classList.toggle('hide', r.data !== true))
+    .catch(() => {});
   /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
      여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
   sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());
