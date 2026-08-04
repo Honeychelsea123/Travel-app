@@ -36,6 +36,25 @@ self.addEventListener('activate', e => {
   })());
 });
 
+/* 아무것도 못 돌려줄 때 마지막으로 내보내는 쪽지.
+   빈 화면은 사용자가 할 수 있는 것이 아무것도 없습니다. */
+function offlineNote(){
+  return new Response(
+    `<!doctype html><html lang="ko"><head><meta charset="utf-8">
+     <meta name="viewport" content="width=device-width,initial-scale=1"><title>AI.Trip</title>
+     </head><body style="margin:0;background:#f5f5f7;
+       font:15px/1.6 -apple-system,'Apple SD Gothic Neo',sans-serif">
+     <div style="max-width:420px;margin:60px auto;padding:24px;background:#fff;
+       border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.10);text-align:center">
+       <b style="font-size:18px">아직 받아둔 화면이 없어요</b>
+       <p style="color:#6b6b70;margin:12px 0 18px">
+         연결이 되는 곳에서 한 번만 열면<br>그다음부터는 비행기모드에서도 열립니다.</p>
+       <button onclick="location.reload()" style="font:inherit;padding:11px 20px;
+         border:0;border-radius:999px;background:#0066cc;color:#fff">다시 시도</button>
+     </div></body></html>`,
+    { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
 /* 캐시가 무한정 커지지 않게 오래된 것부터 버립니다. */
 async function trim(cache, cap){
   const keys = await cache.keys();
@@ -115,7 +134,11 @@ self.addEventListener('fetch', e => {
           });
         const hit = await c.match('./index.html', { ignoreSearch:true });
         if (hit){ fresh().catch(() => {}); return hit; }
-        return await fresh();
+        /* 캐시에도 없고 네트워크도 안 되면 여기서 그냥 실패했습니다.
+           그러면 브라우저가 **빈 화면**을 냅니다 — 무슨 일인지 알 길이 없습니다.
+           실제로 그렇게 됐습니다. 마지막으로 이 쪽지라도 돌려줍니다. */
+        try { return await fresh(); }
+        catch { return offlineNote(); }
       })());
       return;
     }

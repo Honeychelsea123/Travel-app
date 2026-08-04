@@ -123,8 +123,27 @@ const cacheGet = k => { try { return JSON.parse(localStorage.getItem('t2:cache:'
 const cacheSet = (k, v) => { try { localStorage.setItem('t2:cache:' + k, JSON.stringify(v)); }
                              catch {} };   /* 용량이 차면 조용히 넘어갑니다 */
 
+/* ── 기다리다 멈추지 않게 ────────────────────────────────────────────
+ * 비행기모드에서 Supabase 요청이 **거절되지도 않고 그냥 매달립니다.**
+ * 제 코드는 "오류가 나면 캐시를 쓴다"였는데 오류가 안 나니 영원히 기다렸고,
+ * 화면이 "불러오는 중…"에 멈춰 있었습니다. 부팅이 14초 걸린 것도 같은 이유입니다.
+ *
+ * 그래서 시간을 끊습니다. 시간이 지나면 오류인 척 돌려주고,
+ * 아래 isOffline 이 그걸 연결 문제로 알아봐서 캐시로 넘어갑니다.
+ * 이미 끊긴 것을 아는 상태(navigator.onLine=false)면 더 짧게 끊습니다 —
+ * 어차피 안 올 것을 4초씩 기다릴 이유가 없습니다. */
+function netTimeout(p, ms){
+  const wait = ms ?? (navigator.onLine ? 4000 : 1200);
+  return Promise.race([
+    Promise.resolve(p).catch(error => ({ data:null, error })),
+    new Promise(r => setTimeout(
+      () => r({ data:null, error:{ message:'timeout · 응답이 없습니다' } }), wait)),
+  ]);
+}
+
 /* 네트워크가 끊겨서 실패한 것인지 가려냅니다.
-   supabase-js 는 연결이 안 되면 fetch 의 TypeError 를 그대로 던집니다. */
+   supabase-js 는 연결이 안 되면 fetch 의 TypeError 를 그대로 던집니다.
+   위 netTimeout 이 만들어 낸 'timeout' 도 같은 것으로 봅니다. */
 function isOffline(err){
   if (!navigator.onLine) return true;
   const m = String(err?.message || err || '');
@@ -480,8 +499,14 @@ async function loadCities(){
                'center_lat,center_lng';
   /* fame 은 성향 카드가 씁니다 (033). 없으면 그 판정만 건너뛰면 되므로
      아래 단계별 후퇴에서 제일 먼저 떨어져 나가게 둡니다. */
-  let cs = await sb.from('cities')
-    .select(BASE + ',image_url,summary,summary_url,fame').order('name');
+  let cs = await netTimeout(sb.from('cities')
+    .select(BASE + ',image_url,summary,summary_url,fame').order('name'));
+  /* 연결 문제로 실패한 것이면 아래 단계별 후퇴를 돌 이유가 없습니다.
+     세 번을 더 기다리면 그만큼 화면이 늦게 뜹니다. 바로 캐시로 갑니다. */
+  if (cs.error && isOffline(cs.error)){
+    const old = cacheGet('cities');
+    if (old){ useCities(old.cities, old.countries); drawOffbar(); return; }
+  }
   if (cs.error) cs = await sb.from('cities')
     .select(BASE + ',image_url,summary,summary_url').order('name');
   if (cs.error) cs = await sb.from('cities').select(BASE + ',image_url').order('name');
@@ -1709,10 +1734,10 @@ async function buildHome(){
     $('home').appendChild(b);
   };
 
-  let { data, error } = await sb.from('trips')
+  let { data, error } = await netTimeout(sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
     .gte('end_date', today)
-    .order('start_date').limit(1);
+    .order('start_date').limit(1));
   /* 다음 여행은 여행 중에 제일 보고 싶은 것입니다. 캐시로라도 보여줍니다. */
   if (error){
     data = cacheGet('nexttrip');
@@ -4417,7 +4442,7 @@ async function loadTrips(){
   else
     q = q.gte('end_date', today)
          .order('start_date', { ascending:true });
-  let { data, error } = await q;
+  let { data, error } = await netTimeout(q);
 
   /* 못 받아왔으면 지난번 목록을 씁니다. 여행 목록이 안 나오면 여행 중에
      일정으로 들어갈 길 자체가 없어집니다. */
@@ -4570,8 +4595,8 @@ function dayLabel(dateStr, t){
 }
 
 async function fetchTrip(id){
-  const { data, error } = await sb.from('trips')
-    .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle();
+  const { data, error } = await netTimeout(sb.from('trips')
+    .select('*, trip_members(user_id,role)').eq('id', id).maybeSingle());
   /* 여행 한 줄을 못 받으면 그 안으로 아예 못 들어갑니다 — 일정도 지출도 그 뒤입니다.
      캐시는 그 여행을 **한 번 열었을 때** 생깁니다. 비행기모드에서 목록에는 셋이 보이는데
      열어본 적 없는 것을 누르면 "여행을 열지 못했습니다"가 났습니다.
@@ -4734,12 +4759,12 @@ function bump(what){
  * 여행 하나가 여러 도시·나라를 도는 경우입니다.
  * 일정과 지출은 날짜로 저절로 구간에 붙습니다 — 하나하나 고를 필요가 없습니다. */
 async function loadLegs(){
-  const { data, error } = await sb.from('trip_legs')
+  const { data, error } = await netTimeout(sb.from('trip_legs')
     /* 도보 상수 둘을 빼먹어서 "도보 약 NaN분" 이 나왔습니다.
        travel() 이 쓰는 다섯 개를 다 가져와야 합니다. */
     .select('id,city_id,destination,country,start_date,end_date,timezone,currency,' +
             'walk_max_km,walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
-    .eq('trip_id', trip.id).order('start_date');
+    .eq('trip_id', trip.id).order('start_date'));
   /* 구간이 없으면 날짜 칩에 도시가 안 붙고 이동 시간도 못 잽니다. 캐시로 버팁니다. */
   const ck = 'legs:' + trip.id;
   if (error){
@@ -5056,11 +5081,11 @@ window.addEventListener('popstate', () => {
 
 async function loadPlans(){
   $('planerr').classList.add('hide');
-  const { data, error } = await sb.from('plans')
+  const { data, error } = await netTimeout(sb.from('plans')
     .select('id,date,start_time,end_time,category,title,memo,move_note,sort_order,lat,lng')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
-    .order('date').order('start_time', { nullsFirst:false }).order('sort_order');
+    .order('date').order('start_time', { nullsFirst:false }).order('sort_order'));
 
   /* 못 받아왔을 때 마지막으로 받아둔 것을 씁니다.
      여행 중에 데이터가 끊겼다고 일정이 빈 화면이 되면 안 됩니다.
@@ -6858,7 +6883,21 @@ if (window.visualViewport){
   }
 })();
 
-const { data:{ session } } = await sb.auth.getSession();
+/* 로그인 확인을 무한정 기다리지 않습니다.
+   오프라인에서 토큰이 만료돼 있으면 supabase 가 새로 받으러 나가는데,
+   그게 안 돌아와서 화면이 "불러오는 중…"에 멈춰 있었습니다.
+   3초 안에 답이 없으면 저장해 둔 로그인 정보를 그대로 씁니다 —
+   토큰이 낡았어도 화면은 캐시로 돌아가고, 연결되면 알아서 갱신됩니다. */
+function storedSession(){
+  try {
+    const s = JSON.parse(localStorage.getItem('t2-auth') || 'null');
+    return s?.access_token && s?.user ? s : null;
+  } catch { return null; }
+}
+const session = await Promise.race([
+  sb.auth.getSession().then(r => r.data.session).catch(() => storedSession()),
+  new Promise(r => setTimeout(() => r(storedSession()), 3000)),
+]);
 await render(session);
 sb.auth.onAuthStateChange((_e, s) => { render(s); });
 
