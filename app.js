@@ -615,11 +615,10 @@ function md(s){
 }
 
 function drawChats(rows){
+  /* 이름표를 떼고 좌우로 갈랐습니다. 누가 한 말인지 읽지 않아도 보입니다. */
   $('chat').innerHTML = rows.length
-    ? rows.map(m => `<div class="msg">
-        <b class="who" style="color:${m.role === 'user' ? 'var(--ink-48)' : 'var(--primary)'}">
-          ${m.role === 'user' ? '나' : 'AI'}</b>
-        <div class="txt">${md(m.content)}</div></div>`).join('')
+    ? rows.map(m => `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${
+        md(m.content)}</div>`).join('')
     : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
   $('chat').scrollTop = $('chat').scrollHeight;
   drawQasks();                     /* 대화가 생기면 빠른 질문은 물러납니다 */
@@ -720,7 +719,9 @@ $('ai_send').addEventListener('click', async () => {
   $('ai_msg').value = ''; $('cards').innerHTML = '';
   aiShot = null; drawShot();
   $('aisrc').classList.add('hide');
-  $('ai_send').disabled = true; $('ai_send').textContent = '…';
+  /* 글자를 갈아끼우면 안에 있는 비행기 그림이 사라집니다.
+     흐리게만 하고 그림은 그대로 둡니다. */
+  $('ai_send').disabled = true; $('ai_send').classList.add('sending');
 
   /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다.
      여행을 안 골랐으면 trip_id 를 비워 둡니다 — 그것도 남습니다 (029).
@@ -734,7 +735,7 @@ $('ai_send').addEventListener('click', async () => {
     { body: { trip_id: tripId || null, message: msg,
               image: shot ? { mime: shot.mime, data: shot.data } : undefined } });
 
-  $('ai_send').disabled = false; $('ai_send').textContent = '보내기';
+  $('ai_send').disabled = false; $('ai_send').classList.remove('sending');
 
   if (error){
     /* 함수가 오류를 내면 본문에 이유가 들어 있습니다. 그대로 보여줍니다. */
@@ -1977,26 +1978,32 @@ $('home').addEventListener('click', async e => {
     const cityId = wrap.dataset.city;
     const box = st.getBoundingClientRect();
     const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    /* 매긴 줄을 밀어내지 않고 그 자리에 둡니다.
-       예전에는 0.9초 뒤에 사라졌는데, 손이 미끄러져 4점을 3점으로 줘도
-       고칠 새가 없어서 기록 탭까지 가야 했습니다.
-       그대로 두면 다시 눌러 고칠 수 있습니다. 다음에 홈을 열면 없어집니다. */
+    if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
+    row.dataset.done = '1';
+
+    /* 별이 차는 것을 보여주고 밀어냅니다.
+       0.62초는 너무 짧았습니다 — 손이 미끄러져도 고칠 새가 없었습니다.
+       1.5초 두었다가 밀어냅니다. 그동안 다시 누르면 점수가 바뀝니다. */
     paintStars(wrap, v, true);
     markRated(row, v);
+    row.classList.add('rated');
     await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
 
-    /* 새 도시는 처음 매길 때 한 번만 붙입니다. 점수를 고칠 때마다 붙이면
-       목록이 계속 길어집니다. */
-    if (!row.dataset.done){
+    clearTimeout(row._go);                 /* 고쳐 누르면 시계를 다시 겁니다 */
+    row.dataset.done = '';
+    row._go = setTimeout(() => {
       row.dataset.done = '1';
-      row.classList.add('rated');
-      await fillQuiz();
-      const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-        .map(r => r.dataset.cityopen));
-      const nx = quizPool.find(c => !shown.has(c.id));
-      if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
-    }
+      row.classList.add('gone');
+      setTimeout(async () => {
+        row.remove();
+        await fillQuiz();
+        const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+          .map(r => r.dataset.cityopen));
+        const nx = quizPool.find(c => !shown.has(c.id));
+        if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
+      }, 280);
+    }, 1500);
     return;
   }
   const w = e.target.closest('#quizlist button[data-want]');
@@ -5253,20 +5260,25 @@ if (window.visualViewport){
   }
 }
 
-try {
-  const q = t => sb.from(t).select('*', { count:'exact', head:true });
-  const [co, ci, gr] = await Promise.all([q('countries'), q('cities'), q('transit_grades')]);
-  const bad = [co, ci, gr].find(r => r.error);
-  if (bad) throw bad.error;
-  mark(0, true, '연결됨');
-  mark(1, co.count >= 56 && ci.count >= 138 && gr.count === 4,
-        `${co.count} · ${ci.count} · ${gr.count}`);
-} catch (e) {
-  /* 시작할 때 도는 자체 점검입니다. 개발 중에 쓰려고 둔 것인데
-     실패하면 사용자 화면 맨 아래에 빨간 오류 상자가 계속 떠 있었습니다.
-     점검 줄에만 표시하고 화면은 건드리지 않습니다. */
-  mark(0, false, '실패: ' + (e?.message || e?.code || '알 수 없음'));
-}
+/* 자체 점검 세 질의. 개발 중에 보려고 둔 것입니다.
+   await 로 걸어두었더니 화면이 이것부터 기다렸습니다 —
+   프로필 맨 아래 점검 줄 때문에 앱 전체가 늦게 열리고 있었습니다.
+   결과는 늦게 채워도 아무 상관이 없으므로 붙잡지 않고 보냅니다. */
+(async () => {
+  try {
+    const q = t => sb.from(t).select('*', { count:'exact', head:true });
+    const [co, ci, gr] = await Promise.all([q('countries'), q('cities'), q('transit_grades')]);
+    const bad = [co, ci, gr].find(r => r.error);
+    if (bad) throw bad.error;
+    mark(0, true, '연결됨');
+    mark(1, co.count >= 56 && ci.count >= 138 && gr.count === 4,
+          `${co.count} · ${ci.count} · ${gr.count}`);
+  } catch (e) {
+    /* 실패해도 화면은 건드리지 않습니다. 점검 줄에만 적습니다 —
+       예전에는 빨간 오류 상자가 화면 맨 아래에 계속 떠 있었습니다. */
+    mark(0, false, '실패: ' + (e?.message || e?.code || '알 수 없음'));
+  }
+})();
 
 const { data:{ session } } = await sb.auth.getSession();
 await render(session);

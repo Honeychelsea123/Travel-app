@@ -673,11 +673,30 @@ body.sheeton{ overflow:hidden; }
         background:var(--parchment); padding:1px 8px; border-radius:var(--r-sm); }
 
 /* AI 대화 — 이 탭의 본체입니다. 짧아도 채팅창처럼 보이게 자리를 잡아둡니다. */
-#chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto; }
-.msg + .msg{ margin-top:var(--s-md); }
-.msg .who{ display:block; font-size:calc(12px * var(--ts)); margin-bottom:2px; }
-.msg .txt{ font-size:calc(15px * var(--ts)); line-height:1.6; word-break:break-word; }
-.msg .txt b{ font-weight:650; }
+/* 말풍선. 예전에는 "나 / AI" 라는 이름표를 붙이고 글만 흘렸는데,
+   누가 한 말인지 이름을 읽어야 알 수 있었습니다.
+   메신저처럼 좌우로 갈라두면 읽지 않아도 보입니다. */
+#chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto;
+       display:flex; flex-direction:column; gap:10px; }
+.msg{ max-width:82%; padding:10px 14px; border-radius:20px;
+      font-size:calc(15px * var(--ts)); line-height:1.6; word-break:break-word; }
+.msg b{ font-weight:650; }
+/* 내 말은 오른쪽에 파랑. 꼬리 쪽 모서리만 죽여 방향을 만듭니다. */
+.msg.me{ align-self:flex-end; background:var(--primary); color:#fff;
+         border-bottom-right-radius:7px; }
+.msg.ai{ align-self:flex-start; background:var(--pearl); color:var(--ink);
+         border:1px solid var(--divider-soft); border-bottom-left-radius:7px; }
+.msg.me a{ color:#fff; }
+/* 대화가 없을 때 안내문은 풍선이 아니라 가운데에 그대로 둡니다. */
+#chat .empty{ align-self:center; margin:auto 0; }
+
+/* 사진·보내기 단추. 글자 대신 그림이라 크기를 정사각으로 잡습니다. */
+.iconbtn{ flex:none; width:40px; height:40px; padding:0;
+          display:flex; align-items:center; justify-content:center; }
+.iconbtn svg{ width:20px; height:20px; }
+/* 보내는 동안. 글자를 갈아끼우면 그림이 사라지므로 깜빡이기만 합니다. */
+.iconbtn.sending svg{ animation:sending .9s ease-in-out infinite; }
+@keyframes sending{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
 .plan:first-child, .daysep:first-child{ padding-top:0; }
 
 /* 분류 색 — 도쿄 앱에서 옮겨왔습니다.
