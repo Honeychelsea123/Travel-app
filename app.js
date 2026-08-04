@@ -413,7 +413,7 @@ $('del_go').addEventListener('click', async () => {
   if ($('del_word').value.trim() !== DEL_WORD) return;
   const b = $('del_go');
   $('delerr').classList.add('hide');
-  b.disabled = true; b.textContent = '지우는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">지우는 중…</span>';
 
   const { data, error } = await sb.functions.invoke('delete-me',
     { body: { confirm: 'DELETE' } });
@@ -443,7 +443,7 @@ $('del_go').addEventListener('click', async () => {
 $('errbtn').addEventListener('click', async () => {
   const box = $('errlist'), btn = $('errbtn');
   if (!box.classList.contains('hide')){ box.classList.add('hide'); btn.textContent = '확인'; return; }
-  btn.disabled = true; btn.textContent = '보는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">보는 중…</span>';
   const { data, error } = await sb.from('client_errors')
     .select('created_at,build,message,source')
     .order('created_at', { ascending:false }).limit(20);
@@ -708,7 +708,7 @@ $('create').addEventListener('click', async () => {
   if (picked) row.city_id = picked.id;
   else        row.country = $('f_country').value;
 
-  btn.disabled = true; btn.textContent = '만드는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">만드는 중…</span>';
   const { error } = await sb.from('trips').insert(row);
   btn.disabled = false; btn.textContent = '만들기';
   if (error) return fail(error, 'form');
@@ -1208,7 +1208,7 @@ $('cards').addEventListener('click', async e => {
   /* ── 되돌리기 ── 진짜로 지우지 않고 숨깁니다. 다른 삭제와 같은 방식입니다. */
   if (e.target.id === 'undotake'){
     const u = e.target;
-    u.disabled = true; u.textContent = '되돌리는 중…';
+    u.disabled = true; u.innerHTML = '<span class="load">되돌리는 중…</span>';
     for (const t of lastTake)
       await sb.from(t.table).update({ deleted_at: new Date().toISOString() }).eq('id', t.id);
     lastTake = [];
@@ -1253,7 +1253,7 @@ $('cards').addEventListener('click', async e => {
 
   /* ── 한 장씩 ── */
   const b = e.target.closest('button[data-take]'); if (!b) return;
-  b.disabled = true; b.textContent = '담는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">담는 중…</span>';
   try {
     lastTake.push(await takeCard(b.dataset.take, +b.dataset.i, tripId));
   } catch (err){
@@ -2021,7 +2021,7 @@ const REPORT_RULES = [
 async function drawReport(id){
   $('rv_rate').classList.add('hide');
   $('rv_report').classList.remove('hide');
-  $('rv_report').innerHTML = '<div class="card"><div class="empty">만드는 중…</div></div>';
+  $('rv_report').innerHTML = '<div class="card"><div class="empty"><span class="load">만드는 중…</span></div></div>';
   window.scrollTo({ top:0 });
 
   const [t, lg, pl, ex, cr, pr] = await Promise.all([
@@ -2278,7 +2278,7 @@ async function shareReport(){
    AI 가 숫자를 다시 세면 틀립니다. 부를 때만 부르므로 횟수도 아낍니다. */
 async function askReportAi(id, f){
   const b = $('rv_askai');
-  b.disabled = true; b.textContent = '듣는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">듣는 중…</span>';
   const facts = [
     `여행 ${f.days}일, 다녀온 곳 ${rpt.spots}곳, 움직인 거리 ${rpt.km}km`,
     f.spend ? `쓴 돈 ${Math.round(f.spend).toLocaleString()}${f.cur}, 하루 평균 ${
@@ -3513,7 +3513,7 @@ $('d_go').addEventListener('click', async () => {
 
   /* 새 여행이면 먼저 만들고 그 여행에 짭니다. */
   if (draftTrip === 'new'){
-    $('d_go').textContent = '여행 만드는 중…';
+    $('d_go').innerHTML = '<span class="load">여행 만드는 중…</span>';
     const id = await makeDraftTrip();
     if (!id){ $('d_go').disabled = false; $('d_go').textContent = '일정 짜기'; return; }
     draftTrip = id;
@@ -3601,7 +3601,7 @@ function drawDraft(){
   $('d_drop').onclick = () => { dropDraft(draftTrip); showSavedDraft(); };
 
   $('d_apply').onclick = async () => {
-    $('d_apply').disabled = true; $('d_apply').textContent = '넣는 중…';
+    $('d_apply').disabled = true; $('d_apply').innerHTML = '<span class="load">넣는 중…</span>';
     const rows = acts.map(a => ({
       trip_id: draftTrip, date: a.date, start_time: a.start_time,
       title: a.title, category: a.category, memo: a.memo,
@@ -4005,7 +4005,7 @@ $('setback').addEventListener('click', () => showProfile(false));
 $('dumpbtn').addEventListener('click', async () => {
   const b = $('dumpbtn');
   $('dumperr').classList.add('hide');
-  b.disabled = true; b.textContent = '모으는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">모으는 중…</span>';
 
   /* 표마다 조건이 다르지 않습니다. RLS 가 이미 걸러 주므로 통째로 받습니다. */
   const TABLES = ['trips', 'trip_legs', 'trip_members', 'plans', 'expenses',
@@ -4911,7 +4911,7 @@ $('g_add').addEventListener('click', async () => {
   else     row.country = $('g_country').value;
 
   const btn = $('g_add');
-  btn.disabled = true; btn.textContent = '넣는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">넣는 중…</span>';
   const { data, error } = await sb.from('trip_legs').insert(row).select('id');
   btn.disabled = false; btn.textContent = '구간 넣기';
   if (error) return fail(error, 'leg');
@@ -5089,7 +5089,7 @@ $('e_save').addEventListener('click', async () => {
     return fail('예산을 숫자로 적어주세요. 비워두셔도 됩니다.', 'edit');
 
   const n = shiftDays();
-  btn.disabled = true; btn.textContent = '저장 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">저장 중…</span>';
 
   let up = await sb.from('trips')
     .update({ title, start_date: start, end_date: end, budget }).eq('id', trip.id)
@@ -5545,7 +5545,7 @@ $('imp_go').addEventListener('click', async () => {
   if (!text && !impShots.length)
     return fail('사진이나 파일을 고르거나, 일정을 붙여넣어주세요.', 'imp');
 
-  b.disabled = true; b.textContent = '읽는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">읽는 중…</span>';
   const { data, error } = await sb.functions.invoke('chat', {
     body: { trip_id: trip.id, mode: 'import', message: text.slice(0, 8000),
             images: impShots.map(s => ({ mime: s.mime, data: s.data })) },
@@ -5809,7 +5809,7 @@ async function loadTrash(){
 $('trash').addEventListener('click', async e => {
   const b = e.target.closest('[data-undel]'); if (!b) return;
   const [kind, id] = b.dataset.undel.split(':');
-  b.disabled = true; b.textContent = '되살리는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">되살리는 중…</span>';
   const r = await sb.from(TRASH_TABLE[kind])
     .update({ deleted_at: null }).eq('id', id).select('id');
   b.disabled = false; b.textContent = '되살리기';
@@ -6115,7 +6115,7 @@ function drawSettle(){
    과거 날짜는 그날 값을, 아직 안 나온 날짜는 가장 최근 값을 씁니다. */
 async function fillRates(){
   const btn = $('fxfill');
-  btn.disabled = true; btn.textContent = '채우는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">채우는 중…</span>';
   let ok = 0, fail_ = 0;
   for (const e of expenses.filter(x => x.amount_home == null)){
     const r = await rateOf(e.currency, trip.home_currency, e.date);
@@ -6194,7 +6194,7 @@ $('x_create').addEventListener('click', async () => {
                                  return fail('금액을 숫자로 적어주세요.', 'expform');
   if (!date)                     return fail('날짜를 골라주세요.', 'expform');
 
-  btn.disabled = true; btn.textContent = '넣는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">넣는 중…</span>';
   /* 쓴 날 환율을 여기서 못박습니다. 나중에 볼 때마다 새로 받아오면
      사람마다 정산 금액이 달라집니다. */
   const cur = $('x_cur').value;
@@ -6299,7 +6299,7 @@ $('b_create').addEventListener('click', async () => {
   const title = $('b_title').value.trim();
   if (!title) return fail('무엇을 예약했는지 적어주세요.', 'bookform');
 
-  btn.disabled = true; btn.textContent = '넣는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">넣는 중…</span>';
   const { data, error } = await sb.from('bookings').insert({
     trip_id: trip.id, kind: $('b_kind').value, title,
     ref: $('b_ref').value.trim() || null,
@@ -6385,7 +6385,7 @@ const PACK_SEED = [
 
 $('k_seed').addEventListener('click', async () => {
   const b = $('k_seed');
-  b.disabled = true; b.textContent = '넣는 중…';
+  b.disabled = true; b.innerHTML = '<span class="load">넣는 중…</span>';
   const rows = PACK_SEED.flatMap(([cat, items], gi) =>
     items.map((title, i) => ({ trip_id: trip.id, category: cat, title,
                                sort_order: gi * 100 + i })));
@@ -6578,7 +6578,7 @@ $('i_list').addEventListener('click', async e => {
 $('i_make').addEventListener('click', async () => {
   const btn = $('i_make');
   $('memerr').classList.add('hide');
-  btn.disabled = true; btn.textContent = '만드는 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="load">만드는 중…</span>';
   const { data, error } = await sb.from('trip_invites')
     .insert({ trip_id: trip.id, role: $('i_role').value })
     .select('code').maybeSingle();

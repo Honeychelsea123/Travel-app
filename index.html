@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b144">
+<link rel="stylesheet" href="app.css?v=b145">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -154,7 +154,7 @@
 
     <!-- 홈 -->
     <div id="homeview" class="hide">
-      <div id="home"><div class="empty">불러오는 중…</div></div>
+      <div id="home"><div class="empty"><span class="load">불러오는 중…</span></div></div>
     </div>
 
     <!-- 기록 -->
@@ -177,7 +177,7 @@
         <!-- 무엇으로 걸러 보고 있는지 여기 적습니다. 프로필에서 눌러 들어오면
              칩에는 표시가 안 나서 왜 목록이 짧은지 알 수가 없습니다. -->
         <h2 id="r_head">도시</h2>
-        <div id="ratelist"><div class="empty">불러오는 중…</div></div>
+        <div id="ratelist"><div class="empty"><span class="load">불러오는 중…</span></div></div>
 
         <!-- 세상의 도시를 다 넣을 수는 없습니다. 없으면 직접 넣습니다.
              나라는 목록에서 고릅니다 — 통화·언어·시간대가 거기 붙어 있습니다. -->
@@ -249,7 +249,7 @@
 
       <div class="card">
         <h2>여기서 뭘 했더라</h2>
-        <div id="cv_trips"><div class="empty">불러오는 중…</div></div>
+        <div id="cv_trips"><div class="empty"><span class="load">불러오는 중…</span></div></div>
       </div>
       <pre id="cverr" class="hide"></pre>
     </div>
@@ -358,7 +358,7 @@
       <div class="card hide" id="reviewcard">
         <h2><span class="grow">일정 검토</span>
           <button class="ghost" id="reviewclose">닫기</button></h2>
-        <div id="review"><div class="empty">불러오는 중…</div></div>
+        <div id="review"><div class="empty"><span class="load">불러오는 중…</span></div></div>
       </div>
 
       <!-- 채팅은 위가 흐르고 입력칸은 아래에 붙어 있어야 합니다.
@@ -368,7 +368,7 @@
              전에는 대화만 스크롤되고 제안 카드는 그 아래 붙어 있었습니다.
              카드가 여덟 개 나오니 시트 밖으로 밀려나 화면이 먹통이 됐습니다. -->
         <div class="aiscroll">
-          <div id="chat"><div class="empty">불러오는 중…</div></div>
+          <div id="chat"><div class="empty"><span class="load">불러오는 중…</span></div></div>
           <!-- 무엇을 보고 답했는지. 인터넷 검색이 아니라 이 앱의 자료 기준입니다. -->
           <div class="aisrc hide" id="aisrc"></div>
           <!-- AI 가 낸 제안. 담는 것은 사용자가 합니다 (문서 7장). -->
@@ -415,7 +415,7 @@
         <button class="day is-f on" data-f="up">다가오는</button>
         <button class="day is-f" data-f="past">다녀온</button>
       </div>
-      <div id="trips"><div class="empty">불러오는 중…</div></div>
+      <div id="trips"><div class="empty"><span class="load">불러오는 중…</span></div></div>
       <!-- 목록에서 난 오류는 여기 바로 뜹니다.
            페이지 맨 아래 오류 칸에 적으면 누른 사람 눈에 안 들어옵니다. -->
       <pre id="triperr" class="hide"></pre>
@@ -582,7 +582,7 @@
         <div class="card" style="padding:10px 12px">
           <button class="ghost" id="personaback" style="padding-left:0">← 프로필</button>
         </div>
-        <div id="personabox"><div class="empty">불러오는 중…</div></div>
+        <div id="personabox"><div class="empty"><span class="load">불러오는 중…</span></div></div>
       </div>
 
       <!-- 보관함 — 프로필의 숫자나 보관함을 누르면 여기서 펼칩니다.
@@ -604,7 +604,7 @@
               <button class="day" data-ssort="low">낮은순</button>
             </div>
           </div>
-          <div id="shelflist"><div class="empty">불러오는 중…</div></div>
+          <div id="shelflist"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         </div>
       </div>
 
@@ -706,7 +706,7 @@
           </div>
 
           <div id="delbox" class="hide" style="margin-top:14px">
-            <div id="delwhat"><div class="empty">무엇이 지워지는지 세는 중…</div></div>
+            <div id="delwhat"><div class="empty"><span class="load">무엇이 지워지는지 세는 중…</span></div></div>
 
             <div class="empty" style="text-align:left; padding:10px 0 0">
               지우기 전에 <b>내 자료 내려받기</b>를 한 번 해두시는 걸 권해요.
@@ -837,7 +837,7 @@
         <div class="days" id="days"></div>
         <!-- 분류로도 거릅니다. "밥 먹는 데만 보자"가 자주 있는 일입니다. -->
         <div class="days" id="cats" style="margin-top:6px"></div>
-        <div id="plans"><div class="empty">불러오는 중…</div></div>
+        <div id="plans"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="planerr" class="hide"></pre>
       </div>
 
@@ -883,7 +883,7 @@
              일정에 있는 것까지 같이 채웁니다. -->
         <button class="primary" id="geobtn" style="width:100%; margin-bottom:12px"></button>
         <div id="fits"></div>
-        <div id="cands"><div class="empty">불러오는 중…</div></div>
+        <div id="cands"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <div style="display:flex; gap:8px; margin-top:10px">
           <input id="c_title" placeholder="예: 판테온" maxlength="60" enterkeyhint="done">
           <button class="small" id="c_add" style="flex:none">담기</button>
@@ -900,7 +900,7 @@
         <h2><span class="grow">지출</span>
           <button class="small" id="addexpbtn">추가</button></h2>
         <div id="exptotal"></div>
-        <div id="expenses"><div class="empty">불러오는 중…</div></div>
+        <div id="expenses"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="experr" class="hide"></pre>
       </div>
 
@@ -960,7 +960,7 @@
       <div class="card" id="card-book">
         <h2><span class="grow">예약</span>
           <button class="small" id="addbookbtn">추가</button></h2>
-        <div id="bookings"><div class="empty">불러오는 중…</div></div>
+        <div id="bookings"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="bookerr" class="hide"></pre>
       </div>
 
@@ -1004,7 +1004,7 @@
           <span class="val" id="packcount"></span></h2>
         <!-- 몇 개 챙겼는지 한눈에. 다 채우는 맛이 있어야 계속 씁니다. -->
         <div class="fp hide" id="packbar"><i style="width:0%"></i></div>
-        <div id="packing"><div class="empty">불러오는 중…</div></div>
+        <div id="packing"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <div style="display:flex; gap:8px; margin-top:12px">
           <input id="k_title" placeholder="챙길 것" maxlength="60" enterkeyhint="done">
           <select id="k_cat" style="width:auto; flex:none; max-width:28%"></select>
@@ -1019,7 +1019,7 @@
 
       <div class="card" id="card-link">
         <h2>링크</h2>
-        <div id="links"><div class="empty">불러오는 중…</div></div>
+        <div id="links"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <div style="margin-top:12px">
           <input id="l_title" placeholder="이름 (예: 숙소 예약 확인)" maxlength="60">
           <div style="display:flex; gap:8px; margin-top:8px">
@@ -1034,7 +1034,7 @@
       <div class="card" id="card-mem">
         <h2><span class="grow">일행</span>
           <button class="small" id="invbtn">초대</button></h2>
-        <div id="members"><div class="empty">불러오는 중…</div></div>
+        <div id="members"><div class="empty"><span class="load">불러오는 중…</span></div></div>
 
         <div id="invitebox" class="hide" style="margin-top:12px">
           <label for="i_role">권한</label>
@@ -1073,7 +1073,7 @@
       <div class="card" id="card-trash">
         <h2><span class="grow">지운 것</span>
           <span class="val" id="trashcount"></span></h2>
-        <div id="trash"><div class="empty">불러오는 중…</div></div>
+        <div id="trash"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="trasherr" class="hide"></pre>
       </div>
 
@@ -1172,10 +1172,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b144</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b145</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b144"></script>
+<script type="module" src="app.js?v=b145"></script>
 </body>
 </html>
 
