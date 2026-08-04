@@ -1990,7 +1990,18 @@ async function drawReport(id){
 
   $('rv_home').onclick  = () => closeReview();
   $('rv_share').onclick = () => shareReport();
-  $('rv_img').onclick   = () => saveReportImage();
+  /* 이미지는 위 공유 카드와 같은 내용으로 뽑습니다 —
+     하루별 흐름과 AI 문단은 빠집니다. 그건 내가 볼 것이지 남에게 보일 것이 아닙니다. */
+  $('rv_img').onclick   = () => askImageSize({
+    g: rule.g, icon: REPORT_ICON[rule.ic] || PERSONA_ICON[rule.ic] || '',
+    title: label,
+    sub: `${T.destination || T.title || '여행'} · ${days - 1}박 ${days}일`,
+    nums: [spend ? won(spend) + cur : null, `${spots.length}곳`,
+           km ? `약 ${Math.round(km)}km` : null].filter(Boolean).join(' · '),
+    note: foodPct ? `식비 ${foodPct}%` : '',
+    listTitle: five.length ? '★5를 준 곳' : '',
+    list: five.slice(0, 3),
+  }, 'aitrip-리포트');
   $('rv_askai').onclick = () => askReportAi(id, { label, defLine, dayRows, hard,
                                                   spend, cur, days, top, pricey, psr });
 }
@@ -2016,59 +2027,6 @@ async function shareReport(){
   }
   try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('복사했어요'); }
   catch { toast(text); }
-}
-
-/* 이미지 저장. 밖에서 라이브러리를 받아오지 않고 캔버스에 직접 그립니다 —
-   비행기모드에서도 되고 파일도 안 무거워집니다. */
-async function saveReportImage(){
-  if (!rpt) return;
-  const W = 1080, H = 1350, s = 1;
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const g = cv.getContext('2d');
-
-  const grd = g.createLinearGradient(0, 0, W, H);
-  grd.addColorStop(0, '#4b6cff'); grd.addColorStop(.55, '#7b4dff'); grd.addColorStop(1, '#a13cff');
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
-
-  const F = (w, px) => `${w} ${px}px -apple-system, "Malgun Gothic", sans-serif`;
-  g.fillStyle = '#fff'; g.textAlign = 'center';
-
-  g.font = F(700, 84); g.fillText(rpt.dest || rpt.title || '여행', W/2, 250);
-  g.font = F(400, 34); g.globalAlpha = .9;
-  g.fillText(`${rpt.from} – ${rpt.to} · ${rpt.days}일`, W/2, 305);
-  g.globalAlpha = 1;
-
-  const nums = [
-    [rpt.spend ? Math.round(rpt.spend).toLocaleString() : '–', '쓴 돈'],
-    [rpt.spots + '곳', '다녀온 곳'],
-    [rpt.km ? rpt.km + 'km' : '–', '움직인 거리'],
-  ];
-  nums.forEach(([b, k], i) => {
-    const x = W/2 + (i - 1) * 320;
-    g.font = F(700, 62); g.fillText(b, x, 560);
-    g.font = F(400, 30); g.globalAlpha = .85; g.fillText(k, x, 615); g.globalAlpha = 1;
-  });
-
-  g.font = F(700, 60); g.fillText(`"${rpt.label}"`, W/2, 830);
-  if (rpt.defLine){
-    g.font = F(400, 30); g.globalAlpha = .88;
-    g.fillText(rpt.defLine, W/2, 890); g.globalAlpha = 1;
-  }
-  g.font = F(600, 30); g.globalAlpha = .72; g.fillText('AI.Trip', W/2, H - 90);
-  g.globalAlpha = 1;
-
-  const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
-  const file = new File([blob], 'trip-report.png', { type:'image/png' });
-  /* 휴대폰은 이미지를 바로 공유창에 넘길 수 있습니다. 안 되면 내려받습니다. */
-  if (navigator.canShare?.({ files:[file] })){
-    try { await navigator.share({ files:[file], title:'여행 리포트' }); return; }
-    catch (e){ if (e?.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = 'trip-report.png';
-  a.click(); URL.revokeObjectURL(a.href);
-  toast('이미지를 저장했어요');
 }
 
 /* AI 한마디. 계산해 둔 사실만 넘기고 문장만 받습니다 —
@@ -2377,15 +2335,23 @@ async function loadFootprint(){
  */
 
 /* 유형군마다 배경이 다릅니다. 색만으로도 카드가 살아납니다 —
-   캐릭터 그림을 스무 장 뽑으면 화풍이 제각각이 되는데 색은 안 그렇습니다. */
-const PERSONA_BG = {
-  start: 'linear-gradient(160deg,#9aa0a6,#6f7378)',      /* 시작 단계 — 연한 회색 */
-  rare:  'linear-gradient(160deg,#2b3a67,#6b4fa8)',      /* 특이한 유형 — 남색→보라 */
-  deep:  'linear-gradient(160deg,#1f6f4a,#2c7d58)',      /* 파고드는 유형 — 진한 초록 */
-  taste: 'linear-gradient(160deg,#c2681f,#e0913a)',      /* 별점 성향 — 주황 */
-  size:  'linear-gradient(160deg,#a8801f,#d4af37)',      /* 규모 — 금색 */
-  plan:  'linear-gradient(160deg,#2f7ec2,#5aa9e6)',      /* 계획 성향 — 하늘색 */
+   캐릭터 그림을 스무 장 뽑으면 화풍이 제각각이 되는데 색은 안 그렇습니다.
+ *
+ * 색을 두 벌로 적어두면(화면용 CSS 와 이미지용 캔버스) 한쪽만 고치는 사고가 납니다.
+ * 여기 한 번만 적고 양쪽에서 꺼내 씁니다. */
+const GRAD = {
+  start: ['#9aa0a6', '#6f7378'],      /* 시작 단계 — 연한 회색 */
+  rare:  ['#2b3a67', '#6b4fa8'],      /* 특이한 유형 — 남색→보라 */
+  deep:  ['#1f6f4a', '#2c7d58'],      /* 파고드는 유형 — 진한 초록 */
+  taste: ['#c2681f', '#e0913a'],      /* 별점 성향 — 주황 */
+  size:  ['#a8801f', '#d4af37'],      /* 규모 — 금색 */
+  plan:  ['#2f7ec2', '#5aa9e6'],      /* 계획 성향 — 하늘색 */
+  spend: ['#b0533f', '#d4784f'],      /* 리포트 · 지출 — 붉은 주황 */
+  speed: ['#1f6f7a', '#2f9aa8'],      /* 리포트 · 속도 — 청록 */
+  even:  ['#4a5568', '#6b7688'],      /* 리포트 · 기본 — 무채색 */
 };
+const cssGrad = g => `linear-gradient(160deg,${(GRAD[g] || GRAD.even).join(',')})`;
+const PERSONA_BG = Object.fromEntries(Object.keys(GRAD).map(k => [k, cssGrad(k)]));
 
 /* 아이콘은 선 하나로 통일합니다. 굵기 2px 고정, 둥근 끝, 흰색 단색.
    작아져도 안 뭉개지고 유형이 스무 개로 늘어도 화풍이 안 흔들립니다. */
@@ -2420,15 +2386,9 @@ const PERSONA_ICON = {
   bolt:   '<path d="M13 3 6 13.5h5L11 21l7-10.5h-5z"/>',
 };
 
-/* 여행 리포트 카드도 같은 부품을 씁니다. 유형군만 다릅니다 —
+/* 여행 리포트 카드도 같은 부품과 같은 색표를 씁니다 —
    둘이 한 벌로 보여야 나란히 올렸을 때 같은 앱에서 나온 것으로 읽힙니다. */
-const REPORT_BG = {
-  rare:  'linear-gradient(160deg,#2b3a67,#6b4fa8)',   /* 특이한 결과 */
-  spend: 'linear-gradient(160deg,#b0533f,#d4784f)',   /* 지출 성향 — 붉은 주황 */
-  speed: 'linear-gradient(160deg,#1f6f7a,#2f9aa8)',   /* 속도 — 청록 */
-  taste: 'linear-gradient(160deg,#8a4a70,#c2688f)',   /* 취향 — 자주 */
-  even:  'linear-gradient(160deg,#4a5568,#6b7688)',   /* 기본 — 무채색 */
-};
+const REPORT_BG = PERSONA_BG;
 const REPORT_ICON = {
   fork:   '<path d="M7 3v7a2.5 2.5 0 0 0 5 0V3"/><path d="M9.5 10v11"/>' +
           '<path d="M17.5 3c-1.4 1.6-2 3.4-2 5.5 0 1.6.7 2.5 2 2.5V21"/>',
@@ -2450,6 +2410,191 @@ const REPORT_ICON = {
   camera: '<rect x="3" y="7" width="18" height="13" rx="2.5"/>' +
           '<circle cx="12" cy="13.5" r="3.6"/><path d="M8.5 7l1.4-2.5h4.2L15.5 7"/>',
 };
+
+/* ── 카드를 이미지로 ─────────────────────────────────────────────────
+ * 밖에서 라이브러리를 받아오지 않고 캔버스에 직접 그립니다 —
+ * 비행기모드에서도 되고, 남의 서버가 멈춰도 안 멈춥니다.
+ *
+ * **한글 폰트 함정.** 캔버스는 웹폰트가 다 내려오기 전에 그리면 글자를 네모로 찍습니다.
+ * 화면에는 멀쩡히 보이는데 저장한 파일만 깨져서 알아채기도 어렵습니다.
+ * 그래서 쓸 굵기·크기를 하나씩 load() 로 부르고 fonts.ready 까지 기다립니다.
+ * 그래도 안 오면 기기 기본 글꼴로 그립니다 — 네모보다는 낫습니다. */
+const IMG_SIZES = {
+  square: { w:1080, h:1080, ko:'정사각 (1080×1080)' },   /* 인스타 피드 */
+  story:  { w:1080, h:1920, ko:'스토리 (1080×1920)' },   /* 인스타·카톡 스토리 */
+};
+
+let fontReady = null;
+async function ensureFont(){
+  if (fontReady) return fontReady;
+  fontReady = (async () => {
+    if (!document.fonts) return false;
+    /* 쓸 조합을 다 불러둡니다. 하나라도 빠지면 그 크기만 네모가 됩니다. */
+    const want = [[700,120],[700,86],[700,64],[600,40],[400,44],[400,34],[600,30]];
+    try {
+      await Promise.all(want.map(([w, px]) =>
+        document.fonts.load(`${w} ${px}px Pretendard`, '가나다 ABC 123 ★')));
+      await document.fonts.ready;
+      return document.fonts.check('700 86px Pretendard', '가나다');
+    } catch { return false; }
+  })();
+  return fontReady;
+}
+
+/* 선 아이콘을 캔버스에 얹습니다. SVG 를 그림으로 만들어 그리면
+   화면에 쓰는 것과 **같은 좌표**를 그대로 씁니다 — 두 벌로 관리하지 않습니다. */
+function iconImage(paths, px){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${px}"
+    height="${px}" fill="none" stroke="#fff" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+  return new Promise(ok => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => ok(null);          /* 아이콘이 없어도 카드는 나와야 합니다 */
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
+/* 긴 문구를 폭에 맞춰 접습니다. 한국어는 단어 사이를 띄우지 않는 경우가 많아
+   띄어쓰기로만 접으면 한 줄이 넘칩니다. 넘치면 글자 단위로 한 번 더 접습니다. */
+function wrapText(g, text, max){
+  const out = [];
+  for (const word of String(text).split(/\s+/)){
+    if (!out.length){ out.push(word); continue; }
+    const t = out[out.length - 1] + ' ' + word;
+    if (g.measureText(t).width <= max) out[out.length - 1] = t;
+    else out.push(word);
+  }
+  const fixed = [];
+  for (const line of out){
+    if (g.measureText(line).width <= max){ fixed.push(line); continue; }
+    let cur = '';
+    for (const ch of line){
+      if (g.measureText(cur + ch).width > max && cur){ fixed.push(cur); cur = ''; }
+      cur += ch;
+    }
+    if (cur) fixed.push(cur);
+  }
+  return fixed;
+}
+
+/* 카드 하나를 그림 파일로. 화면 카드와 같은 내용, 같은 색, 같은 아이콘입니다. */
+async function cardImage(spec, mode = 'square'){
+  const { w:W, h:H } = IMG_SIZES[mode] || IMG_SIZES.square;
+  const ok = await ensureFont();
+  const fam = ok ? '"Pretendard", -apple-system, sans-serif'
+                 : '-apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
+  const F = (weight, px) => `${weight} ${px}px ${fam}`;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+
+  const [c1, c2] = GRAD[spec.g] || GRAD.even;
+  const grd = g.createLinearGradient(0, 0, W * .45, H);
+  grd.addColorStop(0, c1); grd.addColorStop(1, c2);
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+
+  g.textAlign = 'center'; g.fillStyle = '#fff';
+  const cx = W / 2, pad = 96, maxW = W - pad * 2;
+
+  /* 그릴 것을 먼저 줄 단위로 만들어 높이를 잰 다음, 그 덩어리를 가운데에 놓습니다.
+     위에서부터 그냥 쌓으면 내용이 짧을 때 아래가 텅 빕니다 —
+     특히 세로로 긴 스토리에서 심하게 티가 납니다. */
+  const items = [];
+  const add = (h, draw) => items.push({ h, draw });
+
+  if (spec.sub) add(84, y => {
+    g.font = F(600, 38); g.globalAlpha = .85;
+    g.fillText(spec.sub, cx, y + 38); g.globalAlpha = 1;
+  });
+
+  const icon = await iconImage(spec.icon || '', 176);
+  if (icon) add(176 + 56, y => g.drawImage(icon, cx - 88, y, 176, 176));
+
+  g.font = F(700, 86);
+  const lines = wrapText(g, spec.title, maxW);
+  add(lines.length * 108 + 20, y => {
+    g.font = F(700, 86);
+    lines.forEach((line, i) => g.fillText(line, cx, y + 82 + i * 108));
+  });
+
+  if (spec.nums) add(70, y => {
+    g.font = F(400, 44); g.globalAlpha = .92;
+    g.fillText(spec.nums, cx, y + 44); g.globalAlpha = 1;
+  });
+  if (spec.note) add(58, y => {
+    g.font = F(400, 34); g.globalAlpha = .75;
+    g.fillText(spec.note, cx, y + 34); g.globalAlpha = 1;
+  });
+
+  if (spec.list?.length){
+    const list = spec.list.slice(0, 3);
+    add(44 + 52 + list.length * 62, y => {
+      g.font = F(600, 30); g.globalAlpha = .7;
+      g.fillText(spec.listTitle || '', cx, y + 74); g.globalAlpha = 1;
+      g.font = F(400, 44);
+      list.forEach((item, i) =>
+        g.fillText(wrapText(g, item, maxW)[0], cx, y + 140 + i * 62));
+    });
+  }
+
+  const total = items.reduce((s, it) => s + it.h, 0);
+  /* 정확히 한가운데보다 조금 위가 안정적으로 보입니다.
+     아래에 앱 이름이 들어가서 시각적 무게가 그쪽에 조금 더 실립니다. */
+  let y = Math.max(pad, (H - total) / 2 - H * 0.04);
+  for (const it of items){ it.draw(y); y += it.h; }
+
+  /* 앱 이름은 구석에 작게. 크게 넣으면 광고처럼 보입니다.
+     보는 사람이 궁금해서 찾아오는 정도면 충분합니다. */
+  g.font = F(600, 30); g.globalAlpha = .6;
+  g.fillText('AI.Trip', cx, H - 84); g.globalAlpha = 1;
+
+  return { blob: await new Promise(r => cv.toBlob(r, 'image/png')), fontOk: ok };
+}
+
+/* 저장하거나 공유합니다. 휴대폰은 공유창으로 넘기는 편이 훨씬 빠릅니다 —
+   내려받기 폴더를 찾아 들어갈 필요가 없습니다. */
+async function saveCardImage(spec, mode, name){
+  toast('이미지 만드는 중…');
+  const { blob, fontOk } = await cardImage(spec, mode);
+  const file = new File([blob], name + '.png', { type:'image/png' });
+  if (navigator.canShare?.({ files:[file] })){
+    try { await navigator.share({ files:[file], title: spec.title }); return; }
+    catch (e){ if (e?.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(fontOk ? '이미지를 저장했어요' : '저장했어요. (글꼴을 못 받아 기본 글꼴로 그렸어요)');
+}
+
+/* 어느 크기로 뽑을지 묻습니다. 피드와 스토리는 비율이 아주 달라서
+   하나로 뽑아두면 한쪽은 잘리거나 여백이 크게 남습니다. */
+function askImageSize(spec, name){
+  const box = document.createElement('div');
+  box.className = 'card assheet';
+  box.style.cssText = 'position:fixed; left:0; right:0; bottom:0; z-index:1210';
+  box.innerHTML = `<h2>어떤 크기로 저장할까요?</h2>` +
+    Object.entries(IMG_SIZES).map(([k, v]) =>
+      `<button class="small" data-size="${k}"
+               style="width:100%; margin-bottom:8px">${esc(v.ko)}</button>`).join('') +
+    `<button class="ghost" data-size="" style="width:100%">닫기</button>`;
+  document.body.appendChild(box);
+  $('sheetbg').classList.remove('hide');
+  const shut = () => { box.remove(); $('sheetbg').classList.add('hide');
+                       $('sheetbg').removeEventListener('click', shut); };
+  /* 뒤를 눌러도 닫혀야 합니다. 이 시트는 코드에서 만든 것이라
+     syncSheets 가 모릅니다 — 안 달아두면 뒷판만 걷히고 시트가 남습니다. */
+  $('sheetbg').addEventListener('click', shut);
+  box.addEventListener('click', async e => {
+    const b = e.target.closest('[data-size]'); if (!b) return;
+    const k = b.dataset.size;
+    shut();
+    if (k) await saveCardImage(spec, k, name);
+  });
+}
 
 /* 평생 누적 값. 별점을 매긴 도시만 셉니다 — "가보고 싶어요"는 간 곳이 아닙니다. */
 function personaStats(rows){
@@ -2635,6 +2780,11 @@ function drawPersona(s){
       <div class="pbrand">AI.Trip</div>
     </div>
 
+    <div style="display:flex; gap:8px; margin-bottom:var(--s-sm)">
+      <button class="small" id="p_img" style="flex:1">이미지로 저장</button>
+      <button class="small" id="p_share" style="flex:1">공유</button>
+    </div>
+
     <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
     <div class="card">
@@ -2657,6 +2807,28 @@ function drawPersona(s){
         AI 가 아니라 위 숫자로만 정합니다. 같은 기록이면 언제 봐도 같은 결과예요.
       </div>
     </div>`;
+
+  /* 이미지와 공유는 화면 카드와 **같은 내용**을 넘깁니다.
+     따로 만들면 언젠가 한쪽만 고쳐서 둘이 어긋납니다. */
+  const spec = {
+    g: p.g, icon: PERSONA_ICON[p.ic] || '',
+    title: p.title,
+    nums: `${s.countries}개국 · ${s.cities}도시`,
+    note: conts.map(([k, n]) => `${k} ${n}`).join(' · '),
+    listTitle: s.best.length ? '가장 좋았던 곳' : '',
+    list: s.best.map(b => `${b.name} ★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}`),
+  };
+  $('p_img').onclick = () => askImageSize(spec, 'aitrip-성향');
+  $('p_share').onclick = async () => {
+    const text = `내 여행 성향: ${p.title}\n${spec.nums}${
+      spec.note ? '\n' + spec.note : ''}`;
+    const url = location.origin + location.pathname;
+    if (navigator.share){
+      try { await navigator.share({ title:'내 여행 성향', text, url }); return; }
+      catch (e){ if (e?.name === 'AbortError') return; }
+    }
+    toast(await copyText(`${text}\n${url}`) ? '복사했어요' : text);
+  };
 }
 
 /* ── 후보와 빈 시간 ──────────────────────────────────────────────────
