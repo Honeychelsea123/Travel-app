@@ -67,7 +67,8 @@ function fail(e, where){
                 exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
                 book:$('bookerr'), bookform:$('bookformerr'),
                 pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), dump:$('dumperr'), cand:$('canderr'),
-                draft:$('drafterr'), trash:$('trasherr'), nf:$('nferr') }[where] || $('err');
+                draft:$('drafterr'), trash:$('trasherr'), nf:$('nferr'),
+                del:$('delerr') }[where] || $('err');
   if (!where) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
@@ -252,36 +253,120 @@ addEventListener('unhandledrejection', e => {
  *
  * 나중에 잠금화면 알림(푸시)을 붙일 때 이 스위치들을 그대로 씁니다 —
  * "무엇을 알릴지"는 여기서 정하고, 그때는 "어떻게 받을지" 하나만 더 붙입니다. */
-const NF_KEYS = ['notify_all', 'notify_expense', 'notify_member', 'notify_depart'];
-const nfBox = k => $('nf_' + k.replace('notify_', ''));
-
+/* 처음엔 종류별로 셋을 두었는데 알림이 셋뿐이라 설정이 알림보다 복잡했습니다.
+   스위치 하나로 줄였습니다. **표의 종류별 칸(035)은 그대로 둡니다** —
+   기본값이 켬이라 전체 스위치만 보면 되고, 나중에 다시 나누고 싶으면
+   화면만 붙이면 됩니다. 안 쓰는 칸을 지우려고 마이그레이션을 또 돌릴 이유가 없습니다. */
 async function loadNotifPrefs(){
   const { data, error } = await sb.from('user_prefs')
-    .select(NF_KEYS.join(',')).eq('user_id', me.id).maybeSingle();
+    .select('notify_all').eq('user_id', me.id).maybeSingle();
   /* 035 를 아직 안 올렸으면 칸이 없어서 질의가 실패합니다.
      그때는 설정 카드를 아예 숨깁니다 — 눌러도 저장이 안 되는 스위치를 두면 안 됩니다. */
   if (error){ $('notifprefcard').classList.add('hide'); return; }
   $('notifprefcard').classList.remove('hide');
-  for (const k of NF_KEYS) nfBox(k).checked = data ? data[k] !== false : true;
-  syncNfKinds();
-}
-function syncNfKinds(){
-  $('nf_kinds').classList.toggle('off', !$('nf_all').checked);
+  $('nf_all').checked = data ? data.notify_all !== false : true;
 }
 
 $('notifprefcard').addEventListener('change', async e => {
-  if (!e.target.matches('#nf_all, #nf_expense, #nf_member, #nf_depart')) return;
+  if (e.target.id !== 'nf_all') return;
   $('nferr').classList.add('hide');
-  syncNfKinds();
-  const row = { user_id: me.id };
-  for (const k of NF_KEYS) row[k] = nfBox(k).checked;
+  const on = $('nf_all').checked;
   /* 설정 줄이 아직 없는 계정도 있어서 upsert 로 넣습니다. */
   const r = await sb.from('user_prefs')
-    .upsert(row, { onConflict:'user_id' }).select('user_id');
-  if (r.error) return fail(r.error, 'nf');
-  if (!r.data?.length) return fail('저장되지 않았어요 (0건).', 'nf');
-  toast($('nf_all').checked ? '알림 설정을 저장했어요' : '알림을 모두 껐어요');
+    .upsert({ user_id: me.id, notify_all: on }, { onConflict:'user_id' })
+    .select('user_id');
+  if (r.error){ $('nf_all').checked = !on; return fail(r.error, 'nf'); }
+  if (!r.data?.length){ $('nf_all').checked = !on;
+                        return fail('저장되지 않았어요 (0건).', 'nf'); }
+  toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
   loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
+});
+
+/* ── 탈퇴 ───────────────────────────────────────────────────────────
+ * 이메일·이름·사진을 모으고 있으니 지울 길이 반드시 있어야 합니다.
+ *
+ * 세 가지를 지킵니다.
+ *   1. **무엇이 지워지는지 누르기 전에 보여줍니다.** "정말요?"만 묻고 실행하면
+ *      무엇을 잃는지 모른 채 누르게 됩니다.
+ *   2. **글자를 적게 합니다.** 버튼 두 번으로 계정이 사라지면 안 됩니다.
+ *   3. **일행이 있는 여행은 안 지웁니다.** 내 계정 하나 지우자고 남의 일정을
+ *      없앨 수는 없습니다. 나만 빠지고 주인이면 다음 사람에게 넘깁니다.
+ */
+const DEL_WORD = '탈퇴합니다';
+
+$('delbtn').addEventListener('click', async () => {
+  const box = $('delbox');
+  if (!box.classList.contains('hide')){ box.classList.add('hide'); return; }
+  box.classList.remove('hide');
+  $('delerr').classList.add('hide');
+  $('del_word').value = ''; $('del_go').disabled = true;
+
+  const { data, error } = await sb.rpc('delete_preview');
+  if (error){
+    /* 036 을 아직 안 올렸으면 함수가 없습니다. 세는 것만 건너뛰고 나머지는 그대로. */
+    $('delwhat').innerHTML =
+      `<div class="empty" style="text-align:left">무엇이 지워지는지 세지 못했어요.<br>
+         <span class="memo">${esc(error.message || '')}</span></div>`;
+    return;
+  }
+  const d = data || {};
+  const row = (k, v, m) => v ? `<div class="row"><span class="label">${esc(k)}
+      ${m ? `<div class="memo">${esc(m)}</div>` : ''}</span>
+      <span class="val"><b>${v}</b></span></div>` : '';
+  $('delwhat').innerHTML =
+    `<div class="daysep">지워지는 것</div>` +
+    row('나 혼자인 여행', d.solo_trips, '그 안의 일정·지출·예약까지 함께') +
+    row('일정', d.plans) +
+    row('지출', d.expenses) +
+    row('도시 별점', d.city_ratings) +
+    row('맛집·관광지 별점', d.plan_ratings) +
+    row('AI 대화', d.chats) +
+    `<div class="row"><span class="label">계정
+       <div class="memo">이름 · 이메일 · 프로필 사진</div></span>
+       <span class="val"><b>삭제</b></span></div>` +
+    (d.shared_trips
+      ? `<div class="daysep">남는 것</div>
+         <div class="row"><span class="label">일행이 있는 여행
+           <div class="memo">일정은 그대로 두고 나만 빠져요. 제가 주인이면
+             다음 일행에게 넘어가요. 제가 낸 지출은 남지만 결제자 칸이 비워져요</div></span>
+           <span class="val"><b>${d.shared_trips}</b></span></div>` : '');
+});
+
+$('del_cancel').addEventListener('click', () => {
+  $('delbox').classList.add('hide'); $('delerr').classList.add('hide');
+});
+/* 정확히 적었을 때만 열립니다. 앞뒤 공백은 봐줍니다 — 자동완성이 붙일 때가 있습니다. */
+$('del_word').addEventListener('input', () => {
+  $('del_go').disabled = $('del_word').value.trim() !== DEL_WORD;
+});
+
+$('del_go').addEventListener('click', async () => {
+  if ($('del_word').value.trim() !== DEL_WORD) return;
+  const b = $('del_go');
+  $('delerr').classList.add('hide');
+  b.disabled = true; b.textContent = '지우는 중…';
+
+  const { data, error } = await sb.functions.invoke('delete-me',
+    { body: { confirm: 'DELETE' } });
+
+  if (error || data?.error){
+    b.disabled = false; b.textContent = '영구 삭제';
+    let why = data?.error || error?.message || '';
+    try { why = (await error?.context?.json())?.error || why; } catch {}
+    return fail(/not found|Failed to send/i.test(why)
+      ? 'delete-me 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+      : why, 'del');
+  }
+
+  /* 계정이 없어졌으니 남은 토큰도 버리고 첫 화면으로 보냅니다.
+     캐시에 남은 내 자료도 지웁니다 — 안 지우면 다음 사람이 그걸 봅니다. */
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('t2:'))
+      .forEach(k => localStorage.removeItem(k));
+  } catch {}
+  await sb.auth.signOut().catch(() => {});
+  alert('탈퇴가 끝났습니다. 그동안 감사했습니다.');
+  location.replace(location.pathname);
 });
 
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
@@ -3750,6 +3835,16 @@ function showProfile(setting){
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 $('gear').addEventListener('click', () => { showProfile(true); loadNotifPrefs(); });
+
+/* 상단 홈 단추. 여행 안이든 보관함이든 성향 카드든 한 번에 빠져나옵니다.
+   showApp 이 여행을 닫고 큰 지도도 걷어내므로 따로 치울 것이 없습니다.
+   깊이 들어간 화면들은 뒤로가기 기록을 쌓아뒀으니 그것부터 비워야
+   홈에서 뒤로가기를 눌렀을 때 다시 그 안으로 들어가지 않습니다. */
+$('homebtn').addEventListener('click', () => {
+  ['personapane','shelfpane','mappane'].forEach(v => $(v)?.classList.add('hide'));
+  if (history.state?.t2) history.back();
+  showApp('home');
+});
 $('setback').addEventListener('click', () => showProfile(false));
 
 /* ── 내 자료 내려받기 ────────────────────────────────────────────────
@@ -6324,7 +6419,8 @@ async function render(session){
   if (!session){
     unwatch(); trip = null; document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
-    $('errcard').classList.add('hide'); $('bell').classList.add('hide'); $('aibtn').classList.add('hide');
+    $('errcard').classList.add('hide'); $('bell').classList.add('hide');
+    $('aibtn').classList.add('hide'); $('homebtn').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있어요.';
     me = null;
 
@@ -6380,6 +6476,7 @@ async function render(session){
   } else applyTs(localStorage.getItem('t2:ts') || 1);
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
+  $('homebtn').classList.remove('hide');
   /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
      여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
   sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());

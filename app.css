@@ -212,9 +212,6 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 .sw input:checked + span::after{ transform:translateX(20px); }
 .sw input:disabled + span{ opacity:.4; }
 .sw input:focus-visible + span{ outline:2px solid var(--primary-focus); outline-offset:3px; }
-/* 전체를 끄면 종류는 손댈 수 없게 흐려둡니다 — 눌러도 소용없는 것을
-   눌러보게 두면 고장으로 보입니다. */
-#nf_kinds.off{ opacity:.45; pointer-events:none; }
 
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
