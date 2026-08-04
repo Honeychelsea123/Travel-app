@@ -319,7 +319,11 @@ async function loadCities(){
   /* 좌표는 지도에 핀을 찍는 데 씁니다. 313행이라 무게는 무시할 만합니다. */
   const BASE = 'id,name,name_en,name_local,country,currency,timezone,transit_grade,' +
                'center_lat,center_lng';
+  /* fame 은 성향 카드가 씁니다 (033). 없으면 그 판정만 건너뛰면 되므로
+     아래 단계별 후퇴에서 제일 먼저 떨어져 나가게 둡니다. */
   let cs = await sb.from('cities')
+    .select(BASE + ',image_url,summary,summary_url,fame').order('name');
+  if (cs.error) cs = await sb.from('cities')
     .select(BASE + ',image_url,summary,summary_url').order('name');
   if (cs.error) cs = await sb.from('cities').select(BASE + ',image_url').order('name');
   if (cs.error) cs = await sb.from('cities').select(BASE).order('name');
@@ -2226,6 +2230,271 @@ async function loadFootprint(){
        <span class="n">${n}</span></span>`).join('');
 }
 
+/* ── 성향 카드 ───────────────────────────────────────────────────────
+ * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
+ * MBTI 가 도는 이유와 같습니다.
+ *
+ * **AI 를 안 씁니다.** 같은 사람은 항상 같은 결과가 나와야 하기 때문입니다.
+ * AI 에 맡기면 매번 달라지고, 매번 바뀌는 MBTI 는 아무도 안 합니다.
+ * AI 호출이 0회이므로 한도도 안 닳습니다.
+ *
+ * 문구는 **위에서부터 검사하고 처음 걸리는 것**을 씁니다. 순서가 곧 우선순위입니다.
+ * 그래서 "이제 막 시작한 여행자"가 맨 위에 있습니다 — 3곳 매긴 사람에게
+ * "웬만해선 만족 안 하는 사람"이라고 하면 근거가 없습니다.
+ */
+
+/* 유형군마다 배경이 다릅니다. 색만으로도 카드가 살아납니다 —
+   캐릭터 그림을 스무 장 뽑으면 화풍이 제각각이 되는데 색은 안 그렇습니다. */
+const PERSONA_BG = {
+  start: 'linear-gradient(160deg,#9aa0a6,#6f7378)',      /* 시작 단계 — 연한 회색 */
+  rare:  'linear-gradient(160deg,#2b3a67,#6b4fa8)',      /* 특이한 유형 — 남색→보라 */
+  deep:  'linear-gradient(160deg,#1f6f4a,#2c7d58)',      /* 파고드는 유형 — 진한 초록 */
+  taste: 'linear-gradient(160deg,#c2681f,#e0913a)',      /* 별점 성향 — 주황 */
+  size:  'linear-gradient(160deg,#a8801f,#d4af37)',      /* 규모 — 금색 */
+  plan:  'linear-gradient(160deg,#2f7ec2,#5aa9e6)',      /* 계획 성향 — 하늘색 */
+};
+
+/* 아이콘은 선 하나로 통일합니다. 굵기 2px 고정, 둥근 끝, 흰색 단색.
+   작아져도 안 뭉개지고 유형이 스무 개로 늘어도 화풍이 안 흔들립니다. */
+const PERSONA_ICON = {
+  foot1:  '<circle cx="12" cy="15" r="3.2"/><path d="M12 11.8V6.5"/>',
+  foot3:  '<circle cx="6" cy="17" r="2.4"/><circle cx="12" cy="12" r="2.4"/>' +
+          '<circle cx="18" cy="7" r="2.4"/>',
+  compass:'<circle cx="12" cy="12" r="8.5"/><path d="M15.2 8.8 13.6 13.6 8.8 15.2 10.4 10.4z"/>',
+  globe:  '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/>' +
+          '<path d="M12 3.5a13 13 0 0 1 0 17 13 13 0 0 1 0-17z"/>',
+  route:  '<path d="M3 18c4-7 8-9 18-12"/><path d="M14.5 4.5 21 6l-1.5 6.5"/>' +
+          '<circle cx="4" cy="18.5" r="1.6"/>',
+  stamp:  '<rect x="4" y="6" width="16" height="12" rx="2"/>' +
+          '<circle cx="12" cy="12" r="3.2"/><path d="M7 3.5v2M12 3.5v2M17 3.5v2"/>',
+  pinheart:'<path d="M12 21s6.5-6 6.5-10.5a6.5 6.5 0 0 0-13 0C5.5 15 12 21 12 21z"/>' +
+          '<path d="M12 13.2s-2.4-2-2.4-3.5a1.6 1.6 0 0 1 2.4-1.2 1.6 1.6 0 0 1 2.4 1.2c0 1.5-2.4 3.5-2.4 3.5z"/>',
+  flag:   '<path d="M6 21V4"/><path d="M6 5h11l-2.2 3.6L17 12H6"/>',
+  lens:   '<circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8 21 21"/>',
+  starsmile:'<path d="M12 3.5 14.4 9l6 .6-4.5 4 1.3 5.9L12 16.4 6.8 19.5 8.1 13.6 3.6 9.6l6-.6z"/>' +
+          '<path d="M10.2 10.6h.01M13.8 10.6h.01"/><path d="M10.2 13a2.4 2.4 0 0 0 3.6 0"/>',
+  starhalf:'<path d="M12 3.5 14.4 9l6 .6-4.5 4 1.3 5.9L12 16.4 6.8 19.5 8.1 13.6 3.6 9.6l6-.6z"/>' +
+          '<path d="M12 3.5v12.9"/>',
+  starsplit:'<path d="M10.6 3.9 8.4 9l-5.6.6 4.2 4-1.2 5.5L10.6 16"/>' +
+          '<path d="M13.4 3.9 15.6 9l5.6.6-4.2 4 1.2 5.5L13.4 16"/>',
+  crown:  '<circle cx="12" cy="14.5" r="6"/><path d="M3.5 7.5 7 10l5-5 5 5 3.5-2.5-1.5 6h-14z"/>',
+  passport:'<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/>' +
+          '<path d="M9 15.5h6"/>',
+  bag:    '<rect x="4" y="7.5" width="16" height="12.5" rx="2"/>' +
+          '<path d="M9 7.5V5.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5.5v2"/>' +
+          '<path d="M9 11v5M15 11v5"/>',
+  shoot:  '<path d="M4 20 11 13"/><path d="M15.5 3.5 17 7.5l4 1.5-4 1.5-1.5 4-1.5-4-4-1.5 4-1.5z"/>',
+  bolt:   '<path d="M13 3 6 13.5h5L11 21l7-10.5h-5z"/>',
+};
+
+/* 평생 누적 값. 별점을 매긴 도시만 셉니다 — "가보고 싶어요"는 간 곳이 아닙니다. */
+function personaStats(rows){
+  const rated = rows.filter(r => r.stars != null);
+  const info = id => (cities || []).find(c => c.id === id);
+
+  const byCountry = {}, byContinent = {};
+  let fameSum = 0, fameN = 0, starSum = 0;
+  let low = 0, high = 0;                    /* 1·2점과 4·5점 — 호불호 판정에 씁니다 */
+
+  for (const r of rated){
+    const c = info(r.city_id);
+    starSum += Number(r.stars);
+    if (Number(r.stars) <= 2) low++;
+    if (Number(r.stars) >= 4) high++;
+    if (!c) continue;
+    byCountry[c.country] = (byCountry[c.country] || 0) + 1;
+    const k = continentOf[c.country];
+    if (k) byContinent[k] = (byContinent[k] || 0) + 1;
+    if (c.fame != null){ fameSum += Number(c.fame); fameN++; }
+  }
+  const top = o => Object.entries(o).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+  const [topCountry, topCountryN] = top(byCountry);
+  const [topContinent, topContinentN] = top(byContinent);
+  const n = rated.length;
+
+  return {
+    cities: n,
+    countries: Object.keys(byCountry).length,
+    continents: Object.keys(byContinent).length,
+    byCountry, byContinent,
+    topCountry, topCountryN, topContinent, topContinentN,
+    avgRating: n ? starSum / n : 0,
+    /* 유명도를 모르는 도시는 평균에서 뺍니다. 0으로 치면 평균이 내려가
+       "남들이 안 가는 곳"이 아닌데 그렇게 나옵니다. */
+    avgFame: fameN ? fameSum / fameN : 0,
+    citiesPerCountry: Object.keys(byCountry).length
+      ? n / Object.keys(byCountry).length : 0,
+    lowRatio: n ? low / n : 0,
+    highRatio: n ? high / n : 0,
+    wishCount: rows.filter(r => r.want).length,
+    best: rated.filter(r => Number(r.stars) >= 4.5)
+               .sort((a, b) => b.stars - a.stars)
+               .map(r => ({ name: info(r.city_id)?.name || r.city_id, stars: r.stars }))
+               .slice(0, 3),
+  };
+}
+
+/* 위에서부터 검사해서 **처음 걸리는 것**을 씁니다. 순서가 곧 우선순위입니다.
+ *
+ * 문서의 순서(시작 → 특이 → 파고듦 → 별점 → 규모 → 계획)를 그대로 넣고 돌려보니
+ * **규모 문구가 한 번도 안 나왔습니다.** 12개국부터 87개국까지 76가지를 다 넣어봤는데
+ * 0번이었습니다. 나라가 늘면 대륙 수와 "지구 반대편"이 먼저 늘어서, 60개국을 다녀도
+ * "대륙 순례자"에 걸리고 "세계를 절반쯤 본 사람"은 영영 안 뜹니다.
+ *
+ * 규모가 오히려 더 희소한 축이라 위로 올렸습니다.
+ * 50개국은 4대륙보다 훨씬 드뭅니다. 12개국(size3)은 파고드는 유형 뒤에 뒀습니다 —
+ * 12개국을 다니면서 한 나라를 깊게 파는 사람은 그쪽이 더 그 사람다운 설명입니다. */
+const PERSONA_RULES = [
+  /* 시작 단계 — 다른 판정이 무의미한 구간 */
+  { id:'start1', t:'이제 막 시작한 여행자', g:'start', ic:'foot1', f:s => s.cities <= 3 },
+  { id:'start2', t:'슬슬 감이 오는 중',     g:'start', ic:'foot3', f:s => s.cities <= 7 },
+
+  /* 규모 (큰 쪽) — 가장 희소합니다 */
+  { id:'size1', t:'세계를 절반쯤 본 사람', g:'size', ic:'crown', f:s => s.countries >= 50 },
+
+  /* 특이한 유형 */
+  { id:'rare1', t:'남들이 안 가는 도시 매니아', g:'rare', ic:'compass',
+    f:s => s.avgFame >= 2.5 && s.cities >= 8 },
+  { id:'size2', t:'여권이 두꺼운 사람', g:'size', ic:'passport', f:s => s.countries >= 25 },
+  { id:'rare2', t:'지구 반대편만 골라 가는 사람', g:'rare', ic:'globe',
+    f:s => ['남아메리카','아프리카','오세아니아'].filter(k => s.byContinent[k]).length >= 2 },
+  { id:'rare3', t:'대륙 순례자', g:'rare', ic:'route', f:s => s.continents >= 4 },
+  { id:'rare4', t:'국경을 밥 먹듯 넘는 사람', g:'rare', ic:'stamp',
+    f:s => s.citiesPerCountry <= 1.2 && s.countries >= 8 },
+
+  /* 한 곳에 파고드는 유형 — 나라·대륙 이름이 문구에 그대로 들어갑니다 */
+  { id:'deep1', g:'deep', ic:'pinheart', f:s => s.topCountryN >= 6,
+    t:s => `${countryName[s.topCountry] || s.topCountry} 덕후` },
+  /* 문서의 기준은 "그 대륙 8곳"이었는데, 한국인에게 아시아 8곳은 흔합니다.
+     9도시 매긴 사람이 "아시아 정복 중"이 되면서 그 아래 규칙이 전부 막혔습니다
+     (꾸준한 여행자 · 가면 바로 가는 사람 · 별점 성향이 다 안 나왔습니다).
+     15곳으로 올리고 그 대륙이 전체의 70% 이상일 때만 씁니다 —
+     "정복"이라는 말이 맞아떨어지는 선입니다. */
+  { id:'deep2', g:'deep', ic:'flag',
+    f:s => s.topContinentN >= 15 && s.topContinentN >= s.cities * 0.7,
+    t:s => `${s.topContinent} 정복 중` },
+  { id:'deep3', t:'깊게 파는 사람', g:'deep', ic:'lens', f:s => s.citiesPerCountry >= 3 },
+
+  /* 규모 (작은 쪽) */
+  { id:'size3', t:'꾸준한 여행자', g:'size', ic:'bag', f:s => s.countries >= 12 },
+
+  /* 별점 성향 */
+  { id:'taste1', t:'어딜 가도 좋은 사람', g:'taste', ic:'starsmile',
+    f:s => s.avgRating >= 4.5 && s.cities >= 8 },
+  { id:'taste2', t:'웬만해선 만족 안 하는 사람', g:'taste', ic:'starhalf',
+    f:s => s.avgRating <= 2.8 && s.cities >= 8 },
+  { id:'taste3', t:'호불호가 뚜렷한 사람', g:'taste', ic:'starsplit',
+    f:s => s.lowRatio >= 0.3 && s.highRatio >= 0.3 },
+
+  /* 계획 성향 */
+  { id:'plan1', t:'꿈이 더 많은 사람', g:'plan', ic:'shoot',
+    f:s => s.wishCount >= s.cities * 2 },
+  { id:'plan2', t:'가면 바로 가는 사람', g:'plan', ic:'bolt',
+    f:s => s.wishCount <= 2 && s.cities >= 10 },
+
+  /* 어디에도 안 걸렸을 때 */
+  { id:'base', t:'여행을 아는 사람', g:'size', ic:'bag', f:() => true },
+];
+
+function judgePersona(s){
+  const r = PERSONA_RULES.find(x => x.f(s));
+  return { ...r, title: typeof r.t === 'function' ? r.t(s) : r.t };
+}
+
+/* ── 성향 카드 화면 ─────────────────────────────────────────────────
+ * 한 줄평이 주인공이라 제일 크게, 나머지는 근거로 작게 답니다.
+ * 앱 이름은 구석에 작게 — 크게 넣으면 광고처럼 보입니다.
+ * 보는 사람이 궁금해서 찾아오는 정도면 충분합니다. */
+async function openPersona(){
+  $('profpane').classList.add('hide');
+  $('mappane').classList.add('hide');
+  $('shelfpane').classList.add('hide');
+  $('personapane').classList.remove('hide');
+  window.scrollTo({ top:0 });
+  if (history.state?.t2 !== 'persona') history.pushState({ t2:'persona' }, '');
+
+  await loadCities();
+  const { data, error } = await sb.from('city_ratings')
+    .select('city_id,stars,want').eq('user_id', me.id);
+  if (error){
+    $('personabox').innerHTML =
+      `<div class="card"><div class="empty">불러오지 못했어요.</div></div>`;
+    return;
+  }
+  drawPersona(personaStats(data || []));
+}
+
+function closePersona(fromPop){
+  if (!fromPop && history.state?.t2 === 'persona'){ history.back(); return; }
+  $('personapane').classList.add('hide');
+  $('profpane').classList.remove('hide');
+}
+$('openpersona').addEventListener('click', openPersona);
+$('personaback').addEventListener('click', () => closePersona());
+
+function drawPersona(s){
+  /* 도시 3곳 미만이면 카드를 안 만듭니다. "이제 막 시작한 여행자"도
+     3곳은 있어야 말이 됩니다. 대신 뭘 하면 되는지 알려줍니다. */
+  if (s.cities < 3){
+    $('personabox').innerHTML = `<div class="card">
+      <div class="empty" style="padding:28px 12px">
+        아직 카드를 만들 수 없어요.<br>
+        <b>도시 ${3 - s.cities}곳</b>만 더 평가하면 나와요.
+        <div style="margin-top:14px">
+          <button class="primary" id="pgo">평가하러 가기</button></div>
+      </div></div>`;
+    $('pgo').onclick = () => { closePersona(); showApp('rate'); };
+    return;
+  }
+
+  const p = judgePersona(s);
+  const conts = Object.entries(s.byContinent).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  $('personabox').innerHTML = `
+    <div class="pcard" style="background:${PERSONA_BG[p.g]}">
+      <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">${PERSONA_ICON[p.ic] || ''}</svg>
+
+      <div class="ptitle">${esc(p.title)}</div>
+
+      <div class="pnums">${s.countries}개국 <i>·</i> ${s.cities}도시</div>
+
+      ${s.best.length ? `<div class="pbest">
+        <div class="pl">가장 좋았던 곳</div>
+        ${s.best.map(b => `<div class="pb">${esc(b.name)}
+           <span>★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}</span></div>`).join('')}
+      </div>` : ''}
+
+      ${conts.length ? `<div class="pconts">${
+        conts.map(([k, n]) => `${esc(k)} ${n}`).join(' · ')}</div>` : ''}
+
+      <div class="pbrand">AI.Trip</div>
+    </div>
+
+    <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
+         무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
+    <div class="card">
+      <h2>왜 이렇게 나왔나요</h2>
+      <div class="row"><span class="label">평가한 도시</span>
+        <span class="val">${s.cities}곳 · ${s.countries}개국 · ${s.continents}대륙</span></div>
+      <div class="row"><span class="label">별점 평균</span>
+        <span class="val">★${s.avgRating.toFixed(2)}</span></div>
+      <div class="row"><span class="label">도시 유명도 평균
+        <div class="memo">1 누구나 아는 곳 ~ 3 덜 알려진 곳</div></span>
+        <span class="val">${s.avgFame ? s.avgFame.toFixed(2) : '—'}</span></div>
+      <div class="row"><span class="label">한 나라당 도시</span>
+        <span class="val">${s.citiesPerCountry.toFixed(1)}곳</span></div>
+      <div class="row"><span class="label">가보고 싶은 곳</span>
+        <span class="val">${s.wishCount}곳</span></div>
+      ${s.topCountry ? `<div class="row"><span class="label">가장 많이 간 나라</span>
+        <span class="val">${esc(countryName[s.topCountry] || s.topCountry)}
+          ${s.topCountryN}곳</span></div>` : ''}
+      <div class="empty" style="text-align:left; padding-top:10px">
+        AI 가 아니라 위 숫자로만 정합니다. 같은 기록이면 언제 봐도 같은 결과예요.
+      </div>
+    </div>`;
+}
+
 /* ── 후보와 빈 시간 ──────────────────────────────────────────────────
  * 도쿄 앱에서 가장 잘 굴러가던 기능입니다. 가고 싶은 곳을 모아두고,
  * 일정 사이에 뜬 시간에 "여기 넣을 수 있어요"라고 알려줍니다.
@@ -3099,6 +3368,7 @@ $('mappane').addEventListener('click', e => {
 function showProfile(setting){
   shutBigMap();
   $('shelfpane').classList.add('hide');
+  $('personapane').classList.add('hide');
   $('mappane').classList.add('hide');        /* 지도가 열려 있었으면 같이 닫습니다 */
   $('profpane').classList.toggle('hide', setting);
   $('setpane').classList.toggle('hide', !setting);
@@ -4172,6 +4442,7 @@ window.addEventListener('popstate', () => {
   if (!$('reviewview').classList.contains('hide')) return closeReview(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
+  if (!$('personapane').classList.contains('hide')) return closePersona(true);
   if (!$('mappane').classList.contains('hide')) return closeMap(true);
 });
 

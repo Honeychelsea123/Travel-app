@@ -152,6 +152,38 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
           background:var(--pearl); border:1px solid var(--hairline); }
 .srcchip.warn{ background:#fff6e5; border-color:#f0dcb8; color:#8a5a12; }
 
+/* ── 성향 카드 ──
+   한 줄평이 주인공이라 제일 크게, 나머지는 근거로 작게 답니다.
+   나중에 이미지(1080×1080)로 뽑을 것을 생각해 정사각에 가깝게 잡아둡니다. */
+.pcard{
+  position:relative; border-radius:var(--r-lg); color:#fff;
+  padding:34px 24px 22px; margin-bottom:var(--s-sm);
+  box-shadow:var(--lift-2); overflow:hidden; text-align:center;
+  min-height:min(92vw, 440px);
+  display:flex; flex-direction:column; align-items:center;
+}
+.pcard .pic{ width:84px; height:84px; margin-bottom:18px; flex:none; }
+/* 문구가 길어도(예: "지구 반대편만 골라 가는 사람") 두 줄에 들어가게 합니다.
+   나라 이름이 긴 "리히텐슈타인 덕후" 같은 것도 여기서 접힙니다. */
+.pcard .ptitle{
+  font-size:calc(27px * var(--ts)); font-weight:700; line-height:1.3;
+  letter-spacing:calc(-0.8px * var(--ts)); word-break:keep-all;
+  max-width:11em;
+}
+.pcard .pnums{ margin-top:14px; font-size:calc(15px * var(--ts)); opacity:.92; }
+.pcard .pnums i{ font-style:normal; opacity:.55; margin:0 6px; }
+.pcard .pbest{ margin-top:22px; }
+.pcard .pbest .pl{ font-size:calc(11px * var(--ts)); opacity:.7; margin-bottom:6px;
+                   letter-spacing:.06em; }
+.pcard .pb{ font-size:calc(15px * var(--ts)); line-height:1.65; }
+.pcard .pb span{ opacity:.75; font-size:calc(13px * var(--ts)); margin-left:4px; }
+.pcard .pconts{ margin-top:16px; font-size:calc(13px * var(--ts)); opacity:.75; }
+/* 앱 이름은 구석에 작게. 크게 넣으면 광고처럼 보입니다. */
+.pcard .pbrand{
+  margin-top:auto; padding-top:20px;
+  font-size:calc(11px * var(--ts)); font-weight:600; opacity:.6; letter-spacing:.04em;
+}
+
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
 
