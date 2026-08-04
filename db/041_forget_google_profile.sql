@@ -42,12 +42,21 @@ update public.profiles p
 
 -- ── 2. 구글이 준 원본을 auth.users 에서 비웁니다 ────────────────────
 -- 이메일과 로그인에 필요한 것만 남기고 이름·사진 관련 칸을 걷어냅니다.
-update auth.users
-   set raw_user_meta_data = raw_user_meta_data
-         - 'full_name' - 'name' - 'avatar_url' - 'picture'
-         - 'given_name' - 'family_name' - 'preferred_username'
- where raw_user_meta_data ?| array['full_name','name','avatar_url','picture',
-                                   'given_name','family_name','preferred_username'];
+--
+-- auth 스키마는 Supabase 가 관리하는 곳이라 손대는 것이 막혀 있을 수 있습니다.
+-- 그냥 update 로 두면 막혔을 때 **위 1번까지 통째로 되돌아갑니다.**
+-- 여기서 삼키고, 됐는지 안 됐는지는 아래 확인에서 보여줍니다.
+do $$
+begin
+  update auth.users
+     set raw_user_meta_data = raw_user_meta_data
+           - 'full_name' - 'name' - 'avatar_url' - 'picture'
+           - 'given_name' - 'family_name' - 'preferred_username'
+   where raw_user_meta_data ?| array['full_name','name','avatar_url','picture',
+                                     'given_name','family_name','preferred_username'];
+exception when others then
+  raise notice 'auth.users 는 못 건드렸습니다: %', sqlerrm;
+end $$;
 
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
