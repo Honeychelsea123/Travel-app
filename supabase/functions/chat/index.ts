@@ -156,6 +156,56 @@ async function webSearch(key: string, admin: any, query: string,
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 블로그 글 읽어오기 — 도쿄 앱에서 옮겨왔습니다.
+//
+// 남이 짜둔 일정이나 맛집 목록은 대부분 블로그에 있습니다.
+// 링크만 던지면 우리가 읽어서 정리합니다. 하나하나 옮겨 적는 수고를 없애는 것이 목적입니다.
+//
+// 네이버는 본문을 iframe 안에 넣어서, 원래 주소로 받으면 23자짜리 껍데기만 옵니다.
+// m.blog.naver.com(모바일)으로 바꾸면 본문이 그대로 옵니다 — 도쿄 앱에서 실측한 것입니다.
+//
+// 실패하면 null. 부르는 쪽은 없으면 없는 대로 갑니다.
+// ─────────────────────────────────────────────────────────────────────
+async function readBlog(raw: string) {
+  let u = String(raw || '').trim();
+  if (!/^https?:\/\//i.test(u)) return null;
+  u = u.replace('://blog.naver.com', '://m.blog.naver.com');
+  try {
+    const res = await fetch(u, {
+      headers: {
+        // 모바일 브라우저인 척해야 모바일 본문이 옵니다.
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ' +
+                      'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile Safari/604.1',
+      },
+      redirect: 'follow',
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // 네이버 스마트에디터의 본문 영역. 없으면 페이지 전체를 씁니다.
+    const m = html.match(/<div[^>]*class="[^"]*se-main-container[^"]*"[\s\S]*?<\/body>/i);
+    const body = m ? m[0] : html;
+
+    const text = body
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    // 너무 짧으면 껍데기만 온 것입니다. 그걸 근거로 답하면 지어내게 됩니다.
+    return text.length < 200 ? null : text.slice(0, 12000);
+  } catch {
+    return null;
+  }
+}
+
 /** 두 좌표 사이 거리(km). 이동 시간과 "너무 먼 좌표 버리기"에 씁니다. */
 function distKm(a: number, b: number, c: number, d: number) {
   const R = 6371, r = Math.PI / 180;
@@ -345,13 +395,24 @@ Deno.serve(async (req) => {
       ctx ? '\n아래는 이 여행의 자료다. 이미 들어 있는 일정과 겹치게 넣지 않는다.\n' + ctx : '',
     ].filter(Boolean).join('\n');
 
+    // ── 링크를 던졌으면 그 글을 읽어옵니다 ──
+    // 남이 짜둔 일정·맛집 목록은 대부분 블로그에 있습니다. 옮겨 적는 대신 읽어 옵니다.
+    const link = String(message ?? '').match(/https?:\/\/[^\s]+/)?.[0] ?? '';
+    const blog = link ? await readBlog(link) : null;
+    const blogBlock = blog
+      ? `\n[사용자가 준 글] ${link}\n` +
+        '아래는 그 글의 본문이다. 메뉴·댓글·광고 문구가 섞여 있으니 장소 정보만 골라 쓴다.\n' +
+        blog + '\n[글 끝]\n'
+      : '';
+
     // ── 웹 검색 ──
     // 영업시간·가격·평점처럼 바뀌는 것은 우리 자료에 없습니다.
     // 사진을 물었을 때는 안 합니다 — 물음이 사진에 대한 것이라 검색어가 엉뚱해집니다.
     // 초안(draft)도 안 합니다. 하루치가 아니라 여행 전체라 검색 한 번으로 안 됩니다.
+    // 링크가 있으면 검색도 안 합니다 — 검색어가 주소가 되어 엉뚱한 결과만 옵니다.
     let hits: { title: string; snippet: string; link: string }[] | null = null;
     const tavily = Deno.env.get('TAVILY_KEY');
-    if (tavily && !draft && !shot && needsSearch(String(message))) {
+    if (tavily && !draft && !shot && !blog && needsSearch(String(message))) {
       const dest = tripRow?.destination ?? '';
       hits = await webSearch(tavily, admin,
         searchQuery(String(message), dest), 5,
@@ -368,6 +429,10 @@ Deno.serve(async (req) => {
       '',
       '규칙:',
       '- 자료에 없는 것을 지어내지 않는다. 모르면 모른다고 한다.',
+      blogBlock
+        ? '- [사용자가 준 글]에 있는 장소만 옮긴다. 그 글에 없는 곳을 지어내지 않는다.\n' +
+          '  일정이나 맛집 목록이면 actions 로 내서 바로 담을 수 있게 한다.'
+        : '',
       searchBlock
         ? '- [방금 검색한 결과]에 있는 내용만 근거로 삼는다. 거기 없는 숫자는 지어내지 않는다.\n' +
           '  검색 결과에도 없으면 "찾지 못했습니다"라고 적는다.'
@@ -413,6 +478,7 @@ Deno.serve(async (req) => {
       '- 자료에 없고 네가 원래 알던 것으로 답한 부분이 있으면 "general" 을 반드시 넣는다.',
       '  사용자는 이걸 보고 직접 확인할지 정한다. 숨기면 안 된다.',
       searchBlock,
+      blogBlock,
       ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
     ].join('\n');
 
@@ -459,7 +525,7 @@ Deno.serve(async (req) => {
           { role: 'model', parts: [{ text: '알겠습니다. 자료에 있는 것만 옮기겠습니다.' }] },
           { role: 'user', parts: [
               ...shots.map((s) => ({ inlineData: s })),
-              { text: '아래가 옮길 일정이다.\n\n' + String(message ?? '') },
+              { text: '아래가 옮길 일정이다.\n\n' + blogBlock + String(message ?? '') },
             ] },
         ]
       : draft

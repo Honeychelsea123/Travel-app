@@ -113,6 +113,18 @@ let queue = [];
 try { queue = JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { queue = []; }
 const qsave = () => { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch {} };
 
+/* 오프라인에서 못 쓰는 자리에 "불러오는 중…"을 남겨두면 하루 종일 기다리게 됩니다.
+   기다려도 안 온다는 것을 그 자리에 그대로 적습니다. */
+const OFFNOTE = '<div class="empty">연결이 없어 지금은 볼 수 없어요.<br>' +
+                '연결되면 바로 나옵니다.</div>';
+/* 화면 조각 하나를 "지금은 못 봅니다"로 바꿉니다. 이미 뭔가 그려져 있으면 두고요 —
+   받아둔 내용이 있는데 안내로 덮어버리면 오히려 손해입니다. */
+function offNote(id){
+  const el = $(id); if (!el) return;
+  if (el.querySelector('.rrow, .plan, .row, .ev, .trip, .pcard')) return;
+  el.innerHTML = OFFNOTE;
+}
+
 /* ── 마지막으로 받아둔 것 ─────────────────────────────────────────────
  * 비행기모드에서 앱은 열렸는데 화면이 "불러오는 중…"에서 멈춰 있었습니다.
  * 껍데기(html·js)만 캐시하고 **내용**은 아무것도 안 들고 있었기 때문입니다.
@@ -133,7 +145,10 @@ const cacheSet = (k, v) => { try { localStorage.setItem('t2:cache:' + k, JSON.st
  * 이미 끊긴 것을 아는 상태(navigator.onLine=false)면 더 짧게 끊습니다 —
  * 어차피 안 올 것을 4초씩 기다릴 이유가 없습니다. */
 function netTimeout(p, ms){
-  const wait = ms ?? (navigator.onLine ? 4000 : 1200);
+  /* 끊긴 걸 아는 상태면 400ms 만 봅니다. 캐시에서 꺼내는 데 그 정도면 충분하고,
+     안 올 것을 1초씩 기다리면 화면이 눈에 띄게 굼떠집니다.
+     여러 화면이 줄줄이 기다리면 그게 다 더해집니다. */
+  const wait = ms ?? (navigator.onLine ? 4000 : 400);
   return Promise.race([
     Promise.resolve(p).catch(error => ({ data:null, error })),
     new Promise(r => setTimeout(
@@ -906,6 +921,8 @@ $('ai_trip').addEventListener('change', () => {
  * 대화는 사람별로 나눠 저장합니다 — 섞이면 AI 가 남의 질문을 맥락으로 씁니다
  * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
 async function loadChats(tripId){
+  /* AI 는 서버가 있어야 합니다. 오프라인이면 물어봐도 답이 안 옵니다.
+     
   /* 여행을 안 골랐을 때 나눈 대화도 남깁니다 (029). trip_id 가 비어 있는 줄입니다.
      eq 로는 null 을 못 찾습니다 — is 를 써야 합니다. */
   let q = sb.from('chats').select('role,content').eq('user_id', me.id);
@@ -1299,6 +1316,11 @@ function starHtml(v){
 }
 
 async function loadRatings(){
+  /* 도시 목록은 받아둔 것이 있지만 내 별점은 서버에서 옵니다.
+     오프라인이면 매길 수도 없으니 그렇게 적습니다. */
+  if (!navigator.onLine && !cities){
+    offNote('ratelist'); drawOffbar(); return;
+  }
   $('rateerr').classList.add('hide');
   await loadCities();
   fillCityList();
@@ -3252,10 +3274,12 @@ $('geobtn').addEventListener('click', async () => {
 
 async function loadCands(){
   if (!trip) return;
-  const r = await sb.from('candidates')
+  const r = await netTimeout(sb.from('candidates')
     .select('id,title,title_local,category,memo,lat,lng')
-    .eq('trip_id', trip.id).is('deleted_at', null).order('created_at');
-  if (r.error) return fail(r.error, 'cand');
+    .eq('trip_id', trip.id).is('deleted_at', null).order('created_at'));
+  if (r.error){
+    if (isOffline(r.error)){ offNote('cands'); drawOffbar(); return; }
+    return fail(r.error, 'cand'); }
   cands = r.data || [];
   drawCands();
 }
@@ -4295,8 +4319,21 @@ $('ai_wipe').addEventListener('click', async e => {
 $('bell').addEventListener('click', async e => {
   e.stopPropagation();
   const open = $('notifpanel').classList.toggle('hide');
-  if (!open) await loadNotifs();
+  if (open) return;
+  await loadNotifs();
+  /* 목록을 열었으면 읽은 것입니다. 종에 붙은 숫자를 지웁니다.
+     전에는 "모두 읽음"을 따로 눌러야만 지워져서, 봤는데도 계속 1 이 붙어 있었습니다.
+     1.2초 뒤에 처리하는 이유는 **어느 것이 새 것이었는지 보이게** 하려는 것입니다 —
+     열자마자 전부 흐려지면 뭐가 새로 온 건지 알 수가 없습니다. */
+  clearTimeout(readTimer);
+  readTimer = setTimeout(async () => {
+    if ($('notifpanel').classList.contains('hide')) return;   /* 벌써 닫았으면 그만 */
+    const r = await netTimeout(sb.from('notifications')
+      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
+    if (!r.error && r.data?.length) loadNotifs();
+  }, 1200);
 });
+let readTimer = null;
 /* 바깥을 누르면 닫힙니다. */
 document.addEventListener('click', e => {
   if (!$('notifpanel').classList.contains('hide') &&
@@ -4316,15 +4353,33 @@ async function loadNotifs(){
     $('readall').classList.add('hide');
     return;
   }
-  $('readall').classList.toggle('hide', !unread);
+  /* 읽은 것만 있으면 "모두 읽음" 대신 "지우기"를 답니다.
+     읽어도 목록에 계속 쌓이면 결국 아무도 안 봅니다. */
+  $('readall').classList.remove('hide');
+  $('readall').textContent = unread ? '모두 읽음' : '지우기';
+  $('readall').dataset.act = unread ? 'read' : 'clear';
+
   $('notifs').innerHTML = data.map(n =>
     `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
        ${esc(n.body)}</span>
      <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`).join('');
 }
-$('readall').addEventListener('click', async () => {
-  await sb.from('notifications').update({ read_at: new Date().toISOString() })
-    .is('read_at', null);
+$('readall').addEventListener('click', async e => {
+  e.stopPropagation();
+  const b = $('readall');
+  if (b.dataset.act === 'clear'){
+    /* 읽은 것만 지웁니다. 안 읽은 것이 사이에 있으면 그건 남깁니다. */
+    const r = await netTimeout(sb.from('notifications').delete()
+      .not('read_at', 'is', null).select('id'));
+    if (r.error) return fail(r.error);
+    /* 039 를 안 올렸으면 정책이 없어 0건이 지워집니다. 조용히 넘어가면
+       버튼이 고장 난 것처럼 보입니다. */
+    if (!r.data?.length) return toast('지워지지 않았어요. 039 를 올려주세요.');
+  } else {
+    const r = await netTimeout(sb.from('notifications')
+      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
+    if (r.error) return fail(r.error);
+  }
   loadNotifs();
 });
 
@@ -5721,7 +5776,8 @@ const TRASH_TABLE = { plan:'plans', expense:'expenses', booking:'bookings' };
 
 async function loadTrash(){
   $('trasherr').classList.add('hide');
-  const { data, error } = await sb.rpc('deleted_items', { p_trip: trip.id });
+  const { data, error } = await netTimeout(sb.rpc('deleted_items', { p_trip: trip.id }));
+  if (error && isOffline(error)){ offNote('trash'); $('trashcount').textContent = ''; drawOffbar(); return; }
   if (error){
     /* 032 를 아직 안 올렸으면 함수가 없습니다. 오류 상자 대신 안내로 둡니다. */
     $('trash').innerHTML = '<div class="empty">지운 것을 불러오지 못했어요.</div>';
@@ -5848,15 +5904,17 @@ const nameOf = id => {
 
 async function loadExpenses(){
   $('experr').classList.add('hide');
-  const { data, error } = await sb.from('expenses')
+  const { data, error } = await netTimeout(sb.from('expenses')
     /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
        비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
     .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,' +
             'expense_shares(user_id,weight)')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)
-    .order('date', { ascending:false }).order('created_at', { ascending:false });
-  if (error){ $('expenses').innerHTML = ''; return fail(error, 'exp'); }
+    .order('date', { ascending:false }).order('created_at', { ascending:false }));
+  if (error){
+    if (isOffline(error)){ offNote('expenses'); $('exptotal').innerHTML = ''; drawOffbar(); return; }
+    $('expenses').innerHTML = ''; return fail(error, 'exp'); }
   expenses = data;
   drawExpenses();
   drawSettle();
@@ -6414,11 +6472,13 @@ const ROLE_KO = { owner:'소유자', editor:'편집자', viewer:'보기만' };
 
 async function loadMembers(){
   $('memerr').classList.add('hide');
-  const { data, error } = await sb.from('trip_members')
+  const { data, error } = await netTimeout(sb.from('trip_members')
     .select('user_id,role,nickname,left_at,joined_at,profiles(display_name,avatar_url)')
     .eq('trip_id', trip.id)
-    .order('joined_at');
-  if (error){ $('members').innerHTML = ''; return fail(error, 'mem'); }
+    .order('joined_at'));
+  if (error){
+    if (isOffline(error)){ offNote('members'); drawOffbar(); return; }
+    $('members').innerHTML = ''; return fail(error, 'mem'); }
   members = data;
 
   const owner = trip.myRole === 'owner';
