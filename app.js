@@ -802,8 +802,9 @@ function review(t, ps, lgs){
           if (h && gap < h.min) out.push({
             lv: gap < h.min - 15 ? '심각' : '주의',
             t: `${p.title} → ${nx.title} 이동 시간이 모자랍니다`,
+            /* 음수면 "-20분밖에 없어요"가 됩니다. 앞 일정이 이미 넘겼다는 뜻입니다. */
             s: `${h.km.toFixed(1)}km · ${h.walk ? '도보' : '이동'} 약 ${h.min}분인데 ` +
-               `${gap}분밖에 없어요.` +
+               (gap < 0 ? '앞 일정이 이미 넘겼어요.' : `${gap}분밖에 없어요.`) +
                (guessed ? ' (앞 일정 끝 시각이 없어 어림잡았어요)' : '') });
           else if (!h && gap === 0) out.push({ lv:'주의',
             t:`${p.title} 다음에 이동할 시간이 없어요`,
@@ -5219,7 +5220,9 @@ function drawPlans(){
           const end = prev.end_time ? mins(prev.end_time)
                     : mins(prev.start_time) + (STAY_MIN[prev.category] ?? 30);
           const gap = mins(p.start_time) - end;
-          if (gap < h.min) warn = ` · ${gap}분밖에 없어요`;
+          /* 음수면 "-20분밖에 없어요"가 됩니다. 앞 일정이 이미 넘겼다는 뜻입니다. */
+          if (gap < h.min)
+            warn = gap < 0 ? ' · 앞 일정이 이미 넘겼어요' : ` · ${gap}분밖에 없어요`;
         }
         html += `<div class="hopline${warn ? ' bad' : ''}">
           ${h.walk ? '도보' : '이동'} 약 ${h.min}분 · ${h.km.toFixed(1)}km${esc(warn)}</div>`;
@@ -5399,10 +5402,13 @@ async function drawToday(){
         const end = p.end_time ? mins(p.end_time)
                   : mins(p.start_time) + (STAY_MIN[p.category] ?? 30);
         const gap = mins(nx.start_time) - end;
+        /* 남은 시간이 음수면 "-20분밖에 없어요"가 됩니다. 말이 안 되는 문장입니다.
+           앞 일정이 이미 다음 시작을 넘겼다는 뜻이니 그렇게 적습니다. */
         const tight = gap < mv.min;
+        const why = gap < 0 ? '앞 일정이 이미 넘겼어요'
+                  : tight   ? `${gap}분밖에 없어요` : '';
         h += `<div class="tdmv${tight ? ' bad' : ''}">${mv.walk ? '도보' : '이동'}
-          약 ${mv.min}분 · ${mv.km.toFixed(1)}km${
-          tight ? ` · ${gap}분밖에 없어요` : ''}</div>`;
+          약 ${mv.min}분 · ${mv.km.toFixed(1)}km${why ? ' · ' + why : ''}</div>`;
       }
     }
     return h;
