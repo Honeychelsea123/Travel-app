@@ -26,6 +26,15 @@
   --kb:0px;                     /* 키보드 높이. 아래 스크립트가 재서 넣는다 */
   --sab:env(safe-area-inset-bottom, 0px);
 
+  /* ── 움직임 ──
+     곡선을 곳마다 다르게(ease / ease-out / 기본) 쓰고 있었습니다. 그러면
+     같은 앱인데 어떤 것은 미끄럽고 어떤 것은 뚝 끊깁니다.
+     --ease 는 아이폰 시트가 쓰는 느낌입니다 — 빠르게 나갔다가 부드럽게 멈춥니다.
+     길이도 세 가지로 묶어둡니다. 0.2 와 0.22 를 섞어 쓸 이유가 없습니다. */
+  --ease:cubic-bezier(.32,.72,0,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --t-fast:.16s; --t:.24s; --t-slow:.36s;
+
   /* 앞서 쓰던 이름들을 새 토큰에 이어 둡니다 — 화면 코드를 다시 안 써도 됩니다 */
   --bg:var(--parchment); --panel:var(--canvas); --line:var(--hairline);
   --sunk:var(--parchment); --fg:var(--ink); --dim:var(--ink-48);
@@ -91,7 +100,11 @@ h1{ font-size:calc(19px * var(--ts)); margin:0; font-weight:650;
 button{ font:inherit; letter-spacing:inherit; cursor:pointer;
         border-radius:var(--r-pill); border:1px solid var(--hairline);
         background:var(--canvas); color:var(--ink); padding:10px var(--s-md); }
-button:active{ transform:scale(.96); }
+/* 누를 때는 즉각 반응해야 하고(빠르게), 뗄 때는 부드럽게 돌아와야 합니다.
+   전에는 transition 이 아예 없어서 눌렀다 떼면 뚝 튀어 돌아왔습니다. */
+button, a.btn{ transition:transform var(--t) var(--ease),
+                          opacity var(--t-fast) var(--ease); }
+button:active, a.btn:active{ transform:scale(.96); transition-duration:.06s; }
 button:disabled{ opacity:.45; cursor:default; transform:none; }
 :focus-visible{ outline:2px solid var(--primary-focus); outline-offset:3px; }
 .primary{ flex:1; background:var(--primary); color:#fff; border-color:transparent;
@@ -132,7 +145,7 @@ a.btn:active{ transform:scale(.96); }
 .abar .track{ height:7px; border-radius:99px; background:var(--divider-soft);
               overflow:hidden; margin-top:6px; }
 .abar .track i{ display:block; height:100%; border-radius:99px;
-                background:var(--primary); transition:width .4s ease; }
+                background:var(--primary); transition:width var(--t-slow) var(--ease); }
 .abar.warn .track i{ background:#e0a02a; }
 .abar.bad  .track i{ background:var(--bad); }
 .abar .f{ font-size:calc(11px * var(--ts)); color:var(--ink-48); margin-top:5px; }
@@ -341,11 +354,11 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
            cursor:pointer; z-index:1; }
 .sw span{
   position:absolute; inset:0; border-radius:var(--r-pill);
-  background:#d9d9de; transition:background .2s;
+  background:#d9d9de; transition:background var(--t-fast) var(--ease);
 }
 .sw span::after{
   content:''; position:absolute; top:3px; left:3px; width:24px; height:24px;
-  border-radius:50%; background:#fff; transition:transform .2s;
+  border-radius:50%; background:#fff; transition:transform var(--t) var(--ease);
   box-shadow:0 1px 3px rgba(0,0,0,.28);
 }
 .sw input:checked + span{ background:var(--ok); }
@@ -489,8 +502,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .st{ font-size:min(calc(26px * var(--ts)), 6.6vw); }
 .rrow .want{ flex:none; padding:4px 2px; }
 /* 별이 차는 것과 줄이 밀려나는 것이 보여야 내가 눌렀다는 걸 압니다. */
-.st i{ transition:width .18s ease-out; }
-.rrow{ transition:opacity .28s, transform .28s; }
+.st i{ transition:width var(--t-fast) var(--ease); }
+.rrow{ transition:opacity var(--t-slow) var(--ease), transform var(--t-slow) var(--ease); }
 .rrow.gone{ opacity:0; transform:translateX(30px); }
 /* 왼쪽부터 차례로 톡 튀며 반짝입니다. 채운 별에만 겁니다. */
 @keyframes starpop{
@@ -498,10 +511,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
   35%  { transform:scale(1.36); filter:drop-shadow(0 0 7px rgba(245,166,35,.9)); }
   100% { transform:scale(1);    filter:none; }
 }
-.st.pop{ animation:starpop .36s ease-out both; }
+.st.pop{ animation:starpop var(--t-slow) var(--ease-out) both; }
 @keyframes tagin{ from{ opacity:0; transform:translateY(-3px) scale(.9) }
                   to  { opacity:1; transform:none } }
-.rtag{ animation:tagin .22s ease-out both; }
+.rtag{ animation:tagin var(--t) var(--ease-out) both; }
 /* 움직임을 꺼둔 기기에서는 튀지 않게 합니다. */
 @media (prefers-reduced-motion: reduce){
   .st.pop{ animation:none } .rtag{ animation:none }
@@ -582,8 +595,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
           /* 위 .aisheet 과 같은 이유로 아래를 덮습니다. 이쪽은 카드 색입니다. */
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
                      0 var(--kb, 0px) 0 var(--canvas);
-          animation:sheetup .24s ease-out both; }
-@keyframes sheetup{ from{ transform:translateY(26px); opacity:.5 } to{ transform:none; opacity:1 } }
+          animation:sheetup var(--t) var(--ease) both; }
+@keyframes sheetup{ from{ transform:translateY(100%) } to{ transform:none } }
 /* 잡아 내리는 손잡이 — 닫을 수 있다는 표시입니다 */
 .assheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 12px;
                   border-radius:999px; background:var(--line); }
@@ -643,7 +656,7 @@ body.kbon .assheet{ padding-bottom:16px; }
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
                      0 var(--kb, 0px) 0 var(--parchment);
           padding:10px 12px 12px;
-          animation:sheetup .24s ease-out both; }
+          animation:sheetup var(--t) var(--ease) both; }
 /* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
 .aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
                   border-radius:999px; background:var(--line); }
@@ -715,7 +728,7 @@ body.kbon .assheet{ padding-bottom:16px; }
         max-width:min(88vw, 440px); padding:12px 16px; border-radius:14px;
         background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
         font-size:calc(13px * var(--ts)); line-height:1.5; text-align:center;
-        opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; }
+        opacity:0; pointer-events:none; transition:opacity var(--t) var(--ease), transform var(--t) var(--ease); }
 #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
 
 /* ── 여행 리포트 ─────────────────────────────────────────────────────
@@ -792,7 +805,7 @@ body.kbon .assheet{ padding-bottom:16px; }
 .ev__row{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0;
           align-items:flex-start; cursor:pointer; }
 .ev__chev{ align-self:center; color:var(--ink-48); flex:none;
-           transition:transform .22s; font-size:calc(18px * var(--ts)); }
+           transition:transform var(--t) var(--ease); font-size:calc(18px * var(--ts)); }
 .ev.is-open .ev__chev{ transform:rotate(90deg); }
 .ev .when{ flex:none; width:50px; color:var(--ink-48); font-size:calc(13px * var(--ts));
            font-variant-numeric:tabular-nums; padding-top:2px; }
@@ -850,7 +863,7 @@ body.kbon .assheet{ padding-bottom:16px; }
            cursor:grab; user-select:none; }
 #worldsvg.drag{ cursor:grabbing }
 #worldsvg path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5;
-                transition:fill .3s; }
+                transition:fill var(--t) var(--ease); }
 /* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다. */
 #worldsvg path.been{ fill:var(--primary); opacity:.85; }
 /* 다녀온 곳은 깃발로 꽂습니다. 동그라미보다 "찍었다" 는 느낌이 납니다.
@@ -1001,7 +1014,7 @@ body.kbon .assheet{ padding-bottom:16px; }
   flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
   padding:8px 0 6px; min-height:48px; color:var(--ink-48);
   border:0; background:none; border-radius:var(--r-pill);
-  transition:background .2s, color .2s;
+  transition:background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .tabbar button:active{ transform:none; }
 .tabbar span{ font-size:calc(11px * var(--ts)); letter-spacing:0; }
@@ -1046,3 +1059,23 @@ pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
        margin-top:var(--s-lg); }
 code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       font-size:.92em; }
+
+/* ── 움직임을 줄여 쓰는 사람 ────────────────────────────────────────
+   기기 설정에서 "동작 줄이기"를 켠 사람에게는 애니메이션이 멀미가 됩니다.
+   곳마다 따로 꺼주고 있었는데 새로 만든 것들이 계속 빠졌습니다.
+   여기서 한 번에 걷습니다 — 앞으로 무엇을 더 만들어도 자동으로 걸립니다.
+   **완전히 0 으로 두지는 않습니다.** 0s 로 끄면 transitionend 를 기다리는
+   코드가 영영 안 깨어납니다. 눈에 안 보일 만큼만 남깁니다. */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+  /* 기다리는 중이라는 표시만은 남깁니다. 이게 없으면 멈춘 줄 압니다. */
+  .load::before, .msg.ai.typing i, .iconbtn.sending svg{
+    animation-duration:1.2s !important;
+    animation-iteration-count:infinite !important;
+  }
+}

@@ -6189,21 +6189,64 @@ function syncSheets(){
     /* 손잡이 자리(위쪽 26px)에서 시작한 것만 잡습니다. 안쪽 스크롤과 안 부딪칩니다. */
     if (e.clientY - sheet.getBoundingClientRect().top > 26) return;
     const y0 = e.clientY;
+    const bg = $('sheetbg');
     let dy = 0;
+    /* 속도는 **직전 지점과 지금 지점**의 차이로 잽니다.
+       손 뗀 순간만 보면 마지막 move 와 좌표가 같아 늘 0 이 나옵니다. */
+    let py = y0, pt = performance.now(), v = 0;
+    const EASE = 'cubic-bezier(.32,.72,0,1)';   /* 아이폰 시트와 같은 느낌 */
+
     const move = ev => {
       dy = Math.max(0, ev.clientY - y0);
-      sheet.style.transform = `translateY(${dy}px)`;
       sheet.style.transition = 'none';
+      sheet.style.transform = `translateY(${dy}px)`;
+      /* 내릴수록 뒷판도 같이 걷힙니다. 시트만 움직이면 "닫히는 중"이 아니라
+         "미끄러진 것"처럼 보입니다. */
+      if (bg){ bg.style.transition = 'none';
+               bg.style.opacity = String(Math.max(0, 1 - dy / 320)); }
+
+      const now = performance.now(), dt = now - pt;
+      if (dt > 8){                       /* 너무 잦게 재면 값이 튑니다 */
+        v = (ev.clientY - py) / dt;      /* px/ms, 아래로 갈수록 + */
+        py = ev.clientY; pt = now;
+      }
     };
+
     const up = () => {
       document.removeEventListener('pointermove', move);
       document.removeEventListener('pointerup', up);
-      sheet.style.transition = 'transform .2s';
-      sheet.style.transform = '';
-      if (dy > 90){                       /* 이만큼 내리면 닫을 뜻으로 봅니다 */
+      /* 살짝만 내렸어도 **아래로 던졌으면** 닫는 게 맞습니다.
+         손가락이 빠르면 사람은 이미 닫을 마음을 먹은 것입니다.
+         손을 멈춘 채 오래 들고 있었으면 던진 것이 아니므로 속도를 버립니다. */
+      if (performance.now() - pt > 120) v = 0;
+      const shut = dy > 90 || (dy > 24 && v > 0.5);
+
+      if (!shut){
+        /* 제자리로. 뒷판도 같이 돌아옵니다. */
+        sheet.style.transition = `transform .22s ${EASE}`;
+        sheet.style.transform = '';
+        if (bg){ bg.style.transition = 'opacity .22s'; bg.style.opacity = ''; }
+        setTimeout(() => { sheet.style.transition = ''; if (bg) bg.style.transition = ''; }, 240);
+        return;
+      }
+
+      /* ── 닫기 ──
+         예전에는 여기서 transform 을 '' 로 되돌리고 곧바로 숨겼습니다.
+         그러면 끌어내리던 시트가 **위로 튕겨 올라갔다가** 사라져서,
+         쓸어내렸는데 닫기 단추를 누른 것처럼 뚝 끊겼습니다.
+         내리던 방향 그대로 끝까지 내려보내고, 다 내려간 뒤에 숨깁니다. */
+      const h = sheet.getBoundingClientRect().height || window.innerHeight;
+      sheet.style.transition = `transform .24s ${EASE}`;
+      sheet.style.transform = `translateY(${h}px)`;
+      if (bg){ bg.style.transition = 'opacity .24s'; bg.style.opacity = '0'; }
+
+      setTimeout(() => {
+        /* 다음에 열 때 내려간 채로 있으면 안 됩니다. 숨기기 **전에** 지웁니다. */
+        sheet.style.transition = ''; sheet.style.transform = '';
+        if (bg){ bg.style.transition = ''; bg.style.opacity = ''; }
         if (sheet.id === 'aiview') closeAi();
         else { sheet.classList.add('hide'); syncSheets(); }
-      }
+      }, 230);
     };
     document.addEventListener('pointermove', move);
     document.addEventListener('pointerup', up);
