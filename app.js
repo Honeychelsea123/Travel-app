@@ -7525,6 +7525,11 @@ if (window.visualViewport){
       document.body.appendChild(box);
 
       const show = () => {
+        /* position:fixed 는 iOS 에서 **키보드로 줄어들지 않는 바깥 화면**을
+           기준으로 붙습니다. 키보드가 올라와 화면이 밀리면 눈금자가 위로
+           사라집니다 — 정작 봐야 할 순간에 안 보였습니다.
+           보이는 화면(visualViewport)을 따라오게 매 프레임 자리를 잡아줍니다. */
+        box.style.top = (vv.offsetTop + 6) + 'px';
         const el = document.activeElement;
         const s  = $('aiview');
         const r  = s && !s.classList.contains('hide') ? s.getBoundingClientRect() : null;
