@@ -725,8 +725,33 @@ $('logout').addEventListener('click', async () => {
 const GRADE = { dense:'지하철 촘촘', normal:'대중교통 보통',
                 limited:'대중교통 약함', car:'차로 다니는 곳' };
 
+/* 뒤에서 다시 받아오는 중인지. 두 번 겹쳐 부르지 않으려고 둡니다. */
+let citiesRefreshing = false;
+
 async function loadCities(){
   if (cities) return;
+
+  /* ── 담아둔 것이 있으면 그걸 먼저 씁니다 ──
+     도시 313행에 설명 글까지 붙어 제법 무겁습니다. 그걸 다 받아야 홈도 여행도
+     그려지니, 켤 때마다 그 시간을 통째로 기다리고 있었습니다.
+     예전에는 이 캐시를 **연결이 끊겼을 때만** 꺼냈습니다. 그런데 도시 목록은
+     하루 사이에 바뀌는 자료가 아닙니다. 바로 꺼내 쓰고 새것은 뒤에서 받습니다.
+     서비스워커에서 배운 것과 같습니다 — 기다리는 설계가 집니다. */
+  const cached = cacheGet('cities');
+  if (cached?.cities?.length){
+    useCities(cached.cities, cached.countries);
+    if (!citiesRefreshing && !netIsDown()){
+      citiesRefreshing = true;
+      /* 화면은 이미 그려졌습니다. 새것이 오면 조용히 갈아끼웁니다. */
+      refreshCities().finally(() => { citiesRefreshing = false; });
+    }
+    return;
+  }
+  return refreshCities();
+}
+
+/* 실제로 받아오는 쪽. 위에서 캐시를 쓸 때는 이걸 뒤에서 돌립니다. */
+async function refreshCities(){
   /* 새로 붙인 칸(사진·설명)이 아직 DB에 없을 수 있습니다. 그때 질의가 통째로
      실패하면 도시 목록이 아예 안 나옵니다 — 한 번 그렇게 비어 버렸습니다.
      없는 칸은 빼고 다시 물어봐서, 마이그레이션이 늦어도 화면은 살아 있게 합니다. */
@@ -756,6 +781,9 @@ async function loadCities(){
   if (cs.error || ns.error){
     /* 못 받아왔으면 지난번 것을 씁니다. 도시 목록이 없으면 홈도 여행도 못 그립니다 —
        비행기모드에서 화면이 "불러오는 중…"에 멈춰 있던 곳이 여기였습니다. */
+    /* 뒤에서 새로 받는 중이었다면 화면에는 이미 도시가 있습니다.
+       그때 오류 상자를 띄우면 멀쩡한 화면 위에 빨간 줄만 얹힙니다. */
+    if (cities) return;
     const old = cacheGet('cities');
     if (old){ useCities(old.cities, old.countries); drawOffbar(); return; }
     fail(cs.error || ns.error, 'rate');
@@ -5090,17 +5118,28 @@ async function openTrip(id){
   drawTripHeader();
   document.body.classList.add('hastab');
   showTab('plans');
-  /* 구간을 먼저 읽어야 날짜 칩에 도시가 붙고 지출 통화가 맞습니다.
-     지출은 일행 이름을 쓰므로 일행도 먼저 읽습니다. */
+  /* 여기가 여행을 여는 체감 속도를 정합니다. 예전에는 왕복 다섯 번을 **차례로**
+     기다렸습니다 — 여행 → 구간 → 검토 → 나머지 → 지출·준비물.
+     서울 서버라도 휴대폰에서 한 번에 100ms 안팎이라 그대로 쌓입니다.
+     서로 필요 없는 것끼리는 같이 보냅니다.
+
+     남겨둔 순서 두 가지는 이유가 있습니다.
+       · 구간(legs) 먼저 — 날짜 칩에 도시 이름이 붙고 지출 통화가 여기서 정해집니다.
+         나중에 오면 칩을 한 번 그린 뒤 다시 그려야 합니다.
+       · 일행 먼저 — 지출과 준비물이 사람 이름을 씁니다.
+     대신 일행은 구간을 기다릴 이유가 없어 **같이 출발**시킵니다. */
+  const membersP = loadMembers();
+  const citiesP  = loadCities();
   await loadLegs();
-  await loadReview();
-  /* 준비물은 담당 이름을 쓰므로 일행 뒤에 붙입니다. */
   await Promise.all([
-    loadPlans(), loadBookings(), loadLinks(), loadCities(),
-    loadMembers().then(() => Promise.all([loadExpenses(), loadPacking()])),
+    loadPlans(), loadBookings(), loadLinks(), citiesP,
+    membersP.then(() => Promise.all([loadExpenses(), loadPacking()])),
   ]);
   fillCityList();
   watch();
+  /* 일정 검토 배지는 숫자 하나입니다. 이걸 기다리느라 화면 전체가 늦을 이유가
+     없습니다. 뒤로 보냅니다 — 늦게 와도 배지만 나중에 켜집니다. */
+  loadReview();
 }
 
 /* ── 실시간 ─────────────────────────────────────────────────────────
