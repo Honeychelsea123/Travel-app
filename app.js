@@ -7523,6 +7523,50 @@ if (window.visualViewport){
            (t === 'INPUT' && !/^(button|submit|checkbox|radio|file|range|color)$/i
                                 .test(el.type || 'text'));
   };
+  /* ── 키보드와 ∧ ∨ ✓ 막대 뒤 덮기 ──────────────────────────────────
+     b174 의 자 두 벌이 답을 줬습니다(홈 화면 앱, 키보드 올린 상태).
+
+       빨강 F(position:fixed)   → 레이아웃 바닥에서 **잘렸습니다**
+       파랑 A(position:absolute) → 막대 뒤로 **계속 이어졌습니다**
+       레이아웃 바닥이 문서 좌표 926, 막대 뒤가 대략 937~982
+
+     즉 그 자리에 그려지는 것은 **문서의 계속되는 부분**입니다. 그래서 세계지도가
+     비쳤습니다. 시트는 fixed 라 아무리 키워도 926 에서 잘립니다 — b170·b171 에서
+     시트와 box-shadow 로 두 번 시도해 두 번 다 실패한 이유가 이것입니다.
+     **문서 안에 덮개를 넣으면 덮입니다.** 파랑 자가 거기 그려진 것이 증거입니다. */
+  let kbCover = null;
+  const coverBelow = (on) => {
+    /* 시트가 없을 때는 덮으면 안 됩니다 — 그때 아래가 보이는 것은 정상입니다. */
+    if (!on || !document.body.classList.contains('sheeton')){
+      kbCover?.remove(); kbCover = null;
+      document.body.style.minHeight = '';
+      return;
+    }
+    if (!kbCover){
+      kbCover = document.createElement('div');
+      /* 시트(1210)보다 아래, 페이지 내용보다는 위입니다. */
+      kbCover.style.cssText = 'position:absolute; left:0; right:0; z-index:1205;' +
+                              'pointer-events:none';
+      document.body.appendChild(kbCover);
+    }
+    /* 열려 있는 시트의 색을 그대로 씁니다. AI 시트는 --parchment,
+       나머지 시트는 --canvas 라 하나로 못 박으면 한쪽이 어긋납니다. */
+    const sheet = document.querySelector('.aisheet:not(.hide), .assheet:not(.hide)');
+    kbCover.style.background = sheet
+      ? getComputedStyle(sheet).backgroundColor : 'var(--canvas)';
+
+    /* 레이아웃 바닥의 **문서 좌표**에서 시작합니다. 뷰포트 기준이 아닙니다 —
+       iOS 가 키보드를 띄우며 페이지를 스크롤하므로 scrollY 를 더해야 합니다. */
+    const top = Math.round(window.scrollY + window.innerHeight);
+    const h   = Math.round(window.innerHeight - vv.height) + 140;
+    kbCover.style.top    = top + 'px';
+    kbCover.style.height = h + 'px';
+    /* body.sheeton 은 overflow:hidden 이라 **body 상자 밖으로 나간 덮개는
+       잘립니다.** 짧은 화면에서 그렇게 됩니다. 스크롤은 이미 잠겨 있으니
+       늘려도 사용자 눈에는 아무 차이가 없습니다. */
+    document.body.style.minHeight = (top + h) + 'px';
+  };
+
   const fit = () => {
     /* **offsetTop 을 빼면 안 됩니다.** iOS 는 키보드가 올라올 때 레이아웃을
        줄이는 게 아니라 보이는 화면을 밀어 올립니다. 그러면 offsetTop 이 딱
@@ -7574,6 +7618,11 @@ if (window.visualViewport){
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
        펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
     document.body.classList.toggle('kbon', kb > 60);
+
+    /* **키보드가 올라왔는지는 --kb 로 알 수 없습니다.** 두 환경 다 0 입니다
+       (사파리 695−303−392, 홈화면앱 793−369−424). 레이아웃이 줄지 않고
+       보이는 창만 작아지므로, 판정은 그 차이로 합니다. */
+    coverBelow(typing() && (window.innerHeight - vv.height) > 60);
   };
   vv.addEventListener('resize', fit);
   vv.addEventListener('scroll', fit);
