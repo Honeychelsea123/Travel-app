@@ -7503,6 +7503,49 @@ if (window.visualViewport){
   addEventListener('focusin',  fit);
   addEventListener('focusout', () => setTimeout(fit, 60));
   fit();
+
+  /* ── 키보드 눈금자 (개발용) ───────────────────────────────────────
+   * 키보드가 올라왔을 때 레이아웃이 밀리는데, 저는 아이폰 키보드를 띄워서
+   * 재볼 수가 없습니다. 숫자를 화면에 찍어 사진 한 장으로 갈리게 합니다.
+   *
+   *   켜기 : 주소 끝에 ?kb=1     끄기 : ?kb=0
+   * 한 번 켜면 기억합니다 — 홈 화면 앱으로 열어도 그대로 나옵니다.
+   * 평소에는 아무에게도 안 보입니다. */
+  {
+    const q = new URLSearchParams(location.search).get('kb');
+    if (q === '1') localStorage.setItem('t2:kbdbg', '1');
+    if (q === '0') localStorage.removeItem('t2:kbdbg');
+
+    if (localStorage.getItem('t2:kbdbg') === '1'){
+      const box = document.createElement('div');
+      box.style.cssText =
+        'position:fixed; left:6px; top:6px; z-index:99999; pointer-events:none;' +
+        'background:rgba(0,0,0,.82); color:#0f0; font:11px/1.45 ui-monospace,monospace;' +
+        'padding:6px 8px; border-radius:8px; white-space:pre; max-width:70vw';
+      document.body.appendChild(box);
+
+      const show = () => {
+        const el = document.activeElement;
+        const s  = $('aiview');
+        const r  = s && !s.classList.contains('hide') ? s.getBoundingClientRect() : null;
+        const kb = getComputedStyle(document.documentElement)
+                     .getPropertyValue('--kb').trim();
+        box.textContent =
+          `--kb      ${kb}\n` +
+          `inner     ${window.innerHeight}\n` +
+          `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}\n` +
+          `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>\n` +
+          `kbon      ${document.body.classList.contains('kbon') ? 'Y' : 'N'}\n` +
+          (r ? `시트 top ${Math.round(r.top)}  h ${Math.round(r.height)}\n` +
+               `시트 bot ${Math.round(r.bottom)}  (화면 ${window.innerHeight})\n` +
+               `삐져나감  위 ${Math.round(Math.min(0, r.top))} / ` +
+               `아래 ${Math.round(Math.max(0, r.bottom - (window.innerHeight - parseInt(kb) || 0)))}`
+             : '시트 닫힘');
+        requestAnimationFrame(show);
+      };
+      show();
+    }
+  }
 }
 
 /* ── 시작 ───────────────────────────────────────────────────────── */
