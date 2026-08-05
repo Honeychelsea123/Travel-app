@@ -7495,7 +7495,14 @@ if (window.visualViewport){
                                 .test(el.type || 'text'));
   };
   const fit = () => {
-    const kb = typing() ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    /* **offsetTop 을 빼면 안 됩니다.** iOS 는 키보드가 올라올 때 레이아웃을
+       줄이는 게 아니라 보이는 화면을 밀어 올립니다. 그러면 offsetTop 이 딱
+       키보드 높이만큼 커져서, 빼는 순간 식이 스스로를 상쇄해 0 이 됩니다.
+       실측(아이폰 사파리): inner 695, vv.h 392, offsetTop 303 → 695-392-303 = 0.
+       그래서 --kb 가 0 이 되고 높이 제한이 안 걸려, 시트가 86vh(632)로 그려져
+       보이는 높이 392 를 넘어 위로 240px 잘려 나갔습니다.
+       키보드가 먹은 높이는 그냥 innerHeight - vv.height 입니다. */
+    const kb = typing() ? Math.max(0, window.innerHeight - vv.height) : 0;
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
