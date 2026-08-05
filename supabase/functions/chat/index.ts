@@ -32,7 +32,7 @@ const json = (body: unknown, status = 200) =>
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 
-async function callGemini(model: string, key: string, contents: unknown) {
+async function callGemini(model: string, key: string, contents: unknown, temp = 0.7) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -41,7 +41,7 @@ async function callGemini(model: string, key: string, contents: unknown) {
       body: JSON.stringify({
         contents,
         generationConfig: {
-          temperature: 0.7,
+          temperature: temp,
           responseMimeType: 'application/json',   // 제안을 카드로 만들려면 형식이 있어야 합니다
         },
       }),
@@ -335,9 +335,14 @@ function splitText(s: string, size: number, maxParts: number) {
 
 /** 한 번 물어보고 글자만 꺼냅니다. 한도(429)에 걸리면 가벼운 모델로 한 번 더. */
 // deno-lint-ignore no-explicit-any
-async function askGemini(key: string, contents: any[]) {
-  let r = await callGemini(MODEL, key, contents);
-  if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
+async function askGemini(key: string, contents: any[], fast = false) {
+  // 불러오기는 '읽어서 옮기기'입니다. 추론이 아니라 추출이라 가벼운 모델로 충분하고
+  // 훨씬 빠릅니다. 실측: 큰 모델로 34초였습니다. 실패하면 큰 모델로 한 번 더.
+  // temperature 0 — 옮겨 적는 일에 창의성은 손해입니다.
+  const first = fast ? MODEL_FALLBACK : MODEL;
+  const second = fast ? MODEL : MODEL_FALLBACK;
+  let r = await callGemini(first, key, contents, fast ? 0 : 0.7);
+  if (r.code !== 200) r = await callGemini(second, key, contents, fast ? 0 : 0.7);
   if (r.code !== 200) return null;
   try {
     const parts = JSON.parse(r.body)?.candidates?.[0]?.content?.parts ?? [];
@@ -665,7 +670,7 @@ Deno.serve(async (req) => {
       '- 표에서는 장소 이름이 들어 있는 칸을 제목으로 쓴다.',
       '  가격·메모·비고 칸은 memo 에 짧게 옮긴다.',
       '- 숙소·항공편·기차도 일정이다. 분류를 숙소·이동으로 준다.',
-      '- 좌표는 확실히 아는 곳만. 모르면 null. 지어낸 좌표는 넣지 않는다.',
+      '- 좌표는 적지 않는다. 우리가 나중에 채운다. lat·lng 칸을 아예 내지 않는다.',
       '- 같은 일정이 두 번 적혀 있으면 한 번만 낸다.',
       '',
       '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
@@ -674,7 +679,7 @@ Deno.serve(async (req) => {
       '  "actions": [',
       '    { "type":"add_plan", "date":"YYYY-MM-DD", "start_time":"HH:MM" 또는 null,',
       '      "title":"제목", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
-      '      "memo":"한 줄" 또는 null, "lat":숫자 또는 null, "lng":숫자 또는 null }',
+      '      "memo":"한 줄" 또는 null }',
       '  ]',
       '}',
       '',
@@ -728,7 +733,7 @@ Deno.serve(async (req) => {
             `아래가 옮길 일정이다. 전체를 ${chunks.length}조각으로 나눈 것 중 ` +
             `${i + 1}번째다. **이 조각에 적힌 것만** 옮기고, 여기 없는 날은 만들지 않는다.` +
             '\n\n' + c }] },
-      ])));
+      ]), true)));
 
       // 조각끼리 같은 일정을 겹쳐 낼 수 있습니다(앞뒤가 잘린 자리).
       // 날짜·시각·제목이 같으면 같은 것으로 봅니다.
@@ -753,6 +758,12 @@ Deno.serve(async (req) => {
         return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
       raw = JSON.stringify({
         reply: reply || `${acts.length}개를 찾았습니다.`, actions: acts });
+    } else if (imp) {
+      /* 조각을 안 나눈 짧은 자료도 똑같이 가벼운 모델로 갑니다.
+         여기만 큰 모델로 두면 "짧은 게 더 느린" 이상한 일이 생깁니다. */
+      const t = await askGemini(key, contents, true);
+      if (!t) return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
+      raw = t;
     } else {
       let r = await callGemini(MODEL, key, contents);
       if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
