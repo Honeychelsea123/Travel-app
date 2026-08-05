@@ -7576,7 +7576,9 @@ if (window.visualViewport){
         const cliH = document.documentElement.clientHeight;
         /* 시트 바닥을 레이아웃 기준으로 환산합니다. rect 는 보이는 화면 기준입니다. */
         const botLay = r ? Math.round(r.bottom + vv.offsetTop) : null;
-        const s = $('aiview');
+        /* 위에서 이미 s 로 잡아뒀습니다. 여기서 또 const s 를 쓰면
+           "Identifier 's' has already been declared" 로 **app.js 가 통째로
+           파싱에 실패합니다** — 눈금자 안이든 밖이든 문법 오류는 앱을 죽입니다. */
         const tf = s?.style.transform || '(없음)';
 
         box.textContent =
