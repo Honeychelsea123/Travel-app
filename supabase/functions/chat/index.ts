@@ -365,6 +365,11 @@ Deno.serve(async (req) => {
 
     // ── 여행 자료 ── 없으면 없는 대로 답합니다.
     let ctx = '';
+    // 링크 읽기를 **여기서 미리 걸어둡니다.** 아래 여행 자료를 받아오는 동안
+    // 같이 돌게 하려는 것입니다. 예전에는 자료를 다 받은 뒤에야 시작해서
+    // 그 둘이 순서대로 더해졌습니다. 결과는 쓸 자리에서 기다립니다.
+    const linksP = readLinks(String(message ?? ''));
+
     // 아래 안전장치에서도 씁니다 — 좌표가 구간 중심에서 먼지 봐야 하므로.
     // deno-lint-ignore no-explicit-any
     let legs: any[] = [];
@@ -372,29 +377,36 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     let tripRow: any = null;
     if (trip_id) {
-      const { data: trip } = await asUser.from('trips')
-        .select('title,destination,country,start_date,end_date,timezone,currency,' +
-                'home_currency,walk_max_km,transit_factor,transit_base_min')
-        .eq('id', trip_id).maybeSingle();
-
-      tripRow = trip;
-      if (trip) {
+      // 넷을 차례로 물었습니다. 넷 다 trip_id 하나만 있으면 되는데도
+      // 앞의 답을 기다렸습니다 — 오갈 때마다 붙는 시간이 그대로 쌓입니다.
+      // 한꺼번에 보냅니다. 제일 느린 하나만큼만 걸립니다.
+      const [tripRes, legRes, planRes, expRes] = await Promise.all([
+        asUser.from('trips')
+          .select('title,destination,country,start_date,end_date,timezone,currency,' +
+                  'home_currency,walk_max_km,transit_factor,transit_base_min')
+          .eq('id', trip_id).maybeSingle(),
         // 여러 도시·나라를 도는 여행이면 구간마다 통화·시간대·이동방식이 다릅니다.
         // 이걸 안 주면 AI 가 여행 전체를 한 도시로 보고 답합니다.
-        const legRes = await asUser.from('trip_legs')
+        asUser.from('trip_legs')
           .select('destination,country,start_date,end_date,timezone,currency,' +
                   'center_lat,center_lng,walk_max_km,transit_factor,transit_base_min')
-          .eq('trip_id', trip_id).order('start_date');
-        legs = legRes.data ?? [];
-
-        const { data: plans } = await asUser.from('plans')
+          .eq('trip_id', trip_id).order('start_date'),
+        asUser.from('plans')
           .select('date,start_time,end_time,category,title,memo')
           .eq('trip_id', trip_id).is('deleted_at', null)
-          .order('date').order('start_time');
-        const { data: exp } = await asUser.from('expenses')
+          .order('date').order('start_time'),
+        asUser.from('expenses')
           .select('date,title,amount,currency,category')
           .eq('trip_id', trip_id).is('deleted_at', null)
-          .order('date', { ascending: false }).limit(30);
+          .order('date', { ascending: false }).limit(30),
+      ]);
+
+      const trip = tripRes.data;
+      tripRow = trip;
+      if (trip) {
+        legs = legRes.data ?? [];
+        const plans = planRes.data;
+        const exp = expRes.data;
 
         ctx = [
           `[여행] ${trip.title}`,
@@ -478,7 +490,7 @@ Deno.serve(async (req) => {
     // 남이 짜둔 일정·맛집 목록은 대부분 블로그에 있습니다. 옮겨 적는 대신 읽어 옵니다.
     // 링크는 하나만 읽었는데, 사람들은 블로그 두세 개를 한꺼번에 붙여넣습니다.
     // 최대 셋까지 **동시에** 읽습니다. 하나씩 읽으면 셋에 24초가 걸립니다.
-    const { block: blogBlock, report: blogReport } = await readLinks(String(message ?? ''));
+    const { block: blogBlock, report: blogReport } = await linksP;
 
     // ── 웹 검색 ──
     // 영업시간·가격·평점처럼 바뀌는 것은 우리 자료에 없습니다.
@@ -487,7 +499,10 @@ Deno.serve(async (req) => {
     // 링크가 있으면 검색도 안 합니다 — 검색어가 주소가 되어 엉뚱한 결과만 옵니다.
     let hits: { title: string; snippet: string; link: string }[] | null = null;
     const tavily = Deno.env.get('TAVILY_KEY');
-    if (tavily && !draft && !shot && !blog && needsSearch(String(message))) {
+    // 링크를 줬으면 웹 검색은 건너뜁니다 — 읽을 글을 이미 받았습니다.
+    // 예전 변수(blog)를 여러 링크(blogBlock)로 바꾸면서 이 줄을 안 고쳐
+    // "blog is not defined" 로 답이 통째로 막혔습니다.
+    if (tavily && !draft && !shot && !blogBlock && needsSearch(String(message))) {
       const dest = tripRow?.destination ?? '';
       hits = await webSearch(tavily, admin,
         searchQuery(String(message), dest), 5,
