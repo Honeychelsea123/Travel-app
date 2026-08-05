@@ -5895,12 +5895,34 @@ $('imp_go').addEventListener('click', async () => {
   if (!text && !impShots.length)
     return fail('사진이나 파일을 고르거나, 일정을 붙여넣어주세요.', 'imp');
 
-  b.disabled = true; b.innerHTML = '<span class="load">읽는 중…</span>';
+  /* 20~30초가 걸리는 일입니다. "읽는 중…" 하나만 두면 멈춘 줄 알고 다시 누릅니다.
+     지금 무엇을 하고 있는지 단계로 바꿔 보여줍니다. 진짜 진행률은 알 수 없지만
+     **글자가 바뀌는 것만으로도 살아 있다는 신호가 됩니다.** */
+  const hasLink = /https?:\/\//.test(text);
+  const steps = [
+    [0,     hasLink ? '링크를 여는 중…' : '읽는 중…'],
+    [4000,  hasLink ? '블로그 글을 읽는 중…' : '내용을 살펴보는 중…'],
+    [9000,  '날짜와 장소를 골라내는 중…'],
+    [16000, '거의 다 됐어요…'],
+    [26000, '조금만 더요. 글이 길면 오래 걸려요…'],
+  ];
+  const timers = steps.map(([ms, msg]) => setTimeout(
+    () => { b.innerHTML = `<span class="load">${esc(msg)}</span>`; }, ms));
+
+  b.disabled = true; b.innerHTML = `<span class="load">${esc(steps[0][1])}</span>`;
   const { data, error } = await sb.functions.invoke('chat', {
     body: { trip_id: trip.id, mode: 'import', message: text.slice(0, 8000),
             images: impShots.map(s => ({ mime: s.mime, data: s.data })) },
   });
+  timers.forEach(clearTimeout);
   b.disabled = false; b.textContent = '읽어오기';
+
+  /* 링크를 줬는데 못 읽었으면 그 사실을 말해줍니다. 조용히 넘어가면
+     "링크를 왜 무시하지?"만 알고 이유를 모릅니다. */
+  const bad = (data?.blogs || []).filter(x => !x.ok);
+  if (bad.length)
+    toast(bad.length === 1 ? '링크 1개는 못 읽었어요 (로그인이 필요하거나 막힌 글)'
+                           : `링크 ${bad.length}개는 못 읽었어요`);
 
   if (error || data?.error){
     let why = data?.error || error?.message || '';
@@ -5908,7 +5930,10 @@ $('imp_go').addEventListener('click', async () => {
     return fail(why, 'imp');
   }
   if (!data.actions?.length)
-    return fail('일정을 못 찾았어요. 사진이 흐리거나 형식이 낯설 수 있어요.', 'imp');
+    return fail(bad.length
+      ? '링크를 못 읽었어요. 로그인이 필요한 글이거나 막아둔 블로그일 수 있어요. ' +
+        '글을 복사해서 아래 칸에 붙여넣으면 그대로 읽어드려요.'
+      : '일정을 못 찾았어요. 사진이 흐리거나 형식이 낯설 수 있어요.', 'imp');
 
   /* 결과는 AI 시트에서 봅니다. 담기·되돌리기가 거기 이미 있습니다 —
      여기서 또 만들면 두 벌이 되고 언젠가 한쪽만 고칩니다. */
@@ -6135,25 +6160,34 @@ const TRASH_KO = { plan:'일정', expense:'지출', booking:'예약' };
 const TRASH_TABLE = { plan:'plans', expense:'expenses', booking:'bookings' };
 
 async function loadTrash(){
+  const card = $('card-trash');
+  const kind = TAB_TRASH[tab];
+  /* 되살릴 것이 없으면 카드를 아예 안 보여줍니다. "지운 것이 없어요"만 적힌
+     빈 카드는 매번 자리만 먹고, 그걸 보려고 탭을 여는 사람은 없습니다. */
+  const hideCard = () => card.classList.add('hide');
+  if (!kind) return hideCard();
+
   $('trasherr').classList.add('hide');
   const { data, error } = await netTimeout(sb.rpc('deleted_items', { p_trip: trip.id }));
-  if (error && isOffline(error)){ offNote('trash'); $('trashcount').textContent = ''; drawOffbar(); return; }
   if (error){
-    /* 032 를 아직 안 올렸으면 함수가 없습니다. 오류 상자 대신 안내로 둡니다. */
-    $('trash').innerHTML = '<div class="empty">지운 것을 불러오지 못했어요.</div>';
-    $('trashcount').textContent = '';
-    return fail(error, 'trash');
+    /* 못 불러오면 조용히 접습니다. 되살리기는 급한 기능이 아니라
+       여기서 오류 상자를 띄우면 정작 보러 온 일정 위에 얹힙니다. */
+    if (isOffline(error)) drawOffbar();
+    return hideCard();
   }
-  const rows = data || [];
-  $('trashcount').textContent = rows.length ? `${rows.length}개` : '';
-  $('trash').innerHTML = rows.length
-    ? rows.map(r => `<div class="row">
-        <span class="label"><b>${esc(r.title)}</b>
-          <div class="memo">${esc(TRASH_KO[r.kind] || r.kind)} · ${esc(r.sub || '')}</div></span>
-        ${trip.myRole === 'viewer' ? ''
-          : `<button class="ghost" data-undel="${esc(r.kind)}:${esc(r.id)}"
-                     style="color:var(--primary)">되살리기</button>`}</div>`).join('')
-    : '<div class="empty">지운 것이 없어요.</div>';
+
+  const rows = (data || []).filter(r => r.kind === kind);
+  if (!rows.length) return hideCard();
+
+  card.classList.remove('hide');
+  $('trashtitle').textContent = `지운 ${TRASH_KO[kind]}`;
+  $('trashcount').textContent = `${rows.length}개`;
+  $('trash').innerHTML = rows.map(r => `<div class="arow">
+      <span class="k"><b>${esc(r.title)}</b>
+        <span class="m">${esc(r.sub || '')}</span></span>
+      ${trip.myRole === 'viewer' ? ''
+        : `<button class="ghost" data-undel="${esc(r.kind)}:${esc(r.id)}"
+                   style="color:var(--primary); padding:4px 6px">되살리기</button>`}</div>`).join('');
 }
 
 $('trash').addEventListener('click', async e => {
@@ -6176,28 +6210,39 @@ $('trash').addEventListener('click', async e => {
 /* ── 탭 ─────────────────────────────────────────────────────────────
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
+/* 지운 것(card-trash)이 일행 탭에 있었습니다. 일행과 아무 상관이 없고,
+   **지운 것은 지운 자리에서 되살리는 것이 맞습니다.** 세 탭에 같이 걸고
+   내용은 그 탭 것만 보여줍니다. DOM 에서는 맨 끝에 있어서 어느 탭에 나와도
+   그 탭 카드들 뒤에 붙습니다 — 자리를 옮기지 않아도 됩니다. */
 const TABS = {
-  plans: ['card-today', 'card-plans', 'card-cand', 'plancard', 'importcard'],
-  exp:   ['card-exp', 'expcard', 'settlecard'],
-  prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
-  mem:   ['card-mem', 'card-trash']
+  plans: ['card-today', 'card-plans', 'card-cand', 'plancard', 'importcard', 'card-trash'],
+  exp:   ['card-exp', 'expcard', 'settlecard', 'card-trash'],
+  prep:  ['card-book', 'bookcard', 'card-pack', 'card-link', 'card-trash'],
+  mem:   ['card-mem'],
 };
+/* 어느 탭이 어떤 것을 되살리는가 */
+const TAB_TRASH = { plans:'plan', exp:'expense', prep:'booking' };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
 
 function showTab(t){
   tab = t;
-  for (const [k, ids] of Object.entries(TABS))
-    for (const id of ids){
-      const on = k === t && !FORMS.includes(id)
-                 && !(id === 'settlecard' && !settleOn);
-      $(id).classList.toggle('hide', !on);
-    }
+  /* 한 id 가 여러 탭에 걸리게 되면서, 예전처럼 탭마다 따로 끄면 뒤 탭 차례에
+     방금 켠 것이 다시 꺼집니다. 켤 것을 먼저 모아두고 한 번에 정합니다. */
+  const on = new Set(TABS[t].filter(id => !FORMS.includes(id)));
+  if (!settleOn) on.delete('settlecard');
+  /* 지운 것은 있을 때만 켭니다. loadTrash 가 세어보고 다시 정합니다 —
+     여기서는 일단 끄고, 되살릴 게 있으면 그쪽에서 켭니다. */
+  on.delete('card-trash');
+
+  for (const ids of Object.values(TABS))
+    for (const id of ids) $(id).classList.toggle('hide', !on.has(id));
+
   $('editcard').classList.add('hide');
   document.querySelectorAll('#tabbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.t === t));
   /* 지운 것은 열 때만 받아옵니다. 대부분은 볼 일이 없어서 미리 받으면 낭비입니다. */
-  if (t === 'mem') loadTrash();
+  if (TAB_TRASH[t]) loadTrash();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 $('tabbar').addEventListener('click', e => {
@@ -6227,23 +6272,36 @@ function money(n, cur){
    from=KRW 로 받으면 EUR 이 0.0006 처럼 네 자리로 잘려 와서 되돌릴 때
    1,667원이 됩니다. 실제는 1,658원 — 0.5% 가 틀어집니다.
    EUR 기준이면 KRW=1657.99 로 제대로 옵니다. */
+/* 주소가 api.frankfurter.app 에서 api.frankfurter.dev/v1 로 옮겨갔습니다.
+   옛 주소도 301 로 넘겨주긴 하는데 **그 301 응답에 CORS 헤더가 없습니다.**
+   브라우저는 리다이렉트를 따라가기 전에 그걸 보고 막아버립니다 — 그래서
+   통화와 상관없이 환율이 전부 실패했습니다. 화면에는 "유럽중앙은행이 안 내는
+   통화일 수 있다"고 떴는데, GBP 는 당연히 내는 통화입니다. 틀린 진단이었습니다.
+   (curl 로는 멀쩡히 보여서 더 헷갈립니다. curl 은 CORS 를 안 봅니다.) */
+const FX_API = 'https://api.frankfurter.dev/v1';
+
+/* 왜 실패했는지 부르는 쪽이 알아야 안내를 제대로 씁니다. */
+let fxLastFail = '';
+
 async function fxFor(date){
   const key = `t2:fx:${date}`;
   const hit = localStorage.getItem(key);
-  if (hit) return JSON.parse(hit);
+  if (hit){ try { return JSON.parse(hit); } catch { localStorage.removeItem(key); } }
 
-  /* 아직 환율이 안 나온 날짜(미래·오늘)는 404 입니다. 그럴 땐 최신값을 씁니다. */
+  /* 아직 환율이 안 나온 날짜(미래·오늘·주말)는 404 입니다. 그럴 땐 최신값을 씁니다. */
   for (const d of [date, 'latest']){
     try {
-      const r = await fetch(`https://api.frankfurter.app/${d}?from=EUR`);
+      const r = await fetch(`${FX_API}/${d}?base=EUR`);
       if (!r.ok) continue;
       const j = await r.json();
       if (!j?.rates) continue;
       const v = { date: j.date, rates: j.rates };
-      localStorage.setItem(key, JSON.stringify(v));
+      try { localStorage.setItem(key, JSON.stringify(v)); } catch {}
+      fxLastFail = '';
       return v;
-    } catch { /* 다음 것으로 */ }
+    } catch { fxLastFail = 'net'; }   /* 연결 자체가 안 된 것 */
   }
+  if (!fxLastFail) fxLastFail = 'net';
   return null;
 }
 
@@ -6479,8 +6537,14 @@ async function fillRates(){
     if (up.error || !up.data?.length) fail_++; else ok++;
   }
   await loadExpenses();
-  if (fail_) fail(`${ok}건을 채웠어요. ${fail_}건은 환율을 못 구했어요 ` +
-                  `(유럽중앙은행이 안 내는 통화일 수 있어요).`, 'exp');
+  /* 예전에는 실패하면 무조건 "유럽중앙은행이 안 내는 통화"라고 했습니다.
+     실제로는 환율 서비스에 아예 연결이 안 되고 있었는데 그 안내를 보고
+     통화 탓을 하게 됩니다. 무엇이 안 됐는지 갈라서 말합니다. */
+  if (fail_) fail(fxLastFail === 'net'
+    ? `${ok}건을 채웠어요. ${fail_}건은 환율 서비스에 연결하지 못했어요. ` +
+      `잠시 뒤 다시 눌러보시고, 계속 안 되면 금액을 직접 적어주세요.`
+    : `${ok}건을 채웠어요. ${fail_}건은 환율이 없어요 ` +
+      `(유럽중앙은행이 안 내는 통화입니다).`, 'exp');
 }
 
 $('addexpbtn').addEventListener('click', () => {

@@ -173,43 +173,116 @@ async function webSearch(key: string, admin: any, query: string,
 //
 // 실패하면 null. 부르는 쪽은 없으면 없는 대로 갑니다.
 // ─────────────────────────────────────────────────────────────────────
-async function readBlog(raw: string) {
-  let u = String(raw || '').trim();
-  if (!/^https?:\/\//i.test(u)) return null;
-  u = u.replace('://blog.naver.com', '://m.blog.naver.com');
+const BLOG_MS   = 8000;   // 한 곳당 최대 대기. 넘으면 버립니다
+const BLOG_MAX  = 3;      // 한 번에 읽을 링크 수
+const BLOG_CHARS = 9000;  // 한 글에서 가져갈 글자 수
+
+// 본문이 들어 있을 만한 자리. **위에서부터** 찾아 처음 걸리는 것을 씁니다.
+// 네이버만 보고 있었더니 티스토리·브런치·벨로그는 페이지 전체가 넘어가서
+// 메뉴·사이드바 글자가 일정으로 둔갑했습니다.
+const BODY_PATTERNS: RegExp[] = [
+  /<div[^>]*class="[^"]*se-main-container[^"]*"[\s\S]*?<\/body>/i,  // 네이버 스마트에디터
+  /<div[^>]*id="postViewArea"[\s\S]*?<\/body>/i,                    // 네이버 구 에디터
+  /<div[^>]*class="[^"]*(entry-content|article_view|tt_article_useless_p_margin)[^"]*"[\s\S]*?<\/body>/i, // 티스토리
+  /<div[^>]*class="[^"]*wrap_body[^"]*"[\s\S]*?<\/body>/i,          // 브런치
+  /<article[\s\S]*?<\/article>/i,                                   // 표준
+  /<main[\s\S]*?<\/main>/i,
+];
+
+/** 시간 제한을 건 fetch. 없으면 느린 블로그 하나가 요청 전체를 붙잡습니다. */
+async function fetchText(u: string, ms: number) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
   try {
     const res = await fetch(u, {
+      signal: ac.signal,
+      redirect: 'follow',
       headers: {
         // 모바일 브라우저인 척해야 모바일 본문이 옵니다.
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) ' +
                       'AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile Safari/604.1',
+        'Accept-Language': 'ko,en;q=0.8',
       },
-      redirect: 'follow',
     });
     if (!res.ok) return null;
-    const html = await res.text();
-
-    // 네이버 스마트에디터의 본문 영역. 없으면 페이지 전체를 씁니다.
-    const m = html.match(/<div[^>]*class="[^"]*se-main-container[^"]*"[\s\S]*?<\/body>/i);
-    const body = m ? m[0] : html;
-
-    const text = body
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-      .replace(/[ \t]+/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-
-    // 너무 짧으면 껍데기만 온 것입니다. 그걸 근거로 답하면 지어내게 됩니다.
-    return text.length < 200 ? null : text.slice(0, 12000);
+    return await res.text();
   } catch {
-    return null;
+    return null;                 // 시간 초과도 여기로 옵니다
+  } finally {
+    clearTimeout(t);
   }
+}
+
+function htmlToText(html: string) {
+  let body = html;
+  for (const p of BODY_PATTERNS) {
+    const m = html.match(p);
+    if (m) { body = m[0]; break; }
+  }
+  return body
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    // 본문 영역을 못 찾아 페이지 전체를 쓰게 됐을 때 메뉴·꼬리말을 걷어냅니다.
+    .replace(/<(nav|header|footer|aside|form|select)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function readBlog(raw: string) {
+  let u = String(raw || '').trim().replace(/[)\]},.;]+$/, '');  // 문장 끝 기호가 붙어 옵니다
+  if (!/^https?:\/\//i.test(u)) return null;
+  // 네이버는 본문을 iframe 안에 넣어서 원래 주소로 받으면 껍데기만 옵니다.
+  u = u.replace('://blog.naver.com', '://m.blog.naver.com');
+
+  let html = await fetchText(u, BLOG_MS);
+  let text = html ? htmlToText(html) : '';
+
+  // 네이버 구형 주소는 모바일로 바꿔도 iframe 껍데기가 옵니다.
+  // 그 안에 진짜 주소가 적혀 있으니 한 번만 따라 들어갑니다.
+  if (html && text.length < 200) {
+    const inner = html.match(/<iframe[^>]+src="([^"]+)"/i)?.[1];
+    if (inner) {
+      const abs = inner.startsWith('http') ? inner
+                : 'https://m.blog.naver.com' + (inner.startsWith('/') ? inner : '/' + inner);
+      html = await fetchText(abs, BLOG_MS);
+      text = html ? htmlToText(html) : '';
+    }
+  }
+
+  // 너무 짧으면 껍데기만 온 것입니다. 그걸 근거로 답하면 지어내게 됩니다.
+  if (text.length < 200) return null;
+  return text.slice(0, BLOG_CHARS);
+}
+
+/**
+ * 글에서 링크를 찾아 **한꺼번에** 읽습니다.
+ * 하나씩 읽으면 세 개에 24초가 걸립니다 — 서로 기다릴 이유가 없습니다.
+ * 읽었는지 못 읽었는지를 같이 돌려줍니다. 조용히 실패하면 사용자는
+ * "왜 링크를 무시하지?"만 알고 이유를 모릅니다.
+ */
+async function readLinks(message: string) {
+  const urls = [...new Set(String(message ?? '')
+    .match(/https?:\/\/[^\s<>"']+/g) ?? [])].slice(0, BLOG_MAX);
+  if (!urls.length) return { block: '', report: [] as { link: string; ok: boolean }[] };
+
+  const got = await Promise.all(urls.map(async (u) => ({ link: u, text: await readBlog(u) })));
+  const okOnes = got.filter((g) => g.text);
+
+  const block = okOnes.length
+    ? okOnes.map((g) =>
+        `\n[사용자가 준 글] ${g.link}\n` +
+        '아래는 그 글의 본문이다. 메뉴·댓글·광고 문구가 섞여 있으니 장소 정보만 골라 쓴다.\n' +
+        g.text + '\n[글 끝]\n').join('')
+    : '';
+
+  return { block, report: got.map((g) => ({ link: g.link, ok: !!g.text })) };
 }
 
 /** 두 좌표 사이 거리(km). 이동 시간과 "너무 먼 좌표 버리기"에 씁니다. */
@@ -403,13 +476,9 @@ Deno.serve(async (req) => {
 
     // ── 링크를 던졌으면 그 글을 읽어옵니다 ──
     // 남이 짜둔 일정·맛집 목록은 대부분 블로그에 있습니다. 옮겨 적는 대신 읽어 옵니다.
-    const link = String(message ?? '').match(/https?:\/\/[^\s]+/)?.[0] ?? '';
-    const blog = link ? await readBlog(link) : null;
-    const blogBlock = blog
-      ? `\n[사용자가 준 글] ${link}\n` +
-        '아래는 그 글의 본문이다. 메뉴·댓글·광고 문구가 섞여 있으니 장소 정보만 골라 쓴다.\n' +
-        blog + '\n[글 끝]\n'
-      : '';
+    // 링크는 하나만 읽었는데, 사람들은 블로그 두세 개를 한꺼번에 붙여넣습니다.
+    // 최대 셋까지 **동시에** 읽습니다. 하나씩 읽으면 셋에 24초가 걸립니다.
+    const { block: blogBlock, report: blogReport } = await readLinks(String(message ?? ''));
 
     // ── 웹 검색 ──
     // 영업시간·가격·평점처럼 바뀌는 것은 우리 자료에 없습니다.
@@ -636,6 +705,9 @@ Deno.serve(async (req) => {
       // 어디서 읽어온 것인지 링크째 돌려줍니다. 눌러서 직접 확인할 수 있어야
       // "검색해서 답했다"는 말이 확인 가능한 말이 됩니다.
       web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
+      // 링크를 읽었는지 못 읽었는지. 조용히 실패하면 사용자는 "왜 링크를 무시하지?"만
+      // 알고 이유를 모릅니다. 화면에서 "이 링크는 못 읽었어요"라고 말해줍니다.
+      blogs: blogReport.length ? blogReport : undefined,
       used: take.used, limit: take.limit,
       // 어느 날이 비었는지는 화면에서 알려줍니다. 다시 짜달라고 할지 사용자가 정합니다.
       days: (draft || imp) ? days : undefined,

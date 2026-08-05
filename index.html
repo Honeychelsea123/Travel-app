@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b155">
+<link rel="stylesheet" href="app.css?v=b156">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1158,8 +1158,8 @@
 
       <!-- 지운 것 — 진짜로 지우지 않고 숨겨만 뒀는데(001 의 규칙 1),
            되살리는 길이 화면에 없어서 사실상 영영 지운 것과 같았습니다. -->
-      <div class="card" id="card-trash">
-        <h2><span class="grow">지운 것</span>
+      <div class="card hide" id="card-trash">
+        <h2><span class="grow" id="trashtitle">지운 것</span>
           <span class="val" id="trashcount"></span></h2>
         <div id="trash"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="trasherr" class="hide"></pre>
@@ -1260,10 +1260,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b155</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b156</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b155"></script>
+<script type="module" src="app.js?v=b156"></script>
 </body>
 </html>
 
