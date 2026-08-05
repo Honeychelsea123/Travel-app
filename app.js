@@ -1434,11 +1434,24 @@ $('ai_send').addEventListener('click', async () => {
   await loadChats(tripId);
   showTyping();          /* 답이 올 자리에 점 세 개. 화면이 멈춘 게 아니라는 표시 */
 
-  const { data, error } = await sb.functions.invoke('chat',
-    { body: { trip_id: tripId || null, message: msg,
-              /* 한 장만 보낼 때도 images 로 보냅니다. 서버가 옛 image 도 받아주지만
-                 보내는 쪽이 두 갈래면 언젠가 한쪽만 고칩니다. */
-              images: shots.map(s => ({ mime: s.mime, data: s.data })) } });
+  /* 사진을 붙이면 점 세 개가 **영원히** 돌았습니다. 요청이 끝나지도, 실패하지도
+     않으면 화면은 알 길이 없습니다 — 원인이 무엇이든 그 상태로 두면 안 됩니다.
+     기다릴 시간을 정해두고, 넘으면 그렇다고 말합니다.
+     사진은 올려 보내는 것 자체가 오래 걸려 넉넉히 줍니다. */
+  const wait = shots.length ? 150000 : 90000;
+  const { data, error } = await Promise.race([
+    sb.functions.invoke('chat',
+      { body: { trip_id: tripId || null, message: msg,
+                /* 한 장만 보낼 때도 images 로 보냅니다. 서버가 옛 image 도 받아주지만
+                   보내는 쪽이 두 갈래면 언젠가 한쪽만 고칩니다. */
+                images: shots.map(s => ({ mime: s.mime, data: s.data })) } }),
+    new Promise(r => setTimeout(() => r({ data:null, error:{ message:
+      shots.length
+        ? `사진을 읽는 데 ${Math.round(wait / 1000)}초를 넘겼어요. ` +
+          '사진을 한 장으로 줄이거나 다시 찍어서 올려보세요.'
+        : `답을 기다린 시간이 ${Math.round(wait / 1000)}초를 넘겼어요. 다시 물어봐주세요.`
+    } }), wait)),
+  ]);
 
   $('ai_send').disabled = false; $('ai_send').classList.remove('sending');
   hideTyping();          /* 실패해도 반드시 걷습니다. 남으면 영영 생각하는 척합니다 */
