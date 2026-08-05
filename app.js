@@ -1507,26 +1507,36 @@ function drawCards(d){
     (acts.length ? `<div class="daysep">일정으로 넣기</div>` : '') +
     acts.map((a, i) => {
       const k = a.category ? 'k-' + a.category : '';
+      /* 단추를 **제목 아래**로 내립니다. 오른쪽에 세워두었더니 제목이
+         밀려 두 줄로 접히고, 좁은 자리에 단추 둘이 겹쳐 보였습니다. */
       return `<div class="plan">
         <div class="when">${esc(a.start_time || '–')}</div>
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(a.title)}</b>
           <span class="memo">${esc(a.date)}${a.memo ? ' · ' + esc(a.memo) : ''} ${far(a)}</span>
-        </div>
-        <div class="takepair">
-          <button class="small" data-take="a"  data-i="${i}" data-label="일정에">일정에</button>
-          <button class="small ghost" data-take="ap" data-i="${i}" data-label="후보로">후보로</button>
+          <div class="takepair">
+            <button class="small" data-take="a"  data-i="${i}"
+                    data-label="일정에 넣기">일정에 넣기</button>
+            <button class="small alt" data-take="ap" data-i="${i}"
+                    data-label="후보에 담기">후보에 담기</button>
+          </div>
         </div></div>`;
     }).join('') +
     (places.length ? `<div class="daysep">후보로 담기</div>` : '') +
     places.map((p, i) => {
       const k = p.category ? 'k-' + p.category : '';
+      /* 위 일정 카드와 같은 자리에 둡니다 — 한쪽은 오른쪽, 한쪽은 아래면
+         같은 목록 안에서 단추가 두 군데에 있는 셈이 됩니다. */
       return `<div class="plan">
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(p.name)}</b>
           <span class="memo">${esc([p.name_local, p.why].filter(Boolean).join(' · '))}
-            ${far(p)}</span></div>
-        <button class="small" data-take="p" data-i="${i}" data-label="담기">담기</button></div>`;
+            ${far(p)}</span>
+          <div class="takepair">
+            <button class="small" data-take="p" data-i="${i}"
+                    data-label="후보에 담기">후보에 담기</button>
+          </div>
+        </div></div>`;
     }).join('');
 }
 
@@ -6011,10 +6021,12 @@ $('imp_go').addEventListener('click', async () => {
   /* 20~30초가 걸리는 일입니다. "읽는 중…" 하나만 두면 멈춘 줄 알고 다시 누릅니다.
      지금 무엇을 하고 있는지 단계로 바꿔 보여줍니다. 진짜 진행률은 알 수 없지만
      **글자가 바뀌는 것만으로도 살아 있다는 신호가 됩니다.** */
+  /* 문구에 '블로그'를 박아두면 구글 지도 링크를 넣었을 때 틀린 말이 됩니다.
+     읽는 대상이 무엇이든 맞는 말로 둡니다. */
   const hasLink = /https?:\/\//.test(text);
   const steps = [
     [0,     hasLink ? '링크를 여는 중…' : '읽는 중…'],
-    [4000,  hasLink ? '블로그 글을 읽는 중…' : '내용을 살펴보는 중…'],
+    [4000,  hasLink ? '링크 안을 읽는 중…' : '내용을 살펴보는 중…'],
     [9000,  '날짜와 장소를 골라내는 중…'],
     [16000, '거의 다 됐어요…'],
     [26000, '조금만 더요. 글이 길면 오래 걸려요…'],

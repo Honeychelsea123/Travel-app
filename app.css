@@ -431,9 +431,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan .body{ flex:1; min-width:0; }
 .plan .body b{ display:block; }
 .plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
-/* 불러온 일정 카드의 단추 두 개(일정에 · 후보로). 좁은 화면에서 옆으로
-   나란히 두면 제목이 밀려 잘리므로 위아래로 쌓습니다. */
-.takepair{ display:flex; flex-direction:column; gap:4px; flex:none; }
+/* 담는 단추는 제목·메모 **아래** 줄에 나란히 둡니다.
+   오른쪽에 세웠더니 제목이 밀려 두 줄로 접혔습니다. */
+.takepair{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+.takepair button{ flex:none; }
+/* '후보로'를 .ghost 로 두었더니 **배경도 테두리도 투명**이라 글자만 떠 있어서
+   눌리는 것인 줄 몰랐습니다. 둘 다 단추로 보이게 두고, 색으로만 가릅니다 —
+   '일정에'가 흔히 고르는 쪽이라 그쪽을 진하게 둡니다. */
+.takepair .alt{ background:var(--pearl); color:var(--ink-80); }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          display:flex; align-items:baseline; gap:8px;
          font-weight:600; }
