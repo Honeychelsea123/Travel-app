@@ -174,7 +174,7 @@ async function webSearch(key: string, admin: any, query: string,
 // 실패하면 null. 부르는 쪽은 없으면 없는 대로 갑니다.
 // ─────────────────────────────────────────────────────────────────────
 const BLOG_MS   = 8000;   // 한 곳당 최대 대기. 넘으면 버립니다
-const BLOG_MAX  = 2;      // 한 번에 읽을 링크 수. 셋을 동시에 씹다 워커가 죽었습니다
+const BLOG_MAX  = 3;      // 한 번에 읽을 링크 수
 const BLOG_CHARS = 9000;  // 한 글에서 가져갈 글자 수
 const HTML_MAX  = 400_000; // 받아서 들고 있을 HTML 최대 크기. 본문은 앞쪽에 있습니다
 
@@ -208,7 +208,7 @@ async function fetchText(u: string, ms: number) {
     if (!res.ok) return null;
 
     // ── 크기를 재고 받습니다 ──
-    // 여기가 워커를 죽이고 있었습니다. 네이버·티스토리 글 한 장의 HTML 이
+    // 크기를 안 재고 받으면 큰 페이지에서 손해입니다. 네이버·티스토리 글 한 장의 HTML 이
     // 수 MB 인데 그걸 **셋을 동시에** 받아서, 각각 정규식 여덟 번을 통과시켰습니다.
     // replace 는 그때마다 문자열을 통째로 새로 만듭니다 — 3장 × 3MB × 8번이면
     // 수십 MB 가 순식간에 오갑니다. 로그에 예외 한 줄 없이 shutdown 만 찍힌 것이
@@ -358,6 +358,15 @@ function distKm(a: number, b: number, c: number, d: number) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
 
+  // ── 단계별 시간 재기 ──
+  // 로그에 EarlyDrop(클라이언트가 먼저 끊음)만 찍히고 메모리·CPU 는 멀쩡했습니다
+  // (11.8MB / 59ms). 서버가 죽은 게 아니라 브라우저가 기다리다 놓은 것입니다.
+  // 그럼 **어디서 오래 걸리는지**를 알아야 하는데 그것도 짐작이었습니다.
+  // 각 단계가 몇 ms 인지 찍습니다. 함수 로그에서 그대로 보입니다.
+  const T0 = Date.now();
+  const lap: string[] = [];
+  const mark = (name: string) => lap.push(`${name} ${Date.now() - T0}ms`);
+
   try {
     const key = Deno.env.get('GEMINI_KEY');
     if (!key) return json({ error: 'GEMINI_KEY 가 설정되지 않았습니다.' }, 500);
@@ -373,6 +382,7 @@ Deno.serve(async (req) => {
     const { data: { user } } = await asUser.auth.getUser();
     if (!user) return json({ error: '로그인이 필요합니다.' }, 401);
 
+    mark('auth');
     const body = await req.json().catch(() => ({}));
     const { trip_id, message, mode, prefs, image, images } = body;
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
@@ -424,6 +434,7 @@ Deno.serve(async (req) => {
         used: take?.used, limit: take?.limit,
       }, 429);
 
+    mark('ai_take');
     // ── 여행 자료 ── 없으면 없는 대로 답합니다.
     let ctx = '';
     // 링크 읽기를 **여기서 미리 걸어둡니다.** 아래 여행 자료를 받아오는 동안
@@ -551,7 +562,9 @@ Deno.serve(async (req) => {
     // 남이 짜둔 일정·맛집 목록은 대부분 블로그에 있습니다. 옮겨 적는 대신 읽어 옵니다.
     // 링크는 하나만 읽었는데, 사람들은 블로그 두세 개를 한꺼번에 붙여넣습니다.
     // 최대 셋까지 **동시에** 읽습니다. 하나씩 읽으면 셋에 24초가 걸립니다.
+    mark('ctx');
     const { block: blogBlock, report: blogReport } = await linksP;
+    mark('links');
 
     // ── 웹 검색 ──
     // 영업시간·가격·평점처럼 바뀌는 것은 우리 자료에 없습니다.
@@ -755,6 +768,12 @@ Deno.serve(async (req) => {
         return json({ error: `답을 받지 못했습니다 (${why}).` }, 502);
       }
     }
+
+    mark('gemini');
+    console.log('TIMING ' + (imp ? 'import' : draft ? 'draft' : 'chat') +
+      ' | ' + lap.join(' | ') + ' | 총 ' + (Date.now() - T0) + 'ms' +
+      ' | 글자 ' + (blogBlock.length + String(message ?? '').length) +
+      ' | 조각 ' + (chunks?.length ?? 1));
 
     // JSON 을 못 받아도 말은 전합니다. 형식이 깨졌다고 답까지 버릴 이유는 없습니다.
     let out: { reply?: string; places?: unknown[]; actions?: unknown[];
