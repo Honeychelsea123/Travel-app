@@ -1180,10 +1180,10 @@ async function loadChats(tripId){
     $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
       '일정과 지출은 그대로 보실 수 있어요.</div>';
     $('qasks').classList.add('hide');
-    msgEnable(false); $('ai_send').disabled = true;
+    $('ai_msg').disabled = true; $('ai_send').disabled = true;
     return;
   }
-  msgEnable(true); $('ai_send').disabled = false;
+  $('ai_msg').disabled = false; $('ai_send').disabled = false;
 
   /* 여행을 안 골랐을 때 나눈 대화도 남깁니다 (029). trip_id 가 비어 있는 줄입니다.
      eq 로는 null 을 못 찾습니다 — is 를 써야 합니다. */
@@ -1288,74 +1288,22 @@ function showTyping(){
 }
 function hideTyping(){ document.getElementById('typing')?.remove(); }
 
-/* ── 입력칸 (contenteditable) ────────────────────────────────────────
- * textarea 였는데 iOS 가 그 위에 붙이는 ∧ ∨ ✓ 막대가 레이아웃 바깥에 그려져
- * 시트로 덮을 수가 없었습니다(index.html 에 실측값). contenteditable 에는
- * 그 막대가 안 붙습니다. 대신 textarea 가 공짜로 주던 것들을 직접 해야 합니다.
- *   .value        → msgGet / msgSet
- *   maxlength     → 아래 MSG_MAX
- *   placeholder   → app.css 의 :empty::before
- *   rows 자동증가 → 필요 없습니다. div 는 내용만큼 저절로 큽니다(growMsg 삭제).
- *   disabled      → msgEnable
- * 여기서 제일 위험한 것은 **한글 조합**입니다. 조합이 끝나기 전에 내용을
- * 건드리면 쓰던 글자가 씹힙니다. 그래서 손대는 곳마다 isComposing 을 봅니다. */
-const MSG_MAX = 500;
+/* 여러 줄 입력칸. 쓴 만큼 늘어나야 자기가 뭘 쓰는지 보입니다.
+   height 를 먼저 비워야 줄어들 때도 따라 줄어듭니다 — 안 그러면 한 번 커진
+   채로 안 돌아옵니다.
 
-/* innerText 로 읽습니다. textContent 는 <br>·<div> 로 들어간 줄바꿈을 그냥
-   무시해서 두 줄이 한 줄로 붙어버립니다. 붙여넣기로 들어오는 줄바꿈 없는
-   공백( )은 보통 띄어쓰기로 되돌립니다 — 안 그러면 검색·비교가 어긋납니다. */
-const msgGet = () => $('ai_msg').innerText.replace(/\u00a0/g, ' ');
-/* textContent 로 씁니다. innerHTML 로 쓰면 남이 준 글이 태그로 들어옵니다. */
-const msgSet = (v) => { $('ai_msg').textContent = v; };
-
-/* plaintext-only 면 붙여넣기 서식을 브라우저가 알아서 걷어냅니다(사파리는 오래
-   전부터 됩니다). 못 알아듣는 브라우저는 값이 안 바뀌므로 그걸로 갈립니다. */
-const MSG_PLAIN = (() => {
-  const d = document.createElement('div');
-  try { d.contentEditable = 'plaintext-only'; } catch (e){ return false; }
-  return d.contentEditable === 'plaintext-only';
-})();
-function msgEnable(on){
+   **b173 에서 이 칸을 contenteditable 로 바꿨다가 b174 에서 되돌렸습니다.**
+   iOS 가 textarea 위에 붙이는 ∧ ∨ ✓ 막대를 없애려던 것이었는데, 재보니
+   contenteditable 에도 똑같이 붙습니다 — 홈 화면 앱 vv.h 가 424 에서 1px 도
+   안 움직였습니다. 그러면 placeholder·글자수·한글 조합을 손으로 흉내 낸
+   코드만 남습니다. 브라우저가 이미 맞게 해주는 것을 다시 만들 이유가 없습니다.
+   **막대는 없앨 수 없습니다. 덮는 쪽으로 가야 합니다.** */
+function growMsg(){
   const el = $('ai_msg');
-  el.contentEditable = on ? (MSG_PLAIN ? 'plaintext-only' : 'true') : 'false';
-  el.setAttribute('aria-disabled', on ? 'false' : 'true');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
-msgEnable(true);
-
-/* 커서를 글 끝으로. 글자수를 잘라낸 뒤에 이걸 안 하면 커서가 맨 앞으로
-   튀어서 이어 쓰는 글자가 거꾸로 박힙니다. */
-function msgCaretEnd(){
-  const el = $('ai_msg'), r = document.createRange(), s = getSelection();
-  r.selectNodeContents(el); r.collapse(false);
-  s.removeAllRanges(); s.addRange(r);
-}
-
-function msgTrim(){
-  const el = $('ai_msg');
-  /* 다 지웠는데 <br> 하나가 남는 일이 있습니다. 그러면 :empty 가 아니라서
-     placeholder 가 안 돌아옵니다. 눈에 보이는 글이 없으면 비워버립니다. */
-  if (!el.textContent.trim() && !el.querySelector('img')){
-    if (el.innerHTML !== '') el.innerHTML = '';
-    return;
-  }
-  const t = el.innerText;
-  if (t.length > MSG_MAX){ el.textContent = t.slice(0, MSG_MAX); msgCaretEnd(); }
-}
-$('ai_msg').addEventListener('input', e => {
-  if (e.isComposing) return;         /* 조합 중에는 세지도 자르지도 않습니다 */
-  msgTrim();
-});
-/* 조합이 끝나는 순간에 한 번 더 봅니다 — 조합 중에 넘긴 글자는 여기서 잘립니다. */
-$('ai_msg').addEventListener('compositionend', msgTrim);
-
-/* plaintext-only 를 못 쓰는 브라우저에서 서식을 걷어냅니다.
-   execCommand 는 낡았지만 되돌리기(⌘Z)가 살아 있는 유일한 길입니다. */
-$('ai_msg').addEventListener('paste', e => {
-  if (MSG_PLAIN) return;
-  e.preventDefault();
-  const t = (e.clipboardData || window.clipboardData)?.getData('text/plain') || '';
-  document.execCommand('insertText', false, t);
-});
+$('ai_msg').addEventListener('input', growMsg);
 
 $('ai_msg').addEventListener('keydown', e => {
   /* 줄바꿈이 필요할 때가 있습니다. Enter 는 보내기, Shift+Enter 는 줄바꿈.
@@ -1382,7 +1330,7 @@ function drawQasks(){
 }
 $('qasks').addEventListener('click', e => {
   const b = e.target.closest('.qask'); if (!b) return;
-  msgSet(b.textContent);
+  $('ai_msg').value = b.textContent;
   $('ai_send').click();
 });
 
@@ -1474,14 +1422,12 @@ function drawSources(list, web){
 $('ai_send').addEventListener('click', async () => {
   const shots = aiShots.slice();
   /* 사진만 보내도 됩니다. "이거 뭐야?"를 매번 타이핑하게 할 이유가 없습니다. */
-  const msg = msgGet().trim() ||
+  const msg = $('ai_msg').value.trim() ||
               (shots.length ? '이 사진에 대해 알려줘.' : '');
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
-  /* 비우면 높이는 저절로 한 줄로 돌아옵니다. 다만 textContent='' 는 :empty 가
-     되지만 혹시 남는 것이 있을 수 있어 msgTrim 이 마무리합니다. */
-  msgSet(''); msgTrim();
+  $('ai_msg').value = ''; growMsg();   /* 여러 줄로 늘어나 있던 것을 한 줄로 되돌립니다 */
   $('cards').innerHTML = '';
   aiShots = []; drawShot();
   $('aisrc').classList.add('hide');
@@ -3767,7 +3713,7 @@ $('c_ai').addEventListener('click', async () => {
   openAi();
   $('ai_trip').value = trip.id;
   await loadChats(trip.id);
-  msgSet(msg);
+  $('ai_msg').value = msg;
   $('ai_send').click();
 });
 
@@ -7654,14 +7600,66 @@ if (window.visualViewport){
        그래서 **정작 고쳐야 하는 곳에서 숫자를 한 번도 못 봤습니다** —
        사파리 숫자로 홈 화면 앱을 맞추려 했으니 계속 틀렸습니다.
        관리자면 저절로 켜지게 합니다. 주소에 뭘 붙일 필요가 없어집니다. */
+    /* ── 막대 뒤에 그려지는 것은 무엇인가 (자 두 벌) ──────────────────
+       b173 에서 contenteditable 로 막대를 없애려다 실패했습니다(vv.h 424 그대로).
+       없앨 수 없다면 덮어야 하는데, 그러려면 **그 자리에 무엇의 어느 부분이
+       그려지는지**를 알아야 합니다. 그걸 모르는 채로 b170·b171 에서 두 번
+       헛짚었습니다. 이번에는 자를 대고 사진으로 읽습니다.
+
+         왼쪽 빨강 F###  = position:fixed   (뷰포트 기준 좌표)
+         오른쪽 파랑 A### = position:absolute (문서 기준 좌표)
+
+       키보드를 올린 사진에서 **막대 뒤에 어느 색 몇 번이 비치는지**가 답입니다.
+         빨강이 비친다  → fixed 가 그 자리에도 그려진다. 시트를 늘리면 덮인다.
+         파랑만 비친다  → fixed 는 잘린다. 문서 안에 덮개를 넣어야 한다.
+         아무것도 안 비친다 → 그 자리는 페이지가 아니라 브라우저가 그린다.
+       눈금자 상자를 **손가락으로 누르면** 켜지고 꺼집니다 — 홈 화면 앱은
+       주소로 값을 넘길 수 없어서(사파리와 저장 공간이 다릅니다) 이 길뿐입니다. */
+    const probe = (on) => {
+      document.querySelectorAll('.kbprobe').forEach(n => n.remove());
+      if (!on) return;
+      [true, false].forEach(fx => {
+        const h = fx ? window.innerHeight
+                     : Math.max(document.documentElement.scrollHeight,
+                                window.innerHeight);
+        const d = document.createElement('div');
+        d.className = 'kbprobe';
+        d.style.cssText =
+          `position:${fx ? 'fixed' : 'absolute'}; ${fx ? 'left' : 'right'}:0; top:0;` +
+          `width:54px; height:${h}px; z-index:99998; pointer-events:none;` +
+          `background:${fx ? 'rgba(210,0,0,.78)' : 'rgba(0,70,220,.78)'};` +
+          `color:#fff; font:bold 12px/1 ui-monospace,monospace`;
+        let s = '';
+        for (let y = 0; y < h; y += 40)
+          s += `<span style="position:absolute; top:${y}px; left:3px;` +
+               `border-top:1px solid #fff; width:48px; padding-top:1px">` +
+               `${fx ? 'F' : 'A'}${y}</span>`;
+        d.innerHTML = s;
+        document.body.appendChild(d);
+      });
+    };
+
     window.startRuler = () => {
       if (window.__ruler) return;
       window.__ruler = true;
       const box = document.createElement('div');
+      /* pointer-events 를 살려야 눌러서 자를 켤 수 있습니다. 눈금자는 화면
+         왼쪽 위 구석이라 앱의 무엇도 가리지 않습니다. */
       box.style.cssText =
-        'position:fixed; left:6px; top:6px; z-index:99999; pointer-events:none;' +
+        'position:fixed; left:6px; top:6px; z-index:99999; pointer-events:auto;' +
         'background:rgba(0,0,0,.82); color:#0f0; font:11px/1.45 ui-monospace,monospace;' +
         'padding:6px 8px; border-radius:8px; white-space:pre; max-width:70vw';
+      /* **누르는 순간 preventDefault 해야 합니다.** 안 그러면 입력칸에서 커서가
+         빠져 키보드가 내려갑니다 — 키보드가 올라와 있을 때만 볼 수 있는 것을
+         재려는데 누르는 행동이 그 상태를 없앱니다. click 을 기다리지 않고
+         touchstart 에서 바로 처리합니다(preventDefault 하면 click 이 안 옵니다). */
+      const toggle = (e) => {
+        e.preventDefault();
+        window.__probe = !window.__probe;
+        probe(window.__probe);
+      };
+      box.addEventListener('touchstart', toggle, { passive:false });
+      box.addEventListener('mousedown',  toggle);
       document.body.appendChild(box);
 
       const show = () => {
@@ -7697,10 +7695,11 @@ if (window.visualViewport){
           `  합 ${Math.round(vv.height + vv.offsetTop)}\n` +
           `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>` +
           `${el?.isContentEditable ? ' CE' : ''}  ${STANDALONE ? '홈앱' : '사파리'}\n` +
-          /* ∧ ∨ ✓ 막대는 잴 수가 없습니다 — vv 도 inner 도 그 자리를 안 셉니다.
-             대신 **막대가 없어지면 키보드가 그만큼 낮아져 vv.h 가 커집니다.**
-             textarea 로 잰 홈 화면 앱 값이 424 였습니다. 그보다 크면 없어진 것입니다. */
-          `막대?     vv.h ${Math.round(vv.height)} vs 424(막대 있을 때)\n` +
+          /* b173 에서 contenteditable 로 바꿔봤지만 vv.h 가 424 그대로였습니다.
+             **iOS 는 contenteditable 에도 그 막대를 붙입니다.** 없앨 수 없습니다.
+             남은 길은 덮는 것이고, 그러려면 자(위 probe)를 눌러 켜서
+             막대 뒤에 어느 색 몇 번이 비치는지 사진으로 읽어야 합니다. */
+          `자    ${window.__probe ? '켜짐 — 막대 뒤 색·번호를 읽으세요' : '꺼짐 (여기를 누르세요)'}\n` +
           `transform ${tf}\n` +
           (r ? `시트 top ${Math.round(r.top)}  h ${Math.round(r.height)}\n` +
                `시트 bot ${Math.round(r.bottom)}  레이아웃기준 ${botLay}\n` +
