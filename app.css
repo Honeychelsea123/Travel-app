@@ -924,6 +924,24 @@ body.kbon .assheet{ padding-bottom:16px; }
 /* 대화가 없을 때 안내문은 풍선이 아니라 가운데에 그대로 둡니다. */
 #chat .empty{ align-self:center; margin:auto 0; }
 
+/* ── 답을 만드는 중 ──
+   AI 가 말할 자리에 그대로 뜹니다. 풍선 모양이 같아야 "여기에 답이 올 것"으로
+   읽힙니다. 셋이 차례로 떠올라 멈춰 있지 않다는 것을 계속 보여줍니다. */
+.msg.ai.typing{ display:flex; align-items:center; gap:5px; padding:14px 16px; }
+.msg.ai.typing i{ width:7px; height:7px; border-radius:50%; background:var(--ink-48);
+                  opacity:.35; animation:tdot 1.25s ease-in-out infinite; }
+.msg.ai.typing i:nth-child(2){ animation-delay:.18s; }
+.msg.ai.typing i:nth-child(3){ animation-delay:.36s; }
+@keyframes tdot{
+  0%, 70%, 100%{ transform:translateY(0);    opacity:.30; }
+  35%          { transform:translateY(-4px); opacity:.85; }
+}
+/* 움직임을 끄고 쓰는 사람에게는 깜빡임만 남깁니다 — 아예 없으면 기다리는 줄 모릅니다. */
+@media (prefers-reduced-motion: reduce){
+  .msg.ai.typing i{ animation:tfade 1.4s ease-in-out infinite; }
+  @keyframes tfade{ 0%,100%{ opacity:.25 } 50%{ opacity:.7 } }
+}
+
 /* ── AI 라는 표시 ──
    인공지능기본법 제31조가 요구하는 것이라 지우면 안 됩니다.
    다만 답변마다 붙으니 눈에 걸리면 안 됩니다 — 작게, 흐리게, 줄 하나로. */

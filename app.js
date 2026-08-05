@@ -1266,6 +1266,25 @@ function aiToBottom(){
   requestAnimationFrame(go);
 }
 
+/* ── 답을 기다리는 동안 ──────────────────────────────────────────────
+ * 보내기 단추만 흐려지는 것으로는 "지금 무슨 일이 벌어지고 있다"가 안 읽힙니다.
+ * 20초쯤 걸리는데 화면이 멈춘 것처럼 보이면 다시 누르게 됩니다.
+ * 대화가 이어지는 자리, 곧 **AI 가 말할 자리에** 점 세 개를 띄웁니다.
+ * 저장하지 않습니다 — 답이 오면 loadChats 가 화면을 다시 그리면서 사라집니다. */
+function showTyping(){
+  hideTyping();
+  const box = $('chat');
+  if (!box) return;
+  const el = document.createElement('div');
+  el.className = 'msg ai typing';
+  el.id = 'typing';
+  el.setAttribute('aria-label', '답변을 만드는 중');
+  el.innerHTML = '<i></i><i></i><i></i>';
+  box.appendChild(el);
+  aiToBottom();
+}
+function hideTyping(){ document.getElementById('typing')?.remove(); }
+
 /* 여러 줄 입력칸. 쓴 만큼 늘어나야 자기가 뭘 쓰는지 보입니다.
    height 를 먼저 비워야 줄어들 때도 따라 줄어듭니다 — 안 그러면 한 번 커진
    채로 안 돌아옵니다. */
@@ -1413,6 +1432,7 @@ $('ai_send').addEventListener('click', async () => {
                                   role: 'user',
                                   content: (shots.length ? `[사진 ${shots.length}장] ` : '') + msg });
   await loadChats(tripId);
+  showTyping();          /* 답이 올 자리에 점 세 개. 화면이 멈춘 게 아니라는 표시 */
 
   const { data, error } = await sb.functions.invoke('chat',
     { body: { trip_id: tripId || null, message: msg,
@@ -1421,6 +1441,7 @@ $('ai_send').addEventListener('click', async () => {
               images: shots.map(s => ({ mime: s.mime, data: s.data })) } });
 
   $('ai_send').disabled = false; $('ai_send').classList.remove('sending');
+  hideTyping();          /* 실패해도 반드시 걷습니다. 남으면 영영 생각하는 척합니다 */
 
   if (error){
     /* 함수가 오류를 내면 본문에 이유가 들어 있습니다. 그대로 보여줍니다. */
