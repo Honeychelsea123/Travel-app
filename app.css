@@ -594,7 +594,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
           padding-bottom:104px;
           /* 위 .aisheet 과 같은 이유로 아래를 덮습니다. 이쪽은 카드 색입니다. */
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
-                     0 var(--kb, 0px) 0 var(--canvas);
+                     0 var(--below, 0px) 0 var(--canvas);
           /* both(끝난 뒤에도 마지막 값 유지)를 빼야 합니다. 그게 남아 있으면
              transform:none 이 계속 걸려 있어서, 손잡이를 끌 때 넣는 인라인
              transform 을 애니메이션이 이깁니다 — 시트가 손가락을 안 따라옵니다. */
@@ -657,7 +657,7 @@ body.kbon .assheet{ padding-bottom:16px; }
              아래로 복사해 칠합니다 — 제대로 맞았을 때는 키보드에 가려 안 보이고,
              레이아웃은 건드리지 않으므로 틀려도 손해가 없습니다. */
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
-                     0 var(--kb, 0px) 0 var(--parchment);
+                     0 var(--below, 0px) 0 var(--parchment);
           padding:10px 12px 12px;
           /* both(끝난 뒤에도 마지막 값 유지)를 빼야 합니다. 그게 남아 있으면
              transform:none 이 계속 걸려 있어서, 손잡이를 끌 때 넣는 인라인

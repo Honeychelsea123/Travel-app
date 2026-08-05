@@ -7522,6 +7522,16 @@ if (window.visualViewport){
        거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
        시트는 bottom:0 에 두고, 높이만 "지금 보이는 높이"로 잡습니다. */
     document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+
+    /* ── 레이아웃 바깥에 그려지는 자리 ──
+       사파리는 화면(screen 852) 중 아래쪽을 레이아웃 밖에 두면서(inner 695)
+       **그 자리에도 페이지를 계속 그립니다.** 시트는 bottom:0 이라 695 까지만
+       덮으니 딱 157px 이 비쳐서, 시트 아래로 주소 알약과 일정 글자가 보였습니다.
+       실측: screen 852 − inner 695 = 157, 눈금자의 두 ★ 이 같은 값이었습니다.
+       홈 화면 앱은 도구막대가 없어 이 값이 0 이 되므로 그대로 두면 됩니다.
+       레이아웃은 안 건드리고 이 높이만 시트 색으로 덮습니다(app.css 의 box-shadow). */
+    const below = Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
+    document.documentElement.style.setProperty('--below', below + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
        펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
