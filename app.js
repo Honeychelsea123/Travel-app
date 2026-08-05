@@ -513,6 +513,9 @@ async function loadAdmin(){
      결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
   sb.rpc('sweep_retention').then(() => {}, () => {});
   show(true);
+  /* 홈 화면 앱에서는 ?kb=1 이 안 넘어갑니다(저장 공간이 사파리와 따로).
+     그래서 정작 고쳐야 하는 곳의 숫자를 못 보고 있었습니다. 관리자면 켭니다. */
+  window.startRuler?.();
   const d = r.data;
 
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
@@ -7572,7 +7575,13 @@ if (window.visualViewport){
     if (q === '1') localStorage.setItem('t2:kbdbg', '1');
     if (q === '0') localStorage.removeItem('t2:kbdbg');
 
-    if (localStorage.getItem('t2:kbdbg') === '1'){
+    /* 홈 화면 앱은 사파리와 저장 공간이 따로라 ?kb=1 이 안 넘어갑니다.
+       그래서 **정작 고쳐야 하는 곳에서 숫자를 한 번도 못 봤습니다** —
+       사파리 숫자로 홈 화면 앱을 맞추려 했으니 계속 틀렸습니다.
+       관리자면 저절로 켜지게 합니다. 주소에 뭘 붙일 필요가 없어집니다. */
+    window.startRuler = () => {
+      if (window.__ruler) return;
+      window.__ruler = true;
       const box = document.createElement('div');
       box.style.cssText =
         'position:fixed; left:6px; top:6px; z-index:99999; pointer-events:none;' +
@@ -7621,7 +7630,9 @@ if (window.visualViewport){
         requestAnimationFrame(show);
       };
       show();
-    }
+    };
+    /* 주소로 켠 경우 (사파리). 관리자면 loadAdmin 이 로그인 뒤에 부릅니다. */
+    if (localStorage.getItem('t2:kbdbg') === '1') window.startRuler();
   }
 }
 
