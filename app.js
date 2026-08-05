@@ -7515,7 +7515,21 @@ if (window.visualViewport){
        그래서 --kb 가 0 이 되고 높이 제한이 안 걸려, 시트가 86vh(632)로 그려져
        보이는 높이 392 를 넘어 위로 240px 잘려 나갔습니다.
        키보드가 먹은 높이는 그냥 innerHeight - vv.height 입니다. */
-    const kb = typing() ? Math.max(0, window.innerHeight - vv.height) : 0;
+    /* **offsetTop 을 다시 뺍니다.** b165 에서 이걸 지웠는데, 지금 쓰는 용도로는
+       그게 맞는 식이었습니다. 여기서 필요한 값은 "키보드 높이"가 아니라
+       **레이아웃 안에서 키보드가 가린 높이**입니다. 둘은 환경에 따라 다릅니다.
+
+         사파리    inner 695 − off 303 − vv.h 392 = 0
+                   → 보이는 창이 레이아웃 바닥에서 끝나므로 가린 것이 없습니다
+         홈화면앱  inner 852 − off 0   − vv.h 549 = 303
+                   → 키보드가 레이아웃 안을 303 가립니다
+
+       시트는 bottom:0 이라 레이아웃 바닥에 붙습니다. 그 바닥이 키보드에
+       가려진 만큼만 안쪽 여백으로 밀어 올리면 두 환경이 같이 맞습니다.
+       b165 에서 이 값을 높이 제한에 쓰려다 0 이 나와 지운 것이 실수였습니다 —
+       높이는 --vvh(보이는 높이)가 맡고, 이 값은 여백이 맡습니다. */
+    const kb = typing()
+      ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
     /* 시트는 --kb 를 안 씁니다. iOS 는 키보드가 뜨면 **화면을 스크롤**하기 때문에
        레이아웃 바닥이 곧 보이는 화면의 바닥입니다(off 303 → 보이는 영역 303~695).

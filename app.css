@@ -588,6 +588,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
           margin:0 auto !important; max-width:480px;
           border-radius:var(--r-lg) var(--r-lg) 0 0;
           max-height:min(82vh, calc(var(--vvh, 100dvh) - 24px)); overflow-y:auto;
+          overscroll-behavior:contain;
           /* 아래 떠 있는 탭바에 가리지 않게 둔 여백입니다.
              키보드가 올라오면 탭바가 그 뒤로 숨으므로 이 여백은 빈 자리만 됩니다.
              그때는 아래 body.kbon 규칙이 줄입니다. */
@@ -648,7 +649,10 @@ body.kbon .assheet{ padding-bottom:16px; }
    안 줄이면 시트 위쪽이 화면 밖으로 밀려 올라갑니다. */
 .aisheet{ position:fixed; left:0; right:0; bottom:0; z-index:1210;
           margin:0 auto; max-width:480px;
-          height:min(86vh, 720px, calc(var(--vvh, 100dvh) - 24px));
+          /* 그동안 시트를 키보드 위 크기로 **줄이려고** 했습니다. 그러면 줄인
+             자리 밖(키보드 반투명 막대 뒤)이 비칩니다. 반대로 합니다 —
+             시트는 키보드 뒤까지 덮게 크게 두고, 안쪽 내용만 그만큼 올립니다. */
+          height:calc(min(86vh, 720px, calc(var(--vvh, 100dvh) - 24px)) + var(--kb, 0px));
           background:var(--parchment); border-radius:var(--r-lg) var(--r-lg) 0 0;
           /* 뒤 그림자 + **아래를 시트 색으로 덮는 판**.
              시트 끝과 키보드 사이에 몇십 px 이 비쳐 뒷 화면 글자가 읽히는 일이
@@ -658,7 +662,9 @@ body.kbon .assheet{ padding-bottom:16px; }
              레이아웃은 건드리지 않으므로 틀려도 손해가 없습니다. */
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
                      0 var(--below, 0px) 0 var(--parchment);
-          padding:10px 12px 12px;
+          /* 아래 여백을 키보드만큼 줍니다. 위에서 시트를 그만큼 키웠으니
+             내용은 제자리에 있고, 배경만 키보드 뒤로 뻗습니다. */
+          padding:10px 12px calc(12px + var(--kb, 0px));
           /* both(끝난 뒤에도 마지막 값 유지)를 빼야 합니다. 그게 남아 있으면
              transform:none 이 계속 걸려 있어서, 손잡이를 끌 때 넣는 인라인
              transform 을 애니메이션이 이깁니다 — 시트가 손가락을 안 따라옵니다. */
@@ -675,7 +681,12 @@ body.kbon .assheet{ padding-bottom:16px; }
 /* 스크롤은 **이 덩어리 하나**만 합니다. 대화·근거·제안 카드가 다 여기 들어 있습니다.
    전에는 대화(#chat)만 스크롤됐고 제안 카드는 그 아래 붙어 있어서,
    카드가 여덟 개 나오면 시트 밖으로 밀려나고 스크롤도 안 돼 먹통이 됐습니다. */
-.aichat .aiscroll{ flex:1; min-height:0; overflow-y:auto; }
+.aichat .aiscroll{ flex:1; min-height:0; overflow-y:auto;
+                    /* 끝까지 내리면 스크롤이 **뒤 페이지로 넘어갑니다**(scroll chaining).
+                       그래서 채팅을 굴리면 아래 일정 목록이 같이 움직였습니다.
+                       여기서 가둡니다. iOS 16+ 에서 먹습니다. */
+                    overscroll-behavior:contain;
+                    -webkit-overflow-scrolling:touch; }
 /* 아래쪽 #chat 규칙에 max-height 가 걸려 있습니다. 그대로 두면 이 안에서
    혼자 또 스크롤이 생겨 스크롤 상자가 둘이 됩니다. 여기서 풀어줍니다. */
 .aichat #chat{ flex:none; overflow:visible; min-height:120px; max-height:none; }
