@@ -7539,14 +7539,16 @@ if (window.visualViewport){
     /* 시트가 없을 때는 덮으면 안 됩니다 — 그때 아래가 보이는 것은 정상입니다. */
     if (!on || !document.body.classList.contains('sheeton')){
       kbCover?.remove(); kbCover = null;
-      document.body.style.minHeight = '';
       return;
     }
     if (!kbCover){
       kbCover = document.createElement('div');
-      /* 시트(1210)보다 아래, 페이지 내용보다는 위입니다. */
-      kbCover.style.cssText = 'position:absolute; left:0; right:0; z-index:1205;' +
-                              'pointer-events:none';
+      /* **뒷판(#sheetbg, 1200)보다 아래**에 둡니다. 그러면 화면 안쪽은 뒷판이
+         위에서 덮으므로 보이는 그림이 하나도 안 바뀌고, 뒷판이 닿지 못하는
+         막대 뒤에서만 이 덮개가 드러납니다. 위에 두면 시트 위 24px 틈까지
+         시트 색이 되어 둥근 모서리가 묻힙니다. */
+      kbCover.style.cssText = 'position:absolute; left:0; right:0; top:0;' +
+                              'z-index:1199; pointer-events:none';
       document.body.appendChild(kbCover);
     }
     /* 열려 있는 시트의 색을 그대로 씁니다. AI 시트는 --parchment,
@@ -7555,32 +7557,25 @@ if (window.visualViewport){
     kbCover.style.background = sheet
       ? getComputedStyle(sheet).backgroundColor : 'var(--canvas)';
 
-    /* 레이아웃 바닥의 **문서 좌표**에서 시작합니다. 뷰포트 기준이 아닙니다 —
-       iOS 가 키보드를 띄우며 페이지를 스크롤하므로 그만큼을 더해야 합니다.
+    /* **좌표를 쓰지 않습니다.** b175(scrollY)·b176(rect 로 보정) 둘 다 자리를
+       계산했고 둘 다 틀렸습니다. 아이폰에서 잰 것:
 
-       **b175 는 여기서 scrollY 를 썼고 안 먹었습니다.**
+         눈금자   scrollY 511, 덮개 rect 793~1302 (맞다고 나옴)
+         사진     화면 위에 보이는 파랑 자가 A505 → 실제 스크롤은 133쯤
+         차이     378 ≈ 키보드 높이 369
 
-       기준을 짐작하면 틀립니다. offsetParent 를 기준으로 삼아봤더니 12px
-       어긋났습니다 — body 가 position:static 이면 offsetParent 는 BODY 를
-       돌려주지만 absolute 의 진짜 기준은 body 가 아니라 문서 원점이고,
-       그 사이에 body 의 margin 이 끼어 있습니다.
+       **iOS 는 키보드가 올라오면 scrollY 를 키보드 높이만큼 부풀려 보고하고,
+       absolute 요소의 rect 는 문서→뷰포트 변환에 그 scrollY 가 끼므로 같이
+       틀립니다.** 그래서 rect 로 보정해도 같은 거짓말을 두 번 믿을 뿐입니다.
+       (fixed 요소의 rect 는 정확합니다 — 뷰포트 기준이라 scrollY 를 안 탑니다.
+        시트 bot 424 는 사진과 맞았습니다. 그래서 진작 알아채지 못했습니다.)
 
-       **그래서 놓고 나서 실제로 어디 그려졌는지 재서 어긋난 만큼 밀어줍니다.**
-       컨테이닝 블록이 무엇인지 따지는 것보다 이게 확실하고, 좌표계가 무엇이든
-       스스로 맞습니다. 우리가 원하는 자리는 하나입니다 — 레이아웃 바닥. */
-    const top = Math.round(window.scrollY + window.innerHeight);
-    const h   = Math.round(window.innerHeight - vv.height) + 140;
-    kbCover.style.top    = top + 'px';
-    kbCover.style.height = h + 'px';
-    /* 재서 보정합니다. 덮개 위쪽 모서리가 **레이아웃 바닥(innerHeight)** 에
-       와야 그 아래 막대 뒤가 덮입니다. 어긋난 만큼 밀면 한 번에 맞습니다. */
-    const drift = kbCover.getBoundingClientRect().top - window.innerHeight;
-    if (Math.abs(drift) > 0.5)
-      kbCover.style.top = Math.round(top - drift) + 'px';
-    /* body.sheeton 은 overflow:hidden 이라 **body 상자 밖으로 나간 덮개는
-       잘립니다.** 짧은 화면에서 그렇게 됩니다. 스크롤은 이미 잠겨 있으니
-       늘려도 사용자 눈에는 아무 차이가 없습니다. */
-    document.body.style.minHeight = (top + h) + 'px';
+       **파랑 자는 정확히 그려졌습니다.** 그것은 좌표를 안 썼기 때문입니다 —
+       top:0 에 두고 높이만 문서 높이로 줬습니다. **길이는 오프셋 오차를 안 탑니다.**
+       덮개도 똑같이 만듭니다. 문서 전체를 깔면 어디가 막대 뒤인지 알 필요가
+       없습니다. 그 자리가 문서 안이라는 것은 파랑 자가 이미 증명했습니다. */
+    kbCover.style.height =
+      Math.max(document.documentElement.scrollHeight, window.innerHeight) + 'px';
   };
 
   const fit = () => {
@@ -7758,13 +7753,12 @@ if (window.visualViewport){
              오는데, 그동안의 사진을 "안 고쳐졌다"로 잘못 읽을 뻔했습니다.
              재는 장치에는 **무엇을 재고 있는지**가 늘 함께 있어야 합니다. */
           `화면      ${$('build')?.textContent || '?'}\n` +
-          /* 덮개가 안 생겼는지, 생겼는데 자리가 어긋났는지 갈라 봅니다.
-             레이아웃(위)과 화면(아래) 좌표를 같이 찍습니다 — 어느 쪽이 틀렸는지는
-             둘을 견줘야 압니다. 막대는 화면 기준 vv.h 아래에 있습니다. */
+          /* **rect 는 더 이상 안 찍습니다.** absolute 요소의 rect 는 부풀려진
+             scrollY 를 타서 "793~1302, 맞음"이라고 거짓말했습니다(b176).
+             지금 덮개는 문서 전체를 깔므로 볼 것은 높이 하나뿐입니다. */
           `덮개      ${kbCover
-             ? `top ${parseInt(kbCover.style.top)} h ${parseInt(kbCover.style.height)}` +
-               `  화면 ${Math.round(kbCover.getBoundingClientRect().top)}~` +
-               `${Math.round(kbCover.getBoundingClientRect().bottom)}`
+             ? `h ${parseInt(kbCover.style.height)} / 문서 ` +
+               `${document.documentElement.scrollHeight}`
              : '없음'}\n` +
           /* 덮개가 없으면 **왜** 없는지가 갈려야 합니다. 조건이 둘입니다. */
           `덮개조건  시트 ${document.body.classList.contains('sheeton') ? 'Y' : 'N'}` +
