@@ -513,9 +513,10 @@ async function loadAdmin(){
      결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
   sb.rpc('sweep_retention').then(() => {}, () => {});
   show(true);
-  /* 홈 화면 앱에서는 ?kb=1 이 안 넘어갑니다(저장 공간이 사파리와 따로).
-     그래서 정작 고쳐야 하는 곳의 숫자를 못 보고 있었습니다. 관리자면 켭니다. */
-  window.startRuler?.();
+  /* **자동으로 켜지 않습니다** (b178). 키보드 문제가 b177 에서 닫혔으므로
+     관리자 화면마다 초록 글씨가 뜰 이유가 없습니다.
+     다시 필요하면 주소 끝에 ?kb=1 을 붙이거나, 홈 화면 앱처럼 주소를 못 넘기는
+     곳에서는 여기 한 줄을 되살리면 됩니다 — 눈금자와 자는 그대로 있습니다. */
   const d = r.data;
 
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
@@ -1179,7 +1180,6 @@ async function loadChats(tripId){
   if (netIsDown()){
     $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
       '일정과 지출은 그대로 보실 수 있어요.</div>';
-    $('qasks').classList.add('hide');
     $('ai_msg').disabled = true; $('ai_send').disabled = true;
     return;
   }
@@ -1248,11 +1248,12 @@ function drawChats(rows){
         ? `<div class="msg me">${md(m.content)}</div>`
         : `<div class="msg ai">${md(m.content)}<div class="aitag">AI가 생성한 답변입니다 · 영업시간·요금은 직접 확인해 주세요</div></div>`
       ).join('')
-    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}
-        <div class="aipre">답변은 생성형 AI(Google Gemini)가 만듭니다.
-          보내신 질문과 사진은 답변을 만들기 위해 미국의 Google 서버로 전송돼요.</div></div>`;
+    /* 빈 화면에 붙던 안내(생성형 AI · 미국 Google 서버 전송)는 b178 에서
+       뺐습니다. **답변마다 붙는 aitag 는 그대로 둡니다** — 인공지능기본법
+       제31조가 요구하는 것은 결과물 표시라서 저 안내로는 대신할 수 없습니다.
+       국외 이전 고지는 개인정보처리방침 7번에 그대로 있습니다. */
+    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
   aiToBottom();
-  drawQasks();                     /* 대화가 생기면 빠른 질문은 물러납니다 */
 }
 
 /* 새 답변이 와도 화면이 그대로라 스크롤을 내려야만 읽을 수 있었습니다.
@@ -1313,26 +1314,7 @@ $('ai_msg').addEventListener('keydown', e => {
   }
 });
 
-/* ── 빠른 질문 ──────────────────────────────────────────────────────
- * 빈 입력칸 앞에서 사람들은 아무것도 안 씁니다. 뭘 물어도 되는지 모르니까요.
- * 여행을 골랐을 때와 아닐 때 물어볼 만한 것이 다릅니다. */
-const QASK_TRIP = ['둘째 날이 너무 빡빡한가요?', '비 오면 뭘 하죠?',
-                   '근처에 갈 만한 곳 알려줘', '빠진 게 있을까요?'];
-const QASK_FREE = ['3박 4일 어디가 좋을까요?', '겨울에 따뜻한 곳 추천해줘',
-                   '뭘 챙겨야 할까요?', '환전은 어디서 하죠?'];
-function drawQasks(){
-  const list = $('ai_trip').value ? QASK_TRIP : QASK_FREE;
-  /* 대화가 이미 있으면 안 보입니다 — 자리만 차지합니다. */
-  const empty = !!$('chat').querySelector('.empty');
-  $('qasks').classList.toggle('hide', !empty);
-  $('qasks').innerHTML = empty
-    ? list.map(q => `<button class="qask">${esc(q)}</button>`).join('') : '';
-}
-$('qasks').addEventListener('click', e => {
-  const b = e.target.closest('.qask'); if (!b) return;
-  $('ai_msg').value = b.textContent;
-  $('ai_send').click();
-});
+/* 빠른 질문(추천 문구 4개)은 b178 에서 걷어냈습니다. */
 
 /* ── 사진 첨부 ──────────────────────────────────────────────────────
  * 간판·메뉴판·티켓을 찍어 물어보는 자리입니다. 글로 옮겨 적는 것보다 빠릅니다.

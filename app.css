@@ -223,12 +223,6 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
   border:1px solid #f0dcb8;
 }
 
-/* ── 빠른 질문 ── 빈 입력칸 앞에서 막막하지 않게 깔아둡니다 */
-.qasks{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
-.qask{ padding:6px 11px; font-size:calc(12px * var(--ts));
-       border-radius:var(--r-pill); border:1px solid var(--hairline);
-       background:var(--pearl); color:var(--ink-80); }
-
 /* ── 보낼 사진 미리보기 ── 여러 장을 나란히 둡니다 */
 .shot{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;
        padding:8px; border-radius:var(--r-md); background:var(--pearl); }
@@ -977,8 +971,6 @@ body.kbon .assheet{ padding-bottom:16px; }
    다만 답변마다 붙으니 눈에 걸리면 안 됩니다 — 작게, 흐리게, 줄 하나로. */
 .aitag{ margin-top:7px; padding-top:6px; border-top:1px solid var(--divider-soft);
         font-size:calc(11px * var(--ts)); line-height:1.45; color:var(--ink-48); }
-.aipre{ margin-top:10px; font-size:calc(12px * var(--ts)); line-height:1.5;
-        color:var(--ink-48); max-width:300px; }
 
 /* 사진·보내기 단추. 글자 대신 그림이라 크기를 정사각으로 잡습니다. */
 .iconbtn{ flex:none; width:40px; height:40px; padding:0;
