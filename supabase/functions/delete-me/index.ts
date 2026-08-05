@@ -58,14 +58,42 @@ Deno.serve(async (req) => {
     const { data: summary, error: dataErr } = await asUser.rpc('delete_my_data');
     if (dataErr) return json({ error: '자료를 지우지 못했습니다: ' + dataErr.message }, 500);
 
-    // ── 2. 계정 ── 여기서만 서비스 키를 씁니다.
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // ── 2. 올린 사진 ──
+    // storage.objects.owner 가 auth.users 를 가리킵니다. 파일이 남아 있으면
+    // 그 외래키 때문에 **계정 줄이 안 지워집니다.** SQL 쪽에서는 storage 스키마를
+    // 못 건드려서(소유자가 다릅니다) 여기서 지웁니다.
+    // 실패해도 멈추지 않습니다 — 통이 없을 수도 있고, 그때는 막을 것도 없습니다.
+    try {
+      const { data: files } = await admin.storage.from('avatars').list(user.id);
+      if (files?.length)
+        await admin.storage.from('avatars')
+          .remove(files.map((f) => `${user.id}/${f.name}`));
+    } catch { /* 통이 없거나 이미 비었음 */ }
+
+    // ── 3. 계정 ── 여기서만 서비스 키를 씁니다.
     const { error: authErr } = await admin.auth.admin.deleteUser(user.id);
-    if (authErr)
+    if (authErr) {
+      // GoTrue 는 이럴 때 본문 없이 실패해서 message 가 "{}" 로 옵니다.
+      // 그것만 보고는 무엇이 막는지 알 길이 없어 매번 짐작하게 됩니다.
+      // 044 의 account_blockers 로 **무엇이 몇 개 남았는지** 세어 같이 보냅니다.
+      let left: Record<string, number> | null = null;
+      try {
+        const { data } = await admin.rpc('account_blockers', { p_user: user.id });
+        // 0 인 것은 볼 필요가 없습니다. 남은 것만 남깁니다.
+        if (data) left = Object.fromEntries(
+          Object.entries(data as Record<string, number>).filter(([, v]) => Number(v) > 0));
+      } catch { /* 044 를 아직 안 돌렸을 수 있습니다 */ }
+
+      const detail = left && Object.keys(left).length
+        ? Object.entries(left).map(([k, v]) => `${k} ${v}`).join(', ')
+        : (authErr.message || '(이유를 못 받았습니다)');
       return json({
-        error: '자료는 지웠는데 계정이 남았습니다: ' + authErr.message,
-        partial: true, summary,
+        error: '자료는 지웠는데 계정이 남았습니다. 남아서 막는 것: ' + detail,
+        partial: true, summary, blockers: left,
       }, 500);
+    }
 
     return json({ ok: true, summary });
   } catch (e) {

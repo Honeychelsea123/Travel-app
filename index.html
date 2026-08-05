@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b154">
+<link rel="stylesheet" href="app.css?v=b155">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -397,8 +397,10 @@
                          .8.2L16.8 6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5
                          2.5 0 0 1 3 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
             </button>
-            <input id="ai_msg" placeholder="예: 둘째 날이 너무 빡빡한가요?"
-                   maxlength="500" enterkeyhint="send">
+            <!-- input 이었는데 한 줄만 보여서, 길게 쓰면 자기가 뭘 쓰는지 못 봤습니다.
+                 textarea 로 바꾸고 줄 수에 맞춰 늘립니다(app.js 의 growMsg). -->
+            <textarea id="ai_msg" rows="1" placeholder="예: 둘째 날이 너무 빡빡한가요?"
+                      maxlength="500" enterkeyhint="send"></textarea>
             <!-- 종이비행기. 도쿄 앱과 같습니다. -->
             <button class="primary iconbtn" id="ai_send" title="보내기" aria-label="보내기">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -722,18 +724,8 @@
           <div id="errlist" class="hide"></div>
         </div>
 
-        <!-- ── 관리자 ── 만든 사람만 보입니다 (038 의 admins).
-             통계 서른 줄을 설정 안에 늘어놓으면 설정을 볼 때마다 스크롤을 통과해야
-             합니다. 여기는 들어가는 문만 두고 내용은 별도 화면(#admpane)으로 뺍니다. -->
-        <div class="card hide" id="admincard">
-          <h2>관리자</h2>
-          <div class="srow">
-            <span class="label"><b>대시보드</b>
-              <div class="memo" id="adm_gist">세는 중…</div></span>
-            <button class="small" id="adm_open">열기</button>
-          </div>
-          <div class="snote" id="adm_alert" hidden></div>
-        </div>
+        <!-- 관리자 대시보드는 프로필 우상단 아이콘으로 옮겼습니다.
+             설정에도 두면 같은 문이 둘이라 어느 쪽이 최신인지 헷갈립니다. -->
 
         <!-- ── 내 자료 ── -->
         <div class="card">
@@ -1268,10 +1260,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b154</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b155</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b154"></script>
+<script type="module" src="app.js?v=b155"></script>
 </body>
 </html>
 

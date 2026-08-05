@@ -501,13 +501,9 @@ $('rp_send').addEventListener('click', async () => {
  * **숫자만 냅니다** — 누가 어디를 갔는지는 관리자도 볼 이유가 없습니다.
  * 서버 쪽 함수가 is_admin() 을 확인하므로 화면을 뜯어도 못 봅니다. */
 async function loadAdmin(){
-  const box = $('admincard');
-  /* 관리자가 아니면 서버가 막습니다. 그때 프로필의 아이콘도 같이 숨겨야
-     합니다 — 눌러도 아무 일이 없는 단추를 두면 안 됩니다. */
-  const show = on => {
-    box.classList.toggle('hide', !on);
-    $('dashbtn').classList.toggle('hide', !on);
-  };
+  /* 들어가는 문은 프로필 우상단 아이콘 하나입니다. 관리자가 아니면 서버가
+     막고, 그때 아이콘도 숨깁니다 — 눌러도 아무 일이 없는 단추를 두면 안 됩니다. */
+  const show = on => $('dashbtn').classList.toggle('hide', !on);
   /* 기본 2.5초로는 모자랍니다 — 표 열몇 개를 세는 함수라 첫 호출이 느립니다.
      화면을 막고 있는 것이 아니니 넉넉하게 줍니다. */
   const r = await netTimeout(sb.rpc('admin_stats'), 8000);
@@ -518,7 +514,6 @@ async function loadAdmin(){
   sb.rpc('sweep_retention').then(() => {}, () => {});
   show(true);
   const d = r.data;
-  admGist(d);
 
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
   const num = v => Number(v ?? 0);
@@ -641,45 +636,19 @@ async function loadAdmin(){
       ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`).join('');
 }
 
-/* 설정에 보이는 한 줄 요약. 대시보드를 안 열어도 이것만 보고 넘어갈 수 있어야
-   합니다 — 매일 여는 화면인데 매번 한 겹 더 들어가게 하면 안 봅니다. */
-function admGist(d){
-  const n = v => Number(v ?? 0).toLocaleString('ko-KR');
-  $('adm_gist').textContent =
-    `가입 ${n(d.users_total)} · 오늘 AI ${n(d.ai_today)}회 · 안 읽은 신고 ${n(d.reports_open)}건`;
-
-  /* 손을 써야 하는 것이 있을 때만 뜹니다. 평소에 아무 말이 없어야
-     떴을 때 눈에 들어옵니다. */
-  const bad = [];
-  if (Number(d.ai_blocked_today))  bad.push(`오늘 한도에 ${n(d.ai_blocked_today)}번 막힘`);
-  if (Number(d.ai_pct)  >= 80)     bad.push(`AI 예산 ${d.ai_pct}% 씀`);
-  if (Number(d.se_pct)  >= 80)     bad.push(`검색 예산 ${d.se_pct}% 씀`);
-  if (Number(d.errors_today) >= 5) bad.push(`오늘 오류 ${n(d.errors_today)}건`);
-  const box = $('adm_alert');
-  box.hidden = !bad.length;
-  box.textContent = bad.length ? '⚠ ' + bad.join(' · ') : '';
-}
-
 $('adm_refresh').addEventListener('click', loadAdmin);
 
-/* 통계는 설정 안에 늘어놓지 않고 별도 화면으로 뺐습니다. loadAdmin 이 미리
-   다 받아두므로 여는 것은 즉시입니다.
-   들어오는 문이 둘입니다 — 프로필 우상단 아이콘과 설정 안의 줄.
-   나갈 때는 **온 곳으로** 돌려보내야 합니다. 안 그러면 프로필에서 들어왔는데
-   설정으로 튀어나옵니다. */
-let admFrom = 'prof';
-function openAdm(from){
-  admFrom = from;
-  $(from === 'set' ? 'setpane' : 'profpane').classList.add('hide');
-  $('admback').textContent = from === 'set' ? '← 설정' : '← 프로필';
+/* 통계는 프로필 우상단 아이콘으로만 들어갑니다. 설정 안에도 문을 두었다가
+   같은 문이 둘이 되어 없앴습니다. loadAdmin 이 로그인할 때 미리 다 받아두므로
+   여는 것은 즉시입니다. */
+$('dashbtn').addEventListener('click', () => {
+  $('profpane').classList.add('hide');
   $('admpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
-}
-$('dashbtn') .addEventListener('click', () => openAdm('prof'));
-$('adm_open').addEventListener('click', () => openAdm('set'));
-$('admback') .addEventListener('click', () => {
+});
+$('admback').addEventListener('click', () => {
   $('admpane').classList.add('hide');
-  $(admFrom === 'set' ? 'setpane' : 'profpane').classList.remove('hide');
+  $('profpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
@@ -1251,12 +1220,40 @@ function drawChats(rows){
     : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}
         <div class="aipre">답변은 생성형 AI(Google Gemini)가 만듭니다.
           보내신 질문과 사진은 답변을 만들기 위해 미국의 Google 서버로 전송돼요.</div></div>`;
-  $('chat').scrollTop = $('chat').scrollHeight;
+  aiToBottom();
   drawQasks();                     /* 대화가 생기면 빠른 질문은 물러납니다 */
 }
 
+/* 새 답변이 와도 화면이 그대로라 스크롤을 내려야만 읽을 수 있었습니다.
+   **#chat 을 굴리고 있었는데 그건 스크롤 상자가 아닙니다.** 대화·근거·제안 카드를
+   한 덩어리로 묶으면서 스크롤이 바깥 .aiscroll 로 옮겨졌는데(app.css),
+   굴리는 코드는 옛 상자에 그대로 남아 있었습니다. 아무 일도 안 일어난 것입니다.
+   답변 뒤에는 출처와 제안 카드가 더 붙으므로, 그것들이 그려진 **다음 프레임**에
+   한 번 더 내립니다. 안 그러면 카드 높이만큼 모자랍니다. */
+function aiToBottom(){
+  const box = document.querySelector('.aichat .aiscroll');
+  if (!box) return;
+  const go = () => { box.scrollTop = box.scrollHeight; };
+  go();
+  requestAnimationFrame(go);
+}
+
+/* 여러 줄 입력칸. 쓴 만큼 늘어나야 자기가 뭘 쓰는지 보입니다.
+   height 를 먼저 비워야 줄어들 때도 따라 줄어듭니다 — 안 그러면 한 번 커진
+   채로 안 돌아옵니다. */
+function growMsg(){
+  const el = $('ai_msg');
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+$('ai_msg').addEventListener('input', growMsg);
+
 $('ai_msg').addEventListener('keydown', e => {
-  if (e.key === 'Enter'){ e.preventDefault(); $('ai_send').click(); }
+  /* 줄바꿈이 필요할 때가 있습니다. Enter 는 보내기, Shift+Enter 는 줄바꿈.
+     한글 조합 중(isComposing)에 Enter 를 가로채면 마지막 글자가 잘려 나갑니다. */
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){
+    e.preventDefault(); $('ai_send').click();
+  }
 });
 
 /* ── 빠른 질문 ──────────────────────────────────────────────────────
@@ -1373,7 +1370,8 @@ $('ai_send').addEventListener('click', async () => {
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
-  $('ai_msg').value = ''; $('cards').innerHTML = '';
+  $('ai_msg').value = ''; growMsg();   /* 여러 줄로 늘어나 있던 것을 한 줄로 되돌립니다 */
+  $('cards').innerHTML = '';
   aiShots = []; drawShot();
   $('aisrc').classList.add('hide');
   /* 글자를 갈아끼우면 안에 있는 비행기 그림이 사라집니다.
@@ -1411,6 +1409,9 @@ $('ai_send').addEventListener('click', async () => {
   await loadChats(tripId);
   drawSources(data.sources, data.web);
   drawCards(data);
+  /* drawChats 안에서 한 번 내리지만 그때는 출처와 제안 카드가 아직 없습니다.
+     다 그리고 나서 한 번 더 내려야 새 답변의 끝이 보입니다. */
+  aiToBottom();
 });
 
 /* ── 제안 카드 ──────────────────────────────────────────────────────
@@ -3778,15 +3779,25 @@ async function makeDraftTrip(){
     [c.name, c.name_en, c.name_local].some(v => v && v.toLowerCase() === name.toLowerCase()));
   const end = ymd(new Date(asDate(start).getTime() + (n - 1) * D1));
 
-  const row = { title: `${city ? city.name : name} 여행`,
+  /* id 를 여기서 만들어 넣습니다. 돌려받으려고 .select('id') 를 붙였다가
+     "new row violates row-level security policy for table trips" 로 막혔습니다.
+     넣는 것 자체는 되는데 **돌려주는 줄을 읽을 권한이 그 순간에 없어서**입니다 —
+     trips 읽기 정책이 can_read_trip(참여자인가)인데, 참여자 줄은 INSERT 트리거가
+     끝난 뒤에 생깁니다. 그래서 자기가 방금 만든 여행도 그 찰나에는 못 읽습니다.
+     (일반 '여행 만들기'는 .select() 를 안 붙여서 멀쩡했습니다.)
+     id 를 미리 정하면 돌려받을 이유가 없어집니다. created_by 도 정책과 똑같이
+     명시해 둡니다 — 기본값에 기대면 나중에 기본값이 바뀔 때 조용히 깨집니다. */
+  const id = (crypto.randomUUID ? crypto.randomUUID()
+                                : URL.createObjectURL(new Blob()).slice(-36));
+  const row = { id, created_by: me.id,
+                title: `${city ? city.name : name} 여행`,
                 destination: city ? city.name : name,
                 start_date: start, end_date: end };
   if (city) row.city_id = city.id;      /* 나라·통화·시간대·이동상수는 트리거가 채웁니다 */
 
-  const r = await sb.from('trips').insert(row).select('id').maybeSingle();
+  const r = await sb.from('trips').insert(row);
   if (r.error){ fail(r.error, 'draft'); return null; }
-  if (!r.data?.id){ fail('여행이 만들어지지 않았습니다.', 'draft'); return null; }
-  return r.data.id;
+  return id;
 }
 
 function closeDraft(fromPop){
@@ -4304,9 +4315,9 @@ function showProfile(setting){
   window.scrollTo({ top:0, behavior:'smooth' });
 }
 /* loadAdmin 을 여기서 불러야 합니다. 안 그러면 **영영 안 열립니다** —
-   부르는 곳이 adm_refresh 클릭 하나뿐이었는데 그 단추가 admincard 안에 있고,
-   그 카드는 숨은 채로 시작합니다. 자기를 여는 단추가 자기 안에 있었습니다.
-   관리자가 아니면 서버가 막아서 카드는 그대로 숨어 있습니다. */
+   프로필 아이콘(#dashbtn)을 켤지 말지가 여기 결과로 정해집니다.
+   설정을 열 때도 한 번 더 부릅니다 — 숫자가 오래되면 안 되니까요.
+   관리자가 아니면 서버가 막고 아이콘은 숨은 채로 남습니다. */
 $('gear').addEventListener('click', () => {
   showProfile(true); loadNotifPrefs(); loadAdmin();
 });
@@ -5465,15 +5476,22 @@ function backToList(fromPop){
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', () => backToList());
+/* 뒤로 갈 때는 **위에 얹힌 것부터** 닫습니다. 순서가 곧 화면의 층입니다.
+   여기 순서가 뒤집혀 있어서, 여행 안에서 여행 비서를 열고 닫으면 비서가 아니라
+   **여행이 닫혔습니다** — trip 검사가 aiview 검사보다 위에 있어서 그 줄까지
+   가지도 못했습니다. 시트는 여행 위에 뜨는 것이니 항상 먼저 봅니다. */
 window.addEventListener('popstate', () => {
-  if (cityOpen) return closeCity(true);
-  if (trip) return backToList(true);
+  /* 1) 화면 위에 떠 있는 것 */
   if (!$('aiview').classList.contains('hide')) return closeAi(true);
+  /* 2) 통째로 덮는 화면 */
+  if (cityOpen) return closeCity(true);
   if (!$('reviewview').classList.contains('hide')) return closeReview(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
   if (!$('personapane').classList.contains('hide')) return closePersona(true);
   if (!$('mappane').classList.contains('hide')) return closeMap(true);
+  /* 3) 마지막이 여행입니다. 위의 것들이 다 닫힌 뒤에야 여기로 옵니다. */
+  if (trip) return backToList(true);
 });
 
 async function loadPlans(){
@@ -6417,29 +6435,32 @@ function drawSettle(){
     noPayer ? `누가 냈는지 안 적은 ${noPayer}건` : '',
   ].filter(Boolean).join(' · ');
 
+  /* .row 로 늘어놓았더니 이름·금액이 다 17px 이라 한 사람이 세 줄을 먹고,
+     정작 중요한 "누가 누구에게 얼마"가 스크롤 아래로 밀렸습니다.
+     대시보드와 같은 촘촘한 줄(.arow)을 씁니다 — 금액은 자릿수를 맞춰 훑히게. */
   $('settle').innerHTML =
-    `<div class="row" style="border:0; padding:0 0 4px; margin:0">
-       <span class="label"><b style="font-size:calc(19px * var(--ts))">${
-         esc(money(total, cur))}</b></span>
-       <span class="val">${active.length}명이 나눠요</span></div>
+    `<div class="stltop">
+       <span class="v">${esc(money(total, cur))}</span>
+       <span class="k">${active.length}명이 나눠요</span></div>
 
-     <div class="daysep">누가 얼마</div>
-     ${bal.slice().reverse().map(b => `<div class="row">
-        <span class="label">${esc(nameOf(b.id))}
-          <div class="memo">낸 돈 ${esc(money(b.paid, cur))} ·
-               쓴 돈 ${esc(money(b.owed, cur))}</div></span>
-        <span class="val" style="color:${b.v >= 0 ? 'var(--ok)' : 'var(--bad)'}">
-          <b>${b.v >= 0 ? '+' : '−'}${esc(money(Math.abs(b.v), cur))}</b></span>
+     <div class="agrp">누가 얼마</div>
+     ${bal.slice().reverse().map(b => `<div class="arow">
+        <span class="k"><b>${esc(nameOf(b.id))}</b>
+          <span class="m">낸 돈 ${esc(money(b.paid, cur))} ·
+               쓴 돈 ${esc(money(b.owed, cur))}</span></span>
+        <span class="v" style="color:${b.v >= 0 ? 'var(--ok)' : 'var(--bad)'}">${
+          b.v >= 0 ? '+' : '−'}${esc(money(Math.abs(b.v), cur))}</span>
       </div>`).join('')}
 
-     <div class="daysep">이렇게 보내면 끝나요</div>
+     <div class="agrp">이렇게 보내면 끝나요</div>
      ${moves.length
-       ? moves.map(m => `<div class="row"><span class="label">${esc(nameOf(m.from))}
-            → ${esc(nameOf(m.to))}</span>
-            <span class="val"><b>${esc(money(m.v, cur))}</b></span></div>`).join('')
+       ? moves.map(m => `<div class="arow stlmove">
+            <span class="k"><b>${esc(nameOf(m.from))}</b>
+              <span class="ar">→</span> <b>${esc(nameOf(m.to))}</b></span>
+            <span class="v">${esc(money(m.v, cur))}</span></div>`).join('')
        : '<div class="empty" style="padding:10px 0">딱 맞아요. 주고받을 것이 없어요.</div>'}
 
-     ${skipped ? `<div class="empty" style="text-align:left; color:var(--bad)">
+     ${skipped ? `<div class="snote" style="color:var(--bad)">
           ${esc(skipped)}은 이 정산에 안 들어갔어요.</div>` : ''}`;
 }
 
@@ -7271,8 +7292,20 @@ async function render(session){
  * (도쿄 앱이 --kb 로 하던 것과 같은 방식입니다.) */
 if (window.visualViewport){
   const vv = window.visualViewport;
+  /* 키보드가 올라왔는지는 "글을 쓸 수 있는 칸에 커서가 있는가"로 봅니다.
+     높이 차이만 보면 **크롬(iOS)에서 틀립니다** — 크롬은 아래 툴바가 있어서
+     키보드가 없어도 innerHeight 와 visualViewport 가 100px 넘게 벌어집니다.
+     그걸 키보드로 착각해 body 여백이 늘고 화면이 밀렸습니다. */
+  const typing = () => {
+    const el = document.activeElement;
+    if (!el) return false;
+    const t = el.tagName;
+    return t === 'TEXTAREA' || el.isContentEditable ||
+           (t === 'INPUT' && !/^(button|submit|checkbox|radio|file|range|color)$/i
+                                .test(el.type || 'text'));
+  };
   const fit = () => {
-    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    const kb = typing() ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
@@ -7281,6 +7314,11 @@ if (window.visualViewport){
   };
   vv.addEventListener('resize', fit);
   vv.addEventListener('scroll', fit);
+  /* 커서가 어디 있는지로 판단하므로 커서가 옮겨갈 때도 다시 재야 합니다.
+     focusout 은 다음 칸으로 옮겨가는 중에도 한 번 뜨므로 한 박자 늦춥니다 —
+     안 그러면 칸을 옮길 때마다 여백이 깜빡입니다. */
+  addEventListener('focusin',  fit);
+  addEventListener('focusout', () => setTimeout(fit, 60));
   fit();
 }
 
