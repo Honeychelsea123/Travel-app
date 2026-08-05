@@ -4705,6 +4705,15 @@ $('ai_wipe').addEventListener('click', async e => {
   disarm(b);
   if (r.error) return fail(r.error, 'ai');
   await loadChats(id);
+  /* 대화만 지우고 **제안 카드는 그대로 뒀습니다.** 화면에서 보면 지우기를
+     눌렀는데 일정 목록이 안 없어지는 것이라 고장으로 보입니다.
+     카드는 그 대화에 딸린 것이니 같이 걷습니다. 출처 줄도 마찬가지입니다. */
+  $('cards').innerHTML = '';
+  $('aisrc').classList.add('hide');
+  /* null 로 두면 안 됩니다 — 다른 곳이 suggested.actions 를 그대로 읽습니다.
+     처음 모양(빈 배열 둘)으로 되돌립니다. */
+  suggested = { actions:[], places:[] };
+  lastTake = [];
   toast(`${r.data?.length ?? 0}개를 지웠어요`);
 });
 
