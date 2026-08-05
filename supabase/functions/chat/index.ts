@@ -174,8 +174,9 @@ async function webSearch(key: string, admin: any, query: string,
 // 실패하면 null. 부르는 쪽은 없으면 없는 대로 갑니다.
 // ─────────────────────────────────────────────────────────────────────
 const BLOG_MS   = 8000;   // 한 곳당 최대 대기. 넘으면 버립니다
-const BLOG_MAX  = 3;      // 한 번에 읽을 링크 수
+const BLOG_MAX  = 2;      // 한 번에 읽을 링크 수. 셋을 동시에 씹다 워커가 죽었습니다
 const BLOG_CHARS = 9000;  // 한 글에서 가져갈 글자 수
+const HTML_MAX  = 400_000; // 받아서 들고 있을 HTML 최대 크기. 본문은 앞쪽에 있습니다
 
 // 본문이 들어 있을 만한 자리. **위에서부터** 찾아 처음 걸리는 것을 씁니다.
 // 네이버만 보고 있었더니 티스토리·브런치·벨로그는 페이지 전체가 넘어가서
@@ -205,7 +206,18 @@ async function fetchText(u: string, ms: number) {
       },
     });
     if (!res.ok) return null;
-    return await res.text();
+
+    // ── 크기를 재고 받습니다 ──
+    // 여기가 워커를 죽이고 있었습니다. 네이버·티스토리 글 한 장의 HTML 이
+    // 수 MB 인데 그걸 **셋을 동시에** 받아서, 각각 정규식 여덟 번을 통과시켰습니다.
+    // replace 는 그때마다 문자열을 통째로 새로 만듭니다 — 3장 × 3MB × 8번이면
+    // 수십 MB 가 순식간에 오갑니다. 로그에 예외 한 줄 없이 shutdown 만 찍힌 것이
+    // 그 흔적입니다(예외가 났으면 Uncaught 가 남습니다).
+    // 본문은 앞쪽에 있습니다. 뒤쪽은 댓글·추천글·꼬리말이라 잘라도 손해가 없습니다.
+    const len = Number(res.headers.get('content-length') || 0);
+    if (len > HTML_MAX * 4) return null;      // 대놓고 큰 것은 아예 안 받습니다
+    const html = await res.text();
+    return html.length > HTML_MAX ? html.slice(0, HTML_MAX) : html;
   } catch {
     return null;                 // 시간 초과도 여기로 옵니다
   } finally {
@@ -219,6 +231,9 @@ function htmlToText(html: string) {
     const m = html.match(p);
     if (m) { body = m[0]; break; }
   }
+  // 아래 replace 여덟 번이 그때마다 문자열을 통째로 새로 만듭니다.
+  // 본문 자리를 찾았어도 넉넉히 잘라두고 시작합니다 — 우리가 쓸 것은 9000자입니다.
+  if (body.length > 120_000) body = body.slice(0, 120_000);
   return body
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
