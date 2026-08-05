@@ -6196,10 +6196,16 @@ function syncSheets(){
     let py = y0, pt = performance.now(), v = 0;
     const EASE = 'cubic-bezier(.32,.72,0,1)';   /* 아이폰 시트와 같은 느낌 */
 
+    /* 시트를 여는 애니메이션(sheetup)이 transform 을 건드립니다.
+       그냥 style.transform 으로 넣으면 애니메이션이 살아 있는 동안 밀립니다.
+       important 로 넣어야 무슨 일이 있어도 손가락을 따라옵니다. */
+    const put = v => sheet.style.setProperty('transform', v, 'important');
+    const clearPut = () => sheet.style.removeProperty('transform');
+
     const move = ev => {
       dy = Math.max(0, ev.clientY - y0);
       sheet.style.transition = 'none';
-      sheet.style.transform = `translateY(${dy}px)`;
+      put(`translateY(${dy}px)`);
       /* 내릴수록 뒷판도 같이 걷힙니다. 시트만 움직이면 "닫히는 중"이 아니라
          "미끄러진 것"처럼 보입니다. */
       if (bg){ bg.style.transition = 'none';
@@ -6223,9 +6229,10 @@ function syncSheets(){
 
       if (!shut){
         /* 제자리로. 뒷판도 같이 돌아옵니다. */
-        sheet.style.transition = `transform .22s ${EASE}`;
-        sheet.style.transform = '';
+        sheet.style.transition = `transform var(--t) ${EASE}`;
+        put('translateY(0px)');        /* 0 으로 되돌려야 애니메이션이 보입니다 */
         if (bg){ bg.style.transition = 'opacity .22s'; bg.style.opacity = ''; }
+        setTimeout(clearPut, 240);     /* 다 돌아온 뒤에 걷습니다 */
         setTimeout(() => { sheet.style.transition = ''; if (bg) bg.style.transition = ''; }, 240);
         return;
       }
@@ -6237,12 +6244,12 @@ function syncSheets(){
          내리던 방향 그대로 끝까지 내려보내고, 다 내려간 뒤에 숨깁니다. */
       const h = sheet.getBoundingClientRect().height || window.innerHeight;
       sheet.style.transition = `transform .24s ${EASE}`;
-      sheet.style.transform = `translateY(${h}px)`;
+      put(`translateY(${h}px)`);
       if (bg){ bg.style.transition = 'opacity .24s'; bg.style.opacity = '0'; }
 
       setTimeout(() => {
         /* 다음에 열 때 내려간 채로 있으면 안 됩니다. 숨기기 **전에** 지웁니다. */
-        sheet.style.transition = ''; sheet.style.transform = '';
+        sheet.style.transition = ''; clearPut();
         if (bg){ bg.style.transition = ''; bg.style.opacity = ''; }
         if (sheet.id === 'aiview') closeAi();
         else { sheet.classList.add('hide'); syncSheets(); }

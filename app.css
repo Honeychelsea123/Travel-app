@@ -595,7 +595,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
           /* 위 .aisheet 과 같은 이유로 아래를 덮습니다. 이쪽은 카드 색입니다. */
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
                      0 var(--kb, 0px) 0 var(--canvas);
-          animation:sheetup var(--t) var(--ease) both; }
+          /* both(끝난 뒤에도 마지막 값 유지)를 빼야 합니다. 그게 남아 있으면
+             transform:none 이 계속 걸려 있어서, 손잡이를 끌 때 넣는 인라인
+             transform 을 애니메이션이 이깁니다 — 시트가 손가락을 안 따라옵니다. */
+          animation:sheetup var(--t) var(--ease); }
 @keyframes sheetup{ from{ transform:translateY(100%) } to{ transform:none } }
 /* 잡아 내리는 손잡이 — 닫을 수 있다는 표시입니다 */
 .assheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 12px;
@@ -656,7 +659,10 @@ body.kbon .assheet{ padding-bottom:16px; }
           box-shadow:0 -12px 40px rgba(0,0,0,.22),
                      0 var(--kb, 0px) 0 var(--parchment);
           padding:10px 12px 12px;
-          animation:sheetup var(--t) var(--ease) both; }
+          /* both(끝난 뒤에도 마지막 값 유지)를 빼야 합니다. 그게 남아 있으면
+             transform:none 이 계속 걸려 있어서, 손잡이를 끌 때 넣는 인라인
+             transform 을 애니메이션이 이깁니다 — 시트가 손가락을 안 따라옵니다. */
+          animation:sheetup var(--t) var(--ease); }
 /* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
 .aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
                   border-radius:999px; background:var(--line); }

@@ -285,6 +285,52 @@ async function readLinks(message: string) {
   return { block, report: got.map((g) => ({ link: g.link, ok: !!g.text })) };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 불러오기를 나눠서 동시에
+//
+// 한 덩어리로 보내면 글이 길수록 오래 걸립니다. 걸리는 시간의 대부분은
+// **모델이 답을 써 내려가는 시간**이라 입력이 길면 뽑을 일정도 많아집니다.
+// 셋으로 나눠 한꺼번에 보내면 제일 긴 조각만큼만 걸립니다.
+//
+// **AI 사용 횟수는 그대로 1회입니다.** 세는 것은 ai_take 이고 그건 요청당
+// 한 번만 부릅니다. 우리 쪽 비용만 늘고 사용자 한도는 안 닳습니다.
+//
+// 사진이 붙어 있으면 나누지 않습니다 — 사진은 쪼갤 수가 없고,
+// 사진마다 어느 조각에 넣을지 정할 근거도 없습니다.
+// ─────────────────────────────────────────────────────────────────────
+const IMP_CHUNK = 3500;    // 조각 하나의 글자 수
+const IMP_PARTS = 3;       // 최대 조각 수
+
+/** 줄 단위로 자릅니다. 문장 중간에서 끊으면 그 일정이 통째로 사라집니다. */
+function splitText(s: string, size: number, maxParts: number) {
+  const lines = s.split('\n');
+  const out: string[] = [];
+  let cur = '';
+  for (const ln of lines) {
+    if (cur && cur.length + ln.length + 1 > size) { out.push(cur); cur = ''; }
+    cur += (cur ? '\n' : '') + ln;
+  }
+  if (cur) out.push(cur);
+  if (out.length <= maxParts) return out;
+  // 너무 잘게 나뉘었으면 앞에서부터 뭉쳐 개수를 맞춥니다.
+  const per = Math.ceil(out.length / maxParts), merged: string[] = [];
+  for (let i = 0; i < out.length; i += per) merged.push(out.slice(i, i + per).join('\n'));
+  return merged;
+}
+
+/** 한 번 물어보고 글자만 꺼냅니다. 한도(429)에 걸리면 가벼운 모델로 한 번 더. */
+// deno-lint-ignore no-explicit-any
+async function askGemini(key: string, contents: any[]) {
+  let r = await callGemini(MODEL, key, contents);
+  if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
+  if (r.code !== 200) return null;
+  try {
+    const parts = JSON.parse(r.body)?.candidates?.[0]?.content?.parts ?? [];
+    const t = parts.map((p: { text?: string }) => p.text ?? '').join('').trim();
+    return t || null;
+  } catch { return null; }
+}
+
 /** 두 좌표 사이 거리(km). 이동 시간과 "너무 먼 좌표 버리기"에 씁니다. */
 function distKm(a: number, b: number, c: number, d: number) {
   const R = 6371, r = Math.PI / 180;
@@ -636,18 +682,63 @@ Deno.serve(async (req) => {
             ] },
         ];
 
-    let r = await callGemini(MODEL, key, contents);
-    if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
-    if (r.code !== 200)
-      return json({ error: `AI 가 응답하지 않았습니다 (${r.code}).` }, 502);
+    // ── 불러오기가 길면 나눠서 동시에 ──
+    // 걸리는 시간의 대부분은 모델이 답을 써 내려가는 시간입니다. 자료가 길면
+    // 뽑을 일정도 많아져 그만큼 늘어납니다. 셋으로 갈라 한꺼번에 보내면
+    // 제일 긴 조각만큼만 걸립니다. 사용 횟수는 위에서 이미 1회만 셌습니다.
+    const impBody = blogBlock + String(message ?? '');
+    const chunks = (imp && !shots.length && impBody.length > IMP_CHUNK)
+      ? splitText(impBody, IMP_CHUNK, IMP_PARTS) : null;
 
-    const parsed = JSON.parse(r.body);
-    const parts = parsed?.candidates?.[0]?.content?.parts ?? [];
-    const raw = parts.map((p: { text?: string }) => p.text ?? '').join('').trim();
-    if (!raw) {
-      const why = parsed?.promptFeedback?.blockReason ??
-                  parsed?.candidates?.[0]?.finishReason ?? '알 수 없음';
-      return json({ error: `답을 받지 못했습니다 (${why}).` }, 502);
+    let raw = '';
+
+    if (chunks && chunks.length > 1) {
+      const got = await Promise.all(chunks.map((c, i) => askGemini(key, [
+        { role: 'user',  parts: [{ text: importSystem }] },
+        { role: 'model', parts: [{ text: '알겠습니다. 자료에 있는 것만 옮기겠습니다.' }] },
+        { role: 'user',  parts: [{ text:
+            `아래가 옮길 일정이다. 전체를 ${chunks.length}조각으로 나눈 것 중 ` +
+            `${i + 1}번째다. **이 조각에 적힌 것만** 옮기고, 여기 없는 날은 만들지 않는다.` +
+            '\n\n' + c }] },
+      ])));
+
+      // 조각끼리 같은 일정을 겹쳐 낼 수 있습니다(앞뒤가 잘린 자리).
+      // 날짜·시각·제목이 같으면 같은 것으로 봅니다.
+      // deno-lint-ignore no-explicit-any
+      const acts: any[] = [];
+      const seen = new Set<string>();
+      let reply = '';
+      for (const t of got) {
+        if (!t) continue;
+        // deno-lint-ignore no-explicit-any
+        let o: any = {};
+        try { o = JSON.parse(t); } catch { continue; }
+        if (!reply && o?.reply) reply = String(o.reply);
+        for (const a of (o?.actions ?? [])) {
+          const k = `${a?.date}|${a?.start_time ?? ''}|${String(a?.title ?? '').trim()}`;
+          if (seen.has(k)) continue;
+          seen.add(k); acts.push(a);
+        }
+      }
+      // 조각이 하나도 답을 못 냈으면 통째로 실패한 것입니다.
+      if (!got.some(Boolean))
+        return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
+      raw = JSON.stringify({
+        reply: reply || `${acts.length}개를 찾았습니다.`, actions: acts });
+    } else {
+      let r = await callGemini(MODEL, key, contents);
+      if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
+      if (r.code !== 200)
+        return json({ error: `AI 가 응답하지 않았습니다 (${r.code}).` }, 502);
+
+      const parsed = JSON.parse(r.body);
+      const parts = parsed?.candidates?.[0]?.content?.parts ?? [];
+      raw = parts.map((p: { text?: string }) => p.text ?? '').join('').trim();
+      if (!raw) {
+        const why = parsed?.promptFeedback?.blockReason ??
+                    parsed?.candidates?.[0]?.finishReason ?? '알 수 없음';
+        return json({ error: `답을 받지 못했습니다 (${why}).` }, 502);
+      }
     }
 
     // JSON 을 못 받아도 말은 전합니다. 형식이 깨졌다고 답까지 버릴 이유는 없습니다.
