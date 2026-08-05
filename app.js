@@ -7567,16 +7567,30 @@ if (window.visualViewport){
         const r  = s && !s.classList.contains('hide') ? s.getBoundingClientRect() : null;
         const kb = getComputedStyle(document.documentElement)
                      .getPropertyValue('--kb').trim();
+        /* 눈금자가 0/0 이라는데 화면은 안 맞았습니다. 그러면 눈금자가 못 보는
+           구간이 있는 것입니다. 사파리는 아래 도구막대 자리에도 페이지를 계속
+           그리는데, innerHeight 와 visualViewport 는 그 자리를 안 셉니다.
+           그걸 재려면 화면 전체 높이와 견줘봐야 합니다. */
+        const dpr  = window.devicePixelRatio || 1;
+        const scrH = Math.round(screen.height);          /* 기기 화면 (CSS px) */
+        const cliH = document.documentElement.clientHeight;
+        /* 시트 바닥을 레이아웃 기준으로 환산합니다. rect 는 보이는 화면 기준입니다. */
+        const botLay = r ? Math.round(r.bottom + vv.offsetTop) : null;
+        const s = $('aiview');
+        const tf = s?.style.transform || '(없음)';
+
         box.textContent =
           `--kb      ${kb}\n` +
-          `inner     ${window.innerHeight}\n` +
-          `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}\n` +
+          `inner     ${window.innerHeight}   outer ${window.outerHeight}\n` +
+          `client    ${cliH}   screen ${scrH}   dpr ${dpr}\n` +
+          `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}` +
+          `  합 ${Math.round(vv.height + vv.offsetTop)}\n` +
           `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>\n` +
-          `kbon      ${document.body.classList.contains('kbon') ? 'Y' : 'N'}\n` +
+          `transform ${tf}\n` +
           (r ? `시트 top ${Math.round(r.top)}  h ${Math.round(r.height)}\n` +
-               `시트 bot ${Math.round(r.bottom)}  (화면 ${window.innerHeight})\n` +
-               `삐져나감  위 ${Math.round(Math.min(0, r.top))} / ` +
-               `아래 ${Math.round(Math.max(0, r.bottom - (window.innerHeight - parseInt(kb) || 0)))}`
+               `시트 bot ${Math.round(r.bottom)}  레이아웃기준 ${botLay}\n` +
+               `★ 안 덮인 아래  ${scrH - (botLay ?? 0)}  (screen-시트바닥)\n` +
+               `★ inner 밖      ${scrH - window.innerHeight}  (screen-inner)`
              : '시트 닫힘');
         requestAnimationFrame(show);
       };
