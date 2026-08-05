@@ -339,8 +339,13 @@ async function askGemini(key: string, contents: any[], fast = false) {
   // 불러오기는 '읽어서 옮기기'입니다. 추론이 아니라 추출이라 가벼운 모델로 충분하고
   // 훨씬 빠릅니다. 실측: 큰 모델로 34초였습니다. 실패하면 큰 모델로 한 번 더.
   // temperature 0 — 옮겨 적는 일에 창의성은 손해입니다.
-  const first = fast ? MODEL_FALLBACK : MODEL;
-  const second = fast ? MODEL : MODEL_FALLBACK;
+  /* 한때 fast 를 "가벼운 모델로 바꾸기"로 썼습니다. 34초 → 13초가 됐지만
+     **같은 자료에서 일정이 18개에서 15개로 줄었습니다.** 불러오기에서 빠지는 것은
+     느린 것보다 나쁩니다 — 사용자는 3개가 없어진 줄 모르고 넘어갑니다.
+     모델은 되돌리고, fast 는 이제 **temperature 0** 만 뜻합니다.
+     옮겨 적는 일에 무작위성은 손해라 그것만은 남깁니다. */
+  const first = MODEL;
+  const second = MODEL_FALLBACK;
   let r = await callGemini(first, key, contents, fast ? 0 : 0.7);
   /* 실패하면 **왜** 실패했는지 남깁니다. 성공 경로에만 로그를 두었더니
      TIMING 이 통째로 사라졌고, 그러면 "안 찍힌다"만 알고 이유를 모릅니다. */
