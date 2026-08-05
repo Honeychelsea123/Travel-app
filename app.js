@@ -7504,6 +7504,11 @@ if (window.visualViewport){
        키보드가 먹은 높이는 그냥 innerHeight - vv.height 입니다. */
     const kb = typing() ? Math.max(0, window.innerHeight - vv.height) : 0;
     document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    /* 시트는 --kb 를 안 씁니다. iOS 는 키보드가 뜨면 **화면을 스크롤**하기 때문에
+       레이아웃 바닥이 곧 보이는 화면의 바닥입니다(off 303 → 보이는 영역 303~695).
+       거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
+       시트는 bottom:0 에 두고, 높이만 "지금 보이는 높이"로 잡습니다. */
+    document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
        펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
