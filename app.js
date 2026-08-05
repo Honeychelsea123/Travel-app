@@ -7556,11 +7556,27 @@ if (window.visualViewport){
       ? getComputedStyle(sheet).backgroundColor : 'var(--canvas)';
 
     /* 레이아웃 바닥의 **문서 좌표**에서 시작합니다. 뷰포트 기준이 아닙니다 —
-       iOS 가 키보드를 띄우며 페이지를 스크롤하므로 scrollY 를 더해야 합니다. */
+       iOS 가 키보드를 띄우며 페이지를 스크롤하므로 그만큼을 더해야 합니다.
+
+       **b175 는 여기서 scrollY 를 썼고 안 먹었습니다.**
+
+       기준을 짐작하면 틀립니다. offsetParent 를 기준으로 삼아봤더니 12px
+       어긋났습니다 — body 가 position:static 이면 offsetParent 는 BODY 를
+       돌려주지만 absolute 의 진짜 기준은 body 가 아니라 문서 원점이고,
+       그 사이에 body 의 margin 이 끼어 있습니다.
+
+       **그래서 놓고 나서 실제로 어디 그려졌는지 재서 어긋난 만큼 밀어줍니다.**
+       컨테이닝 블록이 무엇인지 따지는 것보다 이게 확실하고, 좌표계가 무엇이든
+       스스로 맞습니다. 우리가 원하는 자리는 하나입니다 — 레이아웃 바닥. */
     const top = Math.round(window.scrollY + window.innerHeight);
     const h   = Math.round(window.innerHeight - vv.height) + 140;
     kbCover.style.top    = top + 'px';
     kbCover.style.height = h + 'px';
+    /* 재서 보정합니다. 덮개 위쪽 모서리가 **레이아웃 바닥(innerHeight)** 에
+       와야 그 아래 막대 뒤가 덮입니다. 어긋난 만큼 밀면 한 번에 맞습니다. */
+    const drift = kbCover.getBoundingClientRect().top - window.innerHeight;
+    if (Math.abs(drift) > 0.5)
+      kbCover.style.top = Math.round(top - drift) + 'px';
     /* body.sheeton 은 overflow:hidden 이라 **body 상자 밖으로 나간 덮개는
        잘립니다.** 짧은 화면에서 그렇게 됩니다. 스크롤은 이미 잠겨 있으니
        늘려도 사용자 눈에는 아무 차이가 없습니다. */
@@ -7737,6 +7753,26 @@ if (window.visualViewport){
         const tf = s?.style.transform || '(없음)';
 
         box.textContent =
+          /* **화면 버전을 안 찍고 있었습니다.** 그래서 사진을 받고도 이게 고친
+             판인지 옛 판인지 가릴 수가 없었습니다. 배포는 캐시 때문에 늦게
+             오는데, 그동안의 사진을 "안 고쳐졌다"로 잘못 읽을 뻔했습니다.
+             재는 장치에는 **무엇을 재고 있는지**가 늘 함께 있어야 합니다. */
+          `화면      ${$('build')?.textContent || '?'}\n` +
+          /* 덮개가 안 생겼는지, 생겼는데 자리가 어긋났는지 갈라 봅니다.
+             레이아웃(위)과 화면(아래) 좌표를 같이 찍습니다 — 어느 쪽이 틀렸는지는
+             둘을 견줘야 압니다. 막대는 화면 기준 vv.h 아래에 있습니다. */
+          `덮개      ${kbCover
+             ? `top ${parseInt(kbCover.style.top)} h ${parseInt(kbCover.style.height)}` +
+               `  화면 ${Math.round(kbCover.getBoundingClientRect().top)}~` +
+               `${Math.round(kbCover.getBoundingClientRect().bottom)}`
+             : '없음'}\n` +
+          /* 덮개가 없으면 **왜** 없는지가 갈려야 합니다. 조건이 둘입니다. */
+          `덮개조건  시트 ${document.body.classList.contains('sheeton') ? 'Y' : 'N'}` +
+          `  키보드차 ${Math.round(window.innerHeight - vv.height)} (>60이어야)\n` +
+          /* b175 가 안 먹은 것이 자리 계산 때문인지 보려면 두 기준을 견줘야
+             합니다. 같으면 계산은 죄가 없고 다른 곳이 원인입니다. */
+          `좌표기준  scrollY ${Math.round(window.scrollY)}` +
+          `  rect ${Math.round(-document.documentElement.getBoundingClientRect().top)}\n` +
           `--kb      ${kb}\n` +
           `inner     ${window.innerHeight}   outer ${window.outerHeight}\n` +
           `client    ${cliH}   screen ${scrH}   dpr ${dpr}\n` +
