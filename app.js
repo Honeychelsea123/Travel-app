@@ -1447,8 +1447,15 @@ $('ai_send').addEventListener('click', async () => {
     /* 함수가 오류를 내면 본문에 이유가 들어 있습니다. 그대로 보여줍니다. */
     let why = error.message;
     try { why = (await error.context?.json())?.error || why; } catch {}
-    return fail(/not found|Failed to send/i.test(why)
-      ? 'chat 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+    /* 예전에는 'Failed to send'(요청이 도중에 끊김)까지 "함수가 안 올라갔다"로
+       묶어놨습니다. 둘은 전혀 다릅니다 — 하나는 배포 문제고 하나는 서버가
+       일하다 죽은 것입니다. 같은 문구를 내놓으니 엉뚱한 데를 보게 됩니다. */
+    return fail(
+      /not found|404/i.test(why)
+        ? 'chat 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+      : /Failed to send|Load failed|NetworkError/i.test(why)
+        ? '답을 만들다 끊겼어요. 글이 너무 길거나 링크가 무거우면 그럴 수 있어요. ' +
+          '링크를 하나만 넣거나 글을 줄여서 다시 해보세요.'
       : why, 'ai');
   }
   if (data?.error) return fail(data.error, 'ai');
