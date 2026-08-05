@@ -657,6 +657,46 @@ $('admback').addEventListener('click', () => {
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
+/* ── 바뀐 것 ────────────────────────────────────────────────────────
+ * 판마다 무엇이 바뀌었는지. 목록은 changes.js 에 따로 있습니다.
+ *
+ * **정적 import 를 쓰지 않습니다.** 그러면 오프라인에서 그 파일이 캐시에
+ * 없을 때 모듈 로드가 통째로 실패해 앱이 안 뜹니다. 누를 때만 받아오고,
+ * 못 받아오면 그 화면만 못 엽니다. 화면 판 번호를 붙여 옛 파일을 안 잡게 합니다. */
+let CHG = null;
+$('adm_chgcard').addEventListener('click', async () => {
+  $('admpane').classList.add('hide');
+  $('chgpane').classList.remove('hide');
+  window.scrollTo({ top:0, behavior:'smooth' });
+  if (CHG) return drawChanges();
+  try {
+    const v = $('build')?.textContent || '';
+    ({ CHANGES: CHG } = await import(`./changes.js?v=${encodeURIComponent(v)}`));
+    drawChanges();
+  } catch (e){
+    $('chglist').innerHTML = `<div class="card"><div class="empty" style="text-align:left">
+      목록을 못 받아왔어요. 연결이 없으면 이 화면은 안 열립니다.<br>
+      <span class="memo">${esc(String(e?.message || e))}</span></div></div>`;
+  }
+});
+$('chgback').addEventListener('click', () => {
+  $('chgpane').classList.add('hide');
+  $('admpane').classList.remove('hide');
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
+
+const CHG_TAG = { '새로':'k-관광', '고침':'k-식사', '바뀜':'k-이동', '걷어냄':'' };
+function drawChanges(){
+  $('chglist').innerHTML = (CHG || []).map(r => `<div class="card">
+    <h2><span class="grow">${esc(r.t)}</span></h2>
+    <div class="memo" style="margin:-6px 0 10px">${esc(r.d)} · ${esc(r.v)}</div>
+    ${r.items.map(([tag, s]) => `<div class="plan">
+       <span class="kdot ${esc(CHG_TAG[tag] ?? '')}"></span>
+       <div class="body"><b style="font-size:calc(13px * var(--ts))">${esc(tag)}</b>
+         <span class="memo">${esc(s)}</span></div></div>`).join('')}
+  </div>`).join('');
+}
+
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
    문의할 때 붙일 수 있게 복사도 됩니다 — 스크린샷보다 이쪽이 고치기 쉽습니다. */
 $('errbtn').addEventListener('click', async () => {
@@ -1544,6 +1584,33 @@ function drawCards(d){
    담을 때마다 새로 시작합니다 — 열 번 전에 담은 것까지 지우면 그건 사고입니다. */
 let lastTake = [];
 
+/* ── 카드를 일정 폼으로 보내기 ────────────────────────────────────────
+ * 예전에는 '일정에 넣기'가 곧바로 저장했습니다. AI 가 정해준 날짜·시각
+ * 그대로라서, 사용자가 보기에는 **아무 데나 들어간** 것이었습니다.
+ * 손으로 넣을 때는 날짜와 시각을 고르는데 불러온 것만 그냥 꽂히는 셈입니다.
+ * 이제 일정 추가 폼을 **미리 채워서** 열어줍니다. 정하는 것은 사용자가 합니다.
+ *
+ * 좌표는 폼에 칸이 없습니다. 여기 들고 있다가 저장할 때 같이 넣습니다 —
+ * 안 그러면 이동시간 검사의 재료가 사라집니다. (후보 → 일정도 같은 구멍이
+ * 있었습니다. 이 변수를 그쪽에서도 씁니다.) */
+let planSeedGeo = null;
+
+function openPlanForm(seed){
+  /* 이미 열려 있으면 닫고 다시 엽니다. addplanbtn 이 toggle 이라
+     열린 채로 누르면 오히려 닫힙니다. */
+  $('plancard').classList.add('hide');
+  $('addplanbtn').click();
+  $('p_title').value = seed.title || '';
+  $('p_cat').value   = seed.category || '';
+  $('p_memo').value  = seed.memo || '';
+  $('p_date').value  = seed.date || pickedDay || trip.start_date;
+  $('p_start').value = seed.start_time || '';
+  $('p_end').value   = seed.end_time || '';
+  planSeedGeo = (seed.lat != null && seed.lng != null)
+    ? { lat: seed.lat, lng: seed.lng } : null;
+  $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
 /* 카드 한 장을 담습니다. 담긴 줄의 id 를 돌려줍니다 (되돌리기용). */
 async function takeCard(kind, i, tripId){
   if (kind === 'a'){
@@ -1642,6 +1709,20 @@ $('cards').addEventListener('click', async e => {
 
   /* ── 한 장씩 ── */
   const b = e.target.closest('button[data-take]'); if (!b) return;
+
+  /* 일정으로 넣는 것만 폼을 거칩니다. 후보는 날짜가 없는 것이 본래 뜻이라
+     고를 것이 없습니다 — 폼을 띄우면 오히려 한 단계가 늘 뿐입니다. */
+  if (b.dataset.take === 'a'){
+    const a = suggested.actions[+b.dataset.i];
+    if (!a) return;
+    if (!tripId) return fail('어느 여행인지 먼저 골라주세요.', 'ai');
+    /* AI 시트를 닫고 폼을 엽니다. popstate 는 aiview 만 닫고 일정 폼은
+       안 건드리므로 순서가 꼬이지 않습니다. */
+    closeAi();
+    openPlanForm(a);
+    return;
+  }
+
   b.disabled = true; b.innerHTML = '<span class="load">담는 중…</span>';
   try {
     lastTake.push(await takeCard(b.dataset.take, +b.dataset.i, tripId));
@@ -3767,26 +3848,23 @@ $('card-cand').addEventListener('click', async e => {
   if (f){
     /* 제안한 자리 그대로 일정 칸을 채워 엽니다. 날짜와 시각까지 미리 넣습니다. */
     const x = fitList[+f.dataset.fit]; if (!x) return;
-    $('addplanbtn').click();
-    $('p_title').value = x.cand.title;
-    $('p_date').value  = x.date;
-    $('p_start').value = hhmm(x.at);
-    $('p_end').value   = hhmm(x.at + Math.min(x.avail, stayMin(x.cand.category)));
-    $('p_cat').value   = x.cand.category || '';
-    $('p_memo').value  = x.cand.memo || '';
+    /* 후보의 좌표도 같이 넘깁니다. 예전에는 폼을 거치면서 사라져서,
+       빈 시간을 좌표로 계산해 놓고 정작 넣은 일정에는 좌표가 없었습니다. */
+    openPlanForm({
+      title: x.cand.title, category: x.cand.category, memo: x.cand.memo,
+      date: x.date, start_time: hhmm(x.at),
+      end_time: hhmm(x.at + Math.min(x.avail, stayMin(x.cand.category))),
+      lat: x.cand.lat, lng: x.cand.lng,
+    });
     $('card-cand').classList.add('hide');
-    $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
     return;
   }
   /* 후보를 일정으로. 빈 시간 제안을 안 거치고 바로 넣고 싶을 때 씁니다. */
   const cp = e.target.closest('[data-candplan]');
   if (cp){
     const c = cands.find(x => x.id === cp.dataset.candplan); if (!c) return;
-    $('addplanbtn').click();
-    $('p_title').value = c.title;
-    $('p_cat').value   = c.category || '';
-    $('p_memo').value  = c.memo || '';
-    $('p_date').value  = pickedDay || trip.start_date;
+    openPlanForm({ title: c.title, category: c.category, memo: c.memo,
+                   lat: c.lat, lng: c.lng });
     $('card-cand').classList.add('hide');
     return;
   }
@@ -7312,6 +7390,9 @@ async function handleJoin(){
 /* ── 일정 추가 · 삭제 ───────────────────────────────────────────── */
 $('addplanbtn').addEventListener('click', () => {
   editPlanId = null; $('p_create').textContent = '넣기';
+  /* 손으로 새로 여는 것이므로 앞서 카드에서 들고 온 좌표는 버립니다.
+     openPlanForm 은 이 뒤에 다시 채웁니다. */
+  planSeedGeo = null;
   $('plancard').classList.toggle('hide');
   if ($('plancard').classList.contains('hide')) return;
   $('p_date').value = pickedDay || trip.start_date;
@@ -7361,12 +7442,17 @@ $('p_create').addEventListener('click', async () => {
   const before  = editing ? { ...plans.find(p => p.id === editing) } : null;
   const tmpId   = 'tmp:' + Math.random().toString(36).slice(2);
 
+  /* 카드나 후보에서 넘어온 좌표. 폼에는 칸이 없어서 따로 들고 있었습니다.
+     **고치는 중일 때는 쓰지 않습니다** — 그 일정이 이미 가진 좌표를 덮습니다. */
+  const geo = (!editing && planSeedGeo) ? planSeedGeo : null;
+
   if (editing){
     const i = plans.findIndex(p => p.id === editing);
     if (i >= 0) plans[i] = { ...plans[i], ...row };
   } else {
     plans.push({ id: tmpId, trip_id: trip.id, sort_order: sort,
-                 lat:null, lng:null, move_note:null, ...row });
+                 lat: geo?.lat ?? null, lng: geo?.lng ?? null,
+                 move_note:null, ...row });
   }
   plans.sort((a, b) => a.date.localeCompare(b.date)
     || String(a.start_time ?? '~').localeCompare(String(b.start_time ?? '~'))
@@ -7378,9 +7464,11 @@ $('p_create').addEventListener('click', async () => {
   $('plancard').classList.add('hide');
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 
+  planSeedGeo = null;               /* 한 번 쓰고 비웁니다. 다음 일정에 묻으면 안 됩니다 */
   const r = await write(editing
     ? { table:'plans', action:'update', id:editing, row }
-    : { table:'plans', action:'insert', row:{ trip_id: trip.id, sort_order: sort, ...row } });
+    : { table:'plans', action:'insert',
+        row:{ trip_id: trip.id, sort_order: sort, ...row, ...(geo || {}) } });
 
   if (!r.ok){
     /* 되돌립니다. 저장 안 된 것이 화면에 남아 있으면 여행 중에 그걸 믿고 움직입니다. */

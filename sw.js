@@ -17,6 +17,9 @@ const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
   './manifest.json', './apple-touch-icon.png',
   './privacy.html', './terms.html',
+  /* 관리자만 보는 '바뀐 것' 목록. app.js 가 누를 때만 동적으로 받아오므로
+     없어도 앱은 멀쩡합니다. 여기 담아두면 오프라인에서도 열립니다. */
+  './changes.js',
 ];
 
 /* 앱 화면은 index.html 하나뿐입니다. 약관·처리방침은 **다른 문서**입니다.
