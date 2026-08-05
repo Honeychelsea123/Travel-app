@@ -342,7 +342,14 @@ async function askGemini(key: string, contents: any[], fast = false) {
   const first = fast ? MODEL_FALLBACK : MODEL;
   const second = fast ? MODEL : MODEL_FALLBACK;
   let r = await callGemini(first, key, contents, fast ? 0 : 0.7);
-  if (r.code !== 200) r = await callGemini(second, key, contents, fast ? 0 : 0.7);
+  /* 실패하면 **왜** 실패했는지 남깁니다. 성공 경로에만 로그를 두었더니
+     TIMING 이 통째로 사라졌고, 그러면 "안 찍힌다"만 알고 이유를 모릅니다. */
+  if (r.code !== 200){
+    console.log(`ASK ${first} -> ${r.code} ${String(r.body).slice(0, 300)}`);
+    r = await callGemini(second, key, contents, fast ? 0 : 0.7);
+    if (r.code !== 200)
+      console.log(`ASK ${second} -> ${r.code} ${String(r.body).slice(0, 300)}`);
+  }
   if (r.code !== 200) return null;
   try {
     const parts = JSON.parse(r.body)?.candidates?.[0]?.content?.parts ?? [];
@@ -733,7 +740,7 @@ Deno.serve(async (req) => {
             `아래가 옮길 일정이다. 전체를 ${chunks.length}조각으로 나눈 것 중 ` +
             `${i + 1}번째다. **이 조각에 적힌 것만** 옮기고, 여기 없는 날은 만들지 않는다.` +
             '\n\n' + c }] },
-      ]), true)));
+      ], true)));
 
       // 조각끼리 같은 일정을 겹쳐 낼 수 있습니다(앞뒤가 잘린 자리).
       // 날짜·시각·제목이 같으면 같은 것으로 봅니다.
