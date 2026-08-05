@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b172">
+<link rel="stylesheet" href="app.css?v=b173">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -397,10 +397,21 @@
                          .8.2L16.8 6h1.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5
                          2.5 0 0 1 3 16.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg>
             </button>
-            <!-- input 이었는데 한 줄만 보여서, 길게 쓰면 자기가 뭘 쓰는지 못 봤습니다.
-                 textarea 로 바꾸고 줄 수에 맞춰 늘립니다(app.js 의 growMsg). -->
-            <textarea id="ai_msg" rows="1" placeholder="예: 둘째 날이 너무 빡빡한가요?"
-                      maxlength="500" enterkeyhint="send"></textarea>
+            <!-- input → textarea → contenteditable 로 두 번 바뀌었습니다.
+                 input 은 한 줄만 보여서 길게 쓰면 자기가 뭘 쓰는지 못 봤고,
+                 textarea 는 iOS 가 그 위에 ∧ ∨ ✓ 막대를 붙입니다. 그 막대는
+                 레이아웃(innerHeight) **바깥**에 그려져서 시트로 덮을 수가 없고,
+                 그 뒤로 뒷 페이지가 그대로 비쳤습니다(홈 화면 앱 실측: inner 793,
+                 시트 바닥도 793 — 막대는 그 아래). iOS 는 contenteditable 에는
+                 그 막대를 안 붙입니다. 자리가 없어지면 비칠 자리도 없습니다.
+
+                 placeholder·maxlength·rows 가 다 없어지므로 각각 CSS 의
+                 :empty::before, app.js 의 글자수 자르기, CSS 의 max-height 가 맡습니다.
+                 contenteditable 은 여기서 "true" 로 두고 app.js 가 지원되면
+                 plaintext-only 로 올립니다 — 스크립트가 죽어도 쓰기는 됩니다. -->
+            <div id="ai_msg" contenteditable="true" role="textbox" aria-multiline="true"
+                 aria-label="AI 에게 물어보기" enterkeyhint="send"
+                 data-ph="예: 둘째 날이 너무 빡빡한가요?"></div>
             <!-- 종이비행기. 도쿄 앱과 같습니다. -->
             <button class="primary iconbtn" id="ai_send" title="보내기" aria-label="보내기">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -1260,10 +1271,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b172</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b173</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b172"></script>
+<script type="module" src="app.js?v=b173"></script>
 </body>
 </html>
 

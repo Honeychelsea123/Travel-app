@@ -692,13 +692,32 @@ body.kbon .assheet{ padding-bottom:16px; }
 .aichat #chat{ flex:none; overflow:visible; min-height:120px; max-height:none; }
 .aichat .aibar{ margin-top:12px; }
 /* 입력칸. 한 줄짜리 input 이었는데 길게 쓰면 앞이 밀려 나가 자기가 뭘 쓰는지
-   못 봤습니다. textarea 로 바꾸고 다섯 줄까지 늘어나게 합니다.
-   여섯 줄부터는 안에서 스크롤됩니다 — 더 늘리면 대화가 안 보입니다. */
-#ai_msg{ flex:1; min-width:0; resize:none; overflow-y:auto;
+   못 봤습니다. 다섯 줄까지 늘어나고 여섯 줄부터는 안에서 스크롤됩니다 —
+   더 늘리면 대화가 안 보입니다.
+   지금은 textarea 가 아니라 contenteditable 인 div 입니다(index.html 에 이유).
+   그래서 `input, select, textarea` 공통 규칙이 안 걸립니다 — 글자·테두리·바탕을
+   여기서 직접 갖춰야 합니다. 빠뜨리면 테두리 없는 맨 글자만 남습니다. */
+#ai_msg{ flex:1; min-width:0; overflow-y:auto;
          max-height:calc(5 * 1.45em + 20px);
          line-height:1.45; padding:9px 14px;
          border-radius:var(--r-lg);   /* 여러 줄이 되면 알약 모양이 어색합니다 */
-         font-family:inherit; }
+         font-family:inherit;
+         /* 16px 아래로 내려가면 iOS 가 누를 때 화면을 확대해 레이아웃이 깨집니다. */
+         font-size:max(16px, calc(15px * var(--ts)));
+         border:1px solid var(--hairline); background:var(--pearl); color:var(--ink);
+         /* div 는 비어 있으면 높이가 0 입니다. 한 줄 자리는 늘 잡아둡니다. */
+         min-height:calc(1.45em + 20px);
+         /* 줄바꿈과 띄어쓰기를 textarea 처럼 살립니다. 링크를 붙여넣어도
+            상자 밖으로 밀고 나가지 않게 긴 낱말은 잘라 접습니다. */
+         white-space:pre-wrap; overflow-wrap:anywhere;
+         -webkit-user-select:text; user-select:text; }
+#ai_msg:focus{ border-color:var(--primary); background:var(--canvas); }
+/* placeholder 속성이 없으니 직접 그립니다. 비었을 때 <br> 하나가 남으면
+   :empty 가 깨지므로 app.js 가 그때 innerHTML 을 비워줍니다. */
+#ai_msg:empty::before{ content:attr(data-ph); color:var(--muted);
+                       pointer-events:none; }
+/* 연결이 없을 때. disabled 속성이 없으니 눈으로도 알 수 있게 흐립니다. */
+#ai_msg[aria-disabled="true"]{ opacity:.55; background:var(--hairline); }
 /* 사진·보내기 단추는 여러 줄이 돼도 아래에 붙어 있어야 합니다. */
 .aichat .aibar > div{ align-items:flex-end; }
 

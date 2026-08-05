@@ -1180,10 +1180,10 @@ async function loadChats(tripId){
     $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
       '일정과 지출은 그대로 보실 수 있어요.</div>';
     $('qasks').classList.add('hide');
-    $('ai_msg').disabled = true; $('ai_send').disabled = true;
+    msgEnable(false); $('ai_send').disabled = true;
     return;
   }
-  $('ai_msg').disabled = false; $('ai_send').disabled = false;
+  msgEnable(true); $('ai_send').disabled = false;
 
   /* 여행을 안 골랐을 때 나눈 대화도 남깁니다 (029). trip_id 가 비어 있는 줄입니다.
      eq 로는 null 을 못 찾습니다 — is 를 써야 합니다. */
@@ -1288,15 +1288,74 @@ function showTyping(){
 }
 function hideTyping(){ document.getElementById('typing')?.remove(); }
 
-/* 여러 줄 입력칸. 쓴 만큼 늘어나야 자기가 뭘 쓰는지 보입니다.
-   height 를 먼저 비워야 줄어들 때도 따라 줄어듭니다 — 안 그러면 한 번 커진
-   채로 안 돌아옵니다. */
-function growMsg(){
+/* ── 입력칸 (contenteditable) ────────────────────────────────────────
+ * textarea 였는데 iOS 가 그 위에 붙이는 ∧ ∨ ✓ 막대가 레이아웃 바깥에 그려져
+ * 시트로 덮을 수가 없었습니다(index.html 에 실측값). contenteditable 에는
+ * 그 막대가 안 붙습니다. 대신 textarea 가 공짜로 주던 것들을 직접 해야 합니다.
+ *   .value        → msgGet / msgSet
+ *   maxlength     → 아래 MSG_MAX
+ *   placeholder   → app.css 의 :empty::before
+ *   rows 자동증가 → 필요 없습니다. div 는 내용만큼 저절로 큽니다(growMsg 삭제).
+ *   disabled      → msgEnable
+ * 여기서 제일 위험한 것은 **한글 조합**입니다. 조합이 끝나기 전에 내용을
+ * 건드리면 쓰던 글자가 씹힙니다. 그래서 손대는 곳마다 isComposing 을 봅니다. */
+const MSG_MAX = 500;
+
+/* innerText 로 읽습니다. textContent 는 <br>·<div> 로 들어간 줄바꿈을 그냥
+   무시해서 두 줄이 한 줄로 붙어버립니다. 붙여넣기로 들어오는 줄바꿈 없는
+   공백( )은 보통 띄어쓰기로 되돌립니다 — 안 그러면 검색·비교가 어긋납니다. */
+const msgGet = () => $('ai_msg').innerText.replace(/\u00a0/g, ' ');
+/* textContent 로 씁니다. innerHTML 로 쓰면 남이 준 글이 태그로 들어옵니다. */
+const msgSet = (v) => { $('ai_msg').textContent = v; };
+
+/* plaintext-only 면 붙여넣기 서식을 브라우저가 알아서 걷어냅니다(사파리는 오래
+   전부터 됩니다). 못 알아듣는 브라우저는 값이 안 바뀌므로 그걸로 갈립니다. */
+const MSG_PLAIN = (() => {
+  const d = document.createElement('div');
+  try { d.contentEditable = 'plaintext-only'; } catch (e){ return false; }
+  return d.contentEditable === 'plaintext-only';
+})();
+function msgEnable(on){
   const el = $('ai_msg');
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
+  el.contentEditable = on ? (MSG_PLAIN ? 'plaintext-only' : 'true') : 'false';
+  el.setAttribute('aria-disabled', on ? 'false' : 'true');
 }
-$('ai_msg').addEventListener('input', growMsg);
+msgEnable(true);
+
+/* 커서를 글 끝으로. 글자수를 잘라낸 뒤에 이걸 안 하면 커서가 맨 앞으로
+   튀어서 이어 쓰는 글자가 거꾸로 박힙니다. */
+function msgCaretEnd(){
+  const el = $('ai_msg'), r = document.createRange(), s = getSelection();
+  r.selectNodeContents(el); r.collapse(false);
+  s.removeAllRanges(); s.addRange(r);
+}
+
+function msgTrim(){
+  const el = $('ai_msg');
+  /* 다 지웠는데 <br> 하나가 남는 일이 있습니다. 그러면 :empty 가 아니라서
+     placeholder 가 안 돌아옵니다. 눈에 보이는 글이 없으면 비워버립니다. */
+  if (!el.textContent.trim() && !el.querySelector('img')){
+    if (el.innerHTML !== '') el.innerHTML = '';
+    return;
+  }
+  const t = el.innerText;
+  if (t.length > MSG_MAX){ el.textContent = t.slice(0, MSG_MAX); msgCaretEnd(); }
+}
+$('ai_msg').addEventListener('input', e => {
+  if (e.isComposing) return;         /* 조합 중에는 세지도 자르지도 않습니다 */
+  msgTrim();
+});
+/* 조합이 끝나는 순간에 한 번 더 봅니다 — 조합 중에 넘긴 글자는 여기서 잘립니다. */
+$('ai_msg').addEventListener('compositionend', msgTrim);
+
+/* plaintext-only 를 못 쓰는 브라우저에서 서식을 걷어냅니다.
+   execCommand 는 낡았지만 되돌리기(⌘Z)가 살아 있는 유일한 길입니다. */
+$('ai_msg').addEventListener('paste', e => {
+  if (MSG_PLAIN) return;
+  e.preventDefault();
+  const t = (e.clipboardData || window.clipboardData)?.getData('text/plain') || '';
+  document.execCommand('insertText', false, t);
+});
 
 $('ai_msg').addEventListener('keydown', e => {
   /* 줄바꿈이 필요할 때가 있습니다. Enter 는 보내기, Shift+Enter 는 줄바꿈.
@@ -1323,7 +1382,7 @@ function drawQasks(){
 }
 $('qasks').addEventListener('click', e => {
   const b = e.target.closest('.qask'); if (!b) return;
-  $('ai_msg').value = b.textContent;
+  msgSet(b.textContent);
   $('ai_send').click();
 });
 
@@ -1415,12 +1474,14 @@ function drawSources(list, web){
 $('ai_send').addEventListener('click', async () => {
   const shots = aiShots.slice();
   /* 사진만 보내도 됩니다. "이거 뭐야?"를 매번 타이핑하게 할 이유가 없습니다. */
-  const msg = $('ai_msg').value.trim() ||
+  const msg = msgGet().trim() ||
               (shots.length ? '이 사진에 대해 알려줘.' : '');
   const tripId = $('ai_trip').value;
   $('aierr').classList.add('hide');
   if (!msg) return;
-  $('ai_msg').value = ''; growMsg();   /* 여러 줄로 늘어나 있던 것을 한 줄로 되돌립니다 */
+  /* 비우면 높이는 저절로 한 줄로 돌아옵니다. 다만 textContent='' 는 :empty 가
+     되지만 혹시 남는 것이 있을 수 있어 msgTrim 이 마무리합니다. */
+  msgSet(''); msgTrim();
   $('cards').innerHTML = '';
   aiShots = []; drawShot();
   $('aisrc').classList.add('hide');
@@ -3706,7 +3767,7 @@ $('c_ai').addEventListener('click', async () => {
   openAi();
   $('ai_trip').value = trip.id;
   await loadChats(trip.id);
-  $('ai_msg').value = msg;
+  msgSet(msg);
   $('ai_send').click();
 });
 
@@ -7496,6 +7557,12 @@ async function render(session){
  * iOS 에서 키보드가 올라오면 폼 아래 버튼이 가려 아무것도 못 누릅니다.
  * 보이는 높이를 재서 그만큼 바닥에 여백을 줘 스크롤로 닿게 합니다.
  * (도쿄 앱이 --kb 로 하던 것과 같은 방식입니다.) */
+/* 홈 화면에 담은 앱인가. 사파리와 창 구조가 달라서 같은 계산이 다른 자리를
+   가리킵니다(아래 --below). navigator.standalone 은 iOS 전용이고,
+   display-mode 는 안드로이드·데스크톱까지 봅니다. 둘 다 봅니다. */
+const STANDALONE = !!navigator.standalone ||
+  matchMedia('(display-mode: standalone)').matches;
+
 if (window.visualViewport){
   const vv = window.visualViewport;
   /* 키보드가 올라왔는지는 "글을 쓸 수 있는 칸에 커서가 있는가"로 봅니다.
@@ -7547,7 +7614,15 @@ if (window.visualViewport){
        실측: screen 852 − inner 695 = 157, 눈금자의 두 ★ 이 같은 값이었습니다.
        홈 화면 앱은 도구막대가 없어 이 값이 0 이 되므로 그대로 두면 됩니다.
        레이아웃은 안 건드리고 이 높이만 시트 색으로 덮습니다(app.css 의 box-shadow). */
-    const below = Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
+    /* **홈 화면 앱에서는 이 뺄셈이 위쪽을 잽니다.** 실측 2026-08-05:
+         사파리    screen 852 − inner 695 = 157 → 아래 도구막대 (맞음)
+         홈화면앱  screen 852 − inner 793 =  59 → 위 상태바   (틀림)
+       홈 화면 앱은 도구막대가 없고 대신 레이아웃이 상태바 **아래**에서
+       시작합니다. 그래서 같은 뺄셈인데 나온 자리가 반대입니다.
+       그걸 모르고 시트 아래를 59 칠하고 있었습니다 — 없는 자리를 칠한 것입니다.
+       standalone 이면 아래에 덮을 것이 없습니다. */
+    const below = STANDALONE ? 0
+      : Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
     document.documentElement.style.setProperty('--below', below + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
@@ -7620,7 +7695,12 @@ if (window.visualViewport){
           `client    ${cliH}   screen ${scrH}   dpr ${dpr}\n` +
           `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}` +
           `  합 ${Math.round(vv.height + vv.offsetTop)}\n` +
-          `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>\n` +
+          `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>` +
+          `${el?.isContentEditable ? ' CE' : ''}  ${STANDALONE ? '홈앱' : '사파리'}\n` +
+          /* ∧ ∨ ✓ 막대는 잴 수가 없습니다 — vv 도 inner 도 그 자리를 안 셉니다.
+             대신 **막대가 없어지면 키보드가 그만큼 낮아져 vv.h 가 커집니다.**
+             textarea 로 잰 홈 화면 앱 값이 424 였습니다. 그보다 크면 없어진 것입니다. */
+          `막대?     vv.h ${Math.round(vv.height)} vs 424(막대 있을 때)\n` +
           `transform ${tf}\n` +
           (r ? `시트 top ${Math.round(r.top)}  h ${Math.round(r.height)}\n` +
                `시트 bot ${Math.round(r.bottom)}  레이아웃기준 ${botLay}\n` +
