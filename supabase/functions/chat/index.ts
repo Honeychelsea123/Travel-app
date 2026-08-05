@@ -282,19 +282,109 @@ async function readBlog(raw: string) {
  * 읽었는지 못 읽었는지를 같이 돌려줍니다. 조용히 실패하면 사용자는
  * "왜 링크를 무시하지?"만 알고 이유를 모릅니다.
  */
+// ─────────────────────────────────────────────────────────────────────
+// 구글 지도 링크 — **HTML 을 읽으면 안 됩니다.**
+//
+// 2026-08-06 실측 (https://www.google.com/maps/place/Tokyo+Tower/@35.65,139.74,17z):
+//   HTML 216,226자를 받았는데 글자로 바꾸면 **124자**
+//   "Google 지도를 보려면 자바스크립트를 사용 설정하세요."
+//   og:title 은 "Google Maps" — 장소 이름이 아닙니다.
+//
+// 지도는 자바스크립트로 그려서 HTML 안에 장소 이름이 없습니다. 그래서
+// readBlog 의 "200자 미만이면 껍데기" 검사에 걸려 통째로 버려졌고,
+// 사용자에게는 "링크를 못 읽었어요"로만 보였습니다.
+//
+// **필요한 것은 주소 안에 이미 다 있습니다.** 받아올 이유가 없습니다.
+//   /maps/place/<이름>/@<위도>,<경도>,17z
+//   /maps/search/<검색어>      ?q=<검색어>      !3d<위도>!4d<경도>
+// maps.app.goo.gl 같은 단축 주소만 한 번 따라가 최종 주소를 얻습니다.
+// ─────────────────────────────────────────────────────────────────────
+const GMAP_RE = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:google\.[a-z.]+\/maps|goo\.gl\/maps|maps\.app\.goo\.gl|maps\.google\.[a-z.]+)/i;
+const isGoogleMap = (u: string) => GMAP_RE.test(String(u || '').trim());
+
+/** 단축 주소를 펼칩니다. 실패하면 원래 주소를 그대로 씁니다. */
+async function unshortenMap(u: string) {
+  if (!/goo\.gl/i.test(u)) return u;          // 이미 긴 주소면 받아올 이유가 없습니다
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), BLOG_MS);
+  try {
+    const res = await fetch(u, { signal: ac.signal, redirect: 'follow',
+      headers: { 'user-agent': 'Mozilla/5.0' } });
+    // 보통은 여기서 끝납니다 — 302 를 따라가면 res.url 이 긴 주소입니다.
+    if (res.url && !/goo\.gl/i.test(res.url)) return res.url;
+    // 다만 302 가 아니라 **HTML 로 넘기는 판**이 있습니다(meta refresh·스크립트).
+    // 그때는 res.url 이 그대로라서 본문에서 찾아야 합니다.
+    const html = await res.text();
+    const m = html.match(/https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"'\s<>\\]+/i);
+    return m ? m[0].replace(/&amp;/g, '&') : u;
+  } catch { return u; }
+  finally { clearTimeout(t); }
+}
+
+/** 주소에서 장소 이름과 좌표를 뽑습니다. 글자 하나도 받아오지 않습니다. */
+function parseMapUrl(raw: string) {
+  let name = '', lat: string | null = null, lng: string | null = null;
+  let url: URL;
+  try { url = new URL(raw); } catch { return null; }
+
+  const path = decodeURIComponent(url.pathname);
+  // 이름: /maps/place/<이름>/  또는 /maps/search/<검색어>
+  const mp = path.match(/\/maps\/(?:place|search)\/([^/@]+)/);
+  if (mp) name = mp[1].replace(/\+/g, ' ').trim();
+  // ?q= · ?query= 로 오는 판도 있습니다
+  if (!name) name = (url.searchParams.get('q') || url.searchParams.get('query') || '').trim();
+  // 이름 자리에 좌표만 들어 있는 경우가 있습니다("35.6,139.7"). 이름이 아닙니다.
+  if (/^[-\d.]+,\s*[-\d.]+$/.test(name)) name = '';
+
+  // 좌표: @위도,경도  →  없으면 !3d위도!4d경도  →  없으면 ?q=위도,경도
+  const at = raw.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  const d3 = raw.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  const qc = (url.searchParams.get('q') || '').match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+  // !3d/!4d 가 **장소 자체**의 좌표이고 @ 는 지도 화면의 중심입니다.
+  // 둘이 다를 수 있으니 !3d 를 먼저 봅니다.
+  const hit = d3 || at || qc;
+  if (hit){ lat = hit[1]; lng = hit[2]; }
+
+  if (!name && !lat) return null;             // 건질 게 없으면 링크로 취급하지 않습니다
+  return { name, lat, lng };
+}
+
+async function readGoogleMap(raw: string) {
+  const full = await unshortenMap(String(raw || '').trim().replace(/[)\]},.;]+$/, ''));
+  const got = parseMapUrl(full);
+  if (!got) return null;
+  return [
+    got.name ? `장소: ${got.name}` : '장소: (이름이 주소에 없음)',
+    got.lat ? `좌표: ${got.lat}, ${got.lng}` : '',
+  ].filter(Boolean).join('\n');
+}
+
 async function readLinks(message: string) {
   const urls = [...new Set(String(message ?? '')
     .match(/https?:\/\/[^\s<>"']+/g) ?? [])].slice(0, BLOG_MAX);
   if (!urls.length) return { block: '', report: [] as { link: string; ok: boolean }[] };
 
-  const got = await Promise.all(urls.map(async (u) => ({ link: u, text: await readBlog(u) })));
+  const got = await Promise.all(urls.map(async (u) => ({
+    link: u,
+    map: isGoogleMap(u),
+    text: isGoogleMap(u) ? await readGoogleMap(u) : await readBlog(u),
+  })));
   const okOnes = got.filter((g) => g.text);
 
   const block = okOnes.length
-    ? okOnes.map((g) =>
-        `\n[사용자가 준 글] ${g.link}\n` +
-        '아래는 그 글의 본문이다. 메뉴·댓글·광고 문구가 섞여 있으니 장소 정보만 골라 쓴다.\n' +
-        g.text + '\n[글 끝]\n').join('')
+    ? okOnes.map((g) => g.map
+        /* 지도 링크는 **장소 하나를 콕 집어 준 것**입니다. 블로그처럼
+           "골라 쓰라"고 하면 모델이 흘려보냅니다. 반드시 넣으라고 못 박고,
+           좌표는 지어내지 말고 준 값을 그대로 쓰라고 합니다 — 좌표가 틀리면
+           이동 시간 검사가 통째로 어긋납니다. */
+        ? `\n[사용자가 준 구글 지도 링크] ${g.link}\n` +
+          '이 장소는 사용자가 직접 고른 것이다. **반드시 결과에 넣는다.**\n' +
+          '좌표가 적혀 있으면 lat·lng 에 그 값을 그대로 쓴다. 어림잡지 않는다.\n' +
+          '날짜를 알 수 없으면 일정이 아니라 후보(places)로 낸다.\n' +
+          g.text + '\n[지도 끝]\n'
+        : `\n[사용자가 준 글] ${g.link}\n` +
+          '아래는 그 글의 본문이다. 메뉴·댓글·광고 문구가 섞여 있으니 장소 정보만 골라 쓴다.\n' +
+          g.text + '\n[글 끝]\n').join('')
     : '';
 
   return { block, report: got.map((g) => ({ link: g.link, ok: !!g.text })) };

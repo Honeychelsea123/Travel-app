@@ -431,6 +431,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan .body{ flex:1; min-width:0; }
 .plan .body b{ display:block; }
 .plan .body .memo{ color:var(--ink-48); font-size:calc(13px * var(--ts)); }
+/* 불러온 일정 카드의 단추 두 개(일정에 · 후보로). 좁은 화면에서 옆으로
+   나란히 두면 제목이 밀려 잘리므로 위아래로 쌓습니다. */
+.takepair{ display:flex; flex-direction:column; gap:4px; flex:none; }
 .daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:calc(13px * var(--ts));
          display:flex; align-items:baseline; gap:8px;
          font-weight:600; }

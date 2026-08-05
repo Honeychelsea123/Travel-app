@@ -564,8 +564,9 @@ async function loadAdmin(){
     /* 손을 써야 하는 것이 있으면 맨 위입니다. 표 안에 묻으면 안 봅니다. */
     (blocked ? `<div class="awarn">최근 7일 동안 <b>${n(blocked)}번</b> 한도에 막혔습니다.
        ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번입니다. ` : ''}
-       한도는 하루 15회, 여행 중에는 30회입니다.
-       더 쓰고 싶은데 못 쓴 사람이 있다는 뜻이라 자주 막히면 다시 안 옵니다.</div>` : '') +
+       더 쓰고 싶은데 못 쓴 사람이 있다는 뜻이라 자주 막히면 다시 안 옵니다.
+       지금 한도가 얼마인지는 db/046 의 스위치가 정합니다 —
+       여기에 숫자를 적어두면 스위치를 바꿀 때마다 이 문장이 거짓말을 합니다.</div>` : '') +
 
     `<div class="atiles">
       ${tile('가입자', n(d.users_total) + '명', `최근 7일에 ${n(d.users_7d)}명 늘었습니다`)}
@@ -611,7 +612,7 @@ async function loadAdmin(){
        `예산 ${n(d.ai_budget)}회 가운데 ${n(d.ai_left)}회 남았습니다`],
       ['그중 일정 검토 (7일)', n(d.ai_review_7d) + '회',
        '일반 대화와 따로 셉니다. 아까워서 안 쓰게 되면 안 되니까요'],
-      ['오늘 가장 많이 쓴 사람', n(d.ai_top_today) + '회', '한 사람 기준. 한도는 15회입니다'],
+      ['오늘 가장 많이 쓴 사람', n(d.ai_top_today) + '회', '한 사람 기준'],
       ['한도에 막힌 횟수', `오늘 ${n(d.ai_blocked_today)}회 · 7일 ${n(d.ai_blocked_7d)}회`,
        '0이 아니면 더 쓰고 싶은데 못 쓴 사람이 있다는 뜻입니다'],
     ]) +
@@ -1191,8 +1192,12 @@ async function loadChats(tripId){
   q = tripId ? q.eq('trip_id', tripId) : q.is('trip_id', null);
   const { data } = await netTimeout(q.order('created_at').limit(40));
   drawChats(data || []);
+  /* 한도가 없으면 limit 이 null 로 옵니다(db/046). 그대로 찍으면
+     "오늘 3/null회"가 됩니다. 남은 횟수를 보여주는 이유가 "줄어드는 게
+     보이면 납득한다"였으니, 줄어들 것이 없으면 셈을 안 보여주는 게 맞습니다. */
   const { data: left } = await sb.rpc('ai_left');
-  if (left) $('ai_left').textContent = `오늘 ${left.used}/${left.limit}회`;
+  if (left) $('ai_left').textContent = left.limit == null
+    ? `오늘 ${left.used}회` : `오늘 ${left.used}/${left.limit}회`;
 }
 
 /* AI 는 마크다운으로 씁니다. 그대로 찍으면 별표가 글자로 보입니다.
@@ -1495,6 +1500,10 @@ function drawCards(d){
            <button class="small" data-takeall="1">이 ${acts.length + places.length}개 다 담기</button>
            <button class="ghost hide" id="undotake">방금 담은 것 되돌리기</button>
          </div>` : '') +
+    /* **일정으로 온 것도 후보로 보낼 수 있어야 합니다.** 불러오기로 스무 개를
+       읽어오면 그중 몇 개는 "갈지 말지 아직 모르겠는 곳"입니다. 지금까지는
+       일정에 넣거나 버리거나 둘뿐이라, 애매한 것을 일정에 넣어놓고 나중에
+       지우는 수밖에 없었습니다. 단추를 하나 더 답니다. */
     (acts.length ? `<div class="daysep">일정으로 넣기</div>` : '') +
     acts.map((a, i) => {
       const k = a.category ? 'k-' + a.category : '';
@@ -1504,7 +1513,10 @@ function drawCards(d){
         <div class="body"><b>${esc(a.title)}</b>
           <span class="memo">${esc(a.date)}${a.memo ? ' · ' + esc(a.memo) : ''} ${far(a)}</span>
         </div>
-        <button class="small" data-take="a" data-i="${i}">담기</button></div>`;
+        <div class="takepair">
+          <button class="small" data-take="a"  data-i="${i}" data-label="일정에">일정에</button>
+          <button class="small ghost" data-take="ap" data-i="${i}" data-label="후보로">후보로</button>
+        </div></div>`;
     }).join('') +
     (places.length ? `<div class="daysep">후보로 담기</div>` : '') +
     places.map((p, i) => {
@@ -1514,7 +1526,7 @@ function drawCards(d){
         <div class="body"><b>${esc(p.name)}</b>
           <span class="memo">${esc([p.name_local, p.why].filter(Boolean).join(' · '))}
             ${far(p)}</span></div>
-        <button class="small" data-take="p" data-i="${i}">담기</button></div>`;
+        <button class="small" data-take="p" data-i="${i}" data-label="담기">담기</button></div>`;
     }).join('');
 }
 
@@ -1538,7 +1550,15 @@ async function takeCard(kind, i, tripId){
     if (!r.data?.length) throw new Error('저장되지 않았어요 (0건).');
     return { table:'plans', id:r.data[0].id };
   }
-  const p = suggested.places[i];
+  /* 'ap' = 일정으로 온 것을 후보로 보냅니다. 날짜와 시각은 버립니다 —
+     후보는 "언제 갈지 아직 안 정한 곳"이라 날짜가 있으면 뜻이 어긋납니다.
+     대신 원래 며칠에 있던 것인지는 메모에 적어둡니다. 지우면 나중에
+     "이게 왜 여기 있지"가 됩니다. */
+  const src = kind === 'ap' ? suggested.actions[i] : suggested.places[i];
+  const p = kind === 'ap'
+    ? { name: src.title, name_local: null, category: src.category, lat: src.lat, lng: src.lng,
+        why: [src.memo, src.date ? `불러올 때 ${src.date}` : ''].filter(Boolean).join(' · ') }
+    : src;
   const r = await sb.from('candidates').insert({
     trip_id: tripId, title: p.name, title_local: p.name_local,
     category: p.category, memo: p.why, lat: p.lat, lng: p.lng,
@@ -1566,8 +1586,11 @@ $('cards').addEventListener('click', async e => {
       await sb.from(t.table).update({ deleted_at: new Date().toISOString() }).eq('id', t.id);
     lastTake = [];
     u.disabled = false; showUndo();
+    /* 단추마다 원래 글자가 다릅니다(일정에 · 후보로 · 담기).
+       '담기'로 일괄 되돌리면 일정 카드의 단추 두 개가 똑같아집니다. */
     $('cards').querySelectorAll('button[data-take]').forEach(x => {
-      x.disabled = false; x.textContent = '담기';
+      x.disabled = false; x.textContent = x.dataset.label || '담기';
+      x.classList.remove('hide');      /* 담을 때 감춘 짝 단추를 되살립니다 */
     });
     const all = $('cards').querySelector('button[data-takeall]');
     if (all){ all.disabled = false; all.textContent = all.dataset.orig || all.textContent; }
@@ -1595,7 +1618,10 @@ $('cards').addEventListener('click', async e => {
                    showUndo(); return fail(err, 'ai'); }
     }
     all.textContent = `${jobs.length}개 담았어요`;
+    /* 다 담기는 일정은 일정으로, 후보는 후보로 넣습니다. 그러니 일정 카드의
+       '후보로' 단추는 안 쓰인 것이라 글자를 바꾸지 않고 감춥니다. */
     $('cards').querySelectorAll('button[data-take]').forEach(x => {
+      if (x.dataset.take === 'ap'){ x.disabled = true; x.classList.add('hide'); return; }
       x.disabled = true; x.textContent = '담았어요';
     });
     showUndo();
@@ -1610,9 +1636,15 @@ $('cards').addEventListener('click', async e => {
   try {
     lastTake.push(await takeCard(b.dataset.take, +b.dataset.i, tripId));
   } catch (err){
-    b.disabled = false; b.textContent = '담기'; return fail(err, 'ai');
+    b.disabled = false; b.textContent = b.dataset.label || '담기';
+    return fail(err, 'ai');
   }
   b.textContent = '담았어요';
+  /* 일정 카드에는 단추가 둘입니다. 하나를 담았으면 나머지도 잠급니다 —
+     안 그러면 같은 것이 일정에도 후보에도 들어갑니다. */
+  b.closest('.plan')?.querySelectorAll('button[data-take]').forEach(x => {
+    if (x !== b){ x.disabled = true; x.classList.add('hide'); }
+  });
   showUndo();
   await runReview(tripId);          /* 넣었으니 검토 배지도 다시 셉니다 */
 });
@@ -6010,7 +6042,11 @@ $('imp_go').addEventListener('click', async () => {
     try { why = (await error?.context?.json())?.error || why; } catch {}
     return fail(why, 'imp');
   }
-  if (!data.actions?.length)
+  /* **후보(places)만 나올 수 있습니다.** 구글 지도 링크처럼 날짜가 없는 것은
+     일정이 아니라 후보로 옵니다. actions 만 세면 멀쩡히 읽어놓고
+     "일정을 못 찾았어요"로 튕깁니다. */
+  const got = (data.actions?.length || 0) + (data.places?.length || 0);
+  if (!got)
     return fail(bad.length
       ? '링크를 못 읽었어요. 로그인이 필요한 글이거나 막아둔 블로그일 수 있어요. ' +
         '글을 복사해서 아래 칸에 붙여넣으면 그대로 읽어드려요.'
@@ -6025,7 +6061,7 @@ $('imp_go').addEventListener('click', async () => {
   await loadChats(trip.id);
   drawSources(data.sources, data.web);
   drawCards(data);
-  toast(`${data.actions.length}개를 읽었어요. 확인하고 담아주세요.`);
+  toast(`${got}개를 읽었어요. 확인하고 담아주세요.`);
 });
 
 /* ── 날씨 ───────────────────────────────────────────────────────────
