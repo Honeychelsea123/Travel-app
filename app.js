@@ -513,6 +513,9 @@ async function loadAdmin(){
      결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
   sb.rpc('sweep_retention').then(() => {}, () => {});
   show(true);
+  /* 조절 칸도 같이 채웁니다. 여기서 기다리지 않습니다 — 통계와 상관없는
+     별개 요청이라 순서대로 하면 화면만 늦게 뜹니다. */
+  loadSettings();
   /* **자동으로 켜지 않습니다** (b178). 키보드 문제가 b177 에서 닫혔으므로
      관리자 화면마다 초록 글씨가 뜰 이유가 없습니다.
      다시 필요하면 주소 끝에 ?kb=1 을 붙이거나, 홈 화면 앱처럼 주소를 못 넘기는
@@ -642,6 +645,57 @@ async function loadAdmin(){
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
+
+/* ── 조절 ────────────────────────────────────────────────────────────
+ * 코드에 박아두면 껐다 켤 때마다 개발 도구를 열어야 합니다. 운영하는 사람이
+ * 그래야 한다면 그건 아직 만들다 만 것입니다. 값은 DB(app_settings)에 있고
+ * 모양 검사는 admin_setting_set 이 합니다 — 화면만 믿으면 콘솔에서
+ * 아무 값이나 넣을 수 있습니다. */
+async function loadSettings(){
+  const { data, error } = await sb.rpc('admin_settings');
+  if (error){ $('s_note').textContent = '설정을 못 읽었어요: ' + (error.message || ''); return; }
+  const a = data?.ai_limit || {}, w = data?.web_search || {}, m = data?.ai_model || {};
+  $('s_ailimit').checked = !!a.on;
+  $('s_ai_day').value    = a.day  ?? 15;
+  $('s_ai_trip').value   = a.trip ?? 30;
+  $('s_web').checked     = w.on !== false;
+  $('s_model').value     = m.name || 'gemini-3.6-flash';
+  syncSetRow();
+  $('s_note').textContent = '바꾼 뒤 저장을 누르세요. 곧바로 모두에게 적용됩니다.';
+}
+/* 한도를 끈 상태에서 숫자 칸은 아무 뜻이 없습니다. 흐려서 그렇다고 알립니다 —
+   지우면 켤 때 무슨 값이었는지 못 봅니다. */
+function syncSetRow(){
+  const on = $('s_ailimit').checked;
+  $('s_ailimit_nums').style.opacity = on ? '' : '.45';
+  $('s_ai_day').disabled = $('s_ai_trip').disabled = !on;
+}
+$('s_ailimit').addEventListener('change', syncSetRow);
+
+$('adm_setsave').addEventListener('click', async () => {
+  const b = $('adm_setsave');
+  $('serr').classList.add('hide');
+  b.disabled = true; b.innerHTML = '<span class="load">저장 중…</span>';
+  /* 셋을 차례로 보냅니다. 하나가 막히면 거기서 멈추고 왜인지 보여줍니다 —
+     서버가 값의 모양을 검사하므로 그 말을 그대로 옮기는 것이 가장 정확합니다. */
+  const jobs = [
+    ['ai_limit',   { on: $('s_ailimit').checked,
+                     day:  Number($('s_ai_day').value),
+                     trip: Number($('s_ai_trip').value) }],
+    ['web_search', { on: $('s_web').checked }],
+    ['ai_model',   { name: $('s_model').value }],
+  ];
+  for (const [key, value] of jobs){
+    const { error } = await sb.rpc('admin_setting_set', { p_key: key, p_value: value });
+    if (error){
+      b.disabled = false; b.textContent = '저장';
+      return fail(error, 's');
+    }
+  }
+  b.disabled = false; b.textContent = '저장';
+  toast('저장했어요.');
+  await loadSettings();
+});
 
 /* 통계는 프로필 우상단 아이콘으로만 들어갑니다. 설정 안에도 문을 두었다가
    같은 문이 둘이 되어 없앴습니다. loadAdmin 이 로그인할 때 미리 다 받아두므로

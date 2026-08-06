@@ -22,6 +22,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const MODEL = 'gemini-3.6-flash';              // 도쿄 앱에서 쓰던 것과 같은 모델
 const MODEL_FALLBACK = 'gemini-3.5-flash-lite'; // 한도(429)에 걸리면 가벼운 쪽으로
 
+/* 관리자가 화면에서 고른 모델(db/047). 요청을 받을 때마다 설정에서 채웁니다.
+   전역이지만 **모든 요청에 같은 값**이라 서로 방해하지 않습니다 —
+   부르는 자리가 여럿이라 인자로 실어 나르면 그 줄들만 늘어납니다.
+   설정을 못 읽으면 위의 MODEL 그대로 갑니다. */
+let activeModel = MODEL;
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -434,7 +440,7 @@ async function askGemini(key: string, contents: any[], fast = false) {
      느린 것보다 나쁩니다 — 사용자는 3개가 없어진 줄 모르고 넘어갑니다.
      모델은 되돌리고, fast 는 이제 **temperature 0** 만 뜻합니다.
      옮겨 적는 일에 무작위성은 손해라 그것만은 남깁니다. */
-  const first = MODEL;
+  const first = activeModel;
   const second = MODEL_FALLBACK;
   let r = await callGemini(first, key, contents, fast ? 0 : 0.7);
   /* 실패하면 **왜** 실패했는지 남깁니다. 성공 경로에만 로그를 두었더니
@@ -529,10 +535,22 @@ Deno.serve(async (req) => {
     if (imp && !shots.length && !String(message ?? '').trim())
       return json({ error: '읽을 것이 없습니다.' }, 400);
 
-    // ── 사용량 ── 서비스 키로만. 화면에서 건너뛸 수 없습니다.
+    // ── 사용량과 설정 ── 서비스 키로만. 화면에서 건너뛸 수 없습니다.
+    //
+    // 설정을 **같이 받아옵니다.** 순서대로 하면 왕복이 하나 더 붙는데,
+    // 둘은 서로를 안 기다려도 되는 일입니다.
+    // 관리자가 화면에서 바꾸는 값들입니다(db/047). 표가 비었거나 못 읽으면
+    // 아래 기본값으로 갑니다 — 설정을 못 읽었다고 답을 안 해주면 안 됩니다.
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: take, error: takeErr } =
-      await admin.rpc('ai_take', { p_user: user.id, p_kind: draft ? 'draft' : imp ? 'import' : 'chat' });
+    const [{ data: take, error: takeErr }, { data: cfgRows }] = await Promise.all([
+      admin.rpc('ai_take', { p_user: user.id, p_kind: draft ? 'draft' : imp ? 'import' : 'chat' }),
+      admin.from('app_settings').select('key,value'),
+    ]);
+    const cfg: Record<string, any> =
+      Object.fromEntries((cfgRows ?? []).map((r: any) => [r.key, r.value]));
+    // 모델 이름은 DB 쪽에서 이미 목록으로 걸러집니다. 그래도 빈 값이면 기본으로.
+    activeModel     = String(cfg.ai_model?.name || MODEL);
+    const searchOn  = cfg.web_search?.on !== false;
     if (takeErr) return json({ error: takeErr.message }, 500);
     if (!take?.ok)
       return json({
@@ -683,7 +701,9 @@ Deno.serve(async (req) => {
     // 링크를 줬으면 웹 검색은 건너뜁니다 — 읽을 글을 이미 받았습니다.
     // 예전 변수(blog)를 여러 링크(blogBlock)로 바꾸면서 이 줄을 안 고쳐
     // "blog is not defined" 로 답이 통째로 막혔습니다.
-    if (tavily && !draft && !shot && !blogBlock && needsSearch(String(message))) {
+    // searchOn 은 관리자가 화면에서 끌 수 있는 스위치입니다(db/047).
+    // 끄면 Tavily 크레딧이 아예 안 나갑니다 — 답은 검색 없이 그대로 합니다.
+    if (searchOn && tavily && !draft && !shot && !blogBlock && needsSearch(String(message))) {
       const dest = tripRow?.destination ?? '';
       hits = await webSearch(tavily, admin,
         searchQuery(String(message), dest), 5,
@@ -867,7 +887,7 @@ Deno.serve(async (req) => {
       if (!t) return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
       raw = t;
     } else {
-      let r = await callGemini(MODEL, key, contents);
+      let r = await callGemini(activeModel, key, contents);
       if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
       if (r.code !== 200)
         return json({ error: `AI 가 응답하지 않았습니다 (${r.code}).` }, 502);

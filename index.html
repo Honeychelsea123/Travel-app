@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b181">
+<link rel="stylesheet" href="app.css?v=b182">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -818,6 +818,50 @@
           <h2>최근 신고와 오류</h2>
           <div id="adm_feed"></div>
         </div>
+        <!-- ── 조절 ── 코드에 박아두면 바꿀 때마다 개발 도구를 열어야 합니다.
+             돈에 직결된 셋만 여기 둡니다. 값은 db/047 의 app_settings 에 있고
+             admin_setting_set 이 모양을 검사합니다. -->
+        <div class="card" id="adm_setcard">
+          <h2><span class="grow">조절</span>
+            <button class="small" id="adm_setsave">저장</button></h2>
+
+          <div class="srow">
+            <span class="label"><b>AI 하루 한도</b>
+              <div class="memo">끄면 아무도 안 막힙니다. 관리자는 켜도 무제한이에요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_ailimit"><span></span></label>
+          </div>
+          <!-- 한도를 끈 상태에서는 숫자 칸이 의미가 없어 흐려집니다. -->
+          <div class="row" id="s_ailimit_nums">
+            <span class="label">한도 횟수</span>
+            <span class="v" style="display:flex; gap:6px; align-items:center">
+              <input type="number" id="s_ai_day" min="1" max="10000"
+                     style="width:72px" aria-label="평소 하루 한도">
+              <span class="memo">평소</span>
+              <input type="number" id="s_ai_trip" min="1" max="10000"
+                     style="width:72px" aria-label="여행 중 하루 한도">
+              <span class="memo">여행 중</span>
+            </span>
+          </div>
+
+          <div class="srow">
+            <span class="label"><b>웹 검색</b>
+              <div class="memo">끄면 검색 크레딧이 안 나갑니다. 답은 검색 없이 계속해요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_web"><span></span></label>
+          </div>
+
+          <div class="row">
+            <span class="label"><b>AI 모델</b>
+              <div class="memo">가벼운 쪽은 싸지만 불러오기에서 일정을 빠뜨린 적이 있어요.</div></span>
+            <span class="v"><select id="s_model" style="width:auto">
+              <option value="gemini-3.6-flash">기본 (정확)</option>
+              <option value="gemini-3.5-flash-lite">가벼움 (쌈)</option>
+            </select></span>
+          </div>
+
+          <div class="snote" id="s_note">불러오는 중…</div>
+          <pre id="serr" class="hide"></pre>
+        </div>
+
         <!-- 바뀐 것. 카드를 누르면 한 겹 들어갑니다. -->
         <div class="card" id="adm_chgcard" style="cursor:pointer">
           <h2><span class="grow">바뀐 것</span><span class="val">›</span></h2>
@@ -1283,10 +1327,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b181</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b182</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b181"></script>
+<script type="module" src="app.js?v=b182"></script>
 </body>
 </html>
 
