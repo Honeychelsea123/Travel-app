@@ -359,10 +359,14 @@ async function readGoogleMap(raw: string) {
   const full = await unshortenMap(String(raw || '').trim().replace(/[)\]},.;]+$/, ''));
   const got = parseMapUrl(full);
   if (!got) return null;
-  return [
-    got.name ? `장소: ${got.name}` : '장소: (이름이 주소에 없음)',
-    got.lat ? `좌표: ${got.lat}, ${got.lng}` : '',
-  ].filter(Boolean).join('\n');
+  // 글(모델에게 줄 것)과 값(우리가 그대로 쓸 것)을 같이 돌려줍니다.
+  return {
+    text: [
+      got.name ? `장소: ${got.name}` : '장소: (이름이 주소에 없음)',
+      got.lat ? `좌표: ${got.lat}, ${got.lng}` : '',
+    ].filter(Boolean).join('\n'),
+    place: got,
+  };
 }
 
 async function readLinks(message: string) {
@@ -370,11 +374,11 @@ async function readLinks(message: string) {
     .match(/https?:\/\/[^\s<>"']+/g) ?? [])].slice(0, BLOG_MAX);
   if (!urls.length) return { block: '', report: [] as { link: string; ok: boolean }[] };
 
-  const got = await Promise.all(urls.map(async (u) => ({
-    link: u,
-    map: isGoogleMap(u),
-    text: isGoogleMap(u) ? await readGoogleMap(u) : await readBlog(u),
-  })));
+  const got = await Promise.all(urls.map(async (u) => {
+    if (!isGoogleMap(u)) return { link: u, map: false, text: await readBlog(u), place: null };
+    const r = await readGoogleMap(u);
+    return { link: u, map: true, text: r?.text ?? null, place: r?.place ?? null };
+  }));
   const okOnes = got.filter((g) => g.text);
 
   const block = okOnes.length
@@ -393,7 +397,16 @@ async function readLinks(message: string) {
           g.text + '\n[글 끝]\n').join('')
     : '';
 
-  return { block, report: got.map((g) => ({ link: g.link, ok: !!g.text })) };
+  return {
+    block,
+    report: got.map((g) => ({ link: g.link, ok: !!g.text })),
+    /* 지도에서 뽑은 장소를 **그대로** 넘깁니다. 모델을 거치지 않습니다 —
+       이름과 좌표를 이미 정확히 쥐고 있는데 다시 물으면 틀립니다.
+       실측(2026-08-06): 콜로세움 링크를 넘겼더니 링크는 읽었는데(ok:true)
+       actions·places 가 **둘 다 빈 배열**로 왔습니다. 장소 하나에 날짜가
+       없으니 모델이 "옮길 일정이 없다"고 판단한 것입니다. */
+    maps: got.map((g) => g.place).filter(Boolean) as { name:string; lat:string|null; lng:string|null }[],
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -688,7 +701,7 @@ Deno.serve(async (req) => {
     // 링크는 하나만 읽었는데, 사람들은 블로그 두세 개를 한꺼번에 붙여넣습니다.
     // 최대 셋까지 **동시에** 읽습니다. 하나씩 읽으면 셋에 24초가 걸립니다.
     mark('ctx');
-    const { block: blogBlock, report: blogReport } = await linksP;
+    const { block: blogBlock, report: blogReport, maps: mapHits } = await linksP;
     mark('links');
 
     // ── 웹 검색 ──
@@ -972,9 +985,31 @@ Deno.serve(async (req) => {
     const sources = [...new Set((Array.isArray(out.sources) ? out.sources : [])
       .map((s) => String(s)).filter((s) => SRC.includes(s)))];
 
+    /* ── 지도 링크로 고른 곳은 우리가 직접 카드로 만듭니다 ──
+       모델에게 맡겼더니 아무것도 안 냈습니다(위 readLinks 주석의 실측).
+       이름도 좌표도 주소에서 그대로 뽑은 것이라 모델보다 정확합니다.
+       날짜를 알 수 없으니 일정이 아니라 **후보**로 냅니다 — 언제 갈지는
+       사용자가 정할 일입니다. */
+    const mapPlaces = (mapHits ?? []).map((m) => {
+      const la = Number(m.lat), ln = Number(m.lng);
+      const ok = Number.isFinite(la) && Number.isFinite(ln) &&
+                 Math.abs(la) <= 90 && Math.abs(ln) <= 180;
+      return {
+        name: (m.name || '지도에서 고른 곳').slice(0, 60),
+        name_local: null,
+        category: null,
+        why: '구글 지도 링크에서 가져왔어요',
+        lat: ok ? la : null,
+        lng: ok ? ln : null,
+      };
+    }).filter((p) => p.name);
+    // 같은 곳을 모델도 냈으면 우리 것만 남깁니다. 좌표가 붙어 있는 쪽입니다.
+    const mapNames = new Set(mapPlaces.map((p) => p.name));
+    const allPlaces = [...mapPlaces, ...places.filter((p) => !mapNames.has(p.name))];
+
     return json({
       reply: String(out.reply ?? raw).slice(0, 4000),
-      places, actions, sources,
+      places: allPlaces, actions, sources,
       // 어디서 읽어온 것인지 링크째 돌려줍니다. 눌러서 직접 확인할 수 있어야
       // "검색해서 답했다"는 말이 확인 가능한 말이 됩니다.
       web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
