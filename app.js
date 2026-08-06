@@ -67,14 +67,16 @@ document.addEventListener('click', e => {
 }, true);
 
 function fail(e, where){
-  const box = { form:$('formerr'), trip:$('triperr'), edit:$('editerr'), mem:$('memerr'), ava:$('avaerr'),
-                plan:$('planerr'), planform:$('planformerr'), ai:$('aierr'), leg:$('legerr'),
-                exp:$('experr'), expform:$('expformerr'), rv:$('rverr'),
-                book:$('bookerr'), bookform:$('bookformerr'),
-                pack:$('packerr'), link:$('linkerr'), rate:$('rateerr'), cv:$('cverr'), dump:$('dumperr'), cand:$('canderr'),
-                draft:$('drafterr'), trash:$('trasherr'), nf:$('nferr'),
-                del:$('delerr') }[where] || $('err');
-  if (!where) $('errcard').classList.remove('hide');
+  /* 오류 상자를 **손으로 적은 목록**에서 찾고 있었습니다. 목록에 없으면
+     숨겨진 #err 로 떨어지는데 그 카드는 안 열리므로 **오류가 아무 데도
+     안 보였습니다.** 조용한 실패라 사용자는 저장된 줄 알고 넘어갑니다.
+     실제로 'imp'(불러오기)와 's'(조절)가 목록에서 빠져 있었습니다.
+
+     목록에 있던 24개가 전부 `<이름>err` 규칙 그대로였습니다. 목록은 중복이고
+     새 화면을 만들 때마다 빠뜨리게 만드는 함정이라 규칙으로 바꿉니다.
+     그래도 못 찾으면 #err 로 갑니다 — 그때는 카드도 함께 엽니다. */
+  const box = (where && $(where + 'err')) || $('err');
+  if (!where || box === $('err')) $('errcard').classList.remove('hide');
   box.classList.remove('hide');
   /* 연결이 끊겨서 못 받아온 것을 빨간 오류로 띄우면 고장으로 보입니다.
      비행기모드에서 화면마다 빨간 상자가 떴습니다. 그건 오류가 아니라 상태입니다.
