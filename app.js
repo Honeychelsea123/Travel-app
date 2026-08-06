@@ -570,8 +570,7 @@ async function loadAdmin(){
     (blocked ? `<div class="awarn">최근 7일 동안 <b>${n(blocked)}번</b> 한도에 막혔습니다.
        ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번입니다. ` : ''}
        더 쓰고 싶은데 못 쓴 사람이 있다는 뜻이라 자주 막히면 다시 안 옵니다.
-       지금 한도가 얼마인지는 db/046 의 스위치가 정합니다 —
-       여기에 숫자를 적어두면 스위치를 바꿀 때마다 이 문장이 거짓말을 합니다.</div>` : '') +
+       지금 한도는 아래 <b>조절</b>에서 바꿀 수 있어요.</div>` : '') +
 
     `<div class="atiles">
       ${tile('가입자', n(d.users_total) + '명', `최근 7일에 ${n(d.users_7d)}명 늘었습니다`)}
