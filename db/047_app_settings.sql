@@ -152,17 +152,24 @@ grant execute on function public.admin_setting_set(text, jsonb) to authenticated
 
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
+-- **SQL Editor 에는 로그인한 사용자가 없습니다.** auth.uid() 가 비어 있어서
+-- is_admin() 은 여기서 늘 false 이고, ai_limit(auth.uid()) 도 '관리자가 아닌
+-- 사람'으로 판정됩니다. 그게 정상입니다 — 관리자 여부는 앱에서 봐야 합니다.
+-- 여기서 볼 것은 **표가 생겼는지**와 **스위치가 어느 쪽인지** 둘입니다.
 select * from (
   select 1 as ord, '설정 표'::text as check,
          coalesce((select value::text from public.app_settings where key='ai_limit'),
                   '(없음)') as result
   union all
-  select 2, '내 한도(관리자면 없음)',
-         coalesce(public.ai_limit(auth.uid())::text, '없음')
-  union all
-  select 3, '남의 한도(스위치 확인용)',
+  select 2, '스위치 (남들이 받는 한도)',
          coalesce(public.ai_limit(
-           '00000000-0000-0000-0000-000000000000'::uuid)::text || '회', '없음')
+           '00000000-0000-0000-0000-000000000000'::uuid)::text || '회',
+           '없음 — 아무도 안 막힙니다')
   union all
-  select 4, '나는 관리자인가', public.is_admin()::text
+  select 3, '등록된 관리자 수', (select count(*)::text from public.admins)
+  union all
+  select 4, '웹 검색 / 모델',
+         coalesce((select value::text from public.app_settings where key='web_search'), '?')
+         || ' / ' ||
+         coalesce((select value->>'name' from public.app_settings where key='ai_model'), '?')
 ) t order by ord;
