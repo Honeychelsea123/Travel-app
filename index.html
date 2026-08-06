@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b184">
+<link rel="stylesheet" href="app.css?v=b185">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -862,6 +862,19 @@
           <pre id="serr" class="hide"></pre>
         </div>
 
+        <!-- ── 도시 사진 옮기기 ── 한 번 쓰고 지울 카드입니다.
+             다 옮기고 나면 이 카드와 migrate-images 함수를 걷어냅니다. -->
+        <div class="card" id="adm_migcard">
+          <h2><span class="grow">도시 사진 옮기기</span>
+            <button class="small" id="adm_mig">옮기기</button></h2>
+          <div class="empty" style="text-align:left; padding:0 0 8px">
+            지금 도시 사진은 Pexels 서버에서 바로 끌어옵니다. 저쪽이 막으면
+            사진이 통째로 깨져요. 우리 Storage 로 옮깁니다.
+          </div>
+          <div class="snote" id="mig_note">아직 안 옮겼어요.</div>
+          <pre id="migerr" class="hide"></pre>
+        </div>
+
         <!-- 바뀐 것. 카드를 누르면 한 겹 들어갑니다. -->
         <div class="card" id="adm_chgcard" style="cursor:pointer">
           <h2><span class="grow">바뀐 것</span><span class="val">›</span></h2>
@@ -1327,10 +1340,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b184</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b185</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b184"></script>
+<script type="module" src="app.js?v=b185"></script>
 </body>
 </html>
 

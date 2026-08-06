@@ -712,6 +712,41 @@ $('admback').addEventListener('click', () => {
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
+/* ── 도시 사진 옮기기 (일회용) ────────────────────────────────────────
+ * Pexels 핫링크를 우리 Storage 로 옮깁니다. 한 번에 다 하면 함수 시간
+ * 제한에 걸리므로 **조금씩 여러 번** 부르고, 남은 수가 0 이 될 때까지
+ * 이어서 돕니다. 이미 옮긴 것은 서버가 걸러내므로 다시 눌러도 안전합니다.
+ * 다 옮기고 나면 이 블록과 카드, migrate-images 함수를 걷어냅니다. */
+$('adm_mig').addEventListener('click', async () => {
+  const b = $('adm_mig'), note = $('mig_note');
+  $('migerr').classList.add('hide');
+  b.disabled = true;
+  let total = 0, fails = [];
+  /* 한 번이라도 돈 뒤에 멈추면 어디까지 했는지 알아야 합니다. 매 판마다
+     남은 수를 화면에 적습니다 — 300장이면 몇 분이 걸립니다. */
+  for (let round = 1; round <= 40; round++){
+    b.innerHTML = `<span class="load">옮기는 중… ${total}장</span>`;
+    const { data, error } = await sb.functions.invoke('migrate-images', { body: { limit: 15 } });
+    if (error || data?.error){
+      let why = data?.error || error?.message || '';
+      try { why = (await error?.context?.json())?.error || why; } catch {}
+      b.disabled = false; b.textContent = '이어서 옮기기';
+      note.textContent = `${total}장까지 옮겼어요. 다시 누르면 이어서 합니다.`;
+      return fail(why, 'mig');
+    }
+    total += data.moved || 0;
+    if (data.failed?.length) fails = fails.concat(data.failed);
+    note.textContent = `${total}장 옮겼어요. 남은 것 ${data.left}장.`;
+    /* 남은 것이 0 이거나, 한 판에서 하나도 못 옮겼으면 멈춥니다 —
+       후자는 남은 것이 전부 실패하는 것들이라 더 돌아도 같습니다. */
+    if (!data.left || !data.moved) break;
+  }
+  b.disabled = false; b.textContent = '다시 옮기기';
+  note.textContent = `${total}장 옮겼어요.` +
+    (fails.length ? ` 못 옮긴 것 ${fails.length}장: ` +
+      fails.slice(0, 5).map(f => `${f.id}(${f.why})`).join(', ') : ' 다 됐어요.');
+});
+
 /* ── 바뀐 것 ────────────────────────────────────────────────────────
  * 판마다 무엇이 바뀌었는지. 목록은 changes.js 에 따로 있습니다.
  *
