@@ -1006,10 +1006,15 @@ Deno.serve(async (req) => {
     // 같은 곳을 모델도 냈으면 우리 것만 남깁니다. 좌표가 붙어 있는 쪽입니다.
     const mapNames = new Set(mapPlaces.map((p) => p.name));
     const allPlaces = [...mapPlaces, ...places.filter((p) => !mapNames.has(p.name))];
+    /* **일정 쪽에서도 걸러야 합니다.** places 만 걸렀더니 같은 장소가
+       카드 두 개로 나왔습니다 — '일정으로 넣기 Colosseo(좌표 없음)' 와
+       '후보로 담기 Colosseo(좌표 있음)'. 모델이 붙인 날짜는 여행 첫날일
+       뿐 근거가 없고, 좌표도 없습니다. 우리 것만 남깁니다. */
+    const actionsOut = actions.filter((a) => !mapNames.has(a.title));
 
     return json({
       reply: String(out.reply ?? raw).slice(0, 4000),
-      places: allPlaces, actions, sources,
+      places: allPlaces, actions: actionsOut, sources,
       // 어디서 읽어온 것인지 링크째 돌려줍니다. 눌러서 직접 확인할 수 있어야
       // "검색해서 답했다"는 말이 확인 가능한 말이 됩니다.
       web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
