@@ -1623,11 +1623,30 @@ function drawCards(d){
   suggested = { actions: acts, places };
 
   /* 하나씩 누르게 하면 제안이 다섯이면 다섯 번을 누릅니다. 초안은 서른 번입니다.
-     한 번에 담고, 아니다 싶으면 방금 담은 것만 되돌립니다. */
+     한 번에 담고, 아니다 싶으면 방금 담은 것만 되돌립니다.
+
+     **날짜를 물어봅니다.** 개별로 넣을 때는 폼에서 날짜를 정하게 고쳤는데(b181)
+     다 담기는 여전히 AI 가 붙인 날짜로 들어갔습니다. 그 날짜는 대개 여행 첫날일
+     뿐 근거가 없습니다. 스무 개를 하나씩 정하게 할 수는 없으니 **한 번만** 묻습니다.
+       그대로  — AI 가 적어준 날짜를 씁니다(예전 동작)
+       특정일  — 고른 날짜에 다 넣습니다. 하루를 통째로 짜는 경우입니다 */
+  const dayOpts = (trip && acts.length)
+    ? (() => {
+        const out = []; const s = new Date(trip.start_date + 'T00:00:00');
+        const e = new Date(trip.end_date + 'T00:00:00');
+        for (let d = new Date(s), i = 1; d <= e && i <= 60; d.setDate(d.getDate() + 1), i++){
+          const v = d.toISOString().slice(0, 10);
+          out.push(`<option value="${v}">Day ${i} · ${v.slice(5)}</option>`);
+        }
+        return out.join('');
+      })() : '';
+
   $('cards').innerHTML =
     (acts.length + places.length > 1
       ? `<div class="takeall">
            <button class="small" data-takeall="1">이 ${acts.length + places.length}개 다 담기</button>
+           ${dayOpts ? `<select id="takeday" class="small" title="일정을 넣을 날">
+                <option value="">날짜는 그대로</option>${dayOpts}</select>` : ''}
            <button class="ghost hide" id="undotake">방금 담은 것 되돌리기</button>
          </div>` : '') +
     /* **일정으로 온 것도 후보로 보낼 수 있어야 합니다.** 불러오기로 스무 개를
@@ -1701,14 +1720,19 @@ function openPlanForm(seed){
   $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-/* 카드 한 장을 담습니다. 담긴 줄의 id 를 돌려줍니다 (되돌리기용). */
-async function takeCard(kind, i, tripId){
+/* 카드 한 장을 담습니다. 담긴 줄의 id 를 돌려줍니다 (되돌리기용).
+   day 를 주면 그 날짜로 넣습니다 — 다 담기에서 날짜를 하나로 고른 경우입니다. */
+async function takeCard(kind, i, tripId, day){
   if (kind === 'a'){
     const a = suggested.actions[i];
+    /* 날짜를 정해줬으면 그것을 씁니다. AI 가 적어준 날짜는 대개 여행 첫날일
+       뿐 근거가 없어서, 하루를 통째로 짜는 경우에는 그쪽이 맞습니다.
+       **시각은 그대로 둡니다** — 순서까지 뭉개면 오전·오후가 뒤섞입니다. */
+    const date = day || a.date;
     /* 같은 날 맨 뒤로. 좌표가 있으면 같이 넣습니다 — 이동 시간 검사의 재료입니다. */
-    const same = plans.filter(p => p.date === a.date);
+    const same = plans.filter(p => p.date === date);
     const r = await sb.from('plans').insert({
-      trip_id: tripId, date: a.date, title: a.title,
+      trip_id: tripId, date, title: a.title,
       start_time: a.start_time || null, category: a.category,
       memo: a.memo, lat: a.lat, lng: a.lng,
       sort_order: same.length ? Math.max(...same.map(p => +p.sort_order)) + 1 : 0,
@@ -1773,6 +1797,9 @@ $('cards').addEventListener('click', async e => {
     all.dataset.orig = all.textContent;
     all.disabled = true;
     lastTake = [];
+    /* 날짜를 골라뒀으면 일정은 전부 그 날로 갑니다. 비워두면 예전처럼
+       AI 가 적어준 날짜를 씁니다. 후보는 날짜가 없으니 이 값과 무관합니다. */
+    const day = $('takeday')?.value || '';
     const jobs = [
       ...suggested.actions.map((_, i) => ['a', i]),
       ...suggested.places.map((_, i) => ['p', i]),
@@ -1780,11 +1807,14 @@ $('cards').addEventListener('click', async e => {
     let done = 0;
     for (const [kind, i] of jobs){
       all.textContent = `담는 중… ${++done}/${jobs.length}`;
-      try { lastTake.push(await takeCard(kind, i, tripId)); }
+      try { lastTake.push(await takeCard(kind, i, tripId, day)); }
       catch (err){ all.disabled = false; all.textContent = all.dataset.orig;
                    showUndo(); return fail(err, 'ai'); }
     }
     all.textContent = `${jobs.length}개 담았어요`;
+    /* 날짜를 바꿔 넣었으면 그 사실을 말해줍니다. 안 그러면 "왜 다 같은 날에
+       있지"를 나중에 목록에서 발견하게 됩니다. */
+    if (day) toast(`${day} 에 몰아넣었어요. 시각은 그대로예요.`);
     /* 다 담기는 일정은 일정으로, 후보는 후보로 넣습니다. 그러니 일정 카드의
        '후보로' 단추는 안 쓰인 것이라 글자를 바꾸지 않고 감춥니다. */
     $('cards').querySelectorAll('button[data-take]').forEach(x => {

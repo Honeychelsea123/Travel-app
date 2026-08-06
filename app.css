@@ -361,7 +361,10 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 .sw input:focus-visible + span{ outline:2px solid var(--primary-focus); outline-offset:3px; }
 
 /* ── 다 담기 · 되돌리기 ── */
-.takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; }
+.takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; flex-wrap:wrap; }
+/* 다 담기 옆의 날짜 고르개. 폭을 안 묶으면 select 가 줄을 통째로 먹습니다. */
+.takeall select{ width:auto; flex:none; padding:7px 10px;
+                 font-size:calc(13px * var(--ts)); }
 
 /* 홈에서 방금 별점을 준 줄. 사라지지 않고 남아 있어서 다시 눌러 고칠 수 있습니다.
    남은 줄과 구분은 되어야 하니 아주 옅게만 깔아둡니다. */
