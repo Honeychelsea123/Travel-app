@@ -1,20 +1,21 @@
 -- =====================================================================
--- ?꾩떆 紐⑸줉 ?뺤옣 ??172怨?異붽?
+-- 도시 목록 확장 — 171곳 추가
 --
--- ?대쫫??醫뚰몴???쒓컙???**GeoNames ?먯꽌 洹몃?濡?媛?몄삩 寃?*?낅땲??
--- ?곕━媛 ???먮떒? "?대뒓 ?꾩떆瑜??ｌ쓣源? ?섎굹肉먯엯?덈떎.
---   洹쇨굅 臾몄꽌: Downloads/CITY-LIST-EXPANSION.md (?쒓뎅??異쒓뎅 ?듦퀎 湲곗? 諛곕텇)
---   ?먮즺:      GeoNames cities500 (CC BY 4.0)
+-- 이름도 좌표도 시간대도 **GeoNames 에서 그대로 가져온 것**입니다.
+-- 우리가 한 판단은 "어느 도시를 넣을까" 하나뿐입니다.
+--   근거 문서: Downloads/CITY-LIST-EXPANSION.md (한국인 출국 통계 기준 배분)
+--   자료:      GeoNames cities500 (CC BY 4.0)
 --
--- ?쒓뎅???대쫫??GeoNames ???녿뜕 32怨노쭔 ?뚯뿭?덉뒿?덈떎(?섏씠?겶룹븘?좏??셋룸낫? ??.
--- 洹?寃쎌슦?먮룄 **醫뚰몴??GeoNames 寃?*?낅땲?? 吏?대궦 醫뚰몴???섎굹???놁뒿?덈떎.
+-- 한국어 이름이 GeoNames 에 없던 32곳만 음역했습니다(하이퐁·아유타야·보홀 등).
+-- 그 경우에도 **좌표는 GeoNames 것**입니다. 지어낸 좌표는 하나도 없습니다.
 --
--- transit_grade ???멸뎄濡??뺥뻽?듬땲????100留뚢넁 dense, 20留뚢넁 normal, 洹??꾨옒
--- limited. 誘멸뎅쨌罹먮굹?ㅒ룻샇二셋룸돱吏덈옖?쒕뒗 李⑤줈 ?ㅻ땲??怨녹씠?????④퀎 ??톬?듬땲??
+-- transit_grade 는 인구로 정했습니다 — 100만↑ dense, 20만↑ normal, 그 아래
+-- limited. 미국·캐나다·호주·뉴질랜드는 차로 다니는 곳이라 한 단계 낮췄습니다.
 --
--- currency ??countries ?쒖뿉??媛?몄샃?덈떎. **join ?대씪 洹??섎씪媛 countries ??-- ?놁쑝硫?洹?以꾩? 議곗슜??鍮좎쭛?덈떎.** ?꾨옒 ?뺤씤 荑쇰━媛 紐?媛??ㅼ뼱媛붾뒗吏 ?됰땲??
+-- currency 는 countries 표에서 가져옵니다. **join 이라 그 나라가 countries 에
+-- 없으면 그 줄은 조용히 빠집니다.** 아래 확인 쿼리가 몇 개 들어갔는지 셉니다.
 --
--- 048 ?ㅼ쓬???ㅽ뻾?⑸땲?? ?щ윭 踰??ㅽ뻾?대룄 ?덉쟾?⑸땲??on conflict do nothing).
+-- 048 다음에 실행합니다. 여러 번 실행해도 안전합니다(on conflict do nothing).
 -- =====================================================================
 
 insert into public.cities
@@ -197,21 +198,21 @@ join public.countries c on c.code = v.country
 on conflict (id) do nothing;
 
 
--- ?? ?뺤씤 ?????????????????????????????????????????????????????????????
--- ?ｌ쑝?ㅻ뜕 ?섏? ?ㅼ젣濡??ㅼ뼱媛??섍? ?ㅻⅤ硫?countries ???녿뒗 ?섎씪媛 ?덈뒗 寃껋엯?덈떎.
+-- ── 확인 ─────────────────────────────────────────────────────────────
+-- 넣으려던 수와 실제로 들어간 수가 다르면 countries 에 없는 나라가 있는 것입니다.
 select * from (
-  select 1 as ord, '?꾩껜 ?꾩떆'::text as check, count(*)::text as result from public.cities
+  select 1 as ord, '전체 도시'::text as check, count(*)::text as result from public.cities
   union all
-  select 2, '?대쾲???ｌ쑝?ㅻ뜕 寃?, '171'
+  select 2, '이번에 넣으려던 것', '171'
   union all
-  select 3, '?쒓컙?媛 ?댁긽??寃?,
+  select 3, '시간대가 이상한 것',
          (select count(*)::text from public.cities x
            where not exists (select 1 from pg_timezone_names t where t.name = x.timezone))
   union all
-  select 4, '醫뚰몴 ?녿뒗 寃?, (select count(*)::text from public.cities
+  select 4, '좌표 없는 것', (select count(*)::text from public.cities
                               where center_lat is null or center_lng is null)
   union all
-  select 5, '?깃툒蹂?,
+  select 5, '등급별',
          (select string_agg(g || ':' || n, ' ' order by g) from (
             select transit_grade as g, count(*)::text as n from public.cities
              group by transit_grade) s)
