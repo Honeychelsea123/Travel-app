@@ -88,10 +88,17 @@ Deno.serve(async (req) => {
       .range(offset, offset + limit - 1);
     if (selErr) return json({ error: selErr.message }, 500);
 
+    /* **나라를 코드로 넣으면 안 됩니다.** 'Akita JP' 로 찾았더니 아키타견
+       사진만 왔고, 'Angeles PH' 는 천사상이 왔습니다. 두 글자 코드는 검색어로
+       아무 뜻이 없어서 도시명의 다른 뜻을 못 눌러줍니다.
+       나라 이름을 붙이면 'Akita Japan' 이 되어 도시 쪽으로 기울어집니다. */
+    const { data: ccRows } = await admin.from('countries').select('code,name_en');
+    const ccName: Record<string, string> =
+      Object.fromEntries((ccRows ?? []).map((x: any) => [x.code, x.name_en]));
+
     const out: unknown[] = [];
     for (const c of rows ?? []) {
-      // 도시명만으로 찾으면 동명이의가 섞입니다. 나라를 붙여 좁힙니다.
-      const q = `${c.name_en ?? c.id} ${c.country}`;
+      const q = `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
       try {
         const r = await fetch(
           `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}` +
