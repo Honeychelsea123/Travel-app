@@ -5058,16 +5058,15 @@ async function openBadgeShelf(){
     const n = g.items.filter(b => b.earned_at).length;
     return `<div class="daysep">${esc(g.cat)}
       <span class="dstat">${n}/${g.items.length}</span></div>
+      ${/* 이름과 설명을 따로 뒀더니 둘이 같은 말이었습니다 — '첫 해외'와
+            '다른 나라에 한 곳 다녀왔어요'. 조건 그 자체를 이름으로 씁니다.
+            한 줄이면 무슨 배지인지 한 번에 읽힙니다. 받았는지는 색으로 압니다. */''}
       <div class="bdgrid">${g.items.map(b => `
-        <div class="bdg${b.earned_at ? ' on' : ''}">
+        <div class="bdg${b.earned_at ? ' on' : ''}"
+             title="${esc(b.earned_at ? String(b.earned_at).slice(0,10) + ' 받음'
+                                      : b.have + ' / ' + b.need)}">
           <span class="i">${esc(b.icon)}</span>
           <b>${esc(b.name)}</b>
-          <span class="c">${esc(b.note)}</span>
-          ${b.earned_at
-            ? `<span class="c w">${esc(String(b.earned_at).slice(0, 10))}</span>`
-            /* 얼마나 남았는지 보여줍니다. "10개국"만 있으면 지금 몇인지
-               모르니 가까운 건지 먼 건지도 모릅니다. */
-            : `<span class="c w">${b.have} / ${b.need}</span>`}
         </div>`).join('')}</div>`;
   }).join('');
 }
