@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b210">
+<link rel="stylesheet" href="app.css?v=b213">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -448,8 +448,12 @@
     <div id="listview">
     <div class="card">
       <h2><span class="grow" id="listtitle">내 여행</span>
-        <!-- '새 여행'이라고 하면 새로운 여행지를 고른다는 말로 읽힙니다.
-             여기서 하는 일은 일정을 하나 만들어 목록에 얹는 것입니다. -->
+        <!-- 둘은 하는 일이 다릅니다.
+             새 여행  — 어디로·언제부터 정하는 4단계 화면
+             일정 추가 — 이미 만든 여행에 AI 로 일정을 채우는 화면
+             홈의 AI 카드가 '다음 여행' 이야기를 하게 되면서 새 여행으로 가는
+             길이 사라졌습니다. 목록 화면에 두는 것이 원래 자리입니다. -->
+        <button class="small" id="newtripbtn">＋ 새 여행</button>
         <button class="small" id="newbtn">일정 추가</button></h2>
       <!-- 기록 탭을 없애고 여기 칩으로 내렸습니다.
            새 사용자에게 다녀온 여행 탭은 몇 달간 빈 화면입니다. -->
@@ -1436,10 +1440,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b210</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b213</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b210"></script>
+<script type="module" src="app.js?v=b213"></script>
 </body>
 </html>
 

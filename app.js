@@ -1124,6 +1124,9 @@ async function openNew(){
 /* 여행 탭 '일정 추가' — 여행을 만드는 것이 아니라, 이미 있는 여행에
    일정을 채우는 자리입니다. 그래서 초안 화면을 그대로 엽니다. */
 $('newbtn').addEventListener('click', () => openDraft());
+/* '＋ 새 여행' — 어디로·언제부터 정하는 4단계 화면. 홈의 AI 카드가
+   '다음 여행' 이야기를 하게 되면서 여기 말고는 갈 길이 없어졌습니다. */
+$('newtripbtn').addEventListener('click', () => openNew());
 
 $('cancel').addEventListener('click', () => {
   $('newcard').classList.add('hide');
@@ -2658,25 +2661,29 @@ async function buildHome(){
   if (!data.length){
     /* 여행이 없으면 가고 싶다고 표시한 곳을 겁니다. 그것도 없으면 아무 곳이나 —
        빈 화면보다는 사진 한 장이 훨씬 낫습니다. */
-    const w = await sb.from('city_ratings').select('cities(name,country,image_url)')
+    const w = await sb.from('city_ratings').select('cities(id,name,country,image_url)')
       .eq('user_id', me.id).eq('want', true).limit(20);
     const pool = (w.data || []).map(r => r.cities).filter(c => c?.image_url);
     let pick = pool[Math.floor(Math.random() * pool.length)] || null;
     const wanted = !!pick;
     if (!pick){
-      const any = await sb.from('cities').select('name,country,image_url')
+      const any = await sb.from('cities').select('id,name,country,image_url')
         .not('image_url', 'is', null).limit(60);
       const l = any.data || [];
       pick = l[Math.floor(Math.random() * l.length)] || null;
     }
+    /* **히어로에는 단추를 안 답니다.** 예전에는 여기에도 '새 여행'이 있어서
+       바로 아래 AI 카드의 '시작'과 같은 일을 하는 단추가 둘이었습니다.
+       홈에서 여행을 만드는 길은 4단계 카드 하나입니다.
+       이 사진은 "여기 어때요?" 하는 자리고, 누르면 그 도시를 보여줍니다. */
     $('home').innerHTML = heroHtml(
       pick?.image_url, '',
       pick ? `${pick.name}, 어때요?` : '아직 잡아둔 여행이 없어요',
-      !pick   ? '첫 여행을 만들어보세요'
+      !pick   ? '아래에서 첫 여행을 만들어보세요'
       : wanted ? '가보고 싶다고 표시해둔 곳입니다'
                : (countryName[pick.country] || pick.country),
-      '새 여행');
-    $('herobtn').onclick = e => { e.stopPropagation(); showApp('trips'); $('newbtn').click(); };
+      '');
+    if (pick?.id) $('hero').onclick = () => openCity(pick.id);
     /* 여행이 없으면 AI 로 시작하는 것이 첫 걸음입니다. 맨 위에 둡니다. */
     renderAiCard(null, 0);
     await renderQuiz(); await renderFoot();
@@ -2716,6 +2723,16 @@ async function buildHome(){
      평가와 발자국은 다녀온 뒤에 보는 것이라 여행이 남아 있으면 아래로 내립니다.
      반대로 여행이 끝났거나 없으면 그것들이 이 앱의 남은 재미입니다. */
   renderAiCard(t, all.count || 0);
+  /* **새 여행으로 가는 길을 홈에 남겨둡니다.** AI 카드가 '다음 여행' 이야기를
+     하게 되면서, 여행이 이미 있는 사람은 홈에서 새 여행을 못 만들게 됐습니다.
+     카드를 하나 더 크게 얹으면 위가 무거워지므로 얇은 줄로 답니다. */
+  const nt = document.createElement('div');
+  nt.className = 'newtripbar';
+  nt.innerHTML = `<span class="t">＋ 또 어디 가시나요?</span>
+                  <span class="go">새 여행 ›</span>`;
+  nt.onclick = () => openNew();
+  $('home').appendChild(nt);
+
   await renderQuiz();
   await renderFoot();
 }
@@ -3191,9 +3208,14 @@ function renderAiCard(nextTrip, nextPlans){
     ? { title:`${nextTrip.title} 일정이 비어 있어요`,
         sub:'AI가 하루씩 짜드릴게요', go:'짜기',
         go2:() => openDraft(nextTrip.id, true) }
+    /* **여기는 초안 화면이 아니라 비서로 보냅니다.** 처음에 초안으로 보냈더니
+       "빈 시간에 넣을 곳을 찾아드려요"라고 해놓고 일정을 통째로 다시 짜는
+       화면이 떴습니다. 이미 31개가 들어 있는 여행에서요. 말과 행동이 달랐습니다.
+       뭘 더 넣을지 물어보는 자리는 비서입니다. */
     : { title:`${nextTrip.title}, 뭐 더 넣을까요?`,
         sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기',
-        go2:() => openDraft(nextTrip.id, true) };
+        go2:async () => { openAi(); $('ai_trip').value = nextTrip.id;
+                          await loadChats(nextTrip.id); } };
 
   const box = document.createElement('div');
   box.className = 'aicard';
@@ -5573,7 +5595,7 @@ async function loadTrips(){
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`);
     const acts = report +
-      `<button class="ghost" data-act="more" ${a} aria-label="더보기">⋯</button>` +
+      `<button class="ghost" data-act="more" ${a} aria-label="더보기">더보기</button>` +
       `<span class="tmore hide">${more}</span>`;
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
@@ -5617,9 +5639,9 @@ $('trips').addEventListener('click', async e => {
     const wrap = b.nextElementSibling;
     const open = wrap.classList.contains('hide');
     document.querySelectorAll('#trips .tmore').forEach(x => x.classList.add('hide'));
-    document.querySelectorAll('#trips [data-act="more"]').forEach(x => x.textContent = '⋯');
+    document.querySelectorAll('#trips [data-act="more"]').forEach(x => x.textContent = '더보기');
     wrap.classList.toggle('hide', !open);
-    b.textContent = open ? '✕' : '⋯';
+    b.textContent = open ? '닫기' : '더보기';
     return;
   }
 

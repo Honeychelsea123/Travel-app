@@ -612,9 +612,11 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    잘못 눌러 들어간 별점은 발자국 숫자와 배지까지 바꿉니다.
    별 자체는 그대로 두고 **누를 수 있는 자리만** 위아래로 넓힙니다 —
    별을 키우면 목록 줄 높이가 다 밀립니다. */
-.stars{ display:inline-flex; gap:3px; flex:none; cursor:pointer; user-select:none;
+/* 보이는 크기는 건드리지 않습니다 — 넓혔더니 별이 커 보여서 목록이 부담스러웠습니다.
+   **위아래 여백만** 늘립니다. 이건 눈에 안 보이면서 손가락에는 잡힙니다. */
+.stars{ display:inline-flex; gap:1px; flex:none; cursor:pointer; user-select:none;
         padding:7px 0; margin:-7px 0; touch-action:manipulation; }
-.st{ position:relative; width:1.3em; height:1.1em; line-height:1;
+.st{ position:relative; width:1.1em; height:1.1em; line-height:1;
      font-size:calc(21px * var(--ts)); color:var(--hairline); }
 .st::before{ content:'★'; position:absolute; left:0; top:0; }
 .st i{ position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap;
@@ -965,6 +967,18 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .rvbar .t span{ display:block; font-size:calc(11.5px * var(--ts)); color:#a2762a;
                 margin-top:1px; word-break:keep-all }
 .rvbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650; color:#8a5a00 }
+
+/* 새 여행으로 가는 얇은 줄. AI 카드가 '다음 여행' 이야기를 하게 되면서
+   홈에서 새 여행을 만들 길이 사라졌습니다. 카드를 하나 더 얹으면 위가
+   무거워지므로 한 줄로만 둡니다. */
+.newtripbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
+             margin:-2px 0 12px; padding:12px 14px; border-radius:var(--r-md);
+             background:var(--canvas); border:1px dashed var(--hairline); }
+.newtripbar .t{ flex:1; min-width:0; font-size:calc(13.5px * var(--ts));
+                font-weight:600; color:var(--ink-80); }
+.newtripbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650;
+                 color:var(--primary); }
+.newtripbar:active{ background:var(--pearl); }
 
 /* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
    일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
