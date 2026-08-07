@@ -4847,11 +4847,6 @@ $('gear').addEventListener('click', () => {
    showApp 이 여행을 닫고 큰 지도도 걷어내므로 따로 치울 것이 없습니다.
    깊이 들어간 화면들은 뒤로가기 기록을 쌓아뒀으니 그것부터 비워야
    홈에서 뒤로가기를 눌렀을 때 다시 그 안으로 들어가지 않습니다. */
-$('homebtn').addEventListener('click', () => {
-  ['personapane','shelfpane','mappane'].forEach(v => $(v)?.classList.add('hide'));
-  if (history.state?.t2) history.back();
-  showApp('home');
-});
 $('setback').addEventListener('click', () => showProfile(false));
 
 /* ── 내 자료 내려받기 ────────────────────────────────────────────────
@@ -6877,6 +6872,18 @@ $('tstrip').addEventListener('click', e => {
   if (b) showTab(b.dataset.t);
 });
 
+/* 여행 안 구역 띠가 상단바 **아래**에 붙어야 합니다. 둘 다 sticky 라 같은
+   자리를 노리는데, 상단바 높이는 글자 크기 설정(--ts)에 따라 달라집니다.
+   못 박으면 큰 글씨로 쓰는 사람 화면에서 겹칩니다. 재서 넘겨줍니다. */
+function measureTopbar(){
+  const el = document.querySelector('.topbar');
+  if (!el) return;
+  document.documentElement.style.setProperty(
+    '--topbarh', Math.round(el.getBoundingClientRect().height) + 'px');
+}
+addEventListener('resize', measureTopbar);
+measureTopbar();
+
 /* ── 지출 ───────────────────────────────────────────────────────── */
 /* 통화마다 소수 자리가 다릅니다. 엔·원·동은 소수점이 없습니다. */
 const NO_CENTS = ['JPY','KRW','VND','IDR','CLP','HUF','TWD'];
@@ -7896,7 +7903,7 @@ async function render(session){
     unwatch(); trip = null; document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('errcard').classList.add('hide'); $('bell').classList.add('hide');
-    $('aibtn').classList.add('hide'); $('homebtn').classList.add('hide');
+    $('aibtn').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있어요.';
     me = null;
 
@@ -7966,7 +7973,6 @@ async function render(session){
   loadAdmin();
 
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
-  $('homebtn').classList.remove('hide');
   /* 빌드 번호는 만든 사람만 봅니다. 앱 안에서는 아무도 자기를 관리자로 못 만듭니다 —
      admins 표에 쓰기 정책이 아예 없어서 SQL 편집기로만 넣을 수 있습니다 (038). */
   sb.rpc('is_admin').then(r => $('foot').classList.toggle('hide', r.data !== true))

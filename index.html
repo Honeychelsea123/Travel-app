@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b200">
+<link rel="stylesheet" href="app.css?v=b201">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -80,15 +80,9 @@
         <path d="M18 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" opacity=".7"/>
       </svg>
     </button>
-    <!-- 어디에 들어가 있든 한 번에 홈으로. 여행 안·보관함·지도처럼 깊이 들어가면
-         뒤로가기를 여러 번 눌러야 나왔습니다. -->
-    <button class="ghost hide" id="homebtn" title="홈"
-            style="position:relative; padding:4px 4px 0">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 10.5 12 3.5l8.5 7"/>
-        <path d="M5.5 9.6V20h13V9.6"/><path d="M9.8 20v-5.4h4.4V20"/></svg>
-    </button>
+    <!-- 홈 아이콘이 여기 있었습니다. 여행에 들어가면 하단바가 통째로 바뀌어
+         홈으로 갈 길이 없어서 둔 것이었는데, 이제 하단바가 안 바뀝니다.
+         같은 일을 하는 단추가 둘이면 하나는 군더더기입니다. -->
     <button class="ghost hide" id="bell" style="position:relative; padding:4px 2px 0">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
@@ -1415,10 +1409,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b200</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b201</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b200"></script>
+<script type="module" src="app.js?v=b201"></script>
 </body>
 </html>
 

@@ -1161,7 +1161,9 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .tabbar{
   position:fixed; bottom:calc(12px + var(--sab)); z-index:1150;
   left:50%; transform:translateX(-50%);
-  width:min(calc(100% - 24px), calc(480px - 24px));
+  /* 화면 끝까지 늘어나 있으면 바닥에 붙은 판처럼 보입니다. 폭을 줄여
+     떠 있는 알약으로 둡니다 — 아래 내용이 옆으로 비쳐 보입니다. */
+  width:min(calc(100% - 80px), 330px);
   display:flex; gap:2px; padding:6px; border-radius:var(--r-pill);
   background:linear-gradient(158deg, rgba(255,255,255,.28) 0%,
              rgba(255,255,255,.12) 50%, rgba(255,255,255,.24) 100%);
@@ -1196,13 +1198,20 @@ body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
  * 하니 홈·기록·프로필로 한 번에 못 갔고, 비서 단추는 아예 자리를 잃었습니다.
  * 여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
  * 굴러도 안 사라지게 위에 붙여둡니다. 네 구역을 계속 오가는 화면입니다. */
-.tstrip{ position:sticky; top:0; z-index:900;
-         display:flex; gap:2px; margin:0 0 10px;
-         padding:2px 4px 0; background:var(--bg);
+/* **상단바 아래에 붙습니다.** top:0 으로 뒀더니 상단바 위로 올라가 글자가
+   겹쳤습니다 — 상단바도 sticky 라 같은 자리를 노립니다. 그 높이는 글자
+   크기 설정에 따라 달라지므로 못 박지 않고 재서 --topbarh 에 담아둡니다.
+   z-index 도 상단바(20)보다 낮춥니다 — 혹시 겹치면 상단바가 이깁니다. */
+.tstrip{ position:sticky; top:calc(var(--s-sm) + var(--topbarh, 52px) + 6px);
+         z-index:19;
+         display:flex; justify-content:flex-start; gap:0; margin:0 0 10px;
+         padding:0 2px; background:var(--bg);
          border-bottom:1px solid var(--divider-soft); }
-.tstrip button{ flex:1; border:0; border-radius:0; background:none;
-                padding:10px 0 9px; color:var(--ink-48);
-                font-size:calc(14px * var(--ts)); font-weight:600;
+/* 폭을 넷으로 똑같이 나누면 글자 사이가 휑합니다. 글자만큼만 쓰고 왼쪽에
+   붙입니다 — 읽는 순서가 왼쪽에서 오른쪽이라 시작점이 맞아야 훑힙니다. */
+.tstrip button{ flex:none; border:0; border-radius:0; background:none;
+                padding:9px 13px 8px; color:var(--ink-48);
+                font-size:calc(13px * var(--ts)); font-weight:600;
                 /* 밑줄 자리를 항상 잡아둡니다. 켜질 때만 그리면 글자가 2px 튑니다. */
                 box-shadow:inset 0 -2px 0 transparent;
                 transition:color var(--t-fast) var(--ease); }
