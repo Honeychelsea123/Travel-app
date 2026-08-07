@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b199">
+<link rel="stylesheet" href="app.css?v=b200">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1002,6 +1002,18 @@
         <div class="days" id="t_legs" style="margin:10px 0 0"></div>
       </div>
 
+      <!-- 여행 안 구역. 예전에는 이게 하단바를 통째로 갈아치웠습니다.
+           같은 자리가 다른 일을 하니 홈·기록·프로필로 한 번에 못 갔고,
+           비서 단추도 자리를 잃어 상단바로 올려야 했습니다.
+           여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
+           올라가면서 굴러도 안 사라지게 위에 붙여둡니다(sticky). -->
+      <nav class="tstrip" id="tstrip">
+        <button data-t="plans" class="is-on">일정</button>
+        <button data-t="exp">지출</button>
+        <button data-t="prep">준비</button>
+        <button data-t="mem">일행</button>
+      </nav>
+
       <!-- 후기 — 끝난 여행에만 나옵니다 -->
       <div class="card hide" id="reviewbox">
         <h2><span class="grow">다녀오셨네요</span>
@@ -1363,31 +1375,13 @@
 
       <!-- 떠 있는 유리 탭바 — 도쿄 앱과 같은 부품입니다.
            카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다. -->
-      <nav class="tabbar" id="tabbar">
-        <button data-t="plans" class="is-on">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16"
-               rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span>일정</span></button>
-        <button data-t="exp">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="13"
-               rx="3"/><path d="M2.5 10.5h19M6.5 15h4"/></svg><span>지출</span></button>
-        <button data-t="prep">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path
-               d="M4.5 7.5h15V19a1.5 1.5 0 0 1-1.5 1.5H6A1.5 1.5 0 0 1 4.5 19z"/><path
-               d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2"/><path
-               d="M9.5 13.5l1.8 1.8 3.2-3.4"/></svg><span>준비</span></button>
-        <button data-t="mem">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-               stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.4"/><path
-               d="M2.5 20c.6-3.6 3.3-5.6 6.5-5.6s5.9 2 6.5 5.6"/><path
-               d="M16.5 5.2a3.4 3.4 0 0 1 0 6.4M18 14.8c2.2.6 3.4 2.4 3.8 5.2"/></svg>
-          <span>일행</span></button>
-      </nav>
     </section>
 
-    <!-- 앱 전체 하단바. 여행 안에서는 위 탭바가 대신 나옵니다. -->
+    <!-- 앱 전체 하단바. **여행 안에서도 그대로 있습니다.**
+         전에는 여행에 들어가면 이 바가 일정·지출·준비·일행으로 통째로
+         바뀌었습니다. 같은 자리가 다른 일을 하니 홈·기록·프로필로 한 번에
+         못 갔고, 비서 단추는 아예 자리를 잃어 위로 올려야 했습니다.
+         여행 안 구역은 위 .tstrip 이 맡습니다 — Wanderlog 도 그렇게 합니다. -->
     <nav class="tabbar" id="appbar">
       <button data-a="home" class="is-on">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
@@ -1421,10 +1415,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b199</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b200</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b199"></script>
+<script type="module" src="app.js?v=b200"></script>
 </body>
 </html>
 

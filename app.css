@@ -1174,20 +1174,41 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
              0 3px 8px rgba(16,20,35,.08);
 }
 .tabbar button{
-  flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
-  padding:8px 0 6px; min-height:48px; color:var(--ink-48);
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:1px;
+  padding:5px 0 4px; min-height:40px; color:var(--ink-48);
   border:0; background:none; border-radius:var(--r-pill);
   transition:background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .tabbar button:active{ transform:none; }
-.tabbar span{ font-size:calc(11px * var(--ts)); letter-spacing:0; }
+/* 그림도 같이 줄입니다. 글자만 줄이면 그림이 커 보여 균형이 깨집니다. */
+.tabbar button svg{ width:18px; height:18px; }
+.tabbar span{ font-size:calc(10px * var(--ts)); letter-spacing:0; }
 .tabbar button.is-on{
   color:var(--primary); font-weight:600;
   background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
   box-shadow:inset 0 1px 0 rgba(255,255,255,1), 0 3px 10px rgba(16,20,35,.12);
 }
 /* 탭바가 마지막 카드를 가리지 않게 자리를 비웁니다 */
-body.hastab{ padding-bottom:calc(96px + var(--kb) + var(--sab)); }
+body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
+
+/* ── 여행 안 구역 (일정·지출·준비·일행) ──────────────────────────────
+ * 예전에는 이것이 하단바를 통째로 갈아치웠습니다. 같은 자리가 다른 일을
+ * 하니 홈·기록·프로필로 한 번에 못 갔고, 비서 단추는 아예 자리를 잃었습니다.
+ * 여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
+ * 굴러도 안 사라지게 위에 붙여둡니다. 네 구역을 계속 오가는 화면입니다. */
+.tstrip{ position:sticky; top:0; z-index:900;
+         display:flex; gap:2px; margin:0 0 10px;
+         padding:2px 4px 0; background:var(--bg);
+         border-bottom:1px solid var(--divider-soft); }
+.tstrip button{ flex:1; border:0; border-radius:0; background:none;
+                padding:10px 0 9px; color:var(--ink-48);
+                font-size:calc(14px * var(--ts)); font-weight:600;
+                /* 밑줄 자리를 항상 잡아둡니다. 켜질 때만 그리면 글자가 2px 튑니다. */
+                box-shadow:inset 0 -2px 0 transparent;
+                transition:color var(--t-fast) var(--ease); }
+.tstrip button:active{ transform:none; }
+.tstrip button.is-on{ color:var(--primary);
+                      box-shadow:inset 0 -2px 0 var(--primary); }
 
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }

@@ -1343,8 +1343,6 @@ function showApp(t){
      backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
   if (trip){ unwatch(); trip = null; }
   $('tripview').classList.add('hide');
-  $('tabbar').classList.add('hide');
-  $('appbar').classList.remove('hide');
 
   $('draftview').classList.add('hide');
   $('reviewview').classList.add('hide');
@@ -5611,8 +5609,10 @@ async function openTrip(id){
   ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
     .forEach(v => $(v).classList.add('hide'));
   cityOpen = null;
-  $('appbar').classList.add('hide');
-  $('tabbar').classList.remove('hide');
+  /* 하단바는 그대로 둡니다. 여행은 '여행' 탭 안쪽이므로 거기에 불을 켭니다 —
+     지금 앱의 어디에 있는지가 계속 보여야 합니다. */
+  document.querySelectorAll('#appbar button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.a === 'trips'));
   $('tripview').classList.remove('hide');
   $('plancard').classList.add('hide');
   $('editcard').classList.add('hide');
@@ -6014,8 +6014,6 @@ function backToList(fromPop){
   unwatch();
   trip = null;
   $('tripview').classList.add('hide');
-  $('tabbar').classList.add('hide');
-  $('appbar').classList.remove('hide');
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', () => backToList());
@@ -6868,13 +6866,13 @@ function showTab(t){
     for (const id of ids) $(id).classList.toggle('hide', !on.has(id));
 
   $('editcard').classList.add('hide');
-  document.querySelectorAll('#tabbar button').forEach(b =>
+  document.querySelectorAll('#tstrip button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.t === t));
   /* 지운 것은 열 때만 받아옵니다. 대부분은 볼 일이 없어서 미리 받으면 낭비입니다. */
   if (TAB_TRASH[t]) loadTrash();
   window.scrollTo({ top:0, behavior:'smooth' });
 }
-$('tabbar').addEventListener('click', e => {
+$('tstrip').addEventListener('click', e => {
   const b = e.target.closest('button[data-t]');
   if (b) showTab(b.dataset.t);
 });
@@ -7925,7 +7923,6 @@ async function render(session){
   unwatch(); trip = null;
   $('tripview').classList.add('hide');           /* 다시 그릴 때는 목록부터 */
   $('appbar').classList.remove('hide');
-  $('tabbar').classList.add('hide');
   document.body.classList.add('hastab');
   $('sub').textContent = '';
 
