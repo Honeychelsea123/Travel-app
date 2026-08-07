@@ -1067,9 +1067,6 @@ function pick(i){
   $('p_country').textContent =
     `${flagOf(picked.country)} ${countryName[picked.country] || picked.country}`.trim();
   $('p_note').textContent = picked.currency || '';
-  /* 한 장짜리는 이름 칸이 이미 화면에 있습니다. 도시를 고른 그 순간
-     채워줘야 합니다 — 단계 화면처럼 4단계로 넘어갈 때가 없습니다. */
-  if (wizFlat) wizAutoTitle();
 }
 
 $('f_q').addEventListener('input', () => {
@@ -1094,25 +1091,21 @@ $('repick').addEventListener('click', () => {
 });
 
 /* ── 여행 만들기 ────────────────────────────────────────────────────
- * 두 군데서 엽니다. 여는 모양만 다르고 안은 같은 화면입니다.
- *   flat=true  여행 탭 '일정 추가' — 한 장에 다 펼침
- *   flat=false 홈 '시작'          — 넷으로 나눈 단계, 끝에 AI 갈래 */
-async function openNew(flat){
+ * 새 여행을 만드는 화면입니다. 홈의 '시작'에서만 옵니다.
+ * 여행 탭의 '일정 추가'는 **다른 일**입니다 — 이미 있는 여행에 일정을
+ * 채우는 것이라 초안 화면(openDraft)으로 갑니다. 둘을 갈라둡니다. */
+async function openNew(){
   $('newcard').classList.remove('hide');
   await loadCities();
   /* 날짜는 미리 채우지 않습니다. 달력에서 직접 고르는 편이 빠르고,
      미리 채워두면 '오늘 출발'인 채로 지나쳐 버립니다. */
   drawPop();
-  if (flat) wizFlatShow(); else wizShow(1);
+  wizShow(1);
 }
 
-$('newbtn').addEventListener('click', () => {
-  /* 다시 누르면 닫힙니다 — 열어놓고 잘못 눌렀을 때 나갈 길입니다. */
-  if (!$('newcard').classList.contains('hide')){
-    $('newcard').classList.add('hide'); return;
-  }
-  openNew(true);
-});
+/* 여행 탭 '일정 추가' — 여행을 만드는 것이 아니라, 이미 있는 여행에
+   일정을 채우는 자리입니다. 그래서 초안 화면을 그대로 엽니다. */
+$('newbtn').addEventListener('click', () => openDraft());
 
 $('cancel').addEventListener('click', () => {
   $('newcard').classList.add('hide');
@@ -1138,41 +1131,13 @@ const WIZ_TITLES = {
 };
 let wizStep = 1;
 
-/* 한 장짜리인가. 여행 탭의 '일정 추가'가 이쪽입니다 — 이미 어디로 갈지
-   정해두고 목록에 얹기만 하려는 사람에게 네 번 누르게 할 이유가 없습니다.
-   같은 DOM 을 씁니다. 칸을 다 펼치고, 단계 표시와 취향·갈래를 접습니다. */
-let wizFlat = false;
-
 /* 취향 칸 한 벌을 필요한 자리로 옮겨 담습니다. */
 function movePrefs(slotId){
   const slot = $(slotId), block = $('prefblock');
   if (slot && block && block.parentElement !== slot) slot.appendChild(block);
 }
 
-/* 한 장짜리. 1·2·4 를 한꺼번에 펼칩니다. 취향(3)과 AI/직접 갈래는 뺍니다 —
-   빠르게 얹으려는 사람에게 물을 것이 아닙니다. 만들면 그 여행이 바로 열립니다. */
-function wizFlatShow(){
-  wizFlat = true;
-  $('newcard').querySelectorAll('.wizstep').forEach(s =>
-    s.classList.toggle('hide', s.dataset.step === '3'));
-  $('wiztitle').textContent = '일정 추가';
-  $('wizhead').classList.add('flat');      /* 단계 막대와 뒤로가기를 접습니다 */
-  $('wizpick').classList.add('hide');      /* AI / 직접 갈래도 여기선 안 묻습니다 */
-  $('wizback').classList.add('hide');
-  $('wiznext').classList.remove('hide');
-  $('wiznext').textContent = '만들기';
-  $('wizfoot').classList.remove('empty');
-  $('formerr').classList.add('hide');
-  $('newcard').querySelector('.wizbody').scrollTop = 0;
-  wizCal();
-  wizDays();
-}
-
 function wizShow(n){
-  wizFlat = false;
-  $('wizhead').classList.remove('flat');
-  $('wizpick').classList.remove('hide');
-  $('wiznext').textContent = '계속';
   wizStep = Math.min(4, Math.max(1, n));
   $('newcard').querySelectorAll('.wizstep').forEach(s =>
     s.classList.toggle('hide', +s.dataset.step !== wizStep));
@@ -1220,13 +1185,6 @@ function wizCheck(n){
 }
 
 $('wiznext').addEventListener('click', () => {
-  /* 한 장짜리는 '계속'이 아니라 '만들기'입니다. 칸이 다 보이므로
-     둘을 한꺼번에 봅니다 — 어느 단계로 돌아가라고 할 자리가 없습니다. */
-  if (wizFlat){
-    const bad = wizCheck(1) || wizCheck(2);
-    if (bad) return fail(bad, 'form');
-    return createTrip(false);
-  }
   const why = wizCheck(wizStep);
   if (why) return fail(why, 'form');
   wizShow(wizStep + 1);
@@ -1291,7 +1249,7 @@ $('wizcal').addEventListener('click', ev => {
    'AI가 짜줄게요'를 눌러야 하는데 날짜가 대신 앉아 있습니다. */
 function wizDays(){
   const s = $('f_start').value, e = $('f_end').value;
-  if (!wizFlat && wizStep !== 2) return void ($('wizdays').textContent = '');
+  if (wizStep !== 2) return void ($('wizdays').textContent = '');
   $('wizdays').textContent =
     !s ? '' :
     !e ? `${s.slice(5).replace('-','월 ')}일 — 끝나는 날도 눌러주세요` :
@@ -1304,9 +1262,7 @@ $('wiz_manual').addEventListener('click', () => createTrip(false));
 $('wiz_ai').addEventListener('click',     () => createTrip(true));
 
 async function createTrip(withAi){
-  /* 누른 단추에 '만드는 중…'을 겁니다. 한 장짜리에서는 갈래 카드가 접혀
-     있으니 거기 걸면 아무 데도 안 보입니다 — 아래 '만들기'가 그 자리입니다. */
-  const btn = wizFlat ? $('wiznext') : (withAi ? $('wiz_ai') : $('wiz_manual'));
+  const btn = withAi ? $('wiz_ai') : $('wiz_manual');
   $('formerr').classList.add('hide');
 
   const title = $('f_title').value.trim();
@@ -3210,7 +3166,7 @@ function renderAiCard(){
      한쪽은 단계 화면, 한쪽은 옛날 폼이라 모양도 달랐습니다.
      여기서는 단계 화면을 엽니다. 마지막에 'AI가 짜줄게요'를 고르면
      그 초안 화면으로 이어집니다. 길은 하나로 모입니다. */
-  box.onclick = () => openNew(false);
+  box.onclick = () => openNew();
   $('home').appendChild(box);
 }
 
@@ -4324,12 +4280,13 @@ async function openDraft(preselect){
     return `<span class="day${t.id === draftTrip ? ' on' : ''}" data-dtrip="${esc(t.id)}">
       ${esc(t.title)} <span class="n">${n}일</span></span>`;
   }).join('') +
-    `<span class="day${draftTrip === 'new' ? ' on' : ''}" data-dtrip="new">새 여행</span>`;
+    `<span class="day" data-dtrip="new">＋ 새 여행</span>`;
 
   await loadCities();
   fillCityList();
-  $('d_new').classList.toggle('hide', draftTrip !== 'new');
-  if (!$('d_start').value) $('d_start').value = ymd(new Date(Date.now() + 14 * D1));
+  /* 접혀 있던 옛날 폼(어디로·시작·며칠)은 이제 안 씁니다. 여행 만들기는
+     새 여행 화면 한 군데서만 합니다 — '새 여행' 칩이 그리로 보냅니다. */
+  $('d_new').classList.add('hide');
   $('drafterr').classList.add('hide');
   showSavedDraft();
 }
@@ -4339,40 +4296,6 @@ function showSavedDraft(){
   const d = draftTrip && draftTrip !== 'new' ? readDraft(draftTrip) : null;
   if (d){ draftOut = d; drawDraft(); $('d_go').textContent = '다시 짜기'; }
   else  { draftOut = null; $('d_result').innerHTML = ''; $('d_go').textContent = '일정 짜기'; }
-}
-
-/* 새 여행을 골랐으면 먼저 만듭니다. 만들어야 구간이 생기고,
-   구간이 있어야 도시별로 짤 수 있습니다. 만든 여행의 id 를 돌려줍니다. */
-async function makeDraftTrip(){
-  const name = $('d_city').value.trim();
-  const start = $('d_start').value;
-  const n = Math.min(30, Math.max(1, Number($('d_days').value) || 0));
-  if (!name)  { fail('어디로 가는지 골라주세요.', 'draft'); return null; }
-  if (!start) { fail('시작하는 날을 골라주세요.', 'draft'); return null; }
-
-  const city = (cities || []).find(c =>
-    [c.name, c.name_en, c.name_local].some(v => v && v.toLowerCase() === name.toLowerCase()));
-  const end = ymd(new Date(asDate(start).getTime() + (n - 1) * D1));
-
-  /* id 를 여기서 만들어 넣습니다. 돌려받으려고 .select('id') 를 붙였다가
-     "new row violates row-level security policy for table trips" 로 막혔습니다.
-     넣는 것 자체는 되는데 **돌려주는 줄을 읽을 권한이 그 순간에 없어서**입니다 —
-     trips 읽기 정책이 can_read_trip(참여자인가)인데, 참여자 줄은 INSERT 트리거가
-     끝난 뒤에 생깁니다. 그래서 자기가 방금 만든 여행도 그 찰나에는 못 읽습니다.
-     (일반 '여행 만들기'는 .select() 를 안 붙여서 멀쩡했습니다.)
-     id 를 미리 정하면 돌려받을 이유가 없어집니다. created_by 도 정책과 똑같이
-     명시해 둡니다 — 기본값에 기대면 나중에 기본값이 바뀔 때 조용히 깨집니다. */
-  const id = (crypto.randomUUID ? crypto.randomUUID()
-                                : URL.createObjectURL(new Blob()).slice(-36));
-  const row = { id, created_by: me.id,
-                title: `${city ? city.name : name} 여행`,
-                destination: city ? city.name : name,
-                start_date: start, end_date: end };
-  if (city) row.city_id = city.id;      /* 나라·통화·시간대·이동상수는 트리거가 채웁니다 */
-
-  const r = await sb.from('trips').insert(row);
-  if (r.error){ fail(r.error, 'draft'); return null; }
-  return id;
 }
 
 function closeDraft(fromPop){
@@ -4389,11 +4312,10 @@ $('draftview').addEventListener('click', e => {
   /* 여기서도 여행을 만들 수 있게 옛날 폼(d_new)이 접혀 있었습니다. 그러면
      만드는 길이 셋이 됩니다 — 홈, 여행 탭, 그리고 여기. 모양도 다 다릅니다.
      그 화면으로 보냅니다. 만들고 나면 'AI가 짜줄게요'로 여기 다시 옵니다. */
-  if (t.dataset.dtrip === 'new'){ openNew(false); return; }
+  if (t.dataset.dtrip === 'new'){ openNew(); return; }
   draftTrip = t.dataset.dtrip;
   document.querySelectorAll('#d_trips .day').forEach(x =>
     x.classList.toggle('on', x.dataset.dtrip === draftTrip));
-  $('d_new').classList.toggle('hide', draftTrip !== 'new');
   showSavedDraft();            /* 여행마다 초안이 따로 있습니다 */
 });
 
@@ -4415,18 +4337,12 @@ $('prefblock').addEventListener('click', e => {
 
 $('d_go').addEventListener('click', async () => {
   if (!draftTrip) return fail('여행을 골라주세요.', 'draft');
+  /* 여행이 하나도 없으면 'new' 가 골라져 있습니다. 짤 여행이 없으니
+     만드는 화면으로 보냅니다 — 여기서 만들지는 않습니다. */
+  if (draftTrip === 'new') return openNew();
   $('drafterr').classList.add('hide');
   $('d_go').disabled = true; $('d_go').textContent = '짜는 중… 20초쯤 걸립니다';
   $('d_result').innerHTML = '';
-
-  /* 새 여행이면 먼저 만들고 그 여행에 짭니다. */
-  if (draftTrip === 'new'){
-    $('d_go').innerHTML = '<span class="load">여행 만드는 중…</span>';
-    const id = await makeDraftTrip();
-    if (!id){ $('d_go').disabled = false; $('d_go').textContent = '일정 짜기'; return; }
-    draftTrip = id;
-    $('d_go').textContent = '짜는 중… 20초쯤 걸립니다';
-  }
 
   const prefs = {
     pace:    document.querySelector('#d_pace .on')?.dataset.pace || 'normal',
@@ -8184,12 +8100,32 @@ if (window.visualViewport){
        보이는 창만 작아지므로, 판정은 그 차이로 합니다. */
     coverBelow(typing() && (window.innerHeight - vv.height) > 60);
   };
-  vv.addEventListener('resize', fit);
-  vv.addEventListener('scroll', fit);
+  /* ── 안쪽이 따로 구르는 화면에서 쓰던 칸 붙잡아 두기 ────────────────
+     새 여행 화면은 가운데(.wizbody)만 구릅니다. 키보드가 올라오면 그 칸이
+     짧아지는데, 브라우저는 **페이지**를 스크롤해 입력칸을 보여주려 합니다 —
+     안쪽 스크롤은 안 건드리므로 정작 쓰고 있는 칸이 밖으로 밀려 사라졌습니다.
+     여기서 안쪽을 직접 굴려 데려옵니다.
+
+     **이미 보이면 아무것도 안 합니다.** 그 조건이 없으면, 손으로 조금
+     내려볼 때마다 도로 끌어올려서 화면을 못 움직이게 됩니다. */
+  function keepInView(){
+    const el = document.activeElement;
+    const body = el && el.closest && el.closest('.wizbody');
+    if (!body) return;
+    const er = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+    if (er.top >= br.top && er.bottom <= br.bottom) return;
+    body.scrollTop += (er.top + er.height / 2) - (br.top + br.height / 2);
+  }
+  /* 키보드가 올라오는 동안 높이가 몇 번에 걸쳐 바뀝니다. 한 번만 재면
+     올라오기 전 크기로 계산하게 됩니다. 몇 박자 나눠 다시 봅니다. */
+  const keepSoon = () => [0, 150, 350].forEach(t => setTimeout(keepInView, t));
+
+  vv.addEventListener('resize', () => { fit(); keepSoon(); });
+  vv.addEventListener('scroll', fit);   /* 구를 때는 안 붙잡습니다 — 손을 이겨버립니다 */
   /* 커서가 어디 있는지로 판단하므로 커서가 옮겨갈 때도 다시 재야 합니다.
      focusout 은 다음 칸으로 옮겨가는 중에도 한 번 뜨므로 한 박자 늦춥니다 —
      안 그러면 칸을 옮길 때마다 여백이 깜빡입니다. */
-  addEventListener('focusin',  fit);
+  addEventListener('focusin',  () => { fit(); keepSoon(); });
   addEventListener('focusout', () => setTimeout(fit, 60));
   fit();
 

@@ -107,6 +107,11 @@ button, a.btn{ transition:transform var(--t) var(--ease),
 button:active, a.btn:active{ transform:scale(.96); transition-duration:.06s; }
 button:disabled{ opacity:.45; cursor:default; transform:none; }
 :focus-visible{ outline:2px solid var(--primary-focus); outline-offset:3px; }
+/* 글 쓰는 칸은 빼둡니다. 커서가 어디 있는지는 테두리 색과 바탕색이 이미
+   알려주는데(아래 :focus 규칙), 그 위에 고리를 하나 더 그리면 칸 밖으로
+   3px 떨어져 두 겹으로 보입니다 — 알약 하나면 충분합니다.
+   단추와 링크는 그대로 둡니다. 거기는 이 고리 말고는 표시가 없습니다. */
+input:focus-visible, textarea:focus-visible, select:focus-visible{ outline:none; }
 .primary{ flex:1; background:var(--primary); color:#fff; border-color:transparent;
           font-weight:600; box-shadow:var(--lift-1); }
 .google{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
@@ -370,7 +375,14 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
    네 단계를 거치는 일이라, 뒤가 비쳐 보이면 오히려 어수선합니다.
    시트 뼈대(.assheet)는 그대로 두고 크기만 덮어씁니다 — 뒷판·키보드 덮개
    같은 것이 이미 거기 붙어 있어서, 따로 만들면 그걸 다 다시 해야 합니다. */
-.assheet.wiz{ top:0; height:var(--vvh, 100dvh); max-height:none;
+/* **top:0 이 아니라 bottom:0 입니다.** iOS 는 키보드가 뜨면 레이아웃을
+   줄이지 않고 **화면을 통째로 위로 밀어 올립니다.** 그래서 top:0 은
+   보이는 영역보다 위가 되고, 머리말과 첫 칸이 화면 밖으로 사라집니다 —
+   글을 쓰는 동안 정작 무슨 단계인지가 안 보였습니다.
+   밀려도 레이아웃 바닥은 보이는 화면 바닥과 같으므로, 바닥에 붙이고
+   높이만 '지금 보이는 높이'로 잡으면 딱 그 영역을 덮습니다.
+   위 .aisheet 이 같은 이유로 같은 방식을 씁니다. */
+.assheet.wiz{ height:var(--vvh, 100dvh); max-height:none;
               border-radius:0; overflow:hidden;
               display:flex; flex-direction:column;
               padding:max(14px, env(safe-area-inset-top)) 18px 0; }
@@ -386,12 +398,6 @@ body.kbon .assheet.wiz{ padding-bottom:0; }
 .wizfoot.empty{ border-top:0; padding-top:0; }
 
 .wizhead{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
-/* 한 장짜리에는 단계가 없습니다. 진행 막대를 남겨두면 4분의 1쯤 찬 채로
-   멈춰 있어서, 아직 뭐가 더 남은 줄 알게 됩니다. */
-.wizhead.flat .wizbar{ visibility:hidden; }
-/* 칸 사이를 벌립니다. 단계 화면은 한 번에 하나만 보여 붙어 있어도 됐지만,
-   한 장에 다 펼치면 어디까지가 한 덩어리인지 안 보입니다. */
-.wiz .wizstep + .wizstep{ margin-top:22px; }
 .wizhead .ghost{ flex:none; padding:6px 8px; }
 /* 진행 막대. 숫자('2/4')보다 이쪽이 한눈에 들어옵니다. */
 .wizbar{ flex:1; height:4px; border-radius:2px; background:var(--hairline);
