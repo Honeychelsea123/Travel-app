@@ -1126,8 +1126,8 @@ $('cancel').addEventListener('click', () => {
 const WIZ_TITLES = {
   1: '어디로 가시나요?',
   2: '언제 가시나요?',
-  3: '어떤 여행이 좋으세요?',
-  4: '이름을 정해주세요',
+  3: '이름을 정해주세요',
+  4: '어떤 여행이 좋으세요?',
 };
 let wizStep = 1;
 
@@ -1144,18 +1144,20 @@ function wizShow(n){
   $('wiztitle').textContent = WIZ_TITLES[wizStep];
   $('wizfill').style.width = (wizStep * 25) + '%';
   $('wizback').classList.toggle('hide', wizStep === 1);
-  /* 마지막 단계에서는 아래 '계속'이 필요 없습니다 — 두 카드가 곧 결정입니다.
-     그러면 아래 칸이 통째로 빌 수 있으니 구분선도 같이 걷습니다. */
-  $('wiznext').classList.toggle('hide', wizStep === 4);
-  $('wizfoot').classList.toggle('empty', wizStep === 4);
+  /* 3단계에는 아래 '계속'이 없습니다 — 두 카드가 곧 결정입니다.
+     그러면 아래 칸이 통째로 빌 수 있으니 구분선도 같이 걷습니다.
+     4단계(취향)는 AI 를 고른 사람만 오므로 단추가 바로 '일정 짜기'입니다. */
+  $('wiznext').classList.toggle('hide', wizStep === 3);
+  $('wizfoot').classList.toggle('empty', wizStep === 3);
+  $('wiznext').textContent = wizStep === 4 ? '일정 짜기' : '계속';
   $('formerr').classList.add('hide');
   /* 단계를 넘길 때마다 위로. 달력을 한참 내렸다가 다음으로 가면
      새 단계가 가운데쯤부터 보입니다. */
   $('newcard').querySelector('.wizbody').scrollTop = 0;
   wizDays();                          /* 2단계가 아니면 스스로 지웁니다 */
   if (wizStep === 2) wizCal(true);
-  if (wizStep === 3) movePrefs('wiz_prefslot');
-  if (wizStep === 4) wizAutoTitle();
+  if (wizStep === 3) wizAutoTitle();
+  if (wizStep === 4) movePrefs('wiz_prefslot');
 }
 
 /* 이름은 안 묻고 지어둡니다. 대개는 그대로 씁니다.
@@ -1185,6 +1187,9 @@ function wizCheck(n){
 }
 
 $('wiznext').addEventListener('click', () => {
+  /* 4단계는 취향 화면입니다. 여기 단추는 '계속'이 아니라 '일정 짜기'라
+     넘어갈 곳이 없습니다 — 만들고 바로 짜기 시작합니다. */
+  if (wizStep === 4) return createTrip(true);
   const why = wizCheck(wizStep);
   if (why) return fail(why, 'form');
   wizShow(wizStep + 1);
@@ -1257,12 +1262,15 @@ function wizDays(){
          `${Math.round((new Date(e) - new Date(s)) / 864e5) + 1}일`;
 }
 
-/* 마지막 갈래. 여행을 만드는 것까지는 같고, 그다음이 다릅니다. */
+/* 갈래. 직접 채울 사람은 **여기서 끝납니다** — 취향을 물어봐야 쓸 데가
+   없습니다. AI 에게 맡길 사람만 취향 화면으로 한 장 더 갑니다. */
 $('wiz_manual').addEventListener('click', () => createTrip(false));
-$('wiz_ai').addEventListener('click',     () => createTrip(true));
+$('wiz_ai').addEventListener('click',     () => wizShow(4));
 
 async function createTrip(withAi){
-  const btn = withAi ? $('wiz_ai') : $('wiz_manual');
+  /* 누른 단추에 '만드는 중…'을 겁니다. AI 쪽은 취향 화면의 '일정 짜기'가
+     그 자리입니다 — 갈래 카드는 이미 지난 장이라 거기 걸면 안 보입니다. */
+  const btn = withAi ? $('wiznext') : $('wiz_manual');
   $('formerr').classList.add('hide');
 
   const title = $('f_title').value.trim();
@@ -1281,9 +1289,11 @@ async function createTrip(withAi){
      목록에 없는 곳이면 나라만 넘기고, 통화와 언어는 나라에서 옵니다.
 
      id 를 여기서 미리 정합니다. .select('id') 로 돌려받으려 하면
-     "violates row-level security policy" 로 막힙니다 — 참여자 줄이
-     INSERT 트리거 뒤에 생겨서, 방금 만든 여행도 그 찰나에는 못 읽습니다
-     (makeDraftTrip 에 같은 사연이 적혀 있습니다). */
+     "new row violates row-level security policy for table trips" 로 막힙니다.
+     넣는 것 자체는 되는데 **돌려주는 줄을 읽을 권한이 그 순간에 없어서**입니다 —
+     trips 읽기 정책이 can_read_trip(참여자인가)인데, 참여자 줄은 INSERT
+     트리거가 끝난 뒤에 생깁니다. 방금 만든 여행도 그 찰나에는 못 읽습니다.
+     id 를 미리 정하면 돌려받을 이유가 없어집니다. */
   const id = (crypto.randomUUID ? crypto.randomUUID()
                                 : URL.createObjectURL(new Blob()).slice(-36));
   const row = { id, created_by: me.id,
