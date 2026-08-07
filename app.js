@@ -22,7 +22,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     picked = null, hitList = [], cursor = 0,
     trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
-    tab = 'plans', settleOn = false, appTab = 'home',
+    tab = 'plans', settleOn = false, todayOn = false, appTab = 'home',
     tripFilter = 'up', catFilter = '', editPlanId = null, transitLines = [], rateShown = 80, rateObs = null, aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
@@ -5950,6 +5950,14 @@ async function loadLegs(){
 }
 
 /* 그날 어디에 있는지. 구간 밖 날짜(여행 전후)는 가장 가까운 구간을 씁니다. */
+/* 그 날짜가 **실제로 들어 있는** 구간. 없으면 null 입니다.
+   아래 legFor 와 다릅니다 — 그쪽은 이동 상수를 구하려고 가장 가까운 구간으로
+   떨어뜨립니다. 화면에 도시 이름을 적을 때 그렇게 하면 거짓말이 됩니다.
+   실제로 구간 날짜가 여행 날짜 밖이라 **11일 전부가 '바젤'** 로 나왔습니다. */
+function legIn(date){
+  return legs.find(l => date >= l.start_date && date <= l.end_date) || null;
+}
+
 function legFor(date){
   if (!legs.length) return null;
   return legs.find(l => date >= l.start_date && date <= l.end_date)
@@ -5957,12 +5965,26 @@ function legFor(date){
 }
 
 function drawLegs(){
-  /* 헤더에는 둘 이상일 때만 보여줍니다. 하나면 위 줄이 이미 그 도시입니다. */
-  $('t_legs').innerHTML = legs.length > 1
-    ? legs.map(l => `<span class="day" style="cursor:default">${esc(l.destination)}
-        <span class="n">${esc(l.start_date.slice(5).replace('-','/'))}~${
-        esc(l.end_date.slice(5).replace('-','/'))}</span></span>`).join('')
+  /* 구간 날짜가 여행 날짜 밖에 있으면 날짜 칩에 도시가 안 붙습니다.
+     **그걸 조용히 넘기면 "왜 Day 1 에 도시가 없지"가 됩니다.**
+     실제로 구간이 9월 7~17일, 여행이 9월 29일~10월 9일인 자료가 있었고,
+     그때는 11일 전부에 엉뚱한 도시가 붙어 있었습니다. 말해줍니다. */
+  const off = legs.filter(l =>
+    l.end_date < trip.start_date || l.start_date > trip.end_date);
+  const warn = off.length
+    ? `<div class="memo" style="color:var(--bad); margin-top:8px">
+         ${esc(off.map(l => l.destination).join(' · '))} 구간이 여행 날짜
+         (${esc(dateRange(trip.start_date, trip.end_date))}) 밖이에요.
+         <button class="ghost" id="legfix"
+                 style="color:var(--primary); padding:2px 6px">고치기</button></div>`
     : '';
+
+  /* 헤더에는 둘 이상일 때만 보여줍니다. 하나면 위 줄이 이미 그 도시입니다. */
+  $('t_legs').innerHTML = (legs.length > 1
+    ? legs.map(l => `<span class="day" style="cursor:default">${esc(l.destination)}
+        <span class="n">${esc(dateRange(l.start_date, l.end_date))}</span></span>`).join('')
+    : '') + warn;
+  if ($('legfix')) $('legfix').onclick = () => $('editbtn').click();
 
   $('legs').innerHTML = legs.map(l =>
     `<div class="row"><span class="label"><b>${esc(l.destination)}</b>
@@ -6398,8 +6420,11 @@ function shortLabel(d){
   const lab = dayLabel(d, trip);
   const base = lab.startsWith('Day') ? lab.split(' · ')[0]
                                      : lab.split(' · ')[1] + ' ' + d.slice(5).replace('-','/');
-  /* 도시를 여럿 도는 여행이면 Day 번호만으로는 어디인지 모릅니다. */
-  const l = legs.length > 1 ? legFor(d) : null;
+  /* 도시를 여럿 도는 여행이면 Day 번호만으로는 어디인지 모릅니다.
+     **그 날이 실제로 들어 있는 구간만** 씁니다. 가장 가까운 구간으로
+     떨어뜨리면 어느 날이든 도시 이름이 붙는데, 그게 틀린 이름이면
+     "Day 1 · 바젤" 같은 것이 나옵니다. 모르면 안 적는 편이 낫습니다. */
+  const l = legs.length > 1 ? legIn(d) : null;
   return l ? `${base} · ${l.destination}` : base;
 }
 
@@ -6876,10 +6901,11 @@ function todayDayNo(){
 async function drawToday(){
   const box = $('card-today');
   const t = todayDayNo();
-  if (!t){ box.classList.add('hide'); box.innerHTML = ''; return; }
+  if (!t){ todayOn = false; box.classList.add('hide'); box.innerHTML = ''; return; }
 
   const list = plans.filter(p => p.date === t.date);
-  if (!list.length){ box.classList.add('hide'); box.innerHTML = ''; return; }
+  if (!list.length){ todayOn = false; box.classList.add('hide'); box.innerHTML = ''; return; }
+  todayOn = true;
 
   const now = new Date();
   const nowM = now.getHours() * 60 + now.getMinutes();
@@ -7190,6 +7216,9 @@ function showTab(t){
      방금 켠 것이 다시 꺼집니다. 켤 것을 먼저 모아두고 한 번에 정합니다. */
   const on = new Set(TABS[t].filter(id => !FORMS.includes(id)));
   if (!settleOn) on.delete('settlecard');
+  /* 오늘 일정도 같습니다. drawToday 가 비어서 숨겨도 여기서 다시 켜고 있었습니다 —
+     지도 위에 **내용 없는 흰 카드**가 하나 떠 있던 것이 이것입니다. */
+  if (!todayOn) on.delete('card-today');
   /* 지운 것은 있을 때만 켭니다. loadTrash 가 세어보고 다시 정합니다 —
      여기서는 일단 끄고, 되살릴 게 있으면 그쪽에서 켭니다. */
   on.delete('card-trash');
