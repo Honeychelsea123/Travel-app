@@ -1342,7 +1342,7 @@ function showApp(t){
      그대로 남습니다 — 홈에서 발자국을 누르면 프로필 밑에 여행이 붙어 있었습니다.
      backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
   if (trip){ unwatch(); trip = null; }
-  $('tripview').classList.add('hide'); document.body.classList.remove('intrip');
+  $('tripview').classList.add('hide');
 
   $('draftview').classList.add('hide');
   $('reviewview').classList.add('hide');
@@ -5608,8 +5608,6 @@ async function openTrip(id){
      지금 앱의 어디에 있는지가 계속 보여야 합니다. */
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === 'trips'));
-  /* 상단바와 구역 띠를 한 장으로 이어 붙일 때 씁니다 (app.css 의 .tstrip). */
-  document.body.classList.add('intrip');
   $('tripview').classList.remove('hide');
   $('plancard').classList.add('hide');
   $('editcard').classList.add('hide');
@@ -6010,7 +6008,7 @@ function backToList(fromPop){
   if (!fromPop && history.state?.t2 === 'trip'){ history.back(); return; }
   unwatch();
   trip = null;
-  $('tripview').classList.add('hide'); document.body.classList.remove('intrip');
+  $('tripview').classList.add('hide');
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', () => backToList());
@@ -7930,7 +7928,7 @@ async function render(session){
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
   unwatch(); trip = null;
-  $('tripview').classList.add('hide'); document.body.classList.remove('intrip');
+  $('tripview').classList.add('hide');
   $('appbar').classList.remove('hide');
   document.body.classList.add('hastab');
   $('sub').textContent = '';

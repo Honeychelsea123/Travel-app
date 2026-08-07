@@ -1198,40 +1198,30 @@ body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
  * 하니 홈·기록·프로필로 한 번에 못 갔고, 비서 단추는 아예 자리를 잃었습니다.
  * 여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
  * 굴러도 안 사라지게 위에 붙여둡니다. 네 구역을 계속 오가는 화면입니다. */
-/* **상단바에 이어 붙입니다.** 처음엔 top:0 으로 뒀다가 상단바 위로 올라가
-   글자가 겹쳤고, 그다음엔 6px 띄웠더니 이번에는 유리 알약과 회색 띠가
-   따로 노는 두 덩어리로 보였습니다. 사이를 없애고 **한 장처럼** 만듭니다 —
-   상단바는 아래 모서리를 펴고, 띠가 그 아래 모서리를 이어받습니다.
-   상단바 높이는 글자 크기 설정에 따라 달라지므로 못 박지 않고 재서
-   --topbarh 로 받습니다. z-index 는 상단바(20)보다 낮춰 둡니다. */
-body.intrip .topbar{ margin-bottom:0;
-                     border-radius:var(--r-pill) var(--r-pill) 0 0;
-                     border-bottom-color:transparent; }
+/* 알약 넷을 나란히 둡니다. 바로 아래 Day 칩·분류 칩과 같은 모양이라
+   따로 배울 것이 없습니다.
+
+   여기까지 두 번 헤맸습니다. 흰 카드로 만들었더니 상단바와 두 덩어리로
+   보였고, 상단바에 이어 붙였더니 이번엔 내용이 없는 흰 판이 하나 더
+   생긴 꼴이었습니다. **바탕에 칩만 올리는 것이 답이었습니다.**
+
+   굴러도 남아 있게 붙여둡니다 — 일정을 한참 내리다 지출로 건너뛰는 일이
+   잦습니다. 상단바(z-index 20)보다 낮게 둬서 겹치면 상단바가 이깁니다.
+   상단바 높이는 글자 크기 설정에 따라 달라지므로 재서 받습니다(--topbarh). */
 .tstrip{ position:sticky; top:calc(var(--s-sm) + var(--topbarh, 52px));
          z-index:19;
-         display:flex; justify-content:flex-start; gap:0;
-         margin:0 0 var(--s-md); padding:0 10px 2px;
-         border-radius:0 0 var(--r-lg) var(--r-lg);
-         /* 상단바와 같은 유리. 위쪽 안쪽 선은 빼야 이음매가 안 보입니다. */
-         background:linear-gradient(158deg, rgba(255,255,255,.58) 0%,
-                    rgba(255,255,255,.46) 55%, rgba(255,255,255,.56) 100%);
-         backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
-         -webkit-backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
-         border:1px solid rgba(255,255,255,.5); border-top:0;
-         box-shadow:inset 0 -1px 0 rgba(255,255,255,.34),
-                    0 0 0 .5px rgba(16,20,35,.07),
-                    0 10px 30px rgba(16,20,35,.10); }
-/* 폭을 넷으로 똑같이 나누면 글자 사이가 휑합니다. 글자만큼만 쓰고 왼쪽에
-   붙입니다 — 읽는 순서가 왼쪽에서 오른쪽이라 시작점이 맞아야 훑힙니다. */
-.tstrip button{ flex:none; border:0; border-radius:0; background:none;
-                padding:8px 12px 9px; color:var(--ink-48);
-                font-size:calc(14.5px * var(--ts)); font-weight:600;
-                /* 밑줄 자리를 항상 잡아둡니다. 켜질 때만 그리면 글자가 2px 튑니다. */
-                box-shadow:inset 0 -2px 0 transparent;
-                transition:color var(--t-fast) var(--ease); }
+         display:flex; justify-content:flex-start; gap:6px;
+         margin:0; padding:8px 0 10px; background:var(--bg); }
+/* 안 고른 칩은 **흰색**입니다. 아래 Day 칩들은 흰 카드 위에 있어서
+   회색(--parchment)이 알약으로 보이는데, 이 줄은 바탕 위라 같은 색이라
+   모양이 통째로 사라졌습니다. 바탕이 다르면 색도 달라야 합니다. */
+.tstrip button{ flex:none; padding:7px 14px; border-radius:var(--r-pill);
+                border:1px solid var(--hairline); background:var(--canvas);
+                color:var(--ink-80); font-size:calc(14px * var(--ts));
+                white-space:nowrap; }
 .tstrip button:active{ transform:none; }
-.tstrip button.is-on{ color:var(--primary);
-                      box-shadow:inset 0 -2px 0 var(--primary); }
+.tstrip button.is-on{ background:var(--primary); color:#fff; font-weight:600;
+                      border-color:transparent; box-shadow:var(--lift-1); }
 
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }
