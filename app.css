@@ -1198,20 +1198,34 @@ body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
  * 하니 홈·기록·프로필로 한 번에 못 갔고, 비서 단추는 아예 자리를 잃었습니다.
  * 여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
  * 굴러도 안 사라지게 위에 붙여둡니다. 네 구역을 계속 오가는 화면입니다. */
-/* **상단바 아래에 붙습니다.** top:0 으로 뒀더니 상단바 위로 올라가 글자가
-   겹쳤습니다 — 상단바도 sticky 라 같은 자리를 노립니다. 그 높이는 글자
-   크기 설정에 따라 달라지므로 못 박지 않고 재서 --topbarh 에 담아둡니다.
-   z-index 도 상단바(20)보다 낮춥니다 — 혹시 겹치면 상단바가 이깁니다. */
-.tstrip{ position:sticky; top:calc(var(--s-sm) + var(--topbarh, 52px) + 6px);
+/* **상단바에 이어 붙입니다.** 처음엔 top:0 으로 뒀다가 상단바 위로 올라가
+   글자가 겹쳤고, 그다음엔 6px 띄웠더니 이번에는 유리 알약과 회색 띠가
+   따로 노는 두 덩어리로 보였습니다. 사이를 없애고 **한 장처럼** 만듭니다 —
+   상단바는 아래 모서리를 펴고, 띠가 그 아래 모서리를 이어받습니다.
+   상단바 높이는 글자 크기 설정에 따라 달라지므로 못 박지 않고 재서
+   --topbarh 로 받습니다. z-index 는 상단바(20)보다 낮춰 둡니다. */
+body.intrip .topbar{ margin-bottom:0;
+                     border-radius:var(--r-pill) var(--r-pill) 0 0;
+                     border-bottom-color:transparent; }
+.tstrip{ position:sticky; top:calc(var(--s-sm) + var(--topbarh, 52px));
          z-index:19;
-         display:flex; justify-content:flex-start; gap:0; margin:0 0 10px;
-         padding:0 2px; background:var(--bg);
-         border-bottom:1px solid var(--divider-soft); }
+         display:flex; justify-content:flex-start; gap:0;
+         margin:0 0 var(--s-md); padding:0 10px 2px;
+         border-radius:0 0 var(--r-lg) var(--r-lg);
+         /* 상단바와 같은 유리. 위쪽 안쪽 선은 빼야 이음매가 안 보입니다. */
+         background:linear-gradient(158deg, rgba(255,255,255,.58) 0%,
+                    rgba(255,255,255,.46) 55%, rgba(255,255,255,.56) 100%);
+         backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+         -webkit-backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
+         border:1px solid rgba(255,255,255,.5); border-top:0;
+         box-shadow:inset 0 -1px 0 rgba(255,255,255,.34),
+                    0 0 0 .5px rgba(16,20,35,.07),
+                    0 10px 30px rgba(16,20,35,.10); }
 /* 폭을 넷으로 똑같이 나누면 글자 사이가 휑합니다. 글자만큼만 쓰고 왼쪽에
    붙입니다 — 읽는 순서가 왼쪽에서 오른쪽이라 시작점이 맞아야 훑힙니다. */
 .tstrip button{ flex:none; border:0; border-radius:0; background:none;
-                padding:9px 13px 8px; color:var(--ink-48);
-                font-size:calc(13px * var(--ts)); font-weight:600;
+                padding:8px 12px 9px; color:var(--ink-48);
+                font-size:calc(14.5px * var(--ts)); font-weight:600;
                 /* 밑줄 자리를 항상 잡아둡니다. 켜질 때만 그리면 글자가 2px 튑니다. */
                 box-shadow:inset 0 -2px 0 transparent;
                 transition:color var(--t-fast) var(--ease); }
