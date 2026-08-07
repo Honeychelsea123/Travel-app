@@ -672,7 +672,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 도시 사진을 받아두고 홈에서 한 장도 안 쓰고 있었습니다.
  * 사진을 카드 가득 깔고 글자는 그 위에 얹습니다. */
 .hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-       min-height:210px; display:flex; flex-direction:column; justify-content:flex-end;
+       min-height:172px; display:flex; flex-direction:column; justify-content:flex-end;
        padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
        box-shadow:var(--lift-1); margin-bottom:12px; }
 .hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -693,7 +693,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* AI 카드 — 이 앱이 내세우는 기능인데 흰 카드에 글자만 있으면 눌러볼 이유가
    없습니다. 홈에서 유일하게 색을 쓰는 자리로 두어 눈이 먼저 가게 합니다. */
 .aicard{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-         padding:16px 18px; margin-bottom:12px; color:#fff; cursor:pointer;
+         padding:12px 16px; margin-bottom:10px; color:#fff; cursor:pointer;
          display:flex; align-items:center; gap:14px;
          background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
          box-shadow:0 10px 24px rgba(90,63,240,.30); }
@@ -702,7 +702,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
                 width:180px; height:180px; border-radius:50%;
                 background:radial-gradient(circle,rgba(255,255,255,.24),transparent 70%); }
 .aicard > *{ position:relative; z-index:1 }
-.aicard .ic{ flex:none; width:44px; height:44px; border-radius:14px;
+.aicard .ic{ flex:none; width:38px; height:38px; border-radius:12px;
              background:rgba(255,255,255,.20); display:flex;
              align-items:center; justify-content:center; }
 .aicard .tx{ flex:1; min-width:0 }
@@ -968,17 +968,36 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
                 margin-top:1px; word-break:keep-all }
 .rvbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650; color:#8a5a00 }
 
-/* 새 여행으로 가는 얇은 줄. AI 카드가 '다음 여행' 이야기를 하게 되면서
-   홈에서 새 여행을 만들 길이 사라졌습니다. 카드를 하나 더 얹으면 위가
-   무거워지므로 한 줄로만 둡니다. */
-.newtripbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
-             margin:-2px 0 12px; padding:12px 14px; border-radius:var(--r-md);
-             background:var(--canvas); border:1px dashed var(--hairline); }
-.newtripbar .t{ flex:1; min-width:0; font-size:calc(13.5px * var(--ts));
-                font-weight:600; color:var(--ink-80); }
-.newtripbar .go{ flex:none; font-size:calc(12px * var(--ts)); font-weight:650;
-                 color:var(--primary); }
-.newtripbar:active{ background:var(--pearl); }
+/* 새 여행으로 가는 줄. AI 카드가 '다음 여행' 이야기를 하게 되면서 홈에서
+   새 여행을 만들 길이 사라졌습니다.
+   **바로 위 AI 카드와 같은 크기로 맞춥니다.** 처음에는 얇은 줄로 뒀는데
+   위 카드보다 눈에 띄게 작아서 곁다리로 보였습니다. 둘은 같은 무게입니다 —
+   하나는 이번 여행, 하나는 다음 여행.
+   **색은 다르게 둡니다.** 크기까지 같고 색까지 같으면 두 카드가 한 덩어리로
+   보여서 무엇이 무엇인지 갈리지 않습니다. 위(AI·이번 여행)는 보라,
+   여기(다음 여행)는 청록입니다. */
+.newtripbar{ position:relative; overflow:hidden; cursor:pointer;
+             display:flex; align-items:center; gap:14px;
+             padding:12px 16px; margin-bottom:10px; border-radius:var(--r-lg);
+             color:#fff;
+             background:linear-gradient(135deg,#0f9b8e 0%,#16a99a 55%,#2fc2a8 100%);
+             box-shadow:0 10px 24px rgba(15,155,142,.28); }
+/* AI 카드와 같은 빛무리. 두 카드가 한 식구로 보이되 색으로 갈립니다. */
+.newtripbar::after{ content:''; position:absolute; right:-46px; top:-66px;
+                    width:180px; height:180px; border-radius:50%;
+                    background:radial-gradient(circle,rgba(255,255,255,.24),transparent 70%); }
+.newtripbar > *{ position:relative; z-index:1 }
+.newtripbar .ic{ flex:none; width:38px; height:38px; border-radius:12px;
+                 background:rgba(255,255,255,.20); display:flex;
+                 align-items:center; justify-content:center;
+                 font-size:calc(22px * var(--ts)); }
+.newtripbar .tx{ flex:1; min-width:0; }
+.newtripbar .tx b{ display:block; font-size:calc(15px * var(--ts)); font-weight:700; }
+.newtripbar .tx span{ display:block; margin-top:2px; opacity:.85;
+                      font-size:calc(12.5px * var(--ts)); }
+.newtripbar .go{ flex:none; padding:8px 16px; border-radius:var(--r-pill);
+                 background:#fff; color:#0f9b8e;
+                 font-size:calc(13px * var(--ts)); font-weight:700; }
 
 /* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
    일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
@@ -1101,7 +1120,9 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .thumb.ph{ display:flex; align-items:center; justify-content:center;
            font-size:calc(21px * var(--ts)); font-weight:650; color:var(--ink-48); }
 /* 도시 페이지 맨 위 사진 */
-.hero{ height:180px; background:var(--parchment) center/cover no-repeat; }
+/* 180 은 화면의 4분의 1을 먹었습니다. 그 아래 카드 둘이 접혀 있어서
+   내려야 보였습니다. 사진은 분위기고, 할 일은 그 아래에 있습니다. */
+.hero{ height:172px; background:var(--parchment) center/cover no-repeat; }
 .hero.ph{ display:flex; align-items:center; justify-content:center;
           font-size:calc(56px * var(--ts)); font-weight:650; color:var(--hairline); }
 .want, .been{ flex:none; font-size:calc(19px * var(--ts)); padding:2px 6px;

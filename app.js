@@ -2728,8 +2728,10 @@ async function buildHome(){
      카드를 하나 더 크게 얹으면 위가 무거워지므로 얇은 줄로 답니다. */
   const nt = document.createElement('div');
   nt.className = 'newtripbar';
-  nt.innerHTML = `<span class="t">＋ 또 어디 가시나요?</span>
-                  <span class="go">새 여행 ›</span>`;
+  nt.innerHTML = `<span class="ic">＋</span>
+    <span class="tx"><b>다음에 어디 갈까요?</b>
+      <span>어디로 언제 가는지만 정하면 돼요</span></span>
+    <span class="go">새 여행</span>`;
   nt.onclick = () => openNew();
   $('home').appendChild(nt);
 
