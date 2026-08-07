@@ -6843,15 +6843,46 @@ async function loadTrash(){
   card.classList.remove('hide');
   $('trashtitle').textContent = `지운 ${TRASH_KO[kind]}`;
   $('trashcount').textContent = `${rows.length}개`;
+  /* 되살리기 옆에 '완전 삭제'를 둡니다. 지운 것이 여기 계속 쌓이면
+     목록이 길어져 정작 되살릴 것을 못 찾습니다. 진짜로 지우는 것이라
+     한 번 더 물어봅니다(arm) — 되살릴 길이 그때는 없습니다. */
   $('trash').innerHTML = rows.map(r => `<div class="arow">
       <span class="k"><b>${esc(r.title)}</b>
         <span class="m">${esc(r.sub || '')}</span></span>
       ${trip.myRole === 'viewer' ? ''
         : `<button class="ghost" data-undel="${esc(r.kind)}:${esc(r.id)}"
-                   style="color:var(--primary); padding:4px 6px">되살리기</button>`}</div>`).join('');
+                   style="color:var(--primary); padding:4px 6px">되살리기</button>
+           <button class="ghost" data-zap="${esc(r.kind)}:${esc(r.id)}"
+                   style="color:var(--bad, #c0392b); padding:4px 6px">완전 삭제</button>`}
+      </div>`).join('');
+}
+
+/* 되살렸든 지웠든 원래 자리도 다시 그려야 합니다. */
+async function afterTrash(kind){
+  await loadTrash();
+  if (kind === 'plan')    await loadPlans();
+  if (kind === 'expense') await loadExpenses();
+  if (kind === 'booking') await loadBookings();
 }
 
 $('trash').addEventListener('click', async e => {
+  const z = e.target.closest('[data-zap]');
+  if (z){
+    /* 한 번 더 묻습니다. 여기서 지우면 정말 없어집니다. */
+    if (z.dataset.armed !== '1'){ arm(z, '정말 지울까요?'); return; }
+    const [kind, id] = z.dataset.zap.split(':');
+    z.disabled = true; z.innerHTML = '<span class="load">지우는 중…</span>';
+    /* 이미 지운 것만 지웁니다. deleted_at 조건을 빼면, 그 사이 딴 기기에서
+       되살려 놓은 줄까지 여기서 없앨 수 있습니다. */
+    const r = await sb.from(TRASH_TABLE[kind]).delete()
+      .eq('id', id).not('deleted_at', 'is', null).select('id');
+    z.disabled = false; disarm(z); z.textContent = '완전 삭제';
+    if (r.error) return fail(r.error, 'trash');
+    if (!r.data?.length) return fail('지우지 못했어요 (0건).', 'trash');
+    toast('완전히 지웠어요.');
+    return afterTrash(kind);
+  }
+
   const b = e.target.closest('[data-undel]'); if (!b) return;
   const [kind, id] = b.dataset.undel.split(':');
   b.disabled = true; b.innerHTML = '<span class="load">되살리는 중…</span>';
@@ -6861,11 +6892,7 @@ $('trash').addEventListener('click', async e => {
   if (r.error) return fail(r.error, 'trash');
   if (!r.data?.length) return fail('되살리지 못했어요 (0건).', 'trash');
   toast('되살렸어요.');
-  await loadTrash();
-  /* 되살린 것이 원래 자리에 바로 보여야 합니다. */
-  if (kind === 'plan') await loadPlans();
-  if (kind === 'expense') await loadExpenses();
-  if (kind === 'booking') await loadBookings();
+  await afterTrash(kind);
 });
 
 /* ── 탭 ─────────────────────────────────────────────────────────────

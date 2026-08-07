@@ -166,6 +166,9 @@ a.btn:active{ transform:scale(.96); }
           line-height:1.45; margin-top:1px; }
 /* 자릿수가 달라도 오른쪽 끝이 맞아야 훑을 수 있습니다. */
 .arow .v{ font-weight:700; white-space:nowrap; font-variant-numeric:tabular-nums; }
+/* 지운 것 줄에는 단추가 둘입니다(되살리기 · 완전 삭제). 글자가 접히면
+   '정말 지울까요?'로 바뀔 때 줄이 통째로 흔들립니다. */
+#trash .arow button{ flex:none; white-space:nowrap; gap:0; }
 
 /* ── 정산 ──
    합계는 커야 하지만 19px 짜리 굵은 글자가 세 줄 이어지면 그때부터는
