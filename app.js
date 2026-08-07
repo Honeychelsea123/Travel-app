@@ -7276,20 +7276,16 @@ function drawExpenses(){
  *   - 낸 사람 = 결제자. 나간 사람이 낸 것도 돌려받을 돈으로 셉니다
  *   - 환율을 못 구했거나 결제자를 안 적은 지출은 **빼고, 몇 건인지 말합니다**
  */
-function drawSettle(){
-  const active = members.filter(m => !m.left_at);
-  /* 애매한 것이 하나라도 섞이면 합이 안 맞습니다. 쓸 수 있는 것만 씁니다. */
-  const rows    = expenses.filter(e => e.amount_home != null && e.payer_id);
-  const noFx    = expenses.filter(e => e.amount_home == null).length;
-  const noPayer = expenses.filter(e => e.amount_home != null && !e.payer_id).length;
-
-  if (!rows.length || members.length < 2){
-    settleOn = false; $('settlecard').classList.add('hide'); return;
-  }
-  settleOn = true;
-  $('settlecard').classList.toggle('hide', tab !== 'exp');
-
-  const cur = trip.home_currency;
+/* ── 정산 셈 ──────────────────────────────────────────────────────────
+ * **화면과 떼어 놓았습니다.** 돈 계산이라 읽기만으로는 못 믿는데, 화면
+ * 그리기와 붙어 있으면 여행과 일행을 실제로 만들어야만 돌려볼 수 있습니다.
+ * 여기는 넣은 값만 보고 답을 내므로 지어낸 경우로도 검사할 수 있습니다
+ * (아래 __settleCheck).
+ *
+ * 넣는 것: 지출 줄들, 아직 있는 참여자들
+ * 내는 것: { total, bal, moves }
+ */
+function settleMath(rows, active, unit = 1){
   const total = rows.reduce((s, e) => s + Number(e.amount_home), 0);
 
   /* 낸 돈과 써야 할 돈을 따로 셉니다. 둘의 차이가 그 사람의 잔액입니다. */
@@ -7317,6 +7313,23 @@ function drawSettle(){
                                v: (paid[id] || 0) - (owed[id] || 0) }))
                  .sort((a, b) => a.v - b.v);
 
+  /* ── 화면에 찍히는 단위로 맞춰둡니다 ──
+     셋이 10000원을 나누면 1인분이 3333.33… 입니다. 화면은 원 단위로
+     반올림해 찍으므로 "+6,667 받을 것"인데 보내라는 것은 3,333 + 3,333 =
+     6,666 이 됩니다. 1원이 비고, 보는 사람은 어느 쪽이 맞는지 모릅니다.
+     **맞물리기 전에 미리 단위에 맞춰 깎습니다.** 그러면 화면의 모든
+     숫자가 같은 자리에서 떨어집니다.
+     깎고 남은 자투리는 제일 많이 받을 사람에게 몰아줍니다 — 합이 0 이
+     아니면 그만큼이 아무에게도 안 가고 사라집니다. */
+  const q = n => Math.round(n / unit) * unit;
+  bal.forEach(b => { b.paid = q(b.paid); b.owed = q(b.owed); b.v = q(b.v); });
+  const drift = q(bal.reduce((s, b) => s + b.v, 0));
+  if (drift && bal.length){
+    const top = bal.reduce((a, b) => (b.v > a.v ? b : a), bal[0]);
+    top.v = q(top.v - drift);
+  }
+  bal.sort((a, b) => a.v - b.v);
+
   /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다.
      이제 낸 돈 합과 쓴 돈 합이 같으므로 남는 빚 없이 떨어집니다. */
   const work = bal.map(b => ({ ...b }));
@@ -7324,12 +7337,33 @@ function drawSettle(){
   let i = 0, j = work.length - 1;
   while (i < j){
     const owe = -work[i].v, get = work[j].v;
-    if (owe < 1){ i++; continue; }
-    if (get < 1){ j--; continue; }
+    /* 한 단위(원화면 1원)도 안 되는 것은 안 보냅니다. */
+    if (owe < unit){ i++; continue; }
+    if (get < unit){ j--; continue; }
     const v = Math.min(owe, get);
     moves.push({ from: work[i].id, to: work[j].id, v });
     work[i].v += v; work[j].v -= v;
   }
+  return { total, bal, moves };
+}
+
+function drawSettle(){
+  const active = members.filter(m => !m.left_at);
+  /* 애매한 것이 하나라도 섞이면 합이 안 맞습니다. 쓸 수 있는 것만 씁니다. */
+  const rows    = expenses.filter(e => e.amount_home != null && e.payer_id);
+  const noFx    = expenses.filter(e => e.amount_home == null).length;
+  const noPayer = expenses.filter(e => e.amount_home != null && !e.payer_id).length;
+
+  if (!rows.length || members.length < 2){
+    settleOn = false; $('settlecard').classList.add('hide'); return;
+  }
+  settleOn = true;
+  $('settlecard').classList.toggle('hide', tab !== 'exp');
+
+  const cur = trip.home_currency;
+  /* 화면이 찍는 자리와 같은 단위로 셈해야 숫자끼리 아귀가 맞습니다. */
+  const { total, bal, moves } =
+    settleMath(rows, active, NO_CENTS.includes(cur) ? 1 : 0.01);
 
   const skipped = [
     noFx    ? `환율을 못 구한 ${noFx}건` : '',
@@ -8528,6 +8562,87 @@ if (window.visualViewport){
     if (localStorage.getItem('t2:kbdbg') === '1') window.startRuler();
   }
 }
+
+/* ── 정산 자가검사 (개발용) ──────────────────────────────────────────
+ * 정산은 여럿이 가면 제일 자주 열어보는 자리고, 틀리면 사람 사이가 상합니다.
+ * 그런데 눈으로 보려면 여행과 일행과 지출을 실제로 만들어야 합니다 —
+ * 그래서 실제로는 거의 안 돌려보게 됩니다.
+ *
+ * settleMath 는 넣은 값만 보므로 지어낸 경우로 검사할 수 있습니다.
+ * 콘솔에서 __settleCheck() 를 부르면 아래 경우들을 다 돌려 봅니다.
+ *
+ * 무엇을 보나 (셋 다 어기면 돈이 사라지거나 생겨납니다):
+ *   1. 낸 돈 합 == 쓴 돈 합 == 총액
+ *   2. 보내라는 대로 다 보내면 모두의 잔액이 0
+ *   3. NaN 이 하나도 없을 것
+ */
+window.__settleCheck = () => {
+  const M = ids => ids.map(id => ({ user_id:id }));
+  const E = (payer, amt, shares) => ({
+    amount_home: amt, payer_id: payer,
+    expense_shares: shares ? Object.entries(shares).map(
+      ([user_id, weight]) => ({ user_id, weight })) : [],
+  });
+
+  const cases = [
+    ['혼자 다 냄, 셋이 균등',
+     [E('a', 30000)], M(['a','b','c'])],
+    ['셋이 각각 냄, 균등',
+     [E('a', 30000), E('b', 15000), E('c', 6000)], M(['a','b','c'])],
+    ['나눌 사람을 따로 적음 (a·b 만)',
+     [E('c', 20000, { a:1, b:1 })], M(['a','b','c'])],
+    ['몫이 다름 (a 2 : b 1)',
+     [E('a', 30000, { a:2, b:1 })], M(['a','b'])],
+    ['나간 사람이 낸 돈 (d 는 active 아님)',
+     [E('d', 30000), E('a', 3000)], M(['a','b','c'])],
+    ['셋이 10000원 — 3으로 안 나눠떨어짐',
+     [E('a', 10000)], M(['a','b','c'])],
+    ['일곱이 100원 — 아주 작은 금액',
+     [E('a', 100)], M(['a','b','c','d','e','f','g'])],
+    ['몫 무게가 0 뿐 (균등으로 떨어져야)',
+     [E('a', 9000, { a:0, b:0 })], M(['a','b','c'])],
+    ['나눌 사람이 아무도 없음 (다 나감)',
+     [E('a', 5000)], M([])],
+    ['환불(음수) 섞임',
+     [E('a', 30000), E('b', -6000)], M(['a','b','c'])],
+    ['큰 금액 여럿 (자릿수)',
+     [E('a', 1234567), E('b', 7654321), E('c', 999)], M(['a','b','c','d'])],
+  ];
+
+  const out = [];
+  for (const [name, rows, active] of cases){
+    const r = settleMath(rows, active, 1);       /* 원화 기준 */
+    const sumPaid = r.bal.reduce((s, b) => s + b.paid, 0);
+    const sumOwed = r.bal.reduce((s, b) => s + b.owed, 0);
+    /* 보내라는 대로 보낸 뒤의 잔액. 다 0 이어야 합니다. */
+    const after = Object.fromEntries(r.bal.map(b => [b.id, b.v]));
+    for (const m of r.moves){ after[m.from] += m.v; after[m.to] -= m.v; }
+    const worst = Math.max(0, ...Object.values(after).map(Math.abs));
+    const nan = [r.total, sumPaid, sumOwed, ...r.moves.map(m => m.v)]
+      .some(v => !Number.isFinite(v));
+    /* 화면에 찍히는 숫자끼리도 아귀가 맞아야 합니다. 단위로 깎아뒀으므로
+       보이는 값과 셈한 값이 같아야 하고, 잔액 합도 0 이어야 합니다. */
+    const notWhole = r.moves.some(m => Math.abs(m.v - Math.round(m.v)) > 1e-9)
+                  || r.bal.some(b => Math.abs(b.v - Math.round(b.v)) > 1e-9);
+    const balSum = Math.abs(r.bal.reduce((s, b) => s + b.v, 0));
+
+    const bad = [];
+    /* 낸 돈·쓴 돈은 단위로 깎으므로 사람 수만큼 오차가 날 수 있습니다. */
+    if (Math.abs(sumPaid - r.total) > r.bal.length) bad.push(`낸 돈 합 ${sumPaid} ≠ 총액 ${r.total}`);
+    if (Math.abs(sumOwed - r.total) > r.bal.length) bad.push(`쓴 돈 합 ${sumOwed} ≠ 총액 ${r.total}`);
+    if (worst >= 1)   bad.push(`다 보내도 ${worst.toFixed(2)} 남음`);
+    if (balSum > 1e-9) bad.push(`잔액 합 ${balSum} (0 이어야 함)`);
+    if (notWhole)     bad.push('화면 단위로 안 떨어짐');
+    if (nan)          bad.push('NaN');
+    out.push({ 경우:name, 결과: bad.length ? '✗ ' + bad.join(' / ') : '✓',
+               총액:Math.round(r.total), 보낼건수:r.moves.length,
+               남은잔액:+worst.toFixed(2) });
+  }
+  console.table(out);
+  const ng = out.filter(o => o.결과 !== '✓');
+  console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
+  return out;
+};
 
 /* ── 시작 ───────────────────────────────────────────────────────── */
 /* 초대 링크(?join=CODE)로 들어왔을 수 있습니다. 로그인을 거쳐야 쓸 수 있으므로
