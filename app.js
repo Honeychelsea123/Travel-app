@@ -5047,6 +5047,19 @@ async function openBadgeShelf(){
   const got = list.filter(b => b.earned_at);
   $('shelfcount').textContent = `${got.length} / ${list.length}`;
 
+  /* 지금 내 숫자를 맨 위에 한 줄로 적습니다. 이게 없으면 "왜 이 배지가
+     안 들어오지"를 알 길이 없습니다 — 실제로 국가 27인데 배지가 안 켜지는
+     일이 있었고, 그때 어디가 틀렸는지 볼 자리가 없었습니다.
+     갈래마다 재는 것이 하나씩이라 배지 목록에서 그대로 뽑아 씁니다. */
+  /* 갈래의 **마지막** 배지 값을 씁니다. '여행'만 첫 칸이 여행 횟수고
+     나머지가 일수라, 첫 칸을 쓰면 "여행 3일"처럼 엉뚱하게 나옵니다. */
+  const now = {};
+  for (const b of list) now[b.cat] = b.have;
+  const line = Object.entries(now)
+    .map(([c, v]) => `${c} ${v}${{ '평가':'곳', '다녀온 곳':'개국',
+                                   '여행':'일', '후기':'개' }[c] || ''}`)
+    .join(' · ');
+
   /* 갈래끼리 묶습니다. 스물일곱 개를 한 줄로 늘어놓으면 훑을 수가 없습니다. */
   const cats = [];
   for (const b of list){
@@ -5054,7 +5067,8 @@ async function openBadgeShelf(){
     if (last && last.cat === b.cat) last.items.push(b);
     else cats.push({ cat: b.cat, items: [b] });
   }
-  $('shelflist').innerHTML = cats.map(g => {
+  $('shelflist').innerHTML = `<div class="memo bdnow">${esc(line)}</div>` +
+    cats.map(g => {
     const n = g.items.filter(b => b.earned_at).length;
     return `<div class="daysep">${esc(g.cat)}
       <span class="dstat">${n}/${g.items.length}</span></div>
