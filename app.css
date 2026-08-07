@@ -1198,30 +1198,24 @@ body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
  * 하니 홈·기록·프로필로 한 번에 못 갔고, 비서 단추는 아예 자리를 잃었습니다.
  * 여기로 올립니다 — 하단바는 앱 구역만 맡고 안 바뀝니다.
  * 굴러도 안 사라지게 위에 붙여둡니다. 네 구역을 계속 오가는 화면입니다. */
-/* 알약 넷을 나란히 둡니다. 바로 아래 Day 칩·분류 칩과 같은 모양이라
-   따로 배울 것이 없습니다.
+/* 여행 안 구역 — 상단바 **안**에 삽니다. 줄이 안 늘어납니다.
+   밖에 한 줄로 뒀다가 두 번 물렸습니다: 흰 카드로 만드니 상단바와 두
+   덩어리로 보였고, 알약으로 만드니 아래 Day 칩·분류 칩과 생김새가 같아
+   세 줄이 한 덩어리로 읽혔습니다. 여기 들어오면 그 문제가 통째로 없습니다.
 
-   여기까지 두 번 헤맸습니다. 흰 카드로 만들었더니 상단바와 두 덩어리로
-   보였고, 상단바에 이어 붙였더니 이번엔 내용이 없는 흰 판이 하나 더
-   생긴 꼴이었습니다. **바탕에 칩만 올리는 것이 답이었습니다.**
-
-   굴러도 남아 있게 붙여둡니다 — 일정을 한참 내리다 지출로 건너뛰는 일이
-   잦습니다. 상단바(z-index 20)보다 낮게 둬서 겹치면 상단바가 이깁니다.
-   상단바 높이는 글자 크기 설정에 따라 달라지므로 재서 받습니다(--topbarh). */
-.tstrip{ position:sticky; top:calc(var(--s-sm) + var(--topbarh, 52px));
-         z-index:19;
-         display:flex; justify-content:flex-start; gap:6px;
-         margin:0; padding:8px 0 10px; background:var(--bg); }
-/* 안 고른 칩은 **흰색**입니다. 아래 Day 칩들은 흰 카드 위에 있어서
-   회색(--parchment)이 알약으로 보이는데, 이 줄은 바탕 위라 같은 색이라
-   모양이 통째로 사라졌습니다. 바탕이 다르면 색도 달라야 합니다. */
-.tstrip button{ flex:none; padding:7px 14px; border-radius:var(--r-pill);
-                border:1px solid var(--hairline); background:var(--canvas);
-                color:var(--ink-80); font-size:calc(14px * var(--ts));
+   상단바가 이미 붙어 있으니(sticky) 굴러도 같이 따라옵니다. */
+.tstrip{ flex:1; min-width:0; display:flex; gap:2px; }
+.tstrip button{ flex:none; padding:5px 9px; border:0; border-radius:var(--r-pill);
+                background:none; color:var(--ink-48);
+                font-size:calc(14px * var(--ts)); font-weight:600;
                 white-space:nowrap; }
 .tstrip button:active{ transform:none; }
-.tstrip button.is-on{ background:var(--primary); color:#fff; font-weight:600;
-                      border-color:transparent; box-shadow:var(--lift-1); }
+/* 고른 것만 색을 채웁니다. 알약 넷을 다 칠하면 상단바가 다시 탭바처럼
+   무거워집니다 — 여기서는 지금 어디인지만 알면 됩니다. */
+.tstrip button.is-on{ background:var(--primary); color:#fff; }
+/* 여행 안에서는 앱 이름이 자리를 내줍니다. 어느 앱인지는 이미 알고,
+   지금 궁금한 것은 이 여행의 어디를 보고 있느냐입니다. */
+body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }

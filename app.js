@@ -1342,7 +1342,7 @@ function showApp(t){
      그대로 남습니다 — 홈에서 발자국을 누르면 프로필 밑에 여행이 붙어 있었습니다.
      backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
   if (trip){ unwatch(); trip = null; }
-  $('tripview').classList.add('hide');
+  $('tripview').classList.add('hide'); inTrip(false);
 
   $('draftview').classList.add('hide');
   $('reviewview').classList.add('hide');
@@ -5608,6 +5608,8 @@ async function openTrip(id){
      지금 앱의 어디에 있는지가 계속 보여야 합니다. */
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === 'trips'));
+  /* 상단바에 여행 안 구역을 띄우고 앱 이름을 접습니다 (app.css 의 .tstrip). */
+  inTrip(true);
   $('tripview').classList.remove('hide');
   $('plancard').classList.add('hide');
   $('editcard').classList.add('hide');
@@ -6008,7 +6010,7 @@ function backToList(fromPop){
   if (!fromPop && history.state?.t2 === 'trip'){ history.back(); return; }
   unwatch();
   trip = null;
-  $('tripview').classList.add('hide');
+  $('tripview').classList.add('hide'); inTrip(false);
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
 $('backbtn').addEventListener('click', () => backToList());
@@ -6872,17 +6874,12 @@ $('tstrip').addEventListener('click', e => {
   if (b) showTab(b.dataset.t);
 });
 
-/* 여행 안 구역 띠가 상단바 **아래**에 붙어야 합니다. 둘 다 sticky 라 같은
-   자리를 노리는데, 상단바 높이는 글자 크기 설정(--ts)에 따라 달라집니다.
-   못 박으면 큰 글씨로 쓰는 사람 화면에서 겹칩니다. 재서 넘겨줍니다. */
-function measureTopbar(){
-  const el = document.querySelector('.topbar');
-  if (!el) return;
-  document.documentElement.style.setProperty(
-    '--topbarh', Math.round(el.getBoundingClientRect().height) + 'px');
+/* 여행 안이냐 밖이냐. 상단바가 이걸 보고 모양을 바꿉니다 —
+   안이면 구역 넷이 나오고 앱 이름이 접힙니다. */
+function inTrip(on){
+  document.body.classList.toggle('intrip', on);
+  $('tstrip').classList.toggle('hide', !on);
 }
-addEventListener('resize', measureTopbar);
-measureTopbar();
 
 /* ── 지출 ───────────────────────────────────────────────────────── */
 /* 통화마다 소수 자리가 다릅니다. 엔·원·동은 소수점이 없습니다. */
@@ -7928,7 +7925,7 @@ async function render(session){
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
   unwatch(); trip = null;
-  $('tripview').classList.add('hide');
+  $('tripview').classList.add('hide'); inTrip(false);  /* 다시 그릴 때는 목록부터 */
   $('appbar').classList.remove('hide');
   document.body.classList.add('hastab');
   $('sub').textContent = '';
