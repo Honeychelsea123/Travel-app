@@ -981,6 +981,24 @@ function search(q){
   }).slice(0, 40);
 }
 
+/* ── 빈 화면 ──────────────────────────────────────────────────────────
+ * "아직 지출이 없어요." 한 줄만 두면 처음 온 사람은 여기서 멈춥니다.
+ * 추가 단추는 카드 오른쪽 위에 작게 있어서 눈이 안 갑니다.
+ * **빈 화면은 앱이 처음 쓰는 사람을 가르칠 유일한 기회입니다.**
+ * 무엇을 하면 되는지 그 자리에 큼직하게 둡니다. */
+function emptyDo(text, label, btnId){
+  return `<div class="empty emptydo">
+    <div class="t">${esc(text)}</div>
+    ${btnId ? `<button class="primary" data-go="${esc(btnId)}">${esc(label)}</button>` : ''}
+  </div>`;
+}
+/* 빈 화면의 단추는 원래 있던 단추를 대신 눌러줍니다 — 여는 방법을 두 벌로
+   만들면 한쪽만 고치는 날이 옵니다. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-go]');
+  if (b) $(b.dataset.go)?.click();
+});
+
 /* 나라 코드로 국기를 만듭니다. ISO 3166-1 두 글자를 지역표시기호로 옮기는
    규칙이라 나라마다 따로 적어둘 것이 없습니다 — 적어두면 언젠가 틀립니다. */
 function flagOf(code){
@@ -2468,7 +2486,7 @@ async function openCity(id){
       <div class="row" style="border:0; padding:0; margin:0; cursor:pointer"
            data-cvtrip="${esc(t.id)}">
         <span class="label"><b>${esc(t.title)}</b>
-          <div class="memo">${esc(l.start_date)} ~ ${esc(l.end_date)} · ${mine.length}곳</div>
+          <div class="memo">${esc(dateRange(l.start_date, l.end_date))} · ${mine.length}곳</div>
         </span><span class="val">여행 보기 ›</span></div>
       ${mine.map(p => {
         const k = p.category ? 'k-' + p.category : '';
@@ -2632,7 +2650,7 @@ async function buildHome(){
       (pend.places.length ? ` · ${pend.places.length}곳` : ''), '평가하기');
     $('hero').onclick = () => openReviewTrip(pend.trip.id);
     $('herobtn').onclick = e => { e.stopPropagation(); openReviewTrip(pend.trip.id); };
-    renderAiCard();
+    renderAiCard(null, 0);
     await renderQuiz(); await renderFoot();
     return;
   }
@@ -2660,7 +2678,7 @@ async function buildHome(){
       '새 여행');
     $('herobtn').onclick = e => { e.stopPropagation(); showApp('trips'); $('newbtn').click(); };
     /* 여행이 없으면 AI 로 시작하는 것이 첫 걸음입니다. 맨 위에 둡니다. */
-    renderAiCard();
+    renderAiCard(null, 0);
     await renderQuiz(); await renderFoot();
     return;
   }
@@ -2676,21 +2694,28 @@ async function buildHome(){
 
   /* 여행 중이면 오늘 몇 개인지만 한 줄로 얹습니다.
      일정 목록 자체는 여행 탭에 있으니 홈에서 또 늘어놓지 않습니다. */
-  const [photo, cnt] = await Promise.all([
+  const [photo, cnt, all] = await Promise.all([
     tripPhoto(t),
     sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today)
+      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today),
+    /* 이 여행에 일정이 하나라도 있나. 아래 AI 카드가 무슨 말을 할지 정합니다 —
+       일정이 비어 있으면 그게 지금 제일 급한 일입니다. */
+    sb.from('plans').select('id', { count:'exact', head:true })
+      .eq('trip_id', t.id).is('deleted_at', null),
   ]);
 
   const n = cnt.count || 0;
   $('home').innerHTML = heroHtml(photo, badge, t.title,
-    `${t.destination} · ${t.start_date} ~ ${t.end_date} · ${days}일` +
+    `${t.destination} · ${dateRange(t.start_date, t.end_date)} · ${days}일` +
     (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), '');
   $('hero').onclick = () => openTrip(t.id);
   rvBar();                    /* 평가할 여행이 남아 있으면 얇은 띠로 붙습니다 */
 
-  /* 여행이 있으면 다음 일정(히어로) 다음에 AI 가 옵니다. */
-  renderAiCard();
+  /* ── 순서는 여행이 언제냐가 정합니다 ──
+     36일 전인 사람에게 제일 급한 것은 일정이지, 다녀온 도시 평가가 아닙니다.
+     평가와 발자국은 다녀온 뒤에 보는 것이라 여행이 남아 있으면 아래로 내립니다.
+     반대로 여행이 끝났거나 없으면 그것들이 이 앱의 남은 재미입니다. */
+  renderAiCard(t, all.count || 0);
   await renderQuiz();
   await renderFoot();
 }
@@ -3152,7 +3177,24 @@ async function askReportAi(id, f){
 }
 
 /* AI 일정 만들기 — 이 앱이 내세우는 기능이라 홈 위쪽에 둡니다. */
-function renderAiCard(){
+function renderAiCard(nextTrip, nextPlans){
+  /* ── 무엇을 권할지는 그 사람의 여행이 정합니다 ──
+     "AI와 함께 떠나볼까요?" 하나만 늘 띄우면, 다음 주에 도쿄 가는 사람에게도
+     일정이 텅 빈 사람에게도 같은 말을 합니다. 지금 제일 급한 것을 말합니다.
+       · 곧 가는데 일정이 비었다 → 그 여행을 짜자 (제일 급합니다)
+       · 곧 가는데 일정이 있다   → 다듬거나 물어보자
+       · 여행이 없다             → 새로 만들자 */
+  const ai = !nextTrip
+    ? { title:'AI와 함께 떠나볼까요?', sub:'뭘 좋아하는지만 알려주세요',
+        go:'시작', go2:() => openNew() }
+    : nextPlans === 0
+    ? { title:`${nextTrip.title} 일정이 비어 있어요`,
+        sub:'AI가 하루씩 짜드릴게요', go:'짜기',
+        go2:() => openDraft(nextTrip.id, true) }
+    : { title:`${nextTrip.title}, 뭐 더 넣을까요?`,
+        sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기',
+        go2:() => openDraft(nextTrip.id, true) };
+
   const box = document.createElement('div');
   box.className = 'aicard';
   box.id = 'homeaicard';
@@ -3165,16 +3207,16 @@ function renderAiCard(){
        </svg>
      </span>
      <span class="tx">
-       <b>AI와 함께 떠나볼까요?</b>
-       <span>뭘 좋아하는지만 알려주세요</span>
+       <b>${esc(ai.title)}</b>
+       <span>${esc(ai.sub)}</span>
      </span>
-     <span class="go">시작</span>`;
+     <span class="go">${esc(ai.go)}</span>`;
   /* 예전에는 초안 화면(openDraft)을 바로 열었습니다. 그런데 거기에도
      '새 여행'이 따로 있어서, 여행을 만드는 길이 두 개가 됐습니다 —
      한쪽은 단계 화면, 한쪽은 옛날 폼이라 모양도 달랐습니다.
      여기서는 단계 화면을 엽니다. 마지막에 'AI가 짜줄게요'를 고르면
      그 초안 화면으로 이어집니다. 길은 하나로 모입니다. */
-  box.onclick = () => openNew();
+  box.onclick = ai.go2;
   $('home').appendChild(box);
 }
 
@@ -5523,10 +5565,16 @@ async function loadTrips(){
     const report = t.end_date < today
       ? `<button class="ghost" data-act="report" ${a}
                  style="color:var(--primary)">리포트</button>` : '';
-    const acts = report + (role === 'owner'
+    /* **지우기를 상시로 두지 않습니다.** 줄마다 빨간 '삭제'가 손가락 닿는
+       자리에 늘 있었습니다. 되돌릴 수 없는 것을 스치기 쉬운 곳에 둘 이유가
+       없습니다. ⋯ 뒤로 넣고, 누르면 그 줄에서만 펼칩니다. */
+    const more = (role === 'owner'
       ? `<button class="ghost" data-act="edit" ${a}>수정</button>` +
         `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
       : `<button class="ghost" data-act="leave" ${a}>나가기</button>`);
+    const acts = report +
+      `<button class="ghost" data-act="more" ${a} aria-label="더보기">⋯</button>` +
+      `<span class="tmore hide">${more}</span>`;
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
     const img = t.cities?.image_url;
@@ -5537,14 +5585,15 @@ async function loadTrips(){
             : `<span class="thumb ph">${esc(t.title.slice(0,1))}</span>`}
       <div class="t">
       <b>${esc(t.title)}</b>
-      <span class="meta">${esc(t.destination)} · ${esc(t.start_date)} ~ ${esc(t.end_date)} · ${days}일</span>
+      <span class="meta">${esc(t.destination)} · ${esc(dateRange(t.start_date, t.end_date))} · ${days}일</span>
       <div style="margin-top:4px">${acts}</div>
     </div>${
       /* 다녀왔는데 아직 후기를 안 남긴 여행. 여기가 평가로 들어가는 입구입니다. */
       t.end_date < today && !(t.trip_reviews || []).some(r => r.user_id === me.id)
         ? '<span class="badge" style="background:#fdf3e6; color:#f5a623; font-weight:600">' +
           '후기 전</span>'
-        : `<span class="badge">${esc(role)}</span>`}</div>`;
+        /* 'OWNER' 만 영어로 떠 있었습니다. 앱 전체가 한국어입니다. */
+        : `<span class="badge">${esc(ROLE_KO[role] || role)}</span>`}</div>`;
   }).join('');
 }
 
@@ -5561,6 +5610,18 @@ $('trips').addEventListener('click', async e => {
   const { act, id, title } = b.dataset;
 
   if (act === 'cancelact') return loadTrips();
+
+  /* ⋯ — 그 줄에서만 펼칩니다. 다른 줄이 열려 있으면 접습니다.
+     여러 줄이 동시에 펼쳐져 있으면 어느 여행의 삭제인지 헷갈립니다. */
+  if (act === 'more'){
+    const wrap = b.nextElementSibling;
+    const open = wrap.classList.contains('hide');
+    document.querySelectorAll('#trips .tmore').forEach(x => x.classList.add('hide'));
+    document.querySelectorAll('#trips [data-act="more"]').forEach(x => x.textContent = '⋯');
+    wrap.classList.toggle('hide', !open);
+    b.textContent = open ? '✕' : '⋯';
+    return;
+  }
 
   /* 고치기 — 여행을 열고 수정 칸을 바로 펼칩니다. */
   if (act === 'report') return openTripReport(id);
@@ -5624,6 +5685,29 @@ const hm  = t => t ? String(t).slice(0,5) : '';
      시작 전       9월 5일 · 여행 전
      끝난 뒤       9월 18일 · 여행 후
    Day 번호는 start_date 로 계산합니다. 저장하지 않습니다. */
+/* ── 날짜 적는 법 ─────────────────────────────────────────────────────
+ * `2026-09-12 ~ 2026-09-15` 는 기계가 쓰는 모양입니다. 사람은 이렇게 안 씁니다.
+ * 게다가 화면마다 달랐습니다 — 목록은 `2026-09-12 ~ 2026-09-15`,
+ * 여행 안은 `09-12 ~ 09-15`. 같은 정보가 두 모양이면 읽는 사람이 두 번 읽습니다.
+ *
+ * 여기 하나로 모읍니다.
+ *   같은 달        9월 12일 – 15일
+ *   달이 다름      9월 28일 – 10월 3일
+ *   해가 다르면    2027년 1월 3일 – 6일   (올해면 해를 안 적습니다)
+ */
+
+function dateRange(a, b){
+  if (!a || !b) return '';
+  const s = asDate(a), e = asDate(b);
+  const nowY = new Date().getFullYear();
+  const y = s.getFullYear() !== nowY || e.getFullYear() !== nowY
+    ? `${s.getFullYear()}년 ` : '';
+  const same = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
+  return same
+    ? `${y}${s.getMonth() + 1}월 ${s.getDate()}일 – ${e.getDate()}일`
+    : `${y}${s.getMonth() + 1}월 ${s.getDate()}일 – ${e.getMonth() + 1}월 ${e.getDate()}일`;
+}
+
 function dayLabel(dateStr, t){
   const d = asDate(dateStr), s = asDate(t.start_date), e = asDate(t.end_date);
   const f = d.toLocaleDateString('ko-KR',
@@ -5685,7 +5769,7 @@ function drawTripHeader(){
   $('t_meta').textContent = [
     /* 제목과 목적지가 같으면 한 번만 씁니다 — "도쿄 / 도쿄 · 09-12…"는 군더더기입니다. */
     trip.destination === trip.title ? null : trip.destination,
-    `${trip.start_date.slice(5)} ~ ${trip.end_date.slice(5)} · ${days}일`,
+    `${dateRange(trip.start_date, trip.end_date)} · ${days}일`,
     trip.currency, now,
   ].filter(Boolean).join(' · ');
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
@@ -5858,7 +5942,7 @@ function drawLegs(){
 
   $('legs').innerHTML = legs.map(l =>
     `<div class="row"><span class="label"><b>${esc(l.destination)}</b>
-       <div class="memo">${esc(l.start_date)} ~ ${esc(l.end_date)} ·
+       <div class="memo">${esc(dateRange(l.start_date, l.end_date))} ·
          ${esc(l.currency)}</div></span>
      ${legs.length > 1
        ? `<button class="ghost" data-lact="del" data-id="${esc(l.id)}"
@@ -6460,8 +6544,9 @@ function drawPlans(){
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
   if (!show.length){
-    $('plans').innerHTML = `<div class="empty">${pickedDay ? '이 날은 비어 있어요.'
-      : '아직 일정이 없어요.<br>추가를 눌러 넣어보세요.'}</div>`;
+    $('plans').innerHTML = pickedDay
+      ? '<div class="empty">이 날은 비어 있어요.</div>'
+      : emptyDo('아직 일정이 없어요.', '첫 일정 넣기', 'addplanbtn');
     return;
   }
   let html = '', last = null, prev = null;
@@ -7198,7 +7283,7 @@ async function loadExpenses(){
 function drawExpenses(){
   if (!expenses.length){
     $('exptotal').innerHTML = '';
-    $('expenses').innerHTML = '<div class="empty">아직 지출이 없어요.</div>';
+    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.', '첫 지출 넣기', 'addexpbtn');
     return;
   }
   const byCur = {};
@@ -7803,7 +7888,8 @@ async function softDel(e, attr, table, reload, errBox){
 }
 
 /* ── 일행 ───────────────────────────────────────────────────────── */
-const ROLE_KO = { owner:'소유자', editor:'편집자', viewer:'보기만' };
+/* 화면에는 한국어만 씁니다. 여행 목록 배지가 'OWNER' 로 떠 있었습니다. */
+const ROLE_KO = { owner:'호스트', editor:'편집', viewer:'보기만' };
 
 async function loadMembers(){
   $('memerr').classList.add('hide');
@@ -8174,7 +8260,7 @@ async function render(session){
         $('joinname').textContent = data.title;
         $('joinwhen').textContent = data.expired
           ? '만료된 초대입니다'
-          : `${data.destination} · ${data.start_date} ~ ${data.end_date} · ` +
+          : `${data.destination} · ${dateRange(data.start_date, data.end_date)} · ` +
             `${ROLE_KO[data.role] || data.role}로 참여`;
       }
     }

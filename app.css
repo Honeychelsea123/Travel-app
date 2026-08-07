@@ -606,14 +606,30 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .shelf span:not(.ic){ flex:1; text-align:left; color:var(--ink-80); }
 .shelf b{ font-variant-numeric:tabular-nums; }
 
-/* 별점 — 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 */
-.stars{ display:inline-flex; gap:1px; flex:none; cursor:pointer; user-select:none; }
-.st{ position:relative; width:1.1em; height:1.1em; line-height:1;
+/* 별점 — 왼쪽 절반은 반 개, 오른쪽 절반은 한 개.
+   **반 칸이 곧 터치 목표라 별이 작으면 반 칸은 그 절반입니다.**
+   21px 짜리 별이면 반 칸이 10px 인데, 애플이 권하는 것은 44px 입니다.
+   잘못 눌러 들어간 별점은 발자국 숫자와 배지까지 바꿉니다.
+   별 자체는 그대로 두고 **누를 수 있는 자리만** 위아래로 넓힙니다 —
+   별을 키우면 목록 줄 높이가 다 밀립니다. */
+.stars{ display:inline-flex; gap:3px; flex:none; cursor:pointer; user-select:none;
+        padding:7px 0; margin:-7px 0; touch-action:manipulation; }
+.st{ position:relative; width:1.3em; height:1.1em; line-height:1;
      font-size:calc(21px * var(--ts)); color:var(--hairline); }
 .st::before{ content:'★'; position:absolute; left:0; top:0; }
 .st i{ position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap;
        color:#f5a623; font-style:normal; }
 .st i::before{ content:'★'; }
+
+/* ── 빈 화면 ── 무엇을 하면 되는지 그 자리에 둡니다 */
+.emptydo{ padding:26px 8px 22px; }
+.emptydo .t{ margin-bottom:14px; }
+.emptydo .primary{ flex:none; padding:11px 22px; }
+
+/* 여행 목록의 ⋯ 뒤에 숨긴 것 (수정·삭제·나가기).
+   되돌릴 수 없는 것을 손가락 닿는 자리에 상시로 두지 않습니다. */
+.tmore{ display:inline; }
+.tmore.hide{ display:none !important; }
 
 /* 별은 오른쪽에 크게 둡니다 — 채우는 맛이 있어야 매기게 됩니다.
    좁은 화면에서 자리가 모자라면 아랫줄로 내려가되 오른쪽 정렬은 그대로입니다. */
