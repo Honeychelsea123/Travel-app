@@ -8108,7 +8108,11 @@ if (window.visualViewport){
     /* **키보드가 올라왔는지는 --kb 로 알 수 없습니다.** 두 환경 다 0 입니다
        (사파리 695−303−392, 홈화면앱 793−369−424). 레이아웃이 줄지 않고
        보이는 창만 작아지므로, 판정은 그 차이로 합니다. */
-    coverBelow(typing() && (window.innerHeight - vv.height) > 60);
+    const kbUp = typing() && (window.innerHeight - vv.height) > 60;
+    coverBelow(kbUp);
+    /* body.kbon 은 --kb 로 판정하는데 그 값이 두 환경 다 0 이라 안 켜집니다.
+       **키보드가 떠 있는지를 물어야 하는 CSS 는 이쪽을 봐야 합니다.** */
+    document.body.classList.toggle('kbup', kbUp);
   };
   /* ── 안쪽이 따로 구르는 화면에서 쓰던 칸 붙잡아 두기 ────────────────
      새 여행 화면은 가운데(.wizbody)만 구릅니다. 키보드가 올라오면 그 칸이
@@ -8123,8 +8127,17 @@ if (window.visualViewport){
     const body = el && el.closest && el.closest('.wizbody');
     if (!body) return;
     const er = el.getBoundingClientRect(), br = body.getBoundingClientRect();
-    if (er.top >= br.top && er.bottom <= br.bottom) return;
-    body.scrollTop += (er.top + er.height / 2) - (br.top + br.height / 2);
+    /* **아래 SAFE 만큼은 없는 자리로 칩니다.** iOS 는 키보드 위에 ∧ ∨ ✓
+       막대를 그리는데, 그건 브라우저가 그린 것이 아니라 visualViewport 에
+       안 잡힙니다 — 잴 방법이 없습니다. 그래서 좌표로 딱 맞추려 하지 않고
+       넉넉히 비워둡니다. 남으면 그냥 여백이고, 모자라면 쓰던 칸이 가려집니다.
+       한쪽 실패만 아픈 상황에서는 안 아픈 쪽으로 넉넉히 갑니다. */
+    const SAFE = 120;
+    const top = br.top + 16, bottom = br.bottom - SAFE;
+    if (er.top >= top && er.bottom <= bottom) return;
+    /* 가운데가 아니라 **위쪽으로** 데려옵니다. 가운데로 두면 칸이 아래
+       절반에 앉는데, 가려지는 곳이 바로 거기입니다. */
+    body.scrollTop += er.top - top;
   }
   /* 키보드가 올라오는 동안 높이가 몇 번에 걸쳐 바뀝니다. 한 번만 재면
      올라오기 전 크기로 계산하게 됩니다. 몇 박자 나눠 다시 봅니다. */

@@ -390,6 +390,14 @@ body.kbon .assheet.wiz{ padding-bottom:0; }
 .assheet.wiz::before{ display:none; }   /* 끌어내릴 것이 아니니 손잡이도 없앱니다 */
 .wizbody{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
           padding-bottom:8px; }
+/* 키보드가 올라와 있는 동안에는 아래를 넉넉히 비웁니다. 마지막 칸이
+   맨 아래에 있으면 위로 끌어올릴 자리가 없어서, 아무리 굴려도 ∧ ∨ ✓
+   막대 밑에 깔린 채로 있습니다. 굴릴 자리를 만들어 주는 여백입니다. */
+body.kbup .wizbody{ padding-bottom:180px; }
+/* 아래 '계속' 줄은 어차피 막대와 키보드에 가립니다. 자리만 차지하고
+   눌리지도 않으니 걷습니다 — 그만큼 글 쓰는 자리가 넓어집니다.
+   키보드를 내리면(✓) 도로 나옵니다. */
+body.kbup .assheet.wiz .wizfoot{ display:none; }
 .wizfoot{ flex:none; padding:10px 0 max(16px, env(safe-area-inset-bottom));
           background:var(--canvas); border-top:1px solid var(--divider-soft); }
 .wizfoot .primary{ width:100%; }
