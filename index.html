@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b186">
+<link rel="stylesheet" href="app.css?v=b191">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -311,6 +311,11 @@
           </div>
         </div>
 
+        <!-- 취향 칸들은 새 여행 흐름에서도 씁니다. **DOM 은 이 하나뿐**이고
+             화면을 열 때 필요한 자리로 옮겨 담습니다(app.js 의 movePrefs).
+             두 벌로 두면 언젠가 한쪽만 고칩니다. -->
+        <div id="d_prefslot"></div>
+        <div id="prefblock">
         <div class="label" style="font-weight:600; margin-top:14px">속도</div>
         <div class="days" id="d_pace" style="margin-top:6px">
           <span class="day" data-pace="slow">느긋하게</span>
@@ -337,6 +342,7 @@
 
         <input id="d_note" maxlength="200" style="margin-top:14px"
                placeholder="더 하고 싶은 말 (선택) — 예: 아이랑 갑니다">
+        </div>
         <button class="primary" id="d_go" style="width:100%; margin-top:12px">
           일정 짜기</button>
         <div class="memo" style="text-align:center; margin-top:8px">
@@ -437,42 +443,97 @@
     </div>
 
     <!-- 새 여행 -->
-    <div class="card hide" id="newcard">
-      <h2>새 여행</h2>
-      <label for="f_title">제목</label>
-      <input id="f_title" placeholder="예: 도쿄 가을 여행" maxlength="60">
+    <!-- ── 새 여행 ── 한 화면에 다 묻지 않고 넷으로 나눕니다.
+         빈 칸이 여섯 개 있는 화면은 채우기 전에 닫게 됩니다.
+         제목은 안 묻습니다 — 도시를 고르면 "도쿄 여행"으로 지어두고
+         마지막 단계에서 고칠 수 있게 합니다. 물어볼 것을 하나 줄입니다. -->
+    <div class="card hide wiz" id="newcard">
+      <div class="wizhead">
+        <button class="ghost" id="wizback" aria-label="이전">←</button>
+        <div class="wizbar"><i id="wizfill"></i></div>
+        <button class="ghost" id="cancel">닫기</button>
+      </div>
+      <h2 id="wiztitle">어디로 가시나요?</h2>
 
-      <label for="f_q">어디로</label>
-      <!-- 이 칸이 검색이자 입력입니다. 아는 도시면 목록에서 고르고,
-           목록에 없으면 친 그대로 씁니다. 사용자가 둘을 구분할 필요가 없습니다. -->
-      <input id="f_q" placeholder="도쿄 / tokyo / 東京 / ㄷㅋ" autocomplete="off"
-             maxlength="40" enterkeyhint="done">
-      <div id="hits" class="hits hide"></div>
-      <div id="picked" class="picked hide">
-        <div class="p"><b id="p_name">—</b> <span class="c" id="p_country"></span>
-          <div class="c" id="p_note"></div></div>
-        <button class="small" id="repick">바꾸기</button>
+      <!-- 화면을 꽉 채우므로 가운데만 구르고 머리말과 '계속'은 붙어 있습니다.
+           달력처럼 긴 단계에서 단추를 찾아 끝까지 내려가지 않게 합니다. -->
+      <div class="wizbody">
+
+      <!-- 1. 어디로 -->
+      <div class="wizstep" data-step="1">
+        <!-- 이 칸이 검색이자 입력입니다. 아는 도시면 목록에서 고르고,
+             목록에 없으면 친 그대로 씁니다. 사용자가 둘을 구분할 필요가 없습니다. -->
+        <input id="f_q" placeholder="예: 도쿄, 파리, 다낭" autocomplete="off"
+               maxlength="40" enterkeyhint="done">
+        <div id="hits" class="hits hide"></div>
+
+        <!-- 빈 칸만 놓아두면 뭘 칠 수 있는 곳인지 모릅니다.
+             많이 가는 곳을 몇 개 깔아두면 한 번 눌러 넘어갑니다. -->
+        <div id="wizpop" class="poplist"></div>
+
+        <!-- 고르고 나면 사진으로 보여줍니다. 글자만 있으면 맞게 골랐는지
+             확신이 안 섭니다 — 사진은 그 자리에서 알아봅니다. -->
+        <div id="picked" class="citycard hide">
+          <button class="x" id="repick" aria-label="지우기">×</button>
+          <div class="ph" id="pc_img"></div>
+          <div class="nm"><b id="p_name">—</b>
+            <span class="c" id="p_country"></span>
+            <span class="c" id="p_note"></span></div>
+        </div>
+
+        <!-- 목록에 없는 곳이면 나라만 더 물어봅니다. 도시 이름은 위에 이미 쳤습니다. -->
+        <div id="freewrap" class="hide">
+          <label for="f_country">국가</label>
+          <select id="f_country"></select>
+          <!-- 나라만 골라도 무엇이 채워지는지 보여줍니다.
+               안 보이면 통화나 시간대가 엉뚱해도 모르고 지나갑니다. -->
+          <div class="c" id="c_note" style="margin-top:6px"></div>
+        </div>
       </div>
 
-      <!-- 목록에 없는 곳이면 나라만 더 물어봅니다. 도시 이름은 위에 이미 쳤습니다. -->
-      <div id="freewrap" class="hide">
-        <label for="f_country">국가</label>
-        <select id="f_country"></select>
-        <!-- 나라만 골라도 무엇이 채워지는지 보여줍니다.
-             안 보이면 통화나 시간대가 엉뚱해도 모르고 지나갑니다. -->
-        <div class="c" id="c_note" style="margin-top:6px"></div>
+      <!-- 2. 언제 — 달력에서 시작을 누르고 끝을 누릅니다.
+           날짜 칸 두 개는 기기 선택기를 두 번 열게 하고, 며칠짜리인지도
+           보이지 않습니다. 달력이면 기간이 한눈에 보입니다.
+           값은 아래 숨은 칸에 그대로 담깁니다 — 읽는 쪽 코드는 안 바뀝니다. -->
+      <div class="wizstep hide" data-step="2">
+        <input type="hidden" id="f_start"><input type="hidden" id="f_end">
+        <div class="calweek">
+          <span class="sun">일</span><span>월</span><span>화</span><span>수</span>
+          <span>목</span><span>금</span><span class="sat">토</span>
+        </div>
+        <div id="wizcal"></div>
       </div>
 
-      <div class="two">
-        <div><label for="f_start">시작</label><input type="date" id="f_start"></div>
-        <div><label for="f_end">끝</label><input type="date" id="f_end"></div>
+      <!-- 3. 취향 — 여기 자리에 아래 prefblock 을 옮겨 담습니다.
+           초안 화면과 **같은 DOM 하나**를 씁니다. 두 벌로 만들면
+           한쪽만 고치는 날이 옵니다. -->
+      <div class="wizstep hide" data-step="3"><div id="wiz_prefslot"></div></div>
+
+      <!-- 4. 마지막 -->
+      <div class="wizstep hide" data-step="4">
+        <label for="f_title">여행 이름</label>
+        <input id="f_title" placeholder="예: 도쿄 가을 여행" maxlength="60">
+        <div class="wizpick" style="margin-top:16px">
+          <button class="pickcard" id="wiz_ai">
+            <span class="e">✨</span>
+            <b>AI가 짜줄게요</b>
+            <span class="c">고르신 취향대로 일정을 채워드려요</span>
+          </button>
+          <button class="pickcard" id="wiz_manual">
+            <span class="e">📝</span>
+            <b>내가 직접 채울게요</b>
+            <span class="c">여행만 만들고 일정은 나중에</span>
+          </button>
+        </div>
       </div>
 
-      <div style="margin-top:16px; display:flex; gap:8px">
-        <button class="primary" id="create">만들기</button>
-        <button class="small" id="cancel">취소</button>
+      </div><!-- /wizbody -->
+
+      <div class="wizfoot" id="wizfoot">
+        <pre id="formerr" class="hide"></pre>
+        <div class="memo" id="wizdays"></div>
+        <button class="primary" id="wiznext">계속</button>
       </div>
-      <pre id="formerr" class="hide"></pre>
     </div>
     </div><!-- /listview -->
 
@@ -1340,10 +1401,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b186</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b191</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b186"></script>
+<script type="module" src="app.js?v=b191"></script>
 </body>
 </html>
 

@@ -857,8 +857,9 @@ $('logout').addEventListener('click', async () => {
 });
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
-const GRADE = { dense:'지하철 촘촘', normal:'대중교통 보통',
-                limited:'대중교통 약함', car:'차로 다니는 곳' };
+/* 대중교통 등급(transit_grade)은 더 이상 화면에 안 씁니다. 알아도 할 수 있는
+   일이 없고, 정작 필요한 이동 시간은 일정 화면이 따로 알려줍니다.
+   등급 자체는 그 계산의 재료라 DB 에는 그대로 있습니다. */
 
 /* 뒤에서 다시 받아오는 중인지. 두 번 겹쳐 부르지 않으려고 둡니다. */
 let citiesRefreshing = false;
@@ -895,8 +896,13 @@ async function refreshCities(){
                'center_lat,center_lng';
   /* fame 은 성향 카드가 씁니다 (033). 없으면 그 판정만 건너뛰면 되므로
      아래 단계별 후퇴에서 제일 먼저 떨어져 나가게 둡니다. */
+  /* pop_rank 는 새 여행 첫 화면의 추천 순서입니다 (051). 아직 없는 DB 가
+     있을 수 있어 한 칸 따로 둡니다 — 같이 묶으면 이게 없다는 이유로
+     fame 까지 떨어져 나가서 성향 카드가 조용히 망가집니다. */
   let cs = await netTimeout(sb.from('cities')
-    .select(BASE + ',image_url,summary,summary_url,fame').order('name'));
+    .select(BASE + ',image_url,summary,summary_url,fame,pop_rank').order('name'));
+  if (cs.error && !isOffline(cs.error)) cs = await sb.from('cities')
+    .select(BASE + ',image_url,summary,summary_url,fame').order('name');
   /* 연결 문제로 실패한 것이면 아래 단계별 후퇴를 돌 이유가 없습니다.
      세 번을 더 기다리면 그만큼 화면이 늦게 뜹니다. 바로 캐시로 갑니다. */
   if (cs.error && isOffline(cs.error)){
@@ -944,6 +950,9 @@ function useCities(cityRows, countryRows){
   $('f_country').innerHTML =
     countryRows.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
   drawCountryNote();
+  /* 도시가 새로 들어왔으면 '많이 가는 곳'도 다시 뽑습니다. */
+  delete $('wizpop').dataset.done;
+  drawPop();
 }
 
 /* 나라만 골랐을 때 무엇이 채워질지 미리 보여줍니다.
@@ -972,15 +981,51 @@ function search(q){
   }).slice(0, 40);
 }
 
+/* 나라 코드로 국기를 만듭니다. ISO 3166-1 두 글자를 지역표시기호로 옮기는
+   규칙이라 나라마다 따로 적어둘 것이 없습니다 — 적어두면 언젠가 틀립니다. */
+function flagOf(code){
+  if (!/^[A-Za-z]{2}$/.test(code || '')) return '';
+  return String.fromCodePoint(...[...code.toUpperCase()]
+    .map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+}
+
+/* 첫 화면에 깔아둘 '많이 가는 곳'. 순서는 DB 의 pop_rank 가 정합니다(051) —
+   여기 적어두면 도시를 더 넣어도 이 목록만 옛날 것으로 남습니다.
+   pop_rank 는 나라마다 한 곳씩만 매겨져 있습니다. fame 으로는 못 합니다.
+   1등급만 79곳이라 이름순으로 잘리고, 그러면 일본 대표가 '교토'가 됩니다.
+
+   국내는 뺍니다 — 어디로 나갈지 정하는 자리이고, 국내는 쳐서 바로 찾습니다. */
+const POP_N = 8;
+function drawPop(){
+  const box = $('wizpop');
+  const busy = $('f_q').value.trim() || picked;
+  box.classList.toggle('hide', !!busy);
+  if (busy || !cities || box.dataset.done) return;
+  const top = cities.filter(c => c.pop_rank != null && c.country !== 'KR')
+    .sort((a, b) => a.pop_rank - b.pop_rank).slice(0, POP_N);
+  if (!top.length) return;              /* 051 을 아직 안 돌렸으면 조용히 접습니다 */
+  box.innerHTML = top.map(c =>
+    `<button type="button" class="poprow" data-cid="${esc(c.id)}">
+       <span class="fl">${flagOf(c.country)}</span><b>${esc(c.name)}</b>
+       <span class="c">${esc(countryName[c.country] || c.country)}</span></button>`).join('');
+  box.dataset.done = '1';
+}
+$('wizpop').addEventListener('click', e => {
+  const b = e.target.closest('[data-cid]'); if (!b) return;
+  const c = cities?.find(x => String(x.id) === b.dataset.cid); if (!c) return;
+  hitList = [c]; cursor = 0; pick(0);
+});
+
 function drawHits(){
   const box = $('hits'), q = $('f_q').value.trim();
+  drawPop();
   if (!q){ box.classList.add('hide'); $('freewrap').classList.add('hide'); return; }
 
   box.classList.remove('hide');
   box.innerHTML = hitList.map((c, i) =>
     `<div class="hit${i === cursor ? ' on' : ''}" data-i="${i}">
        <b>${esc(c.name)}</b><span class="c">${esc(countryName[c.country] || c.country)}</span>
-       <span class="r">${esc(GRADE[c.transit_grade] || '')}</span></div>`
+       <span class="r">${flagOf(c.country)}</span></div>`
   ).join('')
   + `<div class="hit${cursor === hitList.length ? ' on' : ''}" data-i="${hitList.length}">
        <b>${esc(q)}</b><span class="c">그대로 쓰기</span>
@@ -1011,10 +1056,17 @@ function pick(i){
   $('freewrap').classList.add('hide');
   $('hits').classList.add('hide');
   $('f_q').classList.add('hide');
+  $('wizpop').classList.add('hide');
   $('picked').classList.remove('hide');
+  /* 사진이 없는 도시가 아직 많습니다. 그때는 첫 글자를 큼직하게 둡니다 —
+     빈 회색 네모만 있으면 안 불러온 것인지 없는 것인지 모릅니다. */
+  const im = $('pc_img');
+  im.style.backgroundImage = picked.image_url ? `url("${picked.image_url}")` : '';
+  im.textContent = picked.image_url ? '' : picked.name.slice(0, 1);
   $('p_name').textContent = picked.name;
-  $('p_country').textContent = countryName[picked.country] || picked.country;
-  $('p_note').textContent = `${picked.currency} · ${GRADE[picked.transit_grade] || ''}`;
+  $('p_country').textContent =
+    `${flagOf(picked.country)} ${countryName[picked.country] || picked.country}`.trim();
+  $('p_note').textContent = picked.currency || '';
 }
 
 $('f_q').addEventListener('input', () => {
@@ -1044,14 +1096,10 @@ $('newbtn').addEventListener('click', async () => {
   if ($('newcard').classList.contains('hide')) return;
   await loadCities();
 
-  /* 기본값: 오늘부터 3박 4일. 비워두면 날짜를 두 번 고르게 되는데
-     대부분은 그대로 두거나 며칠만 옮깁니다. */
-  const d = new Date();
-  const iso = n => new Date(d.getTime() + n*864e5).toISOString().slice(0,10);
-  if (!$('f_start').value) $('f_start').value = iso(0);
-  if (!$('f_end').value)   $('f_end').value   = iso(3);
-  syncDates();
-  $('f_title').focus();
+  /* 날짜는 미리 채우지 않습니다. 달력에서 직접 고르는 편이 빠르고,
+     미리 채워두면 '오늘 출발'인 채로 지나쳐 버립니다. */
+  drawPop();
+  wizShow(1);
 });
 
 $('cancel').addEventListener('click', () => {
@@ -1059,18 +1107,152 @@ $('cancel').addEventListener('click', () => {
   $('formerr').classList.add('hide');
 });
 
-/* 끝나는 날이 시작보다 앞설 수 없게 선택기 자체를 막습니다.
-   눌러놓고 나중에 혼나는 것보다 못 누르게 하는 편이 낫습니다.
-   시작일을 뒤로 옮겨 역전되면 끝나는 날을 같이 끌고 갑니다. */
-function syncDates(){
-  const s = $('f_start').value;
-  $('f_end').min = s || '';
-  if (s && $('f_end').value && $('f_end').value < s) $('f_end').value = s;
-}
-$('f_start').addEventListener('change', syncDates);
+/* ── 새 여행 단계 화면 ────────────────────────────────────────────────
+ * 예전에는 제목·도시·나라·시작·끝을 한 화면에서 다 물었습니다. 빈 칸이
+ * 여섯 개 있는 화면은 채우기 전에 닫게 됩니다. 한 번에 하나만 묻습니다.
+ *
+ *   1 어디로  2 언제  3 취향  4 이름과 갈래(AI / 직접)
+ *
+ * **제목은 안 묻습니다.** 도시를 고르면 "도쿄 여행"으로 지어두고 마지막에
+ * 고칠 수 있게 합니다 — 물어볼 것이 하나 줄고, 대개는 그대로 씁니다.
+ *
+ * 취향 칸은 초안 화면과 **DOM 하나를 같이 씁니다**(movePrefs). 두 벌로
+ * 만들면 언젠가 한쪽만 고칩니다. */
+const WIZ_TITLES = {
+  1: '어디로 가시나요?',
+  2: '언제 가시나요?',
+  3: '어떤 여행이 좋으세요?',
+  4: '이름을 정해주세요',
+};
+let wizStep = 1;
 
-$('create').addEventListener('click', async () => {
-  const btn = $('create');
+/* 취향 칸 한 벌을 필요한 자리로 옮겨 담습니다. */
+function movePrefs(slotId){
+  const slot = $(slotId), block = $('prefblock');
+  if (slot && block && block.parentElement !== slot) slot.appendChild(block);
+}
+
+function wizShow(n){
+  wizStep = Math.min(4, Math.max(1, n));
+  $('newcard').querySelectorAll('.wizstep').forEach(s =>
+    s.classList.toggle('hide', +s.dataset.step !== wizStep));
+  $('wiztitle').textContent = WIZ_TITLES[wizStep];
+  $('wizfill').style.width = (wizStep * 25) + '%';
+  $('wizback').classList.toggle('hide', wizStep === 1);
+  /* 마지막 단계에서는 아래 '계속'이 필요 없습니다 — 두 카드가 곧 결정입니다.
+     그러면 아래 칸이 통째로 빌 수 있으니 구분선도 같이 걷습니다. */
+  $('wiznext').classList.toggle('hide', wizStep === 4);
+  $('wizfoot').classList.toggle('empty', wizStep === 4);
+  $('formerr').classList.add('hide');
+  /* 단계를 넘길 때마다 위로. 달력을 한참 내렸다가 다음으로 가면
+     새 단계가 가운데쯤부터 보입니다. */
+  $('newcard').querySelector('.wizbody').scrollTop = 0;
+  wizDays();                          /* 2단계가 아니면 스스로 지웁니다 */
+  if (wizStep === 2) wizCal(true);
+  if (wizStep === 3) movePrefs('wiz_prefslot');
+  if (wizStep === 4 && !$('f_title').value.trim()){
+    const dest = picked ? picked.name : $('f_q').value.trim();
+    if (dest) $('f_title').value = `${dest} 여행`;
+  }
+}
+
+/* 다음으로 넘어가기 전에 그 단계에서 필요한 것만 봅니다.
+   마지막에 몰아서 검사하면 어느 단계로 돌아가야 하는지 모릅니다. */
+function wizCheck(n){
+  if (n === 1){
+    const dest = picked ? picked.name : $('f_q').value.trim();
+    if (!dest) return '어디로 가는지 알려주세요.';
+    if (!picked && !$('f_country').value) return '어느 나라인지 골라주세요.';
+  }
+  if (n === 2){
+    const s = $('f_start').value, e = $('f_end').value;
+    if (!s || !e) return '날짜를 골라주세요.';
+    if (e < s)    return '끝나는 날이 시작보다 빠릅니다.';
+    const days = Math.round((new Date(e) - new Date(s)) / 864e5) + 1;
+    if (days > 365) return `${days}일은 너무 깁니다. 날짜를 다시 봐주세요.`;
+  }
+  return '';
+}
+
+$('wiznext').addEventListener('click', () => {
+  const why = wizCheck(wizStep);
+  if (why) return fail(why, 'form');
+  wizShow(wizStep + 1);
+});
+$('wizback').addEventListener('click', () => wizShow(wizStep - 1));
+
+/* ── 달력 ────────────────────────────────────────────────────────────
+ * 날짜 칸 두 개는 기기 선택기를 두 번 열게 하고, 며칠짜리인지도 안 보입니다.
+ * 여기서는 시작을 누르고 끝을 누릅니다. 고른 값은 숨은 f_start/f_end 에
+ * 그대로 담기므로, 날짜를 읽는 쪽 코드는 하나도 안 바뀝니다.
+ *
+ * 오늘부터 14달을 한 번에 그려 세로로 굴립니다. 화살표로 달을 넘기게 하면
+ * 월말에서 시작해 다음 달에 끝나는 여행이 두 화면에 걸립니다. */
+const CAL_MONTHS = 14;
+/* seek 를 주면 이미 고른 날이 보이는 자리로 굴려줍니다 — 뒤로 갔다 오면
+   달력이 오늘 달부터 다시 시작해서 고른 날을 또 찾게 됩니다. */
+function wizCal(seek){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tkey  = ymd(today);
+  const s = $('f_start').value, e = $('f_end').value;
+  let html = '';
+  for (let m = 0; m < CAL_MONTHS; m++){
+    const first = new Date(today.getFullYear(), today.getMonth() + m, 1);
+    const y = first.getFullYear(), mo = first.getMonth();
+    const last = new Date(y, mo + 1, 0).getDate();
+    let cells = '<span></span>'.repeat(first.getDay());
+    for (let d = 1; d <= last; d++){
+      const k = `${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      /* 지난 날은 못 고릅니다. 고를 수 있게 두면 나중에 "왜 지난 여행이
+         다가오는 목록에 없냐"는 이야기가 됩니다. */
+      const off = k < tkey;
+      const cls = [
+        off ? '' : (k === s ? 's' : ''), off ? '' : (k === e ? 'e' : ''),
+        (!off && s && e && k > s && k < e) ? 'in' : '',
+        k === tkey ? 'today' : '',
+      ].filter(Boolean).join(' ');
+      cells += `<button type="button" class="cd ${cls}" data-d="${k}"${off ? ' disabled' : ''}><i>${d}</i></button>`;
+    }
+    html += `<div class="calmon"><h3>${y}년 ${mo+1}월</h3><div class="calgrid">${cells}</div></div>`;
+  }
+  $('wizcal').innerHTML = html;
+  wizDays();
+  if (seek && s){
+    const cell = $('wizcal').querySelector(`[data-d="${s}"]`);
+    cell?.closest('.calmon')?.scrollIntoView({ block:'start' });
+  }
+}
+
+/* 누를 때마다: 시작이 없거나 이미 둘 다 골랐으면 새로 시작합니다.
+   시작보다 앞을 누르면 그 날이 새 시작이 됩니다 — "다시 처음부터"보다
+   그쪽이 하려던 일에 가깝습니다. */
+$('wizcal').addEventListener('click', ev => {
+  const b = ev.target.closest('.cd'); if (!b || b.disabled) return;
+  const k = b.dataset.d, s = $('f_start').value, e = $('f_end').value;
+  if (!s || e || k < s){ $('f_start').value = k; $('f_end').value = ''; }
+  else                   $('f_end').value = k;
+  wizCal();
+});
+
+/* 며칠인지 바로 보여줍니다. 날짜 두 개를 머릿속으로 빼게 하지 않습니다.
+   달력을 보고 있을 때만 적습니다 — 뒤 단계까지 따라다니면 그 자리에
+   'AI가 짜줄게요'를 눌러야 하는데 날짜가 대신 앉아 있습니다. */
+function wizDays(){
+  const s = $('f_start').value, e = $('f_end').value;
+  if (wizStep !== 2) return void ($('wizdays').textContent = '');
+  $('wizdays').textContent =
+    !s ? '' :
+    !e ? `${s.slice(5).replace('-','월 ')}일 — 끝나는 날도 눌러주세요` :
+         `${s.slice(5).replace('-','.')} – ${e.slice(5).replace('-','.')} · ` +
+         `${Math.round((new Date(e) - new Date(s)) / 864e5) + 1}일`;
+}
+
+/* 마지막 갈래. 여행을 만드는 것까지는 같고, 그다음이 다릅니다. */
+$('wiz_manual').addEventListener('click', () => createTrip(false));
+$('wiz_ai').addEventListener('click',     () => createTrip(true));
+
+async function createTrip(withAi){
+  const btn = withAi ? $('wiz_ai') : $('wiz_manual');
   $('formerr').classList.add('hide');
 
   const title = $('f_title').value.trim();
@@ -1078,33 +1260,56 @@ $('create').addEventListener('click', async () => {
   const dest  = picked ? picked.name : $('f_q').value.trim();
   const start = $('f_start').value, end = $('f_end').value;
 
-  if (!title)                return fail('제목을 적어주세요.', 'form');
-  if (!dest)                 return fail('어디로 가는지 적어주세요.', 'form');
-  if (!start || !end)        return fail('날짜를 골라주세요.', 'form');
-  /* min 을 걸어뒀지만 키보드로 직접 치면 뚫립니다. 여기서 한 번 더 봅니다. */
-  if (end < start)           return fail('끝나는 날이 시작보다 빠릅니다.', 'form');
-  const days = Math.round((new Date(end) - new Date(start)) / 864e5) + 1;
-  if (days > 365)            return fail(`${days}일은 너무 깁니다. 날짜를 다시 봐주세요.`, 'form');
+  /* 단계마다 이미 봤지만 여기서 한 번 더 봅니다. 단계를 건너뛸 길이
+     생기더라도 (뒤로 갔다 오거나, 날짜 칸을 키보드로 직접 치거나)
+     빈 여행이 만들어지지는 않게 합니다. */
+  if (!title)                return fail('이름을 적어주세요.', 'form');
+  const why = wizCheck(1) || wizCheck(2);
+  if (why)                   return fail(why, 'form');
 
   /* 도시를 골랐으면 나라·시간대·통화·이동상수는 DB 트리거가 채웁니다.
-     목록에 없는 곳이면 나라만 넘기고, 통화와 언어는 나라에서 옵니다. */
-  const row = { title, destination: dest, start_date: start, end_date: end };
+     목록에 없는 곳이면 나라만 넘기고, 통화와 언어는 나라에서 옵니다.
+
+     id 를 여기서 미리 정합니다. .select('id') 로 돌려받으려 하면
+     "violates row-level security policy" 로 막힙니다 — 참여자 줄이
+     INSERT 트리거 뒤에 생겨서, 방금 만든 여행도 그 찰나에는 못 읽습니다
+     (makeDraftTrip 에 같은 사연이 적혀 있습니다). */
+  const id = (crypto.randomUUID ? crypto.randomUUID()
+                                : URL.createObjectURL(new Blob()).slice(-36));
+  const row = { id, created_by: me.id,
+                title, destination: dest, start_date: start, end_date: end };
   if (picked) row.city_id = picked.id;
   else        row.country = $('f_country').value;
 
+  const label = btn.innerHTML;
   btn.disabled = true; btn.innerHTML = '<span class="load">만드는 중…</span>';
   const { error } = await sb.from('trips').insert(row);
-  btn.disabled = false; btn.textContent = '만들기';
+  btn.disabled = false; btn.innerHTML = label;
   if (error) return fail(error, 'form');
 
+  wizReset();
+  await loadTrips();
+
+  /* 여기서 갈립니다. 직접 채우겠다면 만든 여행을 바로 열어줍니다 —
+     목록으로 돌려보내면 방금 만든 것을 다시 찾아 눌러야 합니다.
+     AI 에게 맡기겠다면 초안 화면을 그 여행으로 열고 바로 짜기 시작합니다.
+     취향 칸은 같은 DOM 이라 고른 그대로 따라갑니다. */
+  if (withAi){ await openDraft(id); $('d_go').click(); }
+  else         openTrip(id);
+}
+
+/* 다음에 열 때 앞사람 흔적이 남아 있으면 안 됩니다. */
+function wizReset(){
   $('newcard').classList.add('hide');
   $('f_title').value = ''; $('f_q').value = '';
+  $('f_start').value = ''; $('f_end').value = '';
+  $('wizdays').textContent = '';
   picked = null; hitList = []; cursor = 0;
   $('picked').classList.add('hide');
   $('f_q').classList.remove('hide');
   drawHits();                       /* 빈 값이면 후보와 나라 칸을 같이 접습니다 */
-  await loadTrips();
-});
+  wizStep = 1;                      /* 화면은 이미 닫혔으니 그리지 않고 자리만 되돌립니다 */
+}
 
 /* ── 여행 목록 ──────────────────────────────────────────────────── */
 /* ── 앱 하단바 ─────────────────────────────────────────────────────
@@ -1322,12 +1527,14 @@ async function loadChats(tripId){
   q = tripId ? q.eq('trip_id', tripId) : q.is('trip_id', null);
   const { data } = await netTimeout(q.order('created_at').limit(40));
   drawChats(data || []);
-  /* 한도가 없으면 limit 이 null 로 옵니다(db/046). 그대로 찍으면
-     "오늘 3/null회"가 됩니다. 남은 횟수를 보여주는 이유가 "줄어드는 게
-     보이면 납득한다"였으니, 줄어들 것이 없으면 셈을 안 보여주는 게 맞습니다. */
+  /* 쓴 횟수와 **남은 횟수를 따로** 적습니다. 전에는 "3/15회"였는데,
+     이건 읽는 사람이 빼야 남은 수가 나옵니다 — 정작 궁금한 쪽을 안 알려준
+     셈입니다. 한도가 없으면 limit 이 null 로 옵니다(db/046). 그때 그대로
+     찍으면 "3/null회"가 되므로 남은 자리에는 '무제한'을 적습니다. */
   const { data: left } = await sb.rpc('ai_left');
   if (left) $('ai_left').textContent = left.limit == null
-    ? `오늘 ${left.used}회` : `오늘 ${left.used}/${left.limit}회`;
+    ? `오늘 ${left.used}회 · 남은 횟수 무제한`
+    : `오늘 ${left.used}회 · 남은 ${Math.max(0, left.limit - left.used)}회`;
 }
 
 /* AI 는 마크다운으로 씁니다. 그대로 찍으면 별표가 글자로 보입니다.
@@ -2189,14 +2396,14 @@ async function openCity(id){
     $('cv_summary').textContent = c.summary;
     $('cv_src').href = c.summary_url || '#';
   }
-  /* API 없이 이미 아는 것들 — 나라·대륙·통화·시간대·이동 방식. */
-  const GRADE_K = { dense:'지하철 촘촘', normal:'대중교통 보통',
-                    limited:'대중교통 약함', car:'차로 다니는 곳' };
+  /* API 없이 이미 아는 것들 — 나라·대륙·통화·시간대.
+     '다니기'(대중교통 등급)는 걷어냈습니다. 등급을 알아도 할 수 있는 일이
+     없고, 정작 필요한 것은 이동 시간인데 그건 일정 화면이 따로 말해줍니다.
+     transit_grade 자체는 그 계산에 계속 쓰이므로 DB 에는 그대로 둡니다. */
   $('cv_facts').innerHTML = [
     ['대륙', continentOf[c.country]],
     ['통화', c.currency],
     ['현지 시각', (localTime(c.timezone) || '').replace('현지 ', '')],
-    ['다니기', GRADE_K[c.transit_grade]],
   ].filter(([, v]) => v).map(([k, v]) =>
     `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
 
@@ -4029,7 +4236,9 @@ function readDraft(id){
 }
 const dropDraft = id => { try { localStorage.removeItem(DKEY(id)); } catch {} };
 
-async function openDraft(){
+/* preselect 를 주면 그 여행을 고른 채로 엽니다 — 새 여행 마지막 단계에서
+   'AI 가 짜줄게요' 로 들어올 때 씁니다. */
+async function openDraft(preselect){
   const today = ymd(new Date());
   const { data } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date')
@@ -4038,13 +4247,15 @@ async function openDraft(){
   ['homeview','listview','rateview','aiview','setview','cityview']
     .forEach(v => $(v).classList.add('hide'));
   $('draftview').classList.remove('hide');
+  movePrefs('d_prefslot');        /* 새 여행 화면에 가 있었다면 도로 가져옵니다 */
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'draft') history.pushState({ t2:'draft' }, '');
 
   /* 여행이 하나도 없으면 새로 만드는 쪽이 처음부터 열려 있어야 합니다. */
   const list = data || [];
-  draftTrip = list.some(t => t.id === draftTrip) ? draftTrip
-            : (list[0]?.id || 'new');
+  if (preselect) draftTrip = preselect;
+  else draftTrip = list.some(t => t.id === draftTrip) ? draftTrip
+                 : (list[0]?.id || 'new');
   $('d_trips').innerHTML = list.map(t => {
     const n = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
     return `<span class="day${t.id === draftTrip ? ' on' : ''}" data-dtrip="${esc(t.id)}">
@@ -4109,17 +4320,20 @@ function closeDraft(fromPop){
 }
 $('draftback').addEventListener('click', () => closeDraft());
 
-/* 칩 고르기. 속도와 아침은 하나만, 뭘 위주로는 여러 개입니다. */
 $('draftview').addEventListener('click', e => {
   const t = e.target.closest('[data-dtrip]');
-  if (t){
-    draftTrip = t.dataset.dtrip;
-    document.querySelectorAll('#d_trips .day').forEach(x =>
-      x.classList.toggle('on', x.dataset.dtrip === draftTrip));
-    $('d_new').classList.toggle('hide', draftTrip !== 'new');
-    showSavedDraft();          /* 여행마다 초안이 따로 있습니다 */
-    return;
-  }
+  if (!t) return;
+  draftTrip = t.dataset.dtrip;
+  document.querySelectorAll('#d_trips .day').forEach(x =>
+    x.classList.toggle('on', x.dataset.dtrip === draftTrip));
+  $('d_new').classList.toggle('hide', draftTrip !== 'new');
+  showSavedDraft();            /* 여행마다 초안이 따로 있습니다 */
+});
+
+/* 칩 고르기. 속도와 아침은 하나만, 뭘 위주로는 여러 개입니다.
+   **prefblock 자신에 답니다.** 이 칸들은 새 여행 3단계와 초안 화면을
+   오가므로, 바깥 화면에 걸어두면 옮겨간 쪽에서 안 눌립니다. */
+$('prefblock').addEventListener('click', e => {
   for (const [box, key] of [['d_pace','pace'], ['d_morning','morning']]){
     const one = e.target.closest(`#${box} [data-${key}]`);
     if (one){
@@ -4129,7 +4343,7 @@ $('draftview').addEventListener('click', e => {
     }
   }
   const f = e.target.closest('#d_focus [data-focus]');
-  if (f) return f.classList.toggle('on');
+  if (f) f.classList.toggle('on');
 });
 
 $('d_go').addEventListener('click', async () => {
@@ -6453,6 +6667,9 @@ function syncSheets(){
   const grab = e => {
     const sheet = e.target.closest('.assheet, .aisheet');
     if (!sheet) return;
+    /* 새 여행은 화면을 꽉 채우므로 끌어내릴 것이 아닙니다. 게다가 그 자리에
+       뒤로가기 단추가 있어서, 잡으면 단추를 못 누릅니다. */
+    if (sheet.classList.contains('wiz')) return;
     /* 손잡이 자리(위쪽 26px)에서 시작한 것만 잡습니다. 안쪽 스크롤과 안 부딪칩니다. */
     if (e.clientY - sheet.getBoundingClientRect().top > 26) return;
     const y0 = e.clientY;

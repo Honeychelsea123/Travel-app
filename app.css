@@ -360,6 +360,107 @@ input:focus, select:focus{ font-size:max(16px, calc(14px * var(--ts))); }
 .sw input:disabled + span{ opacity:.4; }
 .sw input:focus-visible + span{ outline:2px solid var(--primary-focus); outline-offset:3px; }
 
+/* ── 새 여행 단계 화면 ────────────────────────────────────────────────
+ * 한 화면에 빈 칸 여섯 개를 늘어놓으면 채우기 전에 닫습니다.
+ * 한 번에 하나만 묻고, 어디까지 왔는지 막대로 보여줍니다. */
+/* 시트가 아니라 화면을 꽉 채웁니다. 새 여행은 잠깐 묻고 마는 것이 아니라
+   네 단계를 거치는 일이라, 뒤가 비쳐 보이면 오히려 어수선합니다.
+   시트 뼈대(.assheet)는 그대로 두고 크기만 덮어씁니다 — 뒷판·키보드 덮개
+   같은 것이 이미 거기 붙어 있어서, 따로 만들면 그걸 다 다시 해야 합니다. */
+.assheet.wiz{ top:0; height:var(--vvh, 100dvh); max-height:none;
+              border-radius:0; overflow:hidden;
+              display:flex; flex-direction:column;
+              padding:max(14px, env(safe-area-inset-top)) 18px 0; }
+body.kbon .assheet.wiz{ padding-bottom:0; }
+.assheet.wiz::before{ display:none; }   /* 끌어내릴 것이 아니니 손잡이도 없앱니다 */
+.wizbody{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+          padding-bottom:8px; }
+.wizfoot{ flex:none; padding:10px 0 max(16px, env(safe-area-inset-bottom));
+          background:var(--canvas); border-top:1px solid var(--divider-soft); }
+.wizfoot .primary{ width:100%; }
+.wizfoot .memo{ margin:0 0 10px; }
+.wizfoot .memo:empty{ display:none; }
+.wizfoot.empty{ border-top:0; padding-top:0; }
+
+.wizhead{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.wizhead .ghost{ flex:none; padding:6px 8px; }
+/* 진행 막대. 숫자('2/4')보다 이쪽이 한눈에 들어옵니다. */
+.wizbar{ flex:1; height:4px; border-radius:2px; background:var(--hairline);
+         overflow:hidden; }
+.wizbar i{ display:block; height:100%; width:25%; border-radius:2px;
+           background:var(--primary); transition:width var(--t) var(--ease); }
+/* 단계 제목은 크게. 지금 뭘 묻는지가 화면에서 제일 커야 합니다. */
+.wiz h2{ font-size:calc(23px * var(--ts)); line-height:1.35; margin:0 0 16px; }
+.wizstep{ animation:wizin var(--t) var(--ease); }
+@keyframes wizin{ from{ opacity:0; transform:translateX(10px) } to{ opacity:1; transform:none } }
+@media (prefers-reduced-motion: reduce){ .wizstep{ animation:none } }
+
+/* 마지막 단계의 두 갈래. 단추가 아니라 고르는 카드로 보이게 합니다. */
+.wizpick{ display:flex; flex-direction:column; gap:10px; }
+.pickcard{ display:block; width:100%; text-align:left; padding:16px 18px;
+           border-radius:var(--r-lg); border:1px solid var(--hairline);
+           background:var(--canvas); }
+.pickcard .e{ font-size:calc(24px * var(--ts)); display:block; margin-bottom:6px; }
+.pickcard b{ display:block; font-size:calc(15px * var(--ts)); }
+.pickcard .c{ display:block; margin-top:3px; color:var(--ink-48);
+              font-size:calc(13px * var(--ts)); line-height:1.45; }
+.pickcard.on{ border-color:var(--primary); background:var(--pearl);
+              box-shadow:0 0 0 1px var(--primary) inset; }
+
+/* 많이 가는 곳 — 국기와 이름만. 줄이 굵으면 목록이 벽처럼 보입니다. */
+.poplist{ margin-top:6px; }
+/* border-radius 를 0 으로 되돌립니다. 기본 button 규칙이 알약 모양이라,
+   아래 border-top 만 남기면 그 선의 양 끝이 둥글게 말려 올라갑니다. */
+.poprow{ display:flex; align-items:center; gap:12px; width:100%;
+         padding:11px 4px; border:0; border-radius:0;
+         background:transparent; text-align:left; }
+.poprow + .poprow{ border-top:1px solid var(--divider-soft); }
+.poprow .fl{ font-size:calc(19px * var(--ts)); line-height:1; flex:none; }
+.poprow b{ font-size:calc(15px * var(--ts)); }
+.poprow .c{ margin-left:auto; color:var(--ink-48); font-size:calc(12.5px * var(--ts)); }
+
+/* 고른 도시 — 사진 한 장으로 확인시킵니다. */
+.citycard{ position:relative; margin-top:10px; padding:8px 8px 12px;
+           border-radius:var(--r-lg); background:var(--pearl);
+           border:1px solid var(--hairline); }
+.citycard .ph{ aspect-ratio:1/1; border-radius:calc(var(--r-lg) - 4px);
+               background:var(--parchment) center/cover no-repeat;
+               display:grid; place-items:center;
+               font-size:calc(44px * var(--ts)); font-weight:700; color:var(--ink-48); }
+.citycard .nm{ text-align:center; margin-top:10px; }
+.citycard .nm b{ font-size:calc(16px * var(--ts)); }
+.citycard .nm .c{ color:var(--ink-48); font-size:calc(12.5px * var(--ts));
+                  margin-left:6px; }
+.citycard .x{ position:absolute; top:16px; right:16px; z-index:1;
+              width:30px; height:30px; padding:0; border:0; border-radius:50%;
+              background:rgba(0,0,0,.45); color:#fff; font-size:17px; line-height:30px; }
+
+/* ── 달력 ────────────────────────────────────────────────────────────
+ * 시작을 누르고 끝을 누릅니다. 사이는 띠로 이어 며칠짜리인지 보이게 합니다. */
+.calweek{ display:grid; grid-template-columns:repeat(7,1fr); position:sticky; top:0;
+          z-index:2; background:var(--canvas); padding:2px 0 8px;
+          font-size:calc(11.5px * var(--ts)); color:var(--ink-48); text-align:center; }
+.calweek .sun{ color:#d0413b; } .calweek .sat{ color:#2f6fd0; }
+.calmon{ margin-bottom:10px; }
+.calmon h3{ margin:8px 0 6px; font-size:calc(13.5px * var(--ts)); font-weight:700; }
+.calgrid{ display:grid; grid-template-columns:repeat(7,1fr); }
+.cd{ height:42px; padding:0; border:0; background:transparent;
+     font-size:calc(14px * var(--ts)); color:var(--ink); border-radius:0; }
+.cd:disabled{ color:var(--hairline); }
+.cd i{ display:grid; place-items:center; width:34px; height:34px; margin:0 auto;
+       border-radius:50%; font-style:normal; }
+/* 띠는 칸 배경으로 그립니다. 양 끝은 반만 칠해 동그라미에서 시작·끝나게 합니다.
+   --pearl 로 칠했더니 흰 바탕과 거의 구별이 안 돼서 기간이 안 보였습니다.
+   파랑을 옅게 섞습니다. color-mix 를 못 읽는 브라우저는 위 값이 남습니다. */
+.calgrid{ --band:#e8f1fb; --band:color-mix(in srgb, var(--primary) 11%, var(--canvas)); }
+.cd.in{ background:var(--band); }
+.cd.s{ background:linear-gradient(90deg,transparent 50%,var(--band) 50%); }
+.cd.e{ background:linear-gradient(90deg,var(--band) 50%,transparent 50%); }
+.cd.s.e{ background:transparent; }        /* 하루짜리는 띠가 없습니다 */
+.cd.s i, .cd.e i{ background:var(--primary); color:#fff; font-weight:700; }
+.cd.today i{ box-shadow:0 0 0 1px var(--primary) inset; }
+.cd.today.s i, .cd.today.e i{ box-shadow:none; }
+
 /* ── 다 담기 · 되돌리기 ── */
 .takeall{ display:flex; gap:8px; align-items:center; margin:4px 0 10px; flex-wrap:wrap; }
 /* 다 담기 옆의 날짜 고르개. 폭을 안 묶으면 select 가 줄을 통째로 먹습니다. */
