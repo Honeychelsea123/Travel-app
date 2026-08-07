@@ -3406,6 +3406,10 @@ async function loadFootprint(){
       .in('plans.category', cats)
       .then(r => { $(box).textContent = r.count ?? 0; });
   $('s_want').textContent    = f.wants;
+  /* 후기를 남긴 여행 수. 목록과 같은 함수를 써야 숫자와 목록이 안 어긋납니다. */
+  sb.rpc('my_reviews')
+    .then(r => { $('s_review').textContent = (r.data || []).length; })
+    .catch(() => {});
 
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   $('s_prog').innerHTML = f.countries
@@ -4912,7 +4916,8 @@ $('setview').addEventListener('click', e => {
  * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
 const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
-                comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 곳' };
+                comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 곳',
+                review:'여행 후기' };
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
 const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 
@@ -4981,6 +4986,48 @@ async function openPlaceShelf(kind){
            일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
+/* 다녀온 여행에 남긴 것을 모아 봅니다. 여행 화면 안에만 두면 그 여행을
+   다시 찾아 들어가야 다시 볼 수 있습니다 — 후기는 다시 보라고 쓰는 것입니다.
+   별점·글·사진 중 하나라도 남긴 여행만 나옵니다(db/052 의 my_reviews). */
+async function openReviewShelf(){
+  const { data, error } = await sb.rpc('my_reviews');
+  if (error) return fail(error, 'trip');
+  const list = data || [];
+  $('shelfcount').textContent = list.length ? `${list.length}개` : '';
+  if (!list.length){
+    $('shelflist').innerHTML =
+      `<div class="empty">아직 남긴 후기가 없어요.<br>
+         여행이 끝나면 그 여행 화면에서 별점과 글, 사진을 남길 수 있어요.</div>`;
+    return;
+  }
+  /* 표지 사진은 비공개 통에 있습니다. 잠깐 열리는 주소를 한 번에 받습니다. */
+  const paths = list.map(r => r.cover).filter(Boolean);
+  let by = {};
+  if (paths.length){
+    const { data: urls } = await sb.storage.from('trip-photos')
+      .createSignedUrls(paths, 3600);
+    by = Object.fromEntries((urls || []).map(u => [u.path, u.signedUrl]));
+  }
+  $('shelflist').innerHTML = list.map(r => `
+    <div class="rvcard" data-rvtrip="${esc(r.trip_id)}">
+      ${r.cover ? `<img src="${esc(by[r.cover] || '')}" alt="" loading="lazy">` : ''}
+      <div class="b">
+        <div class="t"><b>${esc(r.title)}</b>
+          <span class="c">${esc(r.end_date)}</span></div>
+        ${r.stars != null ? `<span class="stars">${starHtml(r.stars)}</span>` : ''}
+        ${r.comment ? `<div class="m">${esc(r.comment)}</div>` : ''}
+        ${r.photos ? `<div class="c">사진 ${r.photos}장</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+/* 후기 카드를 누르면 그 여행을 엽니다. 고치는 것은 거기서 합니다 —
+   여기서도 고치게 하면 같은 폼이 두 벌이 됩니다. */
+$('shelflist').addEventListener('click', e => {
+  const c = e.target.closest('[data-rvtrip]');
+  if (c) openTrip(c.dataset.rvtrip);
+});
+
 async function openShelf(kind){
   shelfKind = kind;
   $('profpane').classList.add('hide');
@@ -4998,6 +5045,7 @@ async function openShelf(kind){
     b.classList.toggle('on', b.dataset.ssort === shelfSort));
 
   if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
+  if (kind === 'review') return openReviewShelf();
 
   await loadCities();
   const [mine, vis, stats] = await Promise.all([
@@ -5847,6 +5895,8 @@ async function loadReview(){
   $('rv_when').textContent = `${trip.end_date} 종료`;
   $('rv_stars').innerHTML = starHtml(myReview.stars);
   $('rv_note').value = myReview.comment || '';
+  growNote();
+  loadPhotos();          /* 사진은 안 기다립니다 — 글과 별점이 먼저 떠야 합니다 */
 
   const got = Object.fromEntries((rates.data || []).map(r => [r.city_id, r.stars]));
   $('rv_cities').innerHTML = ids.length
@@ -5881,6 +5931,23 @@ async function saveReview(patch){
 }
 
 $('reviewbox').addEventListener('click', async e => {
+  /* 사진 지우기 — 한 번 더 묻습니다. 통에서도 같이 지웁니다. */
+  const del = e.target.closest('[data-rvdel]');
+  if (del){
+    if (del.dataset.armed !== '1'){ arm(del, '지울까요?'); return; }
+    const p = rvPhotos.find(x => x.id === del.dataset.rvdel);
+    if (!p) return;
+    del.disabled = true;
+    const r = await sb.from('trip_photos').delete().eq('id', p.id).select('id');
+    del.disabled = false; disarm(del); del.textContent = '×';
+    if (r.error) return fail(r.error, 'rv');
+    /* 표에서 지운 뒤 통에서도 지웁니다. 순서가 반대면 파일만 사라지고
+       줄이 남아 깨진 사진이 뜹니다. 통 쪽이 실패해도 화면은 맞습니다. */
+    await sb.storage.from('trip-photos').remove([p.path]);
+    await loadPhotos();
+    return;
+  }
+
   const st = e.target.closest('.st'); if (!st) return;
   const wrap = st.closest('.stars');
   const box = st.getBoundingClientRect();
@@ -5904,9 +5971,110 @@ $('reviewbox').addEventListener('click', async e => {
   }
 });
 
-/* 한 줄 후기는 칸을 벗어날 때 저장합니다. 글자마다 보내면 요청이 쏟아집니다. */
+/* 후기 글은 칸을 벗어날 때 저장합니다. 글자마다 보내면 요청이 쏟아집니다. */
 $('rv_note').addEventListener('change', () =>
   saveReview({ comment: $('rv_note').value.trim() || null }));
+/* 쓴 만큼 칸이 자랍니다. 두 줄에 고정해두면 긴 글을 좁은 구멍으로 씁니다. */
+function growNote(){
+  const t = $('rv_note');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 320) + 'px';
+}
+$('rv_note').addEventListener('input', growNote);
+
+/* ── 후기 사진 ───────────────────────────────────────────────────────
+ * 통은 **비공개**입니다. 주소를 알아도 그냥은 안 열립니다(db/052).
+ * 그래서 볼 때마다 잠깐 열리는 주소를 받아 씁니다(createSignedUrl).
+ *
+ * 폰 사진은 5MB 가 넘기도 합니다. 그대로 올리면 통도 낭비하고 여행지에서
+ * 데이터도 씁니다. 긴 변 1280 으로 줄여 올립니다 — 화면에서 보는 크기의
+ * 두 배쯤이라 확대해도 뭉개지지 않습니다. */
+const RV_MAX = 30;           /* 여행 하나에 이만큼. 통이 무한하지 않습니다 */
+let rvPhotos = [];
+
+function fitImage(file, max = 1280, q = 0.82){
+  return new Promise((ok, no) => {
+    const img = new Image();
+    img.onload = () => {
+      /* 가로세로 비를 지킵니다. 정사각으로 자르는 avatar 쪽(shrink)과 다릅니다 —
+         여행 사진은 잘라내면 정작 찍은 것이 잘려 나갑니다. */
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width  = Math.round(img.width  * s);
+      cv.height = Math.round(img.height * s);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(img.src);
+      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 못 읽었어요')), 'image/jpeg', q);
+    };
+    img.onerror = () => no(new Error('사진을 못 읽었어요'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function loadPhotos(){
+  const { data, error } = await sb.from('trip_photos')
+    .select('id,path,user_id,created_at').eq('trip_id', trip.id).order('created_at');
+  if (error){ $('rv_shots').innerHTML = ''; return fail(error, 'rv'); }
+  rvPhotos = data || [];
+  await drawPhotos();
+}
+
+async function drawPhotos(){
+  const box = $('rv_shots');
+  if (!rvPhotos.length){ box.innerHTML = ''; $('rv_shotnote').textContent = ''; return; }
+  /* 주소를 하나씩 받으면 사진 수만큼 왕복합니다. 한 번에 받습니다. */
+  const { data: urls } = await sb.storage.from('trip-photos')
+    .createSignedUrls(rvPhotos.map(p => p.path), 3600);
+  const by = Object.fromEntries((urls || []).map(u => [u.path, u.signedUrl]));
+  box.innerHTML = rvPhotos.map(p =>
+    `<div class="rvshot">
+       <img src="${esc(by[p.path] || '')}" alt="" loading="lazy">
+       ${p.user_id === me.id
+         ? `<button class="x" data-rvdel="${esc(p.id)}" aria-label="지우기">×</button>` : ''}
+     </div>`).join('');
+  $('rv_shotnote').textContent = `${rvPhotos.length}장`;
+}
+
+$('rv_file').addEventListener('change', async e => {
+  const files = [...(e.target.files || [])];
+  e.target.value = '';                    /* 같은 사진을 다시 골라도 걸리게 */
+  if (!files.length) return;
+  const room = RV_MAX - rvPhotos.length;
+  if (room <= 0) return fail(`사진은 여행 하나에 ${RV_MAX}장까지예요.`, 'rv');
+  const take = files.slice(0, room);
+  if (files.length > room)
+    toast(`${RV_MAX}장까지라서 ${take.length}장만 넣었어요.`);
+
+  const lab = $('rv_add').querySelector('span');
+  const orig = lab.textContent;
+  let done = 0;
+  for (const f of take){
+    lab.textContent = `올리는 중… ${++done}/${take.length}`;
+    try {
+      const blob = await fitImage(f);
+      /* 경로 맨 앞이 여행 id 여야 통 정책이 참여자인지 가릅니다(db/052). */
+      const name = (crypto.randomUUID ? crypto.randomUUID()
+                                      : String(Date.now()) + Math.random()).slice(0, 36);
+      const path = `${trip.id}/${me.id}/${name}.jpg`;
+      const up = await sb.storage.from('trip-photos')
+        .upload(path, blob, { contentType:'image/jpeg' });
+      if (up.error) throw up.error;
+      const r = await sb.from('trip_photos')
+        .insert({ trip_id: trip.id, user_id: me.id, path });
+      if (r.error){
+        /* 표에 못 넣었으면 통에 남은 파일도 치웁니다 — 안 그러면 아무도
+           모르는 사진이 통에만 쌓입니다. */
+        await sb.storage.from('trip-photos').remove([path]);
+        throw r.error;
+      }
+    } catch (err){
+      lab.textContent = orig;
+      return fail(err, 'rv');
+    }
+  }
+  lab.textContent = orig;
+  await loadPhotos();
+});
 
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
 $('editbtn').addEventListener('click', () => {

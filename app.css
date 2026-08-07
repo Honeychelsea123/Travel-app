@@ -1217,6 +1217,51 @@ body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
    지금 궁금한 것은 이 여행의 어디를 보고 있느냐입니다. */
 body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 
+/* 나란히 둔 단추 둘. 기본 크기로 두면 글자가 두 줄로 접힙니다 —
+   좁은 화면에서 반씩 나눠 쓰는 자리입니다. */
+.twobtn button{ padding:11px 6px; font-size:calc(13px * var(--ts));
+                white-space:nowrap; }
+
+/* ── 후기 사진 ───────────────────────────────────────────────────────
+ * 넉 장씩 정사각으로 깝니다. 세로·가로가 섞여 있어도 줄이 안 흔들립니다.
+ * 원본 비는 눌러서 크게 볼 때 지킵니다 — 여기서는 훑는 것이 일입니다. */
+.rvshots{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;
+          margin-top:10px; }
+.rvshots:empty{ display:none; }
+.rvshot{ position:relative; aspect-ratio:1/1; border-radius:var(--r-sm);
+         overflow:hidden; background:var(--parchment); }
+.rvshot img{ width:100%; height:100%; object-fit:cover; display:block; }
+/* 지우기는 내 사진에만 붙습니다. 작게 두되 손가락이 닿을 만큼은 둡니다. */
+.rvshot .x{ position:absolute; top:3px; right:3px; width:22px; height:22px;
+            padding:0; border:0; border-radius:50%; line-height:22px;
+            background:rgba(0,0,0,.5); color:#fff; font-size:14px; }
+.rvshot .x[data-armed="1"]{ width:auto; padding:0 8px; border-radius:999px;
+                            font-size:calc(11px * var(--ts)); }
+/* 사진 넣기 — 파일 고르개는 못생겨서 라벨로 감싸 단추처럼 씁니다. */
+.rvadd{ display:block; margin-top:10px; padding:10px; text-align:center;
+        border:1px dashed var(--hairline); border-radius:var(--r-md);
+        color:var(--ink-48); font-size:calc(13px * var(--ts)); cursor:pointer; }
+.rvadd:active{ background:var(--pearl); }
+#rv_shotnote{ text-align:right; margin-top:4px; }
+#rv_shotnote:empty{ display:none; }
+#rv_note{ margin-top:10px; resize:none; overflow-y:auto; }
+
+/* 보관함의 여행 후기 목록. 사진이 있으면 표지로 왼쪽에 답니다 —
+   글자만 있는 목록은 다시 안 열어봅니다. */
+.rvcard{ display:flex; gap:12px; padding:12px 0; cursor:pointer; align-items:flex-start; }
+.rvcard + .rvcard{ border-top:1px solid var(--divider-soft); }
+.rvcard img{ width:76px; height:76px; flex:none; object-fit:cover;
+             border-radius:var(--r-sm); background:var(--parchment); }
+.rvcard .b{ flex:1; min-width:0; }
+.rvcard .t{ display:flex; align-items:baseline; gap:8px; }
+.rvcard .t b{ font-size:calc(15px * var(--ts)); }
+.rvcard .c{ color:var(--ink-48); font-size:calc(12px * var(--ts)); }
+.rvcard .t .c{ margin-left:auto; flex:none; }
+/* 긴 글은 석 줄까지만. 목록에서는 훑는 것이 일입니다. */
+.rvcard .m{ margin-top:3px; font-size:calc(13px * var(--ts)); color:var(--ink-80);
+            display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+            overflow:hidden; }
+
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }
 
