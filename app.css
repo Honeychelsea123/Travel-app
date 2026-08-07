@@ -1262,6 +1262,26 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
             display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
             overflow:hidden; }
 
+/* ── 여행 배지 ───────────────────────────────────────────────────────
+ * 못 받은 것도 같이 보여줍니다 — 배지는 받은 자랑이자 다음 목표입니다.
+ * 다만 흐리게 두어 받은 것과 한눈에 갈리게 합니다. */
+.bdgrid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;
+         margin:8px 0 var(--s-md); }
+.bdg{ padding:12px 6px 10px; text-align:center; border-radius:var(--r-md);
+      background:var(--pearl); border:1px solid var(--divider-soft); }
+.bdg .i{ display:block; font-size:calc(26px * var(--ts)); line-height:1.1;
+         /* 안 받은 것은 색을 뺍니다. 흐리게만 하면 무슨 그림인지 안 보입니다. */
+         filter:grayscale(1); opacity:.45; }
+.bdg b{ display:block; margin-top:6px; font-size:calc(12.5px * var(--ts));
+        color:var(--ink-48); }
+.bdg .c{ display:block; font-size:calc(10.5px * var(--ts)); color:var(--ink-48);
+         line-height:1.35; }
+.bdg .w{ margin-top:3px; font-variant-numeric:tabular-nums; }
+.bdg.on{ background:var(--canvas); border-color:var(--hairline);
+         box-shadow:var(--lift-1); }
+.bdg.on .i{ filter:none; opacity:1; }
+.bdg.on b{ color:var(--ink); font-weight:700; }
+
 .empty{ text-align:center; color:var(--ink-48); padding:20px 8px;
         font-size:calc(14px * var(--ts)); }
 

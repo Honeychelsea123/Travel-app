@@ -3410,6 +3410,12 @@ async function loadFootprint(){
   sb.rpc('my_reviews')
     .then(r => { $('s_review').textContent = (r.data || []).length; })
     .catch(() => {});
+  /* 받은 배지 수. 여기서 부르는 김에 새로 받은 것도 기록됩니다 —
+     배지 화면을 안 열어봐도 받은 시각이 남습니다. */
+  sb.rpc('my_badges')
+    .then(r => { $('s_badge').textContent =
+      (r.data || []).filter(b => b.earned_at).length; })
+    .catch(() => {});
 
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   $('s_prog').innerHTML = f.countries
@@ -4917,7 +4923,7 @@ $('setview').addEventListener('click', e => {
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
 const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
                 comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 곳',
-                review:'여행 후기' };
+                review:'여행 후기', badge:'여행 배지' };
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
 const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 
@@ -5028,6 +5034,44 @@ $('shelflist').addEventListener('click', e => {
   if (c) openTrip(c.dataset.rvtrip);
 });
 
+/* ── 여행 배지 ───────────────────────────────────────────────────────
+ * 세는 것은 전부 DB 가 합니다(db/053). 화면에서 세면 기기마다 다르게
+ * 나오고, 나중에 조건을 바꿔도 옛날 기기는 옛 조건으로 셉니다.
+ *
+ * **못 받은 것도 보여줍니다.** 받은 것만 늘어놓으면 다음에 뭘 하면
+ * 되는지 알 수가 없습니다 — 배지는 받은 자랑이자 다음 목표입니다. */
+async function openBadgeShelf(){
+  const { data, error } = await sb.rpc('my_badges');
+  if (error) return fail(error, 'trip');
+  const list = data || [];
+  const got = list.filter(b => b.earned_at);
+  $('shelfcount').textContent = `${got.length} / ${list.length}`;
+
+  /* 갈래끼리 묶습니다. 스물일곱 개를 한 줄로 늘어놓으면 훑을 수가 없습니다. */
+  const cats = [];
+  for (const b of list){
+    const last = cats[cats.length - 1];
+    if (last && last.cat === b.cat) last.items.push(b);
+    else cats.push({ cat: b.cat, items: [b] });
+  }
+  $('shelflist').innerHTML = cats.map(g => {
+    const n = g.items.filter(b => b.earned_at).length;
+    return `<div class="daysep">${esc(g.cat)}
+      <span class="dstat">${n}/${g.items.length}</span></div>
+      <div class="bdgrid">${g.items.map(b => `
+        <div class="bdg${b.earned_at ? ' on' : ''}">
+          <span class="i">${esc(b.icon)}</span>
+          <b>${esc(b.name)}</b>
+          <span class="c">${esc(b.note)}</span>
+          ${b.earned_at
+            ? `<span class="c w">${esc(String(b.earned_at).slice(0, 10))}</span>`
+            /* 얼마나 남았는지 보여줍니다. "10개국"만 있으면 지금 몇인지
+               모르니 가까운 건지 먼 건지도 모릅니다. */
+            : `<span class="c w">${b.have} / ${b.need}</span>`}
+        </div>`).join('')}</div>`;
+  }).join('');
+}
+
 async function openShelf(kind){
   shelfKind = kind;
   $('profpane').classList.add('hide');
@@ -5046,6 +5090,7 @@ async function openShelf(kind){
 
   if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
   if (kind === 'review') return openReviewShelf();
+  if (kind === 'badge')  return openBadgeShelf();
 
   await loadCities();
   const [mine, vis, stats] = await Promise.all([
