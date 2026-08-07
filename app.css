@@ -779,7 +779,16 @@ body.kbon .assheet{ padding-bottom:16px; }
 .aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
                   border-radius:999px; background:var(--line); }
 .aihead{ display:flex; align-items:center; gap:6px; padding:2px 2px 8px; }
-.aihead .t{ flex:1; font-weight:700; font-size:calc(17px * var(--ts)); }
+/* 여행 고르개가 제목 자리를 대신합니다. 제 글자만큼만 차지하고(width:auto),
+   긴 여행 이름이 와도 옆 단추를 밀어내지 않게 줄어들 수 있게 둡니다.
+   단추들은 오른쪽에 붙습니다. */
+/* 폭을 안 막아두면 긴 여행 이름이 옆 단추들의 글자를 두 줄로 접습니다 —
+   머리말 높이가 50 에서 63 으로 늘어났습니다. 절반까지만 씁니다. */
+.aihead select{ flex:0 1 auto; min-width:0; width:auto; max-width:42%;
+                padding:6px 10px; border-radius:var(--r-pill); font-weight:600;
+                overflow:hidden; text-overflow:ellipsis; }
+.aihead button{ white-space:nowrap; }
+.aihead #reviewbtn{ margin-left:auto; }
 .aihead .ghost{ padding:6px 8px; }
 #aiview{ display:flex; flex-direction:column; }
 .aichat{ flex:1; display:flex; flex-direction:column; min-height:0; margin-bottom:0;

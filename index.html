@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b191">
+<link rel="stylesheet" href="app.css?v=b192">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -356,17 +356,18 @@
     <!-- 여행 비서. 페이지를 옮기지 않고 보던 화면 위에 올라옵니다 —
          일정을 보다가 물어보고 그 자리로 돌아가야 합니다. -->
     <div id="aiview" class="aisheet hide">
+      <!-- '여행 비서'라는 제목과, 그 아래 카드 한 장을 통째로 쓰던 여행
+           고르개가 따로 있었습니다. 화면 위쪽 두 줄이 대화에 쓸 자리를
+           먹고 있었습니다. 제목은 뺐습니다 — 방금 열어놓고 여기가 어디인지
+           다시 알려줄 이유가 없습니다. 그 자리에 고르개를 넣습니다.
+           어느 여행 이야기인지가 제목보다 훨씬 쓸모 있습니다. -->
       <div class="aihead">
-        <span class="t">여행 비서</span>
+        <select id="ai_trip" aria-label="어느 여행에 대해 물어볼지"></select>
         <button class="ghost" id="reviewbtn" style="color:var(--primary)">
           일정 검토 <span id="reviewdot" class="badge hide"
                 style="margin-left:2px; padding:1px 7px"></span></button>
         <button class="ghost" id="ai_wipe">지우기</button>
         <button class="ghost" id="ai_close" style="font-size:calc(18px * var(--ts))">×</button>
-      </div>
-      <div class="card" style="padding:8px 12px; margin-bottom:8px">
-        <select id="ai_trip" style="width:100%; padding:7px 12px;
-                border-radius:var(--r-pill)"></select>
       </div>
 
       <div class="card hide" id="reviewcard">
@@ -1401,10 +1402,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b191</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b192</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b191"></script>
+<script type="module" src="app.js?v=b192"></script>
 </body>
 </html>
 

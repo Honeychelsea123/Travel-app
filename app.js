@@ -1490,8 +1490,12 @@ async function loadAi(){
 
   /* 여행을 안 고르고도 물어볼 수 있어야 합니다. 어디로 갈지 정하기 전에
      묻는 것이 오히려 더 많습니다. 그때는 여행 자료 없이 그냥 답합니다. */
+  /* 첫 줄이 곧 이 고르개의 이름표입니다 — 아무것도 안 골랐을 때 '여행 선택'
+     이라고 보입니다. 전에는 '여행 없이 물어보기'였는데, 머리말 한 줄에
+     같이 앉히기엔 너무 길어 옆 단추를 밀어냈습니다. 여행을 고르면 그
+     이름이 그대로 보이므로 무슨 이야기 중인지도 여기서 알 수 있습니다. */
   $('ai_trip').innerHTML =
-    `<option value="">여행 없이 물어보기</option>` +
+    `<option value="">여행 선택</option>` +
     (data || []).map(t => `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
   $('ai_trip').value = (aiTripId && data.some(t => t.id === aiTripId)) ? aiTripId : '';
   /* 들어올 때는 채팅부터 보입니다. 홈에서 "자세히"로 온 경우만 펼칩니다. */
