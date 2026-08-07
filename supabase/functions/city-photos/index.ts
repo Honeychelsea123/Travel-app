@@ -79,13 +79,15 @@ Deno.serve(async (req) => {
     if (!key) return json({ error: 'PEXELS 키를 못 찾았습니다 (PEXELS_KEY).' }, 500);
     const limit = Math.min(Math.max(Number(body?.limit) || 12, 1), 30);
     const offset = Math.max(Number(body?.offset) || 0, 0);
+    /* ids 를 주면 **사진이 이미 있어도** 그 도시들을 찾습니다.
+       마음에 안 드는 사진을 바꿀 때 씁니다 — 예전에는 그럴 길이 없어서
+       바꾸려면 DB 에서 주소를 지워야 했습니다. */
+    const ids: string[] = Array.isArray(body?.ids) ? body.ids.slice(0, 30) : [];
 
-    const { data: rows, error: selErr } = await admin
-      .from('cities')
-      .select('id,name,name_en,country')
-      .is('image_url', null)
-      .order('id')
-      .range(offset, offset + limit - 1);
+    let q0 = admin.from('cities').select('id,name,name_en,country').order('id');
+    q0 = ids.length ? q0.in('id', ids)
+                    : q0.is('image_url', null).range(offset, offset + limit - 1);
+    const { data: rows, error: selErr } = await q0;
     if (selErr) return json({ error: selErr.message }, 500);
 
     /* **나라를 코드로 넣으면 안 됩니다.** 'Akita JP' 로 찾았더니 아키타견
@@ -96,25 +98,45 @@ Deno.serve(async (req) => {
     const ccName: Record<string, string> =
       Object.fromEntries((ccRows ?? []).map((x: any) => [x.code, x.name_en]));
 
+    /* **두 가지로 찾아 합칩니다.**
+       그냥 이름만 넣으면 무난하지만 밋밋한 사진이 옵니다 — 골목, 흐린 하늘,
+       평범한 건물. 목록에 깔릴 사진이라 눈에 걸리는 편이 낫습니다.
+       그래서 'cityscape' 를 붙인 것도 같이 찾습니다. 다만 그쪽은 엉뚱한
+       도시가 섞일 수 있으므로 **먼저 이름만으로 찾은 것을 앞에 둡니다.**
+       고르는 사람이 앞에서부터 보고, 아니면 뒤를 봅니다.
+
+       per_page 6 씩 둘이면 최대 12장입니다. 3장일 때는 셋 다 별로여도
+       고를 것이 없어서 그냥 넘겼는데, 그렇게 넘긴 곳이 여덟이었습니다. */
+    const PER = Math.min(Math.max(Number(body?.per) || 6, 1), 12);
+    const hunt = async (query: string) => {
+      const r = await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}` +
+        `&per_page=${PER}&orientation=landscape`,
+        { headers: { Authorization: key }, signal: AbortSignal.timeout(15000) });
+      if (!r.ok) throw new Error(`pexels ${r.status}`);
+      const j = await r.json();
+      return (j.photos ?? []).map((p: any) => ({
+        // large 는 가로 940 정도라 목록 썸네일과 상세 배경에 둘 다 씁니다.
+        src: p.src?.large ?? p.src?.medium, by: p.photographer, page: p.url,
+      }));
+    };
+
     const out: unknown[] = [];
     for (const c of rows ?? []) {
-      const q = `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
+      const base = `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
       try {
-        const r = await fetch(
-          `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}` +
-          `&per_page=3&orientation=landscape`,
-          { headers: { Authorization: key }, signal: AbortSignal.timeout(15000) });
-        if (!r.ok) { out.push({ id: c.id, ko: c.name, q, error: `pexels ${r.status}` }); continue; }
-        const j = await r.json();
-        out.push({
-          id: c.id, ko: c.name, q,
-          photos: (j.photos ?? []).map((p: any) => ({
-            // large 는 가로 940 정도라 목록 썸네일과 상세 배경에 둘 다 씁니다.
-            src: p.src?.large ?? p.src?.medium, by: p.photographer, page: p.url,
-          })),
-        });
+        const [a, b] = await Promise.all([
+          hunt(base),
+          hunt(`${base} cityscape`).catch(() => []),
+        ]);
+        /* 같은 사진이 양쪽에 나오는 일이 흔합니다. 주소로 걸러냅니다. */
+        const seen = new Set<string>();
+        const photos = [...a, ...b].filter((p: any) =>
+          p.src && !seen.has(p.src) && seen.add(p.src));
+        out.push({ id: c.id, ko: c.name, q: base, photos });
       } catch (e) {
-        out.push({ id: c.id, ko: c.name, q, error: String((e as Error)?.message ?? e).slice(0, 60) });
+        out.push({ id: c.id, ko: c.name, q: base,
+                   error: String((e as Error)?.message ?? e).slice(0, 60) });
       }
     }
     const { count } = await admin.from('cities')
