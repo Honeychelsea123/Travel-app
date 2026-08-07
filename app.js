@@ -1067,6 +1067,9 @@ function pick(i){
   $('p_country').textContent =
     `${flagOf(picked.country)} ${countryName[picked.country] || picked.country}`.trim();
   $('p_note').textContent = picked.currency || '';
+  /* 한 장짜리는 이름 칸이 이미 화면에 있습니다. 도시를 고른 그 순간
+     채워줘야 합니다 — 단계 화면처럼 4단계로 넘어갈 때가 없습니다. */
+  if (wizFlat) wizAutoTitle();
 }
 
 $('f_q').addEventListener('input', () => {
@@ -1090,16 +1093,25 @@ $('repick').addEventListener('click', () => {
   hitList = []; drawHits();
 });
 
-/* ── 새 여행 ────────────────────────────────────────────────────── */
-$('newbtn').addEventListener('click', async () => {
-  $('newcard').classList.toggle('hide');
-  if ($('newcard').classList.contains('hide')) return;
+/* ── 여행 만들기 ────────────────────────────────────────────────────
+ * 두 군데서 엽니다. 여는 모양만 다르고 안은 같은 화면입니다.
+ *   flat=true  여행 탭 '일정 추가' — 한 장에 다 펼침
+ *   flat=false 홈 '시작'          — 넷으로 나눈 단계, 끝에 AI 갈래 */
+async function openNew(flat){
+  $('newcard').classList.remove('hide');
   await loadCities();
-
   /* 날짜는 미리 채우지 않습니다. 달력에서 직접 고르는 편이 빠르고,
      미리 채워두면 '오늘 출발'인 채로 지나쳐 버립니다. */
   drawPop();
-  wizShow(1);
+  if (flat) wizFlatShow(); else wizShow(1);
+}
+
+$('newbtn').addEventListener('click', () => {
+  /* 다시 누르면 닫힙니다 — 열어놓고 잘못 눌렀을 때 나갈 길입니다. */
+  if (!$('newcard').classList.contains('hide')){
+    $('newcard').classList.add('hide'); return;
+  }
+  openNew(true);
 });
 
 $('cancel').addEventListener('click', () => {
@@ -1126,13 +1138,41 @@ const WIZ_TITLES = {
 };
 let wizStep = 1;
 
+/* 한 장짜리인가. 여행 탭의 '일정 추가'가 이쪽입니다 — 이미 어디로 갈지
+   정해두고 목록에 얹기만 하려는 사람에게 네 번 누르게 할 이유가 없습니다.
+   같은 DOM 을 씁니다. 칸을 다 펼치고, 단계 표시와 취향·갈래를 접습니다. */
+let wizFlat = false;
+
 /* 취향 칸 한 벌을 필요한 자리로 옮겨 담습니다. */
 function movePrefs(slotId){
   const slot = $(slotId), block = $('prefblock');
   if (slot && block && block.parentElement !== slot) slot.appendChild(block);
 }
 
+/* 한 장짜리. 1·2·4 를 한꺼번에 펼칩니다. 취향(3)과 AI/직접 갈래는 뺍니다 —
+   빠르게 얹으려는 사람에게 물을 것이 아닙니다. 만들면 그 여행이 바로 열립니다. */
+function wizFlatShow(){
+  wizFlat = true;
+  $('newcard').querySelectorAll('.wizstep').forEach(s =>
+    s.classList.toggle('hide', s.dataset.step === '3'));
+  $('wiztitle').textContent = '일정 추가';
+  $('wizhead').classList.add('flat');      /* 단계 막대와 뒤로가기를 접습니다 */
+  $('wizpick').classList.add('hide');      /* AI / 직접 갈래도 여기선 안 묻습니다 */
+  $('wizback').classList.add('hide');
+  $('wiznext').classList.remove('hide');
+  $('wiznext').textContent = '만들기';
+  $('wizfoot').classList.remove('empty');
+  $('formerr').classList.add('hide');
+  $('newcard').querySelector('.wizbody').scrollTop = 0;
+  wizCal();
+  wizDays();
+}
+
 function wizShow(n){
+  wizFlat = false;
+  $('wizhead').classList.remove('flat');
+  $('wizpick').classList.remove('hide');
+  $('wiznext').textContent = '계속';
   wizStep = Math.min(4, Math.max(1, n));
   $('newcard').querySelectorAll('.wizstep').forEach(s =>
     s.classList.toggle('hide', +s.dataset.step !== wizStep));
@@ -1150,10 +1190,15 @@ function wizShow(n){
   wizDays();                          /* 2단계가 아니면 스스로 지웁니다 */
   if (wizStep === 2) wizCal(true);
   if (wizStep === 3) movePrefs('wiz_prefslot');
-  if (wizStep === 4 && !$('f_title').value.trim()){
-    const dest = picked ? picked.name : $('f_q').value.trim();
-    if (dest) $('f_title').value = `${dest} 여행`;
-  }
+  if (wizStep === 4) wizAutoTitle();
+}
+
+/* 이름은 안 묻고 지어둡니다. 대개는 그대로 씁니다.
+   비워둔 것을 손대지는 않습니다 — 직접 고쳐 쓴 이름을 덮으면 안 됩니다. */
+function wizAutoTitle(){
+  if ($('f_title').value.trim()) return;
+  const dest = picked ? picked.name : $('f_q').value.trim();
+  if (dest) $('f_title').value = `${dest} 여행`;
 }
 
 /* 다음으로 넘어가기 전에 그 단계에서 필요한 것만 봅니다.
@@ -1175,6 +1220,13 @@ function wizCheck(n){
 }
 
 $('wiznext').addEventListener('click', () => {
+  /* 한 장짜리는 '계속'이 아니라 '만들기'입니다. 칸이 다 보이므로
+     둘을 한꺼번에 봅니다 — 어느 단계로 돌아가라고 할 자리가 없습니다. */
+  if (wizFlat){
+    const bad = wizCheck(1) || wizCheck(2);
+    if (bad) return fail(bad, 'form');
+    return createTrip(false);
+  }
   const why = wizCheck(wizStep);
   if (why) return fail(why, 'form');
   wizShow(wizStep + 1);
@@ -1239,7 +1291,7 @@ $('wizcal').addEventListener('click', ev => {
    'AI가 짜줄게요'를 눌러야 하는데 날짜가 대신 앉아 있습니다. */
 function wizDays(){
   const s = $('f_start').value, e = $('f_end').value;
-  if (wizStep !== 2) return void ($('wizdays').textContent = '');
+  if (!wizFlat && wizStep !== 2) return void ($('wizdays').textContent = '');
   $('wizdays').textContent =
     !s ? '' :
     !e ? `${s.slice(5).replace('-','월 ')}일 — 끝나는 날도 눌러주세요` :
@@ -1252,7 +1304,9 @@ $('wiz_manual').addEventListener('click', () => createTrip(false));
 $('wiz_ai').addEventListener('click',     () => createTrip(true));
 
 async function createTrip(withAi){
-  const btn = withAi ? $('wiz_ai') : $('wiz_manual');
+  /* 누른 단추에 '만드는 중…'을 겁니다. 한 장짜리에서는 갈래 카드가 접혀
+     있으니 거기 걸면 아무 데도 안 보입니다 — 아래 '만들기'가 그 자리입니다. */
+  const btn = wizFlat ? $('wiznext') : (withAi ? $('wiz_ai') : $('wiz_manual'));
   $('formerr').classList.add('hide');
 
   const title = $('f_title').value.trim();
@@ -3151,7 +3205,12 @@ function renderAiCard(){
        <span>뭘 좋아하는지만 알려주세요</span>
      </span>
      <span class="go">시작</span>`;
-  box.onclick = openDraft;
+  /* 예전에는 초안 화면(openDraft)을 바로 열었습니다. 그런데 거기에도
+     '새 여행'이 따로 있어서, 여행을 만드는 길이 두 개가 됐습니다 —
+     한쪽은 단계 화면, 한쪽은 옛날 폼이라 모양도 달랐습니다.
+     여기서는 단계 화면을 엽니다. 마지막에 'AI가 짜줄게요'를 고르면
+     그 초안 화면으로 이어집니다. 길은 하나로 모입니다. */
+  box.onclick = () => openNew(false);
   $('home').appendChild(box);
 }
 
@@ -4327,6 +4386,10 @@ $('draftback').addEventListener('click', () => closeDraft());
 $('draftview').addEventListener('click', e => {
   const t = e.target.closest('[data-dtrip]');
   if (!t) return;
+  /* 여기서도 여행을 만들 수 있게 옛날 폼(d_new)이 접혀 있었습니다. 그러면
+     만드는 길이 셋이 됩니다 — 홈, 여행 탭, 그리고 여기. 모양도 다 다릅니다.
+     그 화면으로 보냅니다. 만들고 나면 'AI가 짜줄게요'로 여기 다시 옵니다. */
+  if (t.dataset.dtrip === 'new'){ openNew(false); return; }
   draftTrip = t.dataset.dtrip;
   document.querySelectorAll('#d_trips .day').forEach(x =>
     x.classList.toggle('on', x.dataset.dtrip === draftTrip));
