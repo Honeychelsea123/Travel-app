@@ -1314,7 +1314,7 @@ async function createTrip(withAi){
      목록으로 돌려보내면 방금 만든 것을 다시 찾아 눌러야 합니다.
      AI 에게 맡기겠다면 초안 화면을 그 여행으로 열고 바로 짜기 시작합니다.
      취향 칸은 같은 DOM 이라 고른 그대로 따라갑니다. */
-  if (withAi){ await openDraft(id); $('d_go').click(); }
+  if (withAi){ await openDraft(id, true); $('d_go').click(); }
   else         openTrip(id);
 }
 
@@ -4266,8 +4266,9 @@ function readDraft(id){
 const dropDraft = id => { try { localStorage.removeItem(DKEY(id)); } catch {} };
 
 /* preselect 를 주면 그 여행을 고른 채로 엽니다 — 새 여행 마지막 단계에서
-   'AI 가 짜줄게요' 로 들어올 때 씁니다. */
-async function openDraft(preselect){
+   'AI 가 짜줄게요' 로 들어올 때 씁니다.
+   lean 이면 묻는 칸(d_ask)을 접습니다. 거기서 방금 다 고르고 왔으니까요. */
+async function openDraft(preselect, lean){
   const today = ymd(new Date());
   const { data } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date')
@@ -4292,6 +4293,13 @@ async function openDraft(preselect){
   }).join('') +
     `<span class="day" data-dtrip="new">＋ 새 여행</span>`;
 
+  /* 새 여행에서 넘어왔으면 묻는 칸을 접고, 제목을 그 여행 이름으로 답니다.
+     'AI 일정 만들기'라고 적혀 있으면 아직 만드는 중인 줄 압니다. */
+  const mine = list.find(t => t.id === draftTrip);
+  $('d_ask').classList.toggle('hide', !!lean);
+  $('d_more').classList.toggle('hide', !lean);
+  $('d_title').textContent = lean && mine ? mine.title : 'AI 일정 만들기';
+
   await loadCities();
   fillCityList();
   /* 접혀 있던 옛날 폼(어디로·시작·며칠)은 이제 안 씁니다. 여행 만들기는
@@ -4315,6 +4323,13 @@ function closeDraft(fromPop){
   showApp('home');
 }
 $('draftback').addEventListener('click', () => closeDraft());
+
+/* 접어둔 것을 도로 펼칩니다. 다시 짜고 싶을 때 취향을 바꿀 길입니다. */
+$('d_more').addEventListener('click', () => {
+  $('d_ask').classList.remove('hide');
+  $('d_more').classList.add('hide');
+  $('d_ask').scrollIntoView({ behavior:'smooth', block:'nearest' });
+});
 
 $('draftview').addEventListener('click', e => {
   const t = e.target.closest('[data-dtrip]');

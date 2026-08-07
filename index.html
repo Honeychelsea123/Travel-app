@@ -22,7 +22,7 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b198">
+<link rel="stylesheet" href="app.css?v=b199">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -291,7 +291,15 @@
       </div>
 
       <div class="card">
-        <h2>AI 일정 만들기</h2>
+        <h2 id="d_title">AI 일정 만들기</h2>
+
+        <!-- ── 묻는 부분 ──────────────────────────────────────────────
+             새 여행 마법사에서 넘어온 경우에는 이 덩어리를 접습니다.
+             거기서 방금 다 고른 것들이라, 그대로 또 보여주면 답을 아는데
+             다시 묻는 화면이 됩니다. 결과 그리는 코드가 이 화면에만
+             있어서 화면 자체는 그대로 쓰고, 묻는 칸만 감춥니다.
+             아래 '취향 바꾸기'로 언제든 다시 펼칩니다. -->
+        <div id="d_ask">
         <div class="memo" style="margin-bottom:10px">
           여행을 고르고 뭘 좋아하는지만 알려주세요.
           넣을지는 보고 정하시면 돼요.</div>
@@ -336,6 +344,13 @@
         <input id="d_note" maxlength="200" style="margin-top:14px"
                placeholder="더 하고 싶은 말 (선택) — 예: 아이랑 갑니다">
         </div>
+        </div><!-- /d_ask -->
+
+        <!-- 접혀 있을 때만 나옵니다. 접었다는 것과, 펼 수 있다는 것을
+             둘 다 알려줘야 합니다 — 안 그러면 없어진 줄 압니다. -->
+        <button class="ghost hide" id="d_more"
+                style="width:100%; color:var(--primary)">취향 바꾸기</button>
+
         <button class="primary" id="d_go" style="width:100%; margin-top:12px">
           일정 짜기</button>
         <div class="memo" style="text-align:center; margin-top:8px">
@@ -1406,10 +1421,10 @@
 
   <!-- 빌드 번호와 부팅 시각. 만든 사람만 봅니다 (038 의 admins).
        지워버리면 문제가 생겼을 때 어느 빌드인지 물어볼 방법이 없어집니다. -->
-  <p class="foot hide" id="foot">화면 <code id="build">b198</code> · <span id="ms">—</span></p>
+  <p class="foot hide" id="foot">화면 <code id="build">b199</code> · <span id="ms">—</span></p>
 </main>
 
-<script type="module" src="app.js?v=b198"></script>
+<script type="module" src="app.js?v=b199"></script>
 </body>
 </html>
 
