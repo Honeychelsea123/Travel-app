@@ -6561,9 +6561,13 @@ function lineChips(text){
 function drawCats(){
   const used = [...new Set(plans.map(p => p.category).filter(Boolean))];
   $('cats').classList.toggle('hide', used.length < 2);
+  /* 일정 카드는 분류마다 색점(kdot)이 찍히는데, 이 칩은 전부 같은 회색이라
+     "관광 색이 뭐였지"를 다시 찾아야 했습니다. 카드에서 본 색이 칩에도
+     그대로 있으면 눈으로 바로 짝지어집니다 — 카드와 같은 --kc 변수를 씁니다. */
   $('cats').innerHTML = ['전체', ...used].map(k => {
     const v = k === '전체' ? '' : k;
-    return `<span class="day${catFilter === v ? ' on' : ''}" data-cat="${esc(v)}">${
+    const dot = v ? `<i class="k-${esc(v)}"></i>` : '';
+    return `<span class="day${catFilter === v ? ' on' : ''}" data-cat="${esc(v)}">${dot}${
       esc(k)}</span>`;
   }).join('');
 }

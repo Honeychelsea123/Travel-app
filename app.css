@@ -1196,6 +1196,11 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .k-숙소{ --kc:var(--k-stay); } .k-카페{ --kc:var(--k-cafe); }
 .kdot{ width:9px; height:9px; border-radius:50%; flex:none; margin-top:9px;
        background:var(--kc, var(--k-etc)); }
+/* 분류 거르는 칩(#cats) 안의 점. kdot 과 같은 색 변수를 쓰되 인라인이라
+   margin-top 은 필요 없고, 글자 앞에 살짝 띄웁니다. */
+#cats .day i{ display:inline-block; width:8px; height:8px; border-radius:50%;
+              margin-right:5px; background:var(--kc, var(--k-etc)); }
+#cats .day.on i{ background:#fff; }   /* 고른 칩은 배경이 진해서 점도 흰색으로 */
 .ktag{ font-size:calc(13px * var(--ts)); font-weight:600; margin-right:6px;
        color:var(--kc, var(--k-etc)); }
 
