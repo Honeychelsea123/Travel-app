@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b226';
-import { $, esc, toast, copyText } from './dom.js?v=b226';
-import { starHtml, paintStars, markRated } from './stars.js?v=b226';
+import { sb } from './db.js?v=b227';
+import { $, esc, toast, copyText } from './dom.js?v=b227';
+import { starHtml, paintStars, markRated } from './stars.js?v=b227';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
-         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b226';
-import { loadAdmin } from './admin.js?v=b226';
+         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b227';
+import { loadAdmin } from './admin.js?v=b227';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b226';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b227';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -136,6 +136,15 @@ if ('serviceWorker' in navigator){
       logError('서비스워커 등록 실패: ' + (e?.message || e), 'sw.js');
     });
     setTimeout(checkBuild, 1800);        /* 워커가 뒤에서 새 화면을 받아둘 틈 */
+
+    /* Leaflet 을 뒤에서 미리 받아둡니다. **부팅과는 상관없습니다** — 화면이
+       다 뜨고 한가할 때 시작하고, 안 와도 아무 일도 안 일어납니다.
+       이걸 안 하면 지도를 한 번도 안 연 사람은 비행기모드에서 지도가 안 나옵니다
+       (전에는 head 에 있어서 열 때마다 받아졌습니다). 부팅을 안 막으면서
+       그 성질만 되찾습니다. 서비스워커가 셸에 담아두므로 한 번이면 됩니다. */
+    const warm = () => { if (navigator.onLine) ensureLeaflet(); };
+    if (window.requestIdleCallback) requestIdleCallback(warm, { timeout:8000 });
+    else setTimeout(warm, 4000);
   });
   addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
@@ -5910,9 +5919,46 @@ $('days').addEventListener('change', e => {
  * 글자는 영어 지도를 씁니다 — 현지 문자로만 나오면 어디가 어딘지 못 읽습니다. */
 let lmap = null, lmarks = null;
 
+/* ── Leaflet 은 쓸 때 불러옵니다 ──────────────────────────────────────
+ * 전에는 index.html 의 head 에 defer 로 걸려 있었습니다. 그런데 defer
+ * 스크립트와 모듈 스크립트는 **문서 순서대로** 실행됩니다. unpkg 가 느리거나
+ * 매달리면 뒤에 있는 app.js 가 아예 실행되지 않고, 그러면 __t2booted 가
+ * 안 켜져 부팅 실패 상자만 남습니다. **캐시가 멀쩡해도 그렇습니다** —
+ * 재현해서 확인했습니다. 지도 하나가 앱 전체를 붙잡을 이유가 없습니다.
+ *
+ * 여기서 부르면 늦어도 지도만 늦습니다. 못 받아오면 지도만 안 나옵니다.
+ * 실패하면 약속을 지워 다음에 다시 해봅니다 — 한 번 끊겼다고 영영 포기하면
+ * 연결이 돌아와도 지도가 안 나옵니다. */
+let leafletP = null, leafletWaiting = false;
+function ensureLeaflet(){
+  if (window.L) return Promise.resolve(true);
+  if (leafletP) return leafletP;
+  leafletP = new Promise(resolve => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload  = () => resolve(true);
+    s.onerror = () => { leafletP = null; resolve(false); };
+    document.head.appendChild(s);
+  });
+  return leafletP;
+}
+
 function drawPlanMap(){
   const box = $('planmap');
-  if (!window.L){ box.classList.add('hide'); return; }   /* 못 받아왔으면 조용히 생략 */
+  /* 아직 안 왔으면 자리를 감춰두고 불러옵니다. 오면 그때 다시 그립니다 —
+     그래서 부르는 쪽(열 곳)은 이 함수가 기다리는지 몰라도 됩니다. */
+  if (!window.L){
+    box.classList.add('hide');
+    if (!leafletWaiting){
+      leafletWaiting = true;
+      ensureLeaflet().then(ok => { leafletWaiting = false; if (ok) drawPlanMap(); });
+    }
+    return;
+  }
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
   const pts = show.filter(p => p.lat != null && p.lng != null);
