@@ -1,24 +1,21 @@
+/* ── 진입점 ────────────────────────────────────────────────────────
+ * 층은 이렇게 흐릅니다. 위가 아래에 기대고, 거꾸로는 없습니다(순환 참조 방지).
+ *   dom.js · db.js · calc.js · stars.js   ← 아무것도 import 안 하는 잎
+ *   net.js    (dom.js 만)
+ *   admin.js  (dom.js · db.js · net.js)
+ *   app.js    ← 여기. 나머지 전부
+ */
 import { WORLD_PATHS } from './world.js';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sb } from './db.js?v=b221';
+import { $, esc, toast, copyText } from './dom.js?v=b221';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b220';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b221';
 
-/* ── 설정 ──────────────────────────────────────────────────────────
- * publishable 키는 브라우저에 있어도 됩니다. RLS 가 지킵니다.
- * (secret / service_role 키는 절대 여기 두지 않습니다 — RLS 를 통째로 무시합니다.)
- * 저장 키에 t2 를 붙입니다. 도쿄 앱과 같은 github.io 도메인이라
- * localStorage 를 공유하기 때문입니다. 겹치면 여행 중에 터집니다. */
-/* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다. */
+/* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
+   **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
+   world.js 를 쓰는 곳이 여기뿐입니다. */
 document.getElementById('worldland').innerHTML = WORLD_PATHS;
-const SUPABASE_URL = 'https://qahqqhjleqfrsjiixnas.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_ymbrt_00OqzQjT3SrweZgQ_Lu0cw64V';
 
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { storageKey:'t2-auth', persistSession:true, autoRefreshToken:true,
-          detectSessionInUrl:true }
-});
-
-const $  = id => document.getElementById(id);
 const t0 = performance.now();
 let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = {},
     picked = null, hitList = [], cursor = 0,
@@ -32,9 +29,6 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
   const v = localStorage.getItem('t2:ts');
   if (v) document.documentElement.style.setProperty('--ts', v);
 }
-
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
-  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* 자체 점검 표시. 개발 중에 보려고 두었던 "계정" 카드는 화면에서 뺐습니다 —
    사용자가 알 필요가 없는 내용이었습니다.
@@ -4800,15 +4794,7 @@ $('openmap').addEventListener('click', openMap);
 /* 앱 자체를 권하는 자리. 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
    휴대폰은 기본 공유창을 띄우고, 안 되는 브라우저는 주소만 복사합니다. */
 /* 잠깐 뜨는 알림. 아이콘 버튼이라 글자를 바꿔 알릴 자리가 없습니다. */
-let toastT = null;
-function toast(msg){
-  let t = $('toast');
-  if (!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
-  t.textContent = msg;
-  t.classList.add('on');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => t.classList.remove('on'), 3200);
-}
+/* toast 는 dom.js 로 옮겼습니다 (맨 위 import) — net.js 도 씁니다. */
 
 $('shareapp').addEventListener('click', async () => {
   const url  = location.origin + location.pathname;
@@ -7898,20 +7884,7 @@ $('i_share').addEventListener('click', async () => {
    navigator.clipboard 는 내장 브라우저나 iframe 에서 막히는 일이 있는데,
    그럴 때 옛 execCommand 방식은 대개 통합니다. 한 번 실패했다고 포기하면
    사용자가 손으로 긁어야 합니다. */
-async function copyText(t){
-  try { await navigator.clipboard.writeText(t); return true; } catch {}
-  try {
-    const ta = document.createElement('textarea');
-    ta.value = t;
-    ta.setAttribute('readonly', '');
-    ta.style.cssText = 'position:fixed; top:0; left:0; opacity:0';
-    document.body.appendChild(ta);
-    ta.select(); ta.setSelectionRange(0, t.length);
-    const ok = document.execCommand('copy');
-    ta.remove();
-    return ok;
-  } catch { return false; }
-}
+/* copyText 는 dom.js 로 옮겼습니다 (맨 위 import) — admin.js 도 씁니다. */
 
 $('i_copy').addEventListener('click', async () => {
   const ok = await copyText($('i_link').textContent);
