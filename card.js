@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b242';
+import { $, esc, toast } from './dom.js?v=b243';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -119,7 +119,7 @@ async function ensureFont(){
   fontReady = (async () => {
     if (!document.fonts) return false;
     /* 쓸 조합을 다 불러둡니다. 하나라도 빠지면 그 크기만 네모가 됩니다. */
-    const want = [[700,120],[700,86],[700,64],[600,40],[400,44],[400,34],[600,30]];
+    const want = [[700,120],[700,86],[700,64],[600,40],[400,44],[400,34],[600,30],[500,28]];
     try {
       await Promise.all(want.map(([w, px]) =>
         document.fonts.load(`${w} ${px}px Pretendard`, '가나다 ABC 123 ★')));
@@ -130,19 +130,35 @@ async function ensureFont(){
   return fontReady;
 }
 
-/* 선 아이콘을 캔버스에 얹습니다. SVG 를 그림으로 만들어 그리면
-   화면에 쓰는 것과 **같은 좌표**를 그대로 씁니다 — 두 벌로 관리하지 않습니다. */
-function iconImage(paths, px){
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${px}"
-    height="${px}" fill="none" stroke="#fff" stroke-width="2"
-    stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+/* SVG 를 그림으로 만들어 캔버스에 얹습니다. 화면에 쓰는 것과 **같은 좌표**를
+   그대로 쓰므로 두 벌로 관리하지 않습니다.
+   **못 그려도 null 을 줍니다** — 그림 하나 때문에 카드 전체가 안 나오면 안 됩니다. */
+function svgImage(svg){
   return new Promise(ok => {
     const img = new Image();
     img.onload = () => ok(img);
-    img.onerror = () => ok(null);          /* 아이콘이 없어도 카드는 나와야 합니다 */
+    img.onerror = () => ok(null);
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   });
 }
+
+/* 선 아이콘. 굵기 2px 고정, 흰색 단색 — 위 PERSONA_ICON 과 같은 규칙입니다. */
+function iconImage(paths, px){
+  return svgImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${px}"
+    height="${px}" fill="none" stroke="#fff" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`);
+}
+
+/* ── 카드에서 찾아오는 길 ────────────────────────────────────────────
+ * **앱 이름만 적으면 못 찾아옵니다.** 이 앱은 앱스토어에 없는 PWA 라
+ * 'AI.Trip' 을 검색해도 아무 데서도 안 나옵니다. 인스타에 올라간 카드를 보고
+ * "이거 뭐야" 하는 사람에게 줄 것이 그림 안에 있어야 합니다.
+ * 주소는 **여기 한 곳에서만** 만듭니다 — 나중에 도메인이 생기면 이 줄만 바꿉니다.
+ * 화면에는 `https://` 와 끝 슬래시를 뺀 것을 적습니다(짧을수록 읽힙니다). */
+export const appUrl = () =>
+  typeof location === 'undefined' ? '' : location.origin + location.pathname;
+export const appUrlText = () =>
+  appUrl().replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 /* 긴 문구를 폭에 맞춰 접습니다. 한국어는 단어 사이를 띄우지 않는 경우가 많아
    띄어쓰기로만 접으면 한 줄이 넘칩니다. 넘치면 글자 단위로 한 번 더 접습니다. */
@@ -168,7 +184,9 @@ function wrapText(g, text, max){
 }
 
 /* 카드 하나를 그림 파일로. 화면 카드와 같은 내용, 같은 색, 같은 아이콘입니다. */
-async function cardImage(spec, mode = 'square'){
+/* 내보내는 이유는 하나입니다 — **자가검사가 실제로 그려봐야 하기 때문입니다.**
+   화면 없이 blob 이 나오는지, 그림이 깨져도 카드가 나오는지를 봅니다. */
+export async function cardImage(spec, mode = 'square'){
   const { w:W, h:H } = IMG_SIZES[mode] || IMG_SIZES.square;
   const ok = await ensureFont();
   const fam = ok ? '"Pretendard", -apple-system, sans-serif'
@@ -200,6 +218,15 @@ async function cardImage(spec, mode = 'square'){
 
   const icon = await iconImage(spec.icon || '', 176);
   if (icon) add(176 + 56, y => g.drawImage(icon, cx - 88, y, 176, 176));
+
+  /* 그림 한 장(지금은 발자국 세계지도). **화면에 그려져 있는 것을 그대로 받습니다** —
+     어느 나라를 칠할지 여기서 다시 정하면 화면과 어긋납니다.
+     비율은 부르는 쪽이 줍니다(세계지도는 1000×387). */
+  if (spec.art){
+    const mw = maxW, mh = Math.round(mw * (spec.artRatio || 0.387));
+    const art = await svgImage(spec.art);
+    if (art) add(mh + 44, y => g.drawImage(art, cx - mw / 2, y, mw, mh));
+  }
 
   g.font = F(700, 86);
   const lines = wrapText(g, spec.title, maxW);
@@ -235,9 +262,20 @@ async function cardImage(spec, mode = 'square'){
   for (const it of items){ it.draw(y); y += it.h; }
 
   /* 앱 이름은 구석에 작게. 크게 넣으면 광고처럼 보입니다.
-     보는 사람이 궁금해서 찾아오는 정도면 충분합니다. */
+     **주소를 같이 적습니다.** 전에는 이름만 있었는데, 이 앱은 앱스토어에 없는
+     PWA 라 그 이름으로는 아무 데서도 검색이 안 됩니다 — 카드를 보고 궁금해진
+     사람이 갈 곳이 없었습니다. 이름보다 더 흐리게 둬서 광고처럼 안 보이게 합니다. */
   g.font = F(600, 30); g.globalAlpha = .6;
-  g.fillText('AI.Trip', cx, H - 84); g.globalAlpha = 1;
+  g.fillText('AI.Trip', cx, H - 96); g.globalAlpha = 1;
+  /* **주소는 이름만큼 또렷해야 합니다.** 처음에 24px·42% 로 넣었다가 재보니
+     배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
+     폰 화면에서 9pt 도 안 되는데, 그걸 흐리게까지 하면 **읽어서 칠 수가 없습니다.**
+     읽으라고 넣은 글자입니다. 광고처럼 안 보이는 선에서 최대한 또렷하게. */
+  const link = appUrlText();
+  if (link){
+    g.font = F(500, 28); g.globalAlpha = .62;
+    g.fillText(link, cx, H - 54); g.globalAlpha = 1;
+  }
 
   return { blob: await new Promise(r => cv.toBlob(r, 'image/png')), fontOk: ok };
 }
@@ -249,7 +287,18 @@ async function saveCardImage(spec, mode, name){
   const { blob, fontOk } = await cardImage(spec, mode);
   const file = new File([blob], name + '.png', { type:'image/png' });
   if (navigator.canShare?.({ files:[file] })){
-    try { await navigator.share({ files:[file], title: spec.title }); return; }
+    /* **주소를 같이 넘깁니다.** 전에는 `{files, title}` 만 보내서, 카톡으로
+       보내면 그림만 가고 링크가 없었습니다. 받은 사람이 궁금해도 갈 곳이
+       없으니 공유가 유입으로 이어질 수가 없었습니다.
+       받는 앱이 글을 버리는 경우도 있어서 **그림 안에도 주소를 적어**
+       뒀습니다(위 cardImage) — 둘 중 하나는 남습니다. */
+    const url = appUrl();
+    const share = { files:[file], title: spec.title,
+                    text: `${spec.title} · AI.Trip`, url };
+    /* url·text 를 못 받는 기기가 있습니다. 그때는 그림만이라도 보냅니다 —
+       여기서 실패하면 아래 내려받기로 떨어져서 공유 자체를 못 하게 됩니다. */
+    const payload = navigator.canShare(share) ? share : { files:[file], title: spec.title };
+    try { await navigator.share(payload); return; }
     catch (e){ if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
@@ -590,5 +639,84 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
   console.log(ng.length ? `✗ ${ng.length}건 틀림`
             : warn.length ? `✓ 틀린 것 없음 · ⚠ 살펴볼 것 ${warn.length}건`
             : `✓ ${out.length}건 모두 통과`);
+  return out;
+};
+
+/* ── 그리기 자가검사 (개발용) ────────────────────────────────────────
+ * 콘솔에서 **`await __drawCheck()`** — 위 __cardCheck 와 따로 둡니다.
+ * 실제로 캔버스에 그려보므로 느리고(카드 한 장에 1초쯤) 기다려야 합니다.
+ * 빠른 검사에 섞으면 `__cardCheck().filter(...)` 가 약속을 돌려주게 되어
+ * 부르는 쪽이 다 깨집니다.
+ *
+ * 보는 것은 하나입니다: **공유된 그림만 보고 여기로 찾아올 수 있는가.**
+ * 이 앱은 앱스토어에 없는 PWA 라 이름만 적혀 있으면 검색해도 안 나옵니다.
+ */
+if (typeof window !== 'undefined') window.__drawCheck = async () => {
+  const out = [];
+  const bad = (name, msgs) =>
+    out.push({ 항목:name, 결과: msgs.length ? '✗ ' + msgs.join(' / ') : '✓' });
+
+  /* 글자는 배경 그라데이션 위에 반투명으로 얹힙니다. 절대 밝기로는 못 봅니다 —
+     같은 줄에서 **좌우 끝(글자 없는 자리)과 가운데의 대비**를 봅니다. */
+  const 대비 = (g, W, y0, h) => {
+    const d = g.getImageData(0, y0, W, h).data;
+    let 끝 = 0, n = 0, 최대 = 0;
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < W; x++){
+        const i = (y * W + x) * 4, b = (d[i] + d[i+1] + d[i+2]) / 3;
+        if (x < 60 || x > W - 60){ 끝 += b; n++; }
+        else if (b > 최대) 최대 = b;
+      }
+    return 최대 - 끝 / n;
+  };
+  const 그리기 = async spec => {
+    const { blob } = await cardImage(spec, 'square');
+    const bmp = await createImageBitmap(blob);
+    const cv = document.createElement('canvas');
+    cv.width = bmp.width; cv.height = bmp.height;
+    const g = cv.getContext('2d'); g.drawImage(bmp, 0, 0);
+    return { g, W: cv.width, H: cv.height, size: blob.size };
+  };
+  const 밝은픽셀 = x => {
+    const d = x.g.getImageData(0, Math.round(x.H * .45), x.W, Math.round(x.H * .2)).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 235 && d[i+1] > 235) n++;
+    return n;
+  };
+  const base = { g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
+                 title:'27개국', nums:'195개국 중 13.8%' };
+
+  try {
+    const a = await 그리기(base);
+    const m = [];
+    if (!a.size) m.push('빈 그림이 나옴');
+    /* 주소가 안 그려지면 대비가 빈 여백과 같아집니다. */
+    const 주소 = 대비(a.g, a.W, a.H - 70, 26);
+    const 여백 = 대비(a.g, a.W, a.H - 26, 20);
+    if (주소 < 여백 + 25)
+      m.push(`주소가 그림에 안 보임 (대비 ${Math.round(주소)} · 여백 ${Math.round(여백)})`);
+    if (!appUrlText()) m.push('주소 자체가 비어 있음');
+    bad('공유된 그림만 보고 찾아올 수 있는가 (주소가 그림 안에)', m);
+  } catch (e){ bad('공유된 그림만 보고 찾아올 수 있는가', ['터짐: ' + e.message]); }
+
+  try {
+    const m = [];
+    const paths = [0,1,2,3,4].map(i =>
+      `<path class="been" d="M${100 + i*160} 120 h120 v90 h-120 z"/>`).join('');
+    const art = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
+        <style>path{fill:rgba(255,255,255,.16)}path.been{fill:#fff}</style>${paths}</svg>`;
+    const 없음 = await 그리기(base);
+    const 있음 = await 그리기({ ...base, art, artRatio: 387/1000 });
+    if (밝은픽셀(있음) < 밝은픽셀(없음) * 2) m.push('지도를 넣었는데 그림이 안 바뀜');
+    /* **그림이 깨져도 카드는 나와야 합니다.** 지도 하나 때문에 공유를 통째로
+       못 하게 되면 안 됩니다. */
+    const 깨짐 = await 그리기({ ...base, art:'<svg>망가진 것', artRatio: .4 });
+    if (!깨짐.size) m.push('그림이 깨지니 카드가 통째로 안 나옴');
+    bad('발자국 지도가 카드에 들어가는가 · 깨져도 버티는가', m);
+  } catch (e){ bad('발자국 지도가 카드에 들어가는가', ['터짐: ' + e.message]); }
+
+  console.table(out);
+  const ng = out.filter(o => o.결과.startsWith('✗'));
+  console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
   return out;
 };

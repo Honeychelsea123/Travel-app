@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b242';
-import { $, esc, toast, copyText } from './dom.js?v=b242';
-import { starHtml, paintStars, markRated } from './stars.js?v=b242';
+import { sb } from './db.js?v=b243';
+import { $, esc, toast, copyText } from './dom.js?v=b243';
+import { starHtml, paintStars, markRated } from './stars.js?v=b243';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b242';
-import { loadAdmin } from './admin.js?v=b242';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b242';
+         setErrLogger, NOROW } from './net.js?v=b243';
+import { loadAdmin } from './admin.js?v=b243';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b243';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b242';
+         setEditPlanId } from './trip.js?v=b243';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b242';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b243';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b242';
+         useCities, addCity, search } from './cities.js?v=b243';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b242';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b243';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b242';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b243';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b242';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b243';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3933,7 +3933,28 @@ async function openMap(){
      </div>
      <div class="memo" style="text-align:center; margin-top:10px">
        ${UN_COUNTRIES}개국 중 <b>${gone.size}개국</b> · ${pct.toFixed(1)}%</div>
-     <div class="fp"><i style="width:${Math.max(pct, 1.2).toFixed(1)}%"></i></div>`;
+     <div class="fp"><i style="width:${Math.max(pct, 1.2).toFixed(1)}%"></i></div>
+     <button class="ghost" id="fp_img" style="width:100%; margin-top:12px">
+       이미지로 저장 · 공유</button>`;
+
+  /* ── 발자국을 카드로 ──────────────────────────────────────────────
+     **여기가 이 앱에서 제일 내보이고 싶은 그림입니다.** 성향 카드보다
+     "몇 개국 다녀왔다"가 훨씬 자랑거리라, 공유가 유입으로 이어질 자리는
+     여기입니다. 그런데 여태 공유가 아예 없었습니다.
+     지도는 **화면에 그려져 있는 것을 그대로 빌려 씁니다** — 어느 나라를
+     칠할지 다시 정하면 화면과 어긋납니다. 위에서 이미 .been 을 붙여뒀습니다.
+     칠은 카드 배경(남색→보라) 위에 얹히므로 흰색 두 단계로만 씁니다. */
+  $('fp_img').onclick = () => askImageSize({
+    g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
+    title:`${gone.size}개국`,
+    nums:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
+    note:`${mapCities.length}개 도시 · ${conts.size}개 대륙`,
+    artRatio: 387 / 1000,
+    art: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
+            <style>path{fill:rgba(255,255,255,.16)}
+                   path.been{fill:#fff}</style>
+            ${$('worldland').innerHTML}</svg>`,
+  }, 'aitrip-발자국');
 
   /* ── 대륙별 ── 퍼센트는 국가로만 셉니다 ── */
   $('m_cont').innerHTML = CONT.map(([k, total]) => {
