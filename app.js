@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b241';
-import { $, esc, toast, copyText } from './dom.js?v=b241';
-import { starHtml, paintStars, markRated } from './stars.js?v=b241';
+import { sb } from './db.js?v=b242';
+import { $, esc, toast, copyText } from './dom.js?v=b242';
+import { starHtml, paintStars, markRated } from './stars.js?v=b242';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b241';
-import { loadAdmin } from './admin.js?v=b241';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b241';
+         setErrLogger, NOROW } from './net.js?v=b242';
+import { loadAdmin } from './admin.js?v=b242';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b242';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b241';
+         setEditPlanId } from './trip.js?v=b242';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b241';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b242';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b241';
+         useCities, addCity, search } from './cities.js?v=b242';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b241';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b242';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b241';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b242';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b241';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b242';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -2099,11 +2099,19 @@ function heroHtml(photo, dd, title, memo, btn){
    하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
    중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
 async function loadHome(){
-  /* 홈은 서버에서 받아올 것이 많습니다 — 다음 여행, 평가할 곳, 발자국, 통계.
-     오프라인이면 그 중 하나도 못 옵니다. 하나씩 시간을 재며 실패하느니
-     **아예 안 물어보고** 바로 알립니다. 그게 훨씬 빠릅니다. */
-  /* 오프라인 안내는 한 곳에서만 만듭니다. 아래 두 군데(처음부터 끊긴 경우 ·
-     받다가 끊긴 경우)가 같은 말을 해야 하는데, 따로 적으면 갈립니다. */
+  /* **오프라인이라고 미리 포기하지 않습니다 (b242).**
+     전에는 `if (netIsDown()) return offHome();` 로 시작했습니다. "어차피 하나도
+     못 오니 물어보지 말고 바로 알리자"는 뜻이었는데, buildHome 은 다음 여행을
+     **캐시에서 꺼내 그릴 줄 압니다**(cacheGet('nexttrip')).
+     그래서 비행기모드에서 처음 열면 D-35 히어로가 멀쩡히 나오는데,
+     여행 탭에 갔다 오면 그때는 netIsDown() 이 참이 되어 있어서 같은 화면이
+     "홈은 지금 볼 수 없어요"로 바뀌었습니다 — **뒤로 갈수록 못 보게 되는 셈**이라
+     사용자가 바로 알아챘습니다.
+     이제 질의가 전부 netTimeout 을 지나고, netTimeout 은 끊긴 걸 알면 **요청을
+     아예 안 만들고 즉시 돌아옵니다.** 기다릴 것이 없으니 미리 포기할 이유도
+     없어졌습니다. 그려보고, 정말 아무것도 못 그렸을 때만 안내합니다. */
+  /* 오프라인 안내는 한 곳에서만 만듭니다. 아래 두 군데가 같은 말을 해야 하는데
+     따로 적으면 갈립니다. */
   const offHome = () => {
     $('home').innerHTML =
       `<div class="card"><div class="empty" style="padding:26px 12px">
@@ -2119,24 +2127,23 @@ async function loadHome(){
     $('hometotrip').onclick = () => showApp('trips');
     drawOffbar();
   };
-  if (netIsDown()) return offHome();
+  /* 그린 것이 있나. **자리표시자("불러오는 중…")는 그린 것이 아닙니다** —
+     그게 남아 있으면 계속 돌기만 하고 사용자는 곧 뜰 줄 압니다. */
+  const 그렸나 = () => !$('home').querySelector('.load') &&
+                       !!$('home').querySelector('.hero, .card, .rvbar');
   try {
     await buildHome();
-    /* **자리표시자가 남아 있으면 거짓말입니다.** buildHome 이 아무것도 못 그리고
-       끝나는 길이 있는데(질의가 다 비어 오는 경우), 그러면 index.html 의
-       "불러오는 중…"이 그대로 남아 계속 도는 것처럼 보입니다.
-       사용자가 "실제로 불러와지는 줄 안다"고 한 것이 이것입니다. */
-    if ($('home').querySelector('.load')) offHome();
+    if (!그렸나()) offHome();
+    else if (netIsDown()) drawOffbar();   /* 캐시로 그렸으면 그렇다고 띠를 띄웁니다 */
   }
   catch (e){
-    if ($('home').querySelector('.hero, .card, .rvbar')) return;   /* 이미 뭔가 그렸으면 둡니다 */
-    $('home').innerHTML = !netIsDown()
-      ? `<div class="card"><div class="empty">홈을 불러오지 못했어요.<br>
-           <button class="small" id="homeretry" style="margin-top:10px">다시 시도</button>
-         </div></div>`
-      : `<div class="card"><div class="empty">지금은 연결이 없어요.<br>
-           아래 <b>여행</b> 탭에서 저장해둔 일정을 볼 수 있어요.</div></div>`;
-    if ($('homeretry')) $('homeretry').onclick = loadHome;
+    if (그렸나()) return drawOffbar();    /* 도중에 죽었어도 뭔가 남았으면 둡니다 */
+    if (netIsDown()) return offHome();
+    $('home').innerHTML =
+      `<div class="card"><div class="empty">홈을 불러오지 못했어요.<br>
+         <button class="small" id="homeretry" style="margin-top:10px">다시 시도</button>
+       </div></div>`;
+    $('homeretry').onclick = loadHome;
     drawOffbar();
   }
 }
