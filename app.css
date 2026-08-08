@@ -92,6 +92,12 @@ h1{ font-size:calc(19px * var(--ts)); margin:0; font-weight:650;
 .card{ background:var(--canvas); border:0; border-radius:var(--r-lg);
        padding:var(--s-md); margin-bottom:var(--s-sm); min-width:0;
        box-shadow:var(--lift-1); }
+/* 흰 카드 + 같은 모서리 + 같은 그림자가 계속 쌓이면 뭐가 중요한지 눈이
+   못 고릅니다. **뜨는 카드(그림자)는 지금 할 일**, **묻힌 카드(테두리만)는
+   훑어보는 자료** — 이 둘로만 가릅니다. 색상 단계를 늘리면 그것대로 또
+   위계가 생겨 원래 문제로 돌아갑니다. 홈 화면의 '여기 가보셨어요'·
+   '내 발자국'처럼 하는 일 없이 보여주기만 하는 카드에 씁니다. */
+.card.quiet{ box-shadow:none; border:1px solid var(--divider-soft); }
 .card h2{ font-size:calc(15px * var(--ts)); margin:0 0 var(--s-sm); font-weight:600;
           letter-spacing:calc(-0.4px * var(--ts));
           display:flex; align-items:center; gap:var(--s-xs); }
@@ -1369,8 +1375,10 @@ pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
      font-size:calc(13px * var(--ts)); overflow-x:auto;
      white-space:pre-wrap; word-break:break-word; color:var(--bad);
      font-family:var(--sf); }
-.foot{ color:var(--ink-48); font-size:calc(12px * var(--ts)); text-align:center;
-       margin-top:var(--s-lg); }
+/* 프로필 맨 아래에만 있습니다. 눈에 안 띄되 자리는 늘 같아서, 찾으려면
+   찾을 수 있고 안 찾으면 안 보입니다. */
+.foot{ color:var(--ink-48); font-size:calc(11px * var(--ts)); text-align:center;
+       margin:var(--s-lg) 0 var(--s-sm); opacity:.6; }
 code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
       font-size:.92em; }
 

@@ -3332,7 +3332,9 @@ async function renderQuiz(){
   await fillQuiz();
   const list = quizPool.slice(0, QUIZ_ROWS);
   const box = document.createElement('div');
-  box.className = 'card';
+  /* quiet — 위 두 색카드(이번 여행 · 다음 여행)는 지금 할 일이고,
+     이건 훑어보는 자료입니다. 같은 흰 카드로 두면 위계가 안 갈립니다. */
+  box.className = 'card quiet';
   box.innerHTML = `<h2>여기 가보셨어요?</h2>
     <div id="quizlist">${
       list.length ? list.map(quizRow).join('')
@@ -3351,7 +3353,7 @@ async function renderFoot(){
   visited = new Set((vis.data || []).map(v => v.city_id));
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   const box = document.createElement('div');
-  box.className = 'card'; box.id = 'homefp'; box.style.cursor = 'pointer';
+  box.className = 'card quiet'; box.id = 'homefp'; box.style.cursor = 'pointer';
   box.innerHTML =
     `<div class="row" style="border:0; padding:0; margin:0">
        <span class="label" style="font-weight:650">내 발자국</span>
