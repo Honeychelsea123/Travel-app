@@ -8,6 +8,7 @@
 import { WORLD_PATHS } from './world.js';
 import { sb } from './db.js?v=b221';
 import { $, esc, toast, copyText } from './dom.js?v=b221';
+import { starHtml, paintStars, markRated } from './stars.js?v=b221';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
          legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b221';
 
@@ -2105,12 +2106,8 @@ async function runReview(id){
  * 추천은 하지 않습니다 — 예상 별점은 근거보다 세게 들리고,
  * 여행은 틀렸을 때 대가가 영화와 다릅니다.
  * 남들 평균은 예측이 아니라 사실이라 보여주되 몇 명이 매겼는지 같이 답니다. */
-function starHtml(v){
-  return [1,2,3,4,5].map(n => {
-    const f = v == null ? 0 : Math.max(0, Math.min(1, v - (n - 1)));
-    return `<span class="st" data-n="${n}"><i style="width:${(f*100).toFixed(0)}%"></i></span>`;
-  }).join('');
-}
+/* starHtml · paintStars · markRated 는 stars.js 로 옮겼습니다 (맨 위 import).
+   다섯 화면이 같은 모양으로 그려야 하는 것이라 한곳에 모았습니다. */
 
 async function loadRatings(){
   /* 도시 목록은 받아둔 것이 있어도 **내 별점은 서버에서** 옵니다.
@@ -2292,33 +2289,6 @@ $('ratelist').addEventListener('click', async e => {
   const row = e.target.closest('[data-cityopen]');
   if (row) await openCity(row.dataset.cityopen);
 });
-
-/* 별을 누르면 그 자리에서 바로 칠합니다. 저장을 기다렸다 다시 그리면
-   그 사이에 아무 일도 안 일어난 것처럼 보이고, 다시 그리는 순간
-   정렬이 바뀌어 줄이 위로 튀어 오릅니다 — 눌렀는지 알 수가 없습니다. */
-function paintStars(wrap, v, animate){
-  [...wrap.querySelectorAll('.st')].forEach((st, n) => {
-    const f = Math.max(0, Math.min(1, (v ?? 0) - n));
-    st.querySelector('i').style.width = (f * 100).toFixed(0) + '%';
-    if (!animate) return;
-    st.classList.remove('pop');
-    if (f <= 0){ st.style.animationDelay = ''; return; }
-    /* 같은 애니메이션을 다시 틀려면 한 번 끊어줘야 합니다.
-       offsetWidth 를 읽으면 브라우저가 그 자리에서 계산해 흐름이 끊깁니다. */
-    void st.offsetWidth;
-    st.style.animationDelay = (n * 55) + 'ms';   /* 왼쪽부터 차례로 */
-    st.classList.add('pop');
-  });
-}
-function markRated(row, v){
-  if (!row) return;
-  const box = row.querySelector('.t') || row;
-  let t = box.querySelector('.rtag');
-  if (v == null){ t?.remove(); return; }
-  if (!t){ t = document.createElement('span'); t.className = 'ktag rtag';
-           t.style.cssText = '--kc:#f5a623; margin-left:6px'; box.querySelector('b')?.after(t); }
-  t.textContent = `★ ${v} 기록`;
-}
 
 async function saveRate(cityId, patch, quiet){
   const r = await sb.from('city_ratings')
