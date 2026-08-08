@@ -6,18 +6,18 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b234';
-import { $, esc, toast, copyText } from './dom.js?v=b234';
-import { starHtml, paintStars, markRated } from './stars.js?v=b234';
+import { sb } from './db.js?v=b235';
+import { $, esc, toast, copyText } from './dom.js?v=b235';
+import { starHtml, paintStars, markRated } from './stars.js?v=b235';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b234';
-import { loadAdmin } from './admin.js?v=b234';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b234';
+         setErrLogger, NOROW } from './net.js?v=b235';
+import { loadAdmin } from './admin.js?v=b235';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b235';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b234';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b235';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b234';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b235';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -6280,10 +6280,16 @@ $('tstrip').addEventListener('click', e => {
     const next = o[i + d];
     if (next && next !== tab) showTab(next);
   };
-  onSwipeX($('tripview'), {
-    /* 여행 화면이 떠 있을 때만입니다. 숨어 있어도 이벤트는 안 오지만,
-       시트가 위에 열려 있을 때는 화면이 보여도 넘기면 안 됩니다. */
-    active: () => !$('tripview').classList.contains('hide') &&
+  /* **`#tripview` 가 아니라 화면 전체에 겁니다.** 처음에 tripview 에 걸었더니
+     카드가 끝나는 데서 tripview 도 끝나서, **그 아래 회색 빈 자리에서는
+     아무 일도 안 일어났습니다**(지출이 비면 화면의 3분의 2가 그 자리입니다).
+     사용자가 보기에 그 회색도 여행 화면이므로 거기서도 넘어가야 합니다.
+     화면 전체에 걸어도 되는 이유는 `body.intrip` 이 있기 때문입니다 —
+     showApp 이 다른 탭으로 갈 때 여행을 닫으면서 늘 끕니다. */
+  onSwipeX(document, {
+    /* 시트가 위에 열려 있으면 화면이 보여도 넘기면 안 됩니다. */
+    active: () => document.body.classList.contains('intrip') &&
+                  !$('tripview').classList.contains('hide') &&
                   !document.body.classList.contains('sheeton'),
     onLeft:  () => step(1),      /* 왼쪽으로 쓸면 다음 구역이 따라 들어옵니다 */
     onRight: () => step(-1),
