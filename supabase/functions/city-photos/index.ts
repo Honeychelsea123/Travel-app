@@ -121,9 +121,17 @@ Deno.serve(async (req) => {
       }));
     };
 
+    /* **검색어를 직접 줄 수 있게 합니다.**
+       한·일 지방도시는 이름만으로 찾으면 어느 도시인지 알 수 없는 일반 도시
+       사진이 옵니다 — 창원·천안·진주·청주에 똑같은 한옥이 왔고 보령엔
+       부산 해변이 왔습니다. 그런데 **명소 이름으로 찾으면 정확했습니다**
+       (담양 메타세쿼이아길, 보성 녹차밭, 부여 궁남지).
+       그래서 그 도시의 대표 명소를 사람이 정해 넘길 길을 둡니다. */
+    const qs: Record<string, string> = body?.queries ?? {};
+
     const out: unknown[] = [];
     for (const c of rows ?? []) {
-      const base = `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
+      const base = qs[c.id] ?? `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
       try {
         const [a, b] = await Promise.all([
           hunt(base),
