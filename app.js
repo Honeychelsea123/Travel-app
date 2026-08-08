@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b224';
-import { $, esc, toast, copyText } from './dom.js?v=b224';
-import { starHtml, paintStars, markRated } from './stars.js?v=b224';
+import { sb } from './db.js?v=b225';
+import { $, esc, toast, copyText } from './dom.js?v=b225';
+import { starHtml, paintStars, markRated } from './stars.js?v=b225';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
-         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b224';
-import { loadAdmin } from './admin.js?v=b224';
+         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b225';
+import { loadAdmin } from './admin.js?v=b225';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b224';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b225';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -126,7 +126,15 @@ async function checkBuild(){
 }
 if ('serviceWorker' in navigator){
   addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    /* **삼키지 않습니다.** 전에는 .catch(() => {}) 였습니다. sw.js 에 문법
+       오류를 내면 등록이 'script evaluation failed' 로 조용히 실패하고,
+       화면은 멀쩡히 도니까(네트워크로 다 받으므로) **오프라인이 통째로
+       죽은 줄을 아무도 모릅니다.** 실제로 그렇게 만들 뻔했습니다.
+       오류 기록으로 보냅니다 — 관리자 대시보드의 '최근 신고와 오류'에 뜹니다. */
+    navigator.serviceWorker.register('./sw.js').catch(e => {
+      console.error('서비스워커 등록 실패 — 오프라인이 안 됩니다:', e);
+      logError('서비스워커 등록 실패: ' + (e?.message || e), 'sw.js');
+    });
     setTimeout(checkBuild, 1800);        /* 워커가 뒤에서 새 화면을 받아둘 틈 */
   });
   addEventListener('visibilitychange', () => {

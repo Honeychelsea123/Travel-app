@@ -206,9 +206,29 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  /* ── 바깥 것 (지도 타일 · Leaflet · 사진) ── 캐시 먼저. 안 바뀌는 것들입니다. */
+  /* ── 바깥 것 ── 캐시 먼저. 안 바뀌는 것들입니다.
+     **다만 두 부류를 갈라야 합니다.**
+     지도 타일·사진은 얼마든지 쌓이므로 400개로 자릅니다. 그런데 Leaflet 과
+     supabase(esm.sh) 는 **없으면 app.js 가 아예 실행되지 않는 파일**입니다 —
+     leaflet.js 는 head 에 defer 로 걸려 있고 supabase 는 app.js 가 정적
+     import 합니다. 그것들을 타일과 같은 통에 두면 자를 때 같이 쫓겨납니다.
+     게다가 적중해도 다시 담지 않으므로(아래) 순서가 갱신되지 않아
+     **제일 먼저 나가는 것이 하필 그 둘입니다.** 지도를 좀 본 사용자면 닿습니다.
+     그러면 비행기모드에서 셸이 멀쩡한데도 앱이 안 뜹니다.
+     그래서 코드는 셸(안 자르는 통)에 둡니다. 글꼴 조각(.woff2)은 부팅을
+     막지 않으므로 타일과 같이 둡니다.
+
+     **확장자로만 가르면 안 됩니다.** app.js 가 실제로 import 하는 주소는
+     `https://esm.sh/@supabase/supabase-js@2` 로 끝에 .js 가 없습니다 —
+     확장자만 보면 그 진입점 하나가 타일 통으로 떨어져 제일 먼저 쫓겨납니다.
+     재보고 알았습니다. esm.sh 는 자바스크립트만 주므로 통째로 코드로 봅니다.
+     unpkg·jsdelivr 는 글꼴도 주므로 확장자를 봅니다. */
+  const isCode = url.hostname === 'esm.sh'
+    || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
+        && /\.(js|css|mjs)$/i.test(url.pathname));
+
   e.respondWith((async () => {
-    const c = await caches.open(RUN);
+    const c = await caches.open(isCode ? SHELL : RUN);
     const hit = await c.match(req);
     if (hit) return hit;
     try {
@@ -216,7 +236,8 @@ self.addEventListener('fetch', e => {
       /* opaque(무응답) 도 담습니다 — 타일은 CORS 를 안 줍니다.
          대신 상태를 못 보므로 실패한 타일도 담길 수 있습니다. 용량만 막아둡니다. */
       if (res.status === 200 || res.type === 'opaque'){
-        c.put(req, res.clone()); trim(c, TILECAP);
+        c.put(req, res.clone());
+        if (!isCode) trim(c, TILECAP);     /* 셸은 자르지 않습니다 */
       }
       return res;
     } catch {
