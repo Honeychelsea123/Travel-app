@@ -18,14 +18,61 @@
  *
  * 밖에서 가져오는 것은 dom.js 와 db.js 뿐입니다. 둘 다 잎이라 순환이 없습니다.
  */
-import { $, toast } from './dom.js?v=b228';
-import { sb } from './db.js?v=b228';
+import { $, toast } from './dom.js?v=b229';
+import { sb } from './db.js?v=b229';
 
 /* 큐가 다 나간 뒤에 화면을 서버 값으로 맞추는 일은 app.js 가 압니다.
    여기서 trip 이나 loadPlans 를 직접 부르면 net → app 으로 거꾸로 기대게 되어
    순환이 납니다. 무엇을 할지는 app.js 가 넣어줍니다. */
 let onDrained = null;
 export const setOnDrained = fn => { onDrained = fn; };
+
+/* 오류 원문을 어디에 남길지도 app.js 가 압니다(logError 는 로그인 상태와
+   client_errors 표를 봅니다). 같은 이유로 넣어받습니다. */
+let logErr = null;
+export const setErrLogger = fn => { logErr = fn; };
+
+/* ── 서버 말을 사람 말로 ────────────────────────────────────────────────
+ * 전에는 서버가 준 것을 그대로 띄웠습니다. 그러면 화면에
+ *   `new row violates row-level security policy for table "plans"`
+ * 같은 영어가 뜨고, 그마저 없으면 JSON 이 통째로 떴습니다.
+ * **사용자가 할 수 있는 일이 하나도 없는 글자입니다.**
+ *
+ * 여기서 옮기고, 원문은 화면 대신 기록으로 보냅니다 — 원문이 필요한 것은
+ * 사용자가 아니라 고치는 사람입니다.
+ *
+ * **문자열로 넘어온 것은 우리가 쓴 한국어이므로 그대로 둡니다.** */
+const SORRY = '잘 안 됐어요. 잠시 뒤 다시 해보시고, ' +
+              '계속 안 되면 프로필 → 버그 신고로 알려주세요.';
+
+function human(e){
+  const s = String(e?.code || '') + ' ' + String(e?.message || e?.error_description || e?.hint || '');
+  if (/row-level security|42501|permission denied/i.test(s))
+    return '권한이 없어요. 이 여행을 고칠 수 있는지 확인해주세요.';
+  if (/JWT|PGRST301|token is expired|not authenticated|invalid claim/i.test(s))
+    return '로그인이 풀렸어요. 다시 로그인해주세요.';
+  if (/duplicate key|23505|already (exists|registered)/i.test(s))
+    return '이미 있어요.';
+  if (/23503|foreign key/i.test(s))
+    return '이어져 있는 것이 있어서 지울 수 없어요.';
+  if (/22P02|invalid input syntax|invalid text representation/i.test(s))
+    return '적어주신 값을 알아보지 못했어요. 다시 확인해주세요.';
+  if (/too large|413|exceeded the maximum/i.test(s))
+    return '파일이 너무 커요. 더 작은 것으로 올려주세요.';
+  if (/rate limit|429|too many requests/i.test(s))
+    return '너무 자주 눌렀어요. 잠시 뒤에 다시 해주세요.';
+  return SORRY;
+}
+
+/* 서버가 **0줄**을 처리했다는 것은 거의 항상 권한이 없다는 뜻입니다 —
+   RLS 가 막으면 Postgres 는 오류를 내지 않고 조용히 0건을 돌려줍니다.
+   전에는 화면에 '(0건)' 이라고 적었는데, 그건 DB 가 센 줄 수라 사용자에게는
+   아무 뜻이 없습니다. 무엇을 확인해야 하는지 적습니다. */
+export const NOROW = {
+  save: '저장하지 못했어요. 고칠 권한이 있는지 확인해주세요.',
+  del:  '지우지 못했어요. 지울 권한이 있는지 확인해주세요.',
+  edit: '바꾸지 못했어요. 고칠 권한이 있는지 확인해주세요.',
+};
 
 export function fail(e, where){
   /* 오류 상자를 **손으로 적은 목록**에서 찾고 있었습니다. 목록에 없으면
@@ -48,9 +95,15 @@ export function fail(e, where){
     drawOffbar();
     return;
   }
-  /* 문자열을 그냥 넘기면 JSON.stringify 가 따옴표를 씌웁니다. 먼저 걸러냅니다. */
-  box.textContent = typeof e === 'string' ? e
-    : (e && (e.message || e.error_description || e.hint)) || JSON.stringify(e);
+  /* 문자열은 우리가 쓴 한국어입니다. 그대로 보여줍니다. */
+  if (typeof e === 'string'){ box.textContent = e; return; }
+
+  /* 서버가 준 것은 영어이거나 JSON 입니다. 옮겨서 보여주고 원문은 기록으로. */
+  box.textContent = human(e);
+  try {
+    logErr?.(`[${where || '-'}] ${e?.code || ''} ${e?.message || JSON.stringify(e)}`.slice(0, 400),
+             'fail');
+  } catch {}
 }
 
 /* 큐는 localStorage 에 둡니다. 앱을 껐다 켜도 남아야 합니다. */
@@ -145,7 +198,7 @@ export async function write(job){
   try {
     const r = await send(job);
     if (r.error) throw r.error;
-    if (!r.data?.length) return { ok:false, why:'아무것도 저장되지 않았어요 (0건). 권한을 확인해주세요.' };
+    if (!r.data?.length) return { ok:false, why: NOROW.save };
     return { ok:true, id:r.data[0].id };
   } catch (e){
     if (!isOffline(e)) return { ok:false, why:e };
@@ -170,7 +223,10 @@ export async function flushQueue(){
       /* 네트워크가 아닌 이유로 실패한 것은 다시 보내도 같습니다.
          무한히 붙잡고 있으면 뒤에 쌓인 것까지 못 나갑니다. 버리고 알립니다. */
       queue.shift();
-      toast(`저장 하나가 실패했어요: ${job.table} · ${e?.message || e}`);
+      /* 표 이름(trip_members…)과 영어 오류를 그대로 띄우고 있었습니다.
+         사용자가 할 수 있는 일이 없는 글자라 기록으로 보냅니다. */
+      logErr?.(`큐 저장 실패: ${job.action} ${job.table} · ${e?.message || e}`, 'queue');
+      toast('저장 하나가 안 됐어요. 그 내용만 다시 넣어주세요.');
     }
     qsave();
   }

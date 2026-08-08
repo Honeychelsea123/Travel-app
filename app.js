@@ -6,14 +6,15 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b228';
-import { $, esc, toast, copyText } from './dom.js?v=b228';
-import { starHtml, paintStars, markRated } from './stars.js?v=b228';
+import { sb } from './db.js?v=b229';
+import { $, esc, toast, copyText } from './dom.js?v=b229';
+import { starHtml, paintStars, markRated } from './stars.js?v=b229';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
-         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b228';
-import { loadAdmin } from './admin.js?v=b228';
+         write, flushQueue, drawOffbar, setOnDrained,
+         setErrLogger, NOROW } from './net.js?v=b229';
+import { loadAdmin } from './admin.js?v=b229';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b228';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b229';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -77,6 +78,10 @@ document.getElementById('bootfail')?.remove();
 setOnDrained(async () => {
   if (trip && !$('listview').classList.contains('hide')) await loadPlans();
 });
+
+/* fail() 이 서버 오류를 한국어로 바꿔 보여주고 **원문은 여기로** 보냅니다.
+   원문이 필요한 것은 사용자가 아니라 고치는 사람입니다. */
+setErrLogger((msg, src) => logError(msg, src));
 
 
 /* ── 서비스 워커 ────────────────────────────────────────────────────
@@ -223,7 +228,7 @@ $('notifprefcard').addEventListener('change', async e => {
     .select('user_id');
   if (r.error){ $('nf_all').checked = !on; return fail(r.error, 'nf'); }
   if (!r.data?.length){ $('nf_all').checked = !on;
-                        return fail('저장되지 않았어요 (0건).', 'nf'); }
+                        return fail(NOROW.save, 'nf'); }
   toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
   loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
 });
@@ -301,7 +306,7 @@ $('del_go').addEventListener('click', async () => {
     let why = data?.error || error?.message || '';
     try { why = (await error?.context?.json())?.error || why; } catch {}
     return fail(/not found|Failed to send/i.test(why)
-      ? 'delete-me 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+      ? '탈퇴 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
       : why, 'del');
   }
 
@@ -350,7 +355,12 @@ $('rp_send').addEventListener('click', async () => {
   b.disabled = false; b.textContent = '보내기';
 
   if (r.error) return fail(r.error, 'rp');
-  if (!r.data?.length) return fail('보내지지 않았어요 (0건). 040 을 올려주세요.', 'rp');
+  /* 040 을 안 올렸으면 표가 없어 0건이 됩니다. 그건 만든 사람이 할 일이라
+     화면에는 안 적습니다 — 사용자는 마이그레이션 번호를 모릅니다. */
+  if (!r.data?.length){
+    logError('버그 신고 저장 0건 — db/040 미적용 가능성', 'report');
+    return fail('보내지 못했어요. 잠시 뒤 다시 해주세요.', 'rp');
+  }
   $('rp_body').value = '';
   $('rpbox').classList.add('hide');
   toast('보냈어요. 읽고 고치겠습니다.');
@@ -1345,7 +1355,7 @@ $('ai_send').addEventListener('click', async () => {
        일하다 죽은 것입니다. 같은 문구를 내놓으니 엉뚱한 데를 보게 됩니다. */
     return fail(
       /not found|404/i.test(why)
-        ? 'chat 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+        ? 'AI 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
       : /Failed to send|Load failed|NetworkError/i.test(why)
         ? '답을 만들다 끊겼어요. 글이 너무 길거나 링크가 무거우면 그럴 수 있어요. ' +
           '링크를 하나만 넣거나 글을 줄여서 다시 해보세요.'
@@ -1491,7 +1501,7 @@ async function takeCard(kind, i, tripId, day){
       sort_order: same.length ? Math.max(...same.map(p => +p.sort_order)) + 1 : 0,
     }).select('id');
     if (r.error) throw r.error;
-    if (!r.data?.length) throw new Error('저장되지 않았어요 (0건).');
+    if (!r.data?.length) throw new Error(NOROW.save);
     return { table:'plans', id:r.data[0].id };
   }
   /* 'ap' = 일정으로 온 것을 후보로 보냅니다. 날짜와 시각은 버립니다 —
@@ -1509,7 +1519,7 @@ async function takeCard(kind, i, tripId, day){
     source: 'ai',
   }).select('id');
   if (r.error) throw r.error;
-  if (!r.data?.length) throw new Error('저장되지 않았어요 (0건).');
+  if (!r.data?.length) throw new Error(NOROW.save);
   return { table:'candidates', id:r.data[0].id };
 }
 
@@ -1834,7 +1844,7 @@ $('ac_add').addEventListener('click', async () => {
     return fail(/duplicate|unique/i.test(error.message)
       ? '그 국가에 같은 이름의 도시가 이미 있습니다.' : error, 'rate');
   }
-  if (!data) return fail('저장되지 않았습니다 (0건).', 'rate');
+  if (!data) return fail(NOROW.save, 'rate');
 
   /* 목록 뭉치에 바로 끼워 넣습니다. 다시 받아오면 화면이 한 번 껌뻑입니다. */
   cities.push({ ...data,
@@ -3766,7 +3776,7 @@ $('c_add').addEventListener('click', async () => {
   const r = await sb.from('candidates')
     .insert({ trip_id: trip.id, title: t, source: 'manual' }).select('id');
   if (r.error) return fail(r.error, 'cand');
-  if (!r.data?.length) return fail('저장되지 않았습니다 (0건).', 'cand');
+  if (!r.data?.length) return fail(NOROW.save, 'cand');
   $('c_title').value = '';
   await loadCands();
 });
@@ -3804,7 +3814,7 @@ $('card-cand').addEventListener('click', async e => {
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', d.dataset.canddel).select('id');
     if (r.error) return fail(r.error, 'cand');
-    if (!r.data?.length) return fail('지워지지 않았습니다 (0건).', 'cand');
+    if (!r.data?.length) return fail(NOROW.del, 'cand');
     await loadCands();
   }
 });
@@ -3957,7 +3967,7 @@ $('d_go').addEventListener('click', async () => {
     let why = error.message;
     try { why = (await error.context?.json())?.error || why; } catch {}
     return fail(/not found|Failed to send/i.test(why)
-      ? 'chat 함수가 아직 올라가 있지 않습니다. Supabase → Edge Functions 에서 배포해주세요.'
+      ? 'AI 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
       : why, 'draft');
   }
   if (data?.error) return fail(data.error, 'draft');
@@ -4431,11 +4441,24 @@ $('dumpbtn').addEventListener('click', async () => {
                   'expense_shares', 'bookings', 'packing', 'links', 'candidates',
                   'city_ratings', 'plan_ratings', 'trip_reviews', 'chats',
                   'profiles', 'user_prefs'];
+  /* 표 이름을 한국어로 옮기는 짝. **위로 올려두었습니다** — 아래 목록만
+     쓰고 있었고, 정작 오류 문구는 `city_ratings(PGRST301)` 처럼 표 이름과
+     오류 코드를 그대로 내보내고 있었습니다. 둘이 같은 짝을 써야 합니다. */
+  const NAME = { trips:'여행', trip_legs:'구간', trip_members:'일행', plans:'일정',
+                 expenses:'지출', expense_shares:'분담', bookings:'예약',
+                 packing:'준비물', links:'링크', candidates:'후보',
+                 city_ratings:'도시 별점', plan_ratings:'맛집 별점',
+                 trip_reviews:'여행 후기', chats:'AI 대화',
+                 profiles:'프로필', user_prefs:'설정' };
   const out = { app:'AI.Trip', savedAt:new Date().toISOString(), user:me.id, data:{} };
   const failed = [];
   for (const t of TABLES){
     const r = await sb.from(t).select('*');
-    if (r.error){ failed.push(`${t}(${r.error.code || '오류'})`); continue; }
+    if (r.error){
+      failed.push(NAME[t] || t);
+      logError(`내려받기 실패 ${t}: ${r.error.code || ''} ${r.error.message || ''}`, 'dump');
+      continue;
+    }
     out.data[t] = r.data || [];
   }
   /* 도시 목록은 우리가 만든 자료라 안 넣습니다 — 잃어버릴 것은 내가 쓴 것뿐입니다. */
@@ -4448,24 +4471,19 @@ $('dumpbtn').addEventListener('click', async () => {
   a.click(); URL.revokeObjectURL(a.href);
 
   b.disabled = false; b.textContent = '다시 받기';
-  /* 총합만 보면 맞는지 알 수가 없습니다. 표마다 몇 줄인지 늘어놓습니다 —
+  /* 총합만 보면 맞는지 알 수가 없습니다. 표마다 몇 개인지 늘어놓습니다 —
      "일정 0" 같은 것이 눈에 띄어야 빈 백업을 붙들고 있지 않습니다. */
-  const NAME = { trips:'여행', trip_legs:'구간', trip_members:'일행', plans:'일정',
-                 expenses:'지출', expense_shares:'분담', bookings:'예약',
-                 packing:'준비물', links:'링크', candidates:'후보',
-                 city_ratings:'도시 별점', plan_ratings:'맛집 별점',
-                 trip_reviews:'여행 후기', chats:'AI 대화',
-                 profiles:'프로필', user_prefs:'설정' };
   $('dumplist').classList.remove('hide');
   $('dumplist').innerHTML =
-    `<div class="daysep">받은 것 · 모두 ${n.toLocaleString()}줄</div>` +
+    `<div class="daysep">받은 것 · 모두 ${n.toLocaleString()}개</div>` +
     TABLES.map(t => `<div class="row" style="padding:5px 0">
         <span class="label memo">${esc(NAME[t] || t)}</span>
         <span class="val"${(out.data[t]?.length ? '' : ' style="color:var(--ink-48)"')}>${
-          out.data[t] == null ? '못 읽음' : out.data[t].length.toLocaleString()}</span>
+          out.data[t] == null ? '못 읽었어요' : out.data[t].length.toLocaleString()}</span>
       </div>`).join('');
-  toast(`${n.toLocaleString()}줄을 저장했어요`);
-  if (failed.length) fail('못 받은 표: ' + failed.join(', '), 'dump');
+  toast(`${n.toLocaleString()}개를 저장했어요`);
+  if (failed.length)
+    fail('일부는 못 받았어요: ' + failed.join(', ') + '. 잠시 뒤 다시 받아주세요.', 'dump');
 });
 
 /* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
@@ -4915,7 +4933,7 @@ $('readall').addEventListener('click', async e => {
     if (r.error) return fail(r.error);
     /* 039 를 안 올렸으면 정책이 없어 0건이 지워집니다. 조용히 넘어가면
        버튼이 고장 난 것처럼 보입니다. */
-    if (!r.data?.length) return toast('지워지지 않았어요. 039 를 올려주세요.');
+    if (!r.data?.length) return toast('지우지 못했어요. 잠시 뒤 다시 해주세요.');
   } else {
     const r = await netTimeout(sb.from('notifications')
       .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
@@ -4971,14 +4989,14 @@ $('avatarfile').addEventListener('change', async e => {
     const r = await sb.from('profiles').update({ avatar_url: url })
       .eq('id', me.id).select('avatar_url').maybeSingle();
     if (r.error) throw r.error;
-    if (!r.data) throw new Error('저장되지 않았습니다 (0건).');
+    if (!r.data) throw new Error(NOROW.save);
 
     $('avatar').src = url;
     myAvatar = url;
   } catch (err) {
     $('avatar').src = before;
     fail(/bucket|not found/i.test(err.message || '')
-      ? 'avatars 통이 아직 없어요. 026_avatars.sql 을 먼저 실행하세요.'
+      ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
       : err, 'ava');
   }
   $('avatar').style.opacity = '';
@@ -4999,7 +5017,7 @@ $('n_save').addEventListener('click', async () => {
   const r = await sb.from('profiles').update({ display_name: v })
     .eq('id', me.id).select('id');
   if (r.error) return fail(r.error, 'trip');
-  if (!r.data?.length) return fail('이름을 바꾸지 못했습니다 (0건).', 'trip');
+  if (!r.data?.length) return fail(NOROW.edit, 'trip');
   $('name').textContent = v;
   /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이 바뀝니다. */
   if (!myAvatar) $('avatar').src = avatarOf(me.id, v);
@@ -5179,10 +5197,12 @@ $('trips').addEventListener('click', async e => {
 
   if (r?.error) return fail(r.error, 'trip');
   if (!r?.data?.length){
-    return fail(
-      `아무것도 바뀌지 않았습니다 (0건).\n` +
-      `서버가 거부했습니다 — 이 여행의 소유자가 아닐 수 있습니다.\n` +
-      `동작: ${act} · 여행: ${id}`, 'trip');
+    /* 여행 id(UUID)와 동작 이름을 화면에 적고 있었습니다. 사용자가 볼 것이
+       아니라 고치는 사람이 볼 것이므로 기록으로 보냅니다. */
+    logError(`여행 ${act} 0건 — trip=${id}`, 'trip');
+    return fail(act === 'leave'
+      ? '이 여행에서 나가지 못했어요. 잠시 뒤 다시 해주세요.'
+      : '이 여행을 지울 권한이 없어요. 만든 사람만 지울 수 있어요.', 'trip');
   }
   await loadTrips();
 });
@@ -5486,7 +5506,7 @@ $('g_add').addEventListener('click', async () => {
   const { data, error } = await sb.from('trip_legs').insert(row).select('id');
   btn.disabled = false; btn.textContent = '구간 넣기';
   if (error) return fail(error, 'leg');
-  if (!data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'leg');
+  if (!data?.length) return fail(NOROW.save, 'leg');
 
   $('g_dest').value = ''; $('g_countrywrap').classList.add('hide');
   await loadLegs();
@@ -5505,7 +5525,7 @@ $('legs').addEventListener('click', async e => {
   const r = await sb.from('trip_legs').delete().eq('id', b.dataset.id).select('id');
   b.disabled = false;
   if (r.error) return fail(r.error, 'leg');
-  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'leg');
+  if (!r.data?.length) return fail(NOROW.edit, 'leg');
   await loadLegs();
   await loadReview();
   await fetchTrip(trip.id); drawTripHeader();
@@ -5790,7 +5810,7 @@ $('e_save').addEventListener('click', async () => {
   if (up.error && /budget/i.test(up.error.message || '')){
     up = await sb.from('trips')
       .update({ title, start_date: start, end_date: end }).eq('id', trip.id).select('id');
-    if (!up.error) toast('예산 칸이 아직 없어요. 034 를 올리면 저장됩니다.');
+    if (!up.error) toast('예산은 아직 저장되지 않아요. 곧 됩니다.');
   }
 
   if (!up.error && up.data?.length && n !== 0 && $('e_shift').checked && plans.length){
@@ -5804,7 +5824,7 @@ $('e_save').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = '저장';
   if (up.error) return fail(up.error, 'edit');
   if (!up.data?.length)
-    return fail('아무것도 바뀌지 않았습니다 (0건). 편집 권한을 확인해주세요.', 'edit');
+    return fail(NOROW.edit, 'edit');
 
   $('editcard').classList.add('hide');
   pickedDay = null;
@@ -6668,7 +6688,7 @@ $('trash').addEventListener('click', async e => {
       .eq('id', id).not('deleted_at', 'is', null).select('id');
     z.disabled = false; disarm(z); z.textContent = '완전 삭제';
     if (r.error) return fail(r.error, 'trash');
-    if (!r.data?.length) return fail('지우지 못했어요 (0건).', 'trash');
+    if (!r.data?.length) return fail(NOROW.del, 'trash');
     toast('완전히 지웠어요.');
     return afterTrash(kind);
   }
@@ -6680,7 +6700,7 @@ $('trash').addEventListener('click', async e => {
     .update({ deleted_at: null }).eq('id', id).select('id');
   b.disabled = false; b.textContent = '되살리기';
   if (r.error) return fail(r.error, 'trash');
-  if (!r.data?.length) return fail('되살리지 못했어요 (0건).', 'trash');
+  if (!r.data?.length) return fail('되살리지 못했어요. 다시 눌러주세요.', 'trash');
   toast('되살렸어요.');
   await afterTrash(kind);
 });
@@ -7169,7 +7189,7 @@ $('b_create').addEventListener('click', async () => {
   }).select('id');
   btn.disabled = false; btn.textContent = '넣기';
   if (error) return fail(error, 'bookform');
-  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'bookform');
+  if (!data?.length) return fail(NOROW.save, 'bookform');
 
   ['b_title','b_ref','b_addr','b_tel','b_memo','b_stime','b_etime','b_edate']
     .forEach(id => $(id).value = '');
@@ -7255,7 +7275,7 @@ $('k_seed').addEventListener('click', async () => {
   const r = await sb.from('packing').insert(rows).select('id');
   b.disabled = false; b.textContent = '기본 준비물 한 번에 넣기';
   if (r.error) return fail(r.error, 'pack');
-  if (!r.data?.length) return fail('아무것도 저장되지 않았습니다 (0건).', 'pack');
+  if (!r.data?.length) return fail(NOROW.save, 'pack');
   toast(`${r.data.length}개를 넣었어요`);
   await loadPacking();
 });
@@ -7271,7 +7291,7 @@ $('k_add').addEventListener('click', async () => {
   }).select('id');
   $('k_add').disabled = false;
   if (error) return fail(error, 'pack');
-  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'pack');
+  if (!data?.length) return fail(NOROW.save, 'pack');
   $('k_title').value = '';
   await loadPacking();
 });
@@ -7321,7 +7341,7 @@ $('l_add').addEventListener('click', async () => {
     .insert({ trip_id: trip.id, title: t || url, url }).select('id');
   $('l_add').disabled = false;
   if (error) return fail(error, 'link');
-  if (!data?.length) return fail('저장되지 않았습니다 (0건).', 'link');
+  if (!data?.length) return fail(NOROW.save, 'link');
   $('l_title').value = ''; $('l_url').value = '';
   await loadLinks();
 });
@@ -7341,7 +7361,7 @@ async function softDel(e, attr, table, reload, errBox){
     .eq('id', b.dataset.id).select('id');
   b.disabled = false;
   if (r.error) return fail(r.error, errBox);
-  if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', errBox);
+  if (!r.data?.length) return fail(NOROW.edit, errBox);
   await reload();
 }
 
@@ -7438,7 +7458,7 @@ $('i_list').addEventListener('click', async e => {
     .eq('code', b.dataset.ikill).select('code');
   b.disabled = false;
   if (r.error) return fail(r.error, 'mem');
-  if (!r.data?.length) return fail('지워지지 않았어요 (0건). 소유자만 지울 수 있어요.', 'mem');
+  if (!r.data?.length) return fail('일행에서 빼지 못했어요. 만든 사람만 뺄 수 있어요.', 'mem');
   toast('그 링크로는 이제 못 들어와요.');
   drawInvites();
 });
@@ -7452,7 +7472,7 @@ $('i_make').addEventListener('click', async () => {
     .select('code').maybeSingle();
   btn.disabled = false; btn.textContent = '초대 링크 만들기';
   if (error) return fail(error, 'mem');
-  if (!data)  return fail('초대를 만들지 못했습니다 (0건). 소유자만 만들 수 있습니다.', 'mem');
+  if (!data)  return fail('초대 링크를 만들지 못했어요. 만든 사람만 만들 수 있어요.', 'mem');
 
   const link = location.origin + location.pathname + '?join=' + data.code;
   $('i_link').textContent = link;
@@ -7525,7 +7545,7 @@ $('members').addEventListener('click', async e => {
       .eq('trip_id', trip.id).eq('user_id', b.dataset.id).select('user_id');
     b.disabled = false;
     if (r.error) return fail(r.error, 'mem');
-    if (!r.data?.length) return fail('아무것도 바뀌지 않았습니다 (0건).', 'mem');
+    if (!r.data?.length) return fail(NOROW.edit, 'mem');
     return loadMembers();
   }
 });
@@ -7535,7 +7555,7 @@ $('members').addEventListener('change', async e => {
   const r = await sb.from('trip_members').update({ role: s.value })
     .eq('trip_id', trip.id).eq('user_id', s.dataset.mrole).select('user_id');
   if (r.error) return fail(r.error, 'mem');
-  if (!r.data?.length) return fail('권한을 바꾸지 못했습니다 (0건).', 'mem');
+  if (!r.data?.length) return fail(NOROW.edit, 'mem');
   await loadMembers();
 });
 
