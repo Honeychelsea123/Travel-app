@@ -132,7 +132,10 @@ self.addEventListener('fetch', e => {
                  실제로 그렇게 터졌습니다. */
               const html = await r.clone().text();
               await c.put('./index.html', r.clone());
-              const refs = [...html.matchAll(/(?:src|href)="((?:app|world|calc)\.[a-z]+\?v=[^"]+)"/g)]
+              /* 파일 이름을 나열하지 않습니다 — 모듈을 새로 만들 때마다 여기
+                 더하는 것을 잊으면 그 파일만 빠진 채로 담깁니다.
+                 ?v= 가 붙은 우리 파일은 전부 이 문서의 짝입니다. */
+              const refs = [...html.matchAll(/(?:src|href)="([\w.-]+\.[a-z]+\?v=[^"]+)"/g)]
                 .map(m => './' + m[1]);
               await Promise.all(refs.map(async u => {
                 if (await c.match(u)) return;          // 이미 있으면 다시 안 받습니다
