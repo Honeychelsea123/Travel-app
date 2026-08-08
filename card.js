@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b232';
+import { $, esc, toast } from './dom.js?v=b233';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -496,85 +496,92 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     bad('best · 4.5 이상만 · 높은 순 · 3개까지', msgs);
   }
 
-  /* 5. 앞 규칙에 가려 영영 안 나오는 규칙 찾기.
+  /* 5. 앞 규칙에 가려 **영영** 안 나오는 규칙 찾기.
         실제로 그런 일이 있었습니다 — 규모 문구가 12개국부터 87개국까지
         76가지를 다 넣어봐도 0번이었습니다(대륙 수가 먼저 걸려서).
-        여기서는 그럴듯한 자료를 잔뜩 만들어 어느 규칙이 한 번도 안 나오는지 셉니다.
-        **틀림이 아니라 알림입니다** — 일부러 드물게 둔 규칙도 있을 수 있습니다.
-        무작위가 아니라 정해진 순서로 만듭니다. 돌릴 때마다 답이 달라지면
-        "그때는 나왔는데" 를 확인할 수가 없습니다. */
+
+        **무작위 표본으로는 이 질문에 답할 수 없습니다.** 한 번 그렇게 만들었다가
+        틀렸습니다. 표본이 안 만든 것과 규칙이 못 나오는 것을 가릴 수가 없어서,
+        멀쩡한 taste1('어딜 가도 좋은 사람')을 죽었다고 말했습니다. 손으로 따져보니
+        `10곳 · 5개국 · 2대륙 · 유명한 곳 · 평균 4.7점` 이면 그냥 나옵니다.
+
+        그래서 무작위를 걷어내고 **격자를 다 훑습니다.** 값마다 뜻이 갈리는 지점만
+        골라 넣으면(경계 앞뒤) 규칙이 부등호로만 되어 있으므로 이걸로 충분합니다.
+        분포를 짐작할 필요가 없어집니다 — 짐작이 틀려서 두 번 헛다리를 짚었습니다.
+
+        한 번이라도 나오면 **그 자료가 어떤 사람인지 같이 적어 둡니다.** 숫자만
+        "나옴"이라고 하면 그게 실제로 있을 법한 사람인지 알 수가 없습니다. */
   {
-    let seed = 20260808;
-    const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-    /* **대륙을 고르게 뿌리면 안 됩니다.** 처음에 여섯을 똑같이 뿌렸더니
-       rare2('지구 반대편')가 4,000건 중 1,303건을 걷어갔습니다 — 실제로는
-       남아메리카·아프리카·오세아니아를 둘 이상 가본 사람이 그렇게 흔하지
-       않습니다. 한국에서 가는 비중에 가깝게 기울여 둡니다. 정확한 값이 아니라
-       **자릿수만 맞추자는 것**입니다. 이게 틀리면 아래 결과가 통째로 틀립니다. */
-    const CONTS = [['아시아',55], ['유럽',20], ['북아메리카',13],
-                   ['오세아니아',6], ['남아메리카',3], ['아프리카',3]];
-    const pickCont = () => {
-      let n = rnd() * 100;
-      for (const [name, w] of CONTS){ n -= w; if (n <= 0) return name; }
-      return CONTS[0][0];
+    /* 경계 앞뒤로만 고릅니다. 규칙이 쓰는 문턱: cities 3·7·8·10, countries
+       8·12·25·50, continents 4, topCountryN 6, topContinentN 15,
+       citiesPerCountry 1.2·3, avgRating 2.8·4.5, avgFame 2.5, 비율 0.3 */
+    const G = {
+      cities:      [0, 3, 7, 8, 10, 14, 24, 40, 60],
+      countries:   [1, 4, 7, 8, 11, 12, 24, 25, 49, 50],
+      contSet:     [['아시아'], ['아시아','유럽'], ['아시아','유럽','북아메리카'],
+                    ['아시아','유럽','북아메리카','오세아니아'],
+                    ['아시아','오세아니아'],                    /* 반대편 1 */
+                    ['아시아','오세아니아','남아메리카']],       /* 반대편 2 → rare2 */
+      topCountryN: [1, 5, 6],
+      topContFrac: [0.4, 0.69, 0.71, 1],
+      avgRating:   [1.5, 2.8, 3.6, 4.5, 5],
+      avgFame:     [1, 2.4, 2.5, 3],
+      wishCount:   [0, 2, 3, 30],
+      ratios:      [[0, 0], [0.29, 0.5], [0.3, 0.3]],
     };
-    const hit = {}, threw = [];
-    for (let i = 0; i < 4000; i++){
-      const cities = Math.floor(rnd() * 90);
-      const countries = Math.max(1, Math.floor(cities * rnd()) || 1);
-      /* **대륙은 개수만 만들면 안 됩니다.** 어떤 규칙은 continents(개수)가 아니라
-         byContinent(어느 대륙인가)를 봅니다. 개수만 주면 그 규칙은 예외를 내고,
-         예외를 삼키면 "한 번도 안 나옴"으로 잘못 셉니다 — 실제로 그랬습니다. */
-      const nCont = Math.max(1, Math.min(6, Math.ceil(countries * rnd())));
-      const byContinent = {}, byCountry = {};
-      for (let j = 0; j < nCont * 3 && Object.keys(byContinent).length < nCont; j++){
-        const k = pickCont();
-        byContinent[k] = (byContinent[k] || 0) + 1 + Math.floor(rnd() * 20);
+    const hit = {}, witness = {}, threw = [];
+    let n = 0;
+    for (const cities of G.cities)
+    for (const countries of G.countries){
+      if (countries > Math.max(cities, 1)) continue;      /* 나라가 도시보다 많을 수 없습니다 */
+      for (const conts of G.contSet){
+        if (conts.length > countries) continue;
+        const byContinent = {};
+        for (const k of conts) byContinent[k] = 1;
+        for (const topCountryN of G.topCountryN){
+          if (topCountryN > cities) continue;
+          for (const tf of G.topContFrac)
+          for (const avgRating of G.avgRating)
+          for (const avgFame of G.avgFame)
+          for (const wishCount of G.wishCount)
+          for (const [lowRatio, highRatio] of G.ratios){
+            n++;
+            const s = {
+              cities, countries, continents: conts.length, byContinent, byCountry:{},
+              topCountry:'JP', topCountryName:'일본', topCountryN,
+              topContinent: conts[0], topContinentN: Math.round(cities * tf),
+              avgRating, avgFame, wishCount, lowRatio, highRatio,
+              citiesPerCountry: countries ? cities / countries : 0,
+              best: [],
+            };
+            /* **예외를 삼키지 않습니다.** 삼키면 터진 규칙이 "안 걸린 규칙"으로
+               둔갑해 원인이 자기 자신을 감춥니다. 터진 것은 터진 것으로 셉니다. */
+            let r = null;
+            for (const x of PERSONA_RULES){
+              try { if (x.f(s)){ r = x; break; } }
+              catch (e){ threw.push(`${x.id}: ${e.message}`); }
+            }
+            const id = r ? r.id : '(안 걸림)';
+            hit[id] = (hit[id] || 0) + 1;
+            if (!witness[id]) witness[id] =
+              `${cities}곳 · ${countries}개국 · ${conts.length}대륙 · ` +
+              `별점 ${avgRating} · 유명도 ${avgFame} · 담아둔 곳 ${wishCount}`;
+          }
+        }
       }
-      for (let j = 0; j < countries; j++) byCountry['C' + j] = 1 + Math.floor(rnd() * 9);
-      const s = {
-        /* 실제로 담긴 대륙 수를 씁니다. 위에서 겹쳐 뽑으면 nCont 보다 적습니다 —
-           continents 와 byContinent 가 어긋나면 규칙 둘이 서로 모순된 자료를 봅니다. */
-        cities, countries, continents: Object.keys(byContinent).length, byContinent, byCountry,
-        topCountry:'JP', topCountryName:'일본',
-        topCountryN: Math.ceil(cities * rnd()),
-        topContinent: Object.entries(byContinent).sort((a, b) => b[1] - a[1])[0]?.[0] || '아시아',
-        topContinentN: Math.floor(cities * (0.3 + rnd() * 0.7)),
-        avgRating: 1 + rnd() * 4,             /* 별점 1~5 */
-        /* **유명도는 1~3 입니다** (db/033). 그리고 뒤집혀 있습니다 —
-           1 이 누구나 아는 곳, 3 이 덜 알려진 곳입니다. 처음에 0~5 로
-           뿌렸더니 rare1(avgFame>=2.5)이 4,000건 중 1,512건을 걷어가서
-           아래 규칙들이 죄다 "한 번도 안 나옴"으로 보였습니다.
-           **검사 자료의 범위가 틀리면 검사 결과도 틀립니다.** */
-        avgFame: 1 + rnd() * 2,
-        citiesPerCountry: cities / countries,
-        lowRatio: rnd() * 0.6, highRatio: rnd() * 0.6,
-        wishCount: Math.floor(rnd() * 60),
-        best: [],
-      };
-      /* **예외를 삼키지 않습니다.** 삼키면 터진 규칙이 "안 걸린 규칙"으로 둔갑해
-         원인이 자기 자신을 감춥니다. 터진 것은 터진 것으로 셉니다. */
-      let r = null;
-      for (const x of PERSONA_RULES){
-        try { if (x.f(s)){ r = x; break; } }
-        catch (e){ threw.push(`${x.id}: ${e.message}`); }
-      }
-      hit[r ? r.id : '(안 걸림)'] = (hit[r ? r.id : '(안 걸림)'] || 0) + 1;
     }
     bad('규칙이 자료를 보다 터지는가', threw.length ? [...new Set(threw)].slice(0, 3) : []);
     /* 마지막 규칙은 "어디에도 안 걸렸을 때"입니다. 안 나오는 것이 정상이자
        좋은 소식입니다 — 모두가 진짜 성향을 받았다는 뜻입니다. 목록에서 뺍니다. */
     const fallback = PERSONA_RULES[PERSONA_RULES.length - 1].id;
-    const never = PERSONA_RULES.filter(r => !hit[r.id] && r.id !== fallback).map(r => r.id);
-    /* **틀림이 아니라 알림입니다.** 여기 만든 4,000가지는 실제 사용자 분포가
-       아닙니다(대륙 수를 너무 후하게 줍니다). 그래도 "앞 규칙에 완전히 가려진
-       규칙"은 어떤 분포에서도 안 나오므로, 이 목록은 그걸 찾는 첫 그물입니다.
-       나온 것은 사람이 보고 판단해야 합니다 — 일부러 드물게 둔 규칙도 있습니다. */
-    out.push({ 항목:'4,000가지 자료에서 한 번도 안 나온 규칙 (분포는 실제와 다름)',
-               결과: never.length ? '⚠ ' + never.join(', ') : '✓ 전부 나옴' });
+    const dead = PERSONA_RULES.filter(r => !hit[r.id] && r.id !== fallback).map(r => r.id);
+    /* 격자를 다 훑고도 안 나왔으면 **앞 규칙이 논리적으로 다 걷어간 것**입니다.
+       이건 분포 문제가 아니라 규칙표 문제이므로 틀림으로 셉니다. */
+    bad(`앞 규칙에 완전히 가려진 규칙 (${n.toLocaleString()}가지 다 훑음)`, dead);
     console.log('규칙별 횟수:', Object.fromEntries(
       Object.entries(hit).sort((a, b) => b[1] - a[1])));
-    if (hit['(안 걸림)']) bad('어디에도 안 걸린 자료', [`${hit['(안 걸림)']}건`]);
+    console.log('규칙마다 처음 걸린 사람:', witness);
+    if (hit['(안 걸림)']) bad('어디에도 안 걸린 자료', [`${hit['(안 걸림)']}가지`]);
   }
 
   console.table(out);
