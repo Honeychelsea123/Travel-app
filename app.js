@@ -1,5 +1,7 @@
 import { WORLD_PATHS } from './world.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b218';
 
 /* ── 설정 ──────────────────────────────────────────────────────────
  * publishable 키는 브라우저에 있어도 됩니다. RLS 가 지킵니다.
@@ -264,10 +266,16 @@ async function checkBuild(){
     /* **새 파일이 다 받아진 뒤에만 새로고침합니다.**
        전에는 번호만 보고 바로 새로고침했습니다. 그러면 새 index.html 은 받았는데
        짝인 app.js 는 아직 없는 순간이 생기고, 그때 연결이 끊기면
-       화면이 통째로 안 뜹니다. 실제로 비행기모드에서 그렇게 됐습니다. */
-    const refs = [...t.matchAll(/(?:src|href)="((?:app|world)\.[a-z]+\?v=[^"]+)"/g)]
+       화면이 통째로 안 뜹니다. 실제로 비행기모드에서 그렇게 됐습니다.
+       calc.js 도 이제 여기 걸립니다 — index.html 의 modulepreload 링크에
+       ?v= 를 달아뒀고, calc 도 이 정규식에 넣었습니다. */
+    const refs = [...t.matchAll(/(?:src|href)="((?:app|world|calc)\.[a-z]+\?v=[^"]+)"/g)]
       .map(m => './' + m[1]);
-    const box = await caches.open('t2-shell-v6').catch(() => null);
+    /* 캐시 이름에 sw.js 의 VER 을 그대로 박아두면 sw.js 를 고칠 때 여기도 같이
+       고쳐야 하는데 잊기 쉽습니다(실제로 v7 인데 v6 로 박혀 있었습니다).
+       't2-shell-' 로 시작하는 캐시를 찾아서 쓰면 그럴 일이 없습니다. */
+    const shellKey = (await caches.keys()).find(k => k.startsWith('t2-shell-'));
+    const box = shellKey ? await caches.open(shellKey).catch(() => null) : null;
     for (const u of refs){
       if (box && await box.match(u)) continue;
       const r = await fetch(u);          /* 못 받으면 여기서 던지고 새로고침 안 합니다 */
@@ -1409,39 +1417,8 @@ const mins  = t => { const [h,m] = String(t).split(':'); return +h*60 + +m; };
 const fmtM  = v => String(Math.floor(v/60)).padStart(2,'0') + ':' +
                    String(v%60).padStart(2,'0');
 
-/* 두 좌표 사이 직선거리(km). 실제 경로가 아니라 어림입니다. */
-function distKm(a, b, c, d){
-  if ([a,b,c,d].some(v => v == null)) return null;
-  const r = Math.PI/180, R = 6371;
-  const dLat = (c-a)*r, dLng = (d-b)*r;
-  const h = Math.sin(dLat/2)**2 + Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(h));
-}
-
-/* 도쿄에서 실제로 재서 쓰던 식입니다. 상수는 그날 있는 구간에서 옵니다 —
-   로마는 대중교통, 오키나와는 차라서 같은 거리도 시간이 다릅니다. */
-function travel(km, g){
-  if (km == null) return null;
-  /* 상수 하나만 비어도 계산이 통째로 NaN 이 됩니다. 실제로 그렇게 나왔습니다.
-     칸을 못 받아왔거나 아직 안 채워진 구간에서도 그럴듯한 값이 나오게 합니다. */
-  const n = (v, d) => Number.isFinite(Number(v)) ? Number(v) : d;
-  const q = g || {};
-  return km < n(q.walk_max_km, 1.2)
-    ? { walk:true,  min: Math.max(1, Math.round(km * n(q.walk_min_per_km, 13) +
-                                                n(q.walk_base_min, 2))) }
-    : { walk:false, min: Math.max(1, Math.round(km * n(q.transit_factor, 3.5) +
-                                                n(q.transit_base_min, 13))) };
-}
-
-/* 두 일정 사이 이동. 좌표가 둘 다 있어야 잽니다. */
-function hop(a, b, lgs){
-  const km = distKm(a.lat, a.lng, b.lat, b.lng);
-  if (km == null) return null;
-  const g = (lgs || []).find(l => a.date >= l.start_date && a.date <= l.end_date)
-            || (lgs || [])[0];
-  const tv = travel(km, g);
-  return tv && { km, ...tv };
-}
+/* distKm/travel/hop 은 calc.js 로 옮겼습니다 (맨 위 import). 순수 계산이라
+   이름·시그니처 그대로 옮길 수 있었습니다 — 여기서 부르는 자리는 안 바뀝니다. */
 
 function review(t, ps, lgs){
   const out = [];
@@ -4032,9 +4009,10 @@ const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
 const hhmm = m => { m = Math.max(0, Math.round(m));
                     return ('0' + Math.floor(m / 60) % 24).slice(-2) +
                            ':' + ('0' + (m % 60)).slice(-2); };
-const legOf = d => (legs || []).find(l => d >= l.start_date && d <= l.end_date) || (legs || [])[0];
-const tmin = (km, d) => { const g = legOf(d); const t = travel(km, g);
-                          return t ? t.min : Math.round(km * 3.5 + 13); };
+/* legOf/tmin 은 calc.js 로 옮겼습니다(legFirst/travelMinutes) — legs 를 매개변수로
+   받게 바뀌어서 여기서는 모듈 전역 legs 를 넘겨주는 한 줄 래퍼만 둡니다. */
+const legOf = d => legFirst(legs, d);
+const tmin = (km, d) => travelMinutes(legs, km, d);
 
 function planGaps(){
   const byDay = {}, out = [];
@@ -5722,26 +5700,7 @@ const hm  = t => t ? String(t).slice(0,5) : '';
  *   해가 다르면    2027년 1월 3일 – 6일   (올해면 해를 안 적습니다)
  */
 
-function dateRange(a, b){
-  if (!a || !b) return '';
-  const s = asDate(a), e = asDate(b);
-  const nowY = new Date().getFullYear();
-  const y = s.getFullYear() !== nowY || e.getFullYear() !== nowY
-    ? `${s.getFullYear()}년 ` : '';
-  const same = s.getFullYear() === e.getFullYear() && s.getMonth() === e.getMonth();
-  return same
-    ? `${y}${s.getMonth() + 1}월 ${s.getDate()}일 – ${e.getDate()}일`
-    : `${y}${s.getMonth() + 1}월 ${s.getDate()}일 – ${e.getMonth() + 1}월 ${e.getDate()}일`;
-}
-
-function dayLabel(dateStr, t){
-  const d = asDate(dateStr), s = asDate(t.start_date), e = asDate(t.end_date);
-  const f = d.toLocaleDateString('ko-KR',
-    { month:'long', day:'numeric', weekday:'long', timeZone:'UTC' });
-  if (d < s) return `${f} · 여행 전`;
-  if (d > e) return `${f} · 여행 후`;
-  return `Day ${Math.round((d - s) / D1) + 1} · ${f}`;
-}
+/* dateRange/dayLabel 은 calc.js 로 옮겼습니다 (맨 위 import). */
 
 async function fetchTrip(id){
   const { data, error } = await netTimeout(sb.from('trips')
@@ -5772,19 +5731,7 @@ async function fetchTrip(id){
   return true;
 }
 
-/* 시간대 이름(Europe/Rome)은 우리가 계산에 쓰는 값이지 사용자가 알 것은 아닙니다.
-   같은 자료로 현지 시각을 보여주는 편이 실제로 쓸모 있습니다.
-   기기와 시차가 없으면 굳이 적지 않습니다. */
-function localTime(tz){
-  if (!tz) return '';
-  try {
-    const here = new Intl.DateTimeFormat('ko-KR',
-      { hour:'2-digit', minute:'2-digit', hour12:false }).format(new Date());
-    const there = new Intl.DateTimeFormat('ko-KR',
-      { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:tz }).format(new Date());
-    return here === there ? '' : `현지 ${there}`;
-  } catch { return ''; }
-}
+/* localTime 은 calc.js 로 옮겼습니다 (맨 위 import). */
 
 function drawTripHeader(){
   const days = Math.round((asDate(trip.end_date) - asDate(trip.start_date)) / D1) + 1;
@@ -5951,20 +5898,10 @@ async function loadLegs(){
   drawLegs();
 }
 
-/* 그날 어디에 있는지. 구간 밖 날짜(여행 전후)는 가장 가까운 구간을 씁니다. */
-/* 그 날짜가 **실제로 들어 있는** 구간. 없으면 null 입니다.
-   아래 legFor 와 다릅니다 — 그쪽은 이동 상수를 구하려고 가장 가까운 구간으로
-   떨어뜨립니다. 화면에 도시 이름을 적을 때 그렇게 하면 거짓말이 됩니다.
-   실제로 구간 날짜가 여행 날짜 밖이라 **11일 전부가 '바젤'** 로 나왔습니다. */
-function legIn(date){
-  return legs.find(l => date >= l.start_date && date <= l.end_date) || null;
-}
-
-function legFor(date){
-  if (!legs.length) return null;
-  return legs.find(l => date >= l.start_date && date <= l.end_date)
-      || (date < legs[0].start_date ? legs[0] : legs[legs.length - 1]);
-}
+/* legIn/legFor 는 calc.js 로 옮겼습니다(legAt/legNear — 왜 폴백이 다른지는 거기 적어
+   뒀습니다). legs 를 매개변수로 받게 바뀌어서 여기서는 한 줄 래퍼만 둡니다. */
+function legIn(date){ return legAt(legs, date); }
+function legFor(date){ return legNear(legs, date); }
 
 function drawLegs(){
   /* 구간 날짜가 여행 날짜 밖에 있으면 날짜 칩에 도시가 안 붙습니다.
@@ -7252,14 +7189,8 @@ function inTrip(on){
 }
 
 /* ── 지출 ───────────────────────────────────────────────────────── */
-/* 통화마다 소수 자리가 다릅니다. 엔·원·동은 소수점이 없습니다. */
-const NO_CENTS = ['JPY','KRW','VND','IDR','CLP','HUF','TWD'];
-function money(n, cur){
-  try {
-    return new Intl.NumberFormat('ko-KR', { style:'currency', currency:cur,
-      maximumFractionDigits: NO_CENTS.includes(cur) ? 0 : 2 }).format(n);
-  } catch { return `${Math.round(n).toLocaleString('ko-KR')} ${cur}`; }
-}
+/* money/NO_CENTS 는 calc.js 로 옮겼습니다 (맨 위 import) — drawSettle 이
+   정산 단위를 고를 때도 같은 NO_CENTS 를 씁니다. */
 /* ── 환율 ───────────────────────────────────────────────────────────
  * 유럽중앙은행이 매일 내는 값을 씁니다. 키가 없어도 되고 공개 자료입니다.
  *
@@ -7420,90 +7351,8 @@ function drawExpenses(){
    나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다.
    집 통화 하나로 정산합니다 — 실제로 "너 나한테 12만원" 하고 보내지,
    유로 따로 프랑 따로 보내지 않습니다. */
-/* 여럿이 가면 제일 자주 열어보는 자리라 **틀리면 안 됩니다.**
- * 처음 만든 것에 둘이 틀려 있었습니다. 적어둡니다 — 같은 실수를 또 하지 않게.
- *
- *  1. 1인분을 `총액 / 전체 참여자` 로 냈습니다. 나간 사람까지 세어 1인분이 작아졌고,
- *     "이건 나랑 지훈만" 을 담으라고 만들어 둔 expense_shares 표는 아무도 안 읽었습니다.
- *  2. **누가 냈는지 안 적은 지출을 총액에는 넣고 낸 사람에는 안 넣었습니다.**
- *     그러면 갚을 돈 합이 받을 돈 합보다 커집니다. 아래 맞물리기가 짝을 다 못 찾고
- *     남은 빚이 조용히 사라집니다 — 보이는 만큼 다 보내도 정산이 안 끝납니다.
- *
- * 지금 규칙:
- *   - 나눌 사람 = 그 지출에 몫이 적혀 있으면 그 사람들, 없으면 아직 있는 참여자 전원
- *   - 낸 사람 = 결제자. 나간 사람이 낸 것도 돌려받을 돈으로 셉니다
- *   - 환율을 못 구했거나 결제자를 안 적은 지출은 **빼고, 몇 건인지 말합니다**
- */
-/* ── 정산 셈 ──────────────────────────────────────────────────────────
- * **화면과 떼어 놓았습니다.** 돈 계산이라 읽기만으로는 못 믿는데, 화면
- * 그리기와 붙어 있으면 여행과 일행을 실제로 만들어야만 돌려볼 수 있습니다.
- * 여기는 넣은 값만 보고 답을 내므로 지어낸 경우로도 검사할 수 있습니다
- * (아래 __settleCheck).
- *
- * 넣는 것: 지출 줄들, 아직 있는 참여자들
- * 내는 것: { total, bal, moves }
- */
-function settleMath(rows, active, unit = 1){
-  const total = rows.reduce((s, e) => s + Number(e.amount_home), 0);
-
-  /* 낸 돈과 써야 할 돈을 따로 셉니다. 둘의 차이가 그 사람의 잔액입니다. */
-  const paid = {}, owed = {};
-  const bump = (o, k, v) => o[k] = (o[k] || 0) + v;
-
-  for (const e of rows){
-    const amt = Number(e.amount_home);
-    bump(paid, e.payer_id, amt);
-
-    const sh = (e.expense_shares || []).filter(s => Number(s.weight) > 0);
-    const split = sh.length
-      ? sh.map(s => [s.user_id, Number(s.weight)])
-      : active.map(m => [m.user_id, 1]);
-    const w = split.reduce((s, [, v]) => s + v, 0);
-    /* 나눌 사람이 아무도 없으면(다 나갔다) 낸 사람이 혼자 쓴 것으로 둡니다.
-       0 으로 나누면 조용히 NaN 이 되고 정산 전체가 무너집니다. */
-    if (!w){ bump(owed, e.payer_id, amt); continue; }
-    for (const [uid, v] of split) bump(owed, uid, amt * v / w);
-  }
-
-  /* 낸 사람과 나눠 낼 사람을 합칩니다 — 나간 사람이 낸 돈도 돌려받아야 합니다. */
-  const ids = [...new Set([...Object.keys(paid), ...Object.keys(owed)])];
-  const bal = ids.map(id => ({ id, paid: paid[id] || 0, owed: owed[id] || 0,
-                               v: (paid[id] || 0) - (owed[id] || 0) }))
-                 .sort((a, b) => a.v - b.v);
-
-  /* ── 화면에 찍히는 단위로 맞춰둡니다 ──
-     셋이 10000원을 나누면 1인분이 3333.33… 입니다. 화면은 원 단위로
-     반올림해 찍으므로 "+6,667 받을 것"인데 보내라는 것은 3,333 + 3,333 =
-     6,666 이 됩니다. 1원이 비고, 보는 사람은 어느 쪽이 맞는지 모릅니다.
-     **맞물리기 전에 미리 단위에 맞춰 깎습니다.** 그러면 화면의 모든
-     숫자가 같은 자리에서 떨어집니다.
-     깎고 남은 자투리는 제일 많이 받을 사람에게 몰아줍니다 — 합이 0 이
-     아니면 그만큼이 아무에게도 안 가고 사라집니다. */
-  const q = n => Math.round(n / unit) * unit;
-  bal.forEach(b => { b.paid = q(b.paid); b.owed = q(b.owed); b.v = q(b.v); });
-  const drift = q(bal.reduce((s, b) => s + b.v, 0));
-  if (drift && bal.length){
-    const top = bal.reduce((a, b) => (b.v > a.v ? b : a), bal[0]);
-    top.v = q(top.v - drift);
-  }
-  bal.sort((a, b) => a.v - b.v);
-
-  /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다.
-     이제 낸 돈 합과 쓴 돈 합이 같으므로 남는 빚 없이 떨어집니다. */
-  const work = bal.map(b => ({ ...b }));
-  const moves = [];
-  let i = 0, j = work.length - 1;
-  while (i < j){
-    const owe = -work[i].v, get = work[j].v;
-    /* 한 단위(원화면 1원)도 안 되는 것은 안 보냅니다. */
-    if (owe < unit){ i++; continue; }
-    if (get < unit){ j--; continue; }
-    const v = Math.min(owe, get);
-    moves.push({ from: work[i].id, to: work[j].id, v });
-    work[i].v += v; work[j].v -= v;
-  }
-  return { total, bal, moves };
-}
+/* settleMath 는 calc.js 로 옮겼습니다 (맨 위 import, 그대로 옮겼습니다 — 규칙과
+   자투리 처리 설명은 거기 있습니다). __settleCheck 는 그대로 아래에 둡니다. */
 
 function drawSettle(){
   const active = members.filter(m => !m.left_at);

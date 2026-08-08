@@ -132,7 +132,7 @@ self.addEventListener('fetch', e => {
                  실제로 그렇게 터졌습니다. */
               const html = await r.clone().text();
               await c.put('./index.html', r.clone());
-              const refs = [...html.matchAll(/(?:src|href)="((?:app|world)\.[a-z]+\?v=[^"]+)"/g)]
+              const refs = [...html.matchAll(/(?:src|href)="((?:app|world|calc)\.[a-z]+\?v=[^"]+)"/g)]
                 .map(m => './' + m[1]);
               await Promise.all(refs.map(async u => {
                 if (await c.match(u)) return;          // 이미 있으면 다시 안 받습니다
