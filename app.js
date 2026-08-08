@@ -6,15 +6,15 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b229';
-import { $, esc, toast, copyText } from './dom.js?v=b229';
-import { starHtml, paintStars, markRated } from './stars.js?v=b229';
+import { sb } from './db.js?v=b230';
+import { $, esc, toast, copyText } from './dom.js?v=b230';
+import { starHtml, paintStars, markRated } from './stars.js?v=b230';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b229';
-import { loadAdmin } from './admin.js?v=b229';
+         setErrLogger, NOROW } from './net.js?v=b230';
+import { loadAdmin } from './admin.js?v=b230';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b229';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b230';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -317,7 +317,7 @@ $('del_go').addEventListener('click', async () => {
       .forEach(k => localStorage.removeItem(k));
   } catch {}
   await sb.auth.signOut().catch(() => {});
-  alert('탈퇴가 끝났습니다. 그동안 감사했습니다.');
+  alert('탈퇴가 끝났어요. 그동안 고마웠어요.');
   location.replace(location.pathname);
 });
 
@@ -363,7 +363,7 @@ $('rp_send').addEventListener('click', async () => {
   }
   $('rp_body').value = '';
   $('rpbox').classList.add('hide');
-  toast('보냈어요. 읽고 고치겠습니다.');
+  toast('보냈어요. 읽고 고칠게요.');
 });
 
 
@@ -744,9 +744,9 @@ function wizCheck(n){
   if (n === 2){
     const s = $('f_start').value, e = $('f_end').value;
     if (!s || !e) return '날짜를 골라주세요.';
-    if (e < s)    return '끝나는 날이 시작보다 빠릅니다.';
+    if (e < s)    return '끝나는 날이 시작보다 빨라요.';
     const days = Math.round((new Date(e) - new Date(s)) / 864e5) + 1;
-    if (days > 365) return `${days}일은 너무 깁니다. 날짜를 다시 봐주세요.`;
+    if (days > 365) return `${days}일은 너무 길어요. 날짜를 다시 봐주세요.`;
   }
   return '';
 }
@@ -985,7 +985,7 @@ function review(t, ps, lgs){
       const st = mins(p.start_time), en = p.end_time ? mins(p.end_time) : null;
 
       if (en !== null && en < st) out.push({ lv:'심각',
-        t:`${p.title} — 끝나는 시각이 시작보다 빠릅니다`,
+        t:`${p.title} — 끝나는 시각이 시작보다 빨라요`,
         s:`${hm(p.start_time)} → ${hm(p.end_time)}` });
 
       /* 도쿄 앱이 실제로 잡아낸 사고입니다 — 체크인 15시인데 11시 35분에 잡혀 있었습니다. */
@@ -1430,11 +1430,11 @@ function drawCards(d){
             <button class="small" data-take="a"  data-i="${i}"
                     data-label="일정에 넣기">일정에 넣기</button>
             <button class="small alt" data-take="ap" data-i="${i}"
-                    data-label="후보에 담기">후보에 담기</button>
+                    data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>
           </div>
         </div></div>`;
     }).join('') +
-    (places.length ? `<div class="daysep">후보로 담기</div>` : '') +
+    (places.length ? `<div class="daysep">갈 만한 곳에 담기</div>` : '') +
     places.map((p, i) => {
       const k = p.category ? 'k-' + p.category : '';
       /* 위 일정 카드와 같은 자리에 둡니다 — 한쪽은 오른쪽, 한쪽은 아래면
@@ -1446,7 +1446,7 @@ function drawCards(d){
             ${far(p)}</span>
           <div class="takepair">
             <button class="small" data-take="p" data-i="${i}"
-                    data-label="후보에 담기">후보에 담기</button>
+                    data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>
           </div>
         </div></div>`;
     }).join('');
@@ -1739,7 +1739,15 @@ async function loadRatings(){
 
 /* 칩으로 놔둔 것은 둘뿐입니다. 나머지는 프로필 보관함에서 걸러 들어옵니다.
    그때는 무엇으로 걸렀는지 알려주고 풀 길을 같이 줍니다. */
-const NARROW = { todo:'아직 평가 안 한 다녀온 곳', been:'다녀온 곳', mine:'내가 매긴 곳' };
+const NARROW = { todo:'아직 안 매긴 다녀온 도시', been:'다녀온 도시', mine:'내가 매긴 곳' };
+
+/* 여행 카드·히어로의 밑줄. **여행 이름이 대표 도시와 같으면 도시를 뺍니다** —
+   여행을 도시 이름으로 짓는 일이 흔한데, 그러면 "도쿄 / 도쿄 · 9월 12일 –
+   15일 · 4일" 처럼 같은 말이 바로 위아래로 두 번 나옵니다.
+   두 화면이 같은 규칙을 써야 하므로 여기 한 곳에 둡니다. */
+const tripSub = (t, days) =>
+  (t.destination && t.destination !== t.title ? `${t.destination} · ` : '') +
+  `${dateRange(t.start_date, t.end_date)} · ${days}일`;
 
 function setRateFilter(f){
   rateFilter = f;
@@ -1842,7 +1850,7 @@ $('ac_add').addEventListener('click', async () => {
 
   if (error){
     return fail(/duplicate|unique/i.test(error.message)
-      ? '그 국가에 같은 이름의 도시가 이미 있습니다.' : error, 'rate');
+      ? '그 나라에 같은 이름의 도시가 이미 있어요.' : error, 'rate');
   }
   if (!data) return fail(NOROW.save, 'rate');
 
@@ -2051,7 +2059,7 @@ $('cv_save').addEventListener('click', async () => {
   const v = $('cv_note').value.trim() || null;
   $('cv_save').disabled = true;
   await saveRate(cityOpen.id, { comment: v });
-  $('cv_save').textContent = v ? '등록됨' : '지웠어요';
+  $('cv_save').textContent = v ? '등록했어요' : '지웠어요';
   /* 남들 한줄평 목록에 내 것이 바로 끼어들어야 남긴 느낌이 납니다. */
   await openCity(cityOpen.id);
 });
@@ -2187,7 +2195,7 @@ async function buildHome(){
       pick?.image_url, '',
       pick ? `${pick.name}, 어때요?` : '아직 잡아둔 여행이 없어요',
       !pick   ? '아래에서 첫 여행을 만들어보세요'
-      : wanted ? '가보고 싶다고 표시해둔 곳입니다'
+      : wanted ? '가보고 싶다고 표시해둔 곳이에요'
                : (countryName[pick.country] || pick.country),
       '');
     if (pick?.id) $('hero').onclick = () => openCity(pick.id);
@@ -2220,7 +2228,7 @@ async function buildHome(){
 
   const n = cnt.count || 0;
   $('home').innerHTML = heroHtml(photo, badge, t.title,
-    `${t.destination} · ${dateRange(t.start_date, t.end_date)} · ${days}일` +
+    tripSub(t, days) +
     (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), '');
   $('hero').onclick = () => openTrip(t.id);
   rvBar();                    /* 평가할 여행이 남아 있으면 얇은 띠로 붙습니다 */
@@ -2867,7 +2875,7 @@ async function renderFoot(){
      <div style="margin-top:8px; font-size:calc(15px * var(--ts))">${
        f.countries
          ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%`
-         : '별점을 매기면 여기에 쌓입니다.'}</div>
+         : '별점을 매기면 여기에 쌓여요.'}</div>
      ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}
      <!-- 막대 아래에 지도도 같이. 숫자보다 칠해진 면적이 더 와닿습니다.
           지도 좌표는 이미 문서에 있으니 그대로 빌려 씁니다. -->
@@ -2995,7 +3003,7 @@ async function loadFootprint(){
   $('s_prog').innerHTML = f.countries
     ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%
        <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
-    : '다녀온 곳을 표시하면 여기에 쌓입니다.';
+    : '다녀온 곳을 표시하면 여기에 쌓여요.';
 
   const by = f.by_continent || {};
   $('s_cont').innerHTML = Object.entries(by)
@@ -3597,7 +3605,7 @@ function drawCands(){
              <div class="c">${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</div>
              <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
                <b>${f.avail}분</b> · 다음까지 ${f.back}분${
-               f.tight ? ' · 짧게 보고 나와야 합니다' : ''}</div>
+               f.tight ? ' · 짧게 보고 나와야 해요' : ''}</div>
            </div>
            <button class="small" data-fit="${i}">넣기</button>
          </div>`).join('')
@@ -3625,7 +3633,7 @@ function drawCands(){
           </div>
         </div>`;
       }).join('')
-    : '<div class="empty">담아둔 곳이 없어요.<br>AI 제안에서 담거나 아래에 적으세요.</div>';
+    : '<div class="empty">갈 만한 곳이 아직 없어요.<br>AI 제안에서 담거나 아래에 적어보세요.</div>';
   drawGeoBtn();
 }
 
@@ -4497,8 +4505,13 @@ $('setview').addEventListener('click', e => {
  * 기록 탭으로 보내면 그 탭이 걸린 목록으로 바뀝니다. 그러면 새로 매길 곳을
  * 찾을 수가 없습니다 — 기록 탭은 안 매긴 곳을 보여주는 자리입니다.
  * 프로필 안에서 펼치고, 여기서도 바로 별점을 고칠 수 있게 합니다. */
-const SHELF = { want:'가보고 싶은 곳', mine:'내 평가',
-                comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 곳',
+/* **been 이 빠져 있었습니다.** 프로필의 '국가'·'도시' 타일을 누르면 제목이
+   그냥 '보관함'으로 떠서 무슨 목록인지 알 수가 없었습니다.
+   그리고 '다녀온 곳'이 도시(been)와 관광지(spot) 둘을 가리키고 있었습니다 —
+   보관함 안에 '다녀온 맛집' 옆에 '다녀온 곳'이 나란히 있으니 더 헷갈립니다.
+   도시는 '다녀온 도시', 관광지는 '다녀온 관광지'로 갈랐습니다. */
+const SHELF = { been:'다녀온 도시', want:'가보고 싶은 곳', mine:'내가 매긴 곳',
+                comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 관광지',
                 review:'여행 후기', badge:'여행 배지' };
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
 const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
@@ -4757,7 +4770,7 @@ $('shelflist').addEventListener('click', async e => {
      지우면 목록에서 빠지고, 다시 남기고 싶으면 여행 탭에서 그 일정에 별을 답니다. */
   const del = e.target.closest('[data-pdel]');
   if (del){
-    if (del.dataset.armed !== '1'){ arm(del, '지울까요?'); return; }
+    if (del.dataset.armed !== '1'){ arm(del, '정말 지울까요?'); return; }
     const r = await sb.from('plan_ratings').delete()
       .eq('user_id', me.id).eq('plan_id', del.dataset.pdel).select('plan_id');
     if (r.error) return fail(r.error, 'trip');
@@ -4955,11 +4968,11 @@ function shrink(file, size = 256){
       cv.width = cv.height = size;
       cv.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2,
                                     s, s, 0, 0, size, size);
-      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 바꾸지 못했습니다.')),
+      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 바꾸지 못했어요.')),
                 'image/jpeg', 0.85);
       URL.revokeObjectURL(img.src);
     };
-    img.onerror = () => no(new Error('사진을 읽지 못했습니다.'));
+    img.onerror = () => no(new Error('사진을 읽지 못했어요.'));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -5120,7 +5133,7 @@ async function loadTrips(){
             : `<span class="thumb ph">${esc(t.title.slice(0,1))}</span>`}
       <div class="t">
       <b>${esc(t.title)}</b>
-      <span class="meta">${esc(t.destination)} · ${esc(dateRange(t.start_date, t.end_date))} · ${days}일</span>
+      <span class="meta">${esc(tripSub(t, days))}</span>
       <div style="margin-top:4px">${acts}</div>
     </div>${
       /* 다녀왔는데 아직 후기를 안 남긴 여행. 여기가 평가로 들어가는 입구입니다. */
@@ -5287,7 +5300,7 @@ function drawTripHeader(){
 async function openTrip(id){
   if (!await fetchTrip(id))
     return fail(!netIsDown()
-      ? '여행을 열지 못했습니다.'
+      ? '여행을 열지 못했어요.'
       : '연결이 없어서 못 열어요. 한 번이라도 열어본 여행은 비행기모드에서도 열립니다.',
       'trip');
   pickedDay = null;
@@ -5383,7 +5396,7 @@ function bump(what){
       /* 여행 자체가 바뀌었습니다. 내가 빠졌거나 지워졌으면 목록으로 돌려보냅니다. */
       if (!await fetchTrip(trip.id)){
         backToList();
-        return fail('이 여행에서 나갔거나 여행이 지워졌습니다.', 'trip');
+        return fail('이 여행에서 나갔거나 여행이 지워졌어요.', 'trip');
       }
       drawTripHeader();
     }
@@ -5494,7 +5507,7 @@ $('g_add').addEventListener('click', async () => {
   const s = $('g_start').value, e = $('g_end').value;
   if (!v)        return fail('도시를 적어주세요.', 'leg');
   if (!s || !e)  return fail('구간 날짜를 골라주세요.', 'leg');
-  if (e < s)     return fail('끝나는 날이 시작보다 빠릅니다.', 'leg');
+  if (e < s)     return fail('끝나는 날이 시작보다 빨라요.', 'leg');
 
   const hit = cities?.find(c => c.name === v);
   const row = { trip_id: trip.id, destination: v, start_date: s, end_date: e };
@@ -5518,7 +5531,7 @@ $('g_add').addEventListener('click', async () => {
 $('legs').addEventListener('click', async e => {
   const b = e.target.closest('button[data-lact]'); if (!b) return;
   if (b.dataset.armed !== '1'){
-    arm(b, '정말?'); return;
+    arm(b, '정말 지울까요?'); return;
   }
   b.disabled = true;
   /* 구간은 진짜로 지웁니다. 일정과 지출은 날짜로 붙으므로 같이 사라지지 않습니다. */
@@ -5594,7 +5607,7 @@ $('reviewbox').addEventListener('click', async e => {
   /* 사진 지우기 — 한 번 더 묻습니다. 통에서도 같이 지웁니다. */
   const del = e.target.closest('[data-rvdel]');
   if (del){
-    if (del.dataset.armed !== '1'){ arm(del, '지울까요?'); return; }
+    if (del.dataset.armed !== '1'){ arm(del, '정말 지울까요?'); return; }
     const p = rvPhotos.find(x => x.id === del.dataset.rvdel);
     if (!p) return;
     del.disabled = true;
@@ -5789,9 +5802,9 @@ $('e_save').addEventListener('click', async () => {
 
   if (!title)       return fail('제목을 적어주세요.', 'edit');
   if (!start || !end) return fail('날짜를 골라주세요.', 'edit');
-  if (end < start)  return fail('끝나는 날이 시작보다 빠릅니다.', 'edit');
+  if (end < start)  return fail('끝나는 날이 시작보다 빨라요.', 'edit');
   const days = Math.round((asDate(end) - asDate(start)) / D1) + 1;
-  if (days > 365)   return fail(`${days}일은 너무 깁니다. 날짜를 다시 봐주세요.`, 'edit');
+  if (days > 365)   return fail(`${days}일은 너무 길어요. 날짜를 다시 봐주세요.`, 'edit');
 
   /* 1,500,000 처럼 쉼표를 넣는 사람이 많습니다. 지출 칸과 같은 방식으로 걸러냅니다. */
   const braw = $('e_budget').value.replace(/[,\s]/g, '');
@@ -5909,7 +5922,11 @@ function drawDays(){
   plans.forEach(p => set.add(p.date));
   const list = [...set].sort();
 
-  const all = `<button class="day${pickedDay === null ? ' on' : ''}" data-day="">전체</button>`;
+  /* 그냥 '전체'라고만 적혀 있었습니다. 바로 아래 분류 칩도 '전체'로 시작해서
+     같은 글자가 두 줄에 나란히 놓였고, 어느 것이 날짜고 어느 것이 분류인지
+     알 수가 없었습니다. 라벨을 따로 붙이면 세로가 더 길어지므로
+     (칩 줄이 이미 화면을 많이 먹습니다) 칩 자신이 말하게 합니다. */
+  const all = `<button class="day${pickedDay === null ? ' on' : ''}" data-day="">모든 날</button>`;
 
   /* 짧은 여행은 칩이 한눈에 들어와서 낫습니다.
      길어지면 칩이 벽이 됩니다 — 29일짜리는 세 줄을 잡아먹었습니다.
@@ -6073,11 +6090,11 @@ function drawCats(){
   /* 일정 카드는 분류마다 색점(kdot)이 찍히는데, 이 칩은 전부 같은 회색이라
      "관광 색이 뭐였지"를 다시 찾아야 했습니다. 카드에서 본 색이 칩에도
      그대로 있으면 눈으로 바로 짝지어집니다 — 카드와 같은 --kc 변수를 씁니다. */
-  $('cats').innerHTML = ['전체', ...used].map(k => {
-    const v = k === '전체' ? '' : k;
+  /* 위 날짜 칩과 마찬가지로 '전체' 대신 무엇의 전체인지 적습니다. */
+  $('cats').innerHTML = [['모든 분류', ''], ...used.map(k => [k, k])].map(([label, v]) => {
     const dot = v ? `<i class="k-${esc(v)}"></i>` : '';
     return `<span class="day${catFilter === v ? ' on' : ''}" data-cat="${esc(v)}">${dot}${
-      esc(k)}</span>`;
+      esc(label)}</span>`;
   }).join('');
 }
 $('cats').addEventListener('click', e => {
@@ -6819,7 +6836,7 @@ async function rateOf(cur, home, date){
 
 const nameOf = id => {
   const m = members.find(x => x.user_id === id);
-  return m ? (m.nickname || m.profiles?.display_name || '이름 없음') : '알 수 없음';
+  return m ? (m.nickname || m.profiles?.display_name || '아직 이름을 안 정했어요') : '알 수 없음';
 };
 
 async function loadExpenses(){
@@ -7110,7 +7127,7 @@ $('x_create').addEventListener('click', async () => {
 $('expenses').addEventListener('click', async e => {
   const b = e.target.closest('button[data-xact]'); if (!b) return;
   if (b.dataset.armed !== '1'){
-    arm(b, '정말?'); return;
+    arm(b, '정말 지울까요?'); return;
   }
   b.disabled = true;
   const r = await write({ table:'expenses', action:'delete', id: b.dataset.id });
@@ -7354,7 +7371,7 @@ $('links').addEventListener('click', e => softDel(e, 'lkact', 'links', loadLinks
 async function softDel(e, attr, table, reload, errBox){
   const b = e.target.closest(`button[data-${attr}]`); if (!b) return;
   if (b.dataset.armed !== '1'){
-    arm(b, '정말?'); return;
+    arm(b, '정말 지울까요?'); return;
   }
   b.disabled = true;
   const r = await sb.from(table).update({ deleted_at: new Date().toISOString() })
@@ -7367,7 +7384,10 @@ async function softDel(e, attr, table, reload, errBox){
 
 /* ── 일행 ───────────────────────────────────────────────────────── */
 /* 화면에는 한국어만 씁니다. 여행 목록 배지가 'OWNER' 로 떠 있었습니다. */
-const ROLE_KO = { owner:'호스트', editor:'편집', viewer:'보기만' };
+/* 권한 이름은 여기 하나로 정합니다. 전에는 배지가 '편집'인데 바로 옆
+   드롭다운은 '편집자'였고, owner 는 배지에서 '호스트'인데 오류 문구에서는
+   '소유자'였습니다. 같은 사람을 두 이름으로 부르면 사용자가 헷갈립니다. */
+const ROLE_KO = { owner:'만든 사람', editor:'편집자', viewer:'보기만' };
 
 async function loadMembers(){
   $('memerr').classList.add('hide');
@@ -7383,7 +7403,7 @@ async function loadMembers(){
   const owner = trip.myRole === 'owner';
   $('members').innerHTML = data.map(m => {
     const p = m.profiles || {};
-    const name = m.nickname || p.display_name || '이름 없음';
+    const name = m.nickname || p.display_name || '아직 이름을 안 정했어요';
     const self = m.user_id === me.id;
     const gone = !!m.left_at;
     /* 나간 사람도 지웁니다가 아니라 남깁니다 — 빼면 정산이 어긋납니다. */
@@ -7396,8 +7416,11 @@ async function loadMembers(){
            <option value="editor"${m.role === 'editor' ? ' selected' : ''}>편집자</option>
            <option value="viewer"${m.role === 'viewer' ? ' selected' : ''}>보기만</option>
          </select>
+         <!-- '내보내기'라고 적혀 있었습니다. 그 말은 보통 자료를 파일로
+              빼는 것을 뜻하고, 이 앱에도 '내려받기'가 따로 있습니다.
+              사람을 여행에서 빼는 되돌리기 어려운 동작이라 헷갈리면 안 됩니다. -->
          <button class="ghost" data-mact="kick" data-id="${esc(m.user_id)}"
-                 data-name="${esc(name)}" style="color:var(--bad)">내보내기</button>`
+                 data-name="${esc(name)}" style="color:var(--bad)">일행에서 빼기</button>`
       : '';
     const mine = self && !gone
       ? `<button class="ghost" data-mact="nick" data-nick="${esc(m.nickname || '')}">별명</button>`
@@ -7502,7 +7525,7 @@ $('i_share').addEventListener('click', async () => {
 
 $('i_copy').addEventListener('click', async () => {
   const ok = await copyText($('i_link').textContent);
-  $('i_copy').textContent = ok ? '복사됨' : '아래 글자를 복사하세요';
+  $('i_copy').textContent = ok ? '복사했어요' : '아래 글자를 복사하세요';
   if (!ok){
     /* 둘 다 막혔으면 최소한 긁어는 놓습니다. 그대로 Ctrl+C 면 됩니다. */
     const r = document.createRange(); r.selectNodeContents($('i_link'));
@@ -7536,7 +7559,7 @@ $('members').addEventListener('click', async e => {
 
   if (b.dataset.mact === 'kick'){
     if (b.dataset.armed !== '1'){       /* 확인창을 안 쓰는 이유는 앞과 같습니다 */
-      arm(b, `정말 ${b.dataset.name} 내보내기?`); return;
+      arm(b, `정말 ${b.dataset.name} 빼기?`); return;
     }
     b.disabled = true;
     /* 지우지 않고 나간 것으로 표시합니다. 지출에 이름이 남아야 정산이 맞습니다. */
@@ -7606,7 +7629,7 @@ $('p_create').addEventListener('click', async () => {
 
   if (!title) return fail('무엇을 하는지 적어주세요.', 'planform');
   if (!date)  return fail('날짜를 골라주세요.', 'planform');
-  if (st && et && et < st) return fail('끝나는 시각이 시작보다 빠릅니다.', 'planform');
+  if (st && et && et < st) return fail('끝나는 시각이 시작보다 빨라요.', 'planform');
 
   /* 같은 날 맨 뒤로 보냅니다. 소수를 쓰면 나중에 둘 사이에 끼울 때
      그 둘만 건드리면 됩니다 — 같이 편집할 때 서로의 순서를 안 덮습니다. */
@@ -7724,7 +7747,7 @@ async function render(session){
         $('joinnote').classList.remove('hide');
         $('joinname').textContent = data.title;
         $('joinwhen').textContent = data.expired
-          ? '만료된 초대입니다'
+          ? '만료된 초대예요'
           : `${data.destination} · ${dateRange(data.start_date, data.end_date)} · ` +
             `${ROLE_KO[data.role] || data.role}로 참여`;
       }

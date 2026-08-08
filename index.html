@@ -23,18 +23,18 @@
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b229">
+<link rel="stylesheet" href="app.css?v=b230">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b229">
-<link rel="modulepreload" href="dom.js?v=b229">
-<link rel="modulepreload" href="db.js?v=b229">
-<link rel="modulepreload" href="calc.js?v=b229">
-<link rel="modulepreload" href="stars.js?v=b229">
-<link rel="modulepreload" href="net.js?v=b229">
-<link rel="modulepreload" href="admin.js?v=b229">
+<link rel="modulepreload" href="supabase.js?v=b230">
+<link rel="modulepreload" href="dom.js?v=b230">
+<link rel="modulepreload" href="db.js?v=b230">
+<link rel="modulepreload" href="calc.js?v=b230">
+<link rel="modulepreload" href="stars.js?v=b230">
+<link rel="modulepreload" href="net.js?v=b230">
+<link rel="modulepreload" href="admin.js?v=b230">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -322,7 +322,7 @@
              비어 있으면 지우기로 바뀝니다. -->
         <div class="row" style="border:0; padding:8px 0 0; margin:0; gap:8px">
           <span class="empty grow" style="text-align:left; padding:0">
-            한줄평은 다른 사람에게도 보입니다.</span>
+            한줄평은 다른 사람에게도 보여요.</span>
           <!-- .primary 는 flex:1 이라 그대로 쓰면 줄을 다 먹습니다. 여기선 붙박이로. -->
           <button class="primary small" id="cv_save"
                   style="flex:none; margin-left:auto" disabled>등록</button>
@@ -727,9 +727,9 @@
           <div class="stats">
             <button data-shelf="been"><b id="s_country">0</b><span>국가</span></button>
             <button data-shelf="been"><b id="s_city">0</b><span>도시</span></button>
-            <button data-shelf="mine"><b id="s_rated">0</b><span>평가</span></button>
+            <button data-shelf="mine"><b id="s_rated">0</b><span>매긴 곳</span></button>
             <!-- 한줄평은 남에게 보이는 것이라 몇 개 썼는지 따로 셉니다. -->
-            <button data-shelf="comment"><b id="s_comment">0</b><span>코멘트</span></button>
+            <button data-shelf="comment"><b id="s_comment">0</b><span>한줄평</span></button>
           </div>
 
           <div id="s_prog" class="memo" style="text-align:center; margin-top:10px"></div>
@@ -751,7 +751,7 @@
             <!-- 다녀온 여행은 여행 탭에 이미 있어 뺐습니다. 같은 것을 두 군데 두면
                  어디서 봐야 할지 헷갈립니다. -->
             <button data-shelf="mine"><span class="ic" style="color:#f5a623">★</span>
-              <span>내 평가</span><b id="s_rated2">0</b></button>
+              <span>내가 매긴 곳</span><b id="s_rated2">0</b></button>
             <button data-shelf="want"><span class="ic" style="color:#e0245e">♥</span>
               <span>가보고 싶은 곳</span><b id="s_want">0</b></button>
             <!-- 맛집과 관광지는 일정에 이미 들어 있습니다. 여행이 끝나면 그것만 모아
@@ -759,7 +759,7 @@
             <button data-shelf="place"><span class="ic" style="color:var(--k-food)">🍽</span>
               <span>다녀온 맛집</span><b id="s_place">0</b></button>
             <button data-shelf="spot"><span class="ic" style="color:var(--k-see)">📸</span>
-              <span>다녀온 곳</span><b id="s_spot">0</b></button>
+              <span>다녀온 관광지</span><b id="s_spot">0</b></button>
             <!-- 다녀온 여행에 남긴 별점·글·사진. 여행 화면 안에만 있으면
                  그 여행을 다시 찾아 들어가야 다시 봅니다 — 모아서 봅니다. -->
             <button data-shelf="review"><span class="ic">📖</span>
@@ -847,8 +847,8 @@
               <div class="memo">일행의 지출 · 합류, 출발 하루 전</div></span>
             <label class="sw"><input type="checkbox" id="nf_all" checked><span></span></label>
           </div>
-          <div class="snote">잠금화면 알림(푸시)은 아직 없어요.
-            앱을 열었을 때 종 아이콘에 쌓입니다.</div>
+          <div class="snote">잠금화면 알림은 아직 없어요.
+            앱을 열었을 때 종 아이콘에 쌓여요.</div>
           <pre id="nferr" class="hide"></pre>
         </div>
 
@@ -864,7 +864,7 @@
               <button class="day" data-ts="1.3">아주 크게</button>
             </div>
           </div>
-          <div class="snote">이 기기와 내 계정에만 적용됩니다. 일행 화면은 그대로입니다.</div>
+          <div class="snote">이 기기와 내 계정에만 적용돼요. 일행 화면은 그대로예요.</div>
         </div>
 
         <!-- ── 도움 ── 문제를 겪었을 때 갈 곳을 한자리에 모읍니다. -->
@@ -882,7 +882,7 @@
             </div>
             <textarea id="rp_body" rows="5" maxlength="1000"
               placeholder="어느 화면에서 무엇을 하려다 어떻게 됐는지 적어주세요.&#10;예) 지출 넣기를 눌렀는데 저장이 안 돼요"></textarea>
-            <div class="snote">빌드 번호와 기기 종류가 같이 갑니다.
+            <div class="snote">앱 버전과 기기 종류가 같이 가요.
               일정·지출 내용은 안 보내요.</div>
             <div style="margin-top:12px; display:flex; gap:8px">
               <button class="primary" id="rp_send">보내기</button>
@@ -893,7 +893,7 @@
 
           <div class="srow">
             <span class="label"><b>최근에 생긴 문제</b>
-              <div class="memo" id="errnote">앱에서 터진 것을 모아둡니다</div></span>
+              <div class="memo" id="errnote">앱이 멈추거나 잘못 동작한 기록이에요</div></span>
             <button class="small" id="errbtn">확인</button>
           </div>
           <div id="errlist" class="hide"></div>
@@ -928,9 +928,9 @@
               <div class="memo">무엇을 받고, 어디로 보내고, 언제 지우는지</div></span>
             <a class="small btn" href="./privacy.html">보기</a>
           </div>
-          <div class="snote">AI 답변은 Google Gemini가, 웹 검색은 Tavily가 맡습니다.
+          <div class="snote">AI 답변은 Google Gemini가, 웹 검색은 Tavily가 맡아요.
             보내신 질문과 사진은 미국에 있는 두 회사의 서버로 전송돼요.
-            무엇이 어디로 가는지는 처리방침 7번에 표로 적어뒀습니다.</div>
+            무엇이 어디로 가는지는 처리방침 7번에 표로 적어뒀어요.</div>
         </div>
 
         <!-- ── 계정 ── 로그아웃과 탈퇴는 성격이 같아 한 덩어리로 둡니다. -->
@@ -1059,7 +1059,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b229</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b230</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1076,7 +1076,9 @@
           <span id="live" class="hide"
                 style="display:flex; align-items:center; gap:5px;
                        font-size:calc(11px * var(--ts))">
-            <span class="dot ok"></span>실시간</span>
+            <!-- '실시간'이라고만 적혀 있었습니다. 일행이 고친 것이 바로 보인다는
+                 뜻인데, 그 말만으로는 무엇이 실시간인지 알 수 없습니다. -->
+            <span class="dot ok"></span>바로 반영</span>
           <button class="ghost" id="editbtn">수정</button>
         </div>
         <!-- 제목 옆에 붙여 한 줄로 씁니다. 두 줄을 잡으면 지도 자리가 줄어듭니다. -->
@@ -1156,7 +1158,7 @@
           <label for="g_dest">도시</label>
           <input id="g_dest" list="citylist" placeholder="로마 / Rome / ㄹㅁ" maxlength="40">
           <div id="g_countrywrap" class="hide">
-            <label for="g_country">국가 <span style="color:var(--bad)">— 목록에 없는 도시입니다</span></label>
+            <label for="g_country">국가 <span style="color:var(--bad)">— 목록에 없는 도시예요</span></label>
             <select id="g_country"></select>
           </div>
           <div class="two">
@@ -1177,7 +1179,7 @@
         <h2><span class="grow">일정</span>
           <!-- 이미 짜둔 일정을 옮겨 적는 일이 제일 귀찮습니다. -->
           <button class="small" id="impbtn">불러오기</button>
-          <button class="small" id="candbtn">후보</button>
+          <button class="small" id="candbtn">갈 만한 곳</button>
           <button class="small" id="addplanbtn">추가</button></h2>
         <!-- 좌표가 있는 일정만 찍힙니다. 하나도 없으면 통째로 접힙니다. -->
         <div id="planmap" class="hide"></div>
@@ -1195,7 +1197,7 @@
           <button class="ghost" id="imp_cancel">닫기</button></h2>
 
         <div class="empty" style="text-align:left; padding:0 0 10px">
-          이미 짜둔 일정을 <b>사진·파일·글·링크</b> 아무 것으로나 올리면 읽어서 정리해드려요.
+          이미 짜둔 일정을 <b>사진·파일·글·링크</b> 아무것으로나 올리면 읽어서 정리해드려요.
           바로 저장하지 않고 카드로 먼저 보여드립니다.
         </div>
 
@@ -1224,7 +1226,7 @@
 
       <!-- 후보 — 가고 싶은 곳을 모아두고, 일정의 빈 시간에 끼워 넣습니다 -->
       <div class="card hide" id="card-cand">
-        <h2><span class="grow">가고 싶은 곳</span>
+        <h2><span class="grow">갈 만한 곳</span>
           <button class="ghost" id="candclose">닫기</button></h2>
         <!-- 좌표가 없으면 이동 시간 검사와 빈 시간 찾기가 통째로 안 돕니다.
              맨 아래에 두었더니 탭바에 가려 안 보였습니다. 위로 올립니다.
@@ -1387,8 +1389,8 @@
         <div id="invitebox" class="hide" style="margin-top:12px">
           <label for="i_role">권한</label>
           <select id="i_role">
-            <option value="editor">편집자 — 일정과 지출을 고칠 수 있음</option>
-            <option value="viewer">보기만 — 읽기만 가능</option>
+            <option value="editor">편집자 — 일정과 지출을 고칠 수 있어요</option>
+            <option value="viewer">보기만 — 읽기만 할 수 있어요</option>
           </select>
           <div style="margin-top:12px; display:flex; gap:8px">
             <button class="primary" id="i_make">초대 링크 만들기</button>
@@ -1501,7 +1503,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b229"></script>
+<script type="module" src="app.js?v=b230"></script>
 </body>
 </html>
 

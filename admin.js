@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b229';
-import { sb } from './db.js?v=b229';
-import { fail, netTimeout } from './net.js?v=b229';
+import { $, esc, toast, copyText } from './dom.js?v=b230';
+import { sb } from './db.js?v=b230';
+import { fail, netTimeout } from './net.js?v=b230';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -304,6 +304,6 @@ $('errbtn').addEventListener('click', async () => {
   if ($('errcopy')) $('errcopy').onclick = async () => {
     const txt = rows.map(r =>
       `${(r.created_at || '').slice(0, 19)} [${r.build}] ${r.message} @ ${r.source}`).join('\n');
-    $('errcopy').textContent = await copyText(txt) ? '복사됨' : '복사 실패';
+    $('errcopy').textContent = await copyText(txt) ? '복사했어요' : '복사하지 못했어요';
   };
 });
