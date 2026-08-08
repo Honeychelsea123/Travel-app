@@ -65,6 +65,28 @@ function offlineNote(){
     { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
+/* ── 같은 파일의 옛 판을 치웁니다 ──────────────────────────────────────
+ * 셸 캐시는 이름(t2-shell-v7)이 판마다 바뀌지 않습니다. 그래서 activate 의
+ * "이름이 다른 캐시를 지운다"에 안 걸리고 **안이 계속 쌓였습니다.**
+ * 실제로 재보니 app.css?v=b186 부터 b221 까지 스물세 판이 그대로 있었고
+ * 셸에 77 건이 들어 있었습니다.
+ *
+ * b221 에서 파일을 여섯으로 쪼개면서 판마다 2 건 늘던 것이 7 건이 됐습니다.
+ * app.js 하나가 450KB 라 판당 3.5MB 씩 불어납니다. 아이폰은 저장 공간이
+ * 모자라면 앱 자료를 통째로 버리는데, 그러면 오프라인에서 안 열립니다.
+ *
+ * 셸 전체를 개수로 자르면(RUN 처럼) **지금 쓰는 파일을 버릴 수 있어 위험합니다.**
+ * 대신 방금 담은 것과 **같은 경로에 꼬리표만 다른 것**만 지웁니다.
+ * 새 판을 한 번 받으면 그 파일의 옛 판이 전부 정리됩니다. */
+async function dropOldVersions(cache, req){
+  const now = new URL(req.url);
+  if (!now.searchParams.has('v')) return;      /* 꼬리표가 없으면 판이랄 게 없습니다 */
+  for (const k of await cache.keys()){
+    const old = new URL(k.url);
+    if (old.pathname === now.pathname && old.search !== now.search) await cache.delete(k);
+  }
+}
+
 /* 캐시가 무한정 커지지 않게 오래된 것부터 버립니다. */
 async function trim(cache, cap){
   const keys = await cache.keys();
@@ -98,10 +120,13 @@ self.addEventListener('fetch', e => {
         /* 여기서 꼬리표를 무시하면 안 됩니다.
            무시하면 b115 를 달라는데 미리 담아둔 옛 app.js 를 줍니다.
            새 화면에 옛 코드가 붙어 조용히 깨집니다. 주소가 똑같을 때만 씁니다. */
-        const hit = await (await caches.open(SHELL)).match(req);
+        const c = await caches.open(SHELL);
+        const hit = await c.match(req);
         if (hit) return hit;
         const res = await fetch(req);
-        if (res.ok) (await caches.open(SHELL)).put(req, res.clone());
+        /* 새것을 **담고 나서** 옛 판을 지웁니다. 순서가 중요합니다 —
+           먼저 지우면 받아오다 실패했을 때 둘 다 없어집니다. */
+        if (res.ok){ await c.put(req, res.clone()); await dropOldVersions(c, req); }
         return res;
       })());
       return;
@@ -139,7 +164,12 @@ self.addEventListener('fetch', e => {
                 .map(m => './' + m[1]);
               await Promise.all(refs.map(async u => {
                 if (await c.match(u)) return;          // 이미 있으면 다시 안 받습니다
-                try { await c.add(u); } catch {}
+                try {
+                  await c.add(u);
+                  /* 담았으면 그 파일의 옛 판을 치웁니다. 여기를 빠뜨리면
+                     문서가 미리 받아둔 것들만 계속 쌓입니다. */
+                  await dropOldVersions(c, new Request(new URL(u, self.location.href).href));
+                } catch {}
               }));
             }
             return r;
