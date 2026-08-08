@@ -8,7 +8,12 @@
  * app.js 에 있던 것을 여기로 옮겼습니다. admin.js 도 sb 가 필요한데,
  * app.js 에서 가져오면 admin → app → admin 으로 고리가 생깁니다.
  */
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+/* **우리 서버에 둔 사본에서 가져옵니다.** 전에는 여기가
+   `https://esm.sh/@supabase/supabase-js@2` 였는데, 그러면 남의 서버가 느리거나
+   멈추면 app.js 가 아예 실행되지 않습니다 — b227 에서 leaflet 을 뺀 것과 같은
+   문제이고 이쪽은 앱 전체가 매달립니다. 판도 `@2` 라 조용히 바뀌었습니다.
+   자세한 것은 supabase.js 머리말에. */
+import { createClient } from './supabase.js?v=b228';
 
 const SUPABASE_URL = 'https://qahqqhjleqfrsjiixnas.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ymbrt_00OqzQjT3SrweZgQ_Lu0cw64V';
