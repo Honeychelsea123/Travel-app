@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b237';
-import { $, esc, toast, copyText } from './dom.js?v=b237';
-import { starHtml, paintStars, markRated } from './stars.js?v=b237';
+import { sb } from './db.js?v=b238';
+import { $, esc, toast, copyText } from './dom.js?v=b238';
+import { starHtml, paintStars, markRated } from './stars.js?v=b238';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b237';
-import { loadAdmin } from './admin.js?v=b237';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b237';
+         setErrLogger, NOROW } from './net.js?v=b238';
+import { loadAdmin } from './admin.js?v=b238';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b238';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,11 +22,15 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b237';
+         setEditPlanId } from './trip.js?v=b238';
+/* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
+import { myRates, cityStat, visited, justRated, rateFilter,
+         setRateData, setVisited, applyRate, putCityStat,
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b238';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b237';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b238';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b237';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b238';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -43,7 +47,7 @@ let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = 
     picked = null, hitList = [], cursor = 0,
     channel = null, bumpTimer = null, bumpPending = null,
     appTab = 'home',
-    tripFilter = 'up', rateShown = 80, rateObs = null, aiTripId = null, openReview = false, myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', rateShown = 80, rateObs = null, aiTripId = null, openReview = false, myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -1714,18 +1718,17 @@ async function loadRateData(){
     sb.rpc('my_visited'),
   ]);
   if (mine.error) return { error: mine.error };
-  myRates  = Object.fromEntries((mine.data  || []).map(r => [r.city_id, r]));
-  cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
-  /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
-     켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
-  visited  = new Set((vis.data || []).map(v => v.city_id));
+  /* 넣는 것은 rate.js 가 합니다 — 셋을 한 번에 맞추고, 못 받은 것은 안 건드립니다. */
+  setRateData({ mine, stats, vis });
   return {};
 }
 
-/* 다녀온 곳만 다시 셉니다. 별점을 지웠을 때와 홈 발자국이 씁니다. */
+/* 다녀온 곳만 다시 셉니다. 별점을 지웠을 때와 홈 발자국이 씁니다.
+   **응답을 통째로 넘깁니다.** 전에는 `v.data || []` 로 넘어가서, 못 받아오면
+   다녀온 곳이 통째로 빈 Set 이 됐습니다 — 홈 발자국이 이걸 부르므로 그때
+   세계지도가 하얘졌습니다. rate.js 가 오류면 아무것도 안 바꿉니다. */
 async function refreshVisited(){
-  const v = await sb.rpc('my_visited');
-  visited = new Set((v.data || []).map(x => x.city_id));
+  setVisited(await sb.rpc('my_visited'));
 }
 
 async function loadRatings(){
@@ -1746,7 +1749,7 @@ async function loadRatings(){
   fillCityList();
   const r = await loadRateData();
   if (r.error) return fail(r.error, 'rate');
-  justRated.clear();      /* 다시 들어왔으니 매긴 것은 이제 목록에서 뺍니다 */
+  clearJustRated();       /* 다시 들어왔으니 매긴 것은 이제 목록에서 뺍니다 */
   drawRatings();
 }
 
@@ -1763,7 +1766,7 @@ const tripSub = (t, days) =>
   `${dateRange(t.start_date, t.end_date)} · ${days}일`;
 
 function setRateFilter(f){
-  rateFilter = f;
+  putRateFilter(f);
   document.querySelectorAll('#r_filter button').forEach(x =>
     x.classList.toggle('on', x.dataset.rf === f));
   $('r_narrow').classList.toggle('hide', !NARROW[f]);
@@ -1914,17 +1917,14 @@ async function saveRate(cityId, patch, quiet){
             { onConflict: 'user_id,city_id' })
     .select('city_id,stars,want,comment').maybeSingle();
   if (r.error) return fail(r.error, 'rate');
-  myRates[cityId] = { ...(myRates[cityId] || {}), ...r.data };
-  /* 방금 매긴 것은 이번 화면에서는 남겨둡니다 — 잘못 눌렀으면 바로 고쳐야 합니다. */
-  if ('stars' in patch && patch.stars != null) justRated.add(cityId);
-  /* 별점을 매기면 그 도시는 다녀온 것이 됩니다. 지우면 여행 기록이 없는 한 빠집니다. */
-  if ('stars' in patch){
-    if (patch.stars != null) visited.add(cityId);
-    else await refreshVisited();
-  }
+  /* 별점 · 방금 매긴 것 · 다녀온 곳을 **한 번에** 맞춥니다(rate.js).
+     셋을 따로 적으면 그중 하나를 빠뜨립니다. 별을 지운 경우만 다녀온 곳을
+     여기서 못 정합니다 — 지난 여행 기록이 있으면 그대로 다녀온 곳이라
+     서버에 다시 물어야 합니다. 물어야 하는지는 rate.js 가 알려줍니다. */
+  if (applyRate(cityId, r.data, patch).recount) await refreshVisited();
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
-  if (s.data?.[0]) cityStat[cityId] = s.data[0]; else delete cityStat[cityId];
+  putCityStat(cityId, s.data?.[0]);
   /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다. */
   if (!quiet) drawRatings();
 }
@@ -7294,6 +7294,10 @@ async function render(session){
     $('aibtn').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있어요.';
     me = null;
+    /* **앞사람 것을 남기지 않습니다.** 별점·다녀온 곳은 사람마다 다른데
+       여태 로그아웃에도 로그인에도 비우는 코드가 없었습니다. 같은 기기에서
+       계정을 바꾸면 앞사람 별점이 화면에 남았습니다. */
+    clearRates();
 
     /* 초대 링크로 왔으면 어떤 여행인지 먼저 보여줍니다.
        아직 참여자가 아니라 trips 를 못 읽으므로 이름과 날짜만 주는 함수를 씁니다. */
@@ -7312,6 +7316,9 @@ async function render(session){
     return;
   }
   if (me?.id === session.user.id) return;      /* 토큰 갱신마다 다시 그리지 않습니다 */
+  /* **여기까지 왔으면 다른 사람입니다**(같은 사람이면 위에서 돌아갑니다).
+     로그아웃을 안 거치고 바로 갈아타는 길도 있으므로 여기서도 비웁니다. */
+  clearRates();
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
