@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b223';
-import { $, esc, toast, copyText } from './dom.js?v=b223';
-import { starHtml, paintStars, markRated } from './stars.js?v=b223';
+import { sb } from './db.js?v=b224';
+import { $, esc, toast, copyText } from './dom.js?v=b224';
+import { starHtml, paintStars, markRated } from './stars.js?v=b224';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
-         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b223';
-import { loadAdmin } from './admin.js?v=b223';
+         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b224';
+import { loadAdmin } from './admin.js?v=b224';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b223';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b224';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1653,6 +1653,41 @@ async function runReview(id){
 /* starHtml · paintStars · markRated 는 stars.js 로 옮겼습니다 (맨 위 import).
    다섯 화면이 같은 모양으로 그려야 하는 것이라 한곳에 모았습니다. */
 
+/* ── 평가 자료를 받는 곳은 여기 하나입니다 ────────────────────────────
+ * myRates · cityStat · visited 는 **네 화면이 같이 쓰는 자료**입니다
+ * (평가 화면 · 보관함 · 홈 발자국 · 별점 저장).
+ * 전에는 같은 질의가 그 네 곳에 손으로 베껴져 있었고 **이미 서로 달랐습니다**:
+ *   - 보관함만 updated_at 을 받아왔습니다 (정렬에 쓰므로)
+ *   - **보관함은 오류를 확인하지 않았습니다.** 질의가 실패하면 myRates 가
+ *     {} 가 되어 "평가가 하나도 없음"으로 보이고, 공유 자료라 평가 화면까지
+ *     같이 비었습니다. 조용한 실패라 아무도 몰랐습니다.
+ * 배지 버그(my_footprint 를 my_counts 가 베껴 적은 것)와 같은 모양입니다.
+ *
+ * 칸은 두 화면이 쓰는 것을 **합쳐서** 받습니다 — 한쪽만 늘리면 다른 쪽이
+ * 조용히 빈 값을 씁니다.
+ * **실패하면 아무것도 안 바꿉니다.** 반쯤 지워진 자료가 빈 화면보다 나쁩니다. */
+async function loadRateData(){
+  const [mine, stats, vis] = await Promise.all([
+    sb.from('city_ratings').select('city_id,stars,want,comment,updated_at')
+      .eq('user_id', me.id),
+    sb.rpc('city_stats'),
+    sb.rpc('my_visited'),
+  ]);
+  if (mine.error) return { error: mine.error };
+  myRates  = Object.fromEntries((mine.data  || []).map(r => [r.city_id, r]));
+  cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
+  /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
+     켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
+  visited  = new Set((vis.data || []).map(v => v.city_id));
+  return {};
+}
+
+/* 다녀온 곳만 다시 셉니다. 별점을 지웠을 때와 홈 발자국이 씁니다. */
+async function refreshVisited(){
+  const v = await sb.rpc('my_visited');
+  visited = new Set((v.data || []).map(x => x.city_id));
+}
+
 async function loadRatings(){
   /* 도시 목록은 받아둔 것이 있어도 **내 별점은 서버에서** 옵니다.
      별점 없이 도시만 늘어놓으면 뭘 매겼는지 모르고, 눌러도 저장이 안 됩니다.
@@ -1669,17 +1704,8 @@ async function loadRatings(){
   $('rateerr').classList.add('hide');
   await loadCities();
   fillCityList();
-  const [mine, stats, vis] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,want,comment').eq('user_id', me.id),
-    sb.rpc('city_stats'),
-    sb.rpc('my_visited'),
-  ]);
-  if (mine.error) return fail(mine.error, 'rate');
-  myRates  = Object.fromEntries((mine.data || []).map(r => [r.city_id, r]));
-  cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
-  /* 다녀온 곳은 저장하지 않고 계산합니다 — 별점을 매겼거나 지난 여행의 구간 도시.
-     켜고 끄는 스위치가 없으니 어긋날 자리도 없습니다. */
-  visited = new Set((vis.data || []).map(v => v.city_id));
+  const r = await loadRateData();
+  if (r.error) return fail(r.error, 'rate');
   justRated.clear();      /* 다시 들어왔으니 매긴 것은 이제 목록에서 뺍니다 */
   drawRatings();
 }
@@ -1846,8 +1872,7 @@ async function saveRate(cityId, patch, quiet){
   /* 별점을 매기면 그 도시는 다녀온 것이 됩니다. 지우면 여행 기록이 없는 한 빠집니다. */
   if ('stars' in patch){
     if (patch.stars != null) visited.add(cityId);
-    else { const v = await sb.rpc('my_visited');
-           visited = new Set((v.data || []).map(x => x.city_id)); }
+    else await refreshVisited();
   }
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
@@ -2800,12 +2825,11 @@ async function renderQuiz(){
 }
 
 async function renderFoot(){
-  const [{ data: f }, vis] = await Promise.all([
+  const [{ data: f }] = await Promise.all([
     sb.rpc('my_footprint'),
-    sb.rpc('my_visited'),          /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
+    refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
   ]);
   if (!f) return;
-  visited = new Set((vis.data || []).map(v => v.city_id));
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   const box = document.createElement('div');
   box.className = 'card quiet'; box.id = 'homefp'; box.style.cursor = 'pointer';
@@ -4623,15 +4647,16 @@ async function openShelf(kind){
   if (kind === 'badge')  return openBadgeShelf();
 
   await loadCities();
-  const [mine, vis, stats] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,want,comment,updated_at')
-      .eq('user_id', me.id),
-    sb.rpc('my_visited'),
-    sb.rpc('city_stats'),
-  ]);
-  myRates  = Object.fromEntries((mine.data || []).map(r => [r.city_id, r]));
-  visited  = new Set((vis.data || []).map(v => v.city_id));
-  cityStat = Object.fromEntries((stats.data || []).map(s => [s.city_id, s]));
+  /* 전에는 여기서 오류를 안 봤습니다. 실패하면 평가가 하나도 없는 것처럼
+     보이고, 공유 자료라 평가 화면까지 같이 비었습니다. 보고 있는 자리에 적습니다. */
+  const rd = await loadRateData();
+  if (rd.error){
+    $('shelfcount').textContent = '';
+    $('shelflist').innerHTML =
+      `<div class="empty">평가를 못 받아왔어요.<br>
+         <span class="memo">${esc(rd.error.message || rd.error)}</span></div>`;
+    return;
+  }
 
   const all = (cities || []).filter(c => {
     const r = myRates[c.id];

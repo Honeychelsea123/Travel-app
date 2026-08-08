@@ -22,17 +22,17 @@
      Leaflet 은 평범한 스크립트라 모듈보다 먼저 실행돼 window.L 로 잡힙니다. -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<link rel="stylesheet" href="app.css?v=b223">
+<link rel="stylesheet" href="app.css?v=b224">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="dom.js?v=b223">
-<link rel="modulepreload" href="db.js?v=b223">
-<link rel="modulepreload" href="calc.js?v=b223">
-<link rel="modulepreload" href="stars.js?v=b223">
-<link rel="modulepreload" href="net.js?v=b223">
-<link rel="modulepreload" href="admin.js?v=b223">
+<link rel="modulepreload" href="dom.js?v=b224">
+<link rel="modulepreload" href="db.js?v=b224">
+<link rel="modulepreload" href="calc.js?v=b224">
+<link rel="modulepreload" href="stars.js?v=b224">
+<link rel="modulepreload" href="net.js?v=b224">
+<link rel="modulepreload" href="admin.js?v=b224">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -68,7 +68,7 @@
        그때 네트워크가 어긋나도 app.js 본문이 통째로 실행되지 않습니다.**
        화면에는 이 상자만 남고, 사용자는 버튼이 무슨 뜻인지 모릅니다.
 
-       실제로 b220 → b223 에서 그랬습니다. 옛 판의 checkBuild 가 파일 이름을
+       실제로 b220 → b224 에서 그랬습니다. 옛 판의 checkBuild 가 파일 이름을
        나열해 찾고 있어서(app|world|calc) 새로 생긴 모듈 다섯을 미리 안 받아둔
        채로 새로고침했습니다. 그 판으로 넘어오는 **그 한 번**은 옛 코드가
        처리하므로, 새 판에서 정규식을 고쳐둬도 보호를 못 받습니다.
@@ -1025,7 +1025,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b223</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b224</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1467,7 +1467,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b223"></script>
+<script type="module" src="app.js?v=b224"></script>
 </body>
 </html>
 
