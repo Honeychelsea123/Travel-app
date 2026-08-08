@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b239';
-import { $, esc, toast, copyText } from './dom.js?v=b239';
-import { starHtml, paintStars, markRated } from './stars.js?v=b239';
+import { sb } from './db.js?v=b240';
+import { $, esc, toast, copyText } from './dom.js?v=b240';
+import { starHtml, paintStars, markRated } from './stars.js?v=b240';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b239';
-import { loadAdmin } from './admin.js?v=b239';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b239';
+         setErrLogger, NOROW } from './net.js?v=b240';
+import { loadAdmin } from './admin.js?v=b240';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b240';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b239';
+         setEditPlanId } from './trip.js?v=b240';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b239';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b240';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b239';
+         useCities, addCity, search } from './cities.js?v=b240';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b239';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b240';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b239';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b240';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b239';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b240';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1714,7 +1714,7 @@ async function loadRateData(){
    다녀온 곳이 통째로 빈 Set 이 됐습니다 — 홈 발자국이 이걸 부르므로 그때
    세계지도가 하얘졌습니다. rate.js 가 오류면 아무것도 안 바꿉니다. */
 async function refreshVisited(){
-  setVisited(await sb.rpc('my_visited'));
+  setVisited(await netTimeout(sb.rpc('my_visited')));
 }
 
 async function loadRatings(){
@@ -2075,13 +2075,13 @@ $('cv_save').addEventListener('click', async () => {
 /* 사진은 구간에 붙은 도시에서 가져옵니다.
    예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
 async function tripPhoto(t){
-  const lg = await sb.from('trip_legs')
-    .select('city_id, cities(image_url)').eq('trip_id', t.id).order('start_date');
+  const lg = await netTimeout(sb.from('trip_legs')
+    .select('city_id, cities(image_url)').eq('trip_id', t.id).order('start_date'));
   const hit = (lg.data || []).find(l => l.cities?.image_url);
   if (hit) return hit.cities.image_url;
   /* 구간에 도시가 안 붙어 있으면 이름으로 마지막 한 번 찾아봅니다. */
-  const c = await sb.from('cities').select('image_url')
-    .eq('name', t.destination).not('image_url', 'is', null).limit(1);
+  const c = await netTimeout(sb.from('cities').select('image_url')
+    .eq('name', t.destination).not('image_url', 'is', null).limit(1));
   return c.data?.[0]?.image_url || null;
 }
 
@@ -2102,19 +2102,32 @@ async function loadHome(){
   /* 홈은 서버에서 받아올 것이 많습니다 — 다음 여행, 평가할 곳, 발자국, 통계.
      오프라인이면 그 중 하나도 못 옵니다. 하나씩 시간을 재며 실패하느니
      **아예 안 물어보고** 바로 알립니다. 그게 훨씬 빠릅니다. */
-  if (netIsDown()){
+  /* 오프라인 안내는 한 곳에서만 만듭니다. 아래 두 군데(처음부터 끊긴 경우 ·
+     받다가 끊긴 경우)가 같은 말을 해야 하는데, 따로 적으면 갈립니다. */
+  const offHome = () => {
     $('home').innerHTML =
       `<div class="card"><div class="empty" style="padding:26px 12px">
          연결이 없어 홈은 지금 볼 수 없어요.<br>
          <span class="memo">다음 여행 · 평가 · 발자국은 서버에서 가져옵니다.</span>
+         <div style="margin-top:14px; font-size:var(--f-lg)">
+           <b>여행</b> 탭은 지금도 쓸 수 있어요.<br>
+           <span class="memo">한 번이라도 열어본 여행은 일정 · 지출 · 준비물까지
+           그대로 보입니다.</span></div>
          <div style="margin-top:16px">
-           <button class="primary" id="hometotrip">저장해둔 여행 보기</button></div>
+           <button class="primary" id="hometotrip">여행 보러 가기</button></div>
        </div></div>`;
     $('hometotrip').onclick = () => showApp('trips');
     drawOffbar();
-    return;
+  };
+  if (netIsDown()) return offHome();
+  try {
+    await buildHome();
+    /* **자리표시자가 남아 있으면 거짓말입니다.** buildHome 이 아무것도 못 그리고
+       끝나는 길이 있는데(질의가 다 비어 오는 경우), 그러면 index.html 의
+       "불러오는 중…"이 그대로 남아 계속 도는 것처럼 보입니다.
+       사용자가 "실제로 불러와지는 줄 안다"고 한 것이 이것입니다. */
+    if ($('home').querySelector('.load')) offHome();
   }
-  try { await buildHome(); }
   catch (e){
     if ($('home').querySelector('.hero, .card, .rvbar')) return;   /* 이미 뭔가 그렸으면 둡니다 */
     $('home').innerHTML = !netIsDown()
@@ -2175,14 +2188,14 @@ async function buildHome(){
   if (!data.length){
     /* 여행이 없으면 가고 싶다고 표시한 곳을 겁니다. 그것도 없으면 아무 곳이나 —
        빈 화면보다는 사진 한 장이 훨씬 낫습니다. */
-    const w = await sb.from('city_ratings').select('cities(id,name,country,image_url)')
-      .eq('user_id', me.id).eq('want', true).limit(20);
+    const w = await netTimeout(sb.from('city_ratings').select('cities(id,name,country,image_url)')
+      .eq('user_id', me.id).eq('want', true).limit(20));
     const pool = (w.data || []).map(r => r.cities).filter(c => c?.image_url);
     let pick = pool[Math.floor(Math.random() * pool.length)] || null;
     const wanted = !!pick;
     if (!pick){
-      const any = await sb.from('cities').select('id,name,country,image_url')
-        .not('image_url', 'is', null).limit(60);
+      const any = await netTimeout(sb.from('cities').select('id,name,country,image_url')
+        .not('image_url', 'is', null).limit(60));
       const l = any.data || [];
       pick = l[Math.floor(Math.random() * l.length)] || null;
     }
@@ -2217,12 +2230,12 @@ async function buildHome(){
      일정 목록 자체는 여행 탭에 있으니 홈에서 또 늘어놓지 않습니다. */
   const [photo, cnt, all] = await Promise.all([
     tripPhoto(t),
-    sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today),
+    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
+      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today)),
     /* 이 여행에 일정이 하나라도 있나. 아래 AI 카드가 무슨 말을 할지 정합니다 —
        일정이 비어 있으면 그게 지금 제일 급한 일입니다. */
-    sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null),
+    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
+      .eq('trip_id', t.id).is('deleted_at', null)),
   ]);
 
   const n = cnt.count || 0;
@@ -2260,19 +2273,23 @@ let rvTrip = null, shelfKind = 'mine';
 
 async function pendingTrip(){
   const today = ymd(new Date());
-  const { data } = await sb.from('trips')
+  /* **netTimeout 을 지나야 합니다.** 여기가 홈에서 제일 먼저 기다리는 질의인데
+     맨몸으로 나가고 있었습니다. 비행기모드에서는 응답이 안 오고 실패도 안 나서
+     여기서 멈췄고, 화면은 index.html 의 "불러오는 중…" 그대로 남았습니다.
+     사용자가 "계속 도니까 실제로 불러와지는 줄 안다"고 한 것이 이것입니다. */
+  const { data } = await netTimeout(sb.from('trips')
     .select('id,title,destination,start_date,end_date')
     .lt('end_date', today)
-    .order('end_date', { ascending:false }).limit(5);
+    .order('end_date', { ascending:false }).limit(5));
   if (!data?.length) return null;
 
   for (const t of data){
     const [lg, ps, cr, pr] = await Promise.all([
-      sb.from('trip_legs').select('city_id').eq('trip_id', t.id).not('city_id','is',null),
-      sb.from('plans').select('id').eq('trip_id', t.id).is('deleted_at', null)
-        .in('category', ['식사','카페']),
-      sb.from('city_ratings').select('city_id').eq('user_id', me.id).not('stars','is',null),
-      sb.from('plan_ratings').select('plan_id').eq('user_id', me.id).not('stars','is',null),
+      netTimeout(sb.from('trip_legs').select('city_id').eq('trip_id', t.id).not('city_id','is',null)),
+      netTimeout(sb.from('plans').select('id').eq('trip_id', t.id).is('deleted_at', null)
+        .in('category', ['식사','카페'])),
+      netTimeout(sb.from('city_ratings').select('city_id').eq('user_id', me.id).not('stars','is',null)),
+      netTimeout(sb.from('plan_ratings').select('plan_id').eq('user_id', me.id).not('stars','is',null)),
     ]);
     const rated = new Set((cr.data || []).map(r => r.city_id));
     const done  = new Set((pr.data || []).map(r => r.plan_id));
@@ -2860,7 +2877,7 @@ async function renderQuiz(){
 
 async function renderFoot(){
   const [{ data: f }] = await Promise.all([
-    sb.rpc('my_footprint'),
+    netTimeout(sb.rpc('my_footprint')),
     refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
   ]);
   if (!f) return;
@@ -6301,11 +6318,40 @@ $('tstrip').addEventListener('click', e => {
      화면 전체에 걸어도 되는 이유는 `body.intrip` 이 있기 때문입니다 —
      showApp 이 다른 탭으로 갈 때 여행을 닫으면서 늘 끕니다. */
   onSwipeX(document, {
-    /* 시트가 위에 열려 있으면 화면이 보여도 넘기면 안 됩니다. */
+    /* 시트가 위에 열려 있으면 화면이 보여도 넘기면 안 됩니다.
+       **하단바 위에서 시작한 것은 넘깁니다** — 거기는 앱 탭(홈·여행·기록·프로필)
+       차례입니다. 아래에서 따로 듣습니다. */
     active: () => document.body.classList.contains('intrip') &&
                   !$('tripview').classList.contains('hide') &&
                   !document.body.classList.contains('sheeton'),
+    skip:    e => !!e.target.closest?.('#appbar'),
     onLeft:  () => step(1),      /* 왼쪽으로 쓸면 다음 구역이 따라 들어옵니다 */
+    onRight: () => step(-1),
+  });
+}
+
+/* ── 하단바도 좌우로 쓸어 넘기기 ──────────────────────────────────────
+ * 사용자 요청. 탭이 넷이라 끝에서 끝으로 갈 때 손가락이 화면을 가로지릅니다.
+ * 바 위에서 쓸면 옆 탭으로 갑니다 — 손가락을 옮길 필요가 없습니다.
+ *
+ * **여행 안에서도 바 위에서는 앱 탭이 바뀝니다.** 바에 그려진 것이 앱 탭이니
+ * 거기서 쓸면 그것이 움직이는 게 맞습니다(위 여행 구역 쓸기는 바를 건너뜁니다).
+ * 순서는 index.html 의 단추에서 읽습니다 — 코드에 또 적으면 어긋납니다. */
+{
+  const order = () => [...document.querySelectorAll('#appbar button[data-a]')]
+    .map(b => b.dataset.a);
+  const step = d => {
+    const o = order(), i = o.indexOf(appTab);
+    if (i < 0) return;
+    const next = o[i + d];
+    /* 끝에서 더 밀어도 안 돌아 나옵니다 — 돌면 지금 어디인지 감이 사라집니다. */
+    if (next && next !== appTab) showApp(next);
+  };
+  onSwipeX($('appbar'), {
+    /* 하단바가 보일 때만입니다. 로그인 전에는 아예 없습니다. */
+    active: () => !$('appbar').classList.contains('hide') &&
+                  !document.body.classList.contains('sheeton'),
+    onLeft:  () => step(1),
     onRight: () => step(-1),
   });
 }

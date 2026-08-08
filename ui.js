@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b239';
+import { $ } from './dom.js?v=b240';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -50,7 +50,8 @@ function ownedByOthers(el, root){
    변하는 요소에 걸면, 내용이 짧을 때 그 아래 빈 자리에서는 손가락이 닿을 것이
    없어 아무 일도 안 일어납니다. 보는 사람에게는 다 같은 화면인데 위쪽 절반만
    되는 셈이라 "될 때도 있고 안 될 때도 있다"로 느껴집니다. 실제로 그랬습니다. */
-export function onSwipeX(el, { onLeft, onRight, active = () => true }){
+export function onSwipeX(el, { onLeft, onRight, active = () => true,
+                               skip = () => false }){
   let x0 = 0, y0 = 0, t0 = 0, id = null, live = false, dead = false;
 
   el.addEventListener('pointerdown', e => {
@@ -59,6 +60,9 @@ export function onSwipeX(el, { onLeft, onRight, active = () => true }){
     /* 마우스는 왼쪽 단추만. 펜·손가락은 그대로 받습니다. */
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (e.clientX < EDGE || e.clientX > innerWidth - EDGE) return;
+    /* 부르는 쪽이 "여기서 시작한 것은 내 것이 아니다"라고 말할 수 있게 합니다.
+       화면 전체에 걸어두고 그중 한 조각만 다른 쓸기에 넘겨줄 때 씁니다. */
+    if (skip(e)) return;
     if (ownedByOthers(e.target, el)) return;
     id = e.pointerId; x0 = e.clientX; y0 = e.clientY; t0 = e.timeStamp;
     live = false; dead = false;
