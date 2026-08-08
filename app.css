@@ -419,7 +419,16 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
    밀려도 레이아웃 바닥은 보이는 화면 바닥과 같으므로, 바닥에 붙이고
    높이만 '지금 보이는 높이'로 잡으면 딱 그 영역을 덮습니다.
    위 .aisheet 이 같은 이유로 같은 방식을 씁니다. */
-.assheet.wiz{ height:var(--vvh, 100dvh); max-height:none;
+/* **아래가 아니라 위에 붙입니다 (b240 에서 재고 고침).**
+   위 설명의 "레이아웃 바닥은 보이는 화면 바닥과 같다"는 **사파리에서만** 맞습니다.
+   홈 화면 앱에서 눈금자로 재보니 iOS 가 화면을 아예 안 밀었습니다:
+       inner 793 · vv.h 424 · off 0
+   그러면 보이는 곳은 위쪽 0~424 인데 bottom:0 은 레이아웃 바닥 793 이라
+   시트가 369~793, 즉 **키보드 자리에 통째로 앉습니다.** 진행 막대만 55px 보였습니다.
+   보이는 창이 시작하는 자리(--vvtop)에 붙이면 둘 다 맞습니다 —
+   홈앱 0~424, 사파리 303~695(레이아웃 바닥과 같음). */
+.assheet.wiz{ top:var(--vvtop, 0px); bottom:auto;
+              height:var(--vvh, 100dvh); max-height:none;
               border-radius:0; overflow:hidden;
               display:flex; flex-direction:column;
               padding:max(14px, env(safe-area-inset-top)) 18px 0; }

@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b240';
+import { $ } from './dom.js?v=b241';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -29,7 +29,12 @@ const EDGE = 30;      /* 가장자리 몇 px 을 브라우저에 양보하나 */
 /* 손가락이 시작한 자리가 "남의 것"인가. 위로 거슬러 올라가며 봅니다. */
 function ownedByOthers(el, root){
   for (let n = el; n && n !== root; n = n.parentElement){
+    /* 지도 둘. 일정 지도(Leaflet)와 세계지도(#worldsvg)는 **손가락으로 끌어
+       옮기는 것**이 본래 일입니다. 세계지도는 setPointerCapture 로 손가락을
+       잡지만 이벤트는 그래도 document 까지 올라오므로, 여기서 안 걸러내면
+       지도를 옆으로 끌 때마다 탭이 넘어갑니다. */
     if (n.closest?.('.leaflet-container')) return true;
+    if (n.id === 'worldsvg' || n.closest?.('#worldsvg')) return true;
     const t = n.tagName;
     if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || n.isContentEditable) return true;
     if (n.classList?.contains('assheet') || n.classList?.contains('aisheet')) return true;
@@ -351,6 +356,15 @@ if (window.visualViewport){
        거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
        시트는 bottom:0 에 두고, 높이만 "지금 보이는 높이"로 잡습니다. */
     document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+    /* **보이는 창이 레이아웃의 어디서 시작하는가.** 이것이 없어서 새 여행 시트가
+       키보드 뒤에 앉았습니다. 홈 화면 앱에서 잰 값(b240):
+         inner 793 · vv.h 424 · off 0
+       iOS 가 화면을 **안 밀었으므로**(off 0) 보이는 곳은 위쪽 0~424 인데,
+       시트는 bottom:0(=레이아웃 바닥 793)에 높이 424 라 369~793 에 앉습니다 —
+       정확히 키보드 자리입니다. 진행 막대만 55px 보였습니다.
+       사파리는 off 303 이라 bottom:0 이 우연히 맞아서 여태 안 보였습니다.
+       위에 붙이면 둘 다 맞습니다: 홈앱 0~424, 사파리 303~695(=바닥). */
+    document.documentElement.style.setProperty('--vvtop', Math.round(vv.offsetTop) + 'px');
 
     /* ── 레이아웃 바깥에 그려지는 자리 ──
        사파리는 화면(screen 852) 중 아래쪽을 레이아웃 밖에 두면서(inner 695)

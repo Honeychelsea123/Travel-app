@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b240';
-import { $, esc, toast, copyText } from './dom.js?v=b240';
-import { starHtml, paintStars, markRated } from './stars.js?v=b240';
+import { sb } from './db.js?v=b241';
+import { $, esc, toast, copyText } from './dom.js?v=b241';
+import { starHtml, paintStars, markRated } from './stars.js?v=b241';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b240';
-import { loadAdmin } from './admin.js?v=b240';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b240';
+         setErrLogger, NOROW } from './net.js?v=b241';
+import { loadAdmin } from './admin.js?v=b241';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b241';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b240';
+         setEditPlanId } from './trip.js?v=b241';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b240';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b241';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b240';
+         useCities, addCity, search } from './cities.js?v=b241';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b240';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b241';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b240';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b241';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b240';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b241';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -6347,10 +6347,24 @@ $('tstrip').addEventListener('click', e => {
     /* 끝에서 더 밀어도 안 돌아 나옵니다 — 돌면 지금 어디인지 감이 사라집니다. */
     if (next && next !== appTab) showApp(next);
   };
-  onSwipeX($('appbar'), {
-    /* 하단바가 보일 때만입니다. 로그인 전에는 아예 없습니다. */
+  /* **하단바만이 아니라 화면 전체입니다.** 처음에 바 위에서만 되게 했더니
+     사용자가 바로 "홈화면 슬라이드 안된다"고 했습니다 — 당연합니다.
+     여행 안에서는 화면 아무 데나 쓸면 구역이 넘어가는데, 여행 밖에서만
+     좁은 띠를 정확히 짚어야 한다면 그건 같은 앱이 두 규칙으로 도는 것입니다.
+     **여행 밖이면 화면 전체가 앱 탭 차례입니다.**
+     (여행 안에서는 위쪽 쓸기가 구역을 넘기고, 하단바에서만 앱 탭이 넘어갑니다.) */
+  onSwipeX(document, {
     active: () => !$('appbar').classList.contains('hide') &&
-                  !document.body.classList.contains('sheeton'),
+                  !document.body.classList.contains('sheeton') &&
+                  !document.body.classList.contains('intrip'),
+    onLeft:  () => step(1),
+    onRight: () => step(-1),
+  });
+  /* 여행 안에서는 위가 구역 차례라 화면 전체로는 못 겁니다. 바만 따로 듣습니다. */
+  onSwipeX($('appbar'), {
+    active: () => !$('appbar').classList.contains('hide') &&
+                  !document.body.classList.contains('sheeton') &&
+                  document.body.classList.contains('intrip'),
     onLeft:  () => step(1),
     onRight: () => step(-1),
   });
