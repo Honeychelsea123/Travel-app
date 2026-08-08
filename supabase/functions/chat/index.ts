@@ -495,10 +495,10 @@ Deno.serve(async (req) => {
 
   try {
     const key = Deno.env.get('GEMINI_KEY');
-    if (!key) return json({ error: 'GEMINI_KEY 가 설정되지 않았습니다.' }, 500);
+    if (!key) return json({ error: 'AI 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.' }, 500);
 
     const auth = req.headers.get('Authorization') ?? '';
-    if (!auth) return json({ error: '로그인이 필요합니다.' }, 401);
+    if (!auth) return json({ error: '로그인이 필요해요.' }, 401);
 
     const url = Deno.env.get('SUPABASE_URL')!;
     // 부른 사람의 토큰으로 읽습니다 — RLS 가 그대로 걸립니다.
@@ -506,7 +506,7 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: auth } },
     });
     const { data: { user } } = await asUser.auth.getUser();
-    if (!user) return json({ error: '로그인이 필요합니다.' }, 401);
+    if (!user) return json({ error: '로그인이 필요해요.' }, 401);
 
     mark('auth');
     const body = await req.json().catch(() => ({}));
@@ -525,18 +525,18 @@ Deno.serve(async (req) => {
     const shots: { mimeType: string; data: string }[] = [];
     const incoming = Array.isArray(images) ? images : (image ? [image] : []);
     if (incoming.length > 4)
-      return json({ error: '사진은 4장까지입니다.' }, 400);
+      return json({ error: '사진은 4장까지 올릴 수 있어요.' }, 400);
     let bytes = 0;
     for (const im of incoming) {
       if (!im?.data) continue;
-      if (typeof im.data !== 'string') return json({ error: '사진 형식이 이상합니다.' }, 400);
+      if (typeof im.data !== 'string') return json({ error: '사진을 읽지 못했어요. 다른 사진으로 해보세요.' }, 400);
       bytes += im.data.length;
       // 한 장씩도 보고 전체도 봅니다. 작은 것 넷이 모여도 요청이 터질 수 있습니다.
       if (im.data.length > 3_000_000 || bytes > 8_000_000)
-        return json({ error: '사진이 너무 큽니다.' }, 400);
+        return json({ error: '사진이 너무 커요. 더 작은 것으로 올려주세요.' }, 400);
       const mt = String(im.mime ?? 'image/jpeg');
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(mt))
-        return json({ error: '지원하지 않는 사진 형식입니다.' }, 400);
+        return json({ error: '이 사진 형식은 못 읽어요. JPG나 PNG로 올려주세요.' }, 400);
       shots.push({ mimeType: mt, data: im.data });
     }
     const shot = shots.length ? shots[0] : null;   // 아래 검색 건너뛰기 판단에 씁니다
@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
     if ((draft || imp) && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
     if (imp && !shots.length && !String(message ?? '').trim())
-      return json({ error: '읽을 것이 없습니다.' }, 400);
+      return json({ error: '읽을 것이 없어요.' }, 400);
 
     // ── 사용량과 설정 ── 서비스 키로만. 화면에서 건너뛸 수 없습니다.
     //
@@ -567,8 +567,10 @@ Deno.serve(async (req) => {
     if (takeErr) return json({ error: takeErr.message }, 500);
     if (!take?.ok)
       return json({
-        error: `오늘 쓸 수 있는 횟수를 다 썼습니다 (${take?.used}/${take?.limit}회). ` +
-               `내일 다시 열립니다.`,
+        // 여기는 **사람을 잃는 자리**입니다. 쓸모를 느끼는 순간에 막히면
+        // 다시 안 옵니다. 얼마나 썼는지, 언제 풀리는지를 분명히 적습니다.
+        error: `오늘 쓸 수 있는 ${take?.limit}번을 다 썼어요. ` +
+               `내일 다시 열려요.`,
         used: take?.used, limit: take?.limit,
       }, 429);
 
@@ -890,20 +892,23 @@ Deno.serve(async (req) => {
       }
       // 조각이 하나도 답을 못 냈으면 통째로 실패한 것입니다.
       if (!got.some(Boolean))
-        return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
+        return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 물어봐주세요.' }, 502);
       raw = JSON.stringify({
         reply: reply || `${acts.length}개를 찾았습니다.`, actions: acts });
     } else if (imp) {
       /* 조각을 안 나눈 짧은 자료도 똑같이 가벼운 모델로 갑니다.
          여기만 큰 모델로 두면 "짧은 게 더 느린" 이상한 일이 생깁니다. */
       const t = await askGemini(key, contents, true);
-      if (!t) return json({ error: 'AI 가 응답하지 않았습니다.' }, 502);
+      if (!t) return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 물어봐주세요.' }, 502);
       raw = t;
     } else {
       let r = await callGemini(activeModel, key, contents);
       if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
-      if (r.code !== 200)
-        return json({ error: `AI 가 응답하지 않았습니다 (${r.code}).` }, 502);
+      if (r.code !== 200){
+        // HTTP 코드를 사용자에게 보여줄 이유가 없습니다. 로그에는 남습니다.
+        console.error('gemini', r.code, r.why);
+        return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 물어봐주세요.' }, 502);
+      }
 
       const parsed = JSON.parse(r.body);
       const parts = parsed?.candidates?.[0]?.content?.parts ?? [];
@@ -911,7 +916,10 @@ Deno.serve(async (req) => {
       if (!raw) {
         const why = parsed?.promptFeedback?.blockReason ??
                     parsed?.candidates?.[0]?.finishReason ?? '알 수 없음';
-        return json({ error: `답을 받지 못했습니다 (${why}).` }, 502);
+        /* blockReason(SAFETY 등)은 영어 코드라 사용자에게는 뜻이 없습니다.
+           로그에만 남기고, 화면에는 무엇을 해보면 되는지 적습니다. */
+        console.error('gemini empty', why);
+        return json({ error: '답을 못 받았어요. 물어보는 말을 조금 바꿔서 다시 해보세요.' }, 502);
       }
     }
 

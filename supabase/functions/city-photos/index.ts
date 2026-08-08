@@ -30,12 +30,12 @@ Deno.serve(async (req) => {
   try {
     const url = Deno.env.get('SUPABASE_URL')!;
     const auth = req.headers.get('Authorization') ?? '';
-    if (!auth) return json({ error: '로그인이 필요합니다.' }, 401);
+    if (!auth) return json({ error: '로그인이 필요해요.' }, 401);
 
     const asUser = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: auth } } });
     const { data: isAdmin } = await asUser.rpc('is_admin');
-    if (isAdmin !== true) return json({ error: '관리자만 쓸 수 있습니다.' }, 403);
+    if (isAdmin !== true) return json({ error: '관리자만 쓸 수 있어요.' }, 403);
 
     // 이름을 몇 가지로 넣어뒀을 수 있어 차례로 봅니다.
     const key = Deno.env.get('PEXELS_KEY') ?? Deno.env.get('PEXELS_API_KEY') ??
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     }
 
     // ── 후보 찾기 ──
-    if (!key) return json({ error: 'PEXELS 키를 못 찾았습니다 (PEXELS_KEY).' }, 500);
+    if (!key) return json({ error: '사진 검색이 아직 준비되지 않았어요.' }, 500);
     const limit = Math.min(Math.max(Number(body?.limit) || 12, 1), 30);
     const offset = Math.max(Number(body?.offset) || 0, 0);
     /* ids 를 주면 **사진이 이미 있어도** 그 도시들을 찾습니다.

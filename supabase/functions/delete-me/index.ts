@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   try {
     const auth = req.headers.get('Authorization') ?? '';
-    if (!auth) return json({ error: '로그인이 필요합니다.' }, 401);
+    if (!auth) return json({ error: '로그인이 필요해요.' }, 401);
 
     const url = Deno.env.get('SUPABASE_URL')!;
 
@@ -46,17 +46,20 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: auth } },
     });
     const { data: { user } } = await asUser.auth.getUser();
-    if (!user) return json({ error: '로그인이 필요합니다.' }, 401);
+    if (!user) return json({ error: '로그인이 필요해요.' }, 401);
 
     // 한 번 더 확인합니다. 화면이 실수로 불러도 그냥은 안 지워집니다.
     const body = await req.json().catch(() => ({}));
     if (body?.confirm !== 'DELETE')
-      return json({ error: '확인 값이 없습니다.' }, 400);
+      return json({ error: '확인 값이 없어요.' }, 400);
 
     // ── 1. 앱 자료 ── 부른 사람의 토큰으로 돕니다.
     // 함수 안에서 auth.uid() 로 본인 것만 건드립니다 (036).
     const { data: summary, error: dataErr } = await asUser.rpc('delete_my_data');
-    if (dataErr) return json({ error: '자료를 지우지 못했습니다: ' + dataErr.message }, 500);
+    if (dataErr){
+      console.error('delete_my_data', dataErr.message);
+      return json({ error: '자료를 지우지 못했어요. 잠시 뒤 다시 해주세요.' }, 500);
+    }
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
@@ -89,8 +92,13 @@ Deno.serve(async (req) => {
       const detail = left && Object.keys(left).length
         ? Object.entries(left).map(([k, v]) => `${k} ${v}`).join(', ')
         : (authErr.message || '(이유를 못 받았습니다)');
+      /* 반쯤 지워진 상태입니다. 무엇이 막고 있는지는 사용자가 손쓸 수 없는
+         것이라 로그로 보내고, 화면에는 **지금 상태와 다음에 할 일**만 적습니다.
+         구조화된 값(blockers)은 그대로 둡니다 — 화면 쪽이 씁니다. */
+      console.error('delete-me blockers', detail);
       return json({
-        error: '자료는 지웠는데 계정이 남았습니다. 남아서 막는 것: ' + detail,
+        error: '여행 자료는 다 지웠는데 계정만 남았어요. ' +
+               '만든 사람에게 알려주시면 마저 지워드릴게요.',
         partial: true, summary, blockers: left,
       }, 500);
     }
