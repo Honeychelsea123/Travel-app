@@ -1,7 +1,7 @@
 import { WORLD_PATHS } from './world.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b219';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b220';
 
 /* ── 설정 ──────────────────────────────────────────────────────────
  * publishable 키는 브라우저에 있어도 됩니다. RLS 가 지킵니다.
@@ -720,40 +720,10 @@ $('admback').addEventListener('click', () => {
   window.scrollTo({ top:0, behavior:'smooth' });
 });
 
-/* ── 도시 사진 옮기기 (일회용) ────────────────────────────────────────
- * Pexels 핫링크를 우리 Storage 로 옮깁니다. 한 번에 다 하면 함수 시간
- * 제한에 걸리므로 **조금씩 여러 번** 부르고, 남은 수가 0 이 될 때까지
- * 이어서 돕니다. 이미 옮긴 것은 서버가 걸러내므로 다시 눌러도 안전합니다.
- * 다 옮기고 나면 이 블록과 카드, migrate-images 함수를 걷어냅니다. */
-$('adm_mig').addEventListener('click', async () => {
-  const b = $('adm_mig'), note = $('mig_note');
-  $('migerr').classList.add('hide');
-  b.disabled = true;
-  let total = 0, fails = [];
-  /* 한 번이라도 돈 뒤에 멈추면 어디까지 했는지 알아야 합니다. 매 판마다
-     남은 수를 화면에 적습니다 — 300장이면 몇 분이 걸립니다. */
-  for (let round = 1; round <= 40; round++){
-    b.innerHTML = `<span class="load">옮기는 중… ${total}장</span>`;
-    const { data, error } = await sb.functions.invoke('migrate-images', { body: { limit: 15 } });
-    if (error || data?.error){
-      let why = data?.error || error?.message || '';
-      try { why = (await error?.context?.json())?.error || why; } catch {}
-      b.disabled = false; b.textContent = '이어서 옮기기';
-      note.textContent = `${total}장까지 옮겼어요. 다시 누르면 이어서 합니다.`;
-      return fail(why, 'mig');
-    }
-    total += data.moved || 0;
-    if (data.failed?.length) fails = fails.concat(data.failed);
-    note.textContent = `${total}장 옮겼어요. 남은 것 ${data.left}장.`;
-    /* 남은 것이 0 이거나, 한 판에서 하나도 못 옮겼으면 멈춥니다 —
-       후자는 남은 것이 전부 실패하는 것들이라 더 돌아도 같습니다. */
-    if (!data.left || !data.moved) break;
-  }
-  b.disabled = false; b.textContent = '다시 옮기기';
-  note.textContent = `${total}장 옮겼어요.` +
-    (fails.length ? ` 못 옮긴 것 ${fails.length}장: ` +
-      fails.slice(0, 5).map(f => `${f.id}(${f.why})`).join(', ') : ' 다 됐어요.');
-});
+/* 도시 사진을 Pexels 핫링크에서 우리 Storage 로 옮기는 일회용 카드가 여기
+   있었습니다. 2026-08-08 에 469 곳 전부 옮긴 것을 확인하고 걷어냈습니다
+   (image_url 이 전부 우리 storage 주소이고 pexels 는 0 곳).
+   supabase/functions/migrate-images 도 같이 지웠습니다. */
 
 /* ── 바뀐 것 ────────────────────────────────────────────────────────
  * 판마다 무엇이 바뀌었는지. 목록은 changes.js 에 따로 있습니다.
@@ -8603,9 +8573,11 @@ window.__settleCheck = () => {
      [E('a', 30000, { a:2, b:1 })], M(['a','b'])],
     ['나간 사람이 낸 돈 (d 는 active 아님)',
      [E('d', 30000), E('a', 3000)], M(['a','b','c'])],
-    ['셋이 10000원 — 3으로 안 나눠떨어짐',
+    /* 아래 금액은 통화마다 배율을 곱해 씁니다(원화 ×1 · 유로 ×0.001).
+       그래서 이름에 화폐 단위를 적지 않습니다 — 10000 은 10,000원이자 €10 입니다. */
+    ['셋이 10000 — 3으로 안 나눠떨어짐',
      [E('a', 10000)], M(['a','b','c'])],
-    ['일곱이 100원 — 아주 작은 금액',
+    ['일곱이 100 — 아주 작은 금액',
      [E('a', 100)], M(['a','b','c','d','e','f','g'])],
     ['몫 무게가 0 뿐 (균등으로 떨어져야)',
      [E('a', 9000, { a:0, b:0 })], M(['a','b','c'])],
@@ -8617,34 +8589,53 @@ window.__settleCheck = () => {
      [E('a', 1234567), E('b', 7654321), E('c', 999)], M(['a','b','c','d'])],
   ];
 
-  const out = [];
-  for (const [name, rows, active] of cases){
-    const r = settleMath(rows, active, 1);       /* 원화 기준 */
-    const sumPaid = r.bal.reduce((s, b) => s + b.paid, 0);
-    const sumOwed = r.bal.reduce((s, b) => s + b.owed, 0);
-    /* 보내라는 대로 보낸 뒤의 잔액. 다 0 이어야 합니다. */
-    const after = Object.fromEntries(r.bal.map(b => [b.id, b.v]));
-    for (const m of r.moves){ after[m.from] += m.v; after[m.to] -= m.v; }
-    const worst = Math.max(0, ...Object.values(after).map(Math.abs));
-    const nan = [r.total, sumPaid, sumOwed, ...r.moves.map(m => m.v)]
-      .some(v => !Number.isFinite(v));
-    /* 화면에 찍히는 숫자끼리도 아귀가 맞아야 합니다. 단위로 깎아뒀으므로
-       보이는 값과 셈한 값이 같아야 하고, 잔액 합도 0 이어야 합니다. */
-    const notWhole = r.moves.some(m => Math.abs(m.v - Math.round(m.v)) > 1e-9)
-                  || r.bal.some(b => Math.abs(b.v - Math.round(b.v)) > 1e-9);
-    const balSum = Math.abs(r.bal.reduce((s, b) => s + b.v, 0));
+  /* ── 통화 두 벌로 돌립니다 ──
+     처음에는 원화(1원 단위)로만 돌렸습니다. 그런데 정산 단위는 통화마다
+     다릅니다 — drawSettle 이 NO_CENTS 를 보고 원·엔은 1, 유로·프랑·달러는
+     0.01 을 넘깁니다. 0.01 은 2진 부동소수로 정확히 표현되지 않아서
+     원화에서 안 나던 오차가 거기서만 날 수 있는데, 그 경로가 검사에
+     아예 없었습니다. 실제로 유럽 여행(EUR)이 시험 자료에 있습니다.
 
-    const bad = [];
-    /* 낸 돈·쓴 돈은 단위로 깎으므로 사람 수만큼 오차가 날 수 있습니다. */
-    if (Math.abs(sumPaid - r.total) > r.bal.length) bad.push(`낸 돈 합 ${sumPaid} ≠ 총액 ${r.total}`);
-    if (Math.abs(sumOwed - r.total) > r.bal.length) bad.push(`쓴 돈 합 ${sumOwed} ≠ 총액 ${r.total}`);
-    if (worst >= 1)   bad.push(`다 보내도 ${worst.toFixed(2)} 남음`);
-    if (balSum > 1e-9) bad.push(`잔액 합 ${balSum} (0 이어야 함)`);
-    if (notWhole)     bad.push('화면 단위로 안 떨어짐');
-    if (nan)          bad.push('NaN');
-    out.push({ 경우:name, 결과: bad.length ? '✗ ' + bad.join(' / ') : '✓',
-               총액:Math.round(r.total), 보낼건수:r.moves.length,
-               남은잔액:+worst.toFixed(2) });
+     **검사 기준도 단위를 따라가야 합니다.** "1원 단위로 떨어지는가"를
+     그대로 두면 유로에서는 늘 실패합니다. 아래는 전부 unit 으로 잽니다. */
+  const runs = [
+    { 통화:'KRW', unit:1,    scale:1     },   /* 30000 → 30,000원 */
+    { 통화:'EUR', unit:0.01, scale:0.001 },   /* 30000 → €30.00  */
+  ];
+
+  const out = [];
+  for (const { 통화, unit, scale } of runs){
+    for (const [name, rows, active] of cases){
+      const scaled = rows.map(e => ({ ...e, amount_home: e.amount_home * scale }));
+      const r = settleMath(scaled, active, unit);
+      const sumPaid = r.bal.reduce((s, b) => s + b.paid, 0);
+      const sumOwed = r.bal.reduce((s, b) => s + b.owed, 0);
+      /* 보내라는 대로 보낸 뒤의 잔액. 다 0 이어야 합니다. */
+      const after = Object.fromEntries(r.bal.map(b => [b.id, b.v]));
+      for (const m of r.moves){ after[m.from] += m.v; after[m.to] -= m.v; }
+      const worst = Math.max(0, ...Object.values(after).map(Math.abs));
+      const nan = [r.total, sumPaid, sumOwed, ...r.moves.map(m => m.v)]
+        .some(v => !Number.isFinite(v));
+      /* 화면에 찍히는 숫자끼리도 아귀가 맞아야 합니다. 단위로 깎아뒀으므로
+         보이는 값이 전부 unit 의 배수여야 합니다. 0.01 은 부동소수라 딱
+         떨어지지 않으므로(0.1399999… 처럼) 배수인지만 봅니다. */
+      const mult = v => Math.abs(v / unit - Math.round(v / unit)) > 1e-6;
+      const notWhole = r.moves.some(m => mult(m.v)) || r.bal.some(b => mult(b.v));
+      const balSum = Math.abs(r.bal.reduce((s, b) => s + b.v, 0));
+
+      const bad = [];
+      /* 낸 돈·쓴 돈은 단위로 깎으므로 사람 수만큼(× 단위) 오차가 날 수 있습니다. */
+      const slack = r.bal.length * unit;
+      if (Math.abs(sumPaid - r.total) > slack) bad.push(`낸 돈 합 ${sumPaid} ≠ 총액 ${r.total}`);
+      if (Math.abs(sumOwed - r.total) > slack) bad.push(`쓴 돈 합 ${sumOwed} ≠ 총액 ${r.total}`);
+      if (worst >= unit)        bad.push(`다 보내도 ${worst} 남음`);
+      if (balSum > unit / 1000) bad.push(`잔액 합 ${balSum} (0 이어야 함)`);
+      if (notWhole)             bad.push(`${unit} 단위로 안 떨어짐`);
+      if (nan)                  bad.push('NaN');
+      out.push({ 통화, 경우:name, 결과: bad.length ? '✗ ' + bad.join(' / ') : '✓',
+                 총액:+r.total.toFixed(unit === 1 ? 0 : 2), 보낼건수:r.moves.length,
+                 남은잔액:+worst.toFixed(4) });
+    }
   }
   console.table(out);
   const ng = out.filter(o => o.결과 !== '✓');

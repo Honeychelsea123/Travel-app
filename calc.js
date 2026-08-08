@@ -178,14 +178,24 @@ export function settleMath(rows, active, unit = 1){
      숫자가 같은 자리에서 떨어집니다.
      깎고 남은 자투리는 제일 많이 받을 사람에게 몰아줍니다 — 합이 0 이
      아니면 그만큼이 아무에게도 안 가고 사라집니다. */
+  /* **단위 개수(정수)로 셉니다.** 원화는 unit 이 1 이라 어차피 정수지만,
+     유로·프랑·달러는 0.01 이고 그건 2진 부동소수로 정확히 표현되지 않습니다.
+     0.06 에서 0.01 을 다섯 번 빼면 0.009999999999999993 이 됩니다. 그러면
+     아래 맞물리기의 "한 단위도 안 되면 그만"에 걸려 **마지막 한 건을 안
+     보냅니다.** 보이는 만큼 다 보내도 1센트가 남고, 받을 사람은 왜 안
+     맞는지 알 길이 없습니다 — 위 2번 실수와 똑같은 모양입니다.
+     실제로 일곱이 €0.10 을 나눌 때 그랬습니다(__settleCheck 가 잡았습니다).
+     정수로 세면 그런 일이 없습니다. */
   const q = n => Math.round(n / unit) * unit;
-  bal.forEach(b => { b.paid = q(b.paid); b.owed = q(b.owed); b.v = q(b.v); });
-  const drift = q(bal.reduce((s, b) => s + b.v, 0));
+  const U = n => Math.round(n / unit);          /* 단위 몇 개인가 */
+  bal.forEach(b => { b.paid = q(b.paid); b.owed = q(b.owed); b.u = U(b.v); });
+  const drift = bal.reduce((s, b) => s + b.u, 0);
   if (drift && bal.length){
-    const top = bal.reduce((a, b) => (b.v > a.v ? b : a), bal[0]);
-    top.v = q(top.v - drift);
+    const top = bal.reduce((a, b) => (b.u > a.u ? b : a), bal[0]);
+    top.u -= drift;
   }
-  bal.sort((a, b) => a.v - b.v);
+  bal.forEach(b => { b.v = b.u * unit; });      /* 화면이 쓰는 것은 돈 값입니다 */
+  bal.sort((a, b) => a.u - b.u);
 
   /* 적게 낸 사람이 많이 낸 사람에게 보냅니다. 큰 쪽부터 맞물려 건수를 줄입니다.
      이제 낸 돈 합과 쓴 돈 합이 같으므로 남는 빚 없이 떨어집니다. */
@@ -193,13 +203,13 @@ export function settleMath(rows, active, unit = 1){
   const moves = [];
   let i = 0, j = work.length - 1;
   while (i < j){
-    const owe = -work[i].v, get = work[j].v;
-    /* 한 단위(원화면 1원)도 안 되는 것은 안 보냅니다. */
-    if (owe < unit){ i++; continue; }
-    if (get < unit){ j--; continue; }
+    const owe = -work[i].u, get = work[j].u;
+    /* 한 단위(원화면 1원, 유로면 1센트)도 안 되는 것은 안 보냅니다. */
+    if (owe < 1){ i++; continue; }
+    if (get < 1){ j--; continue; }
     const v = Math.min(owe, get);
-    moves.push({ from: work[i].id, to: work[j].id, v });
-    work[i].v += v; work[j].v -= v;
+    moves.push({ from: work[i].id, to: work[j].id, v: v * unit });
+    work[i].u += v; work[j].u -= v;
   }
   return { total, bal, moves };
 }
