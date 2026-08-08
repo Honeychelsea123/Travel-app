@@ -6,18 +6,18 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b231';
-import { $, esc, toast, copyText } from './dom.js?v=b231';
-import { starHtml, paintStars, markRated } from './stars.js?v=b231';
+import { sb } from './db.js?v=b232';
+import { $, esc, toast, copyText } from './dom.js?v=b232';
+import { starHtml, paintStars, markRated } from './stars.js?v=b232';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b231';
-import { loadAdmin } from './admin.js?v=b231';
-import { arm, disarm, syncSheets, setSheetCloser } from './ui.js?v=b231';
+         setErrLogger, NOROW } from './net.js?v=b232';
+import { loadAdmin } from './admin.js?v=b232';
+import { arm, disarm, syncSheets, setSheetCloser } from './ui.js?v=b232';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b231';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b232';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b231';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b232';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
