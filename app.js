@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b221';
-import { $, esc, toast, copyText } from './dom.js?v=b221';
-import { starHtml, paintStars, markRated } from './stars.js?v=b221';
+import { sb } from './db.js?v=b222';
+import { $, esc, toast, copyText } from './dom.js?v=b222';
+import { starHtml, paintStars, markRated } from './stars.js?v=b222';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
-         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b221';
-import { loadAdmin } from './admin.js?v=b221';
+         write, flushQueue, drawOffbar, setOnDrained } from './net.js?v=b222';
+import { loadAdmin } from './admin.js?v=b222';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b221';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b222';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
