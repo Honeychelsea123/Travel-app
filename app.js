@@ -6,18 +6,27 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b236';
-import { $, esc, toast, copyText } from './dom.js?v=b236';
-import { starHtml, paintStars, markRated } from './stars.js?v=b236';
+import { sb } from './db.js?v=b237';
+import { $, esc, toast, copyText } from './dom.js?v=b237';
+import { starHtml, paintStars, markRated } from './stars.js?v=b237';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b236';
-import { loadAdmin } from './admin.js?v=b236';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b236';
+         setErrLogger, NOROW } from './net.js?v=b237';
+import { loadAdmin } from './admin.js?v=b237';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b237';
+/* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
+   값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
+   브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
+import { trip, plans, legs, members, expenses, bookings, transitLines,
+         pickedDay, tab, catFilter, settleOn, todayOn, editPlanId,
+         setTrip, clearTrip, setTripCloser,
+         setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
+         setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
+         setEditPlanId } from './trip.js?v=b237';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b236';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b237';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b236';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b237';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -25,12 +34,16 @@ import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
 document.getElementById('worldland').innerHTML = WORLD_PATHS;
 
 const t0 = performance.now();
+/* **여행 하나에 딸린 것은 여기 없습니다** — trip.js 가 지킵니다(맨 위 import).
+   읽기는 예전과 똑같이 `trip.id`·`plans.length` 로 씁니다(살아 있는 연결).
+   값을 넣을 때만 `setPlans(...)` 처럼 문을 지나갑니다.
+   아래 남은 것은 **여행과 상관없이 앱 전체가 쓰는 것**들입니다 —
+   로그인한 사람, 도시 목록, 어느 앱 탭인지, 평가 화면 상태. */
 let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = {},
     picked = null, hitList = [], cursor = 0,
-    trip = null, plans = [], pickedDay = null, members = [], expenses = [],
     channel = null, bumpTimer = null, bumpPending = null,
-    tab = 'plans', settleOn = false, todayOn = false, appTab = 'home',
-    tripFilter = 'up', catFilter = '', editPlanId = null, transitLines = [], rateShown = 80, rateObs = null, aiTripId = null, legs = [], openReview = false, bookings = [], myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    appTab = 'home',
+    tripFilter = 'up', rateShown = 80, rateObs = null, aiTripId = null, openReview = false, myRates = {}, cityStat = {}, rateFilter = 'all', visited = new Set(), justRated = new Set(), myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -66,6 +79,11 @@ setErrLogger((msg, src) => logError(msg, src));
 /* ui.js 의 시트는 AI 시트 닫는 법을 모릅니다(뒤로가기 기록을 같이 다룹니다).
    넣어줍니다. closeAi 는 function 선언이라 아래에 있어도 여기서 잡힙니다. */
 setSheetCloser(() => closeAi());
+
+/* trip.js 는 실시간 구독을 모릅니다(서버를 모르는 파일입니다). 넣어줍니다 —
+   이제 여행을 닫을 때 구독 끊는 것을 따로 기억할 필요가 없습니다.
+   전에는 네 곳에서 `unwatch(); trip = null;` 을 각자 적고 있었습니다. */
+setTripCloser(() => unwatch());
 
 
 /* ── 서비스 워커 ────────────────────────────────────────────────────
@@ -901,7 +919,7 @@ function showApp(t){
   /* 여행이 열려 있으면 먼저 닫습니다. 안 닫으면 여행 화면이 탭 화면 아래에
      그대로 남습니다 — 홈에서 발자국을 누르면 프로필 밑에 여행이 붙어 있었습니다.
      backToList 가 이미 닫고 부르는 경우에도 다시 해서 탈은 없습니다. */
-  if (trip){ unwatch(); trip = null; }
+  if (trip) clearTrip();
   $('tripview').classList.add('hide'); inTrip(false);
 
   $('draftview').classList.add('hide');
@@ -4871,7 +4889,7 @@ async function fetchTrip(id){
       if (listed) old = { ...listed, home_currency: listed.currency || 'KRW' };
     }
     if (!old){ fail(error, 'trip'); return false; }
-    trip = old;
+    setTrip(old);
     trip.myRole = (old.trip_members || []).find(m => m.user_id === me.id)?.role || '';
     drawOffbar();
     return true;
@@ -4879,7 +4897,7 @@ async function fetchTrip(id){
   /* 행이 안 오면 내보내졌거나 여행이 지워진 것입니다. RLS 가 그렇게 만듭니다. */
   if (!data) return false;
   cacheSet('trip:' + id, data);
-  trip = data;
+  setTrip(data);
   trip.myRole = (data.trip_members || []).find(m => m.user_id === me.id)?.role || '';
   return true;
 }
@@ -4910,7 +4928,7 @@ async function openTrip(id){
       ? '여행을 열지 못했어요.'
       : '연결이 없어서 못 열어요. 한 번이라도 열어본 여행은 비행기모드에서도 열립니다.',
       'trip');
-  pickedDay = null;
+  setPickedDay(null);
   /* 기록을 하나 쌓아야 화면 밀어서 뒤로 가기가 됩니다.
      이미 여행 안이면(다른 여행으로 건너뛴 경우) 또 쌓지 않습니다. */
   if (history.state?.t2 !== 'trip') history.pushState({ t2:'trip' }, '');
@@ -5034,20 +5052,20 @@ async function loadLegs(){
   if (error){
     const old = cacheGet(ck);
     if (!old) return fail(error, 'leg');
-    legs = old; transitLines = cacheGet('lines:' + trip.id) || [];
+    setLegs(old); setTransitLines(cacheGet('lines:' + trip.id));
     drawOffbar(); drawDays(); return;
   }
   cacheSet(ck, data || []);
-  legs = data || [];
+  setLegs(data);
   /* 노선 딱지 색. 그 여행에 나오는 도시 것만 받습니다. */
   const ids = [...new Set(legs.map(l => l.city_id).filter(Boolean))];
   if (ids.length){
     const r = await sb.from('transit_lines').select('name,color,dark_text').in('city_id', ids);
     /* 못 받아오면 지난번 것. 노선 딱지 색이라 없어도 죽지는 않지만,
        위 구간 캐시가 이걸 꺼내 쓰므로 저장은 해둬야 합니다. */
-    transitLines = r.error ? (cacheGet('lines:' + trip.id) || []) : (r.data || []);
+    setTransitLines(r.error ? cacheGet('lines:' + trip.id) : r.data);
     if (!r.error) cacheSet('lines:' + trip.id, transitLines);
-  } else transitLines = [];
+  } else setTransitLines([]);
   drawLegs();
 }
 
@@ -5447,7 +5465,7 @@ $('e_save').addEventListener('click', async () => {
     return fail(NOROW.edit, 'edit');
 
   $('editcard').classList.add('hide');
-  pickedDay = null;
+  setPickedDay(null);
   await openTrip(trip.id);
 });
 
@@ -5456,8 +5474,7 @@ $('e_save').addEventListener('click', async () => {
    ← 버튼도 같은 길로 보내야 기록과 화면이 어긋나지 않습니다. */
 function backToList(fromPop){
   if (!fromPop && history.state?.t2 === 'trip'){ history.back(); return; }
-  unwatch();
-  trip = null;
+  clearTrip();
   $('tripview').classList.add('hide'); inTrip(false);
   showApp(appTab === 'set' ? 'trips' : appTab);
 }
@@ -5496,11 +5513,11 @@ async function loadPlans(){
     let old = null;
     try { old = JSON.parse(localStorage.getItem(ck) || 'null'); } catch {}
     if (!old){ $('plans').innerHTML = ''; return fail(error, 'plan'); }
-    plans = old; drawDays(); drawCats(); drawPlans(); drawPlanMap(); drawOffbar();
+    setPlans(old); drawDays(); drawCats(); drawPlans(); drawPlanMap(); drawOffbar();
     return;
   }
   try { localStorage.setItem(ck, JSON.stringify(data)); } catch {}
-  plans = data;
+  setPlans(data);
   drawDays();
   drawCats();
   drawPlans();
@@ -5553,7 +5570,7 @@ function drawDays(){
 
 $('days').addEventListener('change', e => {
   if (e.target.id !== 'daysel') return;
-  pickedDay = e.target.value || null;
+  setPickedDay(e.target.value || null);
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
@@ -5706,7 +5723,7 @@ function drawCats(){
 }
 $('cats').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]'); if (!b) return;
-  catFilter = b.dataset.cat;
+  setCatFilter(b.dataset.cat);
   drawCats(); drawPlans(); drawPlanMap();
 });
 
@@ -6038,11 +6055,11 @@ function todayDayNo(){
 async function drawToday(){
   const box = $('card-today');
   const t = todayDayNo();
-  if (!t){ todayOn = false; box.classList.add('hide'); box.innerHTML = ''; return; }
+  if (!t){ setTodayOn(false); box.classList.add('hide'); box.innerHTML = ''; return; }
 
   const list = plans.filter(p => p.date === t.date);
-  if (!list.length){ todayOn = false; box.classList.add('hide'); box.innerHTML = ''; return; }
-  todayOn = true;
+  if (!list.length){ setTodayOn(false); box.classList.add('hide'); box.innerHTML = ''; return; }
+  setTodayOn(true);
 
   const now = new Date();
   const nowM = now.getHours() * 60 + now.getMinutes();
@@ -6129,7 +6146,7 @@ $('plans').addEventListener('click', e => {
 
 $('days').addEventListener('click', e => {
   const b = e.target.closest('.day'); if (!b) return;
-  pickedDay = b.dataset.day || null;
+  setPickedDay(b.dataset.day || null);
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
@@ -6239,7 +6256,7 @@ function showTab(t){
      여기 따로 적어두면 index.html 에서 순서를 바꿀 때 어긋납니다. */
   const seq = [...document.querySelectorAll('#tstrip button[data-t]')].map(b => b.dataset.t);
   const back = seq.indexOf(t) < seq.indexOf(tab);
-  tab = t;
+  setTab(t);
   /* 한 id 가 여러 탭에 걸리게 되면서, 예전처럼 탭마다 따로 끄면 뒤 탭 차례에
      방금 켠 것이 다시 꺼집니다. 켤 것을 먼저 모아두고 한 번에 정합니다. */
   const on = new Set(TABS[t].filter(id => !FORMS.includes(id)));
@@ -6391,7 +6408,7 @@ async function loadExpenses(){
   if (error){
     if (isOffline(error)){ offNote('expenses'); $('exptotal').innerHTML = ''; drawOffbar(); return; }
     $('expenses').innerHTML = ''; return fail(error, 'exp'); }
-  expenses = data;
+  setExpenses(data);
   drawExpenses();
   drawSettle();
 }
@@ -6489,9 +6506,9 @@ function drawSettle(){
   const noPayer = expenses.filter(e => e.amount_home != null && !e.payer_id).length;
 
   if (!rows.length || members.length < 2){
-    settleOn = false; $('settlecard').classList.add('hide'); return;
+    setSettleOn(false); $('settlecard').classList.add('hide'); return;
   }
-  settleOn = true;
+  setSettleOn(true);
   $('settlecard').classList.toggle('hide', tab !== 'exp');
 
   const cur = trip.home_currency;
@@ -6695,8 +6712,8 @@ async function loadBookings(){
   if (error){
     const old = cacheGet(bck);
     if (!old){ offNote('bookings'); drawOffbar(); return; }
-    bookings = old; drawOffbar();
-  } else { cacheSet(bck, data); bookings = data; }
+    setBookings(old); drawOffbar();
+  } else { cacheSet(bck, data); setBookings(data); }
   data = bookings;
 
   $('bookings').innerHTML = data.length ? data.map(b => {
@@ -6938,7 +6955,7 @@ async function loadMembers(){
   if (error){
     if (isOffline(error)){ offNote('members'); drawOffbar(); return; }
     $('members').innerHTML = ''; return fail(error, 'mem'); }
-  members = data;
+  setMembers(data);
 
   const owner = trip.myRole === 'owner';
   $('members').innerHTML = data.map(m => {
@@ -7137,7 +7154,7 @@ async function handleJoin(){
 
 /* ── 일정 추가 · 삭제 ───────────────────────────────────────────── */
 $('addplanbtn').addEventListener('click', () => {
-  editPlanId = null; $('p_create').textContent = '넣기';
+  setEditPlanId(null); $('p_create').textContent = '넣기';
   /* 손으로 새로 여는 것이므로 앞서 카드에서 들고 온 좌표는 버립니다.
      openPlanForm 은 이 뒤에 다시 채웁니다. */
   planSeedGeo = null;
@@ -7208,7 +7225,7 @@ $('p_create').addEventListener('click', async () => {
 
   $('p_title').value = ''; $('p_memo').value = '';
   $('p_start').value = ''; $('p_end').value = '';
-  editPlanId = null;
+  setEditPlanId(null);
   $('plancard').classList.add('hide');
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 
@@ -7221,7 +7238,7 @@ $('p_create').addEventListener('click', async () => {
   if (!r.ok){
     /* 되돌립니다. 저장 안 된 것이 화면에 남아 있으면 여행 중에 그걸 믿고 움직입니다. */
     if (editing){ const i = plans.findIndex(p => p.id === editing); if (i >= 0) plans[i] = before; }
-    else plans = plans.filter(p => p.id !== tmpId);
+    else setPlans(plans.filter(p => p.id !== tmpId));
     drawDays(); drawCats(); drawPlans(); drawPlanMap();
     $('plancard').classList.remove('hide');
     return fail(r.why, 'planform');
@@ -7244,7 +7261,7 @@ $('plans').addEventListener('click', async e => {
     $('p_end').value   = p.end_time ? p.end_time.slice(0,5) : '';
     $('p_cat').value   = p.category || '';
     $('p_memo').value  = p.memo || '';
-    editPlanId = id;
+    setEditPlanId(id);
     $('p_create').textContent = '고치기';
     return;
   }
@@ -7255,7 +7272,7 @@ $('plans').addEventListener('click', async e => {
   /* 지우는 것도 먼저 화면에서 뺍니다. 진짜로 지우지는 않고 숨깁니다 —
      여럿이 쓰면 남이 지운 것을 되살릴 방법이 필요합니다. */
   const gone = plans.find(p => p.id === id);
-  plans = plans.filter(p => p.id !== id);
+  setPlans(plans.filter(p => p.id !== id));
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 
   const r = await write({ table:'plans', action:'delete', id });
@@ -7271,7 +7288,7 @@ $('plans').addEventListener('click', async e => {
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
   if (!session){
-    unwatch(); trip = null; document.body.classList.remove('hastab');
+    clearTrip(); document.body.classList.remove('hastab');
     $('signedin').classList.add('hide'); $('signedout').classList.remove('hide');
     $('errcard').classList.add('hide'); $('bell').classList.add('hide');
     $('aibtn').classList.add('hide');
@@ -7298,7 +7315,7 @@ async function render(session){
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
-  unwatch(); trip = null;
+  clearTrip();
   $('tripview').classList.add('hide'); inTrip(false);  /* 다시 그릴 때는 목록부터 */
   $('appbar').classList.remove('hide');
   document.body.classList.add('hastab');
