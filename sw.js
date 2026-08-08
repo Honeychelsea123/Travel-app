@@ -28,6 +28,17 @@ const SHELL_FILES = [
 const isAppDoc = url =>
   url.pathname.endsWith('/') || url.pathname.endsWith('/index.html');
 
+/* 부팅에 필요한 바깥 파일인가. **판단은 여기 하나뿐입니다** — 아래 fetch 와
+   activate 의 이사가 같이 씁니다. 같은 식을 두 곳에 적으면 한쪽만 고치게 됩니다.
+   확장자로만 가르면 안 됩니다: app.js 가 실제로 import 하는 주소는
+   `https://esm.sh/@supabase/supabase-js@2` 라 끝에 .js 가 없습니다.
+   esm.sh 는 자바스크립트만 주므로 통째로, unpkg·jsdelivr 는 글꼴도 주므로
+   확장자를 봅니다. */
+const isCodeUrl = url =>
+  url.hostname === 'esm.sh'
+  || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
+      && /\.(js|css|mjs)$/i.test(url.pathname));
+
 self.addEventListener('install', e => {
   /* 하나라도 실패하면 addAll 은 전부 버립니다. 하나씩 넣어 나머지는 살립니다. */
   e.waitUntil((async () => {
@@ -42,6 +53,25 @@ self.addEventListener('activate', e => {
     const keys = await caches.keys();
     await Promise.all(keys.filter(k => k.startsWith('t2-') && k !== SHELL && k !== RUN)
                           .map(k => caches.delete(k)));
+
+    /* ── 옛 판이 타일 통에 담아둔 코드를 셸로 옮깁니다 ──
+       전에는 leaflet·supabase 가 RUN 에 담겼습니다. 위 fetch 를 고쳐도
+       **이미 담긴 것은 그대로 RUN 에 남아** 400개 제한에 밀려 쫓겨납니다.
+       그러면 비행기모드에서 app.js 가 아예 실행되지 않습니다.
+       **먼저 복사하고 나서 지웁니다** — 반대로 하면 도중에 멈췄을 때 없어집니다.
+       한 번 옮기고 나면 다음부터는 할 일이 없습니다(RUN 에 코드가 안 담기므로). */
+    try {
+      const run = await caches.open(RUN), shell = await caches.open(SHELL);
+      for (const req of await run.keys()){
+        if (!isCodeUrl(new URL(req.url))) continue;
+        if (await shell.match(req)){ await run.delete(req); continue; }
+        const res = await run.match(req);
+        if (!res) continue;
+        await shell.put(req, res.clone());
+        await run.delete(req);
+      }
+    } catch {}   /* 이사가 실패해도 앱은 돌아야 합니다 */
+
     await self.clients.claim();
   })());
 });
@@ -218,14 +248,8 @@ self.addEventListener('fetch', e => {
      그래서 코드는 셸(안 자르는 통)에 둡니다. 글꼴 조각(.woff2)은 부팅을
      막지 않으므로 타일과 같이 둡니다.
 
-     **확장자로만 가르면 안 됩니다.** app.js 가 실제로 import 하는 주소는
-     `https://esm.sh/@supabase/supabase-js@2` 로 끝에 .js 가 없습니다 —
-     확장자만 보면 그 진입점 하나가 타일 통으로 떨어져 제일 먼저 쫓겨납니다.
-     재보고 알았습니다. esm.sh 는 자바스크립트만 주므로 통째로 코드로 봅니다.
-     unpkg·jsdelivr 는 글꼴도 주므로 확장자를 봅니다. */
-  const isCode = url.hostname === 'esm.sh'
-    || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
-        && /\.(js|css|mjs)$/i.test(url.pathname));
+     무엇이 '코드'인지는 맨 위 isCodeUrl 이 정합니다. */
+  const isCode = isCodeUrl(url);
 
   e.respondWith((async () => {
     const c = await caches.open(isCode ? SHELL : RUN);
