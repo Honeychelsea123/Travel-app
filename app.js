@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b238';
-import { $, esc, toast, copyText } from './dom.js?v=b238';
-import { starHtml, paintStars, markRated } from './stars.js?v=b238';
+import { sb } from './db.js?v=b239';
+import { $, esc, toast, copyText } from './dom.js?v=b239';
+import { starHtml, paintStars, markRated } from './stars.js?v=b239';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b238';
-import { loadAdmin } from './admin.js?v=b238';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b238';
+         setErrLogger, NOROW } from './net.js?v=b239';
+import { loadAdmin } from './admin.js?v=b239';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b239';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,15 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b238';
+         setEditPlanId } from './trip.js?v=b239';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b238';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b239';
+/* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
+import { cities, countryName, countryInfo, continentOf,
+         useCities, addCity, search } from './cities.js?v=b239';
+/* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
+import { suggested, aiTripId,
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b239';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b238';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b239';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b238';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b239';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -43,11 +49,15 @@ const t0 = performance.now();
    값을 넣을 때만 `setPlans(...)` 처럼 문을 지나갑니다.
    아래 남은 것은 **여행과 상관없이 앱 전체가 쓰는 것**들입니다 —
    로그인한 사람, 도시 목록, 어느 앱 탭인지, 평가 화면 상태. */
-let me = null, cities = null, countryName = {}, countryInfo = {}, continentOf = {},
+let me = null,
+    /* 도시 고르개가 지금 무엇을 보여주고 있나. **여기 남긴 이유가 있습니다** —
+       `pick()` 하나가 화면 여덟 곳을 씁니다. 떼면 그만큼을 다시 넣어줘야 해서
+       얻는 것보다 잃는 것이 큽니다. 규칙이 있는 절반(search)만 cities.js 로
+       보냈습니다. */
     picked = null, hitList = [], cursor = 0,
     channel = null, bumpTimer = null, bumpPending = null,
     appTab = 'home',
-    tripFilter = 'up', rateShown = 80, rateObs = null, aiTripId = null, openReview = false, myAvatar = null, myReview = {}, cityOpen = null, suggested = { actions:[], places:[] };
+    tripFilter = 'up', rateShown = 80, rateObs = null, openReview = false, myAvatar = null, myReview = {}, cityOpen = null;
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -384,15 +394,9 @@ $('rp_send').addEventListener('click', async () => {
 });
 
 
-/* ── 초성 ───────────────────────────────────────────────────────────
- * 'ㄷㅋ' 로 도쿄를 찾게 합니다. 한글 음절 코드에서 첫 자음만 떼어냅니다. */
-const CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ',
-             'ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-const chosung = s => [...s].map(ch => {
-  const c = ch.charCodeAt(0) - 0xAC00;
-  return (c >= 0 && c < 11172) ? CHO[Math.floor(c / 588)] : ch;
-}).join('');
-const onlyCho = s => /^[ㄱ-ㅎ]+$/.test(s);
+/* 초성('ㄷㅋ'→도쿄)과 찾기는 cities.js 로 갔습니다 (맨 위 import) —
+   사전이 아는 규칙이라 사전 옆에 있어야 하고, 거기서는 로그인 없이도
+   콘솔에서 돌려볼 수 있습니다(__citiesCheck). */
 
 /* ── 로그인 ─────────────────────────────────────────────────────── */
 $('login').addEventListener('click', async () => {
@@ -436,7 +440,7 @@ async function loadCities(){
      서비스워커에서 배운 것과 같습니다 — 기다리는 설계가 집니다. */
   const cached = cacheGet('cities');
   if (cached?.cities?.length){
-    useCities(cached.cities, cached.countries);
+    applyCities(cached.cities, cached.countries);
     if (!citiesRefreshing && !netIsDown()){
       citiesRefreshing = true;
       /* 화면은 이미 그려졌습니다. 새것이 오면 조용히 갈아끼웁니다. */
@@ -468,7 +472,7 @@ async function refreshCities(){
      세 번을 더 기다리면 그만큼 화면이 늦게 뜹니다. 바로 캐시로 갑니다. */
   if (cs.error && isOffline(cs.error)){
     const old = cacheGet('cities');
-    if (old){ useCities(old.cities, old.countries); drawOffbar(); return; }
+    if (old){ applyCities(old.cities, old.countries); drawOffbar(); return; }
   }
   if (cs.error) cs = await sb.from('cities')
     .select(BASE + ',image_url,summary,summary_url').order('name');
@@ -487,29 +491,21 @@ async function refreshCities(){
        그때 오류 상자를 띄우면 멀쩡한 화면 위에 빨간 줄만 얹힙니다. */
     if (cities) return;
     const old = cacheGet('cities');
-    if (old){ useCities(old.cities, old.countries); drawOffbar(); return; }
+    if (old){ applyCities(old.cities, old.countries); drawOffbar(); return; }
     fail(cs.error || ns.error, 'rate');
     return fail(cs.error || ns.error, 'form');
   }
   cacheSet('cities', { cities: cs.data, countries: ns.data });
-  useCities(cs.data, ns.data);
+  applyCities(cs.data, ns.data);
 }
 
 /* 받아온 것이든 캐시에서 꺼낸 것이든 여기서 한 번에 세웁니다.
-   검색 색인을 여기서 만드니 캐시로 들어와도 초성 검색이 그대로 됩니다. */
-function useCities(cityRows, countryRows){
-  countryName = Object.fromEntries(countryRows.map(n => [n.code, n.name]));
-  countryInfo = Object.fromEntries(countryRows.map(n => [n.code, n]));
-  continentOf = Object.fromEntries(countryRows.map(n => [n.code, n.continent]));
-  /* 검색용 색인을 한 번만 만들어 둡니다. 칠 때마다 만들면 버벅입니다. */
-  cities = cityRows.map(c => ({
-    ...c,
-    _hay: [c.name, c.name_en, c.name_local, countryName[c.country]]
-            .filter(Boolean).join(' ').toLowerCase(),
-    _cho: chosung(c.name)
-  }));
+   **사전 세우기와 검색 색인은 cities.js 가 합니다**(useCities). 여기는
+   그 뒤에 화면을 맞추는 일만 합니다 — 나라 고르개, 많이 가는 곳. */
+function applyCities(cityRows, countryRows){
+  useCities(cityRows, countryRows);
   $('f_country').innerHTML =
-    countryRows.map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
+    (countryRows || []).map(n => `<option value="${esc(n.code)}">${esc(n.name)}</option>`).join('');
   drawCountryNote();
   /* 도시가 새로 들어왔으면 '많이 가는 곳'도 다시 뽑습니다. */
   delete $('wizpop').dataset.done;
@@ -529,18 +525,8 @@ function drawCountryNote(){
 }
 $('f_country').addEventListener('change', drawCountryNote);
 
-function search(q){
-  q = q.trim().toLowerCase();
-  if (!q || !cities) return [];        /* 아직 안 불러왔으면 조용히 빈 목록 */
-  const cho = onlyCho(q);
-  const hits = cities.filter(c => cho ? c._cho.includes(q) : c._hay.includes(q));
-  /* 이름이 그 글자로 시작하는 것을 위로 올립니다. '나'를 치면
-     '나라'가 '하나우마'보다 먼저 나와야 합니다. */
-  return hits.sort((a,b) => {
-    const s = x => (cho ? x._cho : x.name.toLowerCase()).startsWith(q) ? 0 : 1;
-    return s(a) - s(b) || a.name.localeCompare(b.name, 'ko');
-  }).slice(0, 40);
-}
+/* 찾기(search)는 cities.js 로 갔습니다 — 초성·시작 우선·40개 자르기 규칙은
+   사전이 아는 것입니다. 부르는 쪽은 그대로입니다. */
 
 /* ── 빈 화면 ──────────────────────────────────────────────────────────
  * "아직 지출이 없어요." 한 줄만 두면 처음 온 사람은 여기서 멈춥니다.
@@ -1400,7 +1386,7 @@ function drawCards(d){
   if (!acts.length && !places.length){ $('cards').innerHTML = ''; return; }
 
   const far = x => x.lat == null ? '<span class="val">좌표 없음</span>' : '';
-  suggested = { actions: acts, places };
+  setSuggested({ actions: acts, places });
 
   /* 하나씩 누르게 하면 제안이 다섯이면 다섯 번을 누릅니다. 초안은 서른 번입니다.
      한 번에 담고, 아니다 싶으면 방금 담은 것만 되돌립니다.
@@ -1649,7 +1635,7 @@ $('reviewbtn').addEventListener('click', () => {
 $('reviewclose').addEventListener('click', () => $('reviewcard').classList.add('hide'));
 
 async function runReview(id){
-  aiTripId = id;
+  setAiTripId(id);
   /* 여행을 안 골랐으면 검토할 것이 없습니다. 배지도 지웁니다. */
   if (!id){
     $('review').innerHTML = '<div class="empty">여행을 고르면 일정을 검토해드립니다.</div>';
@@ -1871,10 +1857,10 @@ $('ac_add').addEventListener('click', async () => {
   if (!data) return fail(NOROW.save, 'rate');
 
   /* 목록 뭉치에 바로 끼워 넣습니다. 다시 받아오면 화면이 한 번 껌뻑입니다. */
-  cities.push({ ...data,
-    _hay: [data.name, data.name_en, data.name_local, countryName[data.country]]
-            .filter(Boolean).join(' ').toLowerCase(),
-    _cho: chosung(data.name) });
+  /* **색인 만드는 식을 여기 다시 적지 않습니다.** 전에는 useCities 의 식을
+     그대로 베껴 적어 두 벌이었습니다 — 규칙을 바꿀 때 한쪽만 고치면 새로 만든
+     도시만 검색에서 사라집니다. cities.js 가 같은 식으로 색인해 끼웁니다. */
+  addCity(data);
   $('r_q').value = data.name;
   drawRatings();
 });
@@ -4465,7 +4451,7 @@ $('shelflist').addEventListener('click', async e => {
 /* 여행 비서는 페이지를 옮기지 않고 보던 화면 위에 올라옵니다.
    일정을 보다가 물어보고 그 자리로 돌아가야 합니다. */
 function openAi(){
-  if (trip) aiTripId = trip.id;
+  if (trip) setAiTripId(trip.id);
   $('notifpanel').classList.add('hide');
   $('aiview').classList.remove('hide');
   $('sheetbg').classList.remove('hide');
@@ -4500,7 +4486,7 @@ $('ai_wipe').addEventListener('click', async e => {
   $('aisrc').classList.add('hide');
   /* null 로 두면 안 됩니다 — 다른 곳이 suggested.actions 를 그대로 읽습니다.
      처음 모양(빈 배열 둘)으로 되돌립니다. */
-  suggested = { actions:[], places:[] };
+  clearSuggested();
   lastTake = [];
   toast(`${r.data?.length ?? 0}개를 지웠어요`);
 });
