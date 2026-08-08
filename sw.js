@@ -39,6 +39,15 @@ const isCodeUrl = url =>
   || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
       && /\.(js|css|mjs)$/i.test(url.pathname));
 
+/* ── 이제 안 나가는 바깥 서버 ────────────────────────────────────────
+ * b228 에서 supabase 를 우리 서버로 들여오면서 esm.sh 로는 한 번도 안 나갑니다.
+ * 그런데 **이미 셸에 담긴 것은 아무도 안 지웁니다.** dropOldVersions 는
+ * "같은 경로의 다른 판"만 보는데, 이건 경로째 사라진 것이라 짝이 될 새 판이
+ * 영영 안 옵니다. 프로덕션 셸에 17건이 그대로 남아 있었습니다.
+ * 여기 이름을 적어두면 다음 activate 때 치웁니다.
+ * **쓰는 것을 적으면 안 됩니다** — unpkg(leaflet)는 지금도 씁니다. */
+const GONE_HOSTS = ['esm.sh'];
+
 self.addEventListener('install', e => {
   /* 하나라도 실패하면 addAll 은 전부 버립니다. 하나씩 넣어 나머지는 살립니다. */
   e.waitUntil((async () => {
@@ -71,6 +80,15 @@ self.addEventListener('activate', e => {
         await run.delete(req);
       }
     } catch {}   /* 이사가 실패해도 앱은 돌아야 합니다 */
+
+    /* 안 나가게 된 바깥 서버의 찌꺼기를 치웁니다(위 GONE_HOSTS).
+       이사 **뒤에** 해야 합니다 — 이사가 RUN 에 있던 것을 셸로 옮겨오므로,
+       먼저 치우면 옮겨온 것이 다시 남습니다. */
+    try {
+      const shell = await caches.open(SHELL);
+      for (const req of await shell.keys())
+        if (GONE_HOSTS.includes(new URL(req.url).hostname)) await shell.delete(req);
+    } catch {}   /* 청소가 실패해도 앱은 돌아야 합니다 */
 
     await self.clients.claim();
   })());

@@ -6,18 +6,18 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b235';
-import { $, esc, toast, copyText } from './dom.js?v=b235';
-import { starHtml, paintStars, markRated } from './stars.js?v=b235';
+import { sb } from './db.js?v=b236';
+import { $, esc, toast, copyText } from './dom.js?v=b236';
+import { starHtml, paintStars, markRated } from './stars.js?v=b236';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b235';
-import { loadAdmin } from './admin.js?v=b235';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b235';
+         setErrLogger, NOROW } from './net.js?v=b236';
+import { loadAdmin } from './admin.js?v=b236';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b236';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b235';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b236';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b235';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b236';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -98,11 +98,22 @@ async function checkBuild(){
        't2-shell-' 로 시작하는 캐시를 찾아서 쓰면 그럴 일이 없습니다. */
     const shellKey = (await caches.keys()).find(k => k.startsWith('t2-shell-'));
     const box = shellKey ? await caches.open(shellKey).catch(() => null) : null;
+    /* **담는 일은 서비스워커에게 맡깁니다.** 아래 fetch 는 워커의 `?v=` 갈래를
+       지나가고, 거기서 담은 **뒤에** 같은 파일의 옛 판을 지웁니다(sw.js 의
+       dropOldVersions). 전에는 여기서 한 번 더 `box.put` 을 했는데, 그러면
+       담기는 하되 **정리를 건너뛴 채로** 담깁니다. 그래서 셸에 옛 판이
+       쌓였습니다 — 프로덕션에서 `app.js?v=b218` 이 b232 옆에 있는 것을 봤습니다.
+       (여기서 지우는 코드를 또 적으면 규칙이 두 곳이 됩니다. 한쪽만 고치게 되는
+        것이 이 앱에서 이미 두 번 난 사고입니다.)
+
+       워커가 아직 이 화면을 안 맡았을 때만 우리가 담습니다 — 그때는 fetch 가
+       워커를 안 지나가므로 아무도 안 담습니다. 옛 판도 없으니 지울 것도 없습니다. */
+    const swOn = !!navigator.serviceWorker?.controller;
     for (const u of refs){
       if (box && await box.match(u)) continue;
       const r = await fetch(u);          /* 못 받으면 여기서 던지고 새로고침 안 합니다 */
       if (!r.ok) return;
-      if (box) await box.put(u, r.clone());
+      if (box && !swOn) await box.put(u, r.clone());
     }
 
     /* 같은 번호로 두 번 새로고침하지 않습니다. 캐시가 아직 안 바뀌었으면
