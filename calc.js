@@ -2,8 +2,7 @@
  * 여기 있는 함수는 DOM을 몰라야 합니다. document, querySelector, 화면의
  * 전역(trip/plans/members 같은 것)을 직접 읽지 않고, 받은 매개변수만 보고
  * 값을 돌려줍니다. 그래야 여행·일행을 실제로 만들지 않고도 콘솔에서
- * 지어낸 값으로 검사할 수 있습니다(맨 아래 __calcCheck, app.js 의
- * __settleCheck 와 같은 이유).
+ * 지어낸 값으로 검사할 수 있습니다(맨 아래 __calcCheck · __settleCheck).
  *
  * app.js 에서 흔히 쓰는 D1/asDate 를 여기서도 한 줄씩 다시 적어 둡니다.
  * app.js 는 이 값을 화면 갱신 로직 곳곳에서 이미 씁니다 — 그쪽까지
@@ -132,7 +131,7 @@ export function money(n, cur){
  * **화면과 떼어 놓았습니다.** 돈 계산이라 읽기만으로는 못 믿는데, 화면
  * 그리기와 붙어 있으면 여행과 일행을 실제로 만들어야만 돌려볼 수 있습니다.
  * 여기는 넣은 값만 보고 답을 내므로 지어낸 경우로도 검사할 수 있습니다
- * (app.js 의 __settleCheck).
+ * (맨 아래 __settleCheck).
  *
  * 지금 규칙:
  *   - 나눌 사람 = 그 지출에 몫이 적혀 있으면 그 사람들, 없으면 아직 있는 참여자 전원
@@ -302,3 +301,109 @@ if (typeof window !== 'undefined') window.__calcCheck = () => {
   console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
   return out;
 };
+/* ── 정산 자가검사 (개발용) ──────────────────────────────────────────
+ * 정산은 여럿이 가면 제일 자주 열어보는 자리고, 틀리면 사람 사이가 상합니다.
+ * 그런데 눈으로 보려면 여행과 일행과 지출을 실제로 만들어야 합니다 —
+ * 그래서 실제로는 거의 안 돌려보게 됩니다.
+ *
+ * settleMath 는 넣은 값만 보므로 지어낸 경우로 검사할 수 있습니다.
+ * 콘솔에서 __settleCheck() 를 부르면 아래 경우들을 다 돌려 봅니다.
+ *
+ * 무엇을 보나 (셋 다 어기면 돈이 사라지거나 생겨납니다):
+ *   1. 낸 돈 합 == 쓴 돈 합 == 총액
+ *   2. 보내라는 대로 다 보내면 모두의 잔액이 0
+ *   3. NaN 이 하나도 없을 것
+ *
+ * b231 에서 app.js 에서 여기로 옮겼습니다. settleMath 가 이미 여기 있는데
+ * 그 검사만 저쪽에 있었습니다 — 셈을 고치는 사람과 검사를 고치는 사람이
+ * 다른 파일을 열게 되면 둘은 반드시 어긋납니다.
+ */
+if (typeof window !== 'undefined') window.__settleCheck = () => {
+  const M = ids => ids.map(id => ({ user_id:id }));
+  const E = (payer, amt, shares) => ({
+    amount_home: amt, payer_id: payer,
+    expense_shares: shares ? Object.entries(shares).map(
+      ([user_id, weight]) => ({ user_id, weight })) : [],
+  });
+
+  const cases = [
+    ['혼자 다 냄, 셋이 균등',
+     [E('a', 30000)], M(['a','b','c'])],
+    ['셋이 각각 냄, 균등',
+     [E('a', 30000), E('b', 15000), E('c', 6000)], M(['a','b','c'])],
+    ['나눌 사람을 따로 적음 (a·b 만)',
+     [E('c', 20000, { a:1, b:1 })], M(['a','b','c'])],
+    ['몫이 다름 (a 2 : b 1)',
+     [E('a', 30000, { a:2, b:1 })], M(['a','b'])],
+    ['나간 사람이 낸 돈 (d 는 active 아님)',
+     [E('d', 30000), E('a', 3000)], M(['a','b','c'])],
+    /* 아래 금액은 통화마다 배율을 곱해 씁니다(원화 ×1 · 유로 ×0.001).
+       그래서 이름에 화폐 단위를 적지 않습니다 — 10000 은 10,000원이자 €10 입니다. */
+    ['셋이 10000 — 3으로 안 나눠떨어짐',
+     [E('a', 10000)], M(['a','b','c'])],
+    ['일곱이 100 — 아주 작은 금액',
+     [E('a', 100)], M(['a','b','c','d','e','f','g'])],
+    ['몫 무게가 0 뿐 (균등으로 떨어져야)',
+     [E('a', 9000, { a:0, b:0 })], M(['a','b','c'])],
+    ['나눌 사람이 아무도 없음 (다 나감)',
+     [E('a', 5000)], M([])],
+    ['환불(음수) 섞임',
+     [E('a', 30000), E('b', -6000)], M(['a','b','c'])],
+    ['큰 금액 여럿 (자릿수)',
+     [E('a', 1234567), E('b', 7654321), E('c', 999)], M(['a','b','c','d'])],
+  ];
+
+  /* ── 통화 두 벌로 돌립니다 ──
+     처음에는 원화(1원 단위)로만 돌렸습니다. 그런데 정산 단위는 통화마다
+     다릅니다 — drawSettle 이 NO_CENTS 를 보고 원·엔은 1, 유로·프랑·달러는
+     0.01 을 넘깁니다. 0.01 은 2진 부동소수로 정확히 표현되지 않아서
+     원화에서 안 나던 오차가 거기서만 날 수 있는데, 그 경로가 검사에
+     아예 없었습니다. 실제로 유럽 여행(EUR)이 시험 자료에 있습니다.
+
+     **검사 기준도 단위를 따라가야 합니다.** "1원 단위로 떨어지는가"를
+     그대로 두면 유로에서는 늘 실패합니다. 아래는 전부 unit 으로 잽니다. */
+  const runs = [
+    { 통화:'KRW', unit:1,    scale:1     },   /* 30000 → 30,000원 */
+    { 통화:'EUR', unit:0.01, scale:0.001 },   /* 30000 → €30.00  */
+  ];
+
+  const out = [];
+  for (const { 통화, unit, scale } of runs){
+    for (const [name, rows, active] of cases){
+      const scaled = rows.map(e => ({ ...e, amount_home: e.amount_home * scale }));
+      const r = settleMath(scaled, active, unit);
+      const sumPaid = r.bal.reduce((s, b) => s + b.paid, 0);
+      const sumOwed = r.bal.reduce((s, b) => s + b.owed, 0);
+      /* 보내라는 대로 보낸 뒤의 잔액. 다 0 이어야 합니다. */
+      const after = Object.fromEntries(r.bal.map(b => [b.id, b.v]));
+      for (const m of r.moves){ after[m.from] += m.v; after[m.to] -= m.v; }
+      const worst = Math.max(0, ...Object.values(after).map(Math.abs));
+      const nan = [r.total, sumPaid, sumOwed, ...r.moves.map(m => m.v)]
+        .some(v => !Number.isFinite(v));
+      /* 화면에 찍히는 숫자끼리도 아귀가 맞아야 합니다. 단위로 깎아뒀으므로
+         보이는 값이 전부 unit 의 배수여야 합니다. 0.01 은 부동소수라 딱
+         떨어지지 않으므로(0.1399999… 처럼) 배수인지만 봅니다. */
+      const mult = v => Math.abs(v / unit - Math.round(v / unit)) > 1e-6;
+      const notWhole = r.moves.some(m => mult(m.v)) || r.bal.some(b => mult(b.v));
+      const balSum = Math.abs(r.bal.reduce((s, b) => s + b.v, 0));
+
+      const bad = [];
+      /* 낸 돈·쓴 돈은 단위로 깎으므로 사람 수만큼(× 단위) 오차가 날 수 있습니다. */
+      const slack = r.bal.length * unit;
+      if (Math.abs(sumPaid - r.total) > slack) bad.push(`낸 돈 합 ${sumPaid} ≠ 총액 ${r.total}`);
+      if (Math.abs(sumOwed - r.total) > slack) bad.push(`쓴 돈 합 ${sumOwed} ≠ 총액 ${r.total}`);
+      if (worst >= unit)        bad.push(`다 보내도 ${worst} 남음`);
+      if (balSum > unit / 1000) bad.push(`잔액 합 ${balSum} (0 이어야 함)`);
+      if (notWhole)             bad.push(`${unit} 단위로 안 떨어짐`);
+      if (nan)                  bad.push('NaN');
+      out.push({ 통화, 경우:name, 결과: bad.length ? '✗ ' + bad.join(' / ') : '✓',
+                 총액:+r.total.toFixed(unit === 1 ? 0 : 2), 보낼건수:r.moves.length,
+                 남은잔액:+worst.toFixed(4) });
+    }
+  }
+  console.table(out);
+  const ng = out.filter(o => o.결과 !== '✓');
+  console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
+  return out;
+};
+
