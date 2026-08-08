@@ -1,0 +1,481 @@
+/* ── 화면 장치 ──────────────────────────────────────────────────────
+ * 여행 자료(trip · plans · legs …)를 하나도 모르는 순수 화면 장치들입니다.
+ * 그래서 app.js 에서 떼어낼 수 있었습니다 — 여기 있는 것은 전부
+ * "DOM 을 어떻게 보이게 하느냐"만 압니다.
+ *
+ *   두 번 눌러 지우기 · 시트(팝업) · iOS 키보드 여백
+ *
+ * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
+ * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
+import { $ } from './dom.js?v=b231';
+
+/* ── 두 번 눌러 지우기 ───────────────────────────────────────────────
+ * 확인창(confirm)이 내장 브라우저에서 막히기 때문에 버튼 글자를 바꿔 묻습니다.
+ * 그런데 물어본 채로 두면 나중에 그 버튼을 무심코 눌렀을 때 바로 지워집니다.
+ * 다른 데를 누르면 원래대로 돌아오게 합니다. */
+export function arm(b, label){
+  if (b.dataset.orig == null) b.dataset.orig = b.textContent;
+  b.dataset.armed = '1';
+  b.textContent = label;
+  b.style.fontWeight = '600';
+}
+export function disarm(b){
+  if (b.dataset.armed !== '1') return;
+  b.dataset.armed = '';
+  if (b.dataset.orig != null) b.textContent = b.dataset.orig;
+  b.style.fontWeight = '';
+}
+/* 실제 처리보다 먼저 돌아야 하므로 잡아채는 단계(capture)에서 봅니다. */
+document.addEventListener('click', e => {
+  document.querySelectorAll('[data-armed="1"]').forEach(b => {
+    if (b !== e.target && !b.contains(e.target)) disarm(b);
+  });
+}, true);
+
+/* ── 폼을 팝업으로 ───────────────────────────────────────────────────
+ * 폼을 여는 자리가 여기저기라 부르는 쪽을 다 고치는 대신, 이 카드들이
+ * 보이게 되는 순간을 지켜보다가 알아서 팝업으로 만듭니다.
+ * 여는 쪽 코드는 그대로 두고 모양만 바뀝니다. */
+const SHEETS = ['plancard', 'card-cand', 'expcard', 'bookcard', 'editcard', 'newcard',
+                'importcard'];
+/* AI 시트는 뒤로가기 기록까지 다루므로 닫는 법이 다릅니다. 그건 app.js 가
+   압니다 — 여기서 app.js 를 부르면 서로 부르는 꼴이 되므로 받아 둡니다.
+   (net.js 의 setOnDrained · setErrLogger 와 같은 방식입니다.)
+   안 넣어주면 아무 일도 안 합니다 — 시트를 못 닫을 뿐 앱은 안 죽습니다. */
+let closeAi = () => {};
+export function setSheetCloser(fn){ closeAi = fn; }
+
+export function syncSheets(){
+  let any = false;
+  for (const id of SHEETS){
+    const el = $(id); if (!el) continue;
+    const on = !el.classList.contains('hide');
+    el.classList.toggle('assheet', on);
+    if (on) any = true;
+  }
+  /* 여행 비서 시트도 뒷판을 씁니다. 여기서 같이 봐야 닫힐 때만 걷힙니다. */
+  if (!$('aiview').classList.contains('hide')) any = true;
+  $('sheetbg').classList.toggle('hide', !any);
+  document.body.classList.toggle('sheeton', any);
+}
+{
+  const ob = new MutationObserver(syncSheets);
+  SHEETS.forEach(id => $(id) &&
+    ob.observe($(id), { attributes:true, attributeFilter:['class'] }));
+  /* 뒤를 누르면 열려 있던 것을 닫습니다. 취소 버튼을 못 찾는 사람이 많습니다. */
+  $('sheetbg').addEventListener('click', () => {
+    if (!$('aiview').classList.contains('hide')) return closeAi();
+    SHEETS.forEach(id => $(id)?.classList.add('hide'));
+    syncSheets();
+  });
+
+  /* 위에 그려둔 손잡이가 장식이기만 했습니다. 끌어내리면 닫히게 합니다 —
+     그 모양을 보면 누구나 그렇게 해봅니다. */
+  const grab = e => {
+    const sheet = e.target.closest('.assheet, .aisheet');
+    if (!sheet) return;
+    /* 새 여행은 화면을 꽉 채우므로 끌어내릴 것이 아닙니다. 게다가 그 자리에
+       뒤로가기 단추가 있어서, 잡으면 단추를 못 누릅니다. */
+    if (sheet.classList.contains('wiz')) return;
+    /* 손잡이 자리(위쪽 26px)에서 시작한 것만 잡습니다. 안쪽 스크롤과 안 부딪칩니다. */
+    if (e.clientY - sheet.getBoundingClientRect().top > 26) return;
+    const y0 = e.clientY;
+    const bg = $('sheetbg');
+    let dy = 0;
+    /* 속도는 **직전 지점과 지금 지점**의 차이로 잽니다.
+       손 뗀 순간만 보면 마지막 move 와 좌표가 같아 늘 0 이 나옵니다. */
+    let py = y0, pt = performance.now(), v = 0;
+    const EASE = 'cubic-bezier(.32,.72,0,1)';   /* 아이폰 시트와 같은 느낌 */
+
+    /* 시트를 여는 애니메이션(sheetup)이 transform 을 건드립니다.
+       그냥 style.transform 으로 넣으면 애니메이션이 살아 있는 동안 밀립니다.
+       important 로 넣어야 무슨 일이 있어도 손가락을 따라옵니다. */
+    const put = v => sheet.style.setProperty('transform', v, 'important');
+    const clearPut = () => sheet.style.removeProperty('transform');
+
+    const move = ev => {
+      dy = Math.max(0, ev.clientY - y0);
+      sheet.style.transition = 'none';
+      put(`translateY(${dy}px)`);
+      /* 내릴수록 뒷판도 같이 걷힙니다. 시트만 움직이면 "닫히는 중"이 아니라
+         "미끄러진 것"처럼 보입니다. */
+      if (bg){ bg.style.transition = 'none';
+               bg.style.opacity = String(Math.max(0, 1 - dy / 320)); }
+
+      const now = performance.now(), dt = now - pt;
+      if (dt > 8){                       /* 너무 잦게 재면 값이 튑니다 */
+        v = (ev.clientY - py) / dt;      /* px/ms, 아래로 갈수록 + */
+        py = ev.clientY; pt = now;
+      }
+    };
+
+    const up = () => {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      /* 살짝만 내렸어도 **아래로 던졌으면** 닫는 게 맞습니다.
+         손가락이 빠르면 사람은 이미 닫을 마음을 먹은 것입니다.
+         손을 멈춘 채 오래 들고 있었으면 던진 것이 아니므로 속도를 버립니다. */
+      if (performance.now() - pt > 120) v = 0;
+      const shut = dy > 90 || (dy > 24 && v > 0.5);
+
+      if (!shut){
+        /* 제자리로. 뒷판도 같이 돌아옵니다. */
+        sheet.style.transition = `transform var(--t) ${EASE}`;
+        put('translateY(0px)');        /* 0 으로 되돌려야 애니메이션이 보입니다 */
+        if (bg){ bg.style.transition = 'opacity .22s'; bg.style.opacity = ''; }
+        setTimeout(clearPut, 240);     /* 다 돌아온 뒤에 걷습니다 */
+        setTimeout(() => { sheet.style.transition = ''; if (bg) bg.style.transition = ''; }, 240);
+        return;
+      }
+
+      /* ── 닫기 ──
+         예전에는 여기서 transform 을 '' 로 되돌리고 곧바로 숨겼습니다.
+         그러면 끌어내리던 시트가 **위로 튕겨 올라갔다가** 사라져서,
+         쓸어내렸는데 닫기 단추를 누른 것처럼 뚝 끊겼습니다.
+         내리던 방향 그대로 끝까지 내려보내고, 다 내려간 뒤에 숨깁니다. */
+      const h = sheet.getBoundingClientRect().height || window.innerHeight;
+      sheet.style.transition = `transform .24s ${EASE}`;
+      put(`translateY(${h}px)`);
+      if (bg){ bg.style.transition = 'opacity .24s'; bg.style.opacity = '0'; }
+
+      setTimeout(() => {
+        /* 다음에 열 때 내려간 채로 있으면 안 됩니다. 숨기기 **전에** 지웁니다. */
+        sheet.style.transition = ''; clearPut();
+        if (bg){ bg.style.transition = ''; bg.style.opacity = ''; }
+        if (sheet.id === 'aiview') closeAi();
+        else { sheet.classList.add('hide'); syncSheets(); }
+      }, 230);
+    };
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+  };
+  document.addEventListener('pointerdown', grab);
+}
+
+/* ── 키보드 ─────────────────────────────────────────────────────────
+ * iOS 에서 키보드가 올라오면 폼 아래 버튼이 가려 아무것도 못 누릅니다.
+ * 보이는 높이를 재서 그만큼 바닥에 여백을 줘 스크롤로 닿게 합니다.
+ * (도쿄 앱이 --kb 로 하던 것과 같은 방식입니다.) */
+/* 홈 화면에 담은 앱인가. 사파리와 창 구조가 달라서 같은 계산이 다른 자리를
+   가리킵니다(아래 --below). navigator.standalone 은 iOS 전용이고,
+   display-mode 는 안드로이드·데스크톱까지 봅니다. 둘 다 봅니다. */
+const STANDALONE = !!navigator.standalone ||
+  matchMedia('(display-mode: standalone)').matches;
+
+if (window.visualViewport){
+  const vv = window.visualViewport;
+  /* 키보드가 올라왔는지는 "글을 쓸 수 있는 칸에 커서가 있는가"로 봅니다.
+     높이 차이만 보면 **크롬(iOS)에서 틀립니다** — 크롬은 아래 툴바가 있어서
+     키보드가 없어도 innerHeight 와 visualViewport 가 100px 넘게 벌어집니다.
+     그걸 키보드로 착각해 body 여백이 늘고 화면이 밀렸습니다. */
+  const typing = () => {
+    const el = document.activeElement;
+    if (!el) return false;
+    const t = el.tagName;
+    return t === 'TEXTAREA' || el.isContentEditable ||
+           (t === 'INPUT' && !/^(button|submit|checkbox|radio|file|range|color)$/i
+                                .test(el.type || 'text'));
+  };
+  /* ── 키보드와 ∧ ∨ ✓ 막대 뒤 덮기 ──────────────────────────────────
+     b174 의 자 두 벌이 답을 줬습니다(홈 화면 앱, 키보드 올린 상태).
+
+       빨강 F(position:fixed)   → 레이아웃 바닥에서 **잘렸습니다**
+       파랑 A(position:absolute) → 막대 뒤로 **계속 이어졌습니다**
+       레이아웃 바닥이 문서 좌표 926, 막대 뒤가 대략 937~982
+
+     즉 그 자리에 그려지는 것은 **문서의 계속되는 부분**입니다. 그래서 세계지도가
+     비쳤습니다. 시트는 fixed 라 아무리 키워도 926 에서 잘립니다 — b170·b171 에서
+     시트와 box-shadow 로 두 번 시도해 두 번 다 실패한 이유가 이것입니다.
+     **문서 안에 덮개를 넣으면 덮입니다.** 파랑 자가 거기 그려진 것이 증거입니다. */
+  let kbCover = null;
+  const coverBelow = (on) => {
+    /* 시트가 없을 때는 덮으면 안 됩니다 — 그때 아래가 보이는 것은 정상입니다. */
+    if (!on || !document.body.classList.contains('sheeton')){
+      kbCover?.remove(); kbCover = null;
+      return;
+    }
+    if (!kbCover){
+      kbCover = document.createElement('div');
+      /* **뒷판(#sheetbg, 1200)보다 아래**에 둡니다. 그러면 화면 안쪽은 뒷판이
+         위에서 덮으므로 보이는 그림이 하나도 안 바뀌고, 뒷판이 닿지 못하는
+         막대 뒤에서만 이 덮개가 드러납니다. 위에 두면 시트 위 24px 틈까지
+         시트 색이 되어 둥근 모서리가 묻힙니다. */
+      kbCover.style.cssText = 'position:absolute; left:0; right:0; top:0;' +
+                              'z-index:1199; pointer-events:none';
+      document.body.appendChild(kbCover);
+    }
+    /* 열려 있는 시트의 색을 그대로 씁니다. AI 시트는 --parchment,
+       나머지 시트는 --canvas 라 하나로 못 박으면 한쪽이 어긋납니다. */
+    const sheet = document.querySelector('.aisheet:not(.hide), .assheet:not(.hide)');
+    kbCover.style.background = sheet
+      ? getComputedStyle(sheet).backgroundColor : 'var(--canvas)';
+
+    /* **좌표를 쓰지 않습니다.** b175(scrollY)·b176(rect 로 보정) 둘 다 자리를
+       계산했고 둘 다 틀렸습니다. 아이폰에서 잰 것:
+
+         눈금자   scrollY 511, 덮개 rect 793~1302 (맞다고 나옴)
+         사진     화면 위에 보이는 파랑 자가 A505 → 실제 스크롤은 133쯤
+         차이     378 ≈ 키보드 높이 369
+
+       **iOS 는 키보드가 올라오면 scrollY 를 키보드 높이만큼 부풀려 보고하고,
+       absolute 요소의 rect 는 문서→뷰포트 변환에 그 scrollY 가 끼므로 같이
+       틀립니다.** 그래서 rect 로 보정해도 같은 거짓말을 두 번 믿을 뿐입니다.
+       (fixed 요소의 rect 는 정확합니다 — 뷰포트 기준이라 scrollY 를 안 탑니다.
+        시트 bot 424 는 사진과 맞았습니다. 그래서 진작 알아채지 못했습니다.)
+
+       **파랑 자는 정확히 그려졌습니다.** 그것은 좌표를 안 썼기 때문입니다 —
+       top:0 에 두고 높이만 문서 높이로 줬습니다. **길이는 오프셋 오차를 안 탑니다.**
+       덮개도 똑같이 만듭니다. 문서 전체를 깔면 어디가 막대 뒤인지 알 필요가
+       없습니다. 그 자리가 문서 안이라는 것은 파랑 자가 이미 증명했습니다. */
+    kbCover.style.height =
+      Math.max(document.documentElement.scrollHeight, window.innerHeight) + 'px';
+  };
+
+  const fit = () => {
+    /* **offsetTop 을 빼면 안 됩니다.** iOS 는 키보드가 올라올 때 레이아웃을
+       줄이는 게 아니라 보이는 화면을 밀어 올립니다. 그러면 offsetTop 이 딱
+       키보드 높이만큼 커져서, 빼는 순간 식이 스스로를 상쇄해 0 이 됩니다.
+       실측(아이폰 사파리): inner 695, vv.h 392, offsetTop 303 → 695-392-303 = 0.
+       그래서 --kb 가 0 이 되고 높이 제한이 안 걸려, 시트가 86vh(632)로 그려져
+       보이는 높이 392 를 넘어 위로 240px 잘려 나갔습니다.
+       키보드가 먹은 높이는 그냥 innerHeight - vv.height 입니다. */
+    /* **offsetTop 을 다시 뺍니다.** b165 에서 이걸 지웠는데, 지금 쓰는 용도로는
+       그게 맞는 식이었습니다. 여기서 필요한 값은 "키보드 높이"가 아니라
+       **레이아웃 안에서 키보드가 가린 높이**입니다. 둘은 환경에 따라 다릅니다.
+
+         사파리    inner 695 − off 303 − vv.h 392 = 0
+                   → 보이는 창이 레이아웃 바닥에서 끝나므로 가린 것이 없습니다
+         홈화면앱  inner 852 − off 0   − vv.h 549 = 303
+                   → 키보드가 레이아웃 안을 303 가립니다
+
+       시트는 bottom:0 이라 레이아웃 바닥에 붙습니다. 그 바닥이 키보드에
+       가려진 만큼만 안쪽 여백으로 밀어 올리면 두 환경이 같이 맞습니다.
+       b165 에서 이 값을 높이 제한에 쓰려다 0 이 나와 지운 것이 실수였습니다 —
+       높이는 --vvh(보이는 높이)가 맡고, 이 값은 여백이 맡습니다. */
+    const kb = typing()
+      ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+    document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    /* 시트는 --kb 를 안 씁니다. iOS 는 키보드가 뜨면 **화면을 스크롤**하기 때문에
+       레이아웃 바닥이 곧 보이는 화면의 바닥입니다(off 303 → 보이는 영역 303~695).
+       거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
+       시트는 bottom:0 에 두고, 높이만 "지금 보이는 높이"로 잡습니다. */
+    document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+
+    /* ── 레이아웃 바깥에 그려지는 자리 ──
+       사파리는 화면(screen 852) 중 아래쪽을 레이아웃 밖에 두면서(inner 695)
+       **그 자리에도 페이지를 계속 그립니다.** 시트는 bottom:0 이라 695 까지만
+       덮으니 딱 157px 이 비쳐서, 시트 아래로 주소 알약과 일정 글자가 보였습니다.
+       실측: screen 852 − inner 695 = 157, 눈금자의 두 ★ 이 같은 값이었습니다.
+       홈 화면 앱은 도구막대가 없어 이 값이 0 이 되므로 그대로 두면 됩니다.
+       레이아웃은 안 건드리고 이 높이만 시트 색으로 덮습니다(app.css 의 box-shadow). */
+    /* **홈 화면 앱에서는 이 뺄셈이 위쪽을 잽니다.** 실측 2026-08-05:
+         사파리    screen 852 − inner 695 = 157 → 아래 도구막대 (맞음)
+         홈화면앱  screen 852 − inner 793 =  59 → 위 상태바   (틀림)
+       홈 화면 앱은 도구막대가 없고 대신 레이아웃이 상태바 **아래**에서
+       시작합니다. 그래서 같은 뺄셈인데 나온 자리가 반대입니다.
+       그걸 모르고 시트 아래를 59 칠하고 있었습니다 — 없는 자리를 칠한 것입니다.
+       standalone 이면 아래에 덮을 것이 없습니다. */
+    const below = STANDALONE ? 0
+      : Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
+    document.documentElement.style.setProperty('--below', below + 'px');
+    /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
+       그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
+       펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
+    document.body.classList.toggle('kbon', kb > 60);
+
+    /* **키보드가 올라왔는지는 --kb 로 알 수 없습니다.** 두 환경 다 0 입니다
+       (사파리 695−303−392, 홈화면앱 793−369−424). 레이아웃이 줄지 않고
+       보이는 창만 작아지므로, 판정은 그 차이로 합니다. */
+    const kbUp = typing() && (window.innerHeight - vv.height) > 60;
+    coverBelow(kbUp);
+    /* body.kbon 은 --kb 로 판정하는데 그 값이 두 환경 다 0 이라 안 켜집니다.
+       **키보드가 떠 있는지를 물어야 하는 CSS 는 이쪽을 봐야 합니다.** */
+    document.body.classList.toggle('kbup', kbUp);
+  };
+  /* ── 안쪽이 따로 구르는 화면에서 쓰던 칸 붙잡아 두기 ────────────────
+     새 여행 화면은 가운데(.wizbody)만 구릅니다. 키보드가 올라오면 그 칸이
+     짧아지는데, 브라우저는 **페이지**를 스크롤해 입력칸을 보여주려 합니다 —
+     안쪽 스크롤은 안 건드리므로 정작 쓰고 있는 칸이 밖으로 밀려 사라졌습니다.
+     여기서 안쪽을 직접 굴려 데려옵니다.
+
+     **이미 보이면 아무것도 안 합니다.** 그 조건이 없으면, 손으로 조금
+     내려볼 때마다 도로 끌어올려서 화면을 못 움직이게 됩니다. */
+  function keepInView(){
+    const el = document.activeElement;
+    const body = el && el.closest && el.closest('.wizbody');
+    if (!body) return;
+    const er = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+    /* **아래 SAFE 만큼은 없는 자리로 칩니다.** iOS 는 키보드 위에 ∧ ∨ ✓
+       막대를 그리는데, 그건 브라우저가 그린 것이 아니라 visualViewport 에
+       안 잡힙니다 — 잴 방법이 없습니다. 그래서 좌표로 딱 맞추려 하지 않고
+       넉넉히 비워둡니다. 남으면 그냥 여백이고, 모자라면 쓰던 칸이 가려집니다.
+       한쪽 실패만 아픈 상황에서는 안 아픈 쪽으로 넉넉히 갑니다. */
+    const SAFE = 120;
+    const top = br.top + 16, bottom = br.bottom - SAFE;
+    if (er.top >= top && er.bottom <= bottom) return;
+    /* 가운데가 아니라 **위쪽으로** 데려옵니다. 가운데로 두면 칸이 아래
+       절반에 앉는데, 가려지는 곳이 바로 거기입니다. */
+    body.scrollTop += er.top - top;
+  }
+  /* 키보드가 올라오는 동안 높이가 몇 번에 걸쳐 바뀝니다. 한 번만 재면
+     올라오기 전 크기로 계산하게 됩니다. 몇 박자 나눠 다시 봅니다. */
+  const keepSoon = () => [0, 150, 350].forEach(t => setTimeout(keepInView, t));
+
+  vv.addEventListener('resize', () => { fit(); keepSoon(); });
+  vv.addEventListener('scroll', fit);   /* 구를 때는 안 붙잡습니다 — 손을 이겨버립니다 */
+  /* 커서가 어디 있는지로 판단하므로 커서가 옮겨갈 때도 다시 재야 합니다.
+     focusout 은 다음 칸으로 옮겨가는 중에도 한 번 뜨므로 한 박자 늦춥니다 —
+     안 그러면 칸을 옮길 때마다 여백이 깜빡입니다. */
+  addEventListener('focusin',  () => { fit(); keepSoon(); });
+  addEventListener('focusout', () => setTimeout(fit, 60));
+  fit();
+
+  /* ── 키보드 눈금자 (개발용) ───────────────────────────────────────
+   * 키보드가 올라왔을 때 레이아웃이 밀리는데, 저는 아이폰 키보드를 띄워서
+   * 재볼 수가 없습니다. 숫자를 화면에 찍어 사진 한 장으로 갈리게 합니다.
+   *
+   *   켜기 : 주소 끝에 ?kb=1     끄기 : ?kb=0
+   * 한 번 켜면 기억합니다 — 홈 화면 앱으로 열어도 그대로 나옵니다.
+   * 평소에는 아무에게도 안 보입니다. */
+  {
+    const q = new URLSearchParams(location.search).get('kb');
+    if (q === '1') localStorage.setItem('t2:kbdbg', '1');
+    if (q === '0') localStorage.removeItem('t2:kbdbg');
+
+    /* 홈 화면 앱은 사파리와 저장 공간이 따로라 ?kb=1 이 안 넘어갑니다.
+       그래서 **정작 고쳐야 하는 곳에서 숫자를 한 번도 못 봤습니다** —
+       사파리 숫자로 홈 화면 앱을 맞추려 했으니 계속 틀렸습니다.
+       관리자면 저절로 켜지게 합니다. 주소에 뭘 붙일 필요가 없어집니다. */
+    /* ── 막대 뒤에 그려지는 것은 무엇인가 (자 두 벌) ──────────────────
+       b173 에서 contenteditable 로 막대를 없애려다 실패했습니다(vv.h 424 그대로).
+       없앨 수 없다면 덮어야 하는데, 그러려면 **그 자리에 무엇의 어느 부분이
+       그려지는지**를 알아야 합니다. 그걸 모르는 채로 b170·b171 에서 두 번
+       헛짚었습니다. 이번에는 자를 대고 사진으로 읽습니다.
+
+         왼쪽 빨강 F###  = position:fixed   (뷰포트 기준 좌표)
+         오른쪽 파랑 A### = position:absolute (문서 기준 좌표)
+
+       키보드를 올린 사진에서 **막대 뒤에 어느 색 몇 번이 비치는지**가 답입니다.
+         빨강이 비친다  → fixed 가 그 자리에도 그려진다. 시트를 늘리면 덮인다.
+         파랑만 비친다  → fixed 는 잘린다. 문서 안에 덮개를 넣어야 한다.
+         아무것도 안 비친다 → 그 자리는 페이지가 아니라 브라우저가 그린다.
+       눈금자 상자를 **손가락으로 누르면** 켜지고 꺼집니다 — 홈 화면 앱은
+       주소로 값을 넘길 수 없어서(사파리와 저장 공간이 다릅니다) 이 길뿐입니다. */
+    const probe = (on) => {
+      document.querySelectorAll('.kbprobe').forEach(n => n.remove());
+      if (!on) return;
+      [true, false].forEach(fx => {
+        const h = fx ? window.innerHeight
+                     : Math.max(document.documentElement.scrollHeight,
+                                window.innerHeight);
+        const d = document.createElement('div');
+        d.className = 'kbprobe';
+        d.style.cssText =
+          `position:${fx ? 'fixed' : 'absolute'}; ${fx ? 'left' : 'right'}:0; top:0;` +
+          `width:54px; height:${h}px; z-index:99998; pointer-events:none;` +
+          `background:${fx ? 'rgba(210,0,0,.78)' : 'rgba(0,70,220,.78)'};` +
+          `color:#fff; font:bold 12px/1 ui-monospace,monospace`;
+        let s = '';
+        for (let y = 0; y < h; y += 40)
+          s += `<span style="position:absolute; top:${y}px; left:3px;` +
+               `border-top:1px solid #fff; width:48px; padding-top:1px">` +
+               `${fx ? 'F' : 'A'}${y}</span>`;
+        d.innerHTML = s;
+        document.body.appendChild(d);
+      });
+    };
+
+    window.startRuler = () => {
+      if (window.__ruler) return;
+      window.__ruler = true;
+      const box = document.createElement('div');
+      /* pointer-events 를 살려야 눌러서 자를 켤 수 있습니다. 눈금자는 화면
+         왼쪽 위 구석이라 앱의 무엇도 가리지 않습니다. */
+      box.style.cssText =
+        'position:fixed; left:6px; top:6px; z-index:99999; pointer-events:auto;' +
+        'background:rgba(0,0,0,.82); color:#0f0; font:11px/1.45 ui-monospace,monospace;' +
+        'padding:6px 8px; border-radius:8px; white-space:pre; max-width:70vw';
+      /* **누르는 순간 preventDefault 해야 합니다.** 안 그러면 입력칸에서 커서가
+         빠져 키보드가 내려갑니다 — 키보드가 올라와 있을 때만 볼 수 있는 것을
+         재려는데 누르는 행동이 그 상태를 없앱니다. click 을 기다리지 않고
+         touchstart 에서 바로 처리합니다(preventDefault 하면 click 이 안 옵니다). */
+      const toggle = (e) => {
+        e.preventDefault();
+        window.__probe = !window.__probe;
+        probe(window.__probe);
+      };
+      box.addEventListener('touchstart', toggle, { passive:false });
+      box.addEventListener('mousedown',  toggle);
+      document.body.appendChild(box);
+
+      const show = () => {
+        /* position:fixed 는 iOS 에서 **키보드로 줄어들지 않는 바깥 화면**을
+           기준으로 붙습니다. 키보드가 올라와 화면이 밀리면 눈금자가 위로
+           사라집니다 — 정작 봐야 할 순간에 안 보였습니다.
+           보이는 화면(visualViewport)을 따라오게 매 프레임 자리를 잡아줍니다. */
+        box.style.top = (vv.offsetTop + 6) + 'px';
+        const el = document.activeElement;
+        const s  = $('aiview');
+        const r  = s && !s.classList.contains('hide') ? s.getBoundingClientRect() : null;
+        const kb = getComputedStyle(document.documentElement)
+                     .getPropertyValue('--kb').trim();
+        /* 눈금자가 0/0 이라는데 화면은 안 맞았습니다. 그러면 눈금자가 못 보는
+           구간이 있는 것입니다. 사파리는 아래 도구막대 자리에도 페이지를 계속
+           그리는데, innerHeight 와 visualViewport 는 그 자리를 안 셉니다.
+           그걸 재려면 화면 전체 높이와 견줘봐야 합니다. */
+        const dpr  = window.devicePixelRatio || 1;
+        const scrH = Math.round(screen.height);          /* 기기 화면 (CSS px) */
+        const cliH = document.documentElement.clientHeight;
+        /* 시트 바닥을 레이아웃 기준으로 환산합니다. rect 는 보이는 화면 기준입니다. */
+        const botLay = r ? Math.round(r.bottom + vv.offsetTop) : null;
+        /* 위에서 이미 s 로 잡아뒀습니다. 여기서 또 const s 를 쓰면
+           "Identifier 's' has already been declared" 로 **app.js 가 통째로
+           파싱에 실패합니다** — 눈금자 안이든 밖이든 문법 오류는 앱을 죽입니다. */
+        const tf = s?.style.transform || '(없음)';
+
+        box.textContent =
+          /* **화면 버전을 안 찍고 있었습니다.** 그래서 사진을 받고도 이게 고친
+             판인지 옛 판인지 가릴 수가 없었습니다. 배포는 캐시 때문에 늦게
+             오는데, 그동안의 사진을 "안 고쳐졌다"로 잘못 읽을 뻔했습니다.
+             재는 장치에는 **무엇을 재고 있는지**가 늘 함께 있어야 합니다. */
+          `화면      ${$('build')?.textContent || '?'}\n` +
+          /* **rect 는 더 이상 안 찍습니다.** absolute 요소의 rect 는 부풀려진
+             scrollY 를 타서 "793~1302, 맞음"이라고 거짓말했습니다(b176).
+             지금 덮개는 문서 전체를 깔므로 볼 것은 높이 하나뿐입니다. */
+          `덮개      ${kbCover
+             ? `h ${parseInt(kbCover.style.height)} / 문서 ` +
+               `${document.documentElement.scrollHeight}`
+             : '없음'}\n` +
+          /* 덮개가 없으면 **왜** 없는지가 갈려야 합니다. 조건이 둘입니다. */
+          `덮개조건  시트 ${document.body.classList.contains('sheeton') ? 'Y' : 'N'}` +
+          `  키보드차 ${Math.round(window.innerHeight - vv.height)} (>60이어야)\n` +
+          /* b175 가 안 먹은 것이 자리 계산 때문인지 보려면 두 기준을 견줘야
+             합니다. 같으면 계산은 죄가 없고 다른 곳이 원인입니다. */
+          `좌표기준  scrollY ${Math.round(window.scrollY)}` +
+          `  rect ${Math.round(-document.documentElement.getBoundingClientRect().top)}\n` +
+          `--kb      ${kb}\n` +
+          `inner     ${window.innerHeight}   outer ${window.outerHeight}\n` +
+          `client    ${cliH}   screen ${scrH}   dpr ${dpr}\n` +
+          `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}` +
+          `  합 ${Math.round(vv.height + vv.offsetTop)}\n` +
+          `재는중?   ${typing() ? 'Y' : 'N'}  <${(el?.tagName || '-').toLowerCase()}>` +
+          `${el?.isContentEditable ? ' CE' : ''}  ${STANDALONE ? '홈앱' : '사파리'}\n` +
+          /* b173 에서 contenteditable 로 바꿔봤지만 vv.h 가 424 그대로였습니다.
+             **iOS 는 contenteditable 에도 그 막대를 붙입니다.** 없앨 수 없습니다.
+             남은 길은 덮는 것이고, 그러려면 자(위 probe)를 눌러 켜서
+             막대 뒤에 어느 색 몇 번이 비치는지 사진으로 읽어야 합니다. */
+          `자    ${window.__probe ? '켜짐 — 막대 뒤 색·번호를 읽으세요' : '꺼짐 (여기를 누르세요)'}\n` +
+          `transform ${tf}\n` +
+          (r ? `시트 top ${Math.round(r.top)}  h ${Math.round(r.height)}\n` +
+               `시트 bot ${Math.round(r.bottom)}  레이아웃기준 ${botLay}\n` +
+               `★ 안 덮인 아래  ${scrH - (botLay ?? 0)}  (screen-시트바닥)\n` +
+               `★ inner 밖      ${scrH - window.innerHeight}  (screen-inner)`
+             : '시트 닫힘');
+        requestAnimationFrame(show);
+      };
+      show();
+    };
+    /* 주소로 켠 경우 (사파리). 관리자면 loadAdmin 이 로그인 뒤에 부릅니다. */
+    if (localStorage.getItem('t2:kbdbg') === '1') window.startRuler();
+  }
+}
