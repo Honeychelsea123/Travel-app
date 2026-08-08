@@ -6,18 +6,18 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b233';
-import { $, esc, toast, copyText } from './dom.js?v=b233';
-import { starHtml, paintStars, markRated } from './stars.js?v=b233';
+import { sb } from './db.js?v=b234';
+import { $, esc, toast, copyText } from './dom.js?v=b234';
+import { starHtml, paintStars, markRated } from './stars.js?v=b234';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b233';
-import { loadAdmin } from './admin.js?v=b233';
-import { arm, disarm, syncSheets, setSheetCloser } from './ui.js?v=b233';
+         setErrLogger, NOROW } from './net.js?v=b234';
+import { loadAdmin } from './admin.js?v=b234';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b234';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b233';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b234';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b233';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b234';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -6224,6 +6224,10 @@ const TAB_TRASH = { plans:'plan', exp:'expense', prep:'booking' };
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
 
 function showTab(t){
+  /* 어느 쪽에서 들어오는지. 알약에 적힌 순서를 그대로 읽습니다 —
+     여기 따로 적어두면 index.html 에서 순서를 바꿀 때 어긋납니다. */
+  const seq = [...document.querySelectorAll('#tstrip button[data-t]')].map(b => b.dataset.t);
+  const back = seq.indexOf(t) < seq.indexOf(tab);
   tab = t;
   /* 한 id 가 여러 탭에 걸리게 되면서, 예전처럼 탭마다 따로 끄면 뒤 탭 차례에
      방금 켠 것이 다시 꺼집니다. 켤 것을 먼저 모아두고 한 번에 정합니다. */
@@ -6245,11 +6249,46 @@ function showTab(t){
   /* 지운 것은 열 때만 받아옵니다. 대부분은 볼 일이 없어서 미리 받으면 낭비입니다. */
   if (TAB_TRASH[t]) loadTrash();
   window.scrollTo({ top:0, behavior:'smooth' });
+
+  /* 옆에서 들어오는 모양. **두 클래스를 먼저 걷고 한 박자 쉬어야** 같은 방향으로
+     연달아 넘길 때 애니메이션이 다시 시작됩니다 — 안 걷으면 두 번째부터
+     아무 일도 안 일어난 것처럼 보입니다. */
+  const v = $('tripview');
+  v.classList.remove('tabin', 'tabin-r');
+  void v.offsetWidth;
+  v.classList.add(back ? 'tabin-r' : 'tabin');
 }
 $('tstrip').addEventListener('click', e => {
   const b = e.target.closest('button[data-t]');
   if (b) showTab(b.dataset.t);
 });
+
+/* ── 좌우로 쓸어 구역 넘기기 ──────────────────────────────────────────
+ * 구역 알약이 화면 **왼쪽 위**에 있어서 한 손으로 들면 엄지가 안 닿습니다.
+ * 손가락이 이미 있는 자리에서 넘길 수 있게 합니다. 알약은 그대로 둡니다 —
+ * 쓸기는 알려주지 않으면 아무도 모르므로, 보이는 길이 사라지면 안 됩니다.
+ *
+ * **순서는 알약에 적힌 순서를 그대로 읽어옵니다.** 여기 따로 적어두면
+ * index.html 에서 순서를 바꿀 때 쓸기만 옛 순서로 남습니다.
+ * 끝에서 더 밀면 안 넘어갑니다 — 돌아 나오면 지금 어디인지 감이 사라집니다. */
+{
+  const order = () => [...document.querySelectorAll('#tstrip button[data-t]')]
+    .map(b => b.dataset.t);
+  const step = d => {
+    const o = order(), i = o.indexOf(tab);
+    if (i < 0) return;
+    const next = o[i + d];
+    if (next && next !== tab) showTab(next);
+  };
+  onSwipeX($('tripview'), {
+    /* 여행 화면이 떠 있을 때만입니다. 숨어 있어도 이벤트는 안 오지만,
+       시트가 위에 열려 있을 때는 화면이 보여도 넘기면 안 됩니다. */
+    active: () => !$('tripview').classList.contains('hide') &&
+                  !document.body.classList.contains('sheeton'),
+    onLeft:  () => step(1),      /* 왼쪽으로 쓸면 다음 구역이 따라 들어옵니다 */
+    onRight: () => step(-1),
+  });
+}
 
 /* 여행 안이냐 밖이냐. 상단바가 이걸 보고 모양을 바꿉니다 —
    안이면 구역 넷이 나오고 앱 이름이 접힙니다. */

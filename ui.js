@@ -3,11 +3,93 @@
  * 그래서 app.js 에서 떼어낼 수 있었습니다 — 여기 있는 것은 전부
  * "DOM 을 어떻게 보이게 하느냐"만 압니다.
  *
- *   두 번 눌러 지우기 · 시트(팝업) · iOS 키보드 여백
+ *   두 번 눌러 지우기 · 시트(팝업) · iOS 키보드 여백 · 좌우로 쓸기
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b233';
+import { $ } from './dom.js?v=b234';
+
+/* ── 좌우로 쓸기 ────────────────────────────────────────────────────
+ * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
+ * 한 손으로 폰을 들면 엄지가 거기까지 안 갑니다 — 매번 손을 고쳐 잡아야 합니다.
+ * 손가락이 이미 있는 자리(화면 가운데)에서 쓸어 넘길 수 있게 합니다.
+ *
+ * **여기는 무엇을 넘기는지 모릅니다.** 방향 둘만 알려주고 나머지는 부르는 쪽이
+ * 정합니다 — 그래야 이 파일이 여행 탭을 몰라도 됩니다.
+ *
+ * 부딪히는 것 넷을 피합니다:
+ *   지도(Leaflet)   — 지도를 옆으로 끄는 것이지 탭을 넘기는 게 아닙니다
+ *   가로로 구르는 칸 — 그 안에서는 그 칸이 임자입니다
+ *   시트·입력칸     — 시트는 아래로 끌어 닫고, 입력칸은 글자를 고릅니다
+ *   화면 가장자리   — iOS 는 거기서 쓸면 **브라우저 뒤로가기**입니다.
+ *                    빼앗으려 들면 둘 다 어정쩡해집니다. 양보합니다.
+ */
+const EDGE = 30;      /* 가장자리 몇 px 을 브라우저에 양보하나 */
+
+/* 손가락이 시작한 자리가 "남의 것"인가. 위로 거슬러 올라가며 봅니다. */
+function ownedByOthers(el, root){
+  for (let n = el; n && n !== root; n = n.parentElement){
+    if (n.closest?.('.leaflet-container')) return true;
+    const t = n.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || n.isContentEditable) return true;
+    if (n.classList?.contains('assheet') || n.classList?.contains('aisheet')) return true;
+    /* 실제로 가로로 구르는 칸만 셉니다. overflow 설정만 보면 안 됩니다 —
+       `overflow-x:auto` 인데 내용이 짧아 안 구르는 칸이 훨씬 많습니다. */
+    if (n.scrollWidth > n.clientWidth + 4){
+      const ox = getComputedStyle(n).overflowX;
+      if (ox === 'auto' || ox === 'scroll') return true;
+    }
+  }
+  return false;
+}
+
+/* el 위에서 좌우로 쓸면 onLeft(다음)·onRight(이전)을 부릅니다.
+   `active()` 가 거짓을 주면 아무 일도 안 합니다 — 그 화면이 아닐 때를 위해서입니다. */
+export function onSwipeX(el, { onLeft, onRight, active = () => true }){
+  let x0 = 0, y0 = 0, t0 = 0, id = null, live = false, dead = false;
+
+  el.addEventListener('pointerdown', e => {
+    id = null;
+    if (!active()) return;
+    /* 마우스는 왼쪽 단추만. 펜·손가락은 그대로 받습니다. */
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.clientX < EDGE || e.clientX > innerWidth - EDGE) return;
+    if (ownedByOthers(e.target, el)) return;
+    id = e.pointerId; x0 = e.clientX; y0 = e.clientY; t0 = e.timeStamp;
+    live = false; dead = false;
+  });
+
+  el.addEventListener('pointermove', e => {
+    if (e.pointerId !== id || dead) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!live){
+      /* 아직 어느 쪽인지 정하기 전입니다. 8px 은 넘어야 손이 움직였다고 봅니다 —
+         누를 때 손가락은 늘 1~2px 씩 흔들립니다. */
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      /* **세로가 조금이라도 이기면 포기합니다.** 여기서 인색하지 않으면
+         목록을 위아래로 굴릴 때마다 탭이 넘어갑니다. 그쪽이 훨씬 자주 하는 일입니다. */
+      if (Math.abs(dx) < Math.abs(dy) * 1.4){ dead = true; return; }
+      live = true;
+    }
+    /* 세로로 많이 흘렀으면 쓸기가 아니라 비스듬한 스크롤입니다. */
+    if (Math.abs(dy) > 60) dead = true;
+  });
+
+  const end = e => {
+    if (e.pointerId !== id) return;
+    const dx = e.clientX - x0, dt = e.timeStamp - t0;
+    id = null;
+    if (!live || dead) return;
+    /* 멀리 끌었거나, 짧아도 빠르게 튕겼으면 넘깁니다.
+       거리만 보면 급하게 넘기는 사람이 매번 실패합니다. */
+    const far  = Math.abs(dx) >= 64;
+    const fast = Math.abs(dx) >= 28 && dt > 0 && Math.abs(dx) / dt > 0.45;
+    if (!far && !fast) return;
+    (dx < 0 ? onLeft : onRight)?.();
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', e => { if (e.pointerId === id) id = null; });
+}
 
 /* ── 두 번 눌러 지우기 ───────────────────────────────────────────────
  * 확인창(confirm)이 내장 브라우저에서 막히기 때문에 버튼 글자를 바꿔 묻습니다.
