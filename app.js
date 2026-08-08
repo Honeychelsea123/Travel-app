@@ -1,7 +1,7 @@
 import { WORLD_PATHS } from './world.js';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b218';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b219';
 
 /* ── 설정 ──────────────────────────────────────────────────────────
  * publishable 키는 브라우저에 있어도 됩니다. RLS 가 지킵니다.
