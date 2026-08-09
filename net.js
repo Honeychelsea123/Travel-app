@@ -18,8 +18,8 @@
  *
  * 밖에서 가져오는 것은 dom.js 와 db.js 뿐입니다. 둘 다 잎이라 순환이 없습니다.
  */
-import { $, toast } from './dom.js?v=b243';
-import { sb } from './db.js?v=b243';
+import { $, toast } from './dom.js?v=b244';
+import { sb } from './db.js?v=b244';
 
 /* 큐가 다 나간 뒤에 화면을 서버 값으로 맞추는 일은 app.js 가 압니다.
    여기서 trip 이나 loadPlans 를 직접 부르면 net → app 으로 거꾸로 기대게 되어
@@ -46,6 +46,14 @@ const SORRY = '잘 안 됐어요. 잠시 뒤 다시 해보시고, ' +
               '계속 안 되면 프로필 → 버그 신고로 알려주세요.';
 
 function human(e){
+  /* **P0001 은 우리가 쓴 말입니다.** DB 함수의 `raise exception` 이 내는 코드라
+     본문이 이미 한국어입니다. 그대로 보여줍니다.
+     전에는 이것도 아래 정규식에 안 걸려 SORRY 로 덮였습니다 —
+     초대가 **만료됐는지 · 없는 코드인지 · 다 썼는지**를 사용자가 알 수가 없었고,
+     SORRY 의 "잠시 뒤 다시 해보세요"는 **만료된 초대에는 틀린 안내**입니다.
+     기다려도 안 되는 것을 기다리라고 하고 있었습니다. */
+  if (e?.code === 'P0001' && e?.message) return String(e.message);
+
   const s = String(e?.code || '') + ' ' + String(e?.message || e?.error_description || e?.hint || '');
   if (/row-level security|42501|permission denied/i.test(s))
     return '권한이 없어요. 이 여행을 고칠 수 있는지 확인해주세요.';
