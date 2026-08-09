@@ -590,6 +590,18 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 날짜 칩 — 줄바꿈으로 둡니다.
    가로 스크롤로 뒀더니 마우스로는 밀 방법이 없었습니다(스크롤바도 숨겨서). */
 .days{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--s-sm); }
+/* **칩이 줄바꿈하면 벽이 됩니다.** 11일 여행의 날짜 칩이 세 줄(120px)을
+   먹어서, 그 아래 분류 칩과 지도까지 합치면 첫 일정이 722px 밑에서
+   시작했습니다. 옆으로 굴리면 한 줄(36px)입니다.
+   초안 화면의 취향 칩(#d_focus 등)은 일곱 개가 다 보여야 고르므로
+   그쪽은 그대로 두고, 이 클래스를 붙인 곳만 바꿉니다. */
+.days.oneline{ flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  /* 카드 안쪽 여백만큼 넘겨서 굴려야 끝 칩이 모서리에 딱 붙지 않습니다. */
+  margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md));
+  padding-left:var(--s-md); padding-right:var(--s-md); }
+.days.oneline::-webkit-scrollbar{ display:none; }
+.days.oneline > *{ flex:0 0 auto; }
 .day{ flex:none; padding:7px 14px; border-radius:var(--r-pill); border:1px solid transparent;
       background:var(--parchment); color:var(--ink-80); cursor:pointer;
       font-size:var(--f-lg); white-space:nowrap; }
@@ -1173,8 +1185,13 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .hero{ height:172px; background:var(--parchment) center/cover no-repeat; }
 .hero.ph{ display:flex; align-items:center; justify-content:center;
           font-size:var(--f-mega); font-weight:650; color:var(--hairline); }
-.want, .been{ flex:none; font-size:var(--f-2xl); padding:2px 6px;
-              color:var(--hairline); }
+/* **손가락 자리를 44px 로 넓힙니다.** 재보니 22×38 이었습니다. 도시 목록에서
+   ♡ 를 누르려다 그 줄이 열려 도시 화면으로 넘어가기 쉬웠습니다.
+   글자(하트)는 그대로 두고 눌리는 넓이만 키웁니다 — 보이는 크기를 키우면
+   목록 줄이 통째로 두꺼워집니다. */
+.want, .been{ flex:none; font-size:var(--f-2xl); color:var(--hairline);
+              min-width:44px; min-height:44px; padding:0;
+              display:inline-flex; align-items:center; justify-content:center; }
 .want.on{ color:#e0245e; }
 .been.on{ color:var(--k-see); }
 

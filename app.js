@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b248';
-import { $, esc, toast, copyText } from './dom.js?v=b248';
-import { starHtml, paintStars, markRated } from './stars.js?v=b248';
+import { sb } from './db.js?v=b249';
+import { $, esc, toast, copyText } from './dom.js?v=b249';
+import { starHtml, paintStars, markRated } from './stars.js?v=b249';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b248';
-import { loadAdmin } from './admin.js?v=b248';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b248';
+         setErrLogger, NOROW } from './net.js?v=b249';
+import { loadAdmin } from './admin.js?v=b249';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b249';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b248';
+         setEditPlanId } from './trip.js?v=b249';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b248';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b249';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b248';
+         useCities, addCity, search } from './cities.js?v=b249';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b248';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b249';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b248';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b249';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b248';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b249';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1409,12 +1409,13 @@ function drawCards(d){
   lastTake = [];                    /* 새 제안이 나오면 되돌릴 대상도 새로 시작합니다 */
   if (!acts.length && !places.length){ $('cards').innerHTML = ''; return; }
 
-  /* 위치를 못 찾은 곳. **제 줄을 줍니다.** 전에는 메모 끝에 붙여서, 메모가 길면
-     그 뒤에 매달려 줄이 이상하게 끊겼습니다 — "… 직접 확인 필요 좌표 / 없음".
-     그리고 '좌표 없음'은 개발자 말입니다. 그게 사용자에게 뜻하는 것은
-     **이 곳은 지도에 안 뜬다**는 것뿐입니다. */
-  const far = x => x.lat == null
-    ? '<span class="memo nogeo">지도에는 안 떠요 · 위치를 못 찾았어요</span>' : '';
+  /* **"지도에는 안 떠요 · 위치를 못 찾았어요"를 뺐습니다.**
+     이 줄을 카드마다 달아뒀는데, 서버 프롬프트가 AI 에게 "좌표는 적지 않는다,
+     우리가 나중에 채운다"고 시키고 있습니다. 그러니 AI 카드는 **거의 언제나**
+     좌표가 없고, 이 줄은 카드마다 빠짐없이 떴습니다 — 실제로 받아보니
+     다섯 장이 전부 달고 나왔습니다. 늘 켜져 있는 경고는 경고가 아니라 배경입니다.
+     게다가 "못 찾았어요"는 찾아봤다는 뜻인데 아직 찾아보지도 않았습니다.
+     좌표는 담은 뒤에 '좌표 채우기'가 붙입니다. 그때 못 찾으면 그쪽이 말합니다. */
   setSuggested({ actions: acts, places });
 
   /* 하나씩 누르게 하면 제안이 다섯이면 다섯 번을 누릅니다. 초안은 서른 번입니다.
@@ -1467,7 +1468,6 @@ function drawCards(d){
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(a.title)}</b>
           <span class="memo">${esc(a.date)}${a.memo ? ' · ' + esc(a.memo) : ''}</span>
-          ${far(a)}
           <div class="takepair">
             <button class="small" data-take="a"  data-i="${i}"
                     data-label="일정에 넣기">일정에 넣기</button>
@@ -1481,11 +1481,16 @@ function drawCards(d){
       const k = p.category ? 'k-' + p.category : '';
       /* 위 일정 카드와 같은 자리에 둡니다 — 한쪽은 오른쪽, 한쪽은 아래면
          같은 목록 안에서 단추가 두 군데에 있는 셈이 됩니다. */
+      /* **현지 이름은 우리말 이름과 다를 때만 답니다.** 국내 장소는 AI 가
+         name_local 에 같은 이름을 되돌려주는데, 그대로 이어 붙이니
+         "트리고 삼척해변점 / 트리고 삼척해변점 · 삼척해변 뷰가 멋진…" 처럼
+         제목이 바로 아래 한 번 더 나왔습니다. 현지 이름이 쓸모 있는 때는
+         택시 기사에게 보여줄 때처럼 **글자가 다를 때**뿐입니다. */
+      const loc = p.name_local && p.name_local !== p.name ? p.name_local : null;
       return `<div class="plan">
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(p.name)}</b>
-          <span class="memo">${esc([p.name_local, p.why].filter(Boolean).join(' · '))}</span>
-          ${far(p)}
+          <span class="memo">${esc([loc, p.why].filter(Boolean).join(' · '))}</span>
           <div class="takepair">
             <button class="small" data-take="p" data-i="${i}"
                     data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>
@@ -1817,10 +1822,17 @@ function drawRatings(){
     return r?.stars == null || justRated.has(c.id);
   });
   /* 아직 안 매긴 다녀온 곳을 맨 위로, 그다음 높은 별점 순.
-     기록 화면에 왔으면 "매길 게 남았나"가 먼저 궁금합니다. */
+     기록 화면에 왔으면 "매길 게 남았나"가 먼저 궁금합니다.
+     **매길 게 없으면 가나다순이 됩니다.** 그러면 첫 화면이 가고시마·가나자와·
+     가마쿠라… 로 시작하는 사전이 됩니다. 매긴 곳이 49개인 사람에게도
+     그랬습니다 — 이름을 알고 찾아오는 게 아니면 아무 쓸모가 없습니다.
+     그래서 그 자리는 이름난 곳 순으로 채웁니다. 찾아서 오는 사람은
+     위의 검색칸을 씁니다(초성도 됩니다). */
   const rank = c => (visited.has(c.id) && myRates[c.id]?.stars == null) ? 999
                   : (myRates[c.id]?.stars ?? -1);
-  list.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name, 'ko'));
+  list.sort((a, b) => rank(b) - rank(a)
+                   || (b.fame ?? 0) - (a.fame ?? 0)
+                   || a.name.localeCompare(b.name, 'ko'));
 
   $('r_head').textContent = { been:'다녀온 곳', want:'가보고 싶은 곳',
                               mine:'내가 매긴 곳', comment:'한줄평 남긴 곳',
@@ -3310,12 +3322,16 @@ function drawCands(){
        일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
     ? cands.map(c => {
         const q = encodeURIComponent(c.title_local || c.title);
+        /* '좌표 없음'은 개발자 말입니다. 사용자에게 뜻하는 것은 하나뿐입니다 —
+           이 곳은 지도에 안 뜬다. 아래 '좌표 채우기'가 채워줍니다. */
+        /* 현지 이름은 **우리말 이름과 다를 때만** 답니다. 국내 장소는 둘이
+           같아서 "삼고정문 / 식사 · 삼고정문"처럼 이름이 두 번 나왔습니다. */
+        const loc = c.title_local && c.title_local !== c.title ? c.title_local : null;
+        const sub = [c.category, loc].filter(Boolean);
         return `<div class="cdc">
           <div class="t"><b>${esc(c.title)}</b>${
-            c.lat == null ? ' <span class="val">좌표 없음</span>' : ''}</div>
-          ${[c.category, c.title_local].filter(Boolean).length
-            ? `<div class="s">${[c.category, c.title_local].filter(Boolean)
-                 .map(esc).join(' · ')}</div>` : ''}
+            c.lat == null ? ' <span class="val">지도에 아직 안 떠요</span>' : ''}</div>
+          ${sub.length ? `<div class="s">${sub.map(esc).join(' · ')}</div>` : ''}
           ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
           <div class="a">
             <button class="ghost" data-candplan="${esc(c.id)}"
@@ -4841,11 +4857,17 @@ async function loadTrips(){
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
     const img = t.cities?.image_url;
+    /* **사진이 없으면 회색 칸에 '삼' 한 글자만 떠 있었습니다.** 글자 하나가
+       제목 왼쪽에 덩그러니 놓이면 제목을 두 번 읽는 것처럼 보입니다.
+       홈 히어로가 쓰는 색(heroTint)을 그대로 깔면 같은 여행은 어디서나
+       같은 색이라 목록에서도 눈으로 짚입니다. */
+    const tint = ` style="background:${heroTint(t.title)}; color:#fff"`;
     return `<div class="trip" data-open="${esc(t.id)}">
       ${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy"
                    onerror="this.replaceWith(Object.assign(document.createElement('span'),
-                     {className:'thumb ph', textContent:'${esc(t.title.slice(0,1))}'}))">`
-            : `<span class="thumb ph">${esc(t.title.slice(0,1))}</span>`}
+                     {className:'thumb ph', textContent:'${esc(t.title.slice(0,1))}',
+                      style:'background:${heroTint(t.title)}; color:#fff'}))">`
+            : `<span class="thumb ph"${tint}>${esc(t.title.slice(0,1))}</span>`}
       <div class="t">
       <b>${esc(t.title)}</b>
       <span class="meta">${esc(tripSub(t, days))}</span>
@@ -5667,18 +5689,41 @@ function drawDays(){
   /* 짧은 여행은 칩이 한눈에 들어와서 낫습니다.
      길어지면 칩이 벽이 됩니다 — 29일짜리는 세 줄을 잡아먹었습니다.
      그때는 고르는 칸 하나로 바꿉니다. */
+  /* **분류 칩은 접어둡니다.** 늘 펼쳐 두면 한 줄(36px)을 늘 먹는데,
+     실제로 거르는 일은 가끔입니다. 대신 상태를 숨기지는 않습니다 —
+     거르는 중이면 칩에 그 분류 이름이 적히고 켜진 채로 남습니다.
+     여기에 다는 이유는 날짜 칩 줄이 이미 옆으로 굴러가서 자리가 공짜라서입니다. */
+  const used = new Set(plans.map(p => p.category).filter(Boolean));
+  const catChip = used.size < 2 ? '' :
+    `<button class="day${catFilter || catsOpen ? ' on' : ''}" data-catstoggle="1">` +
+    `${catFilter ? esc(catFilter) : '분류'}</button>`;
+
   if (list.length <= 12){
     $('days').innerHTML = all + list.map(d =>
       `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">` +
-      `${esc(shortLabel(d))}</button>`).join('');
+      `${esc(shortLabel(d))}</button>`).join('') + catChip;
   } else {
     $('days').innerHTML = all +
       `<select id="daysel"><option value="">날짜 고르기…</option>` +
       list.map(d => `<option value="${esc(d)}"${pickedDay === d ? ' selected' : ''}>` +
                     `${esc(dayLabel(d, trip))}</option>`).join('') +
-      `</select>`;
+      `</select>` + catChip;
   }
+  /* 옆으로 굴러가는 줄이라, 고른 날이 화면 밖이면 안 보입니다.
+     Day 9 를 골라두고 돌아왔을 때 어디가 켜져 있는지 알 수가 없습니다. */
+  const on = $('days').querySelector('.day.on[data-day]');
+  if (on) on.scrollIntoView({ block:'nearest', inline:'center' });
 }
+
+/* 분류 칩 줄을 폈는지. 거르는 중이면 강제로 펴 둡니다 — 접힌 채로 걸러지면
+   왜 목록이 짧은지 알 길이 없습니다. */
+let catsOpen = false;
+$('days').addEventListener('click', e => {
+  if (!e.target.closest('[data-catstoggle]')) return;
+  catsOpen = !catsOpen;
+  if (!catsOpen && catFilter) setCatFilter('');
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
+});
 
 $('days').addEventListener('change', e => {
   if (e.target.id !== 'daysel') return;
@@ -5720,8 +5765,38 @@ function ensureLeaflet(){
   return leafletP;
 }
 
+/* **지도는 기본으로 접습니다.** 재보니 앱 폭 480px 에서 첫 일정 줄이
+   3일 여행 560px, 11일 여행 722px 아래에서 시작했습니다. 아이폰 홈 화면
+   앱의 세로 여유가 780px 안팎이라 긴 여행은 일정이 한 줄도 안 보였습니다.
+   지도는 190px 을 먹는데, 여는 목적이 대개 "오늘 뭐 하지"라 매번 필요하진
+   않습니다. 고른 것은 기기에 남겨서 지도를 즐겨 보는 사람은 한 번만 켜면
+   됩니다. */
+let mapOpen = localStorage.getItem('t2:map') === '1';
+
+function drawMapBtn(pts){
+  const b = $('mapbtn');
+  /* 찍을 게 없으면 단추도 없앱니다 — 눌러서 빈 지도를 보게 할 이유가 없습니다. */
+  b.classList.toggle('hide', !pts);
+  b.classList.toggle('on', mapOpen && !!pts);
+}
+
+$('mapbtn').addEventListener('click', () => {
+  mapOpen = !mapOpen;
+  localStorage.setItem('t2:map', mapOpen ? '1' : '0');
+  drawPlanMap();
+});
+
 function drawPlanMap(){
   const box = $('planmap');
+  /* **찍을 것을 먼저 세고 나서 Leaflet 을 부릅니다.** 전에는 순서가 반대라,
+     지도를 볼 생각이 없어도 열기만 하면 CDN 에서 스크립트와 CSS 를
+     받아왔습니다. 이제 접혀 있으면 아예 안 받습니다. */
+  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
+  if (catFilter) show = show.filter(p => p.category === catFilter);
+  const pts = show.filter(p => p.lat != null && p.lng != null);
+  drawMapBtn(pts.length);
+  if (!pts.length || !mapOpen){ box.classList.add('hide'); return; }
+
   /* 아직 안 왔으면 자리를 감춰두고 불러옵니다. 오면 그때 다시 그립니다 —
      그래서 부르는 쪽(열 곳)은 이 함수가 기다리는지 몰라도 됩니다. */
   if (!window.L){
@@ -5732,11 +5807,7 @@ function drawPlanMap(){
     }
     return;
   }
-  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
-  if (catFilter) show = show.filter(p => p.category === catFilter);
-  const pts = show.filter(p => p.lat != null && p.lng != null);
-  box.classList.toggle('hide', !pts.length);
-  if (!pts.length) return;
+  box.classList.remove('hide');
 
   if (!lmap){
     lmap = L.map(box, { zoomControl:false, attributionControl:false });
@@ -5822,7 +5893,8 @@ function lineChips(text){
    이유가 없습니다. */
 function drawCats(){
   const used = [...new Set(plans.map(p => p.category).filter(Boolean))];
-  $('cats').classList.toggle('hide', used.length < 2);
+  /* 날짜 칩 줄 끝의 '분류'로 폅니다. 거르는 중이면 접히지 않습니다. */
+  $('cats').classList.toggle('hide', used.length < 2 || !(catsOpen || catFilter));
   /* 일정 카드는 분류마다 색점(kdot)이 찍히는데, 이 칩은 전부 같은 회색이라
      "관광 색이 뭐였지"를 다시 찾아야 했습니다. 카드에서 본 색이 칩에도
      그대로 있으면 눈으로 바로 짝지어집니다 — 카드와 같은 --kc 변수를 씁니다. */
@@ -6268,6 +6340,10 @@ $('days').addEventListener('click', e => {
  * 표 셋(일정·지출·예약)을 각각 물으면 화면 코드가 세 배가 되므로
  * 032 의 deleted_items 가 한 번에 모아 줍니다. */
 const TRASH_KO = { plan:'일정', expense:'지출', booking:'예약' };
+$('trashhead').addEventListener('click', () => {
+  const open = $('trash').classList.toggle('hide');
+  $('trashcaret').textContent = open ? '펴기' : '접기';
+});
 const TRASH_TABLE = { plan:'plans', expense:'expenses', booking:'bookings' };
 
 async function loadTrash(){
@@ -6293,6 +6369,9 @@ async function loadTrash(){
   card.classList.remove('hide');
   $('trashtitle').textContent = `지운 ${TRASH_KO[kind]}`;
   $('trashcount').textContent = `${rows.length}개`;
+  /* 탭을 옮기면 다시 접습니다. 한 번 편 채로 따라다니면 접은 뜻이 없습니다. */
+  $('trash').classList.add('hide');
+  $('trashcaret').textContent = '펴기';
   /* 되살리기 옆에 '완전 삭제'를 둡니다. 지운 것이 여기 계속 쌓이면
      목록이 길어져 정작 되살릴 것을 못 찾습니다. 진짜로 지우는 것이라
      한 번 더 물어봅니다(arm) — 되살릴 길이 그때는 없습니다. */
