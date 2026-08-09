@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b267';
-import { $, esc, toast, copyText } from './dom.js?v=b267';
-import { starHtml, paintStars, markRated } from './stars.js?v=b267';
+import { sb } from './db.js?v=b268';
+import { $, esc, toast, copyText } from './dom.js?v=b268';
+import { starHtml, paintStars, markRated } from './stars.js?v=b268';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b267';
-import { loadAdmin } from './admin.js?v=b267';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b267';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b268';
+import { loadAdmin } from './admin.js?v=b268';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b268';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b267';
+         setEditPlanId } from './trip.js?v=b268';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b267';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b268';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b267';
+         useCities, addCity, search } from './cities.js?v=b268';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b267';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b268';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b267';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b268';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b267';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b268';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -8353,6 +8353,33 @@ $('plans').addEventListener('click', async e => {
   await loadPlans();
 });
 
+/* ── 첫 화면 사진 ────────────────────────────────────────────────────
+ * 앱을 처음 보는 사람이 제일 먼저 보는 화면인데 도시 사진을 469장
+ * 가지고도 한 장을 안 쓰고 채도 높은 그러데이션을 깔고 있었습니다.
+ *
+ * **한 번 고른 도시를 캐시에 담아둡니다.** 열 때마다 바뀌면 같은 앱으로
+ * 안 보이고, 무엇보다 로그인 전에는 이 화면이 전부라 연결이 없을 때도
+ * 뭐라도 나와야 합니다. 못 받으면 그냥 안 깝니다 — `.hello` 의 짙은
+ * 바탕이 이미 흰 글자를 읽히게 하므로 화면이 깨지지 않습니다.
+ *
+ * `cities` 는 anon 으로도 읽힙니다(로그인 전에 부르는 이유). */
+async function helloPhoto(){
+  const box = $('hellopic');
+  if (!box) return;                     /* onerror 로 자기를 지우고 갈 수 있습니다 */
+  let c = cacheGet('hellocity');
+  if (!c?.image_url){
+    const { data } = await netTimeout(sb.from('cities')
+      .select('name,image_url').not('image_url', 'is', null).limit(60));
+    const l = data || [];
+    c = l[Math.floor(Math.random() * l.length)] || null;
+    if (c?.image_url) cacheSet('hellocity', c);
+  }
+  if (!c?.image_url || !$('hellopic')) return;
+  box.src = c.image_url;
+  box.classList.remove('hide');
+  $('hellowhere').textContent = c.name;
+}
+
 /* ── 화면 전환 ──────────────────────────────────────────────────── */
 async function render(session){
   if (!session){
@@ -8362,6 +8389,7 @@ async function render(session){
     $('aibtn').classList.add('hide');
     $('sub').textContent = '로그인하면 여행을 만들 수 있어요.';
     me = null;
+    helloPhoto();               /* 기다리지 않습니다 — 사진 때문에 로그인이 늦으면 안 됩니다 */
     /* **앞사람 것을 남기지 않습니다.** 별점·다녀온 곳은 사람마다 다른데
        여태 로그아웃에도 로그인에도 비우는 코드가 없었습니다. 같은 기기에서
        계정을 바꾸면 앞사람 별점이 화면에 남았습니다. */

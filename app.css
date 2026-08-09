@@ -13,10 +13,23 @@
   --k-food:#B65724; --k-move:#2F6DA8; --k-stay:#7154A0; --k-see:#2C7D58;
   --k-shop:#B04A7C; --k-cafe:#866440; --k-etc:#7B7E85;
 
+  /* ── 그림자는 세 단계뿐입니다 ──
+     높이가 곧 뜻입니다. 새 값을 손으로 적으면 단계가 하나 더 생기고,
+     그러면 뭐가 위인지 눈이 못 고릅니다(.card 주석과 같은 이유).
+       lift-0 — 바탕에 **놓여 있는** 것. 줄·띠. 있는지 없는지 겨우 보입니다
+       lift-1 — **떠 있는** 것. 카드·히어로
+       lift-2 — 화면을 **덮는** 것. 시트·팝업 */
+  --lift-0:0 1px 2px rgba(16,24,40,.05);
   --lift-1:0 1px 1px rgba(20,25,45,.04), 0 6px 18px rgba(20,25,45,.06);
   --lift-2:0 1px 2px rgba(20,25,45,.05), 0 14px 38px rgba(20,25,45,.10);
 
+  /* ── 모서리도 뜻이 있습니다 ──
+     sm 썸네일·아이콘 칸 / md **줄과 띠** / lg **덩어리**(카드·히어로) /
+     xl 시트 위쪽 / pill 단추·칩.
+     크기로 고르는 것이 아니라 **무엇인지로** 고릅니다 — 그래야 같은 것이
+     화면마다 같은 모양으로 나옵니다. `999px` 를 손으로 적지 마세요. */
   --r-sm:12px; --r-md:18px; --r-lg:26px; --r-xl:34px; --r-pill:9999px;
+  /* 사이 간격: 종류가 다르면 sm(12), 같은 것끼리 이어지면 xs(8). */
   --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px;
 
   --sf:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
@@ -125,7 +138,16 @@ h1{ font-size:var(--f-2xl); margin:0; font-weight:650;
    위계가 생겨 원래 문제로 돌아갑니다. 홈 화면의 '여기 가보셨어요'·
    '내 발자국'처럼 하는 일 없이 보여주기만 하는 카드에 씁니다. */
 .card.quiet{ box-shadow:none; border:1px solid var(--divider-soft); }
-.card h2{ font-size:var(--f-lg); margin:0 0 var(--s-sm); font-weight:600;
+/* ── 글자 위계는 계단이어야 합니다 ──
+   재보니 **뒤집혀 있었습니다.** 섹션 제목 `.card h2` 가 15px/600 인데
+   그 안의 항목 이름 `.rrow .t b` 는 17px/700 이었습니다 — `b` 에 아무것도
+   안 적어서 본문 기본값(17px)과 굵기(700)를 그대로 받고 있었던 것입니다.
+   제목보다 항목이 크고 굵으면 눈이 목록 한가운데부터 읽기 시작합니다.
+   홈이 "평평하다"고 느껴진 것이 이것입니다.
+     제목 17/700  ›  항목 15/600  ›  딸린 설명 13/400
+   한 계단씩 내려갑니다. 크기와 굵기를 **같이** 내려야 합니다 —
+   하나만 내리면 두 줄이 여전히 비슷해 보입니다. */
+.card h2{ font-size:var(--f-xl); margin:0 0 var(--s-sm); font-weight:700;
           letter-spacing:calc(-0.4px * var(--ts));
           display:flex; align-items:center; gap:var(--s-xs); }
 .card h2 .grow{ flex:1; }
@@ -180,9 +202,9 @@ a.btn:active{ transform:scale(.96); }
           font-size:var(--f-md); font-weight:600; }
 .abar .t .p{ margin-left:auto; font-weight:400; color:var(--ink-48);
              font-size:var(--f-sm); }
-.abar .track{ height:7px; border-radius:99px; background:var(--divider-soft);
+.abar .track{ height:7px; border-radius:var(--r-pill); background:var(--divider-soft);
               overflow:hidden; margin-top:6px; }
-.abar .track i{ display:block; height:100%; border-radius:99px;
+.abar .track i{ display:block; height:100%; border-radius:var(--r-pill);
                 background:var(--primary); transition:width var(--t-slow) var(--ease); }
 .abar.warn .track i{ background:#e0a02a; }
 .abar.bad  .track i{ background:var(--bad); }
@@ -269,7 +291,7 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .shot{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;
        padding:8px; border-radius:var(--r-md); background:var(--pearl); }
 .shot1{ position:relative; flex:none; }
-.shot1 img{ width:46px; height:46px; object-fit:cover; border-radius:10px; display:block; }
+.shot1 img{ width:46px; height:46px; object-fit:cover; border-radius:var(--r-sm); display:block; }
 /* 빼기 단추는 사진 위 모서리에. 아래 줄에 두면 사진마다 줄이 늘어납니다. */
 .shot1 .x{
   position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0;
@@ -654,9 +676,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .stats span{ font-size:var(--f-sm); color:var(--ink-48); }
 
 /* 채워지는 게 보이면 채우고 싶어집니다 */
-.bar{ height:6px; border-radius:999px; background:var(--parchment); overflow:hidden;
+.bar{ height:6px; border-radius:var(--r-pill); background:var(--parchment); overflow:hidden;
       margin-top:8px; }
-.bar i{ display:block; height:100%; border-radius:999px; background:var(--primary); }
+.bar i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--primary); }
 
 .shelf{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .shelf button{ display:flex; align-items:center; gap:8px; padding:13px 14px;
@@ -701,7 +723,11 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow + .rrow{ border-top:1px solid var(--divider-soft); }
 .rrow .thumb{ flex:none; }
 .rrow .t{ flex:1 1 auto; min-width:0; }
-.rrow .t b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* 여기가 `.card h2` 보다 크고 굵었습니다. 한 계단 내립니다 —
+   `b` 라서 안 적으면 17px/700 이 그대로 옵니다. */
+.rrow .t b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+            font-size:var(--f-lg); font-weight:600;
+            letter-spacing:calc(-.2px * var(--ts)); }
 .rrow .memo{ display:block; color:var(--ink-48); font-size:var(--f-md);
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ flex:none; margin-left:auto; white-space:nowrap; }
@@ -731,15 +757,35 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* ── 홈 ──────────────────────────────────────────────────────────────
  * 도시 사진을 받아두고 홈에서 한 장도 안 쓰고 있었습니다.
  * 사진을 카드 가득 깔고 글자는 그 위에 얹습니다. */
+/* **사진이 172px 에 묶여 있었습니다.** 아래 도시 페이지의 `.hero` 규칙이
+   같은 이름으로 `height:172px` 를 덮고 있었던 것입니다(그쪽은 이제
+   `#cv_hero`). 812px 짜리 화면에서 21% 였고, 그 아래 띠 셋이 222px 라
+   **사진보다 글줄이 더 넓은 자리를 먹고 있었습니다.**
+   화면의 3분의 1을 줍니다. 작은 폰(667px)에서도 227px 는 나오고,
+   큰 화면에서 끝없이 자라지 않게 위를 막습니다. */
 .hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-       min-height:172px; display:flex; flex-direction:column; justify-content:flex-end;
+       min-height:clamp(212px, 34vh, 300px);   /* min- 입니다 — 제목이 길면 자랍니다 */
+       display:flex; flex-direction:column; justify-content:flex-end;
        padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
-       box-shadow:var(--lift-1); margin-bottom:12px; }
-.hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-/* 사진이 밝으면 흰 글자가 안 보입니다. 아래쪽을 확실히 어둡게 깝니다. */
+       box-shadow:var(--lift-1); margin-bottom:var(--s-sm); }
+/* ⚠ **`z-index` 를 세 층 다 적어야 합니다.** 아래 `.hero > *` 가 `img` 에도
+   걸려서(자식이니까) 사진이 `z-index:1` 을 받고, `::after` 는 `auto` 라
+   **사진이 덮개 위에 올라앉아 있었습니다 — 덮개가 한 번도 안 먹었습니다.**
+   글자가 그럭저럭 읽힌 건 `text-shadow` 덕이었지 덮개 덕이 아니었습니다.
+   재보고 알았습니다(computed z-index 를 찍어봄). 사진 0 · 덮개 1 · 글자 2. */
+.hero img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+           z-index:0; }
+/* 사진이 밝으면 흰 글자가 안 보입니다. 아래쪽을 확실히 어둡게 깝니다.
+   **카드를 키웠더니 글줄이 위로 올라갔습니다.** 172px 일 때 글자는 위에서
+   61% 부터였는데 287px 이 되면서 57% 로 올라갔고, 그 자리 덮개는 .33 이라
+   **하얀 사진이 오면 D-35 가 2.29 까지 떨어졌습니다**(큰 글자 기준 3.0 미달).
+   재서 잡았습니다 — 키운 것이 원인이니 같이 고칩니다.
+   지금 값은 **사진이 완전히 하얘도** 제목 3.95 · 설명 12 를 보장합니다. */
 .hero::after{ content:''; position:absolute; inset:0; background:
-  linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.22) 45%, rgba(0,0,0,.72) 100%); }
-.hero > *{ position:relative; z-index:1; }
+  linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.20) 40%,
+                          rgba(0,0,0,.58) 62%, rgba(0,0,0,.84) 100%);
+  z-index:1; }
+.hero > *{ position:relative; z-index:2; }
 .hero .dd{ font-size:var(--f-hero); font-weight:750; line-height:1;
            letter-spacing:calc(-2px * var(--ts)); text-shadow:0 2px 12px rgba(0,0,0,.35); }
 .hero .ht{ font-size:var(--f-2xl); font-weight:650; margin-top:8px;
@@ -747,7 +793,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .hero .hm{ font-size:var(--f-md); opacity:.88; margin-top:3px;
            text-shadow:0 1px 8px rgba(0,0,0,.4); }
 .hero .hbtn{ align-self:flex-start; margin-top:12px; background:#fff; color:var(--ink);
-             border:0; border-radius:999px; padding:10px 18px; font-weight:650;
+             border:0; border-radius:var(--r-pill); padding:10px 18px; font-weight:650;
              font-size:var(--f-lg); cursor:pointer; }
 
 /* AI 카드 — **채도 높은 그러데이션 두 장을 걷어냈습니다.**
@@ -758,15 +804,20 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 사진 중심으로 가기로 했으니 **색은 히어로(도시 사진) 하나만** 씁니다.
  * 여기는 흰 카드로 두고, 눈이 가야 할 곳은 아이콘과 오른쪽 단추입니다 —
  * 색이 없어도 누를 것은 누릅니다. */
-.aicard{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-         padding:14px 16px; margin-bottom:8px; cursor:pointer;
+/* **모서리를 카드에서 줄로 내립니다.** 히어로 아래에 이 모양이 셋
+   (평가 띠 · AI · 새 여행) 줄줄이 서는데, 셋 다 26px 모서리에 그림자까지
+   달고 있으니 카드 넷이 쌓인 것처럼 보였습니다 — 재보니 셋을 합쳐
+   222px 로 히어로(172px)보다 넓었습니다. 카드는 히어로 하나입니다.
+   여기는 히어로가 가리키는 곳으로 가는 **줄**입니다(--r-md · --lift-0). */
+.aicard{ position:relative; overflow:hidden; border-radius:var(--r-md);
+         padding:14px 16px; margin-bottom:var(--s-xs); cursor:pointer;
          display:flex; align-items:center; gap:13px;
          background:var(--card, #fff); color:var(--ink);
-         box-shadow:0 1px 2px rgba(16,24,40,.05); }
+         box-shadow:var(--lift-0); }
 .aicard > *{ position:relative; z-index:1 }
 /* 아이콘 자리만 색을 씁니다. 카드 전체를 칠하는 것과 눈에 띄는 정도는
    비슷한데 화면은 훨씬 조용합니다. */
-.aicard .ic{ flex:none; width:38px; height:38px; border-radius:12px;
+.aicard .ic{ flex:none; width:38px; height:38px; border-radius:var(--r-sm);
              background:var(--primary); color:#fff; display:flex;
              align-items:center; justify-content:center; }
 .aicard .tx{ flex:1; min-width:0 }
@@ -779,7 +830,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .aicard .tx span{ display:block; font-size:min(var(--f-sm), 3.6vw);
                   color:var(--ink-48); margin-top:3px; line-height:1.4;
                   word-break:keep-all; }
-.aicard .go{ flex:none; background:var(--primary); color:#fff; border-radius:999px;
+.aicard .go{ flex:none; background:var(--primary); color:#fff; border-radius:var(--r-pill);
              padding:9px 15px; font-weight:700; white-space:nowrap;
              font-size:min(var(--f-md), 3.6vw); }
 /* 아주 좁으면 아이콘을 줄여 글자 자리를 내줍니다. */
@@ -820,7 +871,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 @keyframes sheetup{ from{ transform:translateY(100%) } to{ transform:none } }
 /* 잡아 내리는 손잡이 — 닫을 수 있다는 표시입니다 */
 .assheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 12px;
-                  border-radius:999px; background:var(--line); }
+                  border-radius:var(--r-pill); background:var(--line); }
 body.sheeton{ overflow:hidden; }
 /* 키보드가 올라와 있는 동안. 탭바가 키보드 뒤로 숨으니 그만큼 두었던 여백을 걷습니다. */
 body.kbon .assheet{ padding-bottom:16px; }
@@ -888,7 +939,7 @@ body.kbon .assheet{ padding-bottom:16px; }
           animation:sheetup var(--t) var(--ease); }
 /* 잡아 내리는 손잡이 — 끌어내리면 닫힙니다. */
 .aisheet::before{ content:''; display:block; width:38px; height:4px; margin:0 auto 10px;
-                  border-radius:999px; background:var(--line); }
+                  border-radius:var(--r-pill); background:var(--line); }
 .aihead{ display:flex; align-items:center; gap:6px; padding:2px 2px 8px; }
 /* 여행 고르개가 제목 자리를 대신합니다. 제 글자만큼만 차지하고(width:auto),
    긴 여행 이름이 와도 옆 단추를 밀어내지 않게 줄어들 수 있게 둡니다.
@@ -941,19 +992,42 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 /* ── 첫 화면 ─────────────────────────────────────────────────────────
  * 흰 카드에 버튼 하나만 있으면 무슨 앱인지도 모르고,
  * 왜 구글 계정을 줘야 하는지도 모릅니다. */
+/* **여기가 채도 높은 그러데이션이 마지막으로 남아 있던 자리입니다.**
+   b267 에서 홈의 보라·청록 카드를 걷어냈는데, 정작 앱을 처음 보는 사람이
+   제일 먼저 보는 화면에 보라→자홍 그러데이션이 그대로 있었습니다.
+   도시 사진을 469장 가지고 여기서 한 장도 안 썼습니다.
+   **히어로와 같은 말을 쓰게 합니다** — 사진을 깔고, 아래를 어둡게 덮고,
+   흰 글자를 얹습니다. 사진이 없으면(첫 방문 + 연결 없음) 짙은 색 하나로
+   물러섭니다. 그때도 글자가 읽히는 것이 이 순서의 요점입니다. */
 .hello{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-        padding:26px 22px 24px; margin-bottom:12px; color:#fff;
-        background:linear-gradient(135deg,#4b6cff 0%,#7b4dff 55%,#a13cff 100%);
-        box-shadow:0 12px 28px rgba(90,63,240,.28); }
-.hello::after{ content:''; position:absolute; right:-60px; top:-80px;
-               width:220px; height:220px; border-radius:50%;
-               background:radial-gradient(circle,rgba(255,255,255,.22),transparent 70%); }
-.hello > *{ position:relative; z-index:1 }
+        min-height:clamp(212px, 34vh, 300px);
+        display:flex; flex-direction:column; justify-content:flex-end;
+        padding:26px 22px 24px; margin-bottom:var(--s-sm); color:#fff;
+        background:#2b2f36; box-shadow:var(--lift-1); }
+/* 층 순서는 `.hero` 와 같은 이유로 셋 다 적습니다 — 사진 0 · 덮개 1 · 글자 2. */
+.hello img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+            z-index:0; }
+/* 히어로와 같은 덮개입니다. 밝은 사진에서도 흰 글자가 읽혀야 합니다.
+   **히어로 것을 그대로 가져왔더니 글자가 묻혔습니다.** 재보니 여기 제목은
+   카드의 50~74% 자리에 앉는데(히어로는 훨씬 아래) 거기 덮개가 .34~.54 라
+   바쿠처럼 밝은 사진에서는 흰 글자가 안 읽혔습니다.
+   글줄이 앉는 45% 아래를 확실히 어둡게 내립니다. */
+.hello::after{ content:''; position:absolute; inset:0; background:
+  linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.30) 38%,
+                          rgba(0,0,0,.62) 62%, rgba(0,0,0,.88) 100%);
+  z-index:1; }
+.hello > *{ position:relative; z-index:2 }
+/* 어디 사진인지 적습니다. 안 적으면 그냥 배경 그림으로 보이는데,
+   이 앱이 도시 사진을 가지고 있다는 것 자체가 첫 화면에서 할 말입니다. */
+.hello .hiwhere{ position:absolute; top:14px; right:16px; z-index:2;   /* 덮개(1) 위 */
+                 font-size:var(--f-xs); opacity:.72; letter-spacing:.2px;
+                 text-shadow:0 1px 6px rgba(0,0,0,.5); }
 .hello .hi{ font-size:min(var(--f-3xl), 6.8vw); font-weight:750;
             line-height:1.34; letter-spacing:calc(-.5px * var(--ts));
-            word-break:keep-all; text-shadow:0 2px 12px rgba(0,0,0,.18); }
+            word-break:keep-all; text-shadow:0 2px 14px rgba(0,0,0,.55); }
 .hello .hisub{ font-size:min(var(--f-md), 3.8vw); line-height:1.6;
-               opacity:.94; margin-top:10px; word-break:keep-all; }
+               opacity:.94; margin-top:10px; word-break:keep-all;
+               text-shadow:0 1px 10px rgba(0,0,0,.5); }
 
 /* 무엇을 받고 무엇을 안 받는지. 불안한 자리라 눈에 들어와야 합니다. */
 .safe{ list-style:none; margin:14px 0 0; padding:12px 14px;
@@ -978,7 +1052,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 /* 잠깐 뜨는 알림 */
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
         bottom:calc(96px + env(safe-area-inset-bottom)); z-index:1300;
-        max-width:min(88vw, 440px); padding:12px 16px; border-radius:14px;
+        max-width:min(88vw, 440px); padding:12px 16px; border-radius:var(--r-md);
         background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
         font-size:var(--f-md); line-height:1.5; text-align:center;
         opacity:0; pointer-events:none; transition:opacity var(--t) var(--ease), transform var(--t) var(--ease); }
@@ -1024,7 +1098,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .rday .dn{ width:38px; flex:none; text-align:right; color:var(--ink-48) }
 .rday .ds{ width:40px; flex:none; text-align:right; font-weight:600 }
 .rday .dw{ flex:none; font-size:var(--f-2xs); color:#c1440e;
-           background:#fdf0e8; border-radius:999px; padding:2px 7px }
+           background:#fdf0e8; border-radius:var(--r-pill); padding:2px 7px }
 
 /* 평가 안 한 여행 알림 띠. 히어로 아래에 얇게 붙습니다 —
    앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */
@@ -1051,13 +1125,13 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
    무엇을 하는 곳인지는 아이콘과 글자가 말합니다. */
 .newtripbar{ position:relative; overflow:hidden; cursor:pointer;
              display:flex; align-items:center; gap:13px;
-             padding:14px 16px; margin-bottom:8px; border-radius:var(--r-lg);
+             padding:14px 16px; margin-bottom:var(--s-xs); border-radius:var(--r-md);
              background:var(--card, #fff); color:var(--ink);
-             box-shadow:0 1px 2px rgba(16,24,40,.05); }
+             box-shadow:var(--lift-0); }
 .newtripbar > *{ position:relative; z-index:1 }
 /* 이쪽 아이콘만 톤을 낮춥니다 — AI 가 이 앱이 내세우는 것이라
    눈이 그쪽으로 먼저 가야 합니다. 둘이 똑같이 파랗면 순서가 없어집니다. */
-.newtripbar .ic{ flex:none; width:38px; height:38px; border-radius:12px;
+.newtripbar .ic{ flex:none; width:38px; height:38px; border-radius:var(--r-sm);
                  background:var(--parchment); color:var(--ink-48); display:flex;
                  align-items:center; justify-content:center;
                  font-size:var(--f-2xl); }
@@ -1073,13 +1147,13 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 
 /* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
    일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
-.cbar{ display:flex; height:10px; border-radius:999px; overflow:hidden;
+.cbar{ display:flex; height:10px; border-radius:var(--r-pill); overflow:hidden;
        margin-top:12px; gap:2px; }
 .cbar i{ display:block; height:100%; background:var(--kc, var(--k-etc)); }
 .clegend{ display:flex; flex-wrap:wrap; gap:5px 14px; margin-top:9px }
 .clegend span{ display:inline-flex; align-items:center; gap:5px;
                font-size:var(--f-sm); color:var(--ink-48) }
-.clegend i{ width:8px; height:8px; border-radius:999px;
+.clegend i{ width:8px; height:8px; border-radius:var(--r-pill);
             background:var(--kc, var(--k-etc)) }
 .clegend b{ color:var(--ink); font-weight:600 }
 .clegend em{ font-style:normal; opacity:.7 }
@@ -1140,8 +1214,8 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .dacts a{ color:var(--primary); font-size:var(--f-md); text-decoration:none; }
 .dacts button{ font-size:var(--f-md); padding:4px 2px; }
 
-.fp{ height:6px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:8px }
-.fp > i{ display:block; height:100%; border-radius:999px; background:var(--primary) }
+.fp{ height:6px; border-radius:var(--r-pill); background:var(--line); overflow:hidden; margin-top:8px }
+.fp > i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--primary) }
 
 /* ── 세계지도 ────────────────────────────────────────────────────────
  * 지도는 CDN 에서 안 받고 파일에 심었습니다. 비행기모드에서도 나와야 합니다.
@@ -1159,13 +1233,13 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
               aspect-ratio:auto; background:var(--parchment); }
 #mapclose{ position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
            z-index:1230; background:var(--canvas); border:1px solid var(--hairline);
-           border-radius:999px; padding:9px 16px; font-weight:650;
+           border-radius:var(--r-pill); padding:9px 16px; font-weight:650;
            box-shadow:var(--lift-1); cursor:pointer; }
 /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다. 단추로도 됩니다. */
 #mapzoombtns{ position:fixed; z-index:1230; right:12px;
               bottom:calc(20px + env(safe-area-inset-bottom));
               display:flex; flex-direction:column; gap:8px; }
-#mapzoombtns button{ width:44px; height:44px; border-radius:14px;
+#mapzoombtns button{ width:44px; height:44px; border-radius:var(--r-sm);
                      font-size:var(--f-lg); font-weight:650;
                      background:var(--canvas); border:1px solid var(--hairline);
                      box-shadow:var(--lift-1); cursor:pointer; line-height:1; }
@@ -1192,16 +1266,16 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .crow:first-child{ border-top:0 }
 .crow .nm{ width:74px; flex:none; font-weight:600;
            font-size:var(--f-lg); }
-.crow .bar{ flex:1; height:8px; border-radius:999px; background:var(--line);
+.crow .bar{ flex:1; height:8px; border-radius:var(--r-pill); background:var(--line);
             overflow:hidden; }
-.crow .bar > i{ display:block; height:100%; border-radius:999px;
+.crow .bar > i{ display:block; height:100%; border-radius:var(--r-pill);
                 background:var(--primary); }
 .crow .n{ width:78px; flex:none; text-align:right; color:var(--ink-48);
           font-size:var(--f-sm); }
 /* 국가별 도시 칩 */
 .cchips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px }
 .cchips > button{ border:1px solid var(--line); background:var(--canvas);
-                  border-radius:999px; padding:4px 10px; cursor:pointer;
+                  border-radius:var(--r-pill); padding:4px 10px; cursor:pointer;
                   font-size:var(--f-sm); color:var(--ink) }
 /* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
 .facts{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:14px; }
@@ -1218,10 +1292,14 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
            font-size:var(--f-2xl); font-weight:650; color:var(--ink-48); }
 /* 도시 페이지 맨 위 사진 */
 /* 180 은 화면의 4분의 1을 먹었습니다. 그 아래 카드 둘이 접혀 있어서
-   내려야 보였습니다. 사진은 분위기고, 할 일은 그 아래에 있습니다. */
-.hero{ height:172px; background:var(--parchment) center/cover no-repeat; }
-.hero.ph{ display:flex; align-items:center; justify-content:center;
-          font-size:var(--f-mega); font-weight:650; color:var(--hairline); }
+   내려야 보였습니다. 사진은 분위기고, 할 일은 그 아래에 있습니다.
+   **`.hero` 로 적혀 있었습니다.** 홈 히어로도 같은 이름을 써서, 여기가
+   파일 뒤쪽이라는 이유만으로 홈의 `min-height` 를 `height:172px` 로
+   덮고 있었습니다 — 홈 사진이 자랄 수 없던 진짜 이유입니다.
+   재보고서야 알았습니다. **이 규칙은 `#cv_hero` 한 곳만의 것입니다.** */
+#cv_hero{ height:172px; background:var(--parchment) center/cover no-repeat; }
+#cv_hero.ph{ display:flex; align-items:center; justify-content:center;
+             font-size:var(--f-mega); font-weight:650; color:var(--hairline); }
 /* **손가락 자리를 44px 로 넓힙니다.** 재보니 22×38 이었습니다. 도시 목록에서
    ♡ 를 누르려다 그 줄이 열려 도시 화면으로 넘어가기 쉬웠습니다.
    글자(하트)는 그대로 두고 눌리는 넓이만 키웁니다 — 보이는 크기를 키우면
@@ -1250,7 +1328,7 @@ body.noreorder .ev .grip{ display:none; }
 .ctryhero .big i{ font-size:20px; font-weight:600; font-style:normal;
                   margin-left:6px; color:var(--ink-48); }
 .ctryhero .sub{ color:var(--ink-48); font-size:var(--f-md); margin-top:4px; }
-.ctryhero .track{ height:6px; border-radius:999px; background:var(--parchment);
+.ctryhero .track{ height:6px; border-radius:var(--r-pill); background:var(--parchment);
                   overflow:hidden; margin:12px 0 14px; }
 .ctryhero .track i{ display:block; height:100%; background:var(--primary); }
 /* 국기는 촘촘히. 스물일곱 개가 한눈에 들어와야 "많이 갔구나"가 보입니다. */
@@ -1300,7 +1378,7 @@ body.noreorder .ev .grip{ display:none; }
    메신저처럼 좌우로 갈라두면 읽지 않아도 보입니다. */
 #chat{ min-height:min(46vh, 380px); max-height:min(62vh, 560px); overflow-y:auto;
        display:flex; flex-direction:column; gap:10px; }
-.msg{ max-width:82%; padding:10px 14px; border-radius:20px;
+.msg{ max-width:82%; padding:10px 14px; border-radius:var(--r-md);
       font-size:var(--f-lg); line-height:1.6; word-break:break-word; }
 .msg b{ font-weight:650; }
 /* 내 말은 오른쪽에 파랑. 꼬리 쪽 모서리만 죽여 방향을 만듭니다. */
@@ -1451,7 +1529,7 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 .rvshot .x{ position:absolute; top:3px; right:3px; width:22px; height:22px;
             padding:0; border:0; border-radius:50%; line-height:22px;
             background:rgba(0,0,0,.5); color:#fff; font-size:14px; }
-.rvshot .x[data-armed="1"]{ width:auto; padding:0 8px; border-radius:999px;
+.rvshot .x[data-armed="1"]{ width:auto; padding:0 8px; border-radius:var(--r-pill);
                             font-size:var(--f-xs); }
 /* 사진 넣기 — 파일 고르개는 못생겨서 라벨로 감싸 단추처럼 씁니다. */
 .rvadd{ display:block; margin-top:10px; padding:10px; text-align:center;

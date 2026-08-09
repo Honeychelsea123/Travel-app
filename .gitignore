@@ -12,3 +12,9 @@ service-role*
 Thumbs.db
 desktop.ini
 _maptest.html
+# 디자인 볼 때 쓰는 목업. 로그인 없이 홈을 그려보고 폰 크기로 가둡니다.
+# `_mock.html?before` 는 `_before.css`(= git show HEAD:app.css) 를 씁니다.
+_mock.html
+_frame.html
+_before.css
+_hello_before.html
