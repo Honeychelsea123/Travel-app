@@ -173,9 +173,12 @@ create or replace function public.due_pushes(p_window interval default '20 minut
 returns table (user_id uuid, kind text, ref_id uuid,
                title text, body text, url text)
 language sql security definer set search_path = public as $$
+  -- **`on` 은 예약어라 컬럼 이름으로 못 씁니다.** `select on from sw` 가
+  -- 42601 로 죽었습니다. 설정 키 안의 'on' 은 jsonb 열쇠라 괜찮지만
+  -- SQL 이름으로 꺼내는 순간 걸립니다.
   with sw as (
     select coalesce((select (value->>'on')::boolean
-                       from public.app_settings where key='push_on'), true) as on
+                       from public.app_settings where key='push_on'), true) as enabled
   ),
   mine as (
     select m.user_id, t.id as trip_id, t.title as trip_title,
@@ -189,7 +192,7 @@ language sql security definer set search_path = public as $$
       left join public.user_prefs p on p.user_id = m.user_id
      where m.left_at is null
        and coalesce(p.notify_all, true)
-       and (select on from sw)
+       and (select enabled from sw)
   ),
   p as (
     select mine.user_id, 'plan'::text as kind, pl.id as ref_id,
