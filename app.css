@@ -120,6 +120,17 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
 }
 h1{ font-size:var(--f-2xl); margin:0; font-weight:650;
     letter-spacing:calc(-0.5px * var(--ts)); }
+/* ── `.memo` = 설명 한 줄. 계단의 제일 아랫칸입니다 ──────────────────
+ * 카드 제목 17/700 › 날짜 15/700 › 항목 15/600 › **설명 13/400 회색**.
+ *
+ * **규칙이 자리마다 따로 적혀 있었습니다** — `.plan .body .memo` ·
+ * `.ev .body .memo` · `.rrow .memo` 셋이 같은 두 줄을 베껴 쓰고 있었고,
+ * 그 셋 밖의 `.memo` 는 **아무 규칙도 못 받아 본문 크기(17px)에 검정**으로
+ * 떴습니다. 실제로 그렇게 나온 곳 둘을 재서 찾았습니다:
+ *   · 프로필의 이메일 (17px 검정 — 사진 옆에서 제일 큰 글자였습니다)
+ *   · 지출 줄의 환산 금액 `₩19,363` (금액과 같은 크기로 두 번 외쳤습니다)
+ * 설명은 어디 있든 설명입니다. **한 곳에서 정합니다.** */
+.memo{ color:var(--ink-48); font-size:var(--f-md); }
 /* 알림은 종 바로 아래에 붙습니다 */
 #notifpanel{ position:absolute; top:100%; right:8px; margin-top:8px; z-index:30;
              width:min(320px, calc(100vw - 40px)); max-height:60vh; overflow-y:auto;
@@ -634,11 +645,28 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 
 .plan{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0; align-items:flex-start; }
 .plan + .plan{ border-top:1px solid var(--divider-soft); }
-.plan .when{ flex:none; width:50px; color:var(--ink-48); font-size:var(--f-md);
+/* 시각은 일정을 훑는 기준점입니다. 흐린 회색 400 이라 안 보였습니다 —
+   크기는 그대로 두고 굵기와 진하기만 올립니다(자리를 안 뺏습니다). */
+.plan .when{ flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
+             font-weight:600;
              font-variant-numeric:tabular-nums; padding-top:2px; }
 .plan .body{ flex:1; min-width:0; }
-.plan .body b{ display:block; }
-.plan .body .memo{ color:var(--ink-48); font-size:var(--f-md); }
+/* **`b` 에 아무것도 안 적어 본문 기본값(17px/700)을 받고 있었습니다.**
+   b268 에서 홈의 `.rrow .t b` 가 똑같았습니다. 카드 제목 17/700 ›
+   날짜 15/700 › 항목 15/600 › 설명 13/400 의 계단에 맞춥니다. */
+.plan .body b{ display:block; font-size:var(--f-lg); font-weight:600; }
+/* **`.body` 를 뗐습니다.** 지출 줄의 환산 금액(₩19,363)도 `.memo` 인데
+   `.body` 밖에 있어서 이 규칙을 못 받았고, 그래서 **본문 크기(17px)에
+   검정**으로 떴습니다. 줄 안의 `.memo` 는 어디 있든 설명입니다. */
+.plan .memo{ display:block; }   /* 크기·색은 위의 .memo 한 곳에서 옵니다 */
+/* 지출 줄 오른쪽의 금액. **이름보다 크고 굵었습니다** — 금액 17/700 대
+   이름 15/600. 한 줄에서 셋(이름 · 금액 · 환산)이 같은 무게로 외치고
+   있었습니다. 금액은 이름과 같은 15 에 굵기만 700 — 돈은 굵을 만합니다.
+   자릿수가 흔들리지 않게 tabular-nums 를 씁니다(금액이 세로로 늘어섭니다). */
+.plan .amt{ text-align:right; flex:none; }
+.plan .amt b{ font-size:var(--f-lg); font-weight:700; white-space:nowrap;
+              font-variant-numeric:tabular-nums; }
+.plan .amt .memo{ white-space:nowrap; font-variant-numeric:tabular-nums; }
 /* 담는 단추는 제목·메모 **아래** 줄에 나란히 둡니다.
    오른쪽에 세웠더니 제목이 밀려 두 줄로 접혔습니다. */
 .takepair{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -647,9 +675,20 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    눌리는 것인 줄 몰랐습니다. 둘 다 단추로 보이게 두고, 색으로만 가릅니다 —
    '일정에'가 흔히 고르는 쪽이라 그쪽을 진하게 둡니다. */
 .takepair .alt{ background:var(--pearl); color:var(--ink-80); }
-.daysep{ margin:var(--s-md) 0 2px; color:var(--ink-48); font-size:var(--f-md);
+/* ⚠ **날짜 머리글이 화면에서 제일 작은 글자였습니다** (b270, 실제 여행에서 잼).
+   13px/600 회색인데 바로 아래 장소 이름은 17px/700 검정이었습니다.
+   **하루가 어디서 시작하는지가 목록에서 제일 중요한 표식**인데, 그게 제일
+   작으면 11일짜리 여행은 그냥 긴 줄 하나로 보입니다.
+   b268 에서 홈에 대해 잰 것과 **같은 뒤집힘**입니다 — 위계를 세우는 자리에
+   아무것도 안 적으면 본문 기본값(17px)을 받는 항목 쪽이 이깁니다.
+   → 15/700 검정. 위에 실선을 하나 그어 하루의 시작을 눈으로 끊습니다.
+   `.daysep` 은 **일정과 지출이 같이 씁니다** — 한 곳만 고치면 둘 다 바뀝니다. */
+.daysep{ margin:var(--s-lg) 0 4px; color:var(--ink); font-size:var(--f-lg);
          display:flex; align-items:baseline; gap:8px;
-         font-weight:600; }
+         font-weight:700; padding-top:var(--s-sm);
+         border-top:1px solid var(--divider-soft); }
+/* 목록 맨 위의 첫 날은 카드 제목 바로 아래라 선도 여백도 필요 없습니다. */
+.daysep:first-child{ margin-top:2px; padding-top:0; border-top:0; }
 /* 하루 요약 — 곳 수와 이동. 날짜 오른쪽 끝에 붙입니다. */
 .daysep .dstat{ margin-left:auto; font-weight:400; font-size:var(--f-sm); }
 /* 일정 지도 — 목록 위에 얹습니다. 좌표가 있는 일정만 찍힙니다. */
@@ -728,7 +767,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .t b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
             font-size:var(--f-lg); font-weight:600;
             letter-spacing:calc(-.2px * var(--ts)); }
-.rrow .memo{ display:block; color:var(--ink-48); font-size:var(--f-md);
+.rrow .memo{ display:block;   /* 크기·색은 위의 .memo 한 곳에서 옵니다 */
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ flex:none; margin-left:auto; white-space:nowrap; }
 /* ── 별은 두 번째 줄로 ───────────────────────────────────────────────
@@ -738,8 +777,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *
  * **별을 줄여 자리를 만드는 길은 안 갑니다.** 반 칸(0.5점)을 누르는 것이
  * 이 줄의 핵심인데 별이 작아지면 그게 먼저 어려워집니다.
- * 이름 87 → 238px 이 되고, 별은 폭이 넉넉해져 반 칸도 더 잘 눌립니다.
- * 썸네일 폭(56)+간격(9)만큼 들여써서 위 줄에 딸린 것으로 보이게 합니다.
+ * 이름 87 → 218px 이 되고, 별은 폭이 넉넉해져 반 칸도 더 잘 눌립니다.
  *
  * **`:has(> .stars)` — 자식 기호를 꼭 넣습니다.** `.rrow` 는 열 군데서 쓰는데
  * 그중 셋은 별을 `.t` **안에** 답니다(도시 페이지의 남의 후기 · 일행의 후기).
@@ -747,10 +785,24 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 65px 만큼 엉뚱하게 밀립니다. 처음에 `>` 없이 적었다가 세어보고 잡았습니다.
  * 지금 걸리는 여섯 줄은 **전부 56px 썸네일**이라 들여쓰기가 맞습니다
  * (기록 탭 도시 · 홈 퀴즈 · 평가할 도시/장소 · 보관함 도시/장소).
- * `:has` 를 못 알아듣는 브라우저에서는 지금까지의 한 줄 그대로입니다. */
-.rrow:has(> .stars){ flex-wrap:wrap; row-gap:4px; }
-.rrow:has(> .stars) > .stars{ flex:0 0 100%; margin-left:65px;  /* 썸네일 56 + 간격 9 */
-                              order:1;       /* ♡·× (0) 는 첫 줄에 남기고 별만 내립니다 */
+ * `:has` 를 못 알아듣는 브라우저에서는 지금까지의 한 줄 그대로입니다.
+ *
+ * **flex 로 접었더니 사진 아래에 흰 자리가 생겼습니다** (b269, 실기기에서 봄).
+ * 별이 둘째 줄로 가면서 줄은 106px 이 됐는데 썸네일은 첫 줄에만 얹혀
+ * 56px 그대로라, 그 아래 32px 이 빈 채로 남았습니다.
+ * → **grid 로 바꿔 썸네일이 두 줄을 다 걸치게** 합니다(`grid-row:1 / span 2`).
+ *   빈 자리가 없어지고 사진은 56×56 → 76×70 으로 커집니다.
+ *   줄 높이도 106 → 88px 로 오히려 줄어듭니다 — 이제 줄 높이를 정하는 것이
+ *   썸네일이 아니라 글자이기 때문입니다.
+ * 네 번째 칸(♡ · 보관함의 ×)은 **자리를 안 적습니다** — 남은 칸에 저절로
+ * 들어갑니다. 여섯 줄이 저마다 다른 것을 달고 있어서, 이름을 적어 두면
+ * 하나 바뀔 때마다 여기도 고쳐야 합니다. */
+.rrow:has(> .stars){ display:grid; grid-template-columns:auto 1fr auto;
+                     align-items:center; column-gap:9px; row-gap:4px; }
+.rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:stretch;
+                              width:76px; height:auto; }
+.rrow:has(> .stars) > .t{ grid-column:2; grid-row:1; }
+.rrow:has(> .stars) > .stars{ grid-column:2 / -1; grid-row:2; margin-left:0;
                               line-height:1; /* 25px 글자의 줄 높이까지 따라오면 12px 이 놉니다 */ }
 /* 글자 크기 설정을 따르되 화면 폭을 넘지 않게 위를 막습니다. */
 .rrow .st{ font-size:min(var(--f-3xl), 6.6vw); }
@@ -785,7 +837,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    화면의 3분의 1을 줍니다. 작은 폰(667px)에서도 227px 는 나오고,
    큰 화면에서 끝없이 자라지 않게 위를 막습니다. */
 .hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-       min-height:clamp(212px, 34vh, 300px);   /* min- 입니다 — 제목이 길면 자랍니다 */
+       /* **34vh 는 컸습니다** (b270, 실기기에서 봄 — 844px 화면에서 287px).
+          사진이 있는 여행은 그럭저럭이었지만, 사진이 없어 색만 깔리는 여행은
+          (삼척처럼) 빈 초록 덩어리가 화면 3분의 1을 먹어서 제일 먼저 눈에
+          띄었습니다. 글자는 아래 3분의 1에 몰려 있고 위는 그냥 빕니다.
+          28vh(236px)로 내립니다. 172 → 287 → 236 — 처음 172 보다는 여전히
+          훨씬 크고, **덮개 대비는 오히려 좋아집니다**(글줄이 덜 올라갑니다). */
+       min-height:clamp(196px, 28vh, 260px);   /* min- 입니다 — 제목이 길면 자랍니다 */
        display:flex; flex-direction:column; justify-content:flex-end;
        padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
        box-shadow:var(--lift-1); margin-bottom:var(--s-sm); }
@@ -1213,11 +1271,13 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .ev__chev{ align-self:center; color:var(--ink-48); flex:none;
            transition:transform var(--t) var(--ease); font-size:var(--f-xl); }
 .ev.is-open .ev__chev{ transform:rotate(90deg); }
-.ev .when{ flex:none; width:50px; color:var(--ink-48); font-size:var(--f-md);
+/* .plan 쪽과 같은 이유입니다 — 시각은 훑는 기준, 이름은 계단의 '항목' 칸. */
+.ev .when{ flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
+           font-weight:600;
            font-variant-numeric:tabular-nums; padding-top:2px; }
 .ev .body{ flex:1; min-width:0; }
-.ev .body b{ display:block; }
-.ev .body .memo{ color:var(--ink-48); font-size:var(--f-md); }
+.ev .body b{ display:block; font-size:var(--f-lg); font-weight:600; }
+.ev .memo{ display:block; }
 /* 노선 딱지 — 색은 그 도시 노선의 공식 색입니다 */
 .ln{ display:inline-block; margin-left:5px; padding:1px 7px; border-radius:var(--r-pill);
      background:#888; color:#fff; font-size:var(--f-xs); font-weight:600;

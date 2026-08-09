@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b269';
-import { $, esc, toast, copyText } from './dom.js?v=b269';
-import { starHtml, paintStars, markRated } from './stars.js?v=b269';
+import { sb } from './db.js?v=b270';
+import { $, esc, toast, copyText } from './dom.js?v=b270';
+import { starHtml, paintStars, markRated } from './stars.js?v=b270';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b269';
-import { loadAdmin } from './admin.js?v=b269';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b269';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b270';
+import { loadAdmin } from './admin.js?v=b270';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b270';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b269';
+         setEditPlanId } from './trip.js?v=b270';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b269';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b270';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b269';
+         useCities, addCity, search } from './cities.js?v=b270';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b269';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b270';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b269';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b270';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b269';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b270';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -7370,10 +7370,10 @@ function drawExpenses(){
       <div class="body"><b>${esc(e.title)}</b>
         ${e.category ? `<span class="ktag ${esc(k)}">${esc(e.category)}</span>` : ''}
         ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
-      <div style="text-align:right; flex:none">
-        <b style="white-space:nowrap">${esc(money(Number(e.amount), e.currency))}</b>
+      <div class="amt">
+        <b>${esc(money(Number(e.amount), e.currency))}</b>
         ${e.currency !== trip.home_currency && e.amount_home != null
-          ? `<div class="memo" style="white-space:nowrap">${
+          ? `<div class="memo">${
               esc(money(Number(e.amount_home), trip.home_currency))}</div>` : ''}</div>
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-xact="del" data-id="${esc(e.id)}"
