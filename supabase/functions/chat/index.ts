@@ -511,6 +511,22 @@ Deno.serve(async (req) => {
     mark('auth');
     const body = await req.json().catch(() => ({}));
     const { trip_id, message, mode, prefs, image, images } = body;
+
+    // ── 구글 지도 주소 하나 읽기 ──────────────────────────────────
+    // **AI 를 안 씁니다.** 한도도 안 닳고 값도 안 나갑니다 — 주소를 펴서
+    // 좌표를 뽑는 일뿐입니다. 그런데 이 일을 브라우저에서는 못 합니다:
+    // `maps.app.goo.gl` 짧은 주소는 따라가려면 리다이렉트를 읽어야 하는데
+    // 구글이 CORS 를 안 줍니다. 서버에서만 됩니다.
+    // 여기 이미 unshortenMap·parseMapUrl 이 있어서 통로만 냅니다 —
+    // 함수를 하나 더 만들면 배포할 것이 하나 더 늘 뿐입니다.
+    if (mode === 'map'){
+      const got = await readGoogleMap(String(message || ''));
+      if (!got?.place) return json({ error: '이 주소에서는 위치를 못 찾았어요.' }, 200);
+      const { name, lat, lng } = got.place;
+      return json({ name: name || null,
+                    lat: lat == null ? null : Number(lat),
+                    lng: lng == null ? null : Number(lng) });
+    }
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
     const draft = mode === 'draft';
     // 불러오기 — 이미 짜둔 일정(엑셀·사진·글)을 읽어 일정 카드로 만듭니다.

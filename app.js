@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b260';
-import { $, esc, toast, copyText } from './dom.js?v=b260';
-import { starHtml, paintStars, markRated } from './stars.js?v=b260';
+import { sb } from './db.js?v=b261';
+import { $, esc, toast, copyText } from './dom.js?v=b261';
+import { starHtml, paintStars, markRated } from './stars.js?v=b261';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b260';
-import { loadAdmin } from './admin.js?v=b260';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b260';
+         setErrLogger, NOROW } from './net.js?v=b261';
+import { loadAdmin } from './admin.js?v=b261';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b261';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b260';
+         setEditPlanId } from './trip.js?v=b261';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b260';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b261';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b260';
+         useCities, addCity, search } from './cities.js?v=b261';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b260';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b261';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b260';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b261';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b260';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b261';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -4251,14 +4251,26 @@ async function openMap(){
   }, 'aitrip-발자국');
 
   /* ── 대륙별 ── 퍼센트는 국가로만 셉니다 ── */
+  /* **막대만 있고 어느 나라인지가 없었습니다.** "유럽 19/44국"을 보고 나면
+     바로 드는 생각이 "어느 19개국이지?"인데 답할 자리가 없었습니다.
+     아래 국가별 목록은 **도시**가 주인공이라 나라를 세려면 눈으로 세야 했습니다.
+     줄을 누르면 그 대륙의 국가 이름이 펴집니다 — 한 겹 안에 두는 이유는
+     여섯 대륙을 다 펴두면 그 카드가 화면 몇 개가 되기 때문입니다. */
   $('m_cont').innerHTML = CONT.map(([k, total]) => {
     const cs = mapCities.filter(c => continentOf[c.country] === k);
-    const ns = new Set(cs.map(c => c.country));
-    const p = ns.size / total * 100;
-    return `<div class="crow" data-zoom="${esc(k)}">
+    const ns = [...new Set(cs.map(c => c.country))]
+      .sort((a, b) => (countryName[a] || a).localeCompare(countryName[b] || b, 'ko'));
+    const p = ns.length / total * 100;
+    return `<div class="crow" data-cont="${esc(k)}" data-zoom="${esc(k)}">
       <span class="nm">${esc(k)}</span>
       <span class="bar"><i style="width:${p.toFixed(1)}%"></i></span>
-      <span class="n">${ns.size}/${total}국 · ${cs.length}곳</span></div>`;
+      <span class="n">${ns.length}/${total}국 · ${cs.length}곳</span></div>` +
+      `<div class="cchips hide" data-contlist="${esc(k)}"
+            style="padding:0 0 10px">${
+        ns.length ? ns.map(code => `<button data-czoom="${esc(code)}">${
+            esc(countryName[code] || code)} ${
+            cs.filter(c => c.country === code).length}</button>`).join('')
+          : '<span class="memo">아직 없어요</span>'}</div>`;
   }).join('');
 
   /* ── 국가별 ── 많이 간 나라부터 ── */
@@ -4351,6 +4363,25 @@ $('shareapp').addEventListener('click', async () => {
 $('mapback').addEventListener('click', () => closeMap());
 
 $('mappane').addEventListener('click', e => {
+  /* 대륙 줄을 누르면 그 대륙의 국가 이름이 펴집니다. 지도도 그리로 당깁니다 —
+     둘 다 "이 대륙을 보고 싶다"는 같은 뜻이라 한 번에 합니다.
+     **국가 칩(data-czoom)이 먼저입니다** — 칩은 대륙 줄 밖에 있지만
+     아래 data-zoom 이 그 위를 먼저 잡으면 칩이 안 눌립니다. */
+  const cz = e.target.closest('[data-czoom]');
+  if (cz){
+    /* 그 나라의 도시들을 아래 '국가별' 목록에서 찾아 보여줍니다.
+       지도를 나라 단위로 당기는 것은 setMapView 가 대륙까지만 알아서
+       지금은 못 합니다 — 대륙으로만 당기고 목록으로 데려갑니다. */
+    setMapView(continentOf[cz.dataset.czoom] || '전체');
+    $('m_country')?.scrollIntoView({ behavior:'smooth', block:'start' });
+    return;
+  }
+  const row = e.target.closest('[data-cont]');
+  if (row){
+    const list = $('mappane').querySelector(
+      `[data-contlist="${CSS.escape(row.dataset.cont)}"]`);
+    if (list) list.classList.toggle('hide');
+  }
   const z = e.target.closest('[data-zoom]');
   if (z) return setMapView(z.dataset.zoom);
   const p = e.target.closest('[data-pin]');
@@ -4446,6 +4477,9 @@ $('dumpbtn').addEventListener('click', async () => {
 
 /* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
 $('setview').addEventListener('click', e => {
+  /* 국가 타일은 세계지도로. 보관함은 도시가 주인공이라 "어느 나라를 갔나"에
+     답을 못 합니다 — 그 답은 지도 화면의 대륙별·국가별에 있습니다. */
+  if (e.target.closest('button[data-openmap]')) return openMap();
   const b = e.target.closest('button[data-shelf]'); if (!b) return;
   /* 다녀온 여행 칸은 없앴습니다. 여행 탭에 이미 있습니다. */
   openShelf(b.dataset.shelf);
@@ -7879,6 +7913,9 @@ $('addplanbtn').addEventListener('click', () => {
   /* 손으로 새로 여는 것이므로 앞서 카드에서 들고 온 좌표는 버립니다.
      openPlanForm 은 이 뒤에 다시 채웁니다. */
   planSeedGeo = null;
+  /* 앞서 붙여넣은 링크의 결과도 같이 버립니다. 안 그러면 다음 일정에
+     엉뚱한 위치가 딸려 들어갑니다 — 조용히 틀리는 종류입니다. */
+  planGeo = null; geoAsked = ''; $('p_geonote').classList.add('hide');
   $('plancard').classList.toggle('hide');
   if ($('plancard').classList.contains('hide')) return;
   $('p_date').value = pickedDay || trip.start_date;
@@ -7900,8 +7937,52 @@ $('p_cancel').addEventListener('click', () => {
   $('plancard').classList.add('hide'); $('planformerr').classList.add('hide');
 });
 
+/* ── 붙여넣은 지도 링크에서 위치 찾기 ───────────────────────────────
+ * 사용자가 실제로 하던 일: 구글 지도에서 '공유'로 링크를 복사해 메모에
+ * 붙여넣습니다. 그런데 그건 **글자로만 남았습니다** — 지도에는 안 뜨고,
+ * 좌표를 채우려면 어느 탭에 숨어 있는지도 모르는 단추를 찾아야 했습니다.
+ *
+ * **짧은 주소(maps.app.goo.gl)는 브라우저에서 못 폅니다.** 리다이렉트를
+ * 읽어야 하는데 구글이 CORS 를 안 줍니다. 서버(chat 함수의 mode:'map')가
+ * 폅니다 — 거기 이미 펴고 뽑는 코드가 있고, AI 는 안 씁니다(한도 안 닳음).
+ *
+ * 같은 링크를 두 번 묻지 않습니다. 글자를 고칠 때마다 나가면 안 됩니다. */
+let planGeo = null, geoAsked = '';
+const MAPURL = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps)\S*/i;
+
+async function sniffMapLink(){
+  const hit = ($('p_memo').value + ' ' + $('p_title').value).match(MAPURL);
+  const note = $('p_geonote');
+  if (!hit){ geoAsked = ''; planGeo = null; note.classList.add('hide'); return; }
+  const url = hit[0];
+  if (url === geoAsked) return;
+  geoAsked = url;
+
+  note.classList.remove('hide');
+  note.textContent = '지도에서 위치를 찾는 중…';
+  const r = await sb.functions.invoke('chat', { body:{ mode:'map', message:url } });
+  /* 못 찾아도 넣기는 됩니다 — 위치가 없을 뿐입니다. 막으면 안 됩니다. */
+  if (r.error || r.data?.error || r.data?.lat == null){
+    planGeo = null;
+    note.textContent = '이 링크에서는 위치를 못 찾았어요. 그냥 넣어도 괜찮아요.';
+    return;
+  }
+  planGeo = { lat: r.data.lat, lng: r.data.lng };
+  note.textContent = r.data.name
+    ? `위치를 찾았어요 · ${r.data.name}` : '위치를 찾았어요';
+  /* 제목이 비어 있으면 채워줍니다. 링크만 붙여넣고 이름을 또 치게 할
+     이유가 없습니다. 이미 적었으면 안 건드립니다. */
+  if (r.data.name && !$('p_title').value.trim()) $('p_title').value = r.data.name;
+}
+let geoTimer = null;
+['p_memo', 'p_title'].forEach(id => $(id).addEventListener('input', () => {
+  clearTimeout(geoTimer); geoTimer = setTimeout(sniffMapLink, 500);
+}));
+
 $('p_create').addEventListener('click', async () => {
   $('planformerr').classList.add('hide');
+  /* 붙여넣고 바로 눌렀을 수 있습니다. 아직 안 물어봤으면 여기서 물어봅니다. */
+  await sniffMapLink();
   const title = $('p_title').value.trim(), date = $('p_date').value;
   const st = $('p_start').value, et = $('p_end').value;
 
@@ -7930,7 +8011,10 @@ $('p_create').addEventListener('click', async () => {
 
   /* 카드나 후보에서 넘어온 좌표. 폼에는 칸이 없어서 따로 들고 있었습니다.
      **고치는 중일 때는 쓰지 않습니다** — 그 일정이 이미 가진 좌표를 덮습니다. */
-  const geo = (!editing && planSeedGeo) ? planSeedGeo : null;
+  /* **붙여넣은 지도 링크가 먼저입니다.** 방금 사람이 직접 준 위치라
+     카드에서 딸려온 것보다 확실합니다. 고치는 중이어도 링크를 새로
+     붙여넣었으면 그건 "여기로 바꿔달라"는 뜻이므로 씁니다. */
+  const geo = planGeo || ((!editing && planSeedGeo) ? planSeedGeo : null);
 
   if (editing){
     const i = plans.findIndex(p => p.id === editing);
@@ -7951,8 +8035,12 @@ $('p_create').addEventListener('click', async () => {
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 
   planSeedGeo = null;               /* 한 번 쓰고 비웁니다. 다음 일정에 묻으면 안 됩니다 */
+  /* **고칠 때도 좌표를 같이 보냅니다.** 전에는 넣을 때만 실려서, 이미 있는
+     일정에 지도 링크를 붙여넣어도 지도에 안 떴습니다 — 그 일정을 지우고
+     다시 만들어야 했습니다. 링크를 새로 붙여넣은 경우(planGeo)만 덮습니다. */
   const r = await write(editing
-    ? { table:'plans', action:'update', id:editing, row }
+    ? { table:'plans', action:'update', id:editing,
+        row:{ ...row, ...(planGeo || {}) } }
     : { table:'plans', action:'insert',
         row:{ trip_id: trip.id, sort_order: sort, ...row, ...(geo || {}) } });
 

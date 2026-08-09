@@ -47,24 +47,24 @@
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b260">
+<link rel="stylesheet" href="app.css?v=b261">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b260">
-<link rel="modulepreload" href="dom.js?v=b260">
-<link rel="modulepreload" href="db.js?v=b260">
-<link rel="modulepreload" href="calc.js?v=b260">
-<link rel="modulepreload" href="stars.js?v=b260">
-<link rel="modulepreload" href="net.js?v=b260">
-<link rel="modulepreload" href="admin.js?v=b260">
-<link rel="modulepreload" href="ui.js?v=b260">
-<link rel="modulepreload" href="card.js?v=b260">
-<link rel="modulepreload" href="trip.js?v=b260">
-<link rel="modulepreload" href="rate.js?v=b260">
-<link rel="modulepreload" href="cities.js?v=b260">
-<link rel="modulepreload" href="ai.js?v=b260">
+<link rel="modulepreload" href="supabase.js?v=b261">
+<link rel="modulepreload" href="dom.js?v=b261">
+<link rel="modulepreload" href="db.js?v=b261">
+<link rel="modulepreload" href="calc.js?v=b261">
+<link rel="modulepreload" href="stars.js?v=b261">
+<link rel="modulepreload" href="net.js?v=b261">
+<link rel="modulepreload" href="admin.js?v=b261">
+<link rel="modulepreload" href="ui.js?v=b261">
+<link rel="modulepreload" href="card.js?v=b261">
+<link rel="modulepreload" href="trip.js?v=b261">
+<link rel="modulepreload" href="rate.js?v=b261">
+<link rel="modulepreload" href="cities.js?v=b261">
+<link rel="modulepreload" href="ai.js?v=b261">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -779,7 +779,11 @@
 
           <!-- 왓챠의 "696 평가 | 27 코멘트" 줄과 같은 자리입니다 -->
           <div class="stats">
-            <button data-shelf="been"><b id="s_country">0</b><span>국가</span></button>
+            <!-- **국가를 누르면 도시 목록이 떴습니다.** 둘 다 data-shelf="been"
+                 이었는데 그 보관함은 도시가 주인공이라, 어느 나라를 갔는지는
+                 어디서도 볼 수 없었습니다. 국가는 세계지도로 보냅니다 —
+                 거기 대륙별·국가별이 다 있습니다. -->
+            <button data-openmap="1"><b id="s_country">0</b><span>국가</span></button>
             <button data-shelf="been"><b id="s_city">0</b><span>도시</span></button>
             <button data-shelf="mine"><b id="s_rated">0</b><span>매긴 곳</span></button>
             <!-- 한줄평은 남에게 보이는 것이라 몇 개 썼는지 따로 셉니다. -->
@@ -1153,7 +1157,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b260</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b261</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1565,8 +1569,13 @@
           <option value="기타">기타</option>
         </select>
 
-        <label for="p_memo">메모 (선택)</label>
-        <input id="p_memo" placeholder="예: 긴자선 3정거장" maxlength="200">
+        <!-- **구글 지도 링크를 붙여넣으면 위치를 알아서 찾습니다.**
+             지금까지는 링크가 메모에 글자로만 남고 지도에는 안 떴습니다.
+             짧은 주소(maps.app.goo.gl)는 브라우저에서 못 펴서 서버가 폅니다. -->
+        <label for="p_memo">메모 · 지도 링크 (선택)</label>
+        <input id="p_memo" placeholder="구글 지도 링크를 붙여넣으면 위치가 잡혀요"
+               maxlength="200">
+        <div class="snote hide" id="p_geonote">—</div>
 
         <div style="margin-top:16px; display:flex; gap:8px">
           <button class="primary" id="p_create">넣기</button>
@@ -1616,7 +1625,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b260"></script>
+<script type="module" src="app.js?v=b261"></script>
 </body>
 </html>
 
