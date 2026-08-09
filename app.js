@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b272';
-import { $, esc, toast, copyText } from './dom.js?v=b272';
-import { starHtml, paintStars, markRated } from './stars.js?v=b272';
+import { sb } from './db.js?v=b273';
+import { $, esc, toast, copyText } from './dom.js?v=b273';
+import { starHtml, paintStars, markRated } from './stars.js?v=b273';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b272';
-import { loadAdmin } from './admin.js?v=b272';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b272';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b273';
+import { loadAdmin } from './admin.js?v=b273';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b273';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b272';
+         setEditPlanId } from './trip.js?v=b273';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b272';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b273';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b272';
+         useCities, addCity, search } from './cities.js?v=b273';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b272';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b273';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b272';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b273';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b272';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b273';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -836,9 +836,17 @@ function drawPop(){
   const top = cities.filter(c => c.pop_rank != null && c.country !== 'KR')
     .sort((a, b) => a.pop_rank - b.pop_rank).slice(0, POP_N);
   if (!top.length) return;              /* 051 을 아직 안 돌렸으면 조용히 접습니다 */
+  /* **국기를 못 그리는 기기가 있습니다.** 윈도우는 지역표시기호 둘을 합치지
+     않아서 `JP` `VN` `TH` 처럼 코드가 그대로 보입니다 — 여행을 시작하는
+     첫 화면이 개발자 표기 나열이 됩니다. 오른쪽에 '일본'이라고 이미
+     적혀 있으니 못 그릴 때는 아예 안 답니다.
+     **판단은 `flagOk()` 한 곳에만 둡니다** — b265 에서 발자국 화면에
+     만들어 둔 것을 그대로 씁니다. 그때 여기까지 안 고쳐서 이 화면만
+     남아 있었습니다. 같은 판단을 두 벌로 적으면 한쪽만 고치게 됩니다. */
+  const fl = flagOk();
   box.innerHTML = top.map(c =>
     `<button type="button" class="poprow" data-cid="${esc(c.id)}">
-       <span class="fl">${flagOf(c.country)}</span><b>${esc(c.name)}</b>
+       ${fl ? `<span class="fl">${flagOf(c.country)}</span>` : ''}<b>${esc(c.name)}</b>
        <span class="c">${esc(countryName[c.country] || c.country)}</span></button>`).join('');
   box.dataset.done = '1';
 }
@@ -1417,6 +1425,10 @@ function drawChats(rows){
      인공지능기본법(2026.1.22 시행) 제31조가 생성형 AI 결과물에 그 사실을
      표시하라고 정합니다. 화면에 한 번만 적어두는 것으로는 '결과물 표시'가
      아니라서, 답변 하나하나에 답니다. */
+  /* 빈 상태일 때만 대화칸을 키워 안내와 예시를 가운데 세웁니다.
+     **스크롤 상자(.aiscroll)는 건드리지 않습니다** — 거기를 손댔다가
+     aiToBottom 이 엉뚱한 상자를 굴리던 사고가 이미 한 번 있었습니다. */
+  $('chat').classList.toggle('isempty', !rows.length);
   $('chat').innerHTML = rows.length
     ? rows.map(m => m.role === 'user'
         ? `<div class="msg me">${md(m.content)}</div>`
@@ -1426,7 +1438,18 @@ function drawChats(rows){
        뺐습니다. **답변마다 붙는 aitag 는 그대로 둡니다** — 인공지능기본법
        제31조가 요구하는 것은 결과물 표시라서 저 안내로는 대신할 수 없습니다.
        국외 이전 고지는 개인정보처리방침 7번에 그대로 있습니다. */
-    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>`;
+    /* **처음 열면 411px 가 빈 흰 자리였습니다** (실제 화면에서 잼).
+       안내 한 줄만 있고 그 아래가 통째로 비었습니다. 대화창의 제일 큰 벽은
+       "뭘 물어야 하지"인데, 그 벽 앞에 빈 화면을 내주고 있었던 것입니다.
+       **눌러서 바로 보내지는 예시를 깝니다.** 한 번 눌러보면 어떤 것을
+       물을 수 있는지 알게 되고, 다음부터는 자기 말로 칩니다.
+       여행을 고른 상태면 그 여행에 대한 것을 묻습니다 — 고르개가 바로
+       위에 있는데 예시가 일반적인 이야기면 둘이 따로 놉니다. */
+    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>
+       <div class="asks">${(aiTripId
+          ? ['비 오면 뭐 하지?', '이 일정 너무 빡빡한가?', '근처 맛집 알려줘', '뭘 챙겨야 해?']
+          : ['3박 4일로 어디가 좋을까?', '지금 가기 좋은 곳은?', '혼자 가기 좋은 도시', '예산 100만원이면?']
+        ).map(q => `<button type="button" class="ask" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>`;
   aiToBottom();
 }
 
@@ -1574,6 +1597,15 @@ function drawSources(list, web){
              ${i + 1}. ${esc(w.title || w.link)}</a>`).join('') + '</div>'
       : '');
 }
+
+/* 예시를 누르면 **바로 보냅니다.** 입력칸에 넣어만 주면 한 번 더 눌러야 하고,
+   그러면 예시가 "고르는 것"이 아니라 "지우고 다시 쓰는 것"이 됩니다.
+   빈 화면에서만 보이므로 대화가 시작되면 저절로 사라집니다. */
+$('chat').addEventListener('click', e => {
+  const b = e.target.closest('[data-ask]'); if (!b) return;
+  $('ai_msg').value = b.dataset.ask;
+  $('ai_send').click();
+});
 
 $('ai_send').addEventListener('click', async () => {
   const shots = aiShots.slice();
