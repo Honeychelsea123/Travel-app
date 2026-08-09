@@ -18,8 +18,8 @@
  *
  * 밖에서 가져오는 것은 dom.js 와 db.js 뿐입니다. 둘 다 잎이라 순환이 없습니다.
  */
-import { $, toast } from './dom.js?v=b263';
-import { sb } from './db.js?v=b263';
+import { $, toast } from './dom.js?v=b264';
+import { sb } from './db.js?v=b264';
 
 /* 큐가 다 나간 뒤에 화면을 서버 값으로 맞추는 일은 app.js 가 압니다.
    여기서 trip 이나 loadPlans 를 직접 부르면 net → app 으로 거꾸로 기대게 되어
@@ -202,7 +202,15 @@ async function send(job){
 }
 
 /* 화면에서 부르는 쪽. 성공하면 {ok:true}, 큐에 쌓였으면 {ok:true, queued:true}. */
+/* 점검 모드. 켜져 있으면 **쓰기를 아예 안 보냅니다** — SQL 을 돌리는
+   동안 들어온 저장은 어긋난 표에 앉습니다. 큐에도 안 쌓습니다: 나중에
+   흘려보내면 그것도 점검 중에 들어간 것과 같아집니다.
+   여기 한 곳에서 막습니다 — 부르는 곳이 서른 군데라 거기서 막으면 샙니다. */
+let readOnly = false;
+export function setReadOnly(on){ readOnly = !!on; }
+
 export async function write(job){
+  if (readOnly) return { ok:false, why:'지금은 점검 중이라 저장할 수 없어요. 잠시 뒤 다시 해주세요.' };
   try {
     const r = await send(job);
     if (r.error) throw r.error;

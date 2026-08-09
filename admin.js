@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b263';
-import { sb } from './db.js?v=b263';
-import { fail, netTimeout } from './net.js?v=b263';
+import { $, esc, toast, copyText } from './dom.js?v=b264';
+import { sb } from './db.js?v=b264';
+import { fail, netTimeout } from './net.js?v=b264';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -198,7 +198,70 @@ async function loadSettings(){
   $('s_model').value     = m.name || 'gemini-3.6-flash';
   syncSetRow();
   $('s_note').textContent = '바꾼 뒤 저장을 누르세요. 곧바로 모두에게 적용됩니다.';
+
+  /* 비상 스위치는 **저장을 안 거칩니다.** 급할 때 두 번 누르게 하면 안 됩니다.
+     066 을 아직 안 올렸으면 값이 없습니다 — 그때는 켜진 것으로 봅니다.
+     "설정을 못 읽었으니 다 꺼둔다"는 앱을 멈추는 것과 같습니다. */
+  const on = k => data?.[k]?.on !== false;
+  $('s_aion').checked     = on('ai_on');
+  $('s_signup').checked   = on('signup_on');
+  $('s_push').checked     = on('push_on');
+  $('s_readonly').checked = data?.readonly?.on === true;   /* 이건 꺼짐이 기본 */
+
+  const nt = data?.notice || {};
+  $('s_notice').value = nt.text || '';
+  document.querySelectorAll('#s_tone [data-tone]').forEach(b =>
+    b.classList.toggle('on', b.dataset.tone === (nt.tone || 'info')));
+
+  const f = data?.features || {};
+  document.querySelectorAll('[data-feat]').forEach(el =>
+    el.checked = f[el.dataset.feat] !== false);
 }
+
+/* 켬/끔 하나짜리들. **누르는 즉시 나갑니다.** 실패하면 화면을 되돌립니다 —
+   껐다고 보이는데 안 꺼져 있으면 그게 제일 나쁩니다. */
+$('setadmpane').addEventListener('change', async e => {
+  const el = e.target.closest('[data-now]'); if (!el) return;
+  const key = el.dataset.now, want = el.checked;
+  $('s_swnote').textContent = '보내는 중…';
+  const r = await sb.rpc('admin_setting_set', { p_key:key, p_value:{ on:want } });
+  if (r.error){
+    el.checked = !want;
+    $('s_swnote').textContent = '못 바꿨어요: ' + (r.error.message || '');
+    return;
+  }
+  $('s_swnote').textContent = { ai_on: want ? 'AI 를 켰어요' : 'AI 를 껐어요',
+    signup_on: want ? '가입을 다시 받아요' : '새 가입을 막았어요',
+    push_on:   want ? '알림을 다시 보내요' : '알림을 멈췄어요',
+    readonly:  want ? '점검 모드입니다 — 모두 읽기만 됩니다' : '점검 모드를 껐어요',
+  }[key] || '바꿨어요';
+});
+
+/* 기능 스위치는 하나의 값(객체) 안에 같이 삽니다. 통째로 보냅니다. */
+$('setadmpane').addEventListener('change', async e => {
+  if (!e.target.closest('[data-feat]')) return;
+  const row = {};
+  document.querySelectorAll('[data-feat]').forEach(el => row[el.dataset.feat] = el.checked);
+  const r = await sb.rpc('admin_setting_set', { p_key:'features', p_value:row });
+  if (r.error) toast('못 바꿨어요: ' + (r.error.message || ''));
+  else toast('기능 스위치를 바꿨어요');
+});
+
+$('s_tone').addEventListener('click', e => {
+  const b = e.target.closest('[data-tone]'); if (!b) return;
+  document.querySelectorAll('#s_tone [data-tone]').forEach(x =>
+    x.classList.toggle('on', x === b));
+});
+$('s_noticesave').addEventListener('click', async () => {
+  const b = $('s_noticesave');
+  b.disabled = true; b.innerHTML = '<span class="load">보내는 중…</span>';
+  const tone = document.querySelector('#s_tone .on')?.dataset.tone || 'info';
+  const r = await sb.rpc('admin_setting_set',
+    { p_key:'notice', p_value:{ text: $('s_notice').value, tone } });
+  b.disabled = false; b.textContent = '띄우기';
+  if (r.error) return toast('못 띄웠어요: ' + (r.error.message || ''));
+  toast($('s_notice').value.trim() ? '공지를 띄웠어요' : '공지를 내렸어요');
+});
 /* 한도를 끈 상태에서 숫자 칸은 아무 뜻이 없습니다. 흐려서 그렇다고 알립니다 —
    지우면 켤 때 무슨 값이었는지 못 봅니다. */
 function syncSetRow(){

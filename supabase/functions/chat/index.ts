@@ -527,6 +527,18 @@ Deno.serve(async (req) => {
                     lat: lat == null ? null : Number(lat),
                     lng: lng == null ? null : Number(lng) });
     }
+    // ── AI 비상 스위치 ────────────────────────────────────────────
+    // **한도만으로는 못 끕니다.** 요금이 새거나 키가 새면 즉시 멈춰야 하는데
+    // 배포는 몇 분 걸리고 그 사이에도 돈이 나갑니다(db/066 의 ai_on).
+    // **지도 주소 읽기 다음입니다** — 그건 AI 를 안 쓰므로 껐을 때도
+    // 살아 있어야 맞습니다.
+    try {
+      const { data: sw } = await asUser.rpc('public_flags');
+      // 못 읽으면 켜진 것으로 봅니다 — 설정을 못 읽었다고 앱을 멈추면 안 됩니다.
+      if (sw && sw.ai === false)
+        return json({ error: 'AI 기능을 잠시 멈춰뒀어요. 곧 다시 열립니다.' }, 200);
+    } catch { /* 그대로 갑니다 */ }
+
     // 초안은 버튼만 눌러도 됩니다. 사용자가 문장을 쓰지 않습니다.
     const draft = mode === 'draft';
     // 불러오기 — 이미 짜둔 일정(엑셀·사진·글)을 읽어 일정 카드로 만듭니다.

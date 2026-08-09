@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b263';
-import { $, esc, toast, copyText } from './dom.js?v=b263';
-import { starHtml, paintStars, markRated } from './stars.js?v=b263';
+import { sb } from './db.js?v=b264';
+import { $, esc, toast, copyText } from './dom.js?v=b264';
+import { starHtml, paintStars, markRated } from './stars.js?v=b264';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b263';
-import { loadAdmin } from './admin.js?v=b263';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b263';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b264';
+import { loadAdmin } from './admin.js?v=b264';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b264';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b263';
+         setEditPlanId } from './trip.js?v=b264';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b263';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b264';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b263';
+         useCities, addCity, search } from './cities.js?v=b264';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b263';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b264';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b263';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b264';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b263';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b264';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -326,6 +326,53 @@ $('notifprefcard').addEventListener('change', async e => {
   loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
 });
 
+/* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
+ * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
+ * 배포는 몇 분 걸리고 그 사이에도 돈이 나가거나 잘못된 알림이 계속 갑니다.
+ *
+ * **못 읽으면 전부 켜진 것으로 봅니다.** "설정을 못 읽었으니 다 꺼둔다"는
+ * 앱을 멈추는 것과 같습니다 — 오프라인에서 특히 그렇습니다.
+ * 066 을 아직 안 올린 곳에서도 같은 이유로 그대로 돕니다. */
+let flags = { notice:{ text:'' }, signup:true, readonly:false, features:{} };
+const featOn = k => flags.features?.[k] !== false;
+
+async function loadFlags(){
+  const r = await netTimeout(sb.rpc('public_flags'), 4000);
+  if (r.error || !r.data) return;          /* 조용히 지금 값을 지킵니다 */
+  flags = { ...flags, ...r.data };
+  drawNotice();
+  applyFeatures();
+}
+
+function drawNotice(){
+  const t = String(flags.notice?.text || '').trim();
+  const el = $('noticebar');
+  el.classList.toggle('hide', !t);
+  el.classList.toggle('warn', flags.notice?.tone === 'warn');
+  el.textContent = t;
+}
+
+/* 기능 스위치. **화면에서 감추기만 합니다** — 진짜로 막는 것은 서버 쪽
+   함수입니다(AI·알림). 여기서 감추는 것은 "눌러도 안 되는 단추를 두지
+   않기 위해서"입니다. */
+function applyFeatures(){
+  $('pushrow')?.classList.toggle('hide', !featOn('push'));
+  $('pushkinds')?.classList.toggle('hide', !featOn('push'));
+  $('docbtn')?.classList.toggle('hide', !featOn('docs'));
+  document.body.classList.toggle('noreorder', !featOn('reorder'));
+  document.body.classList.toggle('readonly', !!flags.readonly);
+  /* **진짜로 막는 것은 여기입니다.** 화면에서 단추를 흐리게 하는 것은
+     안내일 뿐이고, 저장은 write() 한 곳을 지나므로 거기서 막습니다. */
+  setReadOnly(!!flags.readonly);
+  /* 점검 중이면 왜 안 되는지 위에 띄웁니다. 공지가 따로 있으면 그쪽이
+     먼저입니다 — 만든 사람이 적은 말이 더 정확합니다. */
+  if (flags.readonly && !String(flags.notice?.text || '').trim()){
+    $('noticebar').classList.remove('hide');
+    $('noticebar').classList.add('warn');
+    $('noticebar').textContent = '지금은 점검 중이에요. 보기만 되고 저장은 잠시 뒤에 돼요.';
+  }
+}
+
 /* ── 알림을 눌렀을 때 ───────────────────────────────────────────────
  * 알림에 `./?t=<여행>&d=<날짜>` 를 실어 보냅니다(065). 오는 길이 둘입니다.
  *   · 앱이 꺼져 있었다 → 그 주소로 새로 열립니다. 부팅 뒤에 읽습니다
@@ -608,6 +655,20 @@ $('login').addEventListener('click', async () => {
               scopes: 'openid email' }
   });
   if (error){ $('login').disabled = false; fail(error); }
+});
+
+/* 가입을 막아뒀으면 **로그인 화면에서 미리 알려줍니다.** 진짜 관문은 서버
+   트리거지만(db/066), 거기까지 갔다 오면 구글을 한 바퀴 돌고 나서
+   "알 수 없는 오류"만 봅니다. 이미 쓰던 사람은 그대로 들어옵니다 —
+   막히는 것은 **새로 만들어지는 계정**뿐이라 단추는 안 감춥니다. */
+loadFlags().then(() => {
+  if (flags.signup === false && $('signedout') && !$('signedout').classList.contains('hide')){
+    const p = document.createElement('p');
+    p.className = 'memo';
+    p.style.cssText = 'text-align:center; margin-top:12px';
+    p.textContent = '지금은 새로 가입할 수 없어요. 이미 쓰시던 분은 그대로 들어오실 수 있어요.';
+    $('login').after(p);
+  }
 });
 
 $('logout').addEventListener('click', async () => {
@@ -6341,7 +6402,8 @@ function dayStat(date){
  *
  * **분류로 거르는 중에는 손잡이를 안 답니다.** 걸러진 목록에서 끌면
  * 화면에 없는 줄의 시각까지 섞여 돌아갑니다 — 보이지 않는 것이 바뀝니다. */
-const canReorder = () => trip?.myRole !== 'viewer' && !catFilter;
+const canReorder = () =>
+  trip?.myRole !== 'viewer' && !catFilter && featOn('reorder') && !flags.readonly;
 
 let dragOn = null;      /* {el, hole, id, date, dy, ids} */
 
@@ -8094,6 +8156,7 @@ let planGeo = null, geoAsked = '';
 const MAPURL = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps)\S*/i;
 
 async function sniffMapLink(){
+  if (!featOn('maplink')) return;
   const hit = ($('p_memo').value + ' ' + $('p_title').value).match(MAPURL);
   const note = $('p_geonote');
   if (!hit){ geoAsked = ''; planGeo = null; note.classList.add('hide'); return; }
@@ -8349,6 +8412,9 @@ async function render(session){
   /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
      여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
   sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());
+  /* 만든 사람이 켜고 끈 것들. 기다리지 않습니다 — 못 읽어도 전부 켜진
+     것으로 보고 그대로 돕니다(db/066). */
+  loadFlags();
   /* 지난번에 못 보낸 저장이 남아 있을 수 있습니다. 켜자마자 흘려보냅니다. */
   drawOffbar(); flushQueue();
   /* 오프라인이면 홈이 어차피 "볼 수 없어요"입니다. 그럴 땐 여행 목록으로 엽니다 —

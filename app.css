@@ -1226,6 +1226,13 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .want.on{ color:#e0245e; }
 .been.on{ color:var(--k-see); }
 
+/* 만든 사람이 띄우는 공지. 오프라인 띠와 같은 자리·같은 모양이라
+   "지금 상태를 알리는 줄"로 한 벌처럼 읽힙니다. */
+#noticebar.warn{ background:var(--bad, #c0392b); color:#fff; }
+/* 기능 스위치로 끈 것들. 화면에서 감추기만 합니다 — 진짜로 막는 것은
+   서버 쪽입니다. */
+body.noreorder .ev .grip{ display:none; }
+
 /* ── 다녀온 나라 ────────────────────────────────────────────────────
  * 글자만 늘어놓으면 공유할 마음이 안 듭니다. 숫자 하나를 크게 세우고
  * 국기를 깔아 **한 장의 그림처럼** 보이게 합니다.

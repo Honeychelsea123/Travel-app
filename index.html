@@ -47,24 +47,24 @@
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b263">
+<link rel="stylesheet" href="app.css?v=b264">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b263">
-<link rel="modulepreload" href="dom.js?v=b263">
-<link rel="modulepreload" href="db.js?v=b263">
-<link rel="modulepreload" href="calc.js?v=b263">
-<link rel="modulepreload" href="stars.js?v=b263">
-<link rel="modulepreload" href="net.js?v=b263">
-<link rel="modulepreload" href="admin.js?v=b263">
-<link rel="modulepreload" href="ui.js?v=b263">
-<link rel="modulepreload" href="card.js?v=b263">
-<link rel="modulepreload" href="trip.js?v=b263">
-<link rel="modulepreload" href="rate.js?v=b263">
-<link rel="modulepreload" href="cities.js?v=b263">
-<link rel="modulepreload" href="ai.js?v=b263">
+<link rel="modulepreload" href="supabase.js?v=b264">
+<link rel="modulepreload" href="dom.js?v=b264">
+<link rel="modulepreload" href="db.js?v=b264">
+<link rel="modulepreload" href="calc.js?v=b264">
+<link rel="modulepreload" href="stars.js?v=b264">
+<link rel="modulepreload" href="net.js?v=b264">
+<link rel="modulepreload" href="admin.js?v=b264">
+<link rel="modulepreload" href="ui.js?v=b264">
+<link rel="modulepreload" href="card.js?v=b264">
+<link rel="modulepreload" href="trip.js?v=b264">
+<link rel="modulepreload" href="rate.js?v=b264">
+<link rel="modulepreload" href="cities.js?v=b264">
+<link rel="modulepreload" href="ai.js?v=b264">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -264,6 +264,9 @@
     <!-- 연결이 끊겼거나 아직 못 보낸 저장이 있을 때만 나옵니다.
          여행 중에 "저장된 줄 알았는데 아니었다"가 제일 무섭습니다. -->
     <div id="offbar" class="offbar hide"></div>
+    <!-- 만든 사람이 띄우는 공지 한 줄. 배포 없이 말을 걸 유일한 수단입니다.
+         오프라인 띠 바로 아래에 둡니다 — 둘 다 "지금 상태"를 알리는 자리입니다. -->
+    <div id="noticebar" class="offbar hide"></div>
 
     <!-- 홈 -->
     <div id="homeview" class="hide">
@@ -1070,6 +1073,7 @@
 
       <!-- ── 관리자 대시보드 ── 설정에서 열립니다. 다른 화면들과 같은 방식으로
            프로필 안의 한 겹입니다. 내용은 loadAdmin() 이 채웁니다. -->
+      <!-- 공지 띠는 main 밖, 화면 맨 위입니다 — 어느 탭에 있든 보여야 합니다. -->
       <div id="admpane" class="hide">
         <!-- 조절은 이 안에서 **제 페이지로** 뜹니다. 그래서 나머지를 한 겹으로
              묶어 통째로 감춥니다 — 카드를 하나씩 감추면 원래 숨어 있던 것
@@ -1148,6 +1152,75 @@
           <div class="snote" id="s_note">불러오는 중…</div>
           <pre id="serr" class="hide"></pre>
         </div>
+
+        <!-- ── 비상 스위치 ── 일이 터졌을 때 **배포를 기다리지 않아도 되는**
+             것들입니다. 배포는 몇 분 걸리고 그 사이에도 돈이 나가거나
+             잘못된 알림이 계속 갑니다. 저장을 따로 두지 않습니다 —
+             급할 때 두 번 누르게 하면 안 됩니다. 누르는 즉시 나갑니다. -->
+        <div class="card">
+          <h2>비상 스위치</h2>
+          <div class="srow">
+            <span class="label"><b>AI 켜기</b>
+              <div class="memo">끄면 모든 AI 기능이 멈춥니다. 요금이 새는 것을 즉시 막는 자리예요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_aion" data-now="ai_on"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>가입 받기</b>
+              <div class="memo">끄면 새로 가입만 막힙니다. 쓰던 사람은 그대로예요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_signup" data-now="signup_on"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>알림 보내기</b>
+              <div class="memo">끄면 잠금화면 알림이 안 나갑니다. 서버에서 아예 안 만들어요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_push" data-now="push_on"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>점검 모드</b>
+              <div class="memo">켜면 모두가 읽기만 됩니다. SQL 을 돌리는 동안 쓰세요.</div></span>
+            <label class="sw"><input type="checkbox" id="s_readonly" data-now="readonly"><span></span></label>
+          </div>
+          <div class="snote" id="s_swnote">누르면 바로 적용됩니다.</div>
+        </div>
+
+        <!-- ── 공지 ── 사용자에게 말을 걸 유일한 수단입니다.
+             지금까지는 무슨 일이 생겨도 알려줄 방법이 아예 없었습니다. -->
+        <div class="card">
+          <h2><span class="grow">공지 한 줄</span>
+            <button class="small" id="s_noticesave">띄우기</button></h2>
+          <input id="s_notice" maxlength="200"
+                 placeholder="예: 오늘 밤 12시에 잠깐 멈춰요">
+          <div class="days" id="s_tone" style="margin:10px 0 0">
+            <button class="day on" data-tone="info">안내</button>
+            <button class="day" data-tone="warn">경고</button>
+          </div>
+          <div class="snote">비우고 띄우면 내려갑니다. 모든 화면 위에 뜹니다.</div>
+        </div>
+
+        <!-- ── 기능 스위치 ── 배포한 기능에 문제가 생겼을 때 되돌리는
+             배포 없이 그것만 끕니다. -->
+        <div class="card">
+          <h2>기능 스위치</h2>
+          <div class="srow">
+            <span class="label"><b>잠금화면 알림</b>
+              <div class="memo">프로필 → 알림의 스위치 자체를 감춥니다.</div></span>
+            <label class="sw"><input type="checkbox" id="f_push" data-feat="push"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>여행 서류</b>
+              <div class="memo">준비 탭의 '서류' 단추.</div></span>
+            <label class="sw"><input type="checkbox" id="f_docs" data-feat="docs"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>끌어서 순서 바꾸기</b>
+              <div class="memo">일정 줄 오른쪽 손잡이.</div></span>
+            <label class="sw"><input type="checkbox" id="f_reorder" data-feat="reorder"><span></span></label>
+          </div>
+          <div class="srow">
+            <span class="label"><b>지도 링크 읽기</b>
+              <div class="memo">일정 폼에 붙여넣은 구글 지도 주소를 서버가 폅니다.</div></span>
+            <label class="sw"><input type="checkbox" id="f_maplink" data-feat="maplink"><span></span></label>
+          </div>
+        </div>
       </div><!-- /setadmpane -->
 
         <!-- 조절이 이 사이에 끼어 있어서 묶음이 둘로 갈립니다.
@@ -1189,7 +1262,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b263</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b264</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1657,7 +1730,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b263"></script>
+<script type="module" src="app.js?v=b264"></script>
 </body>
 </html>
 
