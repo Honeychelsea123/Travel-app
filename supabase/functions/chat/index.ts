@@ -323,7 +323,13 @@ async function unshortenMap(u: string) {
 
     // 보통은 302 를 따라가면 res.url 이 긴 주소입니다.
     // 동의 페이지처럼 **지도 주소가 아닌 곳**으로 갔으면 그건 쓰면 안 됩니다.
-    let full = (res.url && !/goo\.gl/i.test(res.url) && /\/maps\//i.test(res.url))
+    //
+    // **여기서 `/maps/` 가 들어 있는지로 걸렀다가 물렸습니다.**
+    // 이 링크는 `maps.google.com/?q=…` 꼴로 펴지는데 거기엔 `/maps/` 가
+    // 없습니다. 그래서 멀쩡한 주소를 버리고 "위치를 못 찾았어요"가 됐습니다.
+    // 위에 이미 그 판단을 하는 isGoogleMap 이 있었습니다 — 새로 쓰지 말고
+    // 그걸 씁니다. 같은 판단을 두 벌로 적으면 이렇게 갈립니다.
+    let full = (res.url && !/goo\.gl/i.test(res.url) && isGoogleMap(res.url))
       ? res.url : '';
     // 302 가 아니라 HTML 로 넘기는 판도 있습니다(meta refresh·스크립트).
     if (!full){
