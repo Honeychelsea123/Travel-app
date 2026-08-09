@@ -1460,3 +1460,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
   #tripview.tabin > .card:not(.thead),
   #tripview.tabin-r > .card:not(.thead){ animation:none }
 }
+
+/* ── AI 제안 카드의 "지도에는 안 떠요" ────────────────────────────────
+ * 메모 뒤에 이어 붙였더니 메모가 길 때 그 뒤에 매달려 줄이 이상하게
+ * 끊겼습니다("… 직접 확인 필요 좌표 / 없음"). 제 줄을 줍니다. */
+.plan .body .memo{ display:block; }
+.plan .body .nogeo{ margin-top:2px; opacity:.8; }

@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b245';
-import { $, esc, toast, copyText } from './dom.js?v=b245';
-import { starHtml, paintStars, markRated } from './stars.js?v=b245';
+import { sb } from './db.js?v=b246';
+import { $, esc, toast, copyText } from './dom.js?v=b246';
+import { starHtml, paintStars, markRated } from './stars.js?v=b246';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b245';
-import { loadAdmin } from './admin.js?v=b245';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b245';
+         setErrLogger, NOROW } from './net.js?v=b246';
+import { loadAdmin } from './admin.js?v=b246';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b246';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b245';
+         setEditPlanId } from './trip.js?v=b246';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b245';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b246';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b245';
+         useCities, addCity, search } from './cities.js?v=b246';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b245';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b246';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b245';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b246';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b245';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b246';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1381,11 +1381,37 @@ $('ai_send').addEventListener('click', async () => {
  * 카드는 저장하지 않습니다 — 다음 질문을 하면 사라집니다.
  * 남겨두면 이미 담은 것을 또 담게 되고, 무엇이 최신인지 헷갈립니다. */
 function drawCards(d){
-  const acts = d?.actions || [], places = d?.places || [];
+  const acts = d?.actions || [];
+  /* **같은 곳을 두 장으로 내지 않습니다.**
+     "삼고정문 둘째날에 넣어줘" 처럼 한 곳을 말하면 AI 가 그것을 actions 에도
+     places 에도 담아 보낼 때가 있습니다. 그러면 '일정으로 넣기' 아래 한 장,
+     '갈 만한 곳에 담기' 아래 한 장 — **같은 장소가 카드 둘**로 뜨고
+     사용자는 둘이 무엇이 다른지 알 수가 없습니다.
+     일정 카드에는 이미 [일정에 넣기]와 [갈 만한 곳에 담기]가 **둘 다** 있으므로
+     고를 것은 거기서 다 고를 수 있습니다. 이름이 겹치면 일정 카드만 남깁니다.
+     (띄어쓰기·대소문자만 다른 것도 같은 곳으로 봅니다 — AI 가 매번 똑같이
+      적어주지는 않습니다.) */
+  /* **글자가 똑같은지로 보면 안 잡힙니다.** 실제로 온 것은
+     일정 `쌍용각 식사` · 장소 `쌍용각` 이었습니다 — AI 는 일정에는 무엇을 하는지까지
+     붙이고 장소에는 이름만 씁니다. 그래서 **한쪽이 다른 쪽에 들어 있으면** 같은 곳으로
+     봅니다. 두 글자는 넘어야 합니다 — '역' 같은 한 글자는 아무 데나 걸립니다. */
+  const 다듬기 = s => String(s ?? '').trim().replace(/\s+/g, '').toLowerCase();
+  const 제목들 = acts.map(a => 다듬기(a.title)).filter(Boolean);
+  const 같은곳 = name => {
+    const n = 다듬기(name);
+    if (n.length < 2) return false;
+    return 제목들.some(t => t === n || t.includes(n) || (n.length >= 2 && n.includes(t)));
+  };
+  const places = (d?.places || []).filter(p => !같은곳(p.name));
   lastTake = [];                    /* 새 제안이 나오면 되돌릴 대상도 새로 시작합니다 */
   if (!acts.length && !places.length){ $('cards').innerHTML = ''; return; }
 
-  const far = x => x.lat == null ? '<span class="val">좌표 없음</span>' : '';
+  /* 위치를 못 찾은 곳. **제 줄을 줍니다.** 전에는 메모 끝에 붙여서, 메모가 길면
+     그 뒤에 매달려 줄이 이상하게 끊겼습니다 — "… 직접 확인 필요 좌표 / 없음".
+     그리고 '좌표 없음'은 개발자 말입니다. 그게 사용자에게 뜻하는 것은
+     **이 곳은 지도에 안 뜬다**는 것뿐입니다. */
+  const far = x => x.lat == null
+    ? '<span class="memo nogeo">지도에는 안 떠요 · 위치를 못 찾았어요</span>' : '';
   setSuggested({ actions: acts, places });
 
   /* 하나씩 누르게 하면 제안이 다섯이면 다섯 번을 누릅니다. 초안은 서른 번입니다.
@@ -1424,11 +1450,15 @@ function drawCards(d){
       const k = a.category ? 'k-' + a.category : '';
       /* 단추를 **제목 아래**로 내립니다. 오른쪽에 세워두었더니 제목이
          밀려 두 줄로 접히고, 좁은 자리에 단추 둘이 겹쳐 보였습니다. */
+      /* **시각이 없으면 그 칸을 아예 안 그립니다.** 전에는 `–` 를 찍었는데,
+         AI 제안은 시각이 없는 것이 흔해서 줄마다 뜻 없는 줄표가 하나씩
+         서 있었습니다. 빈 칸을 남기면 제목이 50px 밀려 시작합니다. */
       return `<div class="plan">
-        <div class="when">${esc(a.start_time || '–')}</div>
+        ${a.start_time ? `<div class="when">${esc(a.start_time)}</div>` : ''}
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(a.title)}</b>
-          <span class="memo">${esc(a.date)}${a.memo ? ' · ' + esc(a.memo) : ''} ${far(a)}</span>
+          <span class="memo">${esc(a.date)}${a.memo ? ' · ' + esc(a.memo) : ''}</span>
+          ${far(a)}
           <div class="takepair">
             <button class="small" data-take="a"  data-i="${i}"
                     data-label="일정에 넣기">일정에 넣기</button>
@@ -1445,8 +1475,8 @@ function drawCards(d){
       return `<div class="plan">
         <span class="kdot ${esc(k)}"></span>
         <div class="body"><b>${esc(p.name)}</b>
-          <span class="memo">${esc([p.name_local, p.why].filter(Boolean).join(' · '))}
-            ${far(p)}</span>
+          <span class="memo">${esc([p.name_local, p.why].filter(Boolean).join(' · '))}</span>
+          ${far(p)}
           <div class="takepair">
             <button class="small" data-take="p" data-i="${i}"
                     data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>

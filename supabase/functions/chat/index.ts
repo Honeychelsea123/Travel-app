@@ -906,10 +906,31 @@ Deno.serve(async (req) => {
       raw = t;
     } else {
       let r = await callGemini(activeModel, key, contents);
-      if (r.code === 429) r = await callGemini(MODEL_FALLBACK, key, contents);
+      /* **429 만 다시 물어보고 있었습니다.** 그런데 무료 등급에서 훨씬 흔한 것은
+         503 "The model is overloaded" 입니다 — 그건 재시도 없이 곧장
+         "AI가 답을 안 줬어요"로 나갔습니다. 사용자가 실제로 그 화면을 만났고,
+         **같은 질문이 잠시 뒤에는 그냥 됐습니다**(9.7초). 즉 물어보기를
+         그만둔 것이 유일한 이유였습니다.
+         불러오기 쪽(askGemini)은 이미 코드를 안 가리고 한 번 더 물어봅니다.
+         여기만 안 하고 있었습니다. */
+      if (r.code !== 200){
+        console.error('gemini', r.code, String(r.body).slice(0, 300));
+        /* 5xx 는 그 모델이 잠깐 붐비는 것입니다. 조금 쉬었다 **같은 모델**로
+           한 번 더 — 여기서 바로 가벼운 모델로 넘기면 붐빔을 피하려다
+           답의 품질을 잃습니다. */
+        if (r.code >= 500){
+          await new Promise((s) => setTimeout(s, 1200));
+          r = await callGemini(activeModel, key, contents);
+        }
+        /* 그래도 안 되면(또는 한도 429 라면) 가벼운 모델로 넘깁니다. */
+        if (r.code !== 200){
+          console.error('gemini 재시도', r.code, String(r.body).slice(0, 300));
+          r = await callGemini(MODEL_FALLBACK, key, contents);
+        }
+      }
       if (r.code !== 200){
         // HTTP 코드를 사용자에게 보여줄 이유가 없습니다. 로그에는 남습니다.
-        console.error('gemini', r.code, r.why);
+        console.error('gemini 최종실패', r.code, String(r.body).slice(0, 300));
         return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 물어봐주세요.' }, 502);
       }
 
