@@ -805,7 +805,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow:has(> .stars) > .stars{ grid-column:2 / -1; grid-row:2; margin-left:0;
                               line-height:1; /* 25px 글자의 줄 높이까지 따라오면 12px 이 놉니다 */ }
 /* 글자 크기 설정을 따르되 화면 폭을 넘지 않게 위를 막습니다. */
-.rrow .st{ font-size:min(var(--f-3xl), 6.6vw); }
+/* ⚠ **별을 누르는 자리는 어디서나 같은 크기여야 합니다.**
+   목록에서는 25px 인데 도시 페이지에서는 **12px** 였습니다 —
+   `#cv_stars` 가 `.stats span{ font-size:var(--f-sm) }` 을 물려받는데
+   `.st` 는 `1.1em` 이라 부모 크기를 그대로 따라갔기 때문입니다.
+   **정작 별점을 매기는 주 화면이 제일 작았고, 반 칸(0.5점)이 6px 였습니다.**
+   `.st` 를 em 으로 짠 것이 원인입니다 — 부모 글자 크기가 바뀌는 자리에
+   놓이면 조용히 같이 줄어듭니다. 누르는 곳은 px 로 못박습니다. */
+.rrow .st, #cv_stars .st{ font-size:min(var(--f-3xl), 6.6vw); }
 .rrow .want{ flex:none; padding:4px 2px; }
 /* 별이 차는 것과 줄이 밀려나는 것이 보여야 내가 눌렀다는 걸 압니다. */
 .st i{ transition:width var(--t-fast) var(--ease); }
@@ -1390,7 +1397,16 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
    파일 뒤쪽이라는 이유만으로 홈의 `min-height` 를 `height:172px` 로
    덮고 있었습니다 — 홈 사진이 자랄 수 없던 진짜 이유입니다.
    재보고서야 알았습니다. **이 규칙은 `#cv_hero` 한 곳만의 것입니다.** */
-#cv_hero{ height:172px; background:var(--parchment) center/cover no-repeat; }
+/* **172px 는 이제 혼자만 작습니다.** 홈 히어로 236 · 목록 썸네일 76 으로
+   전부 사진 쪽으로 옮겼는데 여기만 그대로였습니다(480px 폭에 172면 2.8:1
+   레터박스입니다).
+   그렇다고 180 으로 되돌리지는 않습니다 — 위 주석의 이유가 아직 유효합니다.
+   **할 일(한줄평·별점)은 사진 아래에 있고, 그게 접혀 보이면 안 됩니다.**
+   그래서 `min` 을 172 로 잡아 **작은 폰에서는 지금과 똑같이** 두고,
+   여유 있는 화면에서만 24vh 까지 자라게 합니다(844px 폰에서 203px).
+   홈(236)보다는 늘 작습니다 — 홈이 그날의 주인공이고 여기는 자료 화면입니다. */
+#cv_hero{ height:clamp(172px, 24vh, 220px);
+          background:var(--parchment) center/cover no-repeat; }
 #cv_hero.ph{ display:flex; align-items:center; justify-content:center;
              font-size:var(--f-mega); font-weight:650; color:var(--hairline); }
 /* **손가락 자리를 44px 로 넓힙니다.** 재보니 22×38 이었습니다. 도시 목록에서
