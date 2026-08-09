@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b255';
-import { $, esc, toast, copyText } from './dom.js?v=b255';
-import { starHtml, paintStars, markRated } from './stars.js?v=b255';
+import { sb } from './db.js?v=b256';
+import { $, esc, toast, copyText } from './dom.js?v=b256';
+import { starHtml, paintStars, markRated } from './stars.js?v=b256';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b255';
-import { loadAdmin } from './admin.js?v=b255';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b255';
+         setErrLogger, NOROW } from './net.js?v=b256';
+import { loadAdmin } from './admin.js?v=b256';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b256';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b255';
+         setEditPlanId } from './trip.js?v=b256';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b255';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b256';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b255';
+         useCities, addCity, search } from './cities.js?v=b256';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b255';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b256';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b255';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b256';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b255';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b256';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -247,8 +247,46 @@ async function loadNotifPrefs(){
   if (error){ $('notifprefcard').classList.add('hide'); return; }
   $('notifprefcard').classList.remove('hide');
   $('nf_all').checked = data ? data.notify_all !== false : true;
+  /* 064 를 아직 안 올린 곳에서는 칸이 없습니다. 그때는 기본값으로 그립니다 —
+     화면이 비는 것보다 낫고, 저장할 때 오류가 뜨면 그때 알게 됩니다. */
+  putKinds(data?.notify_plan || 'first', data?.notify_flight !== false);
   drawPushRow();
 }
+
+/* 고른 것을 화면에 얹습니다. 저장한 뒤에도 이 함수로 다시 그립니다 —
+   두 곳에서 따로 칠하면 한쪽만 고치게 됩니다. */
+function putKinds(plan, flight){
+  document.querySelectorAll('#nf_plan [data-pl]').forEach(b =>
+    b.classList.toggle('on', b.dataset.pl === plan));
+  $('nf_flight').checked = flight;
+}
+
+async function saveKinds(row){
+  $('nferr').classList.add('hide');
+  const r = await sb.from('user_prefs')
+    .upsert({ user_id: me.id, ...row }, { onConflict:'user_id' })
+    .select('notify_plan,notify_flight');
+  if (r.error || !r.data?.length){
+    await loadNotifPrefs();               /* 화면을 진짜 값으로 되돌립니다 */
+    return fail(r.error || NOROW.save, 'nf');
+  }
+  putKinds(r.data[0].notify_plan, r.data[0].notify_flight);
+  return true;
+}
+
+$('nf_plan').addEventListener('click', async e => {
+  const b = e.target.closest('[data-pl]'); if (!b) return;
+  /* 먼저 칠하고 저장합니다. 기다렸다 칠하면 누른 것이 안 눌린 것처럼 보입니다. */
+  putKinds(b.dataset.pl, $('nf_flight').checked);
+  if (await saveKinds({ notify_plan: b.dataset.pl }))
+    toast({ all:'모든 일정을 알려드려요', first:'그날 첫 일정만 알려드려요',
+            off:'일정 알림을 껐어요' }[b.dataset.pl]);
+});
+
+$('notifprefcard').addEventListener('change', async e => {
+  if (e.target.id !== 'nf_flight') return;
+  await saveKinds({ notify_flight: $('nf_flight').checked });
+});
 
 $('notifprefcard').addEventListener('change', async e => {
   if (e.target.id !== 'nf_all') return;
@@ -289,6 +327,10 @@ const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window
 async function drawPushRow(){
   const sw = $('nf_push'), why = $('pushwhy');
   why.classList.add('hide');
+  /* **종류 고르기는 켜져 있을 때만 보여줍니다.** 안 받는 사람에게 무엇을
+     받을지 묻는 칸이 세 줄 서 있으면 설정이 알림보다 복잡해집니다. */
+  const kinds = on => $('pushkinds').classList.toggle('hide', !on);
+  kinds(false);
   if (!pushOk()){
     sw.checked = false; sw.disabled = true;
     why.textContent = matchMedia('(display-mode: standalone)').matches
@@ -307,6 +349,7 @@ async function drawPushRow(){
   sw.disabled = false;
   const reg = await navigator.serviceWorker.getRegistration();
   sw.checked = !!(await reg?.pushManager.getSubscription());
+  kinds(sw.checked);
 }
 
 $('notifprefcard').addEventListener('change', async e => {
