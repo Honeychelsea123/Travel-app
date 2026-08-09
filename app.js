@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b252';
-import { $, esc, toast, copyText } from './dom.js?v=b252';
-import { starHtml, paintStars, markRated } from './stars.js?v=b252';
+import { sb } from './db.js?v=b253';
+import { $, esc, toast, copyText } from './dom.js?v=b253';
+import { starHtml, paintStars, markRated } from './stars.js?v=b253';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b252';
-import { loadAdmin } from './admin.js?v=b252';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b252';
+         setErrLogger, NOROW } from './net.js?v=b253';
+import { loadAdmin } from './admin.js?v=b253';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b253';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b252';
+         setEditPlanId } from './trip.js?v=b253';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b252';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b253';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b252';
+         useCities, addCity, search } from './cities.js?v=b253';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b252';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b253';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b252';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b253';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b252';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b253';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -247,6 +247,7 @@ async function loadNotifPrefs(){
   if (error){ $('notifprefcard').classList.add('hide'); return; }
   $('notifprefcard').classList.remove('hide');
   $('nf_all').checked = data ? data.notify_all !== false : true;
+  drawPushRow();
 }
 
 $('notifprefcard').addEventListener('change', async e => {
@@ -262,6 +263,99 @@ $('notifprefcard').addEventListener('change', async e => {
                         return fail(NOROW.save, 'nf'); }
   toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
   loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
+});
+
+/* ── 잠금화면 알림 (Web Push) ───────────────────────────────────────
+ * `notify_all` 이 "무엇을 알릴지"이고, 여기는 "어떻게 받을지"입니다.
+ * 스위치를 두 벌 두면 하나를 껐는데 다른 쪽으로 계속 옵니다 —
+ * 그래서 이 스위치는 **기기 등록**만 맡습니다. 무엇을 보낼지는
+ * 위 스위치가 정합니다(035 의 notify_wants).
+ *
+ * **아이폰은 홈 화면에 담아야만 됩니다.** 사파리 탭에서는 `PushManager`
+ * 자체가 없습니다. 눌러도 안 되는 스위치를 두면 고장으로 보이므로,
+ * 못 하는 자리에서는 왜 못 하는지 적어둡니다. */
+const VAPID_PUB = 'BKHqArbSZ6R78C-rwKrRs42lvSgYadpp5LLGfJUh2Xg4jzbcJiUv_5NanYsyYoRaeJtGuD9w7cs51vP1xveNBqM';
+
+/* base64url → 바이트. 브라우저가 이 꼴로만 키를 받습니다. */
+function b64ToBytes(s){
+  const p = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4);
+  const raw = atob(p);
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window
+                  && 'Notification' in window;
+
+async function drawPushRow(){
+  const sw = $('nf_push'), why = $('pushwhy');
+  why.classList.add('hide');
+  if (!pushOk()){
+    sw.checked = false; sw.disabled = true;
+    why.textContent = matchMedia('(display-mode: standalone)').matches
+      ? '이 기기는 잠금화면 알림을 지원하지 않아요.'
+      : '홈 화면에 담아서 열면 잠금화면 알림을 켤 수 있어요. ' +
+        '(공유 → 홈 화면에 추가)';
+    why.classList.remove('hide');
+    return;
+  }
+  if (Notification.permission === 'denied'){
+    sw.checked = false; sw.disabled = true;
+    why.textContent = '기기 설정에서 이 앱의 알림이 꺼져 있어요. 거기서 켜주세요.';
+    why.classList.remove('hide');
+    return;
+  }
+  sw.disabled = false;
+  const reg = await navigator.serviceWorker.getRegistration();
+  sw.checked = !!(await reg?.pushManager.getSubscription());
+}
+
+$('notifprefcard').addEventListener('change', async e => {
+  if (e.target.id !== 'nf_push') return;
+  const on = $('nf_push').checked;
+  $('nferr').classList.add('hide');
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg){ $('nf_push').checked = false; return fail('앱을 새로고침한 뒤 다시 켜주세요.', 'nf'); }
+
+  if (!on){
+    const sub = await reg.pushManager.getSubscription();
+    if (sub){
+      /* **표에서 먼저 지우고 기기에서 뗍니다.** 순서가 반대면 표에 죽은
+         주소가 남아 보낼 때마다 실패합니다. */
+      await sb.from('push_subs').delete().eq('endpoint', sub.endpoint);
+      await sub.unsubscribe();
+    }
+    toast('잠금화면 알림을 껐어요');
+    return drawPushRow();
+  }
+
+  /* 허락은 **사용자가 스위치를 켠 그 순간**에만 물을 수 있습니다.
+     앱을 열자마자 물으면 대부분 거절합니다. */
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted'){ $('nf_push').checked = false; return drawPushRow(); }
+
+  let sub;
+  try {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUB) });
+  } catch (err){
+    $('nf_push').checked = false;
+    return fail('알림을 켜지 못했어요. 잠시 뒤 다시 눌러주세요.', 'nf');
+  }
+
+  const j = sub.toJSON();
+  const r = await sb.from('push_subs').upsert({
+    user_id: me.id, endpoint: sub.endpoint,
+    p256dh: j.keys.p256dh, auth: j.keys.auth,
+    ua: navigator.userAgent.slice(0, 200),
+  }, { onConflict: 'endpoint' }).select('id');
+
+  if (r.error || !r.data?.length){
+    await sub.unsubscribe();          /* 표에 못 넣었으면 기기 등록도 물립니다 */
+    $('nf_push').checked = false;
+    return fail(r.error || NOROW.save, 'nf');
+  }
+  toast('이제 잠금화면으로 알려드려요');
+  drawPushRow();
 });
 
 /* ── 탈퇴 ───────────────────────────────────────────────────────────
@@ -421,6 +515,18 @@ $('login').addEventListener('click', async () => {
 });
 
 $('logout').addEventListener('click', async () => {
+  /* **잠금화면 알림부터 뗍니다.** 안 떼면 이 기기는 계속 이 사람의 일정을
+     알립니다 — 같은 기기를 다음 사람이 써도요. 로그아웃한 계정의 일정이
+     남의 잠금화면에 뜨면 그건 자료가 새는 것입니다.
+     로그아웃 뒤에는 RLS 때문에 표에서 지울 수가 없으니 **먼저** 합니다. */
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    const sub = await reg?.pushManager?.getSubscription();
+    if (sub){
+      await sb.from('push_subs').delete().eq('endpoint', sub.endpoint);
+      await sub.unsubscribe();
+    }
+  } catch {}
   await sb.auth.signOut();
   location.replace(location.pathname);      /* 주소에 붙은 토큰 조각을 지웁니다 */
 });

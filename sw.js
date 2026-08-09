@@ -287,3 +287,42 @@ self.addEventListener('fetch', e => {
     }
   })());
 });
+
+/* ── 잠금화면 알림 ──────────────────────────────────────────────────
+ * 여행 앱은 1년에 두 주 쓰입니다. 그 두 주에 **먼저 말을 걸 수 있는
+ * 유일한 자리**가 여기입니다. 앱을 열어야 보이는 알림은 "지금 뭐 할
+ * 시간인가"를 알려줄 수가 없습니다 — 그걸 알려고 앱을 여는 것이니까요.
+ *
+ * 보내는 쪽(Edge Function)이 JSON 을 실어 보냅니다.
+ * **못 읽어도 알림은 띄웁니다** — 빈 알림이라도 뜨는 편이,
+ * 왔는데 아무 일도 안 일어나는 것보다 낫습니다. */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data?.text() || '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'AI.Trip', {
+    body: d.body || '',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    /* 같은 일정에 대한 알림이 두 번 오면 **덮어씁니다**. 폰과 노트북이
+       따로 받는 것은 맞지만 한 기기에 두 장이 쌓이면 안 됩니다. */
+    tag: d.tag || 't2',
+    data: { url: d.url || './' },
+  }));
+});
+
+/* 알림을 누르면 **이미 열려 있는 창을 앞으로 가져옵니다.** 새로 열면
+ * 앱이 두 개가 되고, 홈 화면 앱에서는 하던 것이 날아갑니다. */
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url || './';
+  e.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type:'window', includeUncontrolled:true });
+    for (const c of list){
+      if (c.url.includes(self.registration.scope)){
+        await c.focus();
+        return;
+      }
+    }
+    await self.clients.openWindow(url);
+  })());
+});
