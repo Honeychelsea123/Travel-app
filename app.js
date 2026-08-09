@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b270';
-import { $, esc, toast, copyText } from './dom.js?v=b270';
-import { starHtml, paintStars, markRated } from './stars.js?v=b270';
+import { sb } from './db.js?v=b271';
+import { $, esc, toast, copyText } from './dom.js?v=b271';
+import { starHtml, paintStars, markRated } from './stars.js?v=b271';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b270';
-import { loadAdmin } from './admin.js?v=b270';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b270';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b271';
+import { loadAdmin } from './admin.js?v=b271';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b271';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b270';
+         setEditPlanId } from './trip.js?v=b271';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b270';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b271';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b270';
+         useCities, addCity, search } from './cities.js?v=b271';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b270';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b271';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b270';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b271';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b270';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b271';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3604,7 +3604,7 @@ function drawCands(){
     /* 한 줄로 늘어놓으니 답답했습니다. 카드로 펼치고 할 수 있는 일을 다 답니다 —
        일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
     ? cands.map(c => {
-        const q = encodeURIComponent(c.title_local || c.title);
+        const ml = mapLinks(c, trip?.destination);
         /* '좌표 없음'은 개발자 말입니다. 사용자에게 뜻하는 것은 하나뿐입니다 —
            이 곳은 지도에 안 뜬다. 아래 '좌표 채우기'가 채워줍니다. */
         /* 현지 이름은 **우리말 이름과 다를 때만** 답니다. 국내 장소는 둘이
@@ -3619,8 +3619,7 @@ function drawCands(){
           <div class="a">
             <button class="ghost" data-candplan="${esc(c.id)}"
                     style="color:var(--primary)">일정에 넣기</button>
-            <a href="https://www.google.com/maps/search/?api=1&query=${q}"
-               target="_blank" rel="noopener">지도</a>
+            <a href="${esc(ml.see)}" target="_blank" rel="noopener">지도</a>
             <button class="ghost" data-canddel="${esc(c.id)}"
                     style="color:var(--bad); margin-left:auto">삭제</button>
           </div>
@@ -6344,6 +6343,108 @@ function splitParts(s){
   if (buf) out.push(buf);
   return out;
 }
+/* ── 지도 링크 ───────────────────────────────────────────────────────
+ * '지도에서 보기'가 **제목만으로 검색**하고 있었습니다
+ * (`?api=1&query=아카리조명`). 이름이 같은 가게는 세계에 여럿이라 구글이
+ * 아무 곳이나 고릅니다 — 사용자가 "엉뚱한 곳이 나온다"고 한 것이 이것입니다.
+ *
+ * 그런데 우리는 **더 정확한 것을 이미 둘이나 갖고 있었습니다.**
+ *   1. 메모에 붙여넣은 지도 주소 — 사용자가 직접 그 자리를 짚어준 것
+ *   2. 좌표(`lat`·`lng`) — 재보니 100개 중 89개에 들어 있는데 한 번도 안 썼습니다
+ * 둘 다 버리고 이름으로 검색하고 있었습니다.
+ *
+ * **순서는 메모의 주소가 먼저입니다.** 좌표는 '좌표 채우기'가 짐작해 넣은
+ * 것이고 메모의 주소는 사람이 손으로 짚은 것입니다. 짐작보다 사람이 먼저입니다.
+ * 좌표만 있으면 `/@lat,lng,17z` 로 **그 자리를 보면서 이름을 찾게** 합니다 —
+ * `query=lat,lng` 로 핀만 찍으면 정확은 해도 가게 정보(영업시간·후기)가
+ * 통째로 사라집니다. 이 꼴이면 이름을 못 찾아도 **지도는 옳은 자리**에 섭니다.
+ * 둘 다 없으면 이름에 **그 구간의 도시**를 붙입니다 — 그것만으로도 나라를
+ * 건너뛰는 일은 없어집니다. */
+
+/* 어느 앱에서 복사했는지는 사용자가 정할 일입니다. 구글·애플·네이버·카카오를
+   다 받습니다. 짧은 주소(maps.app.goo.gl)는 우리가 펴볼 수 없으므로 그대로 엽니다 —
+   펴보려고 남의 서버에 물어보면 응답이 달라지는 문제가 생깁니다(b265 에서 겪음). */
+const MAP_URL = new RegExp('^https?://(?:' + [
+  'maps\\.app\\.goo\\.gl', 'goo\\.gl/maps', 'maps\\.google\\.[a-z.]+',
+  '(?:www\\.)?google\\.[a-z.]+/maps', 'maps\\.apple\\.com',
+  'naver\\.me', '(?:m\\.)?map\\.naver\\.com', 'place\\.map\\.kakao\\.com', 'kko\\.to',
+].join('|') + ')(?:[/?]|$)', 'i');
+
+function memoMapUrl(...texts){
+  for (const t of texts)
+    for (const m of String(t || '').matchAll(/https?:\/\/[^\s<>"']+/g))
+      /* 문장 끝의 문장부호가 주소에 딸려 들어옵니다 */
+      if (MAP_URL.test(m[0])) return m[0].replace(/[),.;]+$/, '');
+  return null;
+}
+
+/* 한 줄(일정 또는 후보)에서 '지도에서 보기'·'길찾기' 주소를 만듭니다.
+   `city` 는 이름만으로는 어느 나라인지 모를 때 붙일 도시 이름입니다. */
+function mapLinks(o, city){
+  const geo = o.lat != null && o.lng != null;
+  const name = encodeURIComponent(o.title_local || o.title || '');
+  const q = encodeURIComponent([o.title_local || o.title, city].filter(Boolean).join(' '));
+  const url = memoMapUrl(o.memo, o.move_note);
+  const see = url ? url
+    : geo ? (name ? `https://www.google.com/maps/search/${name}/@${o.lat},${o.lng},17z`
+                  : `https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lng}`)
+    : `https://www.google.com/maps/search/?api=1&query=${q}`;
+  /* 길찾기는 **목적지를 알아야** 합니다. 짧은 주소로는 알 수 없으므로
+     좌표가 있으면 좌표로, 없으면 이름+도시로 갑니다. */
+  const go = `https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=${
+    geo ? `${o.lat},${o.lng}` : q}`;
+  return { see, go };
+}
+
+/* 지도 주소는 **틀려도 화면에서는 멀쩡해 보입니다** — 눌러서 딴 데가 나와야
+   압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
+window.__mapCheck = () => {
+  const T = [];
+  const t = (name, got, want) => T.push({ name, ok: got === want, got, want });
+  const S = 'https://www.google.com/maps/search/';
+
+  /* 1. 사용자가 손으로 짚은 주소가 제일 먼저다 — 좌표가 있어도 */
+  t('메모의 짧은 주소를 그대로 연다',
+    mapLinks({ title:'아카리조명', memo:'https://maps.app.goo.gl/vykxwqgPhrYdhTf16?g_st=ipc' }, '도쿄').see,
+    'https://maps.app.goo.gl/vykxwqgPhrYdhTf16?g_st=ipc');
+  t('메모의 주소가 좌표를 이긴다',
+    mapLinks({ title:'아카리조명', lat:35.6, lng:139.7, memo:'https://maps.app.goo.gl/x' }, '도쿄').see,
+    'https://maps.app.goo.gl/x');
+
+  /* 2. 좌표가 있으면 그 자리를 보면서 이름을 찾는다 */
+  t('좌표는 @lat,lng 로 자리를 잡는다',
+    mapLinks({ title:'콜로세오', lat:41.8902, lng:12.4922 }, '로마').see,
+    S + '%EC%BD%9C%EB%A1%9C%EC%84%B8%EC%98%A4/@41.8902,12.4922,17z');
+  t('이름이 없으면 좌표에 핀만 찍는다',
+    mapLinks({ title:'', lat:41.8902, lng:12.4922 }, '로마').see,
+    S + '?api=1&query=41.8902,12.4922');
+
+  /* 3. 둘 다 없으면 이름 + 도시 — 이것이 '엉뚱한 곳'을 막는 마지막 그물 */
+  t('좌표도 주소도 없으면 도시를 붙인다',
+    mapLinks({ title:'아카리조명' }, '도쿄').see,
+    S + '?api=1&query=%EC%95%84%EC%B9%B4%EB%A6%AC%EC%A1%B0%EB%AA%85%20%EB%8F%84%EC%BF%84');
+
+  /* 4. 길찾기는 짧은 주소로 못 간다 — 목적지를 알아야 하므로 좌표/이름으로 */
+  t('길찾기는 좌표를 쓴다',
+    mapLinks({ title:'콜로세오', lat:41.89, lng:12.49, memo:'https://maps.app.goo.gl/x' }, '로마').go,
+    'https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=41.89,12.49');
+
+  /* 5. 지도가 아닌 주소는 안 물어야 한다 — 블로그 링크를 메모에 적는 일이 잦다 */
+  t('블로그 주소는 지도로 안 쓴다',
+    memoMapUrl('참고 https://blog.naver.com/abc/123'), null);
+  t('문장 끝의 마침표는 주소에서 뗀다',
+    memoMapUrl('여기다 https://maps.app.goo.gl/abc.'), 'https://maps.app.goo.gl/abc');
+  t('구글 지도 긴 주소도 받는다',
+    memoMapUrl('https://www.google.com/maps/place/Tokyo/@35.6,139.7,12z'),
+    'https://www.google.com/maps/place/Tokyo/@35.6,139.7,12z');
+  t('goo.gl 이라도 지도가 아니면 안 쓴다', memoMapUrl('https://goo.gl/abcd'), null);
+
+  const bad = T.filter(x => !x.ok);
+  console.table(T.map(x => ({ 검사:x.name, 결과:x.ok ? 'OK' : '틀림' })));
+  bad.forEach(x => console.error(`✗ ${x.name}\n  나온 것: ${x.got}\n  나와야: ${x.want}`));
+  return { 전체:T.length, 틀림:bad.length };
+};
+
 function parseMemo(memo){
   const out = { move:'', cost:'', notes:[] };
   if (!memo) return out;
@@ -6611,7 +6712,9 @@ function drawPlans(){
     const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null,
                  spent ? money(spent, trip.home_currency) : null]
                   .filter(Boolean).join(' · ');
-    const q = encodeURIComponent(p.title || '');
+    /* 이름만으로는 어느 나라인지 모릅니다. 그날 구간의 도시를 같이 넘깁니다
+       (구간이 하나뿐이면 여행의 대표 도시). */
+    const ml = mapLinks(p, legFor(p.date)?.destination || trip?.destination);
     const open = openPlans.has(p.id);
 
     html += `<div class="ev${open ? ' is-open' : ''}" data-ev="${esc(p.id)}"
@@ -6631,10 +6734,8 @@ function drawPlans(){
         ${mm.cost ? `<div class="drow"><b>예상</b> ${esc(nice(mm.cost))}</div>` : ''}
         ${mm.notes.map(n => `<div class="dnote">${esc(nice(n))}</div>`).join('')}
         <div class="dacts">
-          <a href="https://www.google.com/maps/search/?api=1&query=${q}"
-             target="_blank" rel="noopener">지도에서 보기</a>
-          <a href="https://www.google.com/maps/dir/?api=1&destination=${q}&travelmode=transit"
-             target="_blank" rel="noopener">길찾기</a>
+          <a href="${esc(ml.see)}" target="_blank" rel="noopener">지도에서 보기</a>
+          <a href="${esc(ml.go)}" target="_blank" rel="noopener">길찾기</a>
           ${trip.myRole === 'viewer' ? '' :
             `<button class="ghost" data-pact="edit" data-id="${esc(p.id)}">수정</button>
              <button class="ghost" data-pact="del" data-id="${esc(p.id)}"
