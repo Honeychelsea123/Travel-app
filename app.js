@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b257';
-import { $, esc, toast, copyText } from './dom.js?v=b257';
-import { starHtml, paintStars, markRated } from './stars.js?v=b257';
+import { sb } from './db.js?v=b258';
+import { $, esc, toast, copyText } from './dom.js?v=b258';
+import { starHtml, paintStars, markRated } from './stars.js?v=b258';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b257';
-import { loadAdmin } from './admin.js?v=b257';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b257';
+         setErrLogger, NOROW } from './net.js?v=b258';
+import { loadAdmin } from './admin.js?v=b258';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b258';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b257';
+         setEditPlanId } from './trip.js?v=b258';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b257';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b258';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b257';
+         useCities, addCity, search } from './cities.js?v=b258';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b257';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b258';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b257';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b258';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b257';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b258';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -445,6 +445,11 @@ $('notifprefcard').addEventListener('change', async e => {
     $('nf_push').checked = false;
     return fail(r.error || NOROW.save, 'nf');
   }
+  /* **집 시간대를 여기서도 씁니다.** 위의 loadNotifPrefs 가 이미 하지만,
+     그건 "설정 화면을 열었다"에 기대고 있습니다. 스위치가 나중에 다른
+     자리로 옮겨가면 집 시간대가 조용히 안 채워지고, 그러면 출국편 알림이
+     다시 1시간 일찍 옵니다. 켜는 자리에서 챙기면 그 고리가 끊어집니다. */
+  saveHomeTz();
   toast('이제 잠금화면으로 알려드려요');
   drawPushRow();
 });
