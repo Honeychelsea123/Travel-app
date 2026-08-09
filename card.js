@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b265';
+import { $, esc, toast } from './dom.js?v=b266';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -238,11 +238,16 @@ export async function cardImage(spec, mode = 'square'){
       g.drawImage(ph, (W - dw) / 2, (H - dh) / 2, dw, dh);
       /* **글자가 읽히려면 사진을 눌러야 합니다.** 위는 살짝, 아래는 깊게 —
          글자가 아래쪽에 모여 있고 위쪽은 사진을 보여주는 자리입니다. */
+      /* **처음 값으로는 글자가 사진에 묻혔습니다.** 방콕 사진으로 그려보니
+         밝은 하늘과 금색 지붕 위에서 흰 글씨가 읽히질 않았습니다.
+         글자가 앉는 아래 절반을 훨씬 깊게 누릅니다 — 위쪽은 사진을
+         보여주는 자리라 그대로 둡니다. */
       const sc = g.createLinearGradient(0, 0, 0, H);
-      sc.addColorStop(0,   'rgba(0,0,0,.34)');
-      sc.addColorStop(.42, 'rgba(0,0,0,.20)');
-      sc.addColorStop(.72, 'rgba(0,0,0,.62)');
-      sc.addColorStop(1,   'rgba(0,0,0,.88)');
+      sc.addColorStop(0,   'rgba(0,0,0,.30)');
+      sc.addColorStop(.30, 'rgba(0,0,0,.16)');
+      sc.addColorStop(.52, 'rgba(0,0,0,.58)');
+      sc.addColorStop(.78, 'rgba(0,0,0,.84)');
+      sc.addColorStop(1,   'rgba(0,0,0,.94)');
       g.fillStyle = sc; g.fillRect(0, 0, W, H);
       /* 그 도시의 색을 옅게 덮어 카드마다 인상이 갈리게 합니다. */
       g.globalAlpha = .18; g.fillStyle = c1; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
@@ -350,18 +355,25 @@ export async function cardImage(spec, mode = 'square'){
      둘 다 작고 흐려서 어느 쪽도 안 읽혔습니다. 한 줄에 붙여 놓으면
      "AI.Trip · 주소" 가 하나의 서명처럼 읽힙니다.
      사진 위에 얹히므로 얇은 그림자를 깔아 어떤 사진에서도 읽히게 합니다. */
-  g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 12; g.shadowOffsetY = 1;
-  g.font = F(700, 34); g.globalAlpha = .95;
-  g.fillText('AI.Trip', cx, H - 72); g.globalAlpha = 1;
+  /* **정말로 한 줄에 붙입니다.** 앞서 이름을 H-72, 주소를 H-54 에 뒀는데
+     34px·28px 글자가 18px 간격이면 겹칩니다 — 실제로 겹쳐서 나왔습니다.
+     이름을 그리고 그 폭만큼 옮겨 주소를 이어 붙입니다. */
+  g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 14; g.shadowOffsetY = 1;
+  g.font = F(700, 34); g.globalAlpha = .96;
+  g.fillText('AI.Trip', cx, H - 62);
+  const nameW = g.measureText('AI.Trip').width;
+  g.globalAlpha = 1;
   /* **주소는 이름만큼 또렷해야 합니다.** 처음에 24px·42% 로 넣었다가 재보니
      배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
      폰 화면에서 9pt 도 안 되는데, 그걸 흐리게까지 하면 **읽어서 칠 수가 없습니다.**
      읽으라고 넣은 글자입니다. 광고처럼 안 보이는 선에서 최대한 또렷하게. */
   const link = appUrlText();
   if (link){
-    g.font = F(500, 28); g.globalAlpha = .62;
-    g.fillText(link, cx, H - 54); g.globalAlpha = 1;
+    g.font = F(500, 28); g.globalAlpha = .78;
+    /* 같은 줄, 이름 오른쪽에. 가운뎃점으로 갈라 한 서명처럼 보이게 합니다. */
+    g.fillText('· ' + link, cx + nameW + 14, H - 62); g.globalAlpha = 1;
   }
+  g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
 
   return { blob: await new Promise(r => cv.toBlob(r, 'image/png')), fontOk: ok };
 }
