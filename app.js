@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b262';
-import { $, esc, toast, copyText } from './dom.js?v=b262';
-import { starHtml, paintStars, markRated } from './stars.js?v=b262';
+import { sb } from './db.js?v=b263';
+import { $, esc, toast, copyText } from './dom.js?v=b263';
+import { starHtml, paintStars, markRated } from './stars.js?v=b263';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b262';
-import { loadAdmin } from './admin.js?v=b262';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b262';
+         setErrLogger, NOROW } from './net.js?v=b263';
+import { loadAdmin } from './admin.js?v=b263';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b263';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b262';
+         setEditPlanId } from './trip.js?v=b263';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b262';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b263';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b262';
+         useCities, addCity, search } from './cities.js?v=b263';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b262';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b263';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b262';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b263';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b262';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b263';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -4243,14 +4243,44 @@ async function openCountries(){
     (groups[k] = groups[k] || []).push(code);
   });
 
-  $('ctrylist').innerHTML = order.filter(k => groups[k]?.length).map(k => {
-    const cs = groups[k].sort((a, b) => byC[b].length - byC[a].length);
-    const n  = cs.reduce((s, c) => s + byC[c].length, 0);
+  /* **나라만 보여줍니다.** 처음엔 나라마다 도시 칩을 다 펴뒀는데, 한국 24곳
+     일본 9곳이 붙으니 한 대륙이 화면 두 개가 됐습니다. 사용자 지적:
+     "도시 말고 내가 갔던 나라만 보고 싶은 건데."
+     나라를 칩으로 촘촘히 깔면 27개국이 한 화면에 들어옵니다.
+     도시는 없앤 게 아니라 **한 번 눌러야 나옵니다** — 궁금할 때만 봅니다. */
+  const totalOf = Object.fromEntries(CONT);
+  const pct = codes.length / UN_COUNTRIES * 100;
+
+  /* **글자만 늘어놓으면 공유할 마음이 안 듭니다.** 국기를 답니다 —
+     그림 파일을 스물일곱 장 받아올 필요가 없습니다. 나라 코드 두 글자를
+     지역표시기호로 바꾸면 기기가 국기로 그려줍니다(KR → 🇰🇷).
+     안 되는 기기에서는 그냥 두 글자가 보입니다 — 깨지지 않습니다. */
+  const flag = code => String(code || '').toUpperCase().replace(/[^A-Z]/g, '')
+    .slice(0, 2).replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397));
+
+  const head = `<div class="card ctryhero">
+    <div class="big">${codes.length}<i>개국</i></div>
+    <div class="sub">${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}% · ${list.length}개 도시</div>
+    <div class="track"><i style="width:${Math.min(pct, 100).toFixed(1)}%"></i></div>
+    <div class="flags">${codes
+      .sort((a, b) => byC[b].length - byC[a].length)
+      .map(c => `<span title="${esc(countryName[c] || c)}">${flag(c)}</span>`).join('')}</div>
+    <button class="small" id="ctry_share" style="width:100%; margin-top:14px">
+      이미지로 저장 · 공유</button>
+  </div>`;
+
+  $('ctrylist').innerHTML = head + order.filter(k => groups[k]?.length).map(k => {
+    const cs = groups[k].sort((a, b) => byC[b].length - byC[a].length
+                                     || (countryName[a] || a).localeCompare(countryName[b] || b, 'ko'));
     return `<div class="card">
       <h2><span class="grow">${esc(k)}</span>
-        <span class="val">${cs.length}개국 · ${n}도시</span></h2>
-      ${cs.map(code => `<div style="padding:9px 0; border-top:1px solid var(--line)">
-        <div class="row" style="border:0; padding:0; margin:0">
+        <span class="val">${cs.length}${totalOf[k] ? '/' + totalOf[k] : ''}개국</span></h2>
+      <div class="cchips">${cs.map(code =>
+        `<button data-ctry="${esc(code)}">${flag(code)} ${esc(countryName[code] || code)}${
+          byC[code].length > 1 ? ` <i>${byC[code].length}</i>` : ''}</button>`).join('')}</div>
+      ${cs.map(code => `<div class="hide" data-ctrycity="${esc(code)}"
+             style="padding:10px 0 2px; border-top:1px solid var(--line); margin-top:10px">
+        <div class="row" style="border:0; padding:0 0 6px; margin:0">
           <span class="label" style="font-weight:600">${
             esc(countryName[code] || code)}</span>
           <span class="val">${byC[code].length}곳</span></div>
@@ -4260,6 +4290,27 @@ async function openCountries(){
       </div>`).join('')}
     </div>`;
   }).join('');
+
+  /* 공유 카드. **세계지도를 그대로 씁니다** — 이 페이지에서 제일 자랑스러운
+     것은 칠해진 지도이고, 그건 이미 그려져 있습니다(#worldland).
+     지도 화면을 한 번도 안 열었으면 비어 있으므로 그때는 국기만 냅니다. */
+  $('ctry_share').onclick = () => {
+    const land = $('worldland')?.innerHTML || '';
+    const top = codes.sort((a, b) => byC[b].length - byC[a].length).slice(0, 3);
+    askImageSize({
+      g:'rare', icon: PERSONA_ICON.globe, sub:'다녀온 나라',
+      big: String(codes.length), bigUnit:'개국',
+      title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
+      nums:`${list.length}개 도시 · ${Object.keys(groups).length}개 대륙`,
+      note: codes.map(c => flag(c)).join(' '),
+      listTitle: top.length ? '가장 많이 간 곳' : '',
+      list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
+      artRatio: 387 / 1000,
+      art: land ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
+              <style>path{fill:rgba(255,255,255,.16)} path.been{fill:#fff}</style>
+              ${land}</svg>` : '',
+    }, 'aitrip-다녀온나라');
+  };
 }
 function closeCountries(fromPop){
   if (!fromPop && history.state?.t2 === 'ctry'){ history.back(); return; }
@@ -4269,8 +4320,18 @@ function closeCountries(fromPop){
 $('ctryback').addEventListener('click', () => closeCountries());
 /* 도시 칩을 누르면 그 도시로. 지도 화면과 같은 규칙입니다. */
 $('ctrypane').addEventListener('click', e => {
+  /* 나라 칩을 누르면 그 나라의 도시가 펴집니다. 다시 누르면 접힙니다.
+     **도시 칩보다 먼저 봅니다** — 펴진 도시 칩도 나라 칩 안에 있지 않으므로
+     순서 문제는 없지만, 앞으로 겹칠 때를 대비해 좁은 쪽을 먼저 둡니다. */
   const p = e.target.closest('[data-pin]');
-  if (p) openCity(p.dataset.pin);
+  if (p) return openCity(p.dataset.pin);
+  const c = e.target.closest('[data-ctry]');
+  if (c){
+    const box = $('ctrypane').querySelector(
+      `[data-ctrycity="${CSS.escape(c.dataset.ctry)}"]`);
+    if (box) box.classList.toggle('hide');
+    c.classList.toggle('on', box && !box.classList.contains('hide'));
+  }
 });
 
 async function openMap(){

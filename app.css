@@ -1226,6 +1226,24 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .want.on{ color:#e0245e; }
 .been.on{ color:var(--k-see); }
 
+/* ── 다녀온 나라 ────────────────────────────────────────────────────
+ * 글자만 늘어놓으면 공유할 마음이 안 듭니다. 숫자 하나를 크게 세우고
+ * 국기를 깔아 **한 장의 그림처럼** 보이게 합니다.
+ * 국기는 나라 코드 두 글자를 지역표시기호로 바꾼 것이라 그림 파일이
+ * 하나도 안 듭니다(KR → 🇰🇷). 안 되는 기기에서는 글자가 보일 뿐 안 깨집니다. */
+.ctryhero{ text-align:center; }
+.ctryhero .big{ font-size:56px; font-weight:700; line-height:1.05;
+                letter-spacing:-.02em; }
+.ctryhero .big i{ font-size:20px; font-weight:600; font-style:normal;
+                  margin-left:6px; color:var(--ink-48); }
+.ctryhero .sub{ color:var(--ink-48); font-size:var(--f-md); margin-top:4px; }
+.ctryhero .track{ height:6px; border-radius:999px; background:var(--parchment);
+                  overflow:hidden; margin:12px 0 14px; }
+.ctryhero .track i{ display:block; height:100%; background:var(--primary); }
+/* 국기는 촘촘히. 스물일곱 개가 한눈에 들어와야 "많이 갔구나"가 보입니다. */
+.ctryhero .flags{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+                  font-size:26px; line-height:1.2; }
+
 /* ── 여행 서류 ──────────────────────────────────────────────────────
  * 공항 카운터에서 여는 화면입니다. 줄 서서 한 손으로 들고, 직원에게
  * 화면을 돌려 보여줍니다. 그래서 **글자 배율(--ts)을 안 태웁니다** —

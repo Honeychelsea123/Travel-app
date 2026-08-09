@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b262';
-import { sb } from './db.js?v=b262';
-import { fail, netTimeout } from './net.js?v=b262';
+import { $, esc, toast, copyText } from './dom.js?v=b263';
+import { sb } from './db.js?v=b263';
+import { fail, netTimeout } from './net.js?v=b263';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -246,15 +246,22 @@ $('dashbtn').addEventListener('click', () => {
    다른 카드를 다 감추지는 않습니다 — 한 화면 안에서 자리만 바꿉니다.
    그래야 '뒤로'가 앱을 나가는 것과 안 헷갈립니다. */
 const setPane = on => {
-  $('adm_setcard').classList.toggle('hide', !on);
-  $('adm_setopen').classList.toggle('hide', on);
-  if (on) $('adm_setcard').scrollIntoView({ block:'start' });
+  $('setadmpane').classList.toggle('hide', !on);
+  /* 나머지를 **묶음째** 감춥니다. 카드를 하나씩 감추면, 원래 숨어 있던 것
+     (신고가 없을 때의 adm_feedcard)까지 되살아납니다.
+     조절이 사이에 끼어 있어 묶음이 둘입니다. */
+  $('adm_main').classList.toggle('hide', on);
+  $('adm_dash').classList.toggle('hide', on);
+  window.scrollTo({ top:0 });
 };
 $('adm_setopen').addEventListener('click', () => setPane(true));
 $('adm_setback').addEventListener('click', () => setPane(false));
 
 $('admback').addEventListener('click', () => {
   $('admpane').classList.add('hide');
+  /* 조절을 열어둔 채로 나갔다 들어오면 그 화면이 그대로 남습니다.
+     대시보드로 되돌려 놓습니다 — 들어올 때는 늘 같은 화면이어야 합니다. */
+  setPane(false);
   $('profpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
 });

@@ -47,24 +47,24 @@
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b262">
+<link rel="stylesheet" href="app.css?v=b263">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b262">
-<link rel="modulepreload" href="dom.js?v=b262">
-<link rel="modulepreload" href="db.js?v=b262">
-<link rel="modulepreload" href="calc.js?v=b262">
-<link rel="modulepreload" href="stars.js?v=b262">
-<link rel="modulepreload" href="net.js?v=b262">
-<link rel="modulepreload" href="admin.js?v=b262">
-<link rel="modulepreload" href="ui.js?v=b262">
-<link rel="modulepreload" href="card.js?v=b262">
-<link rel="modulepreload" href="trip.js?v=b262">
-<link rel="modulepreload" href="rate.js?v=b262">
-<link rel="modulepreload" href="cities.js?v=b262">
-<link rel="modulepreload" href="ai.js?v=b262">
+<link rel="modulepreload" href="supabase.js?v=b263">
+<link rel="modulepreload" href="dom.js?v=b263">
+<link rel="modulepreload" href="db.js?v=b263">
+<link rel="modulepreload" href="calc.js?v=b263">
+<link rel="modulepreload" href="stars.js?v=b263">
+<link rel="modulepreload" href="net.js?v=b263">
+<link rel="modulepreload" href="admin.js?v=b263">
+<link rel="modulepreload" href="ui.js?v=b263">
+<link rel="modulepreload" href="card.js?v=b263">
+<link rel="modulepreload" href="trip.js?v=b263">
+<link rel="modulepreload" href="rate.js?v=b263">
+<link rel="modulepreload" href="cities.js?v=b263">
+<link rel="modulepreload" href="ai.js?v=b263">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1071,6 +1071,10 @@
       <!-- ── 관리자 대시보드 ── 설정에서 열립니다. 다른 화면들과 같은 방식으로
            프로필 안의 한 겹입니다. 내용은 loadAdmin() 이 채웁니다. -->
       <div id="admpane" class="hide">
+        <!-- 조절은 이 안에서 **제 페이지로** 뜹니다. 그래서 나머지를 한 겹으로
+             묶어 통째로 감춥니다 — 카드를 하나씩 감추면 원래 숨어 있던 것
+             (신고가 없을 때의 adm_feedcard)까지 되살아납니다. -->
+        <div id="adm_main">
         <div class="card" style="padding:10px 12px">
           <!-- 프로필에서도 설정에서도 열립니다. 온 곳으로 돌아가야 해서
                글자는 JS 가 바꿔 끼웁니다. -->
@@ -1091,10 +1095,21 @@
             <span class="val">›</span></h2>
         </div>
 
-        <div class="card hide" id="adm_setcard">
-          <h2><button class="ghost" id="adm_setback"
-                     style="padding-left:0; margin-right:6px">←</button>
-            <span class="grow">조절</span>
+        </div><!-- /adm_main -->
+
+      <!-- ── 조절 ── **제 페이지입니다** (바뀐 것과 같은 방식).
+           대시보드 안에서 폈다 접었더니 "새 창이 아니라 같은 페이지에서
+           뜬다"는 지적을 받았습니다. 맞습니다 — 보는 화면과 바꾸는 화면은
+           하는 일이 다릅니다. 코드에 박아두면 바꿀 때마다 개발 도구를
+           열어야 하므로 값은 db/047 의 app_settings 에 있고
+           admin_setting_set 이 모양을 검사합니다. -->
+      <div id="setadmpane" class="hide">
+        <div class="card" style="padding:10px 12px">
+          <button class="ghost" id="adm_setback" style="padding-left:0">← 대시보드</button>
+        </div>
+
+        <div class="card" id="adm_setcard">
+          <h2><span class="grow">조절</span>
             <button class="small" id="adm_setsave">저장</button></h2>
 
           <div class="srow">
@@ -1133,7 +1148,11 @@
           <div class="snote" id="s_note">불러오는 중…</div>
           <pre id="serr" class="hide"></pre>
         </div>
+      </div><!-- /setadmpane -->
 
+        <!-- 조절이 이 사이에 끼어 있어서 묶음이 둘로 갈립니다.
+             둘 다 같이 감췄다 폈다 합니다. -->
+        <div id="adm_dash">
         <div class="card">
           <h2><span class="grow">대시보드</span>
             <button class="small" id="adm_refresh">새로고침</button></h2>
@@ -1152,6 +1171,7 @@
             판마다 무엇이 바뀌었는지 모아둡니다.
           </div>
         </div>
+        </div><!-- /adm_dash -->
       </div>
 
       <!-- ── 바뀐 것 ── 대시보드 안의 한 겹입니다.
@@ -1169,7 +1189,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b262</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b263</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1637,7 +1657,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b262"></script>
+<script type="module" src="app.js?v=b263"></script>
 </body>
 </html>
 
