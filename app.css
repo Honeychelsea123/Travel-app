@@ -1227,8 +1227,13 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 /* 화면을 갈아끼우지 않고 **덮습니다.** 화면 목록이 코드 네 곳에 적혀 있어서
    거기 하나를 빠뜨리면 서류를 열어둔 채 다른 화면이 뒤에 남습니다. */
 #docview:not(.hide){ position:fixed; inset:0; z-index:70; overflow-y:auto;
-  background:var(--bg); padding:10px 12px calc(24px + env(safe-area-inset-bottom));
-  -webkit-overflow-scrolling:touch; }
+  background:var(--bg); -webkit-overflow-scrolling:touch; }
+/* **덮는 판은 화면 폭을 그대로 씁니다** — main 의 480px 안에 있지 않으니
+   자기가 챙겨야 합니다. 안 챙기면 넓은 화면에서 예약 카드 하나가
+   2,000px 로 늘어나 앱의 다른 화면과 딴판이 됩니다. 실제로 그랬습니다. */
+#docview > *{ max-width:480px; margin-left:auto; margin-right:auto; }
+#docview > .card{ margin-top:10px; }
+#docs{ padding:0 12px calc(24px + env(safe-area-inset-bottom)); }
 .doccard{ background:var(--card,#fff); border-radius:var(--r-md);
   padding:16px; margin-bottom:10px; }
 .doccard .dk{ font-size:12px; font-weight:600; letter-spacing:.04em;
