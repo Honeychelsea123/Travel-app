@@ -320,6 +320,10 @@ self.addEventListener('notificationclick', e => {
     for (const c of list){
       if (c.url.includes(self.registration.scope)){
         await c.focus();
+        /* **앞으로 가져오기만 하면 무엇 때문에 울렸는지 다시 찾아야 합니다.**
+           열려 있는 창에 어디로 가라고 일러줍니다. 새로 불러오지 않으므로
+           보던 것이 안 날아갑니다. */
+        c.postMessage({ t2:'open', url });
         return;
       }
     }

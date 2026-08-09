@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b256';
-import { $, esc, toast, copyText } from './dom.js?v=b256';
-import { starHtml, paintStars, markRated } from './stars.js?v=b256';
+import { sb } from './db.js?v=b257';
+import { $, esc, toast, copyText } from './dom.js?v=b257';
+import { starHtml, paintStars, markRated } from './stars.js?v=b257';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b256';
-import { loadAdmin } from './admin.js?v=b256';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b256';
+         setErrLogger, NOROW } from './net.js?v=b257';
+import { loadAdmin } from './admin.js?v=b257';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b257';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b256';
+         setEditPlanId } from './trip.js?v=b257';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b256';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b257';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b256';
+         useCities, addCity, search } from './cities.js?v=b257';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b256';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b257';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b256';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b257';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b256';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b257';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -240,8 +240,12 @@ addEventListener('unhandledrejection', e => {
    기본값이 켬이라 전체 스위치만 보면 되고, 나중에 다시 나누고 싶으면
    화면만 붙이면 됩니다. 안 쓰는 칸을 지우려고 마이그레이션을 또 돌릴 이유가 없습니다. */
 async function loadNotifPrefs(){
+  /* **`*` 를 씁니다.** 칸을 하나씩 적었더니 064·065 를 올릴 때마다 여기도
+     고쳐야 했고, 한 번 빠뜨리면 "설정이 저장은 되는데 다시 열면 사라진다"가
+     됩니다. 아직 안 올린 곳에서는 그 칸이 안 올 뿐 질의는 성공합니다 —
+     칸 이름을 적으면 그때는 질의 자체가 실패해서 카드가 통째로 사라집니다. */
   const { data, error } = await sb.from('user_prefs')
-    .select('notify_all').eq('user_id', me.id).maybeSingle();
+    .select('*').eq('user_id', me.id).maybeSingle();
   /* 035 를 아직 안 올렸으면 칸이 없어서 질의가 실패합니다.
      그때는 설정 카드를 아예 숨깁니다 — 눌러도 저장이 안 되는 스위치를 두면 안 됩니다. */
   if (error){ $('notifprefcard').classList.add('hide'); return; }
@@ -250,7 +254,26 @@ async function loadNotifPrefs(){
   /* 064 를 아직 안 올린 곳에서는 칸이 없습니다. 그때는 기본값으로 그립니다 —
      화면이 비는 것보다 낫고, 저장할 때 오류가 뜨면 그때 알게 됩니다. */
   putKinds(data?.notify_plan || 'first', data?.notify_flight !== false);
+  saveHomeTz(data?.home_tz);
   drawPushRow();
+}
+
+/* **집이 어느 시간대인지 브라우저만 압니다.**
+ * 출국편 알림이 1시간 일찍 오던 것을 여기서 막습니다 — 사람이 적는 출발
+ * 시각은 표에 적힌 그대로, 즉 **출발 공항의 현지 시각**입니다. 그런데 우리는
+ * 출발 공항을 모릅니다. 여행 첫날까지의 비행기는 집에서 뜬다고 보고(065),
+ * 그 '집'이 어디인지를 여기서 알려줍니다.
+ *
+ * **바뀌었을 때만 씁니다.** 설정 화면을 열 때마다 upsert 하면 쓸 일 없는
+ * 쓰기가 계속 나갑니다. 이사하거나 오래 머무는 곳이 바뀌면 그때 한 번입니다. */
+async function saveHomeTz(now){
+  let tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  if (!tz || tz === now) return;
+  /* 065 를 아직 안 올렸으면 칸이 없어 실패합니다. 조용히 넘어갑니다 —
+     이건 사용자가 부탁한 일이 아니라 우리가 알아서 하는 일입니다. */
+  await sb.from('user_prefs')
+    .upsert({ user_id: me.id, home_tz: tz }, { onConflict:'user_id' });
 }
 
 /* 고른 것을 화면에 얹습니다. 저장한 뒤에도 이 함수로 다시 그립니다 —
@@ -301,6 +324,31 @@ $('notifprefcard').addEventListener('change', async e => {
                         return fail(NOROW.save, 'nf'); }
   toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
   loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
+});
+
+/* ── 알림을 눌렀을 때 ───────────────────────────────────────────────
+ * 알림에 `./?t=<여행>&d=<날짜>` 를 실어 보냅니다(065). 오는 길이 둘입니다.
+ *   · 앱이 꺼져 있었다 → 그 주소로 새로 열립니다. 부팅 뒤에 읽습니다
+ *   · 앱이 켜져 있었다 → 서비스워커가 postMessage 로 일러줍니다.
+ *     **새로 불러오지 않습니다** — 보던 것이 날아가면 안 됩니다
+ *
+ * **주소는 읽고 나서 지웁니다.** 안 지우면 새로고침할 때마다 같은 여행이
+ * 다시 열리고, 뒤로가기가 이상해집니다. */
+async function openFromUrl(href){
+  let u; try { u = new URL(href, location.href); } catch { return; }
+  const t = u.searchParams.get('t'), d = u.searchParams.get('d');
+  if (!t) return;
+  history.replaceState(history.state, '', location.pathname);
+  await openTrip(t);
+  /* 그 날만 보여줍니다 — 열흘짜리 여행에서 오늘을 다시 찾게 하면
+     알림으로 데려온 뜻이 없습니다. */
+  if (d && (plans || []).some(p => p.date === d)){
+    setPickedDay(d);
+    drawDays(); drawCats(); drawPlans(); drawPlanMap();
+  }
+}
+navigator.serviceWorker?.addEventListener('message', e => {
+  if (e.data?.t2 === 'open') openFromUrl(e.data.url);
 });
 
 /* ── 잠금화면 알림 (Web Push) ───────────────────────────────────────
@@ -8043,6 +8091,9 @@ async function render(session){
      기다리지 않습니다 — 초대 코드가 없으면 아무 일도 안 하는데,
      오프라인에서 이걸 기다리느라 첫 화면이 늦어졌습니다. */
   handleJoin();
+  /* 알림을 눌러서 앱이 꺼진 채로 열렸으면 주소에 여행이 실려 있습니다.
+     `showApp` 뒤에 부릅니다 — 먼저 부르면 홈이 그 위를 덮습니다. */
+  openFromUrl(location.href);
 }
 
 /* ── 시작 ───────────────────────────────────────────────────────── */

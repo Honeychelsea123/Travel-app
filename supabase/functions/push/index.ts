@@ -143,6 +143,13 @@ Deno.serve(async (req) => {
 
   if (gone.length) await sb.from('push_subs').delete().in('endpoint', gone);
 
+  /* **보낸 기록은 영원히 쌓입니다.** 지우는 코드가 없었습니다.
+     pg_cron 이 없으니(042 와 같은 사정) 15분마다 지나가는 김에 치웁니다.
+     실패해도 알림 보내는 일과는 상관없으므로 조용히 넘어갑니다. */
+  sb.rpc('purge_push_log').then((r: any) => {
+    if (r.error) console.error('purge', r.error.message);
+  });
+
   return json({ due: due.length, sent, dead, ...(why ? { why } : {}) });
   }   /* run 끝 */
 });
