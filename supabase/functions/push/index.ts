@@ -27,11 +27,39 @@ const CONTACT = Deno.env.get('VAPID_CONTACT') || 'mailto:noreply@example.com';
 const json = (o: unknown, s = 200) =>
   new Response(JSON.stringify(o), { status: s, headers: { 'content-type': 'application/json' } });
 
+/* **키가 글자까지 똑같기를 바라면 안 됩니다.**
+ * 처음엔 `auth.includes(SRV)` 하나로 막았는데 403 이 났습니다. 게이트웨이를
+ * 이미 지나온 요청이었으니 키 자체는 이 프로젝트의 유효한 키였고,
+ * **종류만 달랐습니다** — Supabase 가 요즘 키를 두 벌 줍니다.
+ *   · 레거시 JWT (`eyJ…`) — payload 의 role 에 service_role 이 적혀 있습니다
+ *   · 새 형식 (`sb_secret_…`) — 이건 서버용이라는 뜻이 이름에 있습니다
+ * 자동으로 들어오는 SUPABASE_SERVICE_ROLE_KEY 는 그중 하나뿐이라,
+ * 다른 쪽을 넣으면 맞는 키인데도 막혔습니다.
+ *
+ * 셋 중 하나면 들여보냅니다. anon·publishable 키는 어느 쪽도 아니라 막힙니다. */
+function allowed(auth: string): { ok: boolean; kind: string } {
+  const tok = auth.replace(/^Bearer\s+/i, '').trim();
+  if (!tok) return { ok: false, kind: '없음' };
+  if (SRV && tok === SRV)        return { ok: true,  kind: '환경변수와 같음' };
+  if (tok.startsWith('sb_secret_')) return { ok: true, kind: '새 형식 secret' };
+  if (tok.startsWith('sb_publishable_'))
+    return { ok: false, kind: 'publishable 키 — 서버용이 아닙니다' };
+  try {
+    const p = JSON.parse(atob(tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (p.role === 'service_role') return { ok: true, kind: '레거시 service_role' };
+    return { ok: false, kind: `레거시 ${p.role} 키 — service_role 이 아닙니다` };
+  } catch {}
+  return { ok: false, kind: '모르는 꼴' };
+}
+
 Deno.serve(async (req) => {
   /* 아무나 부르면 알림을 마구 쏠 수 있습니다. 서비스 키를 요구합니다 —
-     이 함수는 사람이 아니라 스케줄러가 부릅니다. */
-  const auth = req.headers.get('authorization') || '';
-  if (!auth.includes(SRV)) return json({ error: 'forbidden' }, 403);
+     이 함수는 사람이 아니라 스케줄러가 부릅니다.
+     **막을 때는 무엇이 잘못됐는지 같이 알려줍니다.** 그냥 forbidden 만
+     돌려주니 넣은 키가 틀린 건지 이름이 틀린 건지 알 길이 없었습니다.
+     키 값은 절대 안 싣습니다 — 이 답은 공개 저장소의 로그에 찍힙니다. */
+  const gate = allowed(req.headers.get('authorization') || '');
+  if (!gate.ok) return json({ error: 'forbidden', 받은키: gate.kind }, 403);
 
   const sb = createClient(URL_, SRV);
   webpush.setVapidDetails(CONTACT, PUB, PRIV);
