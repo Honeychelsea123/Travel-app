@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b264';
-import { $, esc, toast, copyText } from './dom.js?v=b264';
-import { starHtml, paintStars, markRated } from './stars.js?v=b264';
+import { sb } from './db.js?v=b265';
+import { $, esc, toast, copyText } from './dom.js?v=b265';
+import { starHtml, paintStars, markRated } from './stars.js?v=b265';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b264';
-import { loadAdmin } from './admin.js?v=b264';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b264';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b265';
+import { loadAdmin } from './admin.js?v=b265';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b265';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b264';
+         setEditPlanId } from './trip.js?v=b265';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b264';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b265';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b264';
+         useCities, addCity, search } from './cities.js?v=b265';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b264';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b265';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b264';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b265';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b264';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b265';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -4265,6 +4265,22 @@ $('mapbig').addEventListener('click', () => {
  *
  * 지도 화면과 같은 자료(my_visited)를 씁니다. 다른 데서 세면 두 화면의
  * 숫자가 언젠가 갈립니다. */
+/* 이 기기가 국기를 그릴 수 있나. 한 번만 재고 기억합니다 —
+   캔버스 글자 재기는 값싸지만 나라 스물일곱 번 부를 일은 아닙니다. */
+let flagCan = null;
+function flagOk(){
+  if (flagCan != null) return flagCan;
+  try {
+    const g = document.createElement('canvas').getContext('2d');
+    g.font = '20px sans-serif';
+    /* 🇰🇷 가 한 글자로 합쳐지면 폭이 🇰 하나와 비슷합니다.
+       못 합치면 두 글자를 나란히 그려서 정확히 두 배가 됩니다. */
+    flagCan = g.measureText('\u{1F1F0}\u{1F1F7}').width
+            < g.measureText('\u{1F1F0}').width * 2 - 1;
+  } catch { flagCan = false; }
+  return flagCan;
+}
+
 async function openCountries(){
   $('profpane').classList.add('hide');
   $('ctrypane').classList.remove('hide');
@@ -4316,16 +4332,28 @@ async function openCountries(){
      그림 파일을 스물일곱 장 받아올 필요가 없습니다. 나라 코드 두 글자를
      지역표시기호로 바꾸면 기기가 국기로 그려줍니다(KR → 🇰🇷).
      안 되는 기기에서는 그냥 두 글자가 보입니다 — 깨지지 않습니다. */
-  const flag = code => String(code || '').toUpperCase().replace(/[^A-Z]/g, '')
-    .slice(0, 2).replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397));
+  /* **국기를 못 그리는 기기가 있습니다.** 윈도우는 지역표시기호 두 개를
+     국기로 합치지 않고 `KR` 처럼 글자 두 개로 그립니다. 그러면 화면이
+     "KR JP IT CH LV US…" 코드 나열이 되어 없느니만 못합니다.
+     실기기에서 재보고 알았습니다(윈도우 크롬).
+     합쳐지는지는 폭으로 압니다 — 합쳐지면 한 글자 폭, 아니면 두 글자 폭. */
+  const flag = code => !flagOk() ? '' :
+    String(code || '').toUpperCase().replace(/[^A-Z]/g, '')
+      .slice(0, 2).replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397));
 
   const head = `<div class="card ctryhero">
     <div class="big">${codes.length}<i>개국</i></div>
     <div class="sub">${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}% · ${list.length}개 도시</div>
     <div class="track"><i style="width:${Math.min(pct, 100).toFixed(1)}%"></i></div>
-    <div class="flags">${codes
+    ${flagOk() ? `<div class="flags">${codes
       .sort((a, b) => byC[b].length - byC[a].length)
-      .map(c => `<span title="${esc(countryName[c] || c)}">${flag(c)}</span>`).join('')}</div>
+      .map(c => `<span title="${esc(countryName[c] || c)}">${flag(c)}</span>`).join('')}</div>`
+      /* 국기를 못 그리는 기기에서는 대신 나라 수가 많은 순서로 이름을
+         몇 개 적습니다. 빈 자리를 남기면 카드가 허전합니다. */
+      : `<div class="memo">${esc(codes
+          .sort((a, b) => byC[b].length - byC[a].length).slice(0, 6)
+          .map(c => countryName[c] || c).join(' · '))}${
+          codes.length > 6 ? ` 외 ${codes.length - 6}개국` : ''}</div>`}
     <button class="small" id="ctry_share" style="width:100%; margin-top:14px">
       이미지로 저장 · 공유</button>
   </div>`;
@@ -4337,7 +4365,8 @@ async function openCountries(){
       <h2><span class="grow">${esc(k)}</span>
         <span class="val">${cs.length}${totalOf[k] ? '/' + totalOf[k] : ''}개국</span></h2>
       <div class="cchips">${cs.map(code =>
-        `<button data-ctry="${esc(code)}">${flag(code)} ${esc(countryName[code] || code)}${
+        `<button data-ctry="${esc(code)}">${
+          flag(code) ? flag(code) + ' ' : ''}${esc(countryName[code] || code)}${
           byC[code].length > 1 ? ` <i>${byC[code].length}</i>` : ''}</button>`).join('')}</div>
       ${cs.map(code => `<div class="hide" data-ctrycity="${esc(code)}"
              style="padding:10px 0 2px; border-top:1px solid var(--line); margin-top:10px">
@@ -4363,7 +4392,9 @@ async function openCountries(){
       big: String(codes.length), bigUnit:'개국',
       title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
       nums:`${list.length}개 도시 · ${Object.keys(groups).length}개 대륙`,
-      note: codes.map(c => flag(c)).join(' '),
+      /* 카드에도 국기를 깔지만, 못 그리는 기기에서는 캔버스에도 못 그립니다 —
+         그림 파일로 저장되는 것이라 더 티가 납니다. 그때는 안 넣습니다. */
+      note: flagOk() ? codes.map(c => flag(c)).join(' ') : '',
       listTitle: top.length ? '가장 많이 간 곳' : '',
       list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
       artRatio: 387 / 1000,
