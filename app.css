@@ -731,6 +731,27 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .memo{ display:block; color:var(--ink-48); font-size:var(--f-md);
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ flex:none; margin-left:auto; white-space:nowrap; }
+/* ── 별은 두 번째 줄로 ───────────────────────────────────────────────
+ * 재보니 390px 화면에서 **도시 이름 자리가 87px 뿐**이었습니다 —
+ * 별 142 · 썸네일 56 · ♡ 44 · 간격 27 이 356 중 269 를 먹습니다.
+ * '부에노스아이레스'가 '부에노스아…'가 됐습니다.
+ *
+ * **별을 줄여 자리를 만드는 길은 안 갑니다.** 반 칸(0.5점)을 누르는 것이
+ * 이 줄의 핵심인데 별이 작아지면 그게 먼저 어려워집니다.
+ * 이름 87 → 238px 이 되고, 별은 폭이 넉넉해져 반 칸도 더 잘 눌립니다.
+ * 썸네일 폭(56)+간격(9)만큼 들여써서 위 줄에 딸린 것으로 보이게 합니다.
+ *
+ * **`:has(> .stars)` — 자식 기호를 꼭 넣습니다.** `.rrow` 는 열 군데서 쓰는데
+ * 그중 셋은 별을 `.t` **안에** 답니다(도시 페이지의 남의 후기 · 일행의 후기).
+ * 거기는 썸네일이 없거나 36px 아바타라, `>` 없이 적으면 그 별들까지
+ * 65px 만큼 엉뚱하게 밀립니다. 처음에 `>` 없이 적었다가 세어보고 잡았습니다.
+ * 지금 걸리는 여섯 줄은 **전부 56px 썸네일**이라 들여쓰기가 맞습니다
+ * (기록 탭 도시 · 홈 퀴즈 · 평가할 도시/장소 · 보관함 도시/장소).
+ * `:has` 를 못 알아듣는 브라우저에서는 지금까지의 한 줄 그대로입니다. */
+.rrow:has(> .stars){ flex-wrap:wrap; row-gap:4px; }
+.rrow:has(> .stars) > .stars{ flex:0 0 100%; margin-left:65px;  /* 썸네일 56 + 간격 9 */
+                              order:1;       /* ♡·× (0) 는 첫 줄에 남기고 별만 내립니다 */
+                              line-height:1; /* 25px 글자의 줄 높이까지 따라오면 12px 이 놉니다 */ }
 /* 글자 크기 설정을 따르되 화면 폭을 넘지 않게 위를 막습니다. */
 .rrow .st{ font-size:min(var(--f-3xl), 6.6vw); }
 .rrow .want{ flex:none; padding:4px 2px; }
