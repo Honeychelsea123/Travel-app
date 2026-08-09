@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b258';
-import { $, esc, toast, copyText } from './dom.js?v=b258';
-import { starHtml, paintStars, markRated } from './stars.js?v=b258';
+import { sb } from './db.js?v=b259';
+import { $, esc, toast, copyText } from './dom.js?v=b259';
+import { starHtml, paintStars, markRated } from './stars.js?v=b259';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b258';
-import { loadAdmin } from './admin.js?v=b258';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b258';
+         setErrLogger, NOROW } from './net.js?v=b259';
+import { loadAdmin } from './admin.js?v=b259';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b259';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b258';
+         setEditPlanId } from './trip.js?v=b259';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b258';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b259';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b258';
+         useCities, addCity, search } from './cities.js?v=b259';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b258';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b259';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b258';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b259';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b258';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b259';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3416,10 +3416,20 @@ function drawPersona(s){
 
   /* 이미지와 공유는 화면 카드와 **같은 내용**을 넘깁니다.
      따로 만들면 언젠가 한쪽만 고쳐서 둘이 어긋납니다. */
+  /* **제일 좋았던 곳의 사진을 배경으로 깝니다.** 카드가 단색 배경 위의
+     글자 덩어리라 아무도 안 올렸습니다. 이 앱이 가진 제일 좋은 자산은
+     도시 사진인데 카드에서 안 쓰고 있었습니다.
+     아무 사진이 아니라 **그 사람이 제일 높게 매긴 곳**이라야 뜻이 있습니다. */
+  const photo = s.best.map(b => (cities || []).find(c => c.id === b.id || c.name === b.name))
+                      .find(c => c?.image_url)?.image_url
+             || (cities || []).find(c => c.image_url)?.image_url || '';
   const spec = {
-    g: p.g, icon: PERSONA_ICON[p.ic] || '',
+    g: p.g, icon: PERSONA_ICON[p.ic] || '', photo,
+    /* 훑는 눈에 남는 것은 큰 숫자 하나입니다. 나라 수를 주인공으로. */
+    big: String(s.countries), bigUnit: '개국',
+    sub: '여행 성향',
     title: p.title,
-    nums: `${s.countries}개국 · ${s.cities}도시`,
+    nums: `${s.cities}개 도시 · ${s.continents}대륙`,
     note: conts.map(([k, n]) => `${k} ${n}`).join(' · '),
     listTitle: s.best.length ? '가장 좋았던 곳' : '',
     list: s.best.map(b => `${b.name} ★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}`),

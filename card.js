@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b258';
+import { $, esc, toast } from './dom.js?v=b259';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -119,12 +119,16 @@ async function ensureFont(){
   fontReady = (async () => {
     if (!document.fonts) return false;
     /* 쓸 조합을 다 불러둡니다. 하나라도 빠지면 그 크기만 네모가 됩니다. */
-    const want = [[700,120],[700,86],[700,64],[600,40],[400,44],[400,34],[600,30],[500,28]];
+    /* **여기 빠진 조합은 저장한 그림에서만 네모가 됩니다.** 화면은 멀쩡해서
+       알아채기 어렵습니다. 위 cardImage 의 F(굵기, 크기) 를 바꾸면 여기도
+       같이 바꿔야 합니다 — 사진 배경으로 다시 그리면서 크기가 다 바뀌었습니다. */
+    const want = [[700,168],[700,76],[700,34],[600,48],[600,30],[600,28],
+                  [500,40],[500,28],[400,40],[400,32]];
     try {
       await Promise.all(want.map(([w, px]) =>
         document.fonts.load(`${w} ${px}px Pretendard`, '가나다 ABC 123 ★')));
       await document.fonts.ready;
-      return document.fonts.check('700 86px Pretendard', '가나다');
+      return document.fonts.check('700 76px Pretendard', '가나다');
     } catch { return false; }
   })();
   return fontReady;
@@ -139,6 +143,20 @@ function svgImage(svg){
     img.onload = () => ok(img);
     img.onerror = () => ok(null);
     img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
+/* 배경 사진. **`crossOrigin` 이 없으면 캔버스가 오염돼서 `toBlob` 이 통째로
+   실패합니다** — 그림이 안 나오는 게 아니라 카드 자체를 못 만듭니다.
+   저장통이 CORS 를 주는지 먼저 재보고 넣었습니다(528×350 사진으로 83KB 성공).
+   못 받아오면 null 을 주고 부르는 쪽이 그러데이션으로 돌아갑니다. */
+function photoImage(url){
+  return new Promise(ok => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => ok(img);
+    img.onerror = () => ok(null);
+    img.src = url;
   });
 }
 
@@ -197,13 +215,47 @@ export async function cardImage(spec, mode = 'square'){
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
 
+  /* ── 배경 ────────────────────────────────────────────────────────
+   * **사진이 있으면 사진이 배경입니다.** 전에는 단색 그러데이션 위에 글자만
+   * 얹었는데, 그러면 볼 것이 없어서 아무도 안 올립니다. 이 앱이 가진 제일
+   * 좋은 자산은 도시 사진이고, 카드에서 그걸 안 쓰고 있었습니다.
+   * 사진이 없으면(도시 사진이 아직 없는 곳) 예전 그러데이션으로 돌아갑니다 —
+   * 카드가 안 나오는 것보다 낫습니다. */
   const [c1, c2] = GRAD[spec.g] || GRAD.even;
-  const grd = g.createLinearGradient(0, 0, W * .45, H);
-  grd.addColorStop(0, c1); grd.addColorStop(1, c2);
-  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  const paintGrad = () => {
+    const grd = g.createLinearGradient(0, 0, W * .45, H);
+    grd.addColorStop(0, c1); grd.addColorStop(1, c2);
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  };
 
-  g.textAlign = 'center'; g.fillStyle = '#fff';
-  const cx = W / 2, pad = 96, maxW = W - pad * 2;
+  let photoOk = false;
+  if (spec.photo){
+    const ph = await photoImage(spec.photo);
+    if (ph){
+      /* 잘라서 꽉 채웁니다(cover). 늘려서 채우면 사람도 건물도 일그러집니다. */
+      const s = Math.max(W / ph.width, H / ph.height);
+      const dw = ph.width * s, dh = ph.height * s;
+      g.drawImage(ph, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      /* **글자가 읽히려면 사진을 눌러야 합니다.** 위는 살짝, 아래는 깊게 —
+         글자가 아래쪽에 모여 있고 위쪽은 사진을 보여주는 자리입니다. */
+      const sc = g.createLinearGradient(0, 0, 0, H);
+      sc.addColorStop(0,   'rgba(0,0,0,.34)');
+      sc.addColorStop(.42, 'rgba(0,0,0,.20)');
+      sc.addColorStop(.72, 'rgba(0,0,0,.62)');
+      sc.addColorStop(1,   'rgba(0,0,0,.88)');
+      g.fillStyle = sc; g.fillRect(0, 0, W, H);
+      /* 그 도시의 색을 옅게 덮어 카드마다 인상이 갈리게 합니다. */
+      g.globalAlpha = .18; g.fillStyle = c1; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+      photoOk = true;
+    }
+  }
+  if (!photoOk) paintGrad();
+
+  /* **왼쪽 정렬입니다.** 전부 가운데로 모으면 어디부터 볼지가 없어서
+     글자 덩어리로 보입니다. 왼쪽에 세로선을 하나 만들어 두면 눈이
+     위에서 아래로 흐릅니다 — 상용 앱 카드가 거의 다 이렇습니다. */
+  g.textAlign = 'left'; g.fillStyle = '#fff';
+  const pad = 88, maxW = W - pad * 2, cx = pad;
 
   /* 그릴 것을 먼저 줄 단위로 만들어 높이를 잰 다음, 그 덩어리를 가운데에 놓습니다.
      위에서부터 그냥 쌓으면 내용이 짧을 때 아래가 텅 빕니다 —
@@ -211,13 +263,26 @@ export async function cardImage(spec, mode = 'square'){
   const items = [];
   const add = (h, draw) => items.push({ h, draw });
 
-  if (spec.sub) add(84, y => {
-    g.font = F(600, 38); g.globalAlpha = .85;
-    g.fillText(spec.sub, cx, y + 38); g.globalAlpha = 1;
+  /* 맨 위 작은 말머리. 무슨 카드인지 한 줄로 알려줍니다 —
+     제목만 크게 있으면 "여권이 두꺼운 사람"이 무슨 앱 이야기인지 모릅니다. */
+  if (spec.sub) add(64, y => {
+    g.font = F(600, 30); g.globalAlpha = .8;
+    /* 자간을 벌려 라벨처럼 보이게 합니다. 캔버스에 letterSpacing 이 없는
+       브라우저가 있어 한 글자씩 그립니다. */
+    let x = cx;
+    for (const ch of String(spec.sub)){ g.fillText(ch, x, y + 30); x += g.measureText(ch).width + 3; }
+    g.globalAlpha = 1;
   });
 
-  const icon = await iconImage(spec.icon || '', 176);
-  if (icon) add(176 + 56, y => g.drawImage(icon, cx - 88, y, 176, 176));
+  /* **아이콘을 크게 넣던 것을 뺐습니다.** 176px 짜리 선 아이콘 하나가
+     카드 한복판을 차지했는데, 그건 '자리 채우는 그림'이지 볼거리가
+     아닙니다. 사진이 배경이 된 지금은 더 그렇습니다.
+     사진이 없어 그러데이션으로 갈 때만 작게 남깁니다 — 그때는 정말로
+     아무것도 없기 때문입니다. */
+  if (!photoOk){
+    const icon = await iconImage(spec.icon || '', 96);
+    if (icon) add(96 + 32, y => g.drawImage(icon, cx, y, 96, 96));
+  }
 
   /* 그림 한 장(지금은 발자국 세계지도). **화면에 그려져 있는 것을 그대로 받습니다** —
      어느 나라를 칠할지 여기서 다시 정하면 화면과 어긋납니다.
@@ -225,48 +290,69 @@ export async function cardImage(spec, mode = 'square'){
   if (spec.art){
     const mw = maxW, mh = Math.round(mw * (spec.artRatio || 0.387));
     const art = await svgImage(spec.art);
-    if (art) add(mh + 44, y => g.drawImage(art, cx - mw / 2, y, mw, mh));
+    if (art) add(mh + 44, y => g.drawImage(art, cx, y, mw, mh));
   }
 
-  g.font = F(700, 86);
-  const lines = wrapText(g, spec.title, maxW);
-  add(lines.length * 108 + 20, y => {
-    g.font = F(700, 86);
-    lines.forEach((line, i) => g.fillText(line, cx, y + 82 + i * 108));
+  /* **주인공은 큰 숫자 하나입니다.** 예전에는 '27개국 · 49도시'가 제목 밑에
+     작은 한 줄로 붙어 있었습니다. 그러면 훑는 사람 눈에 아무것도 안 남습니다.
+     Wrapped 도 Strava 도 숫자 하나를 화면만 하게 키웁니다. */
+  if (spec.big) add(190, y => {
+    g.font = F(700, 168);
+    g.fillText(spec.big, cx, y + 150);
+    if (spec.bigUnit){
+      const w = g.measureText(spec.big).width;
+      g.font = F(600, 48); g.globalAlpha = .85;
+      g.fillText(spec.bigUnit, cx + w + 16, y + 150); g.globalAlpha = 1;
+    }
   });
 
-  if (spec.nums) add(70, y => {
-    g.font = F(400, 44); g.globalAlpha = .92;
-    g.fillText(spec.nums, cx, y + 44); g.globalAlpha = 1;
+  g.font = F(700, 76);
+  const lines = wrapText(g, spec.title, maxW);
+  add(lines.length * 94 + 16, y => {
+    g.font = F(700, 76);
+    lines.forEach((line, i) => g.fillText(line, cx, y + 72 + i * 94));
   });
-  if (spec.note) add(58, y => {
-    g.font = F(400, 34); g.globalAlpha = .75;
-    g.fillText(spec.note, cx, y + 34); g.globalAlpha = 1;
+
+  if (spec.nums) add(64, y => {
+    g.font = F(400, 40); g.globalAlpha = .9;
+    g.fillText(spec.nums, cx, y + 40); g.globalAlpha = 1;
+  });
+  if (spec.note) add(54, y => {
+    g.font = F(400, 32); g.globalAlpha = .72;
+    g.fillText(spec.note, cx, y + 32); g.globalAlpha = 1;
   });
 
   if (spec.list?.length){
     const list = spec.list.slice(0, 3);
-    add(44 + 52 + list.length * 62, y => {
-      g.font = F(600, 30); g.globalAlpha = .7;
-      g.fillText(spec.listTitle || '', cx, y + 74); g.globalAlpha = 1;
-      g.font = F(400, 44);
+    add(36 + 46 + list.length * 58, y => {
+      g.font = F(600, 28); g.globalAlpha = .65;
+      g.fillText(spec.listTitle || '', cx, y + 62); g.globalAlpha = 1;
+      g.font = F(500, 40);
       list.forEach((item, i) =>
-        g.fillText(wrapText(g, item, maxW)[0], cx, y + 140 + i * 62));
+        g.fillText(wrapText(g, item, maxW)[0], cx, y + 124 + i * 58));
     });
   }
 
   const total = items.reduce((s, it) => s + it.h, 0);
-  /* 정확히 한가운데보다 조금 위가 안정적으로 보입니다.
-     아래에 앱 이름이 들어가서 시각적 무게가 그쪽에 조금 더 실립니다. */
-  let y = Math.max(pad, (H - total) / 2 - H * 0.04);
+  /* **아래에서부터 쌓습니다.** 가운데에 모으면 사진 한복판을 글자가 가려서
+     배경이 무슨 사진인지 안 보입니다. 위쪽은 사진에게 주고 글자는 아래로
+     내립니다 — 어차피 사진 아래쪽이 제일 어두워서 거기가 제일 잘 읽힙니다.
+     짧은 카드가 바닥에 붙지 않도록 위쪽 여백만 지켜줍니다. */
+  const footer = 150;                     /* 앱 이름·주소가 차지하는 자리 */
+  let y = Math.max(pad, H - footer - total);
   for (const it of items){ it.draw(y); y += it.h; }
 
   /* 앱 이름은 구석에 작게. 크게 넣으면 광고처럼 보입니다.
      **주소를 같이 적습니다.** 전에는 이름만 있었는데, 이 앱은 앱스토어에 없는
      PWA 라 그 이름으로는 아무 데서도 검색이 안 됩니다 — 카드를 보고 궁금해진
      사람이 갈 곳이 없었습니다. 이름보다 더 흐리게 둬서 광고처럼 안 보이게 합니다. */
-  g.font = F(600, 30); g.globalAlpha = .6;
-  g.fillText('AI.Trip', cx, H - 96); g.globalAlpha = 1;
+  /* **왼쪽 아래 한 줄로 모읍니다.** 이름과 주소를 위아래로 떼어 놓으니
+     둘 다 작고 흐려서 어느 쪽도 안 읽혔습니다. 한 줄에 붙여 놓으면
+     "AI.Trip · 주소" 가 하나의 서명처럼 읽힙니다.
+     사진 위에 얹히므로 얇은 그림자를 깔아 어떤 사진에서도 읽히게 합니다. */
+  g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 12; g.shadowOffsetY = 1;
+  g.font = F(700, 34); g.globalAlpha = .95;
+  g.fillText('AI.Trip', cx, H - 72); g.globalAlpha = 1;
   /* **주소는 이름만큼 또렷해야 합니다.** 처음에 24px·42% 로 넣었다가 재보니
      배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
      폰 화면에서 9pt 도 안 되는데, 그걸 흐리게까지 하면 **읽어서 칠 수가 없습니다.**
@@ -386,7 +472,10 @@ export function personaStats(rows, world = {}){
     wishCount: rows.filter(r => r.want).length,
     best: rated.filter(r => Number(r.stars) >= 4.5)
                .sort((a, b) => b.stars - a.stars)
-               .map(r => ({ name: info(r.city_id)?.name || r.city_id, stars: r.stars }))
+               /* id 도 같이 넘깁니다 — 부르는 쪽이 그 도시의 사진을 찾아
+                  카드 배경으로 씁니다. 이름만 주면 같은 이름을 다시 뒤져야 합니다. */
+               .map(r => ({ id: r.city_id, name: info(r.city_id)?.name || r.city_id,
+                            stars: r.stars }))
                .slice(0, 3),
   };
 }
