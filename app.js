@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b247';
-import { $, esc, toast, copyText } from './dom.js?v=b247';
-import { starHtml, paintStars, markRated } from './stars.js?v=b247';
+import { sb } from './db.js?v=b248';
+import { $, esc, toast, copyText } from './dom.js?v=b248';
+import { starHtml, paintStars, markRated } from './stars.js?v=b248';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b247';
-import { loadAdmin } from './admin.js?v=b247';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b247';
+         setErrLogger, NOROW } from './net.js?v=b248';
+import { loadAdmin } from './admin.js?v=b248';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b248';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b247';
+         setEditPlanId } from './trip.js?v=b248';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b247';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b248';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b247';
+         useCities, addCity, search } from './cities.js?v=b248';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b247';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b248';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b247';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b248';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b247';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b248';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -776,7 +776,10 @@ const CAL_MONTHS = 14;
    달력이 오늘 달부터 다시 시작해서 고른 날을 또 찾게 됩니다. */
 function wizCal(seek){
   const today = new Date(); today.setHours(0,0,0,0);
-  const tkey  = ymd(today);
+  /* **로컬 자정을 ymd(UTC)로 돌리면 안 됩니다** — KST 에서는 하루 종일 전날이
+     나와서 달력의 '오늘'이 늘 하루 앞을 가리켰습니다. 달력은 사람이 보는
+     날짜이므로 로컬로 읽습니다. */
+  const tkey  = todayYmd();
   const s = $('f_start').value, e = $('f_end').value;
   let html = '';
   for (let m = 0; m < CAL_MONTHS; m++){
@@ -1424,10 +1427,16 @@ function drawCards(d){
        특정일  — 고른 날짜에 다 넣습니다. 하루를 통째로 짜는 경우입니다 */
   const dayOpts = (trip && acts.length)
     ? (() => {
-        const out = []; const s = new Date(trip.start_date + 'T00:00:00');
-        const e = new Date(trip.end_date + 'T00:00:00');
-        for (let d = new Date(s), i = 1; d <= e && i <= 60; d.setDate(d.getDate() + 1), i++){
-          const v = d.toISOString().slice(0, 10);
+        /* **로컬 자정으로 만들어 UTC 로 잘라 읽고 있었습니다.** 한국(UTC+9)에서는
+           9시간이 빠지면서 목록이 통째로 하루씩 앞으로 밀렸습니다 —
+           8/14~8/16 여행인데 "Day 1 · 08-13" 이 나왔고, 그걸 고르면
+           **여행 시작 전날에 일정이 들어갔습니다.** 실기기에서 확인했습니다.
+           날짜 문자열을 다룰 때는 앱의 다른 곳과 같이 asDate(UTC 자정) + D1 로
+           셈하고 ymd 로 되돌립니다. 둘이 짝이라 시간대를 안 탑니다. */
+        const out = []; const e = trip.end_date;
+        for (let d = asDate(trip.start_date), i = 1; ymd(d) <= e && i <= 60;
+             d = new Date(d.getTime() + D1), i++){
+          const v = ymd(d);
           out.push(`<option value="${v}">Day ${i} · ${v.slice(5)}</option>`);
         }
         return out.join('');
@@ -2199,7 +2208,7 @@ async function loadHome(){
 }
 
 async function buildHome(){
-  const today = ymd(new Date());
+  const today = todayYmd();
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
 
   /* 다녀왔는데 아직 별점을 안 매긴 여행. 앞으로 갈 여행이 먼저이므로
@@ -2329,7 +2338,7 @@ async function buildHome(){
 let rvTrip = null, shelfKind = 'mine';
 
 async function pendingTrip(){
-  const today = ymd(new Date());
+  const today = todayYmd();
   /* **netTimeout 을 지나야 합니다.** 여기가 홈에서 제일 먼저 기다리는 질의인데
      맨몸으로 나가고 있었습니다. 비행기모드에서는 응답이 안 오고 실패도 안 나서
      여기서 멈췄고, 화면은 index.html 의 "불러오는 중…" 그대로 남았습니다.
@@ -3545,7 +3554,7 @@ const dropDraft = id => { try { localStorage.removeItem(DKEY(id)); } catch {} };
    'AI 가 짜줄게요' 로 들어올 때 씁니다.
    lean 이면 묻는 칸(d_ask)을 접습니다. 거기서 방금 다 고르고 왔으니까요. */
 async function openDraft(preselect, lean){
-  const today = ymd(new Date());
+  const today = todayYmd();
   const { data } = await sb.from('trips')
     .select('id,title,destination,start_date,end_date')
     .gte('end_date', today).order('start_date').limit(20);
@@ -4249,7 +4258,7 @@ $('shelffilter').addEventListener('click', e => {
 /* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
    따로 적게 하지 않고, 다녀온 여행의 그 분류만 모아 별점을 받습니다. */
 async function openPlaceShelf(kind){
-  const today = ymd(new Date());
+  const today = todayYmd();
   const cats = SHELF_CAT[kind] || SHELF_CAT.place;
   const [ps, rs] = await Promise.all([
     sb.from('plans').select('id,title,memo,category,date,trip_id,trips(title,end_date)')
@@ -4765,7 +4774,7 @@ $('tsbtns').addEventListener('click', async e => {
 async function loadTrips(){
   /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
      않으면 방금 만든 여행조차 여기 안 나옵니다. */
-  const today = ymd(new Date());
+  const today = todayYmd();
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
             'transit_factor,city_id,cities(image_url),' +
@@ -4933,7 +4942,29 @@ const D1 = 864e5;
    되돌리면서 하루 앞으로 밀립니다. 그래서 여행 첫날 앞에 유령 칩이 하나 생겼습니다.
    시각이 아니라 날짜를 다루는 자리이므로 처음부터 UTC 로 통일합니다. */
 const asDate = s => new Date(s + 'T00:00:00Z');
+/* **날짜 문자열을 만드는 함수가 둘입니다. 섞으면 하루가 어긋납니다.**
+ *
+ * `asDate` 가 **UTC 자정**을 쓰므로(위 줄), 날짜 계산으로 만든 Date 를 다시
+ * 문자열로 돌릴 때는 UTC 로 읽어야 짝이 맞습니다. 그게 `ymd` 입니다.
+ *   ymd(asDate('2026-08-14'))  →  '2026-08-14'   (어느 시간대에서나)
+ *
+ * 그런데 **"오늘이 며칠인가"는 UTC 로 물으면 안 됩니다.** `new Date()` 는
+ * 지금 이 순간이고, 그것을 UTC 로 자르면 한국(UTC+9)에서는
+ * **자정부터 오전 9시까지 어제가 나옵니다.** 실측(b248):
+ *   00:30 KST → 08-08   05:00 → 08-08   08:59 → 08-08   09:01 → 08-09
+ * 하루의 9시간 동안 앱이 어제를 오늘로 알고 있었습니다 — '오늘 화면',
+ * 지난 여행 판정, 지출 날짜 기본값이 다 여기에 걸려 있습니다.
+ *
+ * 달력의 '오늘' 표시는 더 나빴습니다. 로컬 자정을 만들어 ymd 로 돌렸는데
+ * 그건 KST 에서 **하루 종일** 전날입니다.
+ *
+ * 그래서 "오늘"은 따로 둡니다. 여기는 달력이 보여주는 날짜라 로컬이 맞습니다. */
 const ymd = d => d.toISOString().slice(0,10);
+const todayYmd = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
+         `${String(d.getDate()).padStart(2, '0')}`;
+};
 const hm  = t => t ? String(t).slice(0,5) : '';
 
 /* 문서의 표시 규칙 그대로입니다.
@@ -5256,7 +5287,7 @@ $('legs').addEventListener('click', async e => {
  * 기록 탭을 따로 찾아가게 하지 않습니다.
  * 같은 여행도 사람마다 느낌이 다르므로 후기는 한 사람에 한 줄입니다. */
 async function loadReview(){
-  const ended = trip.end_date < ymd(new Date());
+  const ended = trip.end_date < todayYmd();
   $('reviewbox').classList.toggle('hide', !ended);
   if (!ended) return;
 
@@ -6127,7 +6158,7 @@ async function getWeather(lat, lng){
  *
  * 이동 안내는 **지금과 다음 구간에만** 답니다. 하루 전체에 다 달면 소음입니다. */
 function todayDayNo(){
-  const today = ymd(new Date());
+  const today = todayYmd();
   if (!trip || today < trip.start_date || today > trip.end_date) return null;
   return { date: today,
            n: Math.round((asDate(today) - asDate(trip.start_date)) / D1) + 1 };
@@ -6725,7 +6756,7 @@ $('addexpbtn').addEventListener('click', () => {
     `<option value="${esc(m.user_id)}"${m.user_id === me.id ? ' selected' : ''}>` +
     `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
     `<option value="">공동 (결제자 없음)</option>`;
-  $('x_date').value = pickedDay || ymd(new Date());
+  $('x_date').value = pickedDay || todayYmd();
   drawShareChips();
   syncExpCur();
   $('x_title').focus();
