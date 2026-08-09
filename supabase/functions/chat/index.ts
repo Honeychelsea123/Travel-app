@@ -314,13 +314,31 @@ async function unshortenMap(u: string) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), BLOG_MS);
   try {
+    // **UA 가 'Mozilla/5.0' 뿐이면 구글이 봇으로 보고 좌표 없는 판을 줍니다.**
+    // 실제로 재봤습니다: maps.app.goo.gl/18Sbe4… 가 이름과 주소만 주고
+    // 좌표는 null 이었습니다. 그 주소로는 OSM 에서도 못 찾아서 결국 지도에
+    // 안 떴습니다. 진짜 브라우저처럼 물어봅니다.
     const res = await fetch(u, { signal: ac.signal, redirect: 'follow',
-      headers: { 'user-agent': 'Mozilla/5.0' } });
-    // 보통은 여기서 끝납니다 — 302 를 따라가면 res.url 이 긴 주소입니다.
-    if (res.url && !/goo\.gl/i.test(res.url)) return res.url;
-    // 다만 302 가 아니라 **HTML 로 넘기는 판**이 있습니다(meta refresh·스크립트).
-    // 그때는 res.url 이 그대로라서 본문에서 찾아야 합니다.
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
+                      'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                      'Chrome/126.0.0.0 Safari/537.36',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'accept-language': 'ko-KR,ko;q=0.9,en;q=0.8',
+      } });
     const html = await res.text();
+    // 보통은 여기서 끝납니다 — 302 를 따라가면 res.url 이 긴 주소입니다.
+    // **다만 그 주소에 좌표가 없을 때가 있습니다.** 그때는 본문에 남아 있는
+    // 것을 줍습니다 — 지도 페이지는 !3d위도!4d경도 를 어디엔가 싣습니다.
+    let full = (res.url && !/goo\.gl/i.test(res.url)) ? res.url : u;
+    if (!/@-?\d+\.\d+,-?\d+\.\d+|!3d-?\d+\.\d+/.test(full)){
+      const c = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+             || html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (c) return full + (full.includes('?') ? '&' : '?') +
+                    `t2=1&ll=${c[1]},${c[2]}` + `&x=!3d${c[1]}!4d${c[2]}`;
+    }
+    if (full !== u) return full;
+    // 302 가 아니라 **HTML 로 넘기는 판**도 있습니다(meta refresh·스크립트).
     const m = html.match(/https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"'\s<>\\]+/i);
     return m ? m[0].replace(/&amp;/g, '&') : u;
   } catch { return u; }
