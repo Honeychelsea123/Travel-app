@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b249';
-import { $, esc, toast, copyText } from './dom.js?v=b249';
-import { starHtml, paintStars, markRated } from './stars.js?v=b249';
+import { sb } from './db.js?v=b250';
+import { $, esc, toast, copyText } from './dom.js?v=b250';
+import { starHtml, paintStars, markRated } from './stars.js?v=b250';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b249';
-import { loadAdmin } from './admin.js?v=b249';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b249';
+         setErrLogger, NOROW } from './net.js?v=b250';
+import { loadAdmin } from './admin.js?v=b250';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b250';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b249';
+         setEditPlanId } from './trip.js?v=b250';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b249';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b250';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b249';
+         useCities, addCity, search } from './cities.js?v=b250';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b249';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b250';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b249';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b250';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b249';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b250';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1827,11 +1827,14 @@ function drawRatings(){
      가마쿠라… 로 시작하는 사전이 됩니다. 매긴 곳이 49개인 사람에게도
      그랬습니다 — 이름을 알고 찾아오는 게 아니면 아무 쓸모가 없습니다.
      그래서 그 자리는 이름난 곳 순으로 채웁니다. 찾아서 오는 사람은
-     위의 검색칸을 씁니다(초성도 됩니다). */
+     위의 검색칸을 씁니다(초성도 됩니다).
+     **fame 은 1이 이름난 쪽입니다** — 파리·로마·도쿄가 1, 겐트·공주가 3.
+     처음에 큰 값을 앞에 두었더니 목록이 겐트·골웨이·공주로 시작했습니다.
+     값이 없으면 맨 뒤로 보냅니다. */
   const rank = c => (visited.has(c.id) && myRates[c.id]?.stars == null) ? 999
                   : (myRates[c.id]?.stars ?? -1);
   list.sort((a, b) => rank(b) - rank(a)
-                   || (b.fame ?? 0) - (a.fame ?? 0)
+                   || (a.fame ?? 9) - (b.fame ?? 9)
                    || a.name.localeCompare(b.name, 'ko'));
 
   $('r_head').textContent = { been:'다녀온 곳', want:'가보고 싶은 곳',
@@ -5908,7 +5911,9 @@ function drawCats(){
 $('cats').addEventListener('click', e => {
   const b = e.target.closest('[data-cat]'); if (!b) return;
   setCatFilter(b.dataset.cat);
-  drawCats(); drawPlans(); drawPlanMap();
+  /* 날짜 줄 끝의 칩이 지금 거르는 분류를 적으므로 그쪽도 다시 그립니다.
+     안 그리면 '식사'만 보는 중인데 칩에는 '분류'라고 적혀 있습니다. */
+  drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
 /* 그날 몇 곳을 다니고 이동에 얼마나 쓰는지. 좌표가 있는 구간만 셉니다. */
