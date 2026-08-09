@@ -62,13 +62,14 @@ jobs:
             "$URL/functions/v1/push" \
             -H "Authorization: Bearer $KEY" \
             -H "Content-Type: application/json" -d '{}')
+          body=$(cat /tmp/out.json)
           echo "HTTP $code"
-          cat /tmp/out.json
-          echo
+          echo "$body"
           # 실패를 조용히 넘기면 알림이 몇 주째 안 가는 것을 아무도 모릅니다.
-          if [ "$code" = "403" ]; then
-            echo "::error::함수가 서비스 키를 못 알아봤습니다. service_role 키가 맞는지 확인해주세요."
-          elif [ "$code" = "404" ]; then
-            echo "::error::push 함수를 못 찾았습니다. Supabase 에 이름이 push 인지 확인해주세요."
+          # **답을 그대로 주석에 싣습니다.** 코드만 찍었더니 실패할 때마다
+          # 로그를 열어봐야 했고, 그러느라 한 번 고칠 때마다 왕복이 생겼습니다.
+          # 함수는 키 값을 답에 절대 안 싣습니다(공개 저장소 로그에 남습니다).
+          if [ "$code" != "200" ]; then
+            echo "::error::HTTP $code · $body"
           fi
           test "$code" = "200"

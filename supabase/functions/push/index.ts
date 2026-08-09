@@ -61,6 +61,25 @@ Deno.serve(async (req) => {
   const gate = allowed(req.headers.get('authorization') || '');
   if (!gate.ok) return json({ error: 'forbidden', 받은키: gate.kind }, 403);
 
+  /* **터진 이유를 답에 담습니다.** 처음엔 그냥 터지게 뒀더니 스케줄러
+     로그에 500 이라는 숫자만 남았습니다. 그 숫자로는 키가 없는 건지
+     라이브러리가 안 올라온 건지 가릴 수가 없습니다.
+     여기 담기는 것은 오류 문구뿐이고 키 값은 절대 안 실립니다. */
+  try {
+    return await run();
+  } catch (e: any){
+    console.error('push', e);
+    return json({ error: String(e?.message || e).slice(0, 300) }, 500);
+  }
+
+  async function run(){
+  /* 비밀값이 하나라도 비면 setVapidDetails 가 알아듣기 힘든 말로 터집니다.
+     먼저 세어보고 사람 말로 알려줍니다 — 값이 아니라 있고 없음만. */
+  const 빠진것 = [['VAPID_PUBLIC', PUB], ['VAPID_PRIVATE', PRIV]]
+    .filter(([, v]) => !v).map(([k]) => k);
+  if (빠진것.length)
+    return json({ error: `Edge Function 비밀값이 없습니다: ${빠진것.join(', ')}` }, 500);
+
   const sb = createClient(URL_, SRV);
   webpush.setVapidDetails(CONTACT, PUB, PRIV);
 
@@ -80,7 +99,7 @@ Deno.serve(async (req) => {
     byUser.get(s.user_id)!.push(s);
   }
 
-  let sent = 0, dead = 0;
+  let sent = 0, dead = 0, why = '';
   const gone: string[] = [];
 
   for (const d of due as any[]){
@@ -103,7 +122,13 @@ Deno.serve(async (req) => {
         /* 404·410 은 **그 기기가 사라졌다**는 뜻입니다(앱 삭제·기기 초기화).
            지우지 않으면 15분마다 영원히 실패합니다. */
         if (e?.statusCode === 404 || e?.statusCode === 410){ gone.push(s.endpoint); dead++; }
-        else console.error('send', e?.statusCode, e?.body || e?.message);
+        else {
+          console.error('send', e?.statusCode, e?.body || e?.message);
+          /* **첫 실패 이유를 답에도 담습니다.** console 로만 보내면 스케줄러
+             로그에는 `sent:0` 만 남아서, 키가 틀린 건지 기기가 죽은 건지
+             가릴 수가 없습니다. 여기 담기는 것은 푸시 서비스가 준 문구뿐입니다. */
+          if (!why) why = `${e?.statusCode || ''} ${String(e?.body || e?.message || e).slice(0, 200)}`.trim();
+        }
       }
     }
 
@@ -118,5 +143,6 @@ Deno.serve(async (req) => {
 
   if (gone.length) await sb.from('push_subs').delete().in('endpoint', gone);
 
-  return json({ due: due.length, sent, dead });
+  return json({ due: due.length, sent, dead, ...(why ? { why } : {}) });
+  }   /* run 끝 */
 });
