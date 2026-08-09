@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b244';
-import { $, esc, toast, copyText } from './dom.js?v=b244';
-import { starHtml, paintStars, markRated } from './stars.js?v=b244';
+import { sb } from './db.js?v=b245';
+import { $, esc, toast, copyText } from './dom.js?v=b245';
+import { starHtml, paintStars, markRated } from './stars.js?v=b245';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b244';
-import { loadAdmin } from './admin.js?v=b244';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b244';
+         setErrLogger, NOROW } from './net.js?v=b245';
+import { loadAdmin } from './admin.js?v=b245';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b245';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b244';
+         setEditPlanId } from './trip.js?v=b245';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b244';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b245';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b244';
+         useCities, addCity, search } from './cities.js?v=b245';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b244';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b245';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b244';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b245';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b244';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b245';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -6464,9 +6464,23 @@ async function rateOf(cur, home, date){
   return (a && b) ? b / a : null;
 }
 
+/* 일행 이름. **사람을 가리켜야 합니다.**
+   전에는 이름이 없으면 '아직 이름을 안 정했어요' 였습니다. 일행 목록에서는
+   말이 되지만 정산의 송금 줄에 들어가면 이렇게 됩니다:
+
+       아직 이름을 안 정했어요 → 첼시꿀  ₩10,000
+
+   **누가 보내야 하는지를 말하는 자리인데 사람을 못 가리킵니다.** 게다가 이름을
+   안 정한 사람이 둘이면 줄이 통째로 똑같아져서 구분이 아예 안 됩니다.
+   들어온 순서로 번호를 붙입니다 — loadMembers 가 joined_at 으로 정렬하므로
+   다시 열어도 같은 사람이 같은 번호입니다.
+   **이름을 만드는 곳은 여기 하나뿐입니다** — 일행 목록도 이걸 씁니다.
+   전에는 같은 문구가 두 곳에 베껴져 있었습니다. */
 const nameOf = id => {
-  const m = members.find(x => x.user_id === id);
-  return m ? (m.nickname || m.profiles?.display_name || '아직 이름을 안 정했어요') : '알 수 없음';
+  const i = members.findIndex(x => x.user_id === id);
+  if (i < 0) return '알 수 없음';
+  const m = members[i];
+  return m.nickname || m.profiles?.display_name || `일행 ${i + 1}`;
 };
 
 async function loadExpenses(){
@@ -7034,7 +7048,9 @@ async function loadMembers(){
   const owner = trip.myRole === 'owner';
   $('members').innerHTML = data.map(m => {
     const p = m.profiles || {};
-    const name = m.nickname || p.display_name || '아직 이름을 안 정했어요';
+    /* 위 nameOf 하나만 씁니다 — 여기 따로 적으면 정산과 일행 목록에서
+       같은 사람이 다른 이름으로 보입니다. */
+    const name = nameOf(m.user_id);
     const self = m.user_id === me.id;
     const gone = !!m.left_at;
     /* 나간 사람도 지웁니다가 아니라 남깁니다 — 빼면 정산이 어긋납니다. */
