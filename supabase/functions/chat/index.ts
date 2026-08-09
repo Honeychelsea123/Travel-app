@@ -314,33 +314,33 @@ async function unshortenMap(u: string) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), BLOG_MS);
   try {
-    // **UA 가 'Mozilla/5.0' 뿐이면 구글이 봇으로 보고 좌표 없는 판을 줍니다.**
-    // 실제로 재봤습니다: maps.app.goo.gl/18Sbe4… 가 이름과 주소만 주고
-    // 좌표는 null 이었습니다. 그 주소로는 OSM 에서도 못 찾아서 결국 지도에
-    // 안 떴습니다. 진짜 브라우저처럼 물어봅니다.
+    // **UA 를 진짜 브라우저로 바꿨다가 되돌렸습니다.** 그러면 구글이
+    // 동의 페이지(consent.google.com)로 보내서, 이름조차 못 뽑게 됐습니다 —
+    // 고치기 전보다 나빠졌습니다. 재보고 알았습니다. 원래대로 둡니다.
     const res = await fetch(u, { signal: ac.signal, redirect: 'follow',
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ' +
-                      'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-                      'Chrome/126.0.0.0 Safari/537.36',
-        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'accept-language': 'ko-KR,ko;q=0.9,en;q=0.8',
-      } });
+      headers: { 'user-agent': 'Mozilla/5.0' } });
     const html = await res.text();
-    // 보통은 여기서 끝납니다 — 302 를 따라가면 res.url 이 긴 주소입니다.
-    // **다만 그 주소에 좌표가 없을 때가 있습니다.** 그때는 본문에 남아 있는
-    // 것을 줍습니다 — 지도 페이지는 !3d위도!4d경도 를 어디엔가 싣습니다.
-    let full = (res.url && !/goo\.gl/i.test(res.url)) ? res.url : u;
+
+    // 보통은 302 를 따라가면 res.url 이 긴 주소입니다.
+    // 동의 페이지처럼 **지도 주소가 아닌 곳**으로 갔으면 그건 쓰면 안 됩니다.
+    let full = (res.url && !/goo\.gl/i.test(res.url) && /\/maps\//i.test(res.url))
+      ? res.url : '';
+    // 302 가 아니라 HTML 로 넘기는 판도 있습니다(meta refresh·스크립트).
+    if (!full){
+      const m = html.match(/https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"'\s<>\\]+/i);
+      if (m) full = m[0].replace(/&amp;/g, '&');
+    }
+    if (!full) return u;
+
+    // **주소에 좌표가 없어도 본문에는 남아 있습니다.** 지도 페이지는
+    // !3d위도!4d경도 를 어디엔가 싣습니다. 주워서 주소에 붙이면
+    // parseMapUrl 이 그대로 읽습니다.
     if (!/@-?\d+\.\d+,-?\d+\.\d+|!3d-?\d+\.\d+/.test(full)){
       const c = html.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
              || html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-      if (c) return full + (full.includes('?') ? '&' : '?') +
-                    `t2=1&ll=${c[1]},${c[2]}` + `&x=!3d${c[1]}!4d${c[2]}`;
+      if (c) full += (full.includes('?') ? '&' : '?') + `t2=!3d${c[1]}!4d${c[2]}`;
     }
-    if (full !== u) return full;
-    // 302 가 아니라 **HTML 로 넘기는 판**도 있습니다(meta refresh·스크립트).
-    const m = html.match(/https?:\/\/(?:www\.)?google\.[a-z.]+\/maps\/[^"'\s<>\\]+/i);
-    return m ? m[0].replace(/&amp;/g, '&') : u;
+    return full;
   } catch { return u; }
   finally { clearTimeout(t); }
 }
