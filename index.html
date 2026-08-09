@@ -17,30 +17,54 @@
 <!-- 아이폰은 이 값을 manifest 의 short_name 보다 먼저 씁니다 -->
 <meta name="apple-mobile-web-app-title" content="AI.Trip">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<!-- ── 링크를 보냈을 때 상대가 보는 것 ──────────────────────────────
+     **이게 하나도 없었습니다.** 그래서 초대 링크를 카톡으로 보내면
+     "AI.Trip / 여기를 눌러 링크를 확인하세요" 만 떴습니다 — 뒤 문장은
+     카카오가 넣는 기본 문구입니다. 받은 사람은 **무슨 여행인지도, 무엇을
+     하자는 것인지도 모르는 채로** 눌러야 했습니다.
+
+     카톡·메신저는 URL 이 있으면 보낸 사람이 쓴 글을 버리고 여기 값으로
+     제 미리보기 카드를 만듭니다. 그래서 보내는 쪽(navigator.share)만
+     고쳐서는 안 되고 여기가 같이 있어야 합니다.
+
+     **여행 이름까지는 못 넣습니다.** 정적 페이지라 ?join=CODE 마다 다른
+     미리보기를 만들려면 서버가 필요합니다. 대신 "초대를 받았다"는 것과
+     "누르면 무엇이 되는지"는 여기서 말해줄 수 있습니다. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AI.Trip">
+<meta property="og:title" content="AI.Trip — 여행 일정을 같이 짜는 앱">
+<meta property="og:description"
+      content="초대 링크를 누르면 일정 · 지출 · 준비물을 함께 보고 고칠 수 있어요. 비행기모드에서도 열립니다.">
+<meta property="og:image" content="https://honeychelsea123.github.io/Travel-app/icons/icon-512.png">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary">
+<meta name="description"
+      content="AI 가 여행 일정을 짜주고, 다녀온 곳은 지도에 남습니다. 일정 · 지출 · 준비물을 일행과 같이 봅니다.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <!-- 일정 위에 얹는 지도(Leaflet)는 **여기서 안 부릅니다.** app.js 가 쓸 때
      불러옵니다(ensureLeaflet). 전에는 여기 defer 로 걸려 있었는데, defer
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b246">
+<link rel="stylesheet" href="app.css?v=b247">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b246">
-<link rel="modulepreload" href="dom.js?v=b246">
-<link rel="modulepreload" href="db.js?v=b246">
-<link rel="modulepreload" href="calc.js?v=b246">
-<link rel="modulepreload" href="stars.js?v=b246">
-<link rel="modulepreload" href="net.js?v=b246">
-<link rel="modulepreload" href="admin.js?v=b246">
-<link rel="modulepreload" href="ui.js?v=b246">
-<link rel="modulepreload" href="card.js?v=b246">
-<link rel="modulepreload" href="trip.js?v=b246">
-<link rel="modulepreload" href="rate.js?v=b246">
-<link rel="modulepreload" href="cities.js?v=b246">
-<link rel="modulepreload" href="ai.js?v=b246">
+<link rel="modulepreload" href="supabase.js?v=b247">
+<link rel="modulepreload" href="dom.js?v=b247">
+<link rel="modulepreload" href="db.js?v=b247">
+<link rel="modulepreload" href="calc.js?v=b247">
+<link rel="modulepreload" href="stars.js?v=b247">
+<link rel="modulepreload" href="net.js?v=b247">
+<link rel="modulepreload" href="admin.js?v=b247">
+<link rel="modulepreload" href="ui.js?v=b247">
+<link rel="modulepreload" href="card.js?v=b247">
+<link rel="modulepreload" href="trip.js?v=b247">
+<link rel="modulepreload" href="rate.js?v=b247">
+<link rel="modulepreload" href="cities.js?v=b247">
+<link rel="modulepreload" href="ai.js?v=b247">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1065,7 +1089,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b246</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b247</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1509,7 +1533,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b246"></script>
+<script type="module" src="app.js?v=b247"></script>
 </body>
 </html>
 

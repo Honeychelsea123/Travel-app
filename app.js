@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b246';
-import { $, esc, toast, copyText } from './dom.js?v=b246';
-import { starHtml, paintStars, markRated } from './stars.js?v=b246';
+import { sb } from './db.js?v=b247';
+import { $, esc, toast, copyText } from './dom.js?v=b247';
+import { starHtml, paintStars, markRated } from './stars.js?v=b247';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b246';
-import { loadAdmin } from './admin.js?v=b246';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b246';
+         setErrLogger, NOROW } from './net.js?v=b247';
+import { loadAdmin } from './admin.js?v=b247';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b247';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b246';
+         setEditPlanId } from './trip.js?v=b247';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b246';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b247';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b246';
+         useCities, addCity, search } from './cities.js?v=b247';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b246';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b247';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b246';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b247';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b246';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b247';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -2115,8 +2115,28 @@ async function tripPhoto(t){
   return c.data?.[0]?.image_url || null;
 }
 
+/* ── 사진이 없을 때의 히어로 ──────────────────────────────────────────
+ * 도시 사진은 469곳에 다 있지만 **'삼척 여행'처럼 목록에 없는 곳으로 만든
+ * 여행은 사진이 없습니다.** 그때 밋밋한 회색 판이 떴는데, 홈에서 제일 큰
+ * 자리가 회색이면 앱이 덜 만들어진 것처럼 보입니다.
+ *
+ * 색을 이름에서 뽑습니다 — **같은 여행은 늘 같은 색**이라야 "내 여행"으로
+ * 읽힙니다. 무작위면 열 때마다 달라져서 오히려 거슬립니다.
+ * 색표는 성향 카드가 쓰는 것을 그대로 빌립니다(card.js 의 PERSONA_BG) —
+ * 앱 안에서 색이 두 벌이 되면 같은 앱처럼 안 보입니다. */
+const HERO_BG = ['rare', 'deep', 'taste', 'size', 'plan', 'spend', 'speed'];
+function heroTint(seed){
+  const s = String(seed || '');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return PERSONA_BG[HERO_BG[h % HERO_BG.length]];
+}
+
 function heroHtml(photo, dd, title, memo, btn){
-  return `<div class="hero" id="hero">
+  /* 사진이 없으면 색을 깝니다. `.hero::after` 가 위에 어둡게 덮으므로
+     글자는 사진이 있을 때와 똑같이 읽힙니다. */
+  const tint = photo ? '' : ` style="background:${heroTint(title + memo)}"`;
+  return `<div class="hero" id="hero"${tint}>
     ${photo ? `<img src="${esc(photo)}" alt="" onerror="this.remove()">` : ''}
     ${dd ? `<div class="dd">${esc(dd)}</div>` : ''}
     <div class="ht">${esc(title)}</div>
@@ -7185,12 +7205,18 @@ $('i_make').addEventListener('click', async () => {
 
 $('i_share').addEventListener('click', async () => {
   /* 복사해서 어디에 붙이라고 하는 것보다 쓰던 메신저로 바로 보내는 편이 빠릅니다. */
+  const url = $('i_link').textContent;
+  /* **`url` 을 따로 주면 카톡이 우리 글을 버립니다.** URL 이 있으면 메신저는
+     보낸 사람의 글 대신 제 미리보기 카드만 만듭니다 — 그래서 받는 사람 화면에
+     "AI.Trip / 여기를 눌러 링크를 확인하세요" 만 떴고, **무슨 여행인지 알 수가
+     없었습니다.** 주소를 글 안에 넣고 url 은 안 줍니다. 그러면 메신저는 이걸
+     그냥 글로 받아 그대로 보여주고, 주소는 알아서 링크가 됩니다.
+     (미리보기 카드는 여전히 뜨는데, 그 내용은 index.html 의 og: 태그입니다.) */
+  const text = `${trip.title} 같이 가실까요?\n` +
+               `${trip.destination} · ${dateRange(trip.start_date, trip.end_date)}\n` +
+               `아래 링크로 들어오면 일정을 같이 볼 수 있어요.\n${url}`;
   try {
-    await navigator.share({
-      title: `${trip.title} 같이 가요`,
-      text: `${trip.title} (${trip.destination}) 일정에 초대합니다.`,
-      url: $('i_link').textContent,
-    });
+    await navigator.share({ title: `${trip.title} 같이 가요`, text });
   } catch {}   /* 취소를 누르면 거절로 옵니다. 오류가 아닙니다. */
 });
 

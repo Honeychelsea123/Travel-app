@@ -15,7 +15,7 @@ const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
 
 const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
-  './manifest.json', './apple-touch-icon.png',
+  './manifest.json', './icons/apple-touch-icon.png', './icons/icon-512.png',
   './privacy.html', './terms.html',
   /* 관리자만 보는 '바뀐 것' 목록. app.js 가 누를 때만 동적으로 받아오므로
      없어도 앱은 멀쩡합니다. 여기 담아두면 오프라인에서도 열립니다. */

@@ -779,6 +779,12 @@ Deno.serve(async (req) => {
       '- 좌표는 아는 곳만 넣는다. 모르면 null 로 둔다. 지어낸 좌표는 넣지 않는다.',
       '- 날짜는 위 구간을 보고 그 도시에 맞는 날로 넣는다.',
       '- 한 번에 5개를 넘기지 않는다.',
+      '- 같은 곳을 places 와 actions 에 **둘 다 넣지 않는다.** 일정에 넣을 것이면',
+      '  actions 에만 넣는다 — 화면에서 그 카드로 둘 다 할 수 있다.',
+      '- **reply 안에 무엇을 냈는지 이름으로 적는다.** 둘 이상이면 번호를 붙인다.',
+      '  ("1. 쌍용각  2. 죽서루" 처럼). 사용자는 다음 말에서 "1번", "그거" 로',
+      '  가리킨다. reply 에 이름이 없으면 네가 방금 낸 것을 너도 못 찾는다 —',
+      '  카드는 대화에 안 남고 이 글만 남는다.',
       '',
       'sources 규칙 — 이건 사용자에게 그대로 보여준다. 정확해야 한다:',
       '- 아래 [일정] 을 보고 답했으면 "plans", [최근 지출] 이면 "expenses",',
@@ -828,6 +834,46 @@ Deno.serve(async (req) => {
           : '',
     ].filter(Boolean).join('\n');
 
+    /* ── 여태 나눈 이야기를 읽어 옵니다 ────────────────────────────────
+     * **화면이 보내주지 않고 여기서 직접 읽습니다.** 화면이 보내면 그 말이
+     * 진짜 오간 말인지 확인할 방법이 없습니다. asUser 로 읽으므로 RLS 가
+     * 그대로 걸려 남의 대화는 애초에 안 나옵니다.
+     *
+     * **여행마다 따로입니다** — 화면도 여행별로 보여줍니다(loadChats).
+     * 여행을 안 고르고 물어보는 대화(trip_id 없음)도 그들끼리 이어집니다.
+     *
+     * 열두 개까지, 그리고 글자로도 자릅니다. 대화가 길어질수록 요청이 커지고
+     * 그만큼 느려지고 비싸집니다 — 무한정 들고 갈 수는 없습니다.
+     * 오래된 것부터 버립니다(가까운 말이 가리키는 대상일 확률이 높습니다).
+     * 초안·불러오기는 대화가 아니라 한 번 하는 일이라 안 붙입니다. */
+    // deno-lint-ignore no-explicit-any
+    let history: any[] = [];
+    if (!imp && !draft) {
+      const q = asUser.from('chats')
+        .select('role,content')
+        .order('created_at', { ascending: false })
+        .limit(12);
+      const { data: past } = trip_id
+        ? await q.eq('trip_id', trip_id)
+        : await q.is('trip_id', null);
+      let left = 4000;                       /* 글자 예산 */
+      history = (past ?? [])                 /* 최신순으로 왔습니다 */
+        .filter((m) => m?.content)
+        .filter((m) => {                     /* 예산 안에 드는 것까지만 */
+          const n = String(m.content).length;
+          if (n > left) return false;
+          left -= n; return true;
+        })
+        .reverse()                           /* 모델에게는 오래된 것부터 */
+        .map((m) => ({
+          /* chats 는 'user' 와 'model' 로 저장합니다 — Gemini 가 쓰는 이름과
+             같습니다. 혹시 다른 값이 들어와도 user 로 떨어뜨립니다. */
+          role: m.role === 'model' ? 'model' : 'user',
+          parts: [{ text: String(m.content).slice(0, 1200) }],
+        }));
+    }
+    mark('history');
+
     const contents = imp
       ? [
           { role: 'user', parts: [{ text: importSystem }] },
@@ -848,6 +894,14 @@ Deno.serve(async (req) => {
       : [
           { role: 'user', parts: [{ text: system }] },
           { role: 'model', parts: [{ text: '알겠습니다. 자료를 보고 답하겠습니다.' }] },
+          // ── 여태 나눈 이야기 ──
+          // **이게 통째로 빠져 있었습니다.** 보내는 것이 [규칙]→[알겠습니다]→[지금 친 말]
+          // 셋뿐이라 매 요청이 서로 남남이었습니다. 화면에는 대화가 쭉 보이고
+          // chats 표에도 다 있는데 **모델에게만 안 갔습니다.**
+          // 그래서 "1번", "그거", "좀 더 싼 데로" 같은 말을 하나도 못 알아들었고,
+          // 사용자가 "1번 둘째날에 넣어줘" 했을 때 "1번이 어떤 장소인지 알기
+          // 어려워요"라고 답했습니다 — 자기가 방금 낸 것인데도요.
+          ...history,
           // 사진은 물음과 같은 차례에 넣습니다. 사진이 먼저 오면 모델이 잘 봅니다.
           { role: 'user', parts: [
               ...shots.map((s) => ({ inlineData: s })),
