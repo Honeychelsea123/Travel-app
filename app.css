@@ -791,7 +791,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 앱 본문이 480px 로 가운데 있습니다. 시트를 화면 끝까지 늘리면
    넓은 화면에서 혼자 튀어나와 레이아웃이 깨져 보입니다. 같은 폭으로 맞춥니다.
    left·right 를 0 으로 두고 margin auto 를 주면 fixed 라도 가운데로 옵니다. */
-.assheet{ position:fixed !important; left:0; right:0; bottom:0; z-index:1210;
+/* **`bottom:0` 은 레이아웃 바닥입니다. 보이는 화면의 바닥이 아닙니다.**
+   홈 화면 앱은 키보드가 떠도 화면을 안 밀어서(vv.offsetTop 0) 둘이 갈립니다 —
+   일정 추가 시트가 키보드 뒤에 앉아 제목만 잘려 보였습니다. 사용자가 사진으로
+   잡아줬습니다. 새 여행 시트(.wiz)는 b241 에서 고쳤는데 **같은 병을 앓는
+   형제 시트들을 안 봤습니다.** --vvbot 만큼 띄우면 둘 다 맞습니다
+   (사파리는 0 이 나와서 예전과 똑같이 돕니다). */
+.assheet{ position:fixed !important; left:0; right:0; bottom:var(--vvbot, 0px); z-index:1210;
           margin:0 auto !important; max-width:480px;
           border-radius:var(--r-lg) var(--r-lg) 0 0;
           max-height:min(82vh, calc(var(--vvh, 100dvh) - 24px)); overflow-y:auto;

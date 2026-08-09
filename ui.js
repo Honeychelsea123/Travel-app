@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b259';
+import { $ } from './dom.js?v=b260';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -365,6 +365,23 @@ if (window.visualViewport){
        사파리는 off 303 이라 bottom:0 이 우연히 맞아서 여태 안 보였습니다.
        위에 붙이면 둘 다 맞습니다: 홈앱 0~424, 사파리 303~695(=바닥). */
     document.documentElement.style.setProperty('--vvtop', Math.round(vv.offsetTop) + 'px');
+
+    /* **보이는 창의 바닥이 레이아웃의 어디인가.**
+       위 주석이 "레이아웃 바닥이 곧 보이는 화면의 바닥"이라고 적어둔 것은
+       **사파리에서만** 맞았습니다(off 303 이라 우연히 맞음). 홈 화면 앱은
+       off 0 이라 보이는 곳이 0~424 인데 `bottom:0` 은 793 을 가리킵니다 —
+       그래서 일정 추가 시트가 키보드 뒤에 앉아 제목만 잘려 보였습니다.
+       새 여행 시트(.wiz)만 --vvtop 으로 고쳐뒀고 **나머지 시트는 그대로**였습니다.
+       한 곳만 고치고 같은 병을 앓는 형제를 안 본 것입니다.
+       바닥에서 얼마나 띄워야 하는지를 재두면 `bottom:var(--vvbot)` 한 줄로
+       두 환경이 다 맞습니다 — 사파리는 0 이 나와서 지금과 똑같이 돕니다.
+
+       **키보드가 올라와 있을 때만 씁니다.** 사파리는 주소창이 접히거나
+       고무줄 스크롤이 나는 순간에도 offsetTop 이 잠깐 흔들리는데, 그때마다
+       시트가 튀면 안 됩니다. 키보드가 없으면 어차피 두 바닥이 같습니다. */
+    const vvbot = typing()
+      ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+    document.documentElement.style.setProperty('--vvbot', Math.round(vvbot) + 'px');
 
     /* ── 레이아웃 바깥에 그려지는 자리 ──
        사파리는 화면(screen 852) 중 아래쪽을 레이아웃 밖에 두면서(inner 695)

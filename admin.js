@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b259';
-import { sb } from './db.js?v=b259';
-import { fail, netTimeout } from './net.js?v=b259';
+import { $, esc, toast, copyText } from './dom.js?v=b260';
+import { sb } from './db.js?v=b260';
+import { fail, netTimeout } from './net.js?v=b260';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -85,10 +85,20 @@ export async function loadAdmin(){
 
   $('adm_stats').innerHTML =
     /* 손을 써야 하는 것이 있으면 맨 위입니다. 표 안에 묻으면 안 봅니다. */
-    (blocked ? `<div class="awarn">최근 7일 동안 <b>${n(blocked)}번</b> 한도에 막혔습니다.
+    /* **"아래 조절에서 바꾸세요"라고만 하고 갈 길을 안 줬습니다.** 조절이
+       한 겹 안으로 들어갔으니 더 그렇습니다 — 눌러서 바로 가게 합니다.
+       그리고 한 번 보고 판단했으면 닫을 수 있어야 합니다. 안 그러면 늘
+       빨간 상자가 떠 있어서, 정말 급할 때도 배경처럼 지나칩니다.
+       숫자가 늘면 다시 뜹니다(닫은 값과 다르면). */
+    (blocked && String(blocked) !== localStorage.getItem('t2:adm:seenblk')
+      ? `<div class="awarn">최근 7일 동안 <b>${n(blocked)}번</b> 한도에 막혔습니다.
        ${num(d.ai_blocked_today) ? `오늘만 ${n(d.ai_blocked_today)}번입니다. ` : ''}
        더 쓰고 싶은데 못 쓴 사람이 있다는 뜻이라 자주 막히면 다시 안 옵니다.
-       지금 한도는 아래 <b>조절</b>에서 바꿀 수 있어요.</div>` : '') +
+       <div style="margin-top:10px; display:flex; gap:8px">
+         <button class="small" id="adm_goset">한도 바꾸기</button>
+         <button class="ghost" id="adm_hideblk" data-blk="${esc(String(blocked))}">
+           알겠어요</button>
+       </div></div>` : '') +
 
     `<div class="atiles">
       ${tile('가입자', n(d.users_total) + '명', `최근 7일에 ${n(d.users_7d)}명 늘었습니다`)}
@@ -152,6 +162,13 @@ export async function loadAdmin(){
       ['앱이 터진 횟수', `오늘 ${n(d.errors_today)}건 · 7일 ${n(d.errors_7d)}건`],
       ['아직 안 읽은 신고', n(d.reports_open) + '건', `지금까지 받은 신고 ${n(d.reports_total)}건`],
     ]);
+
+  /* 빨간 상자의 두 단추. 다시 그릴 때마다 새로 달아야 하므로 여기 둡니다. */
+  $('adm_goset')?.addEventListener('click', () => setPane(true));
+  $('adm_hideblk')?.addEventListener('click', e => {
+    localStorage.setItem('t2:adm:seenblk', e.currentTarget.dataset.blk);
+    e.currentTarget.closest('.awarn')?.remove();
+  });
 
   const f = await netTimeout(sb.rpc('admin_feed'), 8000);
   const rows = f.data || [];
@@ -224,6 +241,18 @@ $('dashbtn').addEventListener('click', () => {
   $('admpane').classList.remove('hide');
   window.scrollTo({ top:0, behavior:'smooth' });
 });
+/* 조절은 한 겹 안입니다. 관리자 화면을 열 때마다 스위치 다섯이 맨 위를
+   먹었는데, 실제로 바꾸는 일은 몇 달에 한 번입니다.
+   다른 카드를 다 감추지는 않습니다 — 한 화면 안에서 자리만 바꿉니다.
+   그래야 '뒤로'가 앱을 나가는 것과 안 헷갈립니다. */
+const setPane = on => {
+  $('adm_setcard').classList.toggle('hide', !on);
+  $('adm_setopen').classList.toggle('hide', on);
+  if (on) $('adm_setcard').scrollIntoView({ block:'start' });
+};
+$('adm_setopen').addEventListener('click', () => setPane(true));
+$('adm_setback').addEventListener('click', () => setPane(false));
+
 $('admback').addEventListener('click', () => {
   $('admpane').classList.add('hide');
   $('profpane').classList.remove('hide');
