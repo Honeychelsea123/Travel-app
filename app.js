@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b251';
-import { $, esc, toast, copyText } from './dom.js?v=b251';
-import { starHtml, paintStars, markRated } from './stars.js?v=b251';
+import { sb } from './db.js?v=b252';
+import { $, esc, toast, copyText } from './dom.js?v=b252';
+import { starHtml, paintStars, markRated } from './stars.js?v=b252';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b251';
-import { loadAdmin } from './admin.js?v=b251';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b251';
+         setErrLogger, NOROW } from './net.js?v=b252';
+import { loadAdmin } from './admin.js?v=b252';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b252';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b251';
+         setEditPlanId } from './trip.js?v=b252';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b251';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b252';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b251';
+         useCities, addCity, search } from './cities.js?v=b252';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b251';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b252';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b251';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b252';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b251';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b252';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -97,7 +97,11 @@ setSheetCloser(() => closeAi());
 /* trip.js 는 실시간 구독을 모릅니다(서버를 모르는 파일입니다). 넣어줍니다 —
    이제 여행을 닫을 때 구독 끊는 것을 따로 기억할 필요가 없습니다.
    전에는 네 곳에서 `unwatch(); trip = null;` 을 각자 적고 있었습니다. */
-setTripCloser(() => unwatch());
+/* 여행을 닫을 때 딸려 닫혀야 하는 것들. **여기 한 곳에 모읍니다** —
+   여행을 닫는 길이 넷이었고 이미 서로 달랐던 것이 trip.js 를 만든 이유입니다.
+   서류는 여행 위를 덮는 판이라, 안 닫으면 여행을 나갔는데 앞 여행의
+   예약번호가 화면에 남습니다. */
+setTripCloser(() => { unwatch(); $('docview').classList.add('hide'); });
 
 
 /* ── 서비스 워커 ────────────────────────────────────────────────────
@@ -5624,6 +5628,8 @@ window.addEventListener('popstate', () => {
   /* 1) 화면 위에 떠 있는 것 */
   if (!$('aiview').classList.contains('hide')) return closeAi(true);
   /* 2) 통째로 덮는 화면 */
+  /* 서류가 제일 위입니다 — 여행 안에서 열리고 그 위를 다 덮습니다. */
+  if (!$('docview').classList.contains('hide')) return closeDocs(true);
   if (cityOpen) return closeCity(true);
   if (!$('reviewview').classList.contains('hide')) return closeReview(true);
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
@@ -5932,6 +5938,125 @@ function dayStat(date){
            km  ? `${km.toFixed(1)}km` : null ].filter(Boolean).join(' · ');
 }
 
+/* ── 끌어서 순서 바꾸기 ─────────────────────────────────────────────
+ * **목록은 `date · start_time · sort_order` 로 줄을 세웁니다**(loadPlans).
+ * 그래서 `sort_order` 만 바꾸면 시각이 있는 줄은 **놓자마자 제자리로
+ * 돌아갑니다.** 순서를 손으로 바꾸려면 시각을 같이 다뤄야 합니다.
+ *
+ * 규칙은 하나입니다 — **시각은 그 자리에 그대로 있고 일정만 자리를 옮깁니다.**
+ * 하루의 시각들을 자리표로 보고, 새 순서에 앞에서부터 다시 나눠 줍니다.
+ *   09:00 A · 12:00 B · 15:00 C   에서 A 를 맨 뒤로 끌면
+ *   09:00 B · 12:00 C · 15:00 A
+ * 하루의 뼈대(언제 움직이는가)가 안 흔들리고, 도로 끌면 그대로 되돌아옵니다.
+ * 시각이 없는 줄은 없는 채로 남고 `sort_order` 만 따라갑니다.
+ *
+ * **분류로 거르는 중에는 손잡이를 안 답니다.** 걸러진 목록에서 끌면
+ * 화면에 없는 줄의 시각까지 섞여 돌아갑니다 — 보이지 않는 것이 바뀝니다. */
+const canReorder = () => trip?.myRole !== 'viewer' && !catFilter;
+
+let dragOn = null;      /* {el, hole, id, date, dy, ids} */
+
+function evRows(date){
+  return [...$('plans').querySelectorAll(`.ev[data-d="${CSS.escape(date)}"]`)];
+}
+
+$('plans').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('[data-grip]');
+  if (!grip || dragOn) return;
+  const el = grip.closest('.ev');
+  const r  = el.getBoundingClientRect();
+
+  e.preventDefault();
+  grip.setPointerCapture(e.pointerId);
+  document.body.classList.add('reordering');
+
+  /* 빈 칸은 **같은 높이**로 만들어 둡니다. 안 그러면 들어올리는 순간
+     목록이 위로 솟아서 손가락 밑이 딴 곳이 됩니다. */
+  el.style.width  = r.width + 'px';
+  el.style.height = r.height + 'px';
+  const hole = el.cloneNode(true);
+  hole.classList.add('hole');
+  hole.removeAttribute('data-ev');
+  el.after(hole);
+
+  el.classList.add('lift');
+  el.style.left = r.left + 'px';
+  el.style.top  = r.top + 'px';
+
+  dragOn = { el, hole, grip, id: el.dataset.ev, date: el.dataset.d,
+             dy: e.clientY - r.top, top: r.top };
+}, false);
+
+$('plans').addEventListener('pointermove', e => {
+  if (!dragOn) return;
+  e.preventDefault();
+  const y = e.clientY - dragOn.dy;
+  dragOn.el.style.top = y + 'px';
+
+  /* 화면 끝에 닿으면 목록을 굴려 줍니다. 안 그러면 하루가 길 때
+     화면 밖으로는 아예 못 옮깁니다. */
+  const edge = 90;
+  if (e.clientY < edge)                 scrollBy(0, -12);
+  else if (e.clientY > innerHeight - edge) scrollBy(0, 12);
+
+  /* **같은 날 안에서만 옮깁니다.** 날을 옮기는 것은 수정 폼의 날짜 칸이
+     할 일입니다 — 끌어서 넘기면 어느 날에 놓였는지 확인할 자리가 없습니다. */
+  const mid = y + dragOn.el.offsetHeight / 2;
+  for (const row of evRows(dragOn.date)){
+    if (row === dragOn.el || row === dragOn.hole) continue;
+    const rr = row.getBoundingClientRect();
+    if (mid > rr.top && mid < rr.bottom){
+      const after = mid > rr.top + rr.height / 2;
+      row[after ? 'after' : 'before'](dragOn.hole);
+      break;
+    }
+  }
+}, false);
+
+async function dropOrder(){
+  const d = dragOn; if (!d) return;
+  dragOn = null;
+  document.body.classList.remove('reordering');
+  d.el.classList.remove('lift');
+  d.el.removeAttribute('style');
+  d.hole.replaceWith(d.el);
+
+  /* 화면에 보이는 새 순서 그대로 읽습니다. */
+  const ids = evRows(d.date).map(x => x.dataset.ev);
+  const day = plans.filter(p => p.date === d.date);
+  if (ids.length !== day.length) return drawPlans();   /* 어긋나면 다시 그립니다 */
+
+  const slots = day.map(p => ({ s:p.start_time, e:p.end_time }));
+  const next  = ids.map(id => day.find(p => p.id === id));
+  if (next.some(p => !p)) return drawPlans();
+
+  /* 바뀐 것만 씁니다. 안 바뀐 줄까지 쓰면 실시간이 남에게 열 번 튑니다. */
+  const jobs = [];
+  next.forEach((p, i) => {
+    const s = slots[i].s, e = slots[i].e;
+    if (p.start_time === s && p.end_time === e && +p.sort_order === i) return;
+    p.start_time = s; p.end_time = e; p.sort_order = i;
+    jobs.push({ table:'plans', action:'update', id:p.id,
+                row:{ start_time:s, end_time:e, sort_order:i } });
+  });
+  if (!jobs.length) return;
+
+  /* 먼저 화면부터 맞춥니다 — 저장을 기다리는 동안 손을 뗀 자리에 그대로
+     있어야 옮겨진 것으로 보입니다. */
+  setPlans([...plans].sort((a, b) =>
+    a.date.localeCompare(b.date)
+    || (a.start_time || '99:99').localeCompare(b.start_time || '99:99')
+    || (+a.sort_order) - (+b.sort_order)));
+  drawPlans(); drawPlanMap();
+
+  for (const j of jobs){
+    const r = await write(j);
+    if (!r.ok){ await loadPlans(); return fail(r.why, 'plan'); }
+  }
+}
+$('plans').addEventListener('pointerup', dropOrder, false);
+$('plans').addEventListener('pointercancel', dropOrder, false);
+
 function drawPlans(){
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
@@ -5978,13 +6103,23 @@ function drawPlans(){
     /* 분류는 색으로 먼저 읽히게 합니다 — 메모를 안 읽어도 눈으로 찾게 됩니다. */
     const k = p.category ? 'k-' + p.category : '';
     const mm = parseMemo([p.memo, p.move_note].filter(Boolean).join(' / '));
+    /* 그 자리에서 실제로 쓴 돈. **예상(메모의 cost)과 갈라 적습니다** —
+       "예상 3,000엔"과 "쓴 돈 3,400엔"은 다른 이야기고, 여행 중에 궁금한
+       것은 뒤쪽입니다. 환산값이 없는 줄(환율을 못 받은 날)은 빼고 셉니다.
+       한 푼도 안 쓴 일정에는 아무것도 안 답니다 — ₩0 이 줄마다 붙으면
+       실제로 쓴 줄이 안 보입니다. */
+    const spent = (expenses || [])
+      .filter(x => x.plan_id === p.id && x.amount_home != null)
+      .reduce((s, x) => s + Number(x.amount_home), 0);
     /* 부제에는 분류와 값만. 자세한 것은 펼쳐야 나옵니다. */
-    const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null]
+    const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null,
+                 spent ? money(spent, trip.home_currency) : null]
                   .filter(Boolean).join(' · ');
     const q = encodeURIComponent(p.title || '');
     const open = openPlans.has(p.id);
 
-    html += `<div class="ev${open ? ' is-open' : ''}" data-ev="${esc(p.id)}">
+    html += `<div class="ev${open ? ' is-open' : ''}" data-ev="${esc(p.id)}"
+                  data-d="${esc(p.date)}">
       <div class="ev__row">
         <div class="when">${when}</div>
         <span class="kdot ${esc(k)}"></span>
@@ -5992,7 +6127,8 @@ function drawPlans(){
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
-        <span class="ev__chev">›</span>
+        <span class="ev__chev">›</span>${canReorder() ? `
+        <span class="grip" data-grip aria-label="끌어서 순서 바꾸기">≡</span>` : ''}
       </div>
       <div class="detail">
         ${mm.move ? `<div class="drow"><b>이동</b> ${esc(nice(mm.move))}</div>` : ''}
@@ -6327,6 +6463,9 @@ async function drawToday(){
 const openPlans = new Set();
 $('plans').addEventListener('click', e => {
   if (e.target.closest('a, button')) return;      /* 링크와 버튼은 각자 일합니다 */
+  /* 손잡이를 눌렀다 뗀 것은 '펼치기'가 아닙니다. 끌지 않고 톡 눌러도
+     여기까지 오는데, 그러면 순서를 바꾸려다 줄이 펼쳐집니다. */
+  if (e.target.closest('[data-grip]')) return;
   const row = e.target.closest('[data-ev]'); if (!row) return;
   const id = row.dataset.ev;
   if (openPlans.has(id)) openPlans.delete(id); else openPlans.add(id);
@@ -6654,7 +6793,7 @@ async function loadExpenses(){
     /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
        비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
     .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,' +
-            'expense_shares(user_id,weight)')
+            'plan_id,expense_shares(user_id,weight)')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)
     .order('date', { ascending:false }).order('created_at', { ascending:false }));
@@ -6664,6 +6803,10 @@ async function loadExpenses(){
   setExpenses(data);
   drawExpenses();
   drawSettle();
+  /* **일정 줄이 지출을 씁니다**(plan_id 로 붙은 금액). 둘은 같이 출발해서
+     어느 쪽이 먼저 올지 모르므로, 지출이 늦게 오면 일정을 다시 그립니다.
+     안 그러면 여행을 연 첫 화면에서만 금액이 안 붙어 있습니다. */
+  if ((plans || []).length) drawPlans();
 }
 
 function drawExpenses(){
@@ -6841,10 +6984,38 @@ $('addexpbtn').addEventListener('click', () => {
     `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
     `<option value="">공동 (결제자 없음)</option>`;
   $('x_date').value = pickedDay || todayYmd();
+  drawExpPlans();
   drawShareChips();
   syncExpCur();
   $('x_title').focus();
 });
+
+/* ── 지출을 일정에 붙이기 ───────────────────────────────────────────
+ * `expenses.plan_id` 는 **처음부터 표에 있었는데 채울 길이 없었습니다**
+ * (001_schema 439줄). expense_shares 와 같은 경우입니다.
+ *
+ * 붙여두면 일정 줄에서 그날 그 자리에 얼마 썼는지가 바로 보입니다 —
+ * 지출 탭으로 건너가 제목을 눈으로 짝지을 일이 없어집니다.
+ *
+ * **고른 날의 일정만 내놓습니다.** 11일치를 다 늘어놓으면 고를 수가 없고,
+ * 다른 날 일정에 붙으면 그 줄의 합계가 엉뚱해집니다.
+ * 날짜를 바꾸면 목록도 따라 바뀝니다 — 안 그러면 8/14 일정을 고른 채로
+ * 날짜만 8/16 으로 바꿔 저장하는 일이 생깁니다. */
+function drawExpPlans(){
+  const d = $('x_date').value;
+  const list = (plans || []).filter(p => p.date === d);
+  const keep = $('x_plan').value;
+  $('x_plan').innerHTML = '<option value="">안 고름</option>' +
+    list.map(p => `<option value="${esc(p.id)}">${
+      p.start_time ? esc(hm(p.start_time)) + ' · ' : ''}${esc(p.title)}</option>`).join('');
+  /* 날짜가 그대로면 고른 것을 지키고, 바뀌었으면 저절로 '안 고름'이 됩니다. */
+  if (keep && list.some(p => p.id === keep)) $('x_plan').value = keep;
+  const none = !list.length;
+  $('x_plan').disabled = none;
+  $('x_plan').previousElementSibling.textContent =
+    none ? '어디서 (이 날은 일정이 없어요)' : '어디서 (선택)';
+}
+$('x_date').addEventListener('change', drawExpPlans);
 
 /* ── 누가 나눠 내나 ─────────────────────────────────────────────────
  * expense_shares 표는 처음부터 있었는데 채울 길이 없었습니다. 여기가 그 길입니다.
@@ -6902,6 +7073,7 @@ $('x_create').addEventListener('click', async () => {
     trip_id: trip.id, title, amount, date, currency: cur,
     fx_rate: rate, amount_home: rate == null ? null : amount * rate,
     category: $('x_cat').value || null,
+    plan_id: $('x_plan').value || null,
     payer_id: $('x_payer').value || null,
     memo: $('x_memo').value.trim() || null
   }});
@@ -6987,6 +7159,68 @@ async function loadBookings(){
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
   }).join('') : '<div class="empty">항공권·숙소 예약을 넣어두면 여행 중에 찾기 쉬워요.</div>';
 }
+
+/* ── 여행 서류 ──────────────────────────────────────────────────────
+ * 공항 카운터·호텔 프런트에서 여는 화면입니다. **이미 받아둔 예약만
+ * 그립니다** — 여기서 새로 질의하면 로밍이 안 되는 그 순간에 빈 화면이
+ * 됩니다. 예약은 `loadBookings` 가 `book:<여행>` 으로 담아두므로
+ * 비행기모드에서 앱을 켜도 그대로 나옵니다.
+ *
+ * 준비 탭 목록과 **같은 자료를 다르게 보여줍니다.** 목록은 훑는 것이고
+ * 여기는 한 건을 보여주는 것입니다 — 그래서 예약번호가 제일 큽니다. */
+const DOC_LABEL = { 항공:'항공권', 숙소:'숙소', 식당:'식당', 티켓:'티켓', 기타:'예약' };
+
+function drawDocs(){
+  const list = bookings || [];
+  $('docsub').textContent = list.length ? `${list.length}건 · 연결 없이도 보여요`
+                                        : '연결 없이도 보여요';
+  if (!list.length){
+    $('docs').innerHTML =
+      '<div class="empty">넣어둔 예약이 없어요. 준비 탭에서 항공권·숙소를 넣어두면 ' +
+      '공항에서 연결이 안 돼도 여기서 볼 수 있어요.</div>';
+    return;
+  }
+  const 줄 = (k, v, href) => v
+    ? `<div class="dl"><b>${esc(k)}</b><span>${
+        href ? `<a href="${esc(href)}">${esc(v)}</a>` : esc(v)}</span></div>` : '';
+
+  $('docs').innerHTML = list.map(b => {
+    /* 날짜와 시각을 한 줄로 붙이면 훑을 때는 편한데 확인할 때는 어디가
+       시작이고 끝인지 헷갈립니다. 여기서는 갈라 적습니다. */
+    const 시작 = [b.start_date, hm(b.start_time)].filter(Boolean).join(' ');
+    const 끝   = [b.end_date, hm(b.end_time)].filter(Boolean).join(' ');
+    return `<div class="doccard">
+      <div class="dk">${esc(DOC_LABEL[b.kind] || b.kind)}</div>
+      <div class="dt">${esc(b.title)}</div>
+      ${b.ref ? `<button class="dref" data-copy="${esc(b.ref)}">${esc(b.ref)}</button>` : ''}
+      ${줄(b.kind === '숙소' ? '체크인' : '시작', 시작)}
+      ${끝 && 끝 !== 시작 ? 줄(b.kind === '숙소' ? '체크아웃' : '끝', 끝) : ''}
+      ${줄('주소', b.address)}
+      ${줄('전화', b.tel, b.tel ? 'tel:' + String(b.tel).replace(/[^\d+]/g, '') : '')}
+      ${줄('메모', b.memo)}
+    </div>`;
+  }).join('');
+}
+
+function openDocs(){
+  $('docview').classList.remove('hide');
+  scrollTo(0, 0);
+  if (history.state?.t2 !== 'docs') history.pushState({ t2:'docs' }, '');
+  drawDocs();
+}
+function closeDocs(fromPop){
+  if (!fromPop && history.state?.t2 === 'docs'){ history.back(); return; }
+  $('docview').classList.add('hide');
+}
+$('docbtn').addEventListener('click', openDocs);
+$('docback').addEventListener('click', () => closeDocs());
+
+/* 예약번호는 옮겨 적다 틀리는 자리입니다. 눌러서 베낍니다. */
+$('docs').addEventListener('click', async e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  try { await navigator.clipboard.writeText(b.dataset.copy); toast('예약번호를 베꼈어요'); }
+  catch { toast('길게 눌러서 복사해 주세요'); }
+});
 
 $('addbookbtn').addEventListener('click', () => {
   $('bookcard').classList.toggle('hide');

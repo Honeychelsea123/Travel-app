@@ -47,24 +47,24 @@
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b251">
+<link rel="stylesheet" href="app.css?v=b252">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b251">
-<link rel="modulepreload" href="dom.js?v=b251">
-<link rel="modulepreload" href="db.js?v=b251">
-<link rel="modulepreload" href="calc.js?v=b251">
-<link rel="modulepreload" href="stars.js?v=b251">
-<link rel="modulepreload" href="net.js?v=b251">
-<link rel="modulepreload" href="admin.js?v=b251">
-<link rel="modulepreload" href="ui.js?v=b251">
-<link rel="modulepreload" href="card.js?v=b251">
-<link rel="modulepreload" href="trip.js?v=b251">
-<link rel="modulepreload" href="rate.js?v=b251">
-<link rel="modulepreload" href="cities.js?v=b251">
-<link rel="modulepreload" href="ai.js?v=b251">
+<link rel="modulepreload" href="supabase.js?v=b252">
+<link rel="modulepreload" href="dom.js?v=b252">
+<link rel="modulepreload" href="db.js?v=b252">
+<link rel="modulepreload" href="calc.js?v=b252">
+<link rel="modulepreload" href="stars.js?v=b252">
+<link rel="modulepreload" href="net.js?v=b252">
+<link rel="modulepreload" href="admin.js?v=b252">
+<link rel="modulepreload" href="ui.js?v=b252">
+<link rel="modulepreload" href="card.js?v=b252">
+<link rel="modulepreload" href="trip.js?v=b252">
+<link rel="modulepreload" href="rate.js?v=b252">
+<link rel="modulepreload" href="cities.js?v=b252">
+<link rel="modulepreload" href="ai.js?v=b252">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -403,6 +403,17 @@
     <div id="sheetbg" class="hide"></div>
 
     <!-- AI 일정 초안 — 홈의 "AI와 함께 떠나볼까요?"로 들어옵니다 -->
+    <!-- 여행 서류 — 공항·호텔에서 여는 화면.
+         받아둔 예약만 그리므로 **연결이 없어도 그대로 뜹니다.**
+         예약번호를 크게 두는 이유는 하나입니다: 직원에게 보여주는 글자입니다. -->
+    <div id="docview" class="hide">
+      <div class="card" style="padding:10px 12px">
+        <button class="ghost" id="docback" style="padding-left:0">← 돌아가기</button>
+        <span class="label memo" id="docsub" style="margin-left:auto">—</span>
+      </div>
+      <div id="docs"></div>
+    </div>
+
     <div id="draftview" class="hide">
       <div class="card" style="padding:10px 12px">
         <button class="ghost" id="draftback" style="padding-left:0">← 홈</button>
@@ -1102,7 +1113,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b251</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b252</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1330,6 +1341,11 @@
             </select></div>
         </div>
 
+        <!-- 어느 일정에서 쓴 돈인지. 고르면 그 일정 줄에 금액이 붙습니다.
+             고른 날의 일정만 나옵니다 — 11일치를 다 늘어놓으면 못 찾습니다. -->
+        <label for="x_plan">어디서 (선택)</label>
+        <select id="x_plan"></select>
+
         <label for="x_payer">누가 냈나</label>
         <select id="x_payer"></select>
 
@@ -1359,6 +1375,9 @@
       <!-- 준비 — 예약 · 준비물 · 링크 -->
       <div class="card" id="card-book">
         <h2><span class="grow">예약</span>
+          <!-- 공항 카운터·호텔 프런트에서 여는 화면. 로밍이 안 될 때가 많아
+               받아둔 것만으로 돕니다. 여기서 스크롤을 하게 두면 안 됩니다. -->
+          <button class="small" id="docbtn">서류</button>
           <button class="small" id="addbookbtn">추가</button></h2>
         <div id="bookings"><div class="empty"><span class="load">불러오는 중…</span></div></div>
         <pre id="bookerr" class="hide"></pre>
@@ -1557,7 +1576,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b251"></script>
+<script type="module" src="app.js?v=b252"></script>
 </body>
 </html>
 

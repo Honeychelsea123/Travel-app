@@ -1076,6 +1076,31 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
  * 메모를 통째로 뿌리면 안 읽힙니다. 접어 두고 누르면 이동·예상·설명으로
  * 나눠 보여줍니다. 도쿄 앱에서 쓰던 방식입니다. */
 .ev + .ev{ border-top:1px solid var(--divider-soft); }
+
+/* ── 손가락을 따라오는 순서 바꾸기 ──────────────────────────────────
+ * 자리표시자만 움직이면 "내가 지금 뭘 들고 있는지"가 안 보입니다.
+ * 들어올린 줄을 화면에 띄워 손가락을 그대로 따라오게 하고, 원래 자리는
+ * 빈 칸으로 남겨 그 칸이 목록 사이를 옮겨 다닙니다.
+ *
+ * 손잡이에 `touch-action:none` 을 줘야 브라우저가 세로 스크롤로 채가지
+ * 않습니다. **줄 전체에 주면 목록을 굴릴 수가 없습니다** — 손잡이만. */
+.ev .grip{ flex:none; width:28px; align-self:stretch; display:flex;
+  align-items:center; justify-content:center; cursor:grab;
+  color:var(--hairline); font-size:var(--f-lg); touch-action:none;
+  user-select:none; -webkit-user-select:none; }
+.ev .grip:active{ cursor:grabbing; }
+/* 들어올린 줄. 화면 좌표로 띄우므로 목록 흐름에서 빠져 있습니다. */
+.ev.lift{ position:fixed; z-index:60; pointer-events:none; margin:0;
+  border-top:0; border-radius:var(--r-sm); background:var(--card, #fff);
+  box-shadow:0 10px 28px rgba(0,0,0,.18); padding:0 var(--s-sm);
+  transform:scale(1.02); }
+/* 원래 자리. 높이는 그대로 두고 속만 비웁니다 — 높이가 0 이 되면 목록이
+   출렁여서 어디에 놓이는지 알 수가 없습니다. */
+.ev.hole{ background:var(--parchment); border-radius:var(--r-sm); }
+.ev.hole > *{ visibility:hidden; }
+/* 옮겨 다니는 동안 다른 줄이 스르르 비켜야 자리가 바뀐 것이 보입니다. */
+body.reordering .ev:not(.lift){ transition:transform .12s ease; }
+body.reordering{ user-select:none; -webkit-user-select:none; }
 .ev__row{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0;
           align-items:flex-start; cursor:pointer; }
 .ev__chev{ align-self:center; color:var(--ink-48); flex:none;
@@ -1194,6 +1219,33 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
               display:inline-flex; align-items:center; justify-content:center; }
 .want.on{ color:#e0245e; }
 .been.on{ color:var(--k-see); }
+
+/* ── 여행 서류 ──────────────────────────────────────────────────────
+ * 공항 카운터에서 여는 화면입니다. 줄 서서 한 손으로 들고, 직원에게
+ * 화면을 돌려 보여줍니다. 그래서 **글자 배율(--ts)을 안 태웁니다** —
+ * "작게"로 쓰는 사람도 여기서는 크게 봐야 합니다. */
+/* 화면을 갈아끼우지 않고 **덮습니다.** 화면 목록이 코드 네 곳에 적혀 있어서
+   거기 하나를 빠뜨리면 서류를 열어둔 채 다른 화면이 뒤에 남습니다. */
+#docview:not(.hide){ position:fixed; inset:0; z-index:70; overflow-y:auto;
+  background:var(--bg); padding:10px 12px calc(24px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch; }
+.doccard{ background:var(--card,#fff); border-radius:var(--r-md);
+  padding:16px; margin-bottom:10px; }
+.doccard .dk{ font-size:12px; font-weight:600; letter-spacing:.04em;
+  color:var(--ink-48); }
+.doccard .dt{ font-size:20px; font-weight:650; margin:2px 0 10px;
+  line-height:1.25; }
+/* 예약번호. 눌러서 베낍니다 — 옮겨 적다 틀리는 자리입니다. */
+.doccard .dref{ display:block; width:100%; text-align:left;
+  font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:24px; font-weight:600; letter-spacing:.06em;
+  padding:10px 12px; border-radius:var(--r-sm);
+  background:var(--parchment); border:0; color:var(--ink); }
+.doccard .dl{ display:flex; gap:10px; margin-top:10px; font-size:15px; }
+.doccard .dl > b{ flex:none; width:56px; color:var(--ink-48);
+  font-weight:500; font-size:14px; }
+.doccard .dl > span{ flex:1; min-width:0; word-break:break-word; }
+.doccard .dl a{ color:var(--primary); }
 
 /* 예약번호 — 여행 중에 눈으로 찾는 것이라 티나게 둡니다 */
 .refno{ display:inline-block; font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
