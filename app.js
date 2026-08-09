@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b261';
-import { $, esc, toast, copyText } from './dom.js?v=b261';
-import { starHtml, paintStars, markRated } from './stars.js?v=b261';
+import { sb } from './db.js?v=b262';
+import { $, esc, toast, copyText } from './dom.js?v=b262';
+import { starHtml, paintStars, markRated } from './stars.js?v=b262';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, NOROW } from './net.js?v=b261';
-import { loadAdmin } from './admin.js?v=b261';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b261';
+         setErrLogger, NOROW } from './net.js?v=b262';
+import { loadAdmin } from './admin.js?v=b262';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b262';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b261';
+         setEditPlanId } from './trip.js?v=b262';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b261';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b262';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b261';
+         useCities, addCity, search } from './cities.js?v=b262';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b261';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b262';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b261';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b262';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b261';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b262';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1123,6 +1123,9 @@ function showApp(t){
 
   $('draftview').classList.add('hide');
   $('reviewview').classList.add('hide');
+  /* 국가 목록은 프로필 위에 얹히는 판입니다. 탭을 옮기면 같이 걷습니다 —
+     안 걷으면 홈으로 나갔는데 국가 목록이 그대로 덮고 있습니다. */
+  $('ctrypane').classList.add('hide');
   $('homeview').classList.toggle('hide', t !== 'home');
   $('listview').classList.toggle('hide', t !== 'trips');
   $('rateview').classList.toggle('hide', t !== 'rate');
@@ -4193,6 +4196,83 @@ $('mapbig').addEventListener('click', () => {
   });
 }
 
+/* ── 다녀온 국가 ────────────────────────────────────────────────────
+ * 사용자 지적: **"국가 눌러서 또 세계지도로 가고, 대륙별로 눌러야 어디 갔는지
+ * 알 수 있잖아. 국가별로 어디 갔는지 한눈에 보이는 페이지가 있어야 해."**
+ * 맞습니다. 지도 화면의 대륙 펴기는 파고드는 자리이고, 여기는 훑는 자리입니다.
+ * 대륙으로 묶되 **나라는 전부 펼쳐 둡니다** — 한눈에 본다는 게 그 뜻입니다.
+ *
+ * 지도 화면과 같은 자료(my_visited)를 씁니다. 다른 데서 세면 두 화면의
+ * 숫자가 언젠가 갈립니다. */
+async function openCountries(){
+  $('profpane').classList.add('hide');
+  $('ctrypane').classList.remove('hide');
+  window.scrollTo({ top:0 });
+  if (history.state?.t2 !== 'ctry') history.pushState({ t2:'ctry' }, '');
+
+  $('ctrylist').innerHTML = '<div class="card"><div class="empty">' +
+    '<span class="load">불러오는 중…</span></div></div>';
+  await loadCities();
+  const [vis, mine] = await Promise.all([
+    sb.rpc('my_visited'),
+    sb.from('city_ratings').select('city_id,stars').eq('user_id', me.id),
+  ]);
+  const ids  = new Set((vis.data || []).map(v => v.city_id));
+  const list = (cities || []).filter(c => ids.has(c.id));
+  const stars = Object.fromEntries((mine.data || [])
+    .filter(r => r.stars != null).map(r => [r.city_id, Number(r.stars)]));
+
+  const byC = {};
+  list.forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  const codes = Object.keys(byC);
+  $('ctrysum').textContent = `${codes.length}개국 · ${list.length}도시`;
+
+  if (!codes.length){
+    $('ctrylist').innerHTML =
+      '<div class="card"><div class="empty">아직 다녀온 곳이 없어요.<br>' +
+      '도시에 별점을 매기거나 지난 여행을 넣으면 여기 쌓여요.</div></div>';
+    return;
+  }
+
+  /* 대륙 순서는 지도 화면(CONT)과 같게 둡니다. 두 화면이 다른 순서로
+     늘어놓으면 같은 앱처럼 안 읽힙니다. 어디에도 안 걸리는 나라는 맨 뒤. */
+  const order = [...CONT.map(([k]) => k), '기타'];
+  const groups = {};
+  codes.forEach(code => {
+    const k = continentOf[code] || '기타';
+    (groups[k] = groups[k] || []).push(code);
+  });
+
+  $('ctrylist').innerHTML = order.filter(k => groups[k]?.length).map(k => {
+    const cs = groups[k].sort((a, b) => byC[b].length - byC[a].length);
+    const n  = cs.reduce((s, c) => s + byC[c].length, 0);
+    return `<div class="card">
+      <h2><span class="grow">${esc(k)}</span>
+        <span class="val">${cs.length}개국 · ${n}도시</span></h2>
+      ${cs.map(code => `<div style="padding:9px 0; border-top:1px solid var(--line)">
+        <div class="row" style="border:0; padding:0; margin:0">
+          <span class="label" style="font-weight:600">${
+            esc(countryName[code] || code)}</span>
+          <span class="val">${byC[code].length}곳</span></div>
+        <div class="cchips">${byC[code].map(c =>
+          `<button data-pin="${esc(c.id)}">${esc(c.name)}${
+            stars[c.id] ? ` ★${stars[c.id]}` : ''}</button>`).join('')}</div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+function closeCountries(fromPop){
+  if (!fromPop && history.state?.t2 === 'ctry'){ history.back(); return; }
+  $('ctrypane').classList.add('hide');
+  $('profpane').classList.remove('hide');
+}
+$('ctryback').addEventListener('click', () => closeCountries());
+/* 도시 칩을 누르면 그 도시로. 지도 화면과 같은 규칙입니다. */
+$('ctrypane').addEventListener('click', e => {
+  const p = e.target.closest('[data-pin]');
+  if (p) openCity(p.dataset.pin);
+});
+
 async function openMap(){
   $('profpane').classList.add('hide');
   $('mappane').classList.remove('hide');
@@ -4395,6 +4475,7 @@ function showProfile(setting){
   $('shelfpane').classList.add('hide');
   $('personapane').classList.add('hide');
   $('mappane').classList.add('hide');        /* 지도가 열려 있었으면 같이 닫습니다 */
+  $('ctrypane').classList.add('hide');       /* 국가 목록도 같이 */
   /* 대시보드는 설정 위에 한 겹 더 얹힌 화면입니다. 안 닫으면 프로필로 나갔다
      들어와도 통계가 그대로 남아 있습니다. */
   $('admpane').classList.add('hide');
@@ -4479,7 +4560,7 @@ $('dumpbtn').addEventListener('click', async () => {
 $('setview').addEventListener('click', e => {
   /* 국가 타일은 세계지도로. 보관함은 도시가 주인공이라 "어느 나라를 갔나"에
      답을 못 합니다 — 그 답은 지도 화면의 대륙별·국가별에 있습니다. */
-  if (e.target.closest('button[data-openmap]')) return openMap();
+  if (e.target.closest('button[data-openmap]')) return openCountries();
   const b = e.target.closest('button[data-shelf]'); if (!b) return;
   /* 다녀온 여행 칸은 없앴습니다. 여행 탭에 이미 있습니다. */
   openShelf(b.dataset.shelf);
@@ -5881,6 +5962,7 @@ window.addEventListener('popstate', () => {
   if (!$('draftview').classList.contains('hide')) return closeDraft(true);
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
   if (!$('personapane').classList.contains('hide')) return closePersona(true);
+  if (!$('ctrypane').classList.contains('hide')) return closeCountries(true);
   if (!$('mappane').classList.contains('hide')) return closeMap(true);
   /* 3) 마지막이 여행입니다. 위의 것들이 다 닫힌 뒤에야 여기로 옵니다. */
   if (trip) return backToList(true);
@@ -7961,15 +8043,37 @@ async function sniffMapLink(){
   note.classList.remove('hide');
   note.textContent = '지도에서 위치를 찾는 중…';
   const r = await sb.functions.invoke('chat', { body:{ mode:'map', message:url } });
-  /* 못 찾아도 넣기는 됩니다 — 위치가 없을 뿐입니다. 막으면 안 됩니다. */
-  if (r.error || r.data?.error || r.data?.lat == null){
+  if (r.error || r.data?.error){
     planGeo = null;
-    note.textContent = '이 링크에서는 위치를 못 찾았어요. 그냥 넣어도 괜찮아요.';
+    note.textContent = '이 링크를 읽지 못했어요. 그냥 넣어도 괜찮아요.';
     return;
   }
-  planGeo = { lat: r.data.lat, lng: r.data.lng };
-  note.textContent = r.data.name
-    ? `위치를 찾았어요 · ${r.data.name}` : '위치를 찾았어요';
+
+  let { name, lat, lng } = r.data || {};
+  /* **주소는 나오는데 좌표는 없는 링크가 많습니다.** 실제로 재봤습니다:
+       maps.app.goo.gl/18Sbe4… → 이름 "OZEKI Tokyo Gallery, 1 Chome-2-6 …"
+       좌표 null
+     구글이 짧은 주소를 펼 때 좌표 없이 주소만 실어 보내는 판이 있습니다.
+     그러면 우리에게는 **주소 한 줄**이 남는데, 그건 이미 좌표로 바꿀 수
+     있습니다 — 앱이 '좌표 채우기'에서 쓰는 그 검색입니다. 이어 붙입니다. */
+  if (lat == null && name){
+    note.textContent = '주소로 위치를 찾는 중…';
+    const hit = await osmLookup(name);
+    if (hit && hit !== 'stop'){ lat = hit.lat; lng = hit.lng; }
+  }
+
+  if (lat == null){
+    planGeo = null;
+    /* **못 찾아도 넣기는 됩니다.** 위치가 없을 뿐입니다 — 막으면 안 됩니다. */
+    note.textContent = name
+      ? `${name} · 지도 위치는 못 찾았어요. 그냥 넣어도 괜찮아요.`
+      : '이 링크에서는 위치를 못 찾았어요. 그냥 넣어도 괜찮아요.';
+    if (name && !$('p_title').value.trim()) $('p_title').value = name.split(',')[0].trim();
+    return;
+  }
+  planGeo = { lat, lng };
+  note.textContent = name ? `위치를 찾았어요 · ${name.split(',')[0].trim()}`
+                          : '위치를 찾았어요';
   /* 제목이 비어 있으면 채워줍니다. 링크만 붙여넣고 이름을 또 치게 할
      이유가 없습니다. 이미 적었으면 안 건드립니다. */
   if (r.data.name && !$('p_title').value.trim()) $('p_title').value = r.data.name;
