@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b273';
-import { $, esc, toast, copyText } from './dom.js?v=b273';
-import { starHtml, paintStars, markRated } from './stars.js?v=b273';
+import { sb } from './db.js?v=b274';
+import { $, esc, toast, copyText } from './dom.js?v=b274';
+import { starHtml, paintStars, markRated } from './stars.js?v=b274';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b273';
-import { loadAdmin } from './admin.js?v=b273';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b273';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b274';
+import { loadAdmin } from './admin.js?v=b274';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b274';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b273';
+         setEditPlanId } from './trip.js?v=b274';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b273';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b274';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b273';
+         useCities, addCity, search } from './cities.js?v=b274';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b273';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b274';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b273';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b274';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b273';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b274';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -1577,8 +1577,13 @@ $('ai_file').addEventListener('change', async e => {
  * AI 가 무엇을 보고 답했는지 답니다. 인터넷 검색이 아니라 **이 앱의 자료** 중
  * 무엇을 근거로 삼았는지입니다 — 그건 우리가 확인할 수 있습니다.
  * "일반지식"이 붙었다면 우리가 확인해 준 것이 아무것도 없다는 뜻입니다. */
+/* 넷을 더 답니다 — 서버가 AI 에게 일행 · 예약 · 준비물 · 내 별점을 같이
+   넘기게 됐습니다(2026-08-10). **모르는 이름은 아래 filter 가 조용히 버리므로**
+   서버만 고치고 여기를 안 고치면 근거 칩이 안 뜹니다. */
 const SRC_KO = { plans:'이 여행 일정', expenses:'지출 기록', legs:'여행 구간',
-                 trip:'여행 정보', general:'일반 지식 — 직접 확인이 필요해요' };
+                 trip:'여행 정보', members:'일행', bookings:'예약',
+                 packing:'준비물', ratings:'내가 매긴 별점', prefs:'내 취향',
+                 general:'일반 지식 — 직접 확인이 필요해요' };
 function drawSources(list, web){
   const box = $('aisrc'); if (!box) return;
   const arr = (Array.isArray(list) ? list : []).filter(s => SRC_KO[s]);

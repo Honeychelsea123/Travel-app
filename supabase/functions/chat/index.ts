@@ -644,7 +644,15 @@ Deno.serve(async (req) => {
       // 넷을 차례로 물었습니다. 넷 다 trip_id 하나만 있으면 되는데도
       // 앞의 답을 기다렸습니다 — 오갈 때마다 붙는 시간이 그대로 쌓입니다.
       // 한꺼번에 보냅니다. 제일 느린 하나만큼만 걸립니다.
-      const [tripRes, legRes, planRes, expRes] = await Promise.all([
+      // ⚠ **넷을 더 받아옵니다 (2026-08-10).** 재보니 AI 가 여행·구간·일정·지출
+      // 넷만 보고 있었습니다. 사람이 당연히 안다고 여기는 것들을 통째로 몰랐습니다:
+      //   · 일행이 몇 명인지 → "몇 명이서 가면 좋을까"를 못 셉니다
+      //   · 언제 도착하는지 → 첫날 오후부터인지 저녁부터인지 모릅니다
+      //   · 뭘 챙겼는지 → "뭘 챙겨야 해?"에 매번 원론적인 목록만 냅니다
+      //   · 어떤 곳에 별을 높게 줬는지 → **취향의 유일한 근거인데 안 봤습니다**
+      // 같은 Promise.all 에 넣습니다 — 줄을 더 세우면 제일 느린 하나만큼만 늘어납니다.
+      const [tripRes, legRes, planRes, expRes,
+             memRes, bookRes, packRes, prefRes, rateRes] = await Promise.all([
         asUser.from('trips')
           .select('title,destination,country,start_date,end_date,timezone,currency,' +
                   'home_currency,walk_max_km,transit_factor,transit_base_min')
@@ -663,6 +671,27 @@ Deno.serve(async (req) => {
           .select('date,title,amount,currency,category')
           .eq('trip_id', trip_id).is('deleted_at', null)
           .order('date', { ascending: false }).limit(30),
+        // 나간 사람은 뺍니다 — 지금 같이 가는 사람 수가 궁금한 것입니다.
+        asUser.from('trip_members').select('role,nickname')
+          .eq('trip_id', trip_id).is('left_at', null),
+        // 예약은 첫날·마지막날 질문의 근거입니다. "첫날 뭐 할까"의 답은
+        // 몇 시에 내리는지에 통째로 달려 있습니다.
+        // **예약번호·전화·주소는 안 보냅니다** — 답하는 데 필요 없고,
+        // 남의 서버로 나가는 것은 적을수록 좋습니다.
+        asUser.from('bookings')
+          .select('kind,title,start_date,start_time,end_date,end_time')
+          .eq('trip_id', trip_id).is('deleted_at', null)
+          .order('start_date').limit(20),
+        asUser.from('packing').select('title,done')
+          .eq('trip_id', trip_id).is('deleted_at', null).limit(60),
+        // 취향은 지금까지 **초안 화면에서 보내줄 때만** 있었습니다.
+        // 대화에서는 같은 사람인데 취향을 모르는 채로 답했습니다. 서버가 직접 읽습니다.
+        asUser.from('user_prefs').select('*').maybeSingle(),
+        // 이 앱이 남들과 다른 자리입니다 — 다녀온 뒤의 기록.
+        // 별을 높게 준 곳이 취향을 말해주는데 AI 는 한 번도 못 봤습니다.
+        asUser.from('city_ratings')
+          .select('stars,cities(name,country)')
+          .not('stars', 'is', null).order('stars', { ascending: false }).limit(12),
       ]);
 
       const trip = tripRes.data;
@@ -671,6 +700,23 @@ Deno.serve(async (req) => {
         legs = legRes.data ?? [];
         const plans = planRes.data;
         const exp = expRes.data;
+
+        // 여행지 시간대로 오늘을 셉니다. 사람이 묻는 '오늘'은 지금 서 있는 곳의 오늘입니다.
+        let todayThere = '';
+        try {
+          todayThere = new Date().toLocaleDateString('en-CA',
+            { timeZone: trip.timezone || 'Asia/Seoul' });
+        } catch { todayThere = new Date().toLocaleDateString('en-CA'); }
+        // 며칠째인지도 같이 셉니다. AI 가 날짜 뺄셈을 하게 두면 틀립니다.
+        const D1 = 86400000;
+        const gap = Math.round(
+          (Date.parse(trip.start_date + 'T00:00:00Z') - Date.parse(todayThere + 'T00:00:00Z')) / D1);
+        const len = Math.round(
+          (Date.parse(trip.end_date + 'T00:00:00Z') - Date.parse(trip.start_date + 'T00:00:00Z')) / D1);
+        const dayNote = gap > 0 ? ` (여행 시작 ${gap}일 전)`
+                      : gap === 0 ? ' (여행 첫날)'
+                      : -gap <= len ? ` (여행 ${-gap + 1}일째, 총 ${len + 1}일 중)`
+                      : ` (여행이 ${-gap - len}일 전에 끝남)`;
 
         ctx = [
           `[여행] ${trip.title}`,
@@ -694,7 +740,57 @@ Deno.serve(async (req) => {
           (exp ?? []).map((e) =>
             `- ${e.date} ${e.title} ${e.amount}${e.currency}` +
             `${e.category ? ' (' + e.category + ')' : ''}`).join('\n') || '- (없음)',
-        ].join('\n');
+          '',
+          // ── 여기서부터가 2026-08-10 에 더한 것입니다 ──
+          // **오늘이 며칠인지를 안 알려주고 있었습니다.** 모델이 아는 '오늘'은
+          // 학습이 끝난 날이라 "오늘 뭐 해?" "내일은?" 이 통째로 어긋납니다.
+          // 여행지 시간대로 셉니다 — 사람이 묻는 '오늘'은 지금 서 있는 곳의 오늘입니다.
+          // `toISOString()` 을 쓰지 않습니다. 그건 UTC 로 잘라서 한국에서 하루가
+          // 밀립니다(b248 에서 세 군데가 걸렸습니다). `en-CA` 가 YYYY-MM-DD 를 줍니다.
+          `[오늘] ${todayThere}${dayNote}`,
+          '',
+          `[일행] ${(memRes.data ?? []).length}명` +
+            ((memRes.data ?? []).some((m) => m.nickname)
+              ? ' — ' + (memRes.data ?? []).map((m) =>
+                  `${m.nickname ?? '이름없음'}${m.role === 'owner' ? '(만든 사람)' : ''}`)
+                  .join(', ')
+              : ''),
+          '',
+          '[예약] 도착·출발 시각이 첫날과 마지막 날에 무엇을 넣을 수 있는지를 정한다.',
+          (bookRes.data ?? []).map((b) =>
+            `- ${b.kind ?? ''} ${b.title} ${b.start_date ?? ''} ${b.start_time?.slice(0, 5) ?? ''}` +
+            `${b.end_date ? ` ~ ${b.end_date} ${b.end_time?.slice(0, 5) ?? ''}` : ''}`)
+            .join('\n') || '- (없음)',
+          '',
+          // 다 챙긴 것까지 늘어놓으면 자리만 먹습니다. **아직 안 챙긴 것**이 답에 쓰입니다.
+          (() => {
+            const pk = packRes.data ?? [];
+            const left = pk.filter((p) => !p.done).map((p) => p.title);
+            return `[준비물] ${pk.length}개 중 ${left.length}개 남음` +
+              (left.length ? ': ' + left.slice(0, 25).join(', ') : '');
+          })(),
+          '',
+          // 취향은 지금까지 초안 화면이 보내줄 때만 있었습니다. 대화에서는 같은
+          // 사람인데 취향을 모른 채 답했습니다.
+          (() => {
+            const p = prefRes.data ?? {};
+            const bits = [
+              p.pace === 'slow' ? '느긋한 속도' : p.pace === 'packed' ? '빡빡한 속도' : null,
+              p.morning === 'late' ? '아침에 늦게 움직임' : null,
+              p.focus ? `좋아하는 것: ${String(p.focus).slice(0, 80)}` : null,
+            ].filter(Boolean);
+            return bits.length ? `[취향] ${bits.join(' · ')}` : '';
+          })(),
+          // **이 앱이 남들과 다른 자리입니다** — 다녀온 뒤의 기록.
+          // 별을 높게 준 곳이 취향을 말해주는데 AI 는 한 번도 못 봤습니다.
+          (() => {
+            const rs = (rateRes.data ?? []).filter((r) => r.cities?.name);
+            return rs.length
+              ? '[높게 준 도시] 이 사람의 취향은 여기서 읽는다.\n' +
+                rs.map((r) => `- ${r.cities.name} ${r.stars}점`).join('\n')
+              : '';
+          })(),
+        ].filter((s) => s !== '').join('\n');
       }
     }
 
@@ -804,6 +900,16 @@ Deno.serve(async (req) => {
       '- 도시가 여러 곳이면 그날 어느 구간인지 보고 답한다.',
       '  로마 일정에 피렌체 식당을 넣지 않는다.',
       '- 예약번호 · 주소 · 전화번호를 새로 지어내지 않는다.',
+      // 자료를 넘겨줘도 쓰라고 말해주지 않으면 안 씁니다. 넷 다 한 줄씩 적습니다.
+      '- 날짜를 셀 때는 [오늘]을 기준으로 삼는다. 네가 아는 오늘이 아니다.',
+      '  "오늘" "내일" "이번 주"는 전부 [오늘]에서 센다.',
+      '- 몇 명인지는 [일행]에서 본다. 인원수에 따라 답이 달라지면 그렇게 적는다.',
+      '- 첫날과 마지막 날은 [예약]의 도착 · 출발 시각 안에서만 짠다.',
+      '  도착이 저녁이면 그날 오전 일정을 넣지 않는다.',
+      '- 뭘 챙길지 물으면 [준비물]에 이미 있는 것은 빼고 답한다.',
+      '  없는 목록을 처음부터 늘어놓으면 이미 챙긴 것을 또 챙기게 한다.',
+      '- 어디가 좋을지 물으면 [높게 준 도시]와 [취향]을 근거로 삼는다.',
+      '  그 사람이 실제로 좋아한 곳이 일반적인 추천보다 낫다.',
       '',
       shots.length
         ? `- 사진이 ${shots.length}장 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n` +
@@ -814,7 +920,8 @@ Deno.serve(async (req) => {
       '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
       '{',
       '  "reply": "사람에게 할 말. 마크다운 써도 된다.",',
-      '  "sources": ["plans","expenses","legs","trip","general" 중 실제로 근거로 삼은 것만],',
+      '  "sources": ["plans","expenses","legs","trip","members","bookings",' +
+      '"packing","ratings","prefs","general" 중 실제로 근거로 삼은 것만],',
       '  "places": [',
       '    { "name":"한국어 이름", "name_local":"현지 표기", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
       '      "lat":숫자, "lng":숫자, "why":"한 줄 이유" }',
