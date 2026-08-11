@@ -38,7 +38,7 @@ const isCodeUrl = url =>
   url.hostname === 'esm.sh'
   || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
       && /\.(js|css|mjs)$/i.test(url.pathname))
-  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b283) ──────────────
+  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b284) ──────────────
    * 워드마크 '기로'를 Dongle 로 씁니다. 글꼴 조각은 원래 타일과 같은 통에
    * 두었는데(부팅을 막지 않으므로), **로고는 다릅니다** — 400개가 차서
    * 밀려나면 어느 날 갑자기 상단바 글꼴만 바뀝니다. 앱 이름이 흔들리는 것은

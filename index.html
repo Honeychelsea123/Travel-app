@@ -70,24 +70,24 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b283">
+<link rel="stylesheet" href="app.css?v=b284">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b283">
-<link rel="modulepreload" href="dom.js?v=b283">
-<link rel="modulepreload" href="db.js?v=b283">
-<link rel="modulepreload" href="calc.js?v=b283">
-<link rel="modulepreload" href="stars.js?v=b283">
-<link rel="modulepreload" href="net.js?v=b283">
-<link rel="modulepreload" href="admin.js?v=b283">
-<link rel="modulepreload" href="ui.js?v=b283">
-<link rel="modulepreload" href="card.js?v=b283">
-<link rel="modulepreload" href="trip.js?v=b283">
-<link rel="modulepreload" href="rate.js?v=b283">
-<link rel="modulepreload" href="cities.js?v=b283">
-<link rel="modulepreload" href="ai.js?v=b283">
+<link rel="modulepreload" href="supabase.js?v=b284">
+<link rel="modulepreload" href="dom.js?v=b284">
+<link rel="modulepreload" href="db.js?v=b284">
+<link rel="modulepreload" href="calc.js?v=b284">
+<link rel="modulepreload" href="stars.js?v=b284">
+<link rel="modulepreload" href="net.js?v=b284">
+<link rel="modulepreload" href="admin.js?v=b284">
+<link rel="modulepreload" href="ui.js?v=b284">
+<link rel="modulepreload" href="card.js?v=b284">
+<link rel="modulepreload" href="trip.js?v=b284">
+<link rel="modulepreload" href="rate.js?v=b284">
+<link rel="modulepreload" href="cities.js?v=b284">
+<link rel="modulepreload" href="ai.js?v=b284">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1319,7 +1319,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b283</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b284</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1787,7 +1787,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b283"></script>
+<script type="module" src="app.js?v=b284"></script>
 </body>
 </html>
 

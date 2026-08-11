@@ -163,7 +163,15 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
 :root.dongle h1.brand{ font-family:'Dongle', var(--sf);
           font-size:calc(var(--f-2xl) * 1.9); font-weight:700;
           line-height:.72; letter-spacing:0; gap:.26em; padding-top:.07em; }
-:root.dongle h1.brand .mark{ width:.70em; height:.70em;
+/* ⚠ **상자 크기와 보이는 크기가 다릅니다.** `keyro-mark.svg` 는 viewBox 96 인데
+   팻말 그림은 y 22~74, 즉 **상자의 54%** 만 씁니다(좌우로도 여백이 있습니다).
+   0.70em 으로 두면 보이는 그림은 0.70×0.54 = **0.378em** 뿐이라, 글자 잉크
+   0.52em 보다 오히려 작습니다 — 키웠는데도 작아 보이던 이유입니다.
+   **잉크끼리 맞춥니다**: 보이는 그림을 글자 잉크의 1.35배로 두려면
+   0.52 × 1.35 ÷ 0.54 = **1.30em**.
+   세로는 그대로입니다 — SVG 그림이 상자 한가운데 있어(22 위, 22 아래) 상자
+   중심 = 그림 중심이고, 그 중심을 글자 잉크 중심에 맞춰 뒀습니다. */
+:root.dongle h1.brand .mark{ width:1.30em; height:1.30em;
           /* -0.27em 은 **화면에서 재서 나온 값**입니다. 계산으로 -0.145em 을
              넣었더니 8.77px 이 남았습니다 — 식이 틀렸던 것입니다(요소 박스
              top 을 줄 상자 top 으로 봤는데 브라우저는 글꼴 상자를 줍니다).
