@@ -634,6 +634,19 @@ Deno.serve(async (req) => {
     // 그 둘이 순서대로 더해졌습니다. 결과는 쓸 자리에서 기다립니다.
     const linksP = readLinks(String(message ?? ''));
 
+    // ⚠ **취향과 별점은 사람에게 딸린 것입니다 — 여행 블록 안에 두면 안 됩니다.**
+    // 처음에 `if (trip_id)` 안에 넣었다가 물렸습니다(2026-08-11, 실제로 물어봄):
+    // 여행을 안 고르고 "다음에 어디 갈까? 내 취향으로 골라줘" 하고 물었더니
+    // **"등록된 취향이 없어서 어렵다"**고 답했습니다. 별점이 74개나 있는데요.
+    // 여행을 안 골랐을 때가 바로 이 자료가 제일 쓸모 있는 자리입니다.
+    // 여행 자료를 받는 동안 같이 돌게 여기서 걸어둡니다.
+    const meP = Promise.all([
+      asUser.from('user_prefs').select('*').maybeSingle(),
+      asUser.from('city_ratings')
+        .select('stars,cities(name,country)')
+        .not('stars', 'is', null).order('stars', { ascending: false }).limit(12),
+    ]);
+
     // 아래 안전장치에서도 씁니다 — 좌표가 구간 중심에서 먼지 봐야 하므로.
     // deno-lint-ignore no-explicit-any
     let legs: any[] = [];
@@ -652,7 +665,7 @@ Deno.serve(async (req) => {
       //   · 어떤 곳에 별을 높게 줬는지 → **취향의 유일한 근거인데 안 봤습니다**
       // 같은 Promise.all 에 넣습니다 — 줄을 더 세우면 제일 느린 하나만큼만 늘어납니다.
       const [tripRes, legRes, planRes, expRes,
-             memRes, bookRes, packRes, prefRes, rateRes] = await Promise.all([
+             memRes, bookRes, packRes] = await Promise.all([
         asUser.from('trips')
           .select('title,destination,country,start_date,end_date,timezone,currency,' +
                   'home_currency,walk_max_km,transit_factor,transit_base_min')
@@ -684,14 +697,6 @@ Deno.serve(async (req) => {
           .order('start_date').limit(20),
         asUser.from('packing').select('title,done')
           .eq('trip_id', trip_id).is('deleted_at', null).limit(60),
-        // 취향은 지금까지 **초안 화면에서 보내줄 때만** 있었습니다.
-        // 대화에서는 같은 사람인데 취향을 모르는 채로 답했습니다. 서버가 직접 읽습니다.
-        asUser.from('user_prefs').select('*').maybeSingle(),
-        // 이 앱이 남들과 다른 자리입니다 — 다녀온 뒤의 기록.
-        // 별을 높게 준 곳이 취향을 말해주는데 AI 는 한 번도 못 봤습니다.
-        asUser.from('city_ratings')
-          .select('stars,cities(name,country)')
-          .not('stars', 'is', null).order('stars', { ascending: false }).limit(12),
       ]);
 
       const trip = tripRes.data;
@@ -762,36 +767,46 @@ Deno.serve(async (req) => {
             `${b.end_date ? ` ~ ${b.end_date} ${b.end_time?.slice(0, 5) ?? ''}` : ''}`)
             .join('\n') || '- (없음)',
           '',
-          // 다 챙긴 것까지 늘어놓으면 자리만 먹습니다. **아직 안 챙긴 것**이 답에 쓰입니다.
+          // ⚠ **처음에 '안 챙긴 것'만 보냈다가 물렸습니다** (2026-08-11, 실제로 물어봄).
+          // AI 가 "목록에 없는 기본 필수품인 여권도 챙기세요"라고 답했는데
+          // 여권은 목록에 있고 이미 챙긴 것이었습니다. **안 보내면 없는 것이 됩니다.**
+          // 챙긴 것도 이름만 같이 보냅니다 — 그래야 이미 한 일을 또 시키지 않습니다.
           (() => {
             const pk = packRes.data ?? [];
+            if (!pk.length) return '[준비물] (아직 없음)';
             const left = pk.filter((p) => !p.done).map((p) => p.title);
-            return `[준비물] ${pk.length}개 중 ${left.length}개 남음` +
-              (left.length ? ': ' + left.slice(0, 25).join(', ') : '');
-          })(),
-          '',
-          // 취향은 지금까지 초안 화면이 보내줄 때만 있었습니다. 대화에서는 같은
-          // 사람인데 취향을 모른 채 답했습니다.
-          (() => {
-            const p = prefRes.data ?? {};
-            const bits = [
-              p.pace === 'slow' ? '느긋한 속도' : p.pace === 'packed' ? '빡빡한 속도' : null,
-              p.morning === 'late' ? '아침에 늦게 움직임' : null,
-              p.focus ? `좋아하는 것: ${String(p.focus).slice(0, 80)}` : null,
-            ].filter(Boolean);
-            return bits.length ? `[취향] ${bits.join(' · ')}` : '';
-          })(),
-          // **이 앱이 남들과 다른 자리입니다** — 다녀온 뒤의 기록.
-          // 별을 높게 준 곳이 취향을 말해주는데 AI 는 한 번도 못 봤습니다.
-          (() => {
-            const rs = (rateRes.data ?? []).filter((r) => r.cities?.name);
-            return rs.length
-              ? '[높게 준 도시] 이 사람의 취향은 여기서 읽는다.\n' +
-                rs.map((r) => `- ${r.cities.name} ${r.stars}점`).join('\n')
-              : '';
+            const done = pk.filter((p) => p.done).map((p) => p.title);
+            return `[준비물] ${pk.length}개 중 ${left.length}개 남음\n` +
+              `- 아직 안 챙김: ${left.slice(0, 25).join(', ') || '(없음)'}\n` +
+              `- 이미 챙김(다시 권하지 마라): ${done.slice(0, 25).join(', ') || '(없음)'}`;
           })(),
         ].filter((s) => s !== '').join('\n');
       }
+    }
+
+    // ── 사람에게 딸린 자료 ── 여행을 골랐든 안 골랐든 늘 붙입니다.
+    // 여행 블록 밖에 있는 것이 핵심입니다 — 위 주석 참고.
+    const [prefRes, rateRes] = await meP;
+    {
+      const p = prefRes.data ?? {};
+      const bits = [
+        p.pace === 'slow' ? '느긋한 속도' : p.pace === 'packed' ? '빡빡한 속도' : null,
+        p.morning === 'late' ? '아침에 늦게 움직임' : null,
+        p.focus ? `좋아하는 것: ${String(p.focus).slice(0, 80)}` : null,
+      ].filter(Boolean);
+      // deno-lint-ignore no-explicit-any
+      const rs = (rateRes.data ?? []).filter((r: any) => r.cities?.name);
+      const mine = [
+        bits.length ? `[취향] ${bits.join(' · ')}` : '',
+        rs.length
+          // **이 앱이 남들과 다른 자리입니다** — 다녀온 뒤의 기록.
+          // 그 사람이 실제로 좋아한 곳이 일반적인 추천보다 낫습니다.
+          ? '[높게 준 도시] 이 사람의 취향은 여기서 읽는다.\n' +
+            // deno-lint-ignore no-explicit-any
+            rs.map((r: any) => `- ${r.cities.name} ${r.stars}점`).join('\n')
+          : '',
+      ].filter(Boolean).join('\n');
+      if (mine) ctx = ctx ? ctx + '\n\n' + mine : mine;
     }
 
     // ── 초안 짜기 ──
@@ -922,6 +937,11 @@ Deno.serve(async (req) => {
       '  "reply": "사람에게 할 말. 마크다운 써도 된다.",',
       '  "sources": ["plans","expenses","legs","trip","members","bookings",' +
       '"packing","ratings","prefs","general" 중 실제로 근거로 삼은 것만],',
+      // 실제로 준비물·예약을 보고 답해놓고 sources 에 "general" 만 적었습니다.
+      // 근거 칩이 거짓말을 하게 됩니다 — 무엇을 봤는지 빠짐없이 적으라고 못박습니다.
+      '  · sources 는 빠짐없이 적는다. [준비물]을 봤으면 "packing",',
+      '    [예약]이면 "bookings", [일행]이면 "members", [높게 준 도시]면 "ratings" 를 넣는다.',
+      '    자료를 보고 답해놓고 "general" 만 적으면 안 된다.',
       '  "places": [',
       '    { "name":"한국어 이름", "name_local":"현지 표기", "category":"식사|카페|관광|쇼핑|이동|숙소|기타",',
       '      "lat":숫자, "lng":숫자, "why":"한 줄 이유" }',
@@ -952,7 +972,12 @@ Deno.serve(async (req) => {
       '  사용자는 이걸 보고 직접 확인할지 정한다. 숨기면 안 된다.',
       searchBlock,
       blogBlock,
-      ctx ? '\n아래는 지금 이 여행의 자료다.\n' + ctx : '\n(선택된 여행이 없다.)',
+      // 여행을 안 골라도 취향·별점은 옵니다. 그때 "이 여행의 자료다"라고 하면
+      // 있지도 않은 여행 이야기로 읽습니다 — 무엇이 온 것인지 정확히 적습니다.
+      ctx
+        ? `\n아래는 우리가 가진 자료다${
+            tripRow ? '' : ' — 여행은 안 골랐고, 이 사람의 취향과 별점만 있다'}.\n` + ctx
+        : '\n(가진 자료가 없다.)',
     ].join('\n');
 
     // ── 불러오기 지시문 ──
