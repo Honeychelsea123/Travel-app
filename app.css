@@ -857,6 +857,15 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
           28vh(236px)로 내립니다. 172 → 287 → 236 — 처음 172 보다는 여전히
           훨씬 크고, **덮개 대비는 오히려 좋아집니다**(글줄이 덜 올라갑니다). */
        min-height:clamp(196px, 28vh, 260px);   /* min- 입니다 — 제목이 길면 자랍니다 */
+       /* ⚠ **사진이 없으면 이 높이를 채울 것이 없습니다** (b280, 사용자 지적).
+          글줄은 바닥에 붙어 있어서 위쪽 절반이 빈 색 덩어리로 남습니다 —
+          "이미지 없는 도시는 보기 너무 흉하다".
+          높이를 억지로 지키지 않고 **글자만큼만** 씁니다. 그러면 빈 곳이
+          아예 없어져서, 사진 없는 것이 사고가 아니라 그냥 다른 모양이 됩니다.
+          ※ 진짜 원인은 자료입니다 — 그 도시가 `cities` 표에 없어서 구간에
+            `city_id` 가 안 붙고, 그래서 쓸 사진이 없습니다. 도시를 넣고
+            사진을 채우면 이 갈래를 안 타게 됩니다. 아래는 그때까지의 모습이자,
+            목록에 없는 곳을 직접 쳐서 만든 여행의 모습이기도 합니다. */
        display:flex; flex-direction:column; justify-content:flex-end;
        padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
        box-shadow:var(--lift-1); margin-bottom:var(--s-sm); }
@@ -899,6 +908,15 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .hero .hbtn{ align-self:flex-start; margin-top:12px; background:#fff; color:var(--ink);
              border:0; border-radius:var(--r-pill); padding:10px 18px; font-weight:650;
              font-size:var(--f-lg); cursor:pointer; }
+/* 사진이 없을 때 — 글자만큼만 씁니다(위 `.hero` 주석 참고).
+   위아래 여백을 조금 넉넉히 줘서 글자가 모서리에 붙지 않게 합니다. */
+.hero.noimg{ min-height:0; padding:24px 18px 22px; }
+/* ⚠ **덮개를 걷으려다 물릴 뻔했습니다.** "사진이 없으니 덮을 것도 없다"고
+   생각했는데, 틴트 7종에 **금색(#d4af37) · 하늘색(#5aa9e6) 같은 밝은 것**이
+   섞여 있습니다. 걷으면 흰 글자 대비가 **2.1** 까지 떨어집니다(큰 글자 3.0 기준).
+   대신 **평평하게** 깝니다 — 원래 덮개는 %로 깔려서 카드가 짧아지면 아래쪽만
+   진해져 색이 지저분해집니다. 높이에 안 휘둘리는 한 겹이면 짧아져도 같습니다. */
+.hero.noimg::after{ background:rgba(0,0,0,.34); }
 
 /* AI 카드 — **채도 높은 그러데이션 두 장을 걷어냈습니다.**
  * 보라·청록 카드가 홈 위쪽을 나란히 먹고 있었는데, 그게 화면에서 제일

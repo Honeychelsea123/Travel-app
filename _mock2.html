@@ -1,0 +1,17 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>noimg</title>
+<script>document.write('<link rel="stylesheet" href="./'+(location.search.includes('before')?'_before.css':'app.css')+'?t='+Date.now()+'">')</script>
+<style>body{margin:0;background:var(--parchment)}.w{max-width:480px;margin:0 auto;padding:12px 0 40px}
+.lbl{font:12px monospace;color:#888;margin:20px 0 6px}</style>
+</head><body><div class="w" id="w"></div>
+<script>
+const G={rare:['#2b3a67','#6b4fa8'],size:['#a8801f','#d4af37'],deep:['#1f6f4a','#2c7d58']};
+const noimg=location.search.includes('before')?'':' noimg';
+const hero=(g,dd,t,m)=>`<div class="hero${noimg}" style="background:linear-gradient(160deg,${G[g].join(',')})">
+ <div class="dd">${dd}</div><div class="ht">${t}</div><div class="hm">${m}</div></div>`;
+document.getElementById('w').innerHTML=
+ `<div class="lbl">사진 없는 여행 — 초록</div>`+hero('deep','D-3','삼척 여행','삼척 · 8월 14일 – 16일 · 3일')
++`<div class="lbl">제일 밝은 틴트(금색)로도 읽히나</div>`+hero('size','D-12','경주 여행','경주 · 9월 3일 – 5일 · 3일')
++`<div class="lbl">보라</div>`+hero('rare','D-40','속초 여행','속초 · 10월 1일 – 2일 · 2일');
+</script></body></html>
