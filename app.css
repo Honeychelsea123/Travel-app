@@ -4,6 +4,22 @@
    흐림이 반투명 사각형으로 안 보이기 때문입니다. */
 :root{
   color-scheme: light;
+  /* ── 색은 두 역할로 갈라 씁니다 (b282) ────────────────────────────
+   * **--brand(오렌지) = 정체성.** 아이콘 · 첫 화면 로고 · 상단바 워드마크.
+   *   "여기가 기로다" 를 말하는 자리.
+   * **--primary(파랑) = 동작.** 단추 · 링크 · 켜진 탭.
+   *   "이걸 누르세요" 를 말하는 자리.
+   *
+   * 취향이 아니라 **재서 갈랐습니다.** 브랜드 오렌지를 동작색으로 쓰면:
+   *   · 흰 글자 대비가 **3.28** 로 떨어집니다(기준 4.5). 단추가 전부 흐려집니다.
+   *     흰 글자를 살리려면 #c94e20 까지 어둡게 해야 하는데 그건 이미 다른 색입니다
+   *   · 분류색과 겹칩니다 — 브랜드 16° 대 **k-food 21°(5° 차) · k-cafe 31°(15° 차)**.
+   *     일정 목록은 분류를 **색으로 먼저** 읽게 만든 화면이라, 브랜드색이
+   *     식사·카페 점과 구분이 안 되면 그 장치가 통째로 무너집니다
+   *
+   * ⚠ **--brand 를 단추 바탕으로 쓰지 마십시오.** 꼭 써야 하면 글자를
+   *   흰색이 아니라 잉크(#11141A)로 두십시오(그때는 5.62 로 통과합니다). */
+  --brand:#F25E26;    --brand-dark:#D94E1B;   --brand-ink:#11141A;
   --primary:#0066cc;  --primary-focus:#0071e3;
   --ink:#1d1d1f;      --ink-80:#333333;   --ink-48:#6b6b70;
   --divider-soft:#f0f0f0; --hairline:#e0e0e0;
@@ -120,6 +136,26 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
 }
 h1{ font-size:var(--f-2xl); margin:0; font-weight:650;
     letter-spacing:calc(-0.5px * var(--ts)); }
+/* 로고 — 마크(오렌지) + 이름. 여기가 `--brand` 를 쓰는 자리입니다.
+   마크는 글자 크기를 따라가게 `em` 으로 둡니다 — 글자 배율을 '크게'로 둔
+   사람에게 마크만 작게 남으면 짝이 안 맞습니다. */
+/* 기본(글꼴이 아직/영영 안 온 상태) — 앱 글꼴로 멀쩡히 보입니다. */
+h1.brand{ display:flex; align-items:center; gap:.32em; }
+h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
+                align-self:center; }
+
+/* ⚠ **Dongle 이 실제로 실렸을 때만** 아래를 겁니다.
+   `document.fonts` 로 확인하고 `<html>` 에 `dongle` 을 답니다(index.html).
+   그냥 걸어두면 안 됩니다 — Dongle 은 아주 납작해서 1.9배로 키워야 제 크기가
+   나오는데, 글꼴이 안 온 날 그 배율이 **앱 글꼴에 걸리면** 상단바 글자가
+   터무니없이 커집니다. 오프라인에서 그럴 수 있습니다. */
+:root.dongle h1.brand{ font-family:'Dongle', var(--sf);
+          font-size:calc(var(--f-2xl) * 1.9); font-weight:700;
+          line-height:.72; letter-spacing:0; gap:.3em;
+          /* 핸드오프 27행: 글리프가 em 상자 위쪽에 몰려 있어 7% 내려 맞춥니다. */
+          padding-top:.07em; }
+:root.dongle h1.brand .mark{ width:.52em; height:.52em;
+          transform:translateY(-.05em); }
 /* ── `.memo` = 설명 한 줄. 계단의 제일 아랫칸입니다 ──────────────────
  * 카드 제목 17/700 › 날짜 15/700 › 항목 15/600 › **설명 13/400 회색**.
  *
@@ -1147,6 +1183,11 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 .hello .hi{ font-size:min(var(--f-3xl), 6.8vw); font-weight:750;
             line-height:1.34; letter-spacing:calc(-.5px * var(--ts));
             word-break:keep-all; text-shadow:0 2px 14px rgba(0,0,0,.55); }
+/* 이름의 세 겹. 표어 바로 아래에 붙여 **한 덩어리**로 읽히게 합니다 —
+   떨어뜨리면 그냥 한자 장식으로 보입니다. 글자 사이를 벌려 표식처럼 둡니다. */
+.hello .hiname{ font-size:min(var(--f-sm), 3.4vw); font-weight:600;
+                letter-spacing:.14em; opacity:.82; margin-top:8px;
+                text-shadow:0 1px 8px rgba(0,0,0,.5); }
 .hello .hisub{ font-size:min(var(--f-md), 3.8vw); line-height:1.6;
                opacity:.94; margin-top:10px; word-break:keep-all;
                text-shadow:0 1px 10px rgba(0,0,0,.5); }

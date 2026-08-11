@@ -37,7 +37,16 @@ const isAppDoc = url =>
 const isCodeUrl = url =>
   url.hostname === 'esm.sh'
   || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
-      && /\.(js|css|mjs)$/i.test(url.pathname));
+      && /\.(js|css|mjs)$/i.test(url.pathname))
+  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b282) ──────────────
+   * 워드마크 '기로'를 Dongle 로 씁니다. 글꼴 조각은 원래 타일과 같은 통에
+   * 두었는데(부팅을 막지 않으므로), **로고는 다릅니다** — 400개가 차서
+   * 밀려나면 어느 날 갑자기 상단바 글꼴만 바뀝니다. 앱 이름이 흔들리는 것은
+   * 지도 타일 하나가 없는 것과 무게가 다릅니다.
+   * `fonts.googleapis.com` 은 CSS, `fonts.gstatic.com` 은 실제 글꼴 파일입니다.
+   * 둘 다 있어야 하므로 둘 다 담습니다. */
+  || url.hostname === 'fonts.googleapis.com'
+  || url.hostname === 'fonts.gstatic.com';
 
 /* ── 이제 안 나가는 바깥 서버 ────────────────────────────────────────
  * b228 에서 supabase 를 우리 서버로 들여오면서 esm.sh 로는 한 번도 안 나갑니다.
@@ -99,7 +108,7 @@ self.addEventListener('activate', e => {
 function offlineNote(){
   return new Response(
     `<!doctype html><html lang="ko"><head><meta charset="utf-8">
-     <meta name="viewport" content="width=device-width,initial-scale=1"><title>AI.Trip</title>
+     <meta name="viewport" content="width=device-width,initial-scale=1"><title>기로</title>
      </head><body style="margin:0;background:#f5f5f7;
        font:15px/1.6 -apple-system,'Apple SD Gothic Neo',sans-serif">
      <div style="max-width:420px;margin:60px auto;padding:24px;background:#fff;
@@ -299,7 +308,7 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data?.text() || '' }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'AI.Trip', {
+  e.waitUntil(self.registration.showNotification(d.title || '기로', {
     body: d.body || '',
     icon: './icons/icon-192.png',
     badge: './icons/icon-192.png',

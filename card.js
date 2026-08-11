@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b281';
+import { $, esc, toast } from './dom.js?v=b282';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -169,7 +169,7 @@ function iconImage(paths, px){
 
 /* ── 카드에서 찾아오는 길 ────────────────────────────────────────────
  * **앱 이름만 적으면 못 찾아옵니다.** 이 앱은 앱스토어에 없는 PWA 라
- * 'AI.Trip' 을 검색해도 아무 데서도 안 나옵니다. 인스타에 올라간 카드를 보고
+ * '기로' 을 검색해도 아무 데서도 안 나옵니다. 인스타에 올라간 카드를 보고
  * "이거 뭐야" 하는 사람에게 줄 것이 그림 안에 있어야 합니다.
  * 주소는 **여기 한 곳에서만** 만듭니다 — 나중에 도메인이 생기면 이 줄만 바꿉니다.
  * 화면에는 `https://` 와 끝 슬래시를 뺀 것을 적습니다(짧을수록 읽힙니다). */
@@ -353,15 +353,15 @@ export async function cardImage(spec, mode = 'square'){
      사람이 갈 곳이 없었습니다. 이름보다 더 흐리게 둬서 광고처럼 안 보이게 합니다. */
   /* **왼쪽 아래 한 줄로 모읍니다.** 이름과 주소를 위아래로 떼어 놓으니
      둘 다 작고 흐려서 어느 쪽도 안 읽혔습니다. 한 줄에 붙여 놓으면
-     "AI.Trip · 주소" 가 하나의 서명처럼 읽힙니다.
+     "기로 · 주소" 가 하나의 서명처럼 읽힙니다.
      사진 위에 얹히므로 얇은 그림자를 깔아 어떤 사진에서도 읽히게 합니다. */
   /* **정말로 한 줄에 붙입니다.** 앞서 이름을 H-72, 주소를 H-54 에 뒀는데
      34px·28px 글자가 18px 간격이면 겹칩니다 — 실제로 겹쳐서 나왔습니다.
      이름을 그리고 그 폭만큼 옮겨 주소를 이어 붙입니다. */
   g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 14; g.shadowOffsetY = 1;
   g.font = F(700, 34); g.globalAlpha = .96;
-  g.fillText('AI.Trip', cx, H - 62);
-  const nameW = g.measureText('AI.Trip').width;
+  g.fillText('기로', cx, H - 62);
+  const nameW = g.measureText('기로').width;
   g.globalAlpha = 1;
   /* **주소는 이름만큼 또렷해야 합니다.** 처음에 24px·42% 로 넣었다가 재보니
      배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
@@ -392,7 +392,7 @@ async function saveCardImage(spec, mode, name){
        뒀습니다(위 cardImage) — 둘 중 하나는 남습니다. */
     const url = appUrl();
     const share = { files:[file], title: spec.title,
-                    text: `${spec.title} · AI.Trip`, url };
+                    text: `${spec.title} · 기로`, url };
     /* url·text 를 못 받는 기기가 있습니다. 그때는 그림만이라도 보냅니다 —
        여기서 실패하면 아래 내려받기로 떨어져서 공유 자체를 못 하게 됩니다. */
     const payload = navigator.canShare(share) ? share : { files:[file], title: spec.title };

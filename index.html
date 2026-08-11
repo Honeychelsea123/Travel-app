@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AI.Trip</title>
+<title>기로</title>
 
 <!-- 홈 화면에 추가했을 때 쓰이는 것들.
      안드로이드는 manifest 를 보고, 아이폰은 아래 apple- 태그들을 따로 봅니다.
@@ -15,12 +15,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <!-- 아이폰은 이 값을 manifest 의 short_name 보다 먼저 씁니다 -->
-<meta name="apple-mobile-web-app-title" content="AI.Trip">
+<meta name="apple-mobile-web-app-title" content="기로">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 <!-- ── 링크를 보냈을 때 상대가 보는 것 ──────────────────────────────
      **이게 하나도 없었습니다.** 그래서 초대 링크를 카톡으로 보내면
-     "AI.Trip / 여기를 눌러 링크를 확인하세요" 만 떴습니다 — 뒤 문장은
+     "기로 / 여기를 눌러 링크를 확인하세요" 만 떴습니다 — 뒤 문장은
      카카오가 넣는 기본 문구입니다. 받은 사람은 **무슨 여행인지도, 무엇을
      하자는 것인지도 모르는 채로** 눌러야 했습니다.
 
@@ -32,39 +32,58 @@
      미리보기를 만들려면 서버가 필요합니다. 대신 "초대를 받았다"는 것과
      "누르면 무엇이 되는지"는 여기서 말해줄 수 있습니다. -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="AI.Trip">
-<meta property="og:title" content="AI.Trip — 여행 일정을 같이 짜는 앱">
+<meta property="og:site_name" content="기로">
+<meta property="og:title" content="기로 — 여행 일정을 같이 짜는 앱">
 <meta property="og:description"
       content="초대 링크를 누르면 일정 · 지출 · 준비물을 함께 보고 고칠 수 있어요. 비행기모드에서도 열립니다.">
-<meta property="og:image" content="https://honeychelsea123.github.io/Travel-app/icons/icon-512.png">
+<meta property="og:image" content="https://honeychelsea123.github.io/Travel-app/icons/keyro-512.png">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary">
 <meta name="description"
       content="AI 가 여행 일정을 짜주고, 다녀온 곳은 지도에 남습니다. 일정 · 지출 · 준비물을 일행과 같이 봅니다.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<!-- 로고 워드마크 글꼴. **이름 한 곳에만 씁니다** — 본문까지 바꾸면 읽는
+     글꼴이 통째로 달라집니다(Dongle 은 아주 가늘고 납작합니다).
+     `display=swap` 이라 글꼴이 늦거나 안 와도 글자는 바로 보입니다 —
+     그때는 앱 글꼴로 '기로'가 나옵니다. 로고가 사라지지는 않습니다.
+     `sw.js` 의 `isCodeUrl` 에 fonts 두 호스트를 넣어 **안 잘리는 통**에
+     담습니다 — 타일과 같이 두면 400개가 찼을 때 밀려나서, 어느 날 갑자기
+     상단바 글꼴만 바뀝니다. -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Dongle:wght@400;700&display=swap">
+<script>
+/* Dongle 이 **실제로 실렸을 때만** 로고 크기 규칙을 켭니다(app.css `:root.dongle`).
+   Dongle 은 아주 납작해서 1.9배로 키워야 제 크기가 나오는데, 글꼴이 안 온 날
+   그 배율이 앱 글꼴에 걸리면 상단바 글자가 터무니없이 커집니다.
+   실패해도 아무 일 없습니다 — 그때는 앱 글꼴로 '기로'가 나옵니다. */
+document.fonts?.load('700 1em Dongle').then(() => {
+  if (document.fonts.check('700 1em Dongle')) document.documentElement.classList.add('dongle');
+}).catch(() => {});
+</script>
 <!-- 일정 위에 얹는 지도(Leaflet)는 **여기서 안 부릅니다.** app.js 가 쓸 때
      불러옵니다(ensureLeaflet). 전에는 여기 defer 로 걸려 있었는데, defer
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b281">
+<link rel="stylesheet" href="app.css?v=b282">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b281">
-<link rel="modulepreload" href="dom.js?v=b281">
-<link rel="modulepreload" href="db.js?v=b281">
-<link rel="modulepreload" href="calc.js?v=b281">
-<link rel="modulepreload" href="stars.js?v=b281">
-<link rel="modulepreload" href="net.js?v=b281">
-<link rel="modulepreload" href="admin.js?v=b281">
-<link rel="modulepreload" href="ui.js?v=b281">
-<link rel="modulepreload" href="card.js?v=b281">
-<link rel="modulepreload" href="trip.js?v=b281">
-<link rel="modulepreload" href="rate.js?v=b281">
-<link rel="modulepreload" href="cities.js?v=b281">
-<link rel="modulepreload" href="ai.js?v=b281">
+<link rel="modulepreload" href="supabase.js?v=b282">
+<link rel="modulepreload" href="dom.js?v=b282">
+<link rel="modulepreload" href="db.js?v=b282">
+<link rel="modulepreload" href="calc.js?v=b282">
+<link rel="modulepreload" href="stars.js?v=b282">
+<link rel="modulepreload" href="net.js?v=b282">
+<link rel="modulepreload" href="admin.js?v=b282">
+<link rel="modulepreload" href="ui.js?v=b282">
+<link rel="modulepreload" href="card.js?v=b282">
+<link rel="modulepreload" href="trip.js?v=b282">
+<link rel="modulepreload" href="rate.js?v=b282">
+<link rel="modulepreload" href="cities.js?v=b282">
+<link rel="modulepreload" href="ai.js?v=b282">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -163,11 +182,27 @@
 
 <main>
   <div class="topbar">
-    <h1>AI.Trip</h1>
+    <!-- ── 상단바 로고 ────────────────────────────────────────────────
+         마크(방향 표지판)는 **SVG 를 그대로 박습니다.** 파일로 부르면 비행기
+         모드에서 캐시에서 밀려났을 때 로고 자리가 빕니다 — 앱 이름이 사라지는
+         것은 다른 어떤 것이 빠지는 것보다 나쁩니다.
+
+         ⚠ **워드마크 폰트(Dongle)는 안 씁니다.** 핸드오프의 워드마크는
+         "Dongle 로 '기로'를 렌더링" 이라, 넣으려면 구글 폰트를 받아야 합니다.
+         이 앱은 오프라인이 강점인데 이름 한 단어 때문에 바깥 폰트에 기대면,
+         캐시에서 밀려난 날 상단바 글꼴만 바뀝니다(글꼴 조각은 타일과 같은
+         통에 있어서 400개가 차면 밀려납니다).
+         **마크가 정체성을 지고, 글자는 앱 글꼴로 씁니다.**
+         정확한 워드마크가 필요한 자리(스토어·홍보물)는 SVG 자산을 쓰십시오. -->
+    <h1 class="brand">
+      <svg class="mark" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+        <path d="M18 22 H62 L76 33 L62 44 H18 Q13 44 13 33 Q13 22 18 22 Z"/>
+        <path d="M78 52 H34 L20 63 L34 74 H78 Q83 74 83 63 Q83 52 78 52 Z"/>
+      </svg>기로</h1>
     <p class="sub" id="sub">불러오는 중…</p>
     <!-- ── 여행 안 구역 (일정·지출·준비·일행) ────────────────────────
          **상단바 안**에 삽니다. 여행에 들어갔을 때만 나오고, 그때는
-         'AI.Trip' 글자가 자리를 내줍니다 — 어느 앱인지는 이미 알고,
+         '기로' 글자가 자리를 내줍니다 — 어느 앱인지는 이미 알고,
          지금 궁금한 것은 이 여행의 어디를 보고 있느냐입니다.
 
          밖에 한 줄로 뒀다가 두 번 물렸습니다. 흰 카드로 만드니 상단바와
@@ -225,9 +260,17 @@
          아래 짙은 바탕이 그대로라 글자는 똑같이 읽힙니다. -->
     <div class="hello">
       <img id="hellopic" class="hide" alt="" onerror="this.remove()">
-      <div class="hi">여행을 짜고,<br>다녀온 곳을 남기세요</div>
-      <div class="hisub">AI가 첫날부터 마지막 날까지 짜드려요.<br>
-        다녀온 도시는 지도에 깃발로 쌓여요.</div>
+      <!-- ⚠ **이름이 설명을 요구합니다.** '기로에 서다'는 한국어에서 보통
+           무거운 갈림길(생사의 기로)이라, 이름만 보면 여행 앱으로 안 읽힙니다.
+           記路(기록하는 길)라는 읽기가 그걸 풀어주는데 **설명을 본 사람에게만**
+           풀립니다. 그래서 이 줄은 장식이 아니라 이름의 일부입니다.
+           記路 는 사전에 없는 조어입니다 — 브랜드 조어로만 쓰고 사전적
+           의미라고 적지 않습니다. -->
+      <div class="hi">기록이 길이 되다</div>
+      <div class="hiname">岐路 · 記路 · KEY路</div>
+      <div class="hisub">수많은 선택 앞에 선 여행의 순간.<br>
+        내가 남긴 기록은 취향이 되고,<br>
+        AI는 그 취향으로 나만의 다음 길을 찾습니다.</div>
       <div class="hiwhere" id="hellowhere"></div>
     </div>
 
@@ -1272,7 +1315,7 @@
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b281</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b282</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1740,7 +1783,7 @@
   </div>
 </main>
 
-<script type="module" src="app.js?v=b281"></script>
+<script type="module" src="app.js?v=b282"></script>
 </body>
 </html>
 

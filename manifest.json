@@ -1,7 +1,7 @@
 {
-  "name": "AI.Trip",
-  "short_name": "AI.Trip",
-  "description": "일정을 짜주고 다녀온 곳을 지도에 남기는 AI 여행 앱",
+  "name": "기로",
+  "short_name": "기로",
+  "description": "기록이 길이 되다 — 일정을 짜주고 다녀온 곳을 지도에 남기는 여행 앱",
   "id": "/Travel-app/",
   "start_url": ".",
   "scope": ".",
@@ -11,9 +11,8 @@
   "theme_color": "#ffffff",
   "lang": "ko",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/keyro-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icons/keyro-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/keyro-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
