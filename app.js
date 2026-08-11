@@ -6522,8 +6522,13 @@ window.__designCheck = () => {
       : '17/700 은 카드 제목 자리입니다');
     if (e.classList.contains('memo') && (fs > 13 || fw >= 600))
       say('②설명 규격밖', '설명은 13/400 회색입니다');
+    /* ③ 은 **이미 보고 그대로 두기로 한 것입니다** (2026-08-11, 사용자 결정).
+       머리줄의 작은 단추 여덟이 31~36px 로 44 에 못 미칩니다. 다 키우면
+       머리줄이 통째로 두꺼워져 사진 중심 방향과 어긋나서, 실기기에서 눌러보고
+       답답할 때 손보기로 했습니다. **아래 결과가 나와도 할 일이 아닙니다** —
+       새로 생긴 것이 있는지 보는 눈금으로만 쓰십시오. */
     if ((tag === 'BUTTON' || tag === 'A') && box.height < 44 && e.textContent.trim())
-      say('③손가락 자리', `${Math.round(box.width)}×${Math.round(box.height)} — 44 미만`);
+      say('③손가락 자리(둘 것)', `${Math.round(box.width)}×${Math.round(box.height)} — 44 미만`);
   }
   if (out.length) console.table(out); else console.log('디자인 규칙 위반 없음 ✅');
   return { 위반:out.length, 항목:out };
