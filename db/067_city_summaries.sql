@@ -136,6 +136,109 @@ update public.cities set
   summary_url = 'https://ko.wikipedia.org/wiki/방비엥'
 where name = '방비엥' and country = 'LA';
 
+-- ── 2묶음 ──────────────────────────────────────────────────────────
+-- ⚠ '비크'도 한국어 위키에서는 동음이의(스페인 비크 · 인명)입니다.
+--   아이슬란드 마을 문서는 '비크이뮈르달' 입니다.
+update public.cities set
+  summary = '베트남 남중부 빈딘성의 해안 도시. 붐비지 않는 긴 백사장과 참파 왕국이 남긴 벽돌 탑이 함께 있습니다. 절벽 길로 이어지는 에오지오 어촌이 대표적입니다. 다낭이나 나트랑보다 사람이 적어 조용히 쉬려는 사람이 찾습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/꾸이년'
+where name = '꾸이년' and country = 'VN';
+
+update public.cities set
+  summary = '필리핀 중부 비사야스의 섬. 마른 풀로 갈색이 되는 초콜릿 힐과 손바닥만 한 안경원숭이 타르시어가 대표적입니다. 팡라오섬 해변에서 다이빙과 호핑을 합니다. 세부에서 배로 두 시간이라 함께 묶어 다닙니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/보홀주'
+where name = '보홀' and country = 'PH';
+
+update public.cities set
+  summary = '호찌민에서 가장 가까운 바다. 언덕 위 예수상까지 계단을 오르면 도시와 해안이 한눈에 들어옵니다. 프랑스 시절의 별장과 등대가 남아 있습니다. 호찌민에서 배나 버스로 두 시간이라 주말에 붐빕니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/붕따우'
+where name = '붕따우' and country = 'VN';
+
+update public.cities set
+  summary = '홋카이도 한가운데의 구릉 마을. 밭이 이어붙인 천처럼 보이는 패치워크 로드와 파랗게 빛나는 청의 호수가 대표적입니다. 여름에는 꽃밭, 겨울에는 눈밭이 됩니다. 후라노와 묶어 아사히카와에서 차로 다닙니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/비에이정'
+where name = '비에이' and country = 'JP';
+
+update public.cities set
+  summary = '아이슬란드 남쪽 끝의 작은 마을. 검은 모래 해변 레이니스피아라와 육각 기둥 절벽, 바다에 선 바위 기둥이 대표적입니다. 링로드를 도는 사람들이 하룻밤 묵는 곳입니다. 파도가 갑자기 밀려와 물가에 가까이 가지 않습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/비크이뮈르달'
+where name = '비크' and country = 'IS';
+
+update public.cities set
+  summary = '나가사키현 북부의 항구 도시. 규슈 최대 테마파크 하우스텐보스가 있고, 섬이 흩어진 구주쿠시마를 배로 돕니다. 미군 기지에서 시작된 사세보 버거가 명물입니다. 하카타에서 특급으로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/사세보시'
+where name = '사세보' and country = 'JP';
+
+update public.cities set
+  summary = '리가 근교 가우야 강 골짜기의 마을. 붉은 벽돌 투라이다성과 옛 성터가 숲에 흩어져 있고 골짜기를 케이블카로 건넙니다. 가을 단풍으로 라트비아에서 이름났습니다. 리가에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/시굴다'
+where name = '시굴다' and country = 'LV';
+
+update public.cities set
+  summary = '캄보디아 남부의 해변 도시. 오트레스와 오체틀 해변이 대표적이고 앞바다의 코롱섬으로 배가 오갑니다. 카지노와 고층 건물이 크게 늘어 예전의 한적한 모습과는 많이 달라졌습니다. 프놈펜에서 차로 네 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/시아누크빌'
+where name = '시아누크빌' and country = 'KH';
+
+update public.cities set
+  summary = '마닐라 북쪽 팜팡가주의 도시. 옛 미군 클라크 기지가 국제공항과 자유무역지대로 바뀌었습니다. 근교에 피나투보 화산 트레킹과 골프장이 모여 있습니다. 한국에서 클라크 직항이 있어 마닐라를 거치지 않습니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/Angeles,_Pampanga'
+where name = '앙헬레스' and country = 'PH';
+
+update public.cities set
+  summary = '팔라완 북쪽 끝의 해변 마을. 바다에서 솟은 석회암 절벽과 그 사이 라군을 배로 도는 호핑 투어가 전부라 할 만합니다. 빅라군과 스몰라군이 대표적입니다. 푸에르토프린세사에서 차로 다섯 시간 걸립니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/El_Nido,_Palawan'
+where name = '엘니도' and country = 'PH';
+
+update public.cities set
+  summary = '중국 지린성 연변 조선족 자치주의 중심 도시. 간판이 한글과 한자로 함께 적혀 있고 조선족 문화가 남아 있습니다. 백두산으로 가는 길목이라 여름과 가을에 사람이 몰립니다. 인천에서 직항이 있습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/옌지시'
+where name = '연변' and country = 'CN';
+
+update public.cities set
+  summary = '하코네로 들어가는 길목의 성 도시. 복원된 오다와라성 천수각이 시내 한가운데 있고 사가미만이 바로 앞입니다. 어시장과 가마보코가 명물입니다. 도쿄에서 신칸센으로 35분이라 하코네 여행의 첫 정거장이 됩니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/오다와라시'
+where name = '오다와라' and country = 'JP';
+
+update public.cities set
+  summary = '리가 옆 발트해에 면한 휴양 도시. 30km 넘게 이어지는 백사장과 소나무 숲, 나무로 지은 별장이 늘어서 있습니다. 여름 한철에 사람이 몰립니다. 리가에서 기차로 30분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/유르말라'
+where name = '유르말라' and country = 'LV';
+
+update public.cities set
+  summary = '베트남 남부의 해변 도시. 옆의 무이네에 붉은 모래와 흰 모래 사구가 있어 지프를 타고 오릅니다. 바람이 좋아 카이트서핑으로 알려졌습니다. 호찌민에서 차로 네 시간, 고속도로가 열려 더 가까워졌습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/판티엣'
+where name = '판티엣' and country = 'VN';
+
+update public.cities set
+  summary = '뉴질랜드 남섬의 옥빛 호수. 호숫가에 선 선한 목자의 교회가 사진으로 알려졌고 11월에서 12월에 루피너스가 핍니다. 국제 다크스카이 보호구역이라 밤하늘로도 이름났습니다. 크라이스트처치에서 차로 세 시간입니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/Lake_Tekapo'
+where name = '테카포' and country = 'NZ';
+
+update public.cities set
+  summary = '캐나다 로키의 북쪽 국립공원 마을. 아이스필드 파크웨이가 밴프까지 이어지고 말리뉴 호수와 애서배스카 폭포가 대표적입니다. 다크스카이 보호구역입니다. 2024년 큰 산불로 마을 일부가 탔으니 가기 전에 확인이 필요합니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/Jasper,_Alberta'
+where name = '재스퍼' and country = 'CA';
+
+update public.cities set
+  summary = '아드리아해에 면한 크로아티아의 항구 도시. 파도가 밀려들 때 소리가 나는 바다 오르간과 태양의 인사가 바닷가에 있습니다. 로마 포룸 유적이 구시가에 그대로 남아 있습니다. 노을로 이름난 곳입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/자다르'
+where name = '자다르' and country = 'HR';
+
+update public.cities set
+  summary = '알프스 기슭 호수에 안긴 프랑스 동부의 도시. 운하가 구시가를 가로지르고 물 위에 선 팔레 드 릴이 상징입니다. 호수가 유럽에서 손꼽히게 맑아 여름에 물놀이를 합니다. 제네바에서 차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/안시'
+where name = '안시' and country = 'FR';
+
+update public.cities set
+  summary = '암스테르담 남쪽의 운하 도시. 물가보다 한 층 낮은 부두에 카페가 늘어선 구조가 이곳만의 것입니다. 네덜란드에서 가장 높은 돔 타워를 계단으로 오릅니다. 대학 도시라 젊고, 암스테르담에서 기차로 30분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/위트레흐트'
+where name = '위트레흐트' and country = 'NL';
+
+update public.cities set
+  summary = '운하를 색색의 배가 지나 포르투갈의 베네치아라 불리는 도시. 몰리세이루를 타고 운하를 돕니다. 근처 코스타 노바에 줄무늬 어부 집이 늘어서 있습니다. 포르투에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아베이루'
+where name = '아베이루' and country = 'PT';
+
 commit;
 
 -- 확인 — 아직 비어 있는 곳이 몇 곳인지
