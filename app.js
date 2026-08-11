@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b278';
-import { $, esc, toast, copyText } from './dom.js?v=b278';
-import { starHtml, paintStars, markRated } from './stars.js?v=b278';
+import { sb } from './db.js?v=b279';
+import { $, esc, toast, copyText } from './dom.js?v=b279';
+import { starHtml, paintStars, markRated } from './stars.js?v=b279';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b278';
-import { loadAdmin } from './admin.js?v=b278';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b278';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b279';
+import { loadAdmin } from './admin.js?v=b279';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b279';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b278';
+         setEditPlanId } from './trip.js?v=b279';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b278';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b279';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b278';
+         useCities, addCity, search } from './cities.js?v=b279';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b278';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b279';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b278';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b279';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b278';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b279';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -70,7 +70,7 @@ let me = null,
   if (v) document.documentElement.style.setProperty('--ts', v);
 }
 
-/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b278).
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b279).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
    부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
    어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
@@ -6486,6 +6486,49 @@ function mapLinks(o, city){
 
 /* 지도 주소는 **틀려도 화면에서는 멀쩡해 보입니다** — 눌러서 딴 데가 나와야
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
+/* ── 디자인 규칙 검사 ────────────────────────────────────────────────
+ * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
+ * 여행 목록(b279). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
+ * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
+ * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
+ * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.
+ *
+ *   카드 제목 17/700 › 구역 머리 15/700 › 항목 15/600 › 설명 13/400
+ *
+ * 배율(--ts)을 걷어내고 **설계값으로** 잽니다 — 사용자가 '작게'로 보고
+ * 있으면 모든 수가 0.9배로 나와서 규칙과 안 맞습니다. */
+window.__designCheck = () => {
+  const ts = parseFloat(getComputedStyle(document.documentElement)
+               .getPropertyValue('--ts')) || 1;
+  const out = [], seen = new Set();
+  for (const e of document.querySelectorAll('main *, #aiview *')){
+    if (!e.offsetParent) continue;
+    const box = e.getBoundingClientRect(); if (box.height < 6) continue;
+    /* 자기가 직접 글자를 갖고 있는 것만 봅니다. 감싸는 상자는 자식의
+       크기를 물려받아 보여서 엉뚱하게 걸립니다. */
+    if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
+    const g = getComputedStyle(e);
+    const fs = Math.round(parseFloat(g.fontSize) / ts), fw = +g.fontWeight;
+    const tag = e.tagName, key = tag + '.' + (e.className || '-');
+    const say = (rule, why) => { const k = rule + key; if (seen.has(k)) return;
+      seen.add(k); out.push({ 규칙:rule, 자리:key, 값:`${fs}px/${fw}`,
+        글자:e.textContent.trim().replace(/\s+/g, ' ').slice(0, 20), 왜:why }); };
+
+    /* 히어로 숫자(D-3)와 카드 제목은 일부러 큽니다 — 빼고 봅니다. */
+    const big = fs >= 17 && fw >= 700;
+    const 제목 = /^H[12]$/.test(tag) || e.closest('h1,h2') || e.classList.contains('dd');
+    if (big && !제목) say('①제목처럼 큼', tag === 'B'
+      ? 'b 에 크기를 안 적어 본문 기본값을 받았습니다 → 15/600'
+      : '17/700 은 카드 제목 자리입니다');
+    if (e.classList.contains('memo') && (fs > 13 || fw >= 600))
+      say('②설명 규격밖', '설명은 13/400 회색입니다');
+    if ((tag === 'BUTTON' || tag === 'A') && box.height < 44 && e.textContent.trim())
+      say('③손가락 자리', `${Math.round(box.width)}×${Math.round(box.height)} — 44 미만`);
+  }
+  if (out.length) console.table(out); else console.log('디자인 규칙 위반 없음 ✅');
+  return { 위반:out.length, 항목:out };
+};
+
 window.__mapCheck = () => {
   const T = [];
   const t = (name, got, want) => T.push({ name, ok: got === want, got, want });

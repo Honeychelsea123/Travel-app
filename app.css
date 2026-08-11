@@ -615,7 +615,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .trip .thumb{ flex:none; width:52px; height:52px; border-radius:var(--r-sm);
               object-fit:cover; background:var(--parchment); }
 .trip .t{ flex:1; min-width:0; }
-.trip .t b{ display:block; }
+/* **또 같은 자리였습니다** (b279, 규칙 검사로 찾음). `b` 에 크기를 안 적어
+   본문 기본값 17/700 을 받고 있었고, 그건 이 카드의 제목('내 여행')과
+   **똑같은 크기·굵기**입니다. 목록 항목이 제목과 같은 무게로 외치면
+   무엇이 묶음이고 무엇이 항목인지가 사라집니다.
+   b268(홈 `.rrow`) · b270(`.ev`·`.plan`) 에 이어 세 번째입니다 —
+   **새 목록을 만들 때 `b` 에 크기·굵기를 적는 것이 규칙입니다.** */
+.trip .t b{ display:block; font-size:var(--f-lg); font-weight:600; }
 .trip .meta{ color:var(--ink-48); font-size:var(--f-md); }
 .badge{ font-size:var(--f-sm); padding:3px 10px; border-radius:var(--r-pill);
         background:var(--parchment); color:var(--ink-48); flex:none; }
