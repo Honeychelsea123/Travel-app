@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b275';
-import { $, esc, toast, copyText } from './dom.js?v=b275';
-import { starHtml, paintStars, markRated } from './stars.js?v=b275';
+import { sb } from './db.js?v=b276';
+import { $, esc, toast, copyText } from './dom.js?v=b276';
+import { starHtml, paintStars, markRated } from './stars.js?v=b276';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b275';
-import { loadAdmin } from './admin.js?v=b275';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b275';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b276';
+import { loadAdmin } from './admin.js?v=b276';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b276';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b275';
+         setEditPlanId } from './trip.js?v=b276';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b275';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b276';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b275';
+         useCities, addCity, search } from './cities.js?v=b276';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b275';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b276';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b275';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b276';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b275';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b276';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -57,7 +57,12 @@ let me = null,
     picked = null, hitList = [], cursor = 0,
     channel = null, bumpTimer = null, bumpPending = null,
     appTab = 'home',
-    tripFilter = 'up', rateShown = 80, rateObs = null, openReview = false, myAvatar = null, myReview = {}, cityOpen = null;
+    tripFilter = 'up', rateShown = 80, rateObs = null, openReview = false, myAvatar = null, myReview = {}, cityOpen = null,
+    /* 기록 목록을 마지막으로 그린 글자. 같으면 다시 안 그립니다 — 사진이
+       깜빡이는 것을 막습니다(drawRatings 참고). **목록을 밖에서 건드리면
+       반드시 '' 로 되돌립니다.** 안 그러면 "같으니 건드리지 말자"가
+       화면과 어긋난 채로 굳습니다. */
+    lastRateHtml = '';
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -2077,6 +2082,7 @@ async function loadRatings(){
       `<div class="empty" style="padding:26px 12px">
          연결이 없어 기록은 지금 볼 수 없어요.<br>
          <span class="memo">별점과 평가는 서버에 저장됩니다.</span></div>`;
+    lastRateHtml = '';          /* 안내로 갈아끼웠으니 다음엔 반드시 다시 그립니다 */
     $('r_head').textContent = '도시';
     $('addcity').classList.add('hide');
     drawOffbar(); return;
@@ -2084,8 +2090,22 @@ async function loadRatings(){
   $('rateerr').classList.add('hide');
   await loadCities();
   fillCityList();
+
+  /* ⚠ **네트워크 셋을 다 기다린 뒤에야 그리고 있었습니다** (실기기에서 지적받음).
+     `loadRateData` 는 city_ratings · city_stats · my_visited 셋을 받아옵니다.
+     탭을 누를 때마다 그 왕복이 끝나야 첫 글자가 나오니, 두 번째부터도
+     매번 빈 화면을 보게 됩니다 — **이미 다 아는 내용인데도요.**
+     별점 · 통계 · 다녀온 곳은 rate.js 에 그대로 살아 있습니다(탭을 옮겨도
+     안 비웁니다). 있으면 **그것으로 먼저 그리고** 새것은 뒤에서 받습니다.
+     받아온 뒤 달라진 게 없으면 위 `lastRateHtml` 이 다시 그리는 것을 막으므로
+     사진도 안 깜빡입니다. */
+  const warm = !!(myRates && Object.keys(myRates).length);
+  if (warm) drawRatings();
+
   const r = await loadRateData();
-  if (r.error) return fail(r.error, 'rate');
+  /* 이미 그려둔 것이 있으면 오류로 그것을 지우지 않습니다 —
+     연결이 잠깐 끊긴 것 때문에 멀쩡히 보던 목록이 사라지면 안 됩니다. */
+  if (r.error) return warm ? undefined : fail(r.error, 'rate');
   clearJustRated();       /* 다시 들어왔으니 매긴 것은 이제 목록에서 뺍니다 */
   drawRatings();
 }
@@ -2157,12 +2177,13 @@ function drawRatings(){
 
   if (!list.length && !canAdd){
     $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없어요.</div>';
+    lastRateHtml = '';
     return;
   }
 
   /* 끝까지 내리면 더 불러옵니다. 80곳에서 자르고 "검색하세요" 라고만 하면
      222곳이 영영 안 보입니다. */
-  $('ratelist').innerHTML = list.slice(0, rateShown).map(c => {
+  const html = list.slice(0, rateShown).map(c => {
     const r = myRates[c.id] || {}, s = cityStat[c.id];
     const todo = visited.has(c.id) && r.stars == null;
     /* 사진이나 이름을 누르면 그 도시 페이지가 열립니다.
@@ -2185,6 +2206,21 @@ function drawRatings(){
     </div>`;
   }).join('') + (list.length > rateShown
     ? '<div class="empty" id="ratemore">더 불러오는 중…</div>' : '');
+
+  /* ⚠ **같은 것을 다시 그리면 사진이 깜빡입니다** (실기기에서 지적받음).
+     `showApp('rate')` 가 탭을 누를 때마다 `loadRatings()` 를 부르고, 여기가
+     `innerHTML` 을 갈아끼웁니다. 글자는 똑같이 다시 그려도 티가 안 나는데
+     **`<img>` 80개는 통째로 버려졌다가 새로 만들어져서** 빈 칸이 보였다가
+     채워집니다. 같은 주소인데도 그렇습니다 — 요소가 새것이라 처음부터
+     다시 그리는 것이라서요.
+     → **글자가 한 자도 안 달라졌으면 손대지 않습니다.** 그러면 사진 요소가
+       그대로 살아 있어 깜빡일 일이 없습니다.
+     비교는 우리가 만든 글자끼리 합니다 — `el.innerHTML` 을 도로 읽으면
+     브라우저가 따옴표와 속성 순서를 제 식대로 바꿔 놓아서 **늘 다르다고 나옵니다.** */
+  if (html !== lastRateHtml){
+    $('ratelist').innerHTML = html;
+    lastRateHtml = html;
+  }
   /* 바닥에 닿으면 더 그립니다. 스크롤 값을 재는 것보다 어긋날 자리가 적습니다. */
   const more = $('ratemore');
   if (more){
@@ -2247,6 +2283,10 @@ $('ratelist').addEventListener('click', async e => {
     /* 저장을 기다리지 않고 먼저 칠합니다. 여기서는 줄을 옮기지도 지우지도 않습니다. */
     paintStars(wrap, next, true);
     markRated(st.closest('.rrow'), next);
+    /* 줄을 직접 손댔습니다(별 칠하기 · ★기록 딱지). 만든 글자에는 그 딱지가
+       없으므로, 여기서 무효로 해두지 않으면 다음 그리기가 "같다"고 건너뛰어
+       화면과 어긋난 채로 남습니다. */
+    lastRateHtml = '';
     await saveRate(cityId, { stars: next }, true);
     return;
   }
@@ -8531,7 +8571,7 @@ async function render(session){
     /* **앞사람 것을 남기지 않습니다.** 별점·다녀온 곳은 사람마다 다른데
        여태 로그아웃에도 로그인에도 비우는 코드가 없었습니다. 같은 기기에서
        계정을 바꾸면 앞사람 별점이 화면에 남았습니다. */
-    clearRates();
+    clearRates(); lastRateHtml = '';   /* 사람이 바뀌면 앞사람 목록을 반드시 다시 그립니다 */
 
     /* 초대 링크로 왔으면 어떤 여행인지 먼저 보여줍니다.
        아직 참여자가 아니라 trips 를 못 읽으므로 이름과 날짜만 주는 함수를 씁니다. */
@@ -8552,7 +8592,7 @@ async function render(session){
   if (me?.id === session.user.id) return;      /* 토큰 갱신마다 다시 그리지 않습니다 */
   /* **여기까지 왔으면 다른 사람입니다**(같은 사람이면 위에서 돌아갑니다).
      로그아웃을 안 거치고 바로 갈아타는 길도 있으므로 여기서도 비웁니다. */
-  clearRates();
+  clearRates(); lastRateHtml = '';   /* 사람이 바뀌면 앞사람 목록을 반드시 다시 그립니다 */
   me = session.user;
 
   $('signedout').classList.add('hide'); $('signedin').classList.remove('hide');
