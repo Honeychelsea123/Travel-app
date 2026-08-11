@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b277';
-import { $, esc, toast, copyText } from './dom.js?v=b277';
-import { starHtml, paintStars, markRated } from './stars.js?v=b277';
+import { sb } from './db.js?v=b278';
+import { $, esc, toast, copyText } from './dom.js?v=b278';
+import { starHtml, paintStars, markRated } from './stars.js?v=b278';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b277';
-import { loadAdmin } from './admin.js?v=b277';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b277';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b278';
+import { loadAdmin } from './admin.js?v=b278';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b278';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b277';
+         setEditPlanId } from './trip.js?v=b278';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b277';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b278';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b277';
+         useCities, addCity, search } from './cities.js?v=b278';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b277';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b278';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b277';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b278';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b277';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b278';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -70,15 +70,15 @@ let me = null,
   if (v) document.documentElement.style.setProperty('--ts', v);
 }
 
-/* 자체 점검 표시. 개발 중에 보려고 두었던 "계정" 카드는 화면에서 뺐습니다 —
-   사용자가 알 필요가 없는 내용이었습니다.
-   부르는 곳이 여러 군데라 함수는 남겨두고, 자리가 없으면 조용히 넘어갑니다. */
-function mark(id, ok, text){
-  const d = $('d'+id), v = $('v'+id);
-  if (!d || !v) return;
-  d.className = 'dot ' + (ok ? 'ok' : 'bad');
-  v.textContent = text;
-}
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b278).
+   "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
+   부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
+   어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
+   **점검 결과는 아무도 못 보는 채로 버려지고 있었습니다.**
+   그런데도 부팅마다 countries · cities · transit_grades 개수를 세러
+   서버에 세 번 다녀왔습니다.
+   다시 필요하면 **관리자 대시보드에 자리를 만들고** 거기서 부르십시오 —
+   보는 자리 없이 되살리면 같은 일이 반복됩니다. */
 
 /* 여기까지 왔으면 화면 코드가 살아 있다는 뜻입니다.
    index.html 의 "화면을 못 불러왔어요" 상자를 걷습니다. */
@@ -8658,9 +8658,6 @@ async function render(session){
   sb.rpc('is_admin').then(r => {
     const admin = r.data === true;
     $('foot').classList.toggle('hide', !admin);
-    /* 점검 줄은 관리자만 봅니다. 보이는 사람에게만 채웁니다 —
-       예전엔 모두의 부팅에서 세 질의가 나갔습니다(위 __selfCheck 주석). */
-    if (admin) window.__selfCheck?.();
   }).catch(() => {});
   /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
      여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
@@ -8693,31 +8690,6 @@ async function render(session){
     history.replaceState(null, '', location.pathname);
   }
 }
-
-/* 자체 점검 세 질의. 개발 중에 보려고 둔 것입니다.
-   await 로 걸어두었더니 화면이 이것부터 기다렸습니다 —
-   프로필 맨 아래 점검 줄 때문에 앱 전체가 늦게 열리고 있었습니다.
-   결과는 늦게 채워도 아무 상관이 없으므로 붙잡지 않고 보냅니다.
-
-   ⚠ **그런데 결과를 적는 `#foot` 은 관리자에게만 보입니다.** 그래서 이 셋은
-   **아무도 안 볼 줄을 채우려고 모든 사람의 부팅마다** 나가고 있었습니다.
-   재보니 부팅 31건 중 3건이 이것입니다. 관리자로 확인된 뒤에만 돌립니다 —
-   `window.__selfCheck` 로 내보내 두고, `is_admin` 이 참일 때 부릅니다. */
-window.__selfCheck = async () => {
-  try {
-    const q = t => sb.from(t).select('*', { count:'exact', head:true });
-    const [co, ci, gr] = await Promise.all([q('countries'), q('cities'), q('transit_grades')]);
-    const bad = [co, ci, gr].find(r => r.error);
-    if (bad) throw bad.error;
-    mark(0, true, '연결됨');
-    mark(1, co.count >= 56 && ci.count >= 138 && gr.count === 4,
-          `${co.count} · ${ci.count} · ${gr.count}`);
-  } catch (e) {
-    /* 실패해도 화면은 건드리지 않습니다. 점검 줄에만 적습니다 —
-       예전에는 빨간 오류 상자가 화면 맨 아래에 계속 떠 있었습니다. */
-    mark(0, false, '실패: ' + (e?.message || e?.code || '알 수 없음'));
-  }
-};
 
 /* 로그인 확인을 무한정 기다리지 않습니다.
    오프라인에서 토큰이 만료돼 있으면 supabase 가 새로 받으러 나가는데,
