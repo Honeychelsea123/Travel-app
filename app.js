@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b280';
-import { $, esc, toast, copyText } from './dom.js?v=b280';
-import { starHtml, paintStars, markRated } from './stars.js?v=b280';
+import { sb } from './db.js?v=b281';
+import { $, esc, toast, copyText } from './dom.js?v=b281';
+import { starHtml, paintStars, markRated } from './stars.js?v=b281';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b280';
-import { loadAdmin } from './admin.js?v=b280';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b280';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b281';
+import { loadAdmin } from './admin.js?v=b281';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b281';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b280';
+         setEditPlanId } from './trip.js?v=b281';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b280';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b281';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b280';
+         useCities, addCity, search } from './cities.js?v=b281';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b280';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b281';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b280';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b281';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b280';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b281';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -70,7 +70,7 @@ let me = null,
   if (v) document.documentElement.style.setProperty('--ts', v);
 }
 
-/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b280).
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b281).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
    부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
    어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
@@ -2487,14 +2487,45 @@ $('cv_save').addEventListener('click', async () => {
 /* 사진은 구간에 붙은 도시에서 가져옵니다.
    예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
 async function tripPhoto(t){
+  /* **나라도 같이 받아옵니다.** 아래 대체 사진이 나라를 알아야 하는데,
+     `t.country` 는 부르는 두 곳(buildHome · pendingTrip)의 select 에 **없습니다**
+     (재봄). 부르는 쪽을 둘 다 고치는 대신, 구간에서 가져옵니다 —
+     구간에는 늘 나라가 붙어 있고 여기서 이미 한 번 물어보고 있습니다. */
   const lg = await netTimeout(sb.from('trip_legs')
-    .select('city_id, cities(image_url)').eq('trip_id', t.id).order('start_date'));
+    .select('city_id, country, cities(image_url)').eq('trip_id', t.id).order('start_date'));
   const hit = (lg.data || []).find(l => l.cities?.image_url);
   if (hit) return hit.cities.image_url;
+  const country = (lg.data || []).find(l => l.country)?.country || t.country;
   /* 구간에 도시가 안 붙어 있으면 이름으로 마지막 한 번 찾아봅니다. */
   const c = await netTimeout(sb.from('cities').select('image_url')
     .eq('name', t.destination).not('image_url', 'is', null).limit(1));
-  return c.data?.[0]?.image_url || null;
+  if (c.data?.[0]?.image_url) return c.data[0].image_url;
+
+  /* ── 그래도 없으면 **같은 나라의 대표 도시** 사진을 빌립니다 ──────────
+   * '삼척'처럼 우리 목록에 없는 곳으로 만든 여행은 여기까지 옵니다.
+   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b281).
+   * 도시는 몰라도 **나라는 압니다.** 그 나라에서 한 곳을 빌려 옵니다.
+   *
+   * 고르는 순서: `pop_rank`(나라마다 한 곳씩 매겨둔 대표) → 없으면
+   * `fame` 이 낮은 것(1 이 누구나 아는 곳). **pop_rank 는 88개국 중
+   * 16개국에만 있어서** 그것만으로는 대부분의 나라에서 못 고릅니다.
+   * 이름순을 마지막 기준으로 둡니다 — 같은 여행이 열 때마다 다른 사진이면
+   * "내 여행"으로 안 읽힙니다. **늘 같은 것이 나와야 합니다.**
+   *
+   * ⚠ **이 사진은 그 사람이 가는 곳이 아닙니다.** 삼척 여행에 강릉 사진이
+   * 걸립니다(같은 강원도 동해안이라 그럴듯하지만, 프랑스 시골 여행에 파리
+   * 사진이 걸리는 경우도 있습니다). 그래서 **제목과 밑줄은 늘 진짜 목적지**를
+   * 적습니다 — 사진은 분위기고, 어디로 가는지는 글자가 말합니다.
+   * 지역까지 맞추려면 구간에 좌표가 있어야 하는데, 직접 쳐서 만든 구간은
+   * `center_lat` 이 비어 있어(재봄) 거리로는 못 고릅니다. */
+  if (!country) return null;
+  const n = await netTimeout(sb.from('cities')
+    .select('image_url,pop_rank,fame,name')
+    .eq('country', country).not('image_url', 'is', null)
+    .order('pop_rank', { ascending: true, nullsFirst: false })
+    .order('fame',     { ascending: true, nullsFirst: false })
+    .order('name').limit(1));
+  return n.data?.[0]?.image_url || null;
 }
 
 /* ── 사진이 없을 때의 히어로 ──────────────────────────────────────────
@@ -6491,7 +6522,7 @@ function mapLinks(o, city){
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
- * 여행 목록(b280). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
+ * 여행 목록(b281). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
  * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
  * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
  * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.
