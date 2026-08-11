@@ -6,14 +6,14 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b276';
-import { $, esc, toast, copyText } from './dom.js?v=b276';
-import { starHtml, paintStars, markRated } from './stars.js?v=b276';
+import { sb } from './db.js?v=b277';
+import { $, esc, toast, copyText } from './dom.js?v=b277';
+import { starHtml, paintStars, markRated } from './stars.js?v=b277';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b276';
-import { loadAdmin } from './admin.js?v=b276';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b276';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b277';
+import { loadAdmin } from './admin.js?v=b277';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b277';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +22,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b276';
+         setEditPlanId } from './trip.js?v=b277';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b276';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b277';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b276';
+         useCities, addCity, search } from './cities.js?v=b277';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b276';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b277';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b276';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b277';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b276';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b277';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -341,12 +341,23 @@ $('notifprefcard').addEventListener('change', async e => {
 let flags = { notice:{ text:'' }, signup:true, readonly:false, features:{} };
 const featOn = k => flags.features?.[k] !== false;
 
-async function loadFlags(){
-  const r = await netTimeout(sb.rpc('public_flags'), 4000);
-  if (r.error || !r.data) return;          /* 조용히 지금 값을 지킵니다 */
-  flags = { ...flags, ...r.data };
-  drawNotice();
-  applyFeatures();
+/* ⚠ **부팅에 두 번 불립니다.** 로그인 화면용으로 한 번(맨 아래 `loadFlags().then`),
+   로그인이 끝나고 또 한 번. 이미 들어와 있는 사람은 둘이 나란히 나갑니다 —
+   재보니 **685ms + 701ms**, 둘 다 첫 화면을 기다리게 하는 자리였습니다.
+   부르는 쪽 둘 다 이유가 있어서 어느 하나를 지우기보다, **돌고 있으면 그 약속을
+   같이 씁니다.** 끝나면 비우므로 나중에 다시 부르면 새로 받아옵니다
+   (관리자가 스위치를 바꾸고 새로고침하는 길이 살아 있어야 합니다). */
+let flagsP = null;
+function loadFlags(){
+  if (flagsP) return flagsP;
+  flagsP = (async () => {
+    const r = await netTimeout(sb.rpc('public_flags'), 4000);
+    if (r.error || !r.data) return;        /* 조용히 지금 값을 지킵니다 */
+    flags = { ...flags, ...r.data };
+    drawNotice();
+    applyFeatures();
+  })().finally(() => { flagsP = null; });
+  return flagsP;
 }
 
 function drawNotice(){
@@ -8644,8 +8655,13 @@ async function render(session){
   $('bell').classList.remove('hide'); $('aibtn').classList.remove('hide');
   /* 빌드 번호는 만든 사람만 봅니다. 앱 안에서는 아무도 자기를 관리자로 못 만듭니다 —
      admins 표에 쓰기 정책이 아예 없어서 SQL 편집기로만 넣을 수 있습니다 (038). */
-  sb.rpc('is_admin').then(r => $('foot').classList.toggle('hide', r.data !== true))
-    .catch(() => {});
+  sb.rpc('is_admin').then(r => {
+    const admin = r.data === true;
+    $('foot').classList.toggle('hide', !admin);
+    /* 점검 줄은 관리자만 봅니다. 보이는 사람에게만 채웁니다 —
+       예전엔 모두의 부팅에서 세 질의가 나갔습니다(위 __selfCheck 주석). */
+    if (admin) window.__selfCheck?.();
+  }).catch(() => {});
   /* 출발 하루 전 알림. 시간이 되면 저절로 도는 장치가 없어서 앱을 열 때 확인합니다.
      여러 번 불러도 한 번만 생깁니다 (032 의 ensure_trip_reminders). */
   sb.rpc('ensure_trip_reminders').then(() => loadNotifs()).catch(() => loadNotifs());
@@ -8681,8 +8697,13 @@ async function render(session){
 /* 자체 점검 세 질의. 개발 중에 보려고 둔 것입니다.
    await 로 걸어두었더니 화면이 이것부터 기다렸습니다 —
    프로필 맨 아래 점검 줄 때문에 앱 전체가 늦게 열리고 있었습니다.
-   결과는 늦게 채워도 아무 상관이 없으므로 붙잡지 않고 보냅니다. */
-(async () => {
+   결과는 늦게 채워도 아무 상관이 없으므로 붙잡지 않고 보냅니다.
+
+   ⚠ **그런데 결과를 적는 `#foot` 은 관리자에게만 보입니다.** 그래서 이 셋은
+   **아무도 안 볼 줄을 채우려고 모든 사람의 부팅마다** 나가고 있었습니다.
+   재보니 부팅 31건 중 3건이 이것입니다. 관리자로 확인된 뒤에만 돌립니다 —
+   `window.__selfCheck` 로 내보내 두고, `is_admin` 이 참일 때 부릅니다. */
+window.__selfCheck = async () => {
   try {
     const q = t => sb.from(t).select('*', { count:'exact', head:true });
     const [co, ci, gr] = await Promise.all([q('countries'), q('cities'), q('transit_grades')]);
@@ -8696,7 +8717,7 @@ async function render(session){
        예전에는 빨간 오류 상자가 화면 맨 아래에 계속 떠 있었습니다. */
     mark(0, false, '실패: ' + (e?.message || e?.code || '알 수 없음'));
   }
-})();
+};
 
 /* 로그인 확인을 무한정 기다리지 않습니다.
    오프라인에서 토큰이 만료돼 있으면 supabase 가 새로 받으러 나가는데,
