@@ -15,7 +15,7 @@ const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
 
 const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
-  './manifest.json', './icons/apple-touch-icon.png', './icons/icon-512.png',
+  './manifest.json', './icons/apple-touch-icon.png', './icons/keyro-512.png', './icons/keyro-icon-orange.svg',
   './privacy.html', './terms.html',
   /* 관리자만 보는 '바뀐 것' 목록. app.js 가 누를 때만 동적으로 받아오므로
      없어도 앱은 멀쩡합니다. 여기 담아두면 오프라인에서도 열립니다. */
@@ -38,7 +38,7 @@ const isCodeUrl = url =>
   url.hostname === 'esm.sh'
   || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
       && /\.(js|css|mjs)$/i.test(url.pathname))
-  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b282) ──────────────
+  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b283) ──────────────
    * 워드마크 '기로'를 Dongle 로 씁니다. 글꼴 조각은 원래 타일과 같은 통에
    * 두었는데(부팅을 막지 않으므로), **로고는 다릅니다** — 400개가 차서
    * 밀려나면 어느 날 갑자기 상단바 글꼴만 바뀝니다. 앱 이름이 흔들리는 것은
@@ -310,8 +310,8 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data?.text() || '' }; }
   e.waitUntil(self.registration.showNotification(d.title || '기로', {
     body: d.body || '',
-    icon: './icons/icon-192.png',
-    badge: './icons/icon-192.png',
+    icon: './icons/keyro-180.png',
+    badge: './icons/keyro-180.png',
     /* 같은 일정에 대한 알림이 두 번 오면 **덮어씁니다**. 폰과 노트북이
        따로 받는 것은 맞지만 한 기기에 두 장이 쌓이면 안 됩니다. */
     tag: d.tag || 't2',

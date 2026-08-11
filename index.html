@@ -10,7 +10,11 @@
      둘 다 없으면 페이지 스크린샷과 <title> 이 그대로 아이콘과 이름이 됩니다. -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<!-- 탭 아이콘. **여기를 안 바꾸면 manifest 만 바꿔도 탭은 옛 아이콘 그대로입니다** —
+     manifest 는 홈 화면에 추가할 때 쓰이고, 탭은 이 줄을 봅니다.
+     SVG 를 먼저 두어 어느 크기에서도 또렷하게, 못 읽는 브라우저는 PNG 로. -->
+<link rel="icon" href="icons/keyro-icon-orange.svg" type="image/svg+xml">
+<link rel="icon" href="icons/keyro-180.png" sizes="180x180" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -66,24 +70,24 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b282">
+<link rel="stylesheet" href="app.css?v=b283">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b282">
-<link rel="modulepreload" href="dom.js?v=b282">
-<link rel="modulepreload" href="db.js?v=b282">
-<link rel="modulepreload" href="calc.js?v=b282">
-<link rel="modulepreload" href="stars.js?v=b282">
-<link rel="modulepreload" href="net.js?v=b282">
-<link rel="modulepreload" href="admin.js?v=b282">
-<link rel="modulepreload" href="ui.js?v=b282">
-<link rel="modulepreload" href="card.js?v=b282">
-<link rel="modulepreload" href="trip.js?v=b282">
-<link rel="modulepreload" href="rate.js?v=b282">
-<link rel="modulepreload" href="cities.js?v=b282">
-<link rel="modulepreload" href="ai.js?v=b282">
+<link rel="modulepreload" href="supabase.js?v=b283">
+<link rel="modulepreload" href="dom.js?v=b283">
+<link rel="modulepreload" href="db.js?v=b283">
+<link rel="modulepreload" href="calc.js?v=b283">
+<link rel="modulepreload" href="stars.js?v=b283">
+<link rel="modulepreload" href="net.js?v=b283">
+<link rel="modulepreload" href="admin.js?v=b283">
+<link rel="modulepreload" href="ui.js?v=b283">
+<link rel="modulepreload" href="card.js?v=b283">
+<link rel="modulepreload" href="trip.js?v=b283">
+<link rel="modulepreload" href="rate.js?v=b283">
+<link rel="modulepreload" href="cities.js?v=b283">
+<link rel="modulepreload" href="ai.js?v=b283">
 </head>
 <body>
 <!-- 흰 화면 막기.
@@ -1315,7 +1319,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b282</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b283</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1783,7 +1787,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b282"></script>
+<script type="module" src="app.js?v=b283"></script>
 </body>
 </html>
 

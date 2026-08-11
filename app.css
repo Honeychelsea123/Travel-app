@@ -149,13 +149,28 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
    그냥 걸어두면 안 됩니다 — Dongle 은 아주 납작해서 1.9배로 키워야 제 크기가
    나오는데, 글꼴이 안 온 날 그 배율이 **앱 글꼴에 걸리면** 상단바 글자가
    터무니없이 커집니다. 오프라인에서 그럴 수 있습니다. */
+/* ⚠ **눈으로 맞추면 틀립니다. 캔버스로 잉크를 재서 넣은 값입니다.**
+   Dongle 700 로 '기로'를 그려 실제 잉크 상자를 쟀습니다(font-size 기준):
+     · 잉크 높이 = **52%**       · 잉크 중심 = 베이스라인 **위 27%**
+     · ascent 85 · descent 60 (합 145) → line-height .72 면 반여백이 **-36.5**
+   여기서 나온 것 둘:
+     1) `align-items:center` 는 **요소 박스**를 맞춥니다. 박스 중심은 위에서 36,
+        잉크 중심은 21.5 — 그래서 마크가 **0.145em 아래**에 있어야 맞습니다.
+        처음에 -0.05em 을 넣었더니 0.095em(약 4px) 어긋나 있었습니다.
+     2) 마크를 0.52em 으로 두면 **잉크와 같은 높이**가 됩니다. 그런데 글자는
+        폭이 있어 시각 무게가 더 큽니다 — 같은 높이면 마크가 작아 보입니다.
+        1.35배(0.70em)로 키웁니다. */
 :root.dongle h1.brand{ font-family:'Dongle', var(--sf);
           font-size:calc(var(--f-2xl) * 1.9); font-weight:700;
-          line-height:.72; letter-spacing:0; gap:.3em;
-          /* 핸드오프 27행: 글리프가 em 상자 위쪽에 몰려 있어 7% 내려 맞춥니다. */
-          padding-top:.07em; }
-:root.dongle h1.brand .mark{ width:.52em; height:.52em;
-          transform:translateY(-.05em); }
+          line-height:.72; letter-spacing:0; gap:.26em; padding-top:.07em; }
+:root.dongle h1.brand .mark{ width:.70em; height:.70em;
+          /* -0.27em 은 **화면에서 재서 나온 값**입니다. 계산으로 -0.145em 을
+             넣었더니 8.77px 이 남았습니다 — 식이 틀렸던 것입니다(요소 박스
+             top 을 줄 상자 top 으로 봤는데 브라우저는 글꼴 상자를 줍니다).
+             베이스라인을 **직접** 재서(vertical-align:baseline 인 0폭 조각의
+             바닥) 잉크 중심과 맞췄습니다. 크기를 바꿔도 이 값은 그대로입니다 —
+             `align-items:center` 라 마크 박스 중심 위치는 크기와 무관합니다. */
+          transform:translateY(-.27em); }
 /* ── `.memo` = 설명 한 줄. 계단의 제일 아랫칸입니다 ──────────────────
  * 카드 제목 17/700 › 날짜 15/700 › 항목 15/600 › **설명 13/400 회색**.
  *
