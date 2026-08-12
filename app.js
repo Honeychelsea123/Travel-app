@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b313';
+import { sb } from './db.js?v=b314';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b313';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b313';
-import { starHtml, paintStars, markRated } from './stars.js?v=b313';
+import { $, esc, toast, copyText } from './dom.js?v=b314';
+import { starHtml, paintStars, markRated } from './stars.js?v=b314';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b313';
-import { loadAdmin } from './admin.js?v=b313';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b314';
+import { loadAdmin } from './admin.js?v=b314';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b313';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b313';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b313';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b314';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b314';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,21 +46,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b313';
+         setEditPlanId } from './trip.js?v=b314';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b313';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b314';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b313';
+         useCities, addCity, search } from './cities.js?v=b314';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b313';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b314';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b313';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b314';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b313';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b314';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3622,7 +3622,15 @@ async function openPersona(){
     return;
   }
   /* card.js 는 도시 목록을 모릅니다 — 넣어줍니다(위 loadCities 가 채워둡니다). */
-  drawPersona(personaStats(data || [], { cities, continentOf, countryName }));
+  const st = personaStats(data || [], { cities, continentOf, countryName });
+  /* 카드 지도에 칠할 나라 코드. `personaStats` 는 **개수만** 셉니다 —
+     세는 것과 칠하는 것은 다른 일이라 거기 넣지 않았습니다.
+     별점을 매긴 도시의 나라만 씁니다(가보고 싶은 곳은 아직 안 간 곳입니다). */
+  st.codes = [...new Set((data || [])
+    .filter(r => r.stars != null)
+    .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
+    .filter(Boolean))];
+  drawPersona(st);
 }
 
 function closePersona(fromPop){
@@ -3698,11 +3706,33 @@ async function drawPersona(s){
      글자 덩어리라 아무도 안 올렸습니다. 이 앱이 가진 제일 좋은 자산은
      도시 사진인데 카드에서 안 쓰고 있었습니다.
      아무 사진이 아니라 **그 사람이 제일 높게 매긴 곳**이라야 뜻이 있습니다. */
-  const photo = s.best.map(b => (cities || []).find(c => c.id === b.id || c.name === b.name))
-                      .find(c => c?.image_url)?.image_url
-             || (cities || []).find(c => c.image_url)?.image_url || '';
+  /* ── 사진 대신 지도 ──────────────────────────────────────────────
+   * ⚠ **사진 배경을 걷었습니다(b314).** 도시 사진 469장은 출처가 제각각이라
+   *   어떤 카드는 좋고 어떤 카드는 흐렸습니다. 듀오톤으로 그 편차를 덮으려다
+   *   세피아가 됐고(b305 → b313), 채도만 빼도 편차는 남았습니다.
+   *   **품질을 못 고르면 안 쓰는 것이 낫습니다.**
+   *
+   * 대신 이 앱에만 있는 것을 씁니다 — **다녀온 나라가 칠해진 세계지도.**
+   * 진짜 자료라 사람마다 다르고, 그리는 것이라 **품질이 늘 같습니다.**
+   *
+   * ⚠ 화면에 그려진 `#worldland` 를 그대로 쓰지 않습니다. 지도 화면을
+   *   한 번도 안 열었으면 `been` 표시가 없어 텅 빈 지도가 나옵니다.
+   *   여기서 사본을 떠서 직접 칠합니다. */
+  const gone = new Set(s.codes || []);
+  let art = '';
+  const src = document.getElementById('worldland');
+  if (src && gone.size){
+    const holder = document.createElement('div');
+    holder.innerHTML = src.innerHTML;
+    holder.querySelectorAll('path').forEach(pa =>
+      pa.setAttribute('class', gone.has(pa.dataset.c) ? 'been' : ''));
+    art = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
+             <style>path{fill:rgba(255,255,255,.13)} path.been{fill:#fff}</style>
+             ${holder.innerHTML}</svg>`;
+  }
   const spec = {
-    g: p.g, icon: PERSONA_ICON[p.ic] || '', photo,
+    g: p.g, icon: PERSONA_ICON[p.ic] || '',
+    art, artRatio: 387 / 1000,
     /* 훑는 눈에 남는 것은 큰 숫자 하나입니다. 나라 수를 주인공으로. */
     big: String(s.countries), bigUnit: '개국',
     sub: '여행 성향',

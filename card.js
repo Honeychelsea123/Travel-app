@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b313';
+import { $, esc, toast } from './dom.js?v=b314';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -226,10 +226,19 @@ export async function cardImage(spec, mode = 'square'){
    * 사진이 없으면(도시 사진이 아직 없는 곳) 예전 그러데이션으로 돌아갑니다 —
    * 카드가 안 나오는 것보다 낫습니다. */
   const [c1, c2] = GRAD[spec.g] || GRAD.even;
+  /* ── 바탕 ────────────────────────────────────────────────────────
+   * ⚠ **두 색 사선 그러데이션을 버렸습니다(b314).** 배너처럼 보였고,
+   *   특히 금색(size)에서 촌스러웠습니다. 색 두 개가 화면을 가득 채우면
+   *   그 자체가 볼거리인 줄 알지만 실은 아무것도 아닙니다.
+   * 깊은 잉크 위에 유형 색을 **한쪽 구석에서 옅게 번지게** 합니다.
+   * 어두운 바탕은 흰 글자와 지도를 그대로 살려주고, 번지는 색 하나로
+   * 유형이 갈립니다. 색은 배경이 아니라 **악센트**여야 합니다. */
   const paintGrad = () => {
-    const grd = g.createLinearGradient(0, 0, W * .45, H);
-    grd.addColorStop(0, c1); grd.addColorStop(1, c2);
-    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    g.fillStyle = '#0E1116'; g.fillRect(0, 0, W, H);
+    const r = g.createRadialGradient(W * .12, H * .08, 0, W * .12, H * .08, H * .95);
+    r.addColorStop(0, c2); r.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = .42; g.fillStyle = r; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+    void c1;
   };
 
   let photoOk = false;
