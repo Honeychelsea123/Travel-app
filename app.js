@@ -6,14 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b287';
-import { $, esc, toast, copyText } from './dom.js?v=b287';
-import { starHtml, paintStars, markRated } from './stars.js?v=b287';
+import { sb } from './db.js?v=b288';
+import { $, esc, toast, copyText } from './dom.js?v=b288';
+import { starHtml, paintStars, markRated } from './stars.js?v=b288';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b287';
-import { loadAdmin } from './admin.js?v=b287';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b287';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b288';
+import { loadAdmin } from './admin.js?v=b288';
+/* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
+   돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
+import { recommend, tasteOf, scoreCity } from './rec.js?v=b288';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b288';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -22,21 +25,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b287';
+         setEditPlanId } from './trip.js?v=b288';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b287';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b288';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b287';
+         useCities, addCity, search } from './cities.js?v=b288';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b287';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b288';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b287';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b288';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b287';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b288';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -94,7 +97,7 @@ function putHtml(id, html){
 }
 const dropHtml = id => { delete lastHtml[id]; };
 
-/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b287).
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b288).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
    부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
    어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
@@ -772,7 +775,10 @@ async function refreshCities(){
      있을 수 있어 한 칸 따로 둡니다 — 같이 묶으면 이게 없다는 이유로
      fame 까지 떨어져 나가서 성향 카드가 조용히 망가집니다. */
   let cs = await netTimeout(sb.from('cities')
-    .select(BASE + ',image_url,summary,summary_url,fame,pop_rank').order('name'));
+    /* `tags` 는 추천 계산이 씁니다(rec.js). **제일 앞 시도에만 넣습니다** —
+       아직 db/068 을 안 돌린 곳에서는 이 줄이 실패하고 아래 단계별 후퇴가
+       tags 없이 받아옵니다. 그러면 추천만 조용히 비고 앱은 그대로 돕니다. */
+    .select(BASE + ',image_url,summary,summary_url,fame,pop_rank,tags').order('name'));
   if (cs.error && !isOffline(cs.error)) cs = await sb.from('cities')
     .select(BASE + ',image_url,summary,summary_url,fame').order('name');
   /* 연결 문제로 실패한 것이면 아래 단계별 후퇴를 돌 이유가 없습니다.
@@ -2528,7 +2534,7 @@ async function tripPhoto(t){
 
   /* ── 그래도 없으면 **같은 나라의 대표 도시** 사진을 빌립니다 ──────────
    * '삼척'처럼 우리 목록에 없는 곳으로 만든 여행은 여기까지 옵니다.
-   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b287).
+   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b288).
    * 도시는 몰라도 **나라는 압니다.** 그 나라에서 한 곳을 빌려 옵니다.
    *
    * 고르는 순서: `pop_rank`(나라마다 한 곳씩 매겨둔 대표) → 없으면
@@ -6569,7 +6575,7 @@ function mapLinks(o, city){
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
- * 여행 목록(b287). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
+ * 여행 목록(b288). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
  * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
  * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
  * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.
@@ -6613,6 +6619,75 @@ window.__designCheck = () => {
   }
   if (out.length) console.table(out); else console.log('디자인 규칙 위반 없음 ✅');
   return { 위반:out.length, 항목:out };
+};
+
+/* ── 추천 검사 ───────────────────────────────────────────────────────
+ * 점수식은 **틀려도 화면에서는 그럴듯해 보입니다** — 도시 이름이 나오니까요.
+ * 실제로 만들면서 두 번 틀렸고 둘 다 눈으로는 못 잡았습니다:
+ *   1) 기저율로 안 나눠서 `도시`(48%에 붙음)가 취향 1등이 됐습니다
+ *   2) 싫어한 도시가 5곳뿐인데 그대로 반영해 `미식`이 "내 30% vs 전체 25%"
+ *      인데도 음수로 나왔습니다
+ * 그래서 **지어낸 사람**으로 돌려봅니다. 실제 자료로만 보면 내 취향 하나만
+ * 확인하게 되고, 그건 표본 하나입니다. */
+window.__recCheck = () => {
+  const T = [];
+  const t = (name, ok, detail) => T.push({ 검사:name, 결과: ok ? 'OK' : '틀림', detail });
+  /* 태그가 다른 가짜 도시들 */
+  const mk = (id, tags, fame = 2) =>
+    ({ id, name:id, country:id.slice(0, 2), tags, fame, image_url:'x' });
+  const world = [
+    mk('a1', ['해변']), mk('a2', ['해변']), mk('a3', ['해변']), mk('a4', ['해변']),
+    mk('b1', ['미술']), mk('b2', ['미술']),
+    mk('c1', ['도시']), mk('c2', ['도시']), mk('c3', ['도시']), mk('c4', ['도시']),
+    mk('d1', ['자연']), mk('d2', ['자연']),
+  ];
+  /* ① 흔한 태그가 취향으로 둔갑하지 않는가 — 위 1) 을 막는 검사 */
+  {
+    /* 도시(4곳)와 미술(2곳) 을 똑같이 하나씩 좋아했다. 비율로 보면 미술이 세다. */
+    const r = [{ city_id:'c1', stars:5 }, { city_id:'b1', stars:5 }];
+    const ts = tasteOf(world, r);
+    t('흔한 태그가 취향으로 둔갑하지 않는다', ts['미술'] > ts['도시'],
+      `미술 ${ts['미술'].toFixed(3)} vs 도시 ${ts['도시'].toFixed(3)}`);
+  }
+  /* ② 싫어함이 적을 때 과하게 반영되지 않는가 — 위 2) 를 막는 검사 */
+  {
+    const many = [...Array(15)].map((_, i) => ({ city_id:'a' + (i % 4 + 1), stars:5 }));
+    const one  = [...many, { city_id:'b1', stars:1 }];
+    const A = tasteOf(world, many), B = tasteOf(world, one);
+    t('싫어함 한 건이 취향을 뒤집지 못한다',
+      Math.abs(B['해변'] - A['해변']) < 0.25,
+      `해변 ${A['해변'].toFixed(3)} → ${B['해변'].toFixed(3)}`);
+  }
+  /* ③ 아무것도 안 매긴 사람에게 터지지 않는가 */
+  {
+    const r = recommend(world, [], {});
+    t('별점이 하나도 없어도 안 터진다', Array.isArray(r.main), `${r.main.length}곳`);
+  }
+  /* ④ 이미 매긴 곳·다녀온 곳이 추천에 안 나오는가 */
+  {
+    const r = recommend(world, [{ city_id:'a1', stars:5 }], { visited:new Set(['a2']) });
+    const ids = [...r.main, ...r.other].map(x => x.city.id);
+    t('매긴 곳·다녀온 곳은 빠진다', !ids.includes('a1') && !ids.includes('a2'), ids.join(','));
+  }
+  /* ⑤ 같은 나라가 두 번 나오지 않는가 */
+  {
+    const same = [...Array(6)].map((_, i) => mk('kr' + i, ['미술']));
+    const r = recommend([...world, ...same], [{ city_id:'b1', stars:5 }], {});
+    const cs = [...r.main, ...r.other].map(x => x.city.country);
+    t('같은 나라가 두 번 안 나온다', cs.length === new Set(cs).size, cs.join(','));
+  }
+  /* ⑥ 태그가 없는 도시는 점수를 못 낸다(그대로 두면 0 점으로 섞입니다) */
+  t('태그 없는 도시는 점수가 없다', scoreCity({ tags:[] }, {}) === null, '');
+  /* ⑦ 이유가 붙는가 — 이유 없는 추천은 무작위와 구별되지 않습니다 */
+  {
+    const r = recommend(world, [{ city_id:'b1', stars:5 }], {});
+    t('왜 나왔는지가 붙는다', r.main.every(x => Array.isArray(x.why)),
+      r.main[0] ? r.main[0].why.join('·') : '-');
+  }
+  const bad = T.filter(x => x.결과 !== 'OK');
+  console.table(T);
+  bad.forEach(x => console.error('✗ ' + x.검사 + ' — ' + x.detail));
+  return { 전체:T.length, 틀림:bad.length };
 };
 
 window.__mapCheck = () => {
