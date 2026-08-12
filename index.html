@@ -108,25 +108,25 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b298">
+<link rel="stylesheet" href="app.css?v=b299">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b298">
-<link rel="modulepreload" href="dom.js?v=b298">
-<link rel="modulepreload" href="db.js?v=b298">
-<link rel="modulepreload" href="calc.js?v=b298">
-<link rel="modulepreload" href="rec.js?v=b298">
-<link rel="modulepreload" href="stars.js?v=b298">
-<link rel="modulepreload" href="net.js?v=b298">
-<link rel="modulepreload" href="admin.js?v=b298">
-<link rel="modulepreload" href="ui.js?v=b298">
-<link rel="modulepreload" href="card.js?v=b298">
-<link rel="modulepreload" href="trip.js?v=b298">
-<link rel="modulepreload" href="rate.js?v=b298">
-<link rel="modulepreload" href="cities.js?v=b298">
-<link rel="modulepreload" href="ai.js?v=b298">
+<link rel="modulepreload" href="supabase.js?v=b299">
+<link rel="modulepreload" href="dom.js?v=b299">
+<link rel="modulepreload" href="db.js?v=b299">
+<link rel="modulepreload" href="calc.js?v=b299">
+<link rel="modulepreload" href="rec.js?v=b299">
+<link rel="modulepreload" href="stars.js?v=b299">
+<link rel="modulepreload" href="net.js?v=b299">
+<link rel="modulepreload" href="admin.js?v=b299">
+<link rel="modulepreload" href="ui.js?v=b299">
+<link rel="modulepreload" href="card.js?v=b299">
+<link rel="modulepreload" href="trip.js?v=b299">
+<link rel="modulepreload" href="rate.js?v=b299">
+<link rel="modulepreload" href="cities.js?v=b299">
+<link rel="modulepreload" href="ai.js?v=b299">
 </head>
 <body>
 <!-- ── 스플래시(런치 스크린) ────────────────────────────────────────
@@ -149,7 +149,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
      이어붙인 티가 안 납니다. 바꿀 때 같이 바꾸십시오. -->
 <div id="splash" style="position:fixed; inset:0; z-index:9999; background:#fff;
      display:flex; flex-direction:column; align-items:center; justify-content:center;
-     gap:18px; transition:opacity .28s ease; -webkit-user-select:none; user-select:none">
+     gap:18px; transition:opacity .38s ease; -webkit-user-select:none; user-select:none">
   <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">
     <rect width="96" height="96" rx="22.4" fill="#F25E26"/>
     <g transform="translate(9.6,9.6) scale(0.8)" fill="#fff">
@@ -187,12 +187,28 @@ document.fonts?.load('700 1em Dongle').then(() => {
     document.fonts.ready.then(put).catch(function(){});
   })();
 
+  /* ── 얼마나 오래 보여줄 것인가 ────────────────────────────────────
+     처음에는 app.js 가 화면을 정하자마자 걷었습니다. 그런데 캐시에서 여는
+     날은 그게 0.2~0.4초라 **글자를 읽기 전에 사라졌습니다.**
+     여기서 재는 것은 "앱이 준비됐나"인데, 사람이 필요한 것은 "읽을 시간"
+     입니다. 둘 중 **늦은 쪽**을 기다립니다.
+       앱이 느린 날 → 앱을 기다립니다(그때는 이미 오래 보였습니다)
+       앱이 빠른 날 → 1.1초를 채웁니다
+     1.1초는 '기록이 길이 되다' 를 한 번 읽는 시간입니다. 더 늘리면
+     빠른 앱을 일부러 느리게 만드는 것이 됩니다.
+     이 값은 아래 3.2초(스스로 걷히는 시간)보다 반드시 작아야 합니다. */
+  var SPLASH_T0 = new Date().getTime(), SPLASH_MIN = 1100;
+
   /* 스스로 걷히는 길. app.js 가 부르는 hideSplash 와 같은 일을 합니다. */
   window.__hideSplash = function(){
     var s = document.getElementById('splash');
     if (!s) return;
+    var left = SPLASH_MIN - (new Date().getTime() - SPLASH_T0);
+    if (left > 0){ setTimeout(window.__hideSplash, left); return; }
     s.style.opacity = '0';
-    setTimeout(function(){ s.remove(); }, 300);
+    /* 위 style 의 transition(.38s)보다 넉넉히 뒤에 지웁니다.
+       먼저 지우면 사라지는 것이 아니라 툭 끊깁니다. */
+    setTimeout(function(){ s.remove(); }, 420);
   };
   setTimeout(window.__hideSplash, 3200);
 </script>
@@ -1440,7 +1456,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b298</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b299</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1908,7 +1924,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b298"></script>
+<script type="module" src="app.js?v=b299"></script>
 </body>
 </html>
 
