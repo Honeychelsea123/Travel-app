@@ -645,7 +645,7 @@ Deno.serve(async (req) => {
       ['plans', '[일정]'], ['expenses', '[최근 지출]'], ['legs', '[구간]'],
       ['trip', '[여행]·[오늘]'], ['members', '[일행]'], ['bookings', '[예약]'],
       ['packing', '[준비물]'], ['ratings', '[높게 준 도시]'], ['prefs', '[취향]'],
-      ['placerates', '[높게 준 장소]'], ['candidates', '[담아둔 곳]'],
+      ['placerates', '[높게 준 장소]'], ['candidates', '[추천에서 빼야 할 곳]'],
     ];
     // 'general' 은 자료가 아니라 "내가 원래 알던 것"이라 짝이 없습니다.
     const SRC_ALL = [...SRC_MAP.map(([k]) => k), 'general'];
@@ -691,6 +691,10 @@ Deno.serve(async (req) => {
     // 초안을 짤 때 며칠짜리인지 알아야 해서 바깥으로 뺍니다.
     // deno-lint-ignore no-explicit-any
     let tripRow: any = null;
+    /* 담아둔 곳. **답을 만든 뒤 카드에서 걸러내야 해서** 바깥에 둡니다
+       (아래 dropDup 참고 — 프롬프트가 안 지키는 것을 코드가 지킵니다). */
+    // deno-lint-ignore no-explicit-any
+    let candList: any[] = [];
     if (trip_id) {
       // 넷을 차례로 물었습니다. 넷 다 trip_id 하나만 있으면 되는데도
       // 앞의 답을 기다렸습니다 — 오갈 때마다 붙는 시간이 그대로 쌓입니다.
@@ -825,9 +829,15 @@ Deno.serve(async (req) => {
           (() => {
             // deno-lint-ignore no-explicit-any
             const cd = (candRes.data ?? []) as any[];
+            candList = cd;
+            /* ⚠ 처음엔 '[담아둔 곳] … 다시 권하지 마라' 로 적었는데 **모델이
+               목록을 보고 "여기서 고르라"로 읽어 그중 셋을 그대로 추천**했습니다.
+               제목부터 "빼라"로 바꾸고, 목록 **앞뒤로** 못박습니다. */
             return cd.length
-              ? '[담아둔 곳] 가고 싶다고 이미 골라둔 곳이다. **다시 권하지 마라.**\n' +
-                cd.map((c) => `- ${c.title}${c.category ? ` (${c.category})` : ''}`).join('\n')
+              ? '[추천에서 빼야 할 곳] 아래는 **이미 담아둔 곳**이다.\n' +
+                '이미 가기로 정한 곳이라 **답에 절대 넣지 마라. 여기서 고르는 것이 아니다.**\n' +
+                cd.map((c) => `- ${c.title}${c.category ? ` (${c.category})` : ''}`).join('\n') +
+                '\n(위 목록은 제외 대상이다. 추천 후보가 아니다.)'
               : '';
           })(),
         ].filter((s) => s !== '').join('\n');
@@ -999,9 +1009,9 @@ Deno.serve(async (req) => {
       '- **무엇을 할지**를 정할 때는 [높게 준 장소]를 본다. 어디를 좋아하는지와',
       '  무엇을 하기를 좋아하는지는 다르다 — 도시 별점으로는 후자를 알 수 없다.',
       '  한줄평이 붙어 있으면 그 말을 점수보다 무겁게 본다. 본인이 직접 쓴 것이다.',
-      '- **[담아둔 곳]에 이미 있는 곳은 다시 권하지 않는다.** 가고 싶다고 이미',
-      '  정해둔 것이라, 또 권하면 아무것도 모르고 말하는 것으로 보인다.',
-      '  대신 그 곳들과 어울리는 다른 곳이나 동선을 말한다.',
+      '- **[추천에서 빼야 할 곳] 은 제외 목록이다. 거기 있는 곳은 답에 넣지 마라.**',
+      '  이미 가기로 정한 곳이라, 또 권하면 아무것도 모르고 말하는 것으로 보인다.',
+      '  그 목록에서 고르는 것이 아니다. 대신 그 곳들과 어울리는 **다른** 곳이나 동선을 말한다.',
       '',
       shots.length
         ? `- 사진이 ${shots.length}장 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n` +
@@ -1361,9 +1371,28 @@ Deno.serve(async (req) => {
        뿐 근거가 없고, 좌표도 없습니다. 우리 것만 남깁니다. */
     const actionsOut = actions.filter((a) => !mapNames.has(a.title));
 
+    /* ⚠ **"다시 권하지 마라"를 프롬프트로 시켰더니 정반대로 했습니다.**
+       실제로 물어봤습니다 — "로마에서 뭐 하면 좋을까?" 에 sources 로
+       `candidates` 를 인용해놓고, **담아둔 네 곳 중 셋을 그대로 추천**했습니다.
+       목록을 보여줬더니 "여기서 고르라"로 읽은 것입니다.
+
+       **지켜야 하는 규칙은 프롬프트가 아니라 코드에 둡니다.** 프롬프트는
+       부탁이고 코드는 보장입니다. 카드(담기·일정 넣기)는 여기서 걸러냅니다 —
+       이미 담아둔 곳이 카드로 또 나오면 누르는 순간 중복이 생깁니다.
+       (글로 쓴 답까지는 못 막습니다. 그건 프롬프트로 한 번 더 못박습니다.) */
+    const already = new Set(
+      // deno-lint-ignore no-explicit-any
+      ((candList ?? []) as any[]).map((c) => String(c.title || '').trim()).filter(Boolean));
+    const same = (a: string, b: string) =>
+      a === b || a.includes(b) || b.includes(a);   /* '판테온' 과 '아르만도 알 판테온' */
+    const dropDup = (name: string) =>
+      ![...already].some((c) => same(String(name || '').trim(), c));
+    const placesOut = allPlaces.filter((p) => dropDup(p.name));
+    const actsOut = actionsOut.filter((a) => dropDup(a.title));
+
     return json({
       reply: String(out.reply ?? raw).slice(0, 4000),
-      places: allPlaces, actions: actionsOut, sources,
+      places: placesOut, actions: actsOut, sources,
       // 어디서 읽어온 것인지 링크째 돌려줍니다. 눌러서 직접 확인할 수 있어야
       // "검색해서 답했다"는 말이 확인 가능한 말이 됩니다.
       web: (hits ?? []).map((h) => ({ title: h.title, link: h.link })),
