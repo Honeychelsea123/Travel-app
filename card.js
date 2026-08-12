@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b312';
+import { $, esc, toast } from './dom.js?v=b313';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -39,10 +39,6 @@ const GRAD = {
   speed: ['#1f6f7a', '#2f9aa8'],      /* 리포트 · 속도 — 청록 */
   even:  ['#4a5568', '#6b7688'],      /* 리포트 · 기본 — 무채색 */
 };
-/* 듀오톤의 어두운 쪽. 검정이 아니라 **살짝 푸른 잉크**입니다 —
-   순검정으로 깔면 사진이 죽은 듯 납작해지고, 흰 글자와의 대비도
-   너무 세서 눈이 아픕니다. 밝은 쪽은 그 카드의 색(c2)을 씁니다. */
-const DUO_INK = '#141821';
 const cssGrad = g => `linear-gradient(160deg,${(GRAD[g] || GRAD.even).join(',')})`;
 export const PERSONA_BG = Object.fromEntries(Object.keys(GRAD).map(k => [k, cssGrad(k)]));
 
@@ -257,18 +253,21 @@ export async function cardImage(spec, mode = 'square'){
        *   · 흰 글자 대비가 늘 확보됩니다(밝은 하늘 위에서 글자가 묻히던 것)
        * 좋은 사진이 필요한 게 아니라 **같은 처리**가 필요합니다.
        *
-       * 캔버스 합성으로 합니다 — 픽셀을 하나씩 만지면 1080×1350 에서
-       * 눈에 띄게 느립니다(재봄).
-       *   1) `saturation` 으로 색을 빼서 흑백을 만들고
-       *   2) `lighten` 으로 어두운 쪽 바닥을 잉크색으로 올리고
-       *   3) `multiply` 로 밝은 쪽을 카드 색으로 눌러 물들입니다 */
+       * ⚠ **완전한 듀오톤으로 갔다가 물렸습니다(b305 → b313).**
+       *   밝은 쪽을 유형 색(size 는 금색 #d4af37)으로 물들였더니
+       *   **세피아 필터**가 됐습니다 — 대구 사진이 거의 안 보이고 오래된
+       *   사진 앱처럼 읽혔습니다. 금색은 중간 밝기라 사진을 뭉개기만 하고
+       *   대비를 못 만듭니다.
+       *
+       * 지금은 **채도만 절반 뺍니다.** 화질 편차를 누르는 효과는 그대로면서
+       * 사진이 사진으로 보입니다. 유형별 색은 카드를 통째로 물들이는 대신
+       * 큰 숫자에만 남깁니다 — 그래야 유형도 갈리고 사진도 삽니다.
+       * 캔버스 합성으로 합니다(픽셀을 하나씩 만지면 1080×1350 에서 느립니다). */
+      g.globalAlpha = .5;
       g.globalCompositeOperation = 'saturation';
       g.fillStyle = '#808080'; g.fillRect(0, 0, W, H);
-      g.globalCompositeOperation = 'lighten';
-      g.fillStyle = DUO_INK;  g.fillRect(0, 0, W, H);
-      g.globalCompositeOperation = 'multiply';
-      g.fillStyle = c2;       g.fillRect(0, 0, W, H);
       g.globalCompositeOperation = 'source-over';
+      g.globalAlpha = 1;
       /* **글자가 읽히려면 사진을 눌러야 합니다.** 위는 살짝, 아래는 깊게 —
          글자가 아래쪽에 모여 있고 위쪽은 사진을 보여주는 자리입니다. */
       /* **처음 값으로는 글자가 사진에 묻혔습니다.** 방콕 사진으로 그려보니
@@ -282,8 +281,11 @@ export async function cardImage(spec, mode = 'square'){
       sc.addColorStop(.78, 'rgba(0,0,0,.84)');
       sc.addColorStop(1,   'rgba(0,0,0,.94)');
       g.fillStyle = sc; g.fillRect(0, 0, W, H);
-      /* 그 도시의 색을 옅게 덮어 카드마다 인상이 갈리게 합니다. */
-      g.globalAlpha = .18; g.fillStyle = c1; g.fillRect(0, 0, W, H); g.globalAlpha = 1;
+      /* ⚠ **유형 색을 카드 전체에 덮던 것을 걷었습니다.**
+         .18 이면 옅어 보이지만, 채도를 뺀 사진 위에 얹히면 화면 전체가
+         그 색으로 물듭니다 — 세피아가 된 원인의 절반이 이것이었습니다.
+         카드마다 인상을 가르는 일은 **사진**이 합니다. 사진이 서로
+         다른데 색까지 덮을 이유가 없습니다. */
       photoOk = true;
     }
   }
@@ -400,12 +402,13 @@ export async function cardImage(spec, mode = 'square'){
      배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
      폰 화면에서 9pt 도 안 되는데, 그걸 흐리게까지 하면 **읽어서 칠 수가 없습니다.**
      읽으라고 넣은 글자입니다. 광고처럼 안 보이는 선에서 최대한 또렷하게. */
-  const link = appUrlText();
-  if (link){
-    g.font = F(500, 28); g.globalAlpha = .78;
-    /* 같은 줄, 이름 오른쪽에. 가운뎃점으로 갈라 한 서명처럼 보이게 합니다. */
-    g.fillText('· ' + link, cx + nameW + 14, H - 62); g.globalAlpha = 1;
-  }
+  /* ⚠ **주소를 뺐습니다(b313).** 찾아올 길을 남긴다는 취지는 맞았는데,
+     지금 주소가 `honeychelsea123.github.io/Travel-app` 입니다. 인스타에
+     올리는 카드에 남의 깃허브 경로가 박히면 그 한 줄이 카드 전체를 개인
+     습작으로 만듭니다. 없느니만 못합니다.
+     도메인을 사면 되살리십시오 — `appUrlText()` 는 그대로 두었고 여기
+     네 줄이면 됩니다. `keyro.app` 정도면 서명으로 읽힙니다. */
+  void nameW;
   g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
 
   return { blob: await new Promise(r => cv.toBlob(r, 'image/png')), fontOk: ok };
@@ -824,14 +827,17 @@ if (typeof window !== 'undefined') window.__drawCheck = async () => {
     const a = await 그리기(base);
     const m = [];
     if (!a.size) m.push('빈 그림이 나옴');
-    /* 주소가 안 그려지면 대비가 빈 여백과 같아집니다. */
-    const 주소 = 대비(a.g, a.W, a.H - 70, 26);
+    /* ⚠ **'주소가 그림 안에 있는가' 를 '이름이 있는가' 로 바꿨습니다(b313).**
+       주소를 일부러 뺐는데(위 서명 자리 참고) 검사는 그대로 두면, 매번
+       걸리는 것을 무시하게 되고 그러면 진짜가 섞여도 안 보입니다.
+       규칙이 화면보다 옛것이면 규칙이 아니라 소음입니다.
+       도메인을 사서 주소를 되살리면 여기도 같이 되살리십시오. */
+    const 이름 = 대비(a.g, a.W, a.H - 70, 26);
     const 여백 = 대비(a.g, a.W, a.H - 26, 20);
-    if (주소 < 여백 + 25)
-      m.push(`주소가 그림에 안 보임 (대비 ${Math.round(주소)} · 여백 ${Math.round(여백)})`);
-    if (!appUrlText()) m.push('주소 자체가 비어 있음');
-    bad('공유된 그림만 보고 찾아올 수 있는가 (주소가 그림 안에)', m);
-  } catch (e){ bad('공유된 그림만 보고 찾아올 수 있는가', ['터짐: ' + e.message]); }
+    if (이름 < 여백 + 25)
+      m.push(`이름(기로)이 그림에 안 보임 (대비 ${Math.round(이름)} · 여백 ${Math.round(여백)})`);
+    bad('공유된 그림에 이름이 남는가', m);
+  } catch (e){ bad('공유된 그림에 이름이 남는가', ['터짐: ' + e.message]); }
 
   try {
     const m = [];
