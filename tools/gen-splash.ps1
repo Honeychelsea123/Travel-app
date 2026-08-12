@@ -23,6 +23,8 @@ $pfc.AddFontFile((Join-Path $fonts "Dongle-Bold.ttf"))
 $pfc.AddFontFile((Join-Path $fonts "Pretendard-Regular.otf"))
 foreach ($f in $pfc.Families) { Write-Host ("글꼴 실림: " + $f.Name) }
 
+$brandCol = [System.Drawing.ColorTranslator]::FromHtml("#F25E26")
+$brBrand  = New-Object System.Drawing.SolidBrush($brandCol)
 $mark = [System.Drawing.Image]::FromFile((Join-Path $root "icons\keyro-512.png"))
 
 # device-width, device-height, dpr, 기기 이름
@@ -72,7 +74,53 @@ foreach ($d in $devices) {
   $total = $markPx + $gap + $wmBox + $gap + $tagBox
   $y = ($h - $total) / 2
 
-  # ── 마크는 **둥글게 잘라서** 넣습니다 ────────────────────────────
+  # ── 마크도 **파일이 아니라 같은 경로**로 그립니다 ────────────────
+  # index.html 의 SVG 와 **한 글자도 다르지 않은 좌표**를 씁니다:
+  #   <rect width=96 height=96 rx=22.4 fill=#F25E26>
+  #   <g transform="translate(9.6,9.6) scale(0.8)" fill=#fff> 화살표 둘 </g>
+  # 전에는 icons/keyro-512.png 를 얹었는데, 그 파일은 b301 에서 정사각형으로
+  # 다시 구운 것이라 화면의 SVG 와 미세하게 달랐고, 홈 화면 앱에서 마크만
+  # 살짝 깜빡였습니다. 워드마크에 한 것과 같은 처방입니다 —
+  # **두 곳이 같은 것을 그리려면 같은 좌표에서 나와야 합니다.**
+  # SVG 의 Q(2차)는 GDI+ 에 없어서 3차로 옮겨 적었습니다(제어점 2/3 규칙).
+  $k  = $markPx / 96.0
+  $mx0 = [int](($w - $markPx)/2)
+  $T = { param($px,$py) New-Object System.Drawing.PointF(
+          [single]($mx0 + $k*(9.6 + 0.8*$px)), [single]($y + $k*(9.6 + 0.8*$py))) }
+
+  $tile = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $rr2 = [single]($markPx * 22.4 / 96 * 2)
+  $tile.AddArc([single]$mx0,                  [single]$y,                  $rr2,$rr2,180,90)
+  $tile.AddArc([single]($mx0+$markPx-$rr2),   [single]$y,                  $rr2,$rr2,270,90)
+  $tile.AddArc([single]($mx0+$markPx-$rr2),   [single]($y+$markPx-$rr2),   $rr2,$rr2,0,90)
+  $tile.AddArc([single]$mx0,                  [single]($y+$markPx-$rr2),   $rr2,$rr2,90,90)
+  $tile.CloseFigure()
+  $g.FillPath($brBrand, $tile)
+
+  $wht = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
+  foreach ($arrow in @(
+    @{ pts = @(@(18,22),@(62,22),@(76,33),@(62,44),@(18,44));
+       c   = @(@(14.667,44),@(13,40.333),@(13,33), @(13,25.667),@(14.667,22),@(18,22)) },
+    @{ pts = @(@(78,52),@(34,52),@(20,63),@(34,74),@(78,74));
+       c   = @(@(81.333,74),@(83,70.333),@(83,63), @(83,55.667),@(81.333,52),@(78,52)) })) {
+    $gp = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $p = $arrow.pts
+    for ($j=0; $j -lt $p.Length-1; $j++) {
+      $gp.AddLine((& $T $p[$j][0] $p[$j][1]), (& $T $p[$j+1][0] $p[$j+1][1]))
+    }
+    $c = $arrow.c
+    $gp.AddBezier((& $T $p[$p.Length-1][0] $p[$p.Length-1][1]),
+                  (& $T $c[0][0] $c[0][1]), (& $T $c[1][0] $c[1][1]), (& $T $c[2][0] $c[2][1]))
+    $gp.AddBezier((& $T $c[2][0] $c[2][1]),
+                  (& $T $c[3][0] $c[3][1]), (& $T $c[4][0] $c[4][1]), (& $T $c[5][0] $c[5][1]))
+    $gp.CloseFigure()
+    $g.FillPath($wht, $gp)
+    $gp.Dispose()
+  }
+  $tile.Dispose()
+  $y += $markPx + $gap
+  if ($false) {
+  # ── 옛 길: 파일을 얹던 것 ────────────────────────────────────────
   # icons/keyro-512.png 는 b301 에서 **모서리까지 꽉 찬 정사각형**이 됐습니다
   # (홈 화면 아이콘 아래에 검정이 끼던 것을 고치면서 — iOS 는 자기가 깎고
   #  남은 투명한 곳을 검정으로 채웁니다). 그대로 얹으면 런치 이미지의 마크만
@@ -91,7 +139,7 @@ foreach ($d in $devices) {
   $g.SetClip($clip)
   $g.DrawImage($mark, $mx0, [int]$y, [int]$markPx, [int]$markPx)
   $g.ResetClip(); $clip.Dispose()
-  $y += $markPx + $gap
+  }   # if ($false) 끝 — 옛 길은 남겨만 둡니다
 
   $brInk = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#11141A"))
   # ── 워드마크는 **글자가 아니라 경로**로 그립니다 ──────────────────
