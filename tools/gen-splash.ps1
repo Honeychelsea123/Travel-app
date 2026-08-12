@@ -63,13 +63,13 @@ foreach ($d in $devices) {
   $sWm  = $g.MeasureString("기로", $fWm)
   $sTag = $g.MeasureString("기록이 길이 되다", $fTag)
 
-  # flex 는 각 줄의 실제 높이로 쌓습니다. Dongle 은 아주 납작해서
-  # 글자 상자(MeasureString)가 실제 잉크보다 훨씬 큽니다 — 그래서
-  # 워드마크만 상자가 아니라 **눈에 보이는 높이(약 0.42배)** 로 셉니다.
-  $wmInk  = $wmPx * 0.42
-  $tagInk = $sTag.Height
-
-  $total = $markPx + $gap + $wmInk + $gap + $tagInk
+  # 화면 스플래시(index.html #splash)와 **같은 상자 높이**로 쌓습니다.
+  # 전에는 Dongle 의 잉크 높이(0.42배)로 셌는데, 브라우저는 line-height:1 인
+  # **상자 57px** 로 셉니다. 그래서 블록이 196 이어야 하는데 168 이 됐고,
+  # 두 장의 로고가 14px 어긋나 iOS 크로스페이드에서 그게 보였습니다.
+  $wmBox  = $wmPx
+  $tagBox = $tagPx
+  $total = $markPx + $gap + $wmBox + $gap + $tagBox
   $y = ($h - $total) / 2
 
   $g.DrawImage($mark, [int](($w - $markPx)/2), [int]$y, [int]$markPx, [int]$markPx)
@@ -77,11 +77,12 @@ foreach ($d in $devices) {
 
   $brInk = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#11141A"))
   # Dongle 은 상자 위쪽이 크게 비어 있어 그대로 그리면 아래로 처집니다.
-  $g.DrawString("기로", $fWm, $brInk, [single](($w - $sWm.Width)/2), [single]($y - $wmPx*0.30))
-  $y += $wmInk + $gap
+  # 상자 안에서 세로 가운데. MeasureString 의 상자가 실제보다 크므로 그 차이만큼 올립니다.
+  $g.DrawString("기로", $fWm, $brInk, [single](($w - $sWm.Width)/2), [single]($y + ($wmBox - $sWm.Height)/2))
+  $y += $wmBox + $gap
 
   $brTag = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#8A8A8F"))
-  $g.DrawString("기록이 길이 되다", $fTag, $brTag, [single](($w - $sTag.Width)/2), [single]$y)
+  $g.DrawString("기록이 길이 되다", $fTag, $brTag, [single](($w - $sTag.Width)/2), [single]($y + ($tagBox - $sTag.Height)/2))
 
   $name = "{0}x{1}@{2}x.png" -f $cw, $ch, $dpr
   $bmp.Save((Join-Path $out $name), [System.Drawing.Imaging.ImageFormat]::Png)

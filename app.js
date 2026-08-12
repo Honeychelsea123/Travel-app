@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b300';
+import { sb } from './db.js?v=b301';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b300';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b300';
-import { starHtml, paintStars, markRated } from './stars.js?v=b300';
+import { $, esc, toast, copyText } from './dom.js?v=b301';
+import { starHtml, paintStars, markRated } from './stars.js?v=b301';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b300';
-import { loadAdmin } from './admin.js?v=b300';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b301';
+import { loadAdmin } from './admin.js?v=b301';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b300';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b300';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b300';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b301';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b301';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,21 +46,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b300';
+         setEditPlanId } from './trip.js?v=b301';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b300';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b301';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b300';
+         useCities, addCity, search } from './cities.js?v=b301';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b300';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b301';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b300';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b301';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b300';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b301';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -5520,13 +5520,63 @@ $('tsbtns').addEventListener('click', async e => {
   if (r.error) fail(r.error, 'trip');
 });
 
+/* ── 여행 목록의 사진 ────────────────────────────────────────────────
+ * 전에는 `t.cities?.image_url` **하나만** 봤습니다. 그건 여행에 직접 붙은
+ * 도시(`trips.city_id`)의 사진이라, 우리 목록에 없는 곳으로 만든 여행은
+ * ('삼척') 늘 비어서 색 칸에 첫 글자만 떴습니다.
+ *
+ * 고르는 순서는 `tripPhoto()` 와 **같습니다**(구간 도시 › 나라 대표).
+ * 목적지 이름으로 찾는 단계는 뺐습니다 — 이름이 맞으면 애초에 `city_id` 가
+ * 붙어 있어서 첫 줄에서 걸립니다.
+ *
+ * ⚠ **줄마다 부르지 않습니다.** `tripPhoto()` 는 여행 하나에 질의를 최대
+ *   3번 합니다. 목록이 열 개면 서른 번입니다. 여기서는 빠진 것만 모아
+ *   **두 번**에 끝냅니다(구간 한 번, 나라 대표 한 번).
+ *
+ * ⚠ 이 사진은 그 사람이 가는 곳이 아닐 수 있습니다 — 삼척 여행에 강릉
+ *   사진이 걸립니다. 사진은 분위기고, 어디로 가는지는 **글자**가 말합니다.
+ *   `tripPhoto()` 머리말에 같은 이야기를 적어뒀습니다. */
+async function fillTripPhotos(rows){
+  const need = (rows || []).filter(t => !t.cities?.image_url);
+  if (!need.length) return;
+
+  const lg = await netTimeout(sb.from('trip_legs')
+    .select('trip_id,country,start_date,cities(image_url)')
+    .in('trip_id', need.map(t => t.id)).order('start_date'));
+
+  const byTrip = {}, legCountry = {};
+  for (const l of (lg.data || [])){
+    if (!byTrip[l.trip_id] && l.cities?.image_url) byTrip[l.trip_id] = l.cities.image_url;
+    if (!legCountry[l.trip_id] && l.country)       legCountry[l.trip_id] = l.country;
+  }
+
+  /* 구간에서 못 찾은 것만 나라로 갑니다. 나라는 겹치므로 한 번에 묻습니다. */
+  const rest = need.filter(t => !byTrip[t.id]);
+  const countries = [...new Set(rest.map(t => legCountry[t.id] || t.country).filter(Boolean))];
+  const rep = {};
+  if (countries.length){
+    /* 같은 여행은 열 때마다 같은 사진이어야 합니다 — 다르면 "내 여행"으로
+       안 읽힙니다. pop_rank › fame › 이름 순으로 **늘 같은 것**을 고릅니다. */
+    const c = await netTimeout(sb.from('cities')
+      .select('country,image_url,pop_rank,fame,name')
+      .in('country', countries).not('image_url', 'is', null)
+      .order('pop_rank', { ascending:true, nullsFirst:false })
+      .order('fame',     { ascending:true, nullsFirst:false })
+      .order('name',     { ascending:true }));
+    for (const row of (c.data || [])) if (!rep[row.country]) rep[row.country] = row.image_url;
+  }
+
+  for (const t of need) t._photo = byTrip[t.id] || rep[legCountry[t.id] || t.country] || null;
+}
+
 async function loadTrips(){
   /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
      않으면 방금 만든 여행조차 여기 안 나옵니다. */
   const today = todayYmd();
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            'transit_factor,city_id,cities(image_url),' +
+            /* `country` 는 사진 대체에 씁니다(아래 fillTripPhotos). */
+    'transit_factor,city_id,country,cities(image_url),' +
             'trip_members(user_id,role),trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
   if (tripFilter === 'past')
@@ -5546,7 +5596,8 @@ async function loadTrips(){
                return fail(error); }
     data = old; error = null; drawOffbar();
   } else {
-    cacheSet(ck, data);
+    await fillTripPhotos(data);
+    cacheSet(ck, data);   /* 사진까지 담아둡니다 — 비행기모드에서도 같은 줄이 나옵니다 */
     /* 목록에 있는 여행은 **열어본 적 없어도** 비행기모드에서 열려야 합니다.
        한 줄씩 미리 담아둡니다 — 목록을 받을 때 이미 필요한 값이 다 왔습니다.
        이걸 안 하면 "열어본 적 있는 여행만 열림"이 되는데,
@@ -5589,7 +5640,9 @@ async function loadTrips(){
       `<span class="tmore hide">${more}</span>`;
     /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
        그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
-    const img = t.cities?.image_url;
+    /* `_photo` 는 fillTripPhotos 가 채웁니다 — 우리 도시 목록에 없는 곳으로
+       만든 여행('삼척')이 늘 빈 칸이던 것을 메웁니다. */
+    const img = t.cities?.image_url || t._photo;
     /* **사진이 없으면 회색 칸에 '삼' 한 글자만 떠 있었습니다.** 글자 하나가
        제목 왼쪽에 덩그러니 놓이면 제목을 두 번 읽는 것처럼 보입니다.
        홈 히어로가 쓰는 색(heroTint)을 그대로 깔면 같은 여행은 어디서나
