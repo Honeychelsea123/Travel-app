@@ -6,19 +6,19 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b289';
-import { $, esc, toast, copyText } from './dom.js?v=b289';
-import { starHtml, paintStars, markRated } from './stars.js?v=b289';
+import { sb } from './db.js?v=b290';
+import { $, esc, toast, copyText } from './dom.js?v=b290';
+import { starHtml, paintStars, markRated } from './stars.js?v=b290';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b289';
-import { loadAdmin } from './admin.js?v=b289';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b290';
+import { loadAdmin } from './admin.js?v=b290';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* `certainPicks` 만 화면이 씁니다. 나머지 셋은 `__recCheck` 전용입니다 —
    왜 화면에 안 쓰는지는 rec.js 맨 위에 적어뒀습니다(무작위와 별 차이 없음). */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b289';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b289';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b290';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b290';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -27,21 +27,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b289';
+         setEditPlanId } from './trip.js?v=b290';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b289';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b290';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b289';
+         useCities, addCity, search } from './cities.js?v=b290';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b289';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b290';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b289';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b290';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b289';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b290';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -99,7 +99,7 @@ function putHtml(id, html){
 }
 const dropHtml = id => { delete lastHtml[id]; };
 
-/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b289).
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b290).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
    부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
    어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
@@ -2536,7 +2536,7 @@ async function tripPhoto(t){
 
   /* ── 그래도 없으면 **같은 나라의 대표 도시** 사진을 빌립니다 ──────────
    * '삼척'처럼 우리 목록에 없는 곳으로 만든 여행은 여기까지 옵니다.
-   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b289).
+   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b290).
    * 도시는 몰라도 **나라는 압니다.** 그 나라에서 한 곳을 빌려 옵니다.
    *
    * 고르는 순서: `pop_rank`(나라마다 한 곳씩 매겨둔 대표) → 없으면
@@ -4988,7 +4988,14 @@ async function openPlaceShelf(kind){
 
   const list = shelfArrange(all);
 
-  $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
+  /* 도시 목록과 같은 이유로 평균을 같이 적습니다(위 주석 참고).
+     여기는 아직 안 매긴 장소가 섞여 있어 **매긴 것만으로** 셉니다. */
+  {
+    const st = list.map(p => rate[p.id]).filter(s => s != null);
+    const avg = st.length ? (st.reduce((a, b) => a + b, 0) / st.length) : null;
+    $('shelfcount').textContent = !list.length ? ''
+      : avg != null ? `${list.length}곳 · 평균 ★${avg.toFixed(1)}` : `${list.length}곳`;
+  }
   $('shelflist').innerHTML = list.length
     ? list.map(p => `<div class="rrow">
         <span class="thumb ph">${({ 식사:'🍽', 카페:'☕', 관광:'📸', 쇼핑:'🛍' })[p.category] || '📍'}</span>
@@ -5142,7 +5149,20 @@ async function openShelf(kind){
   const list = HAS_STARS(kind) ? shelfArrange(all)
     : [...all].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-  $('shelfcount').textContent = list.length ? `${list.length}곳` : '';
+  /* **개수만 있고 평균이 없었습니다.** 74곳을 매겼다는 것보다 "평균 몇 점을
+     주는 사람인가"가 자기 기록을 볼 때 더 궁금합니다 — 후하게 주는 편인지
+     짜게 주는 편인지가 거기서 드러납니다.
+     ⚠ **별점이 있는 목록에만 답니다.** '가보고 싶은 곳'은 별점이 없어서
+       평균이 NaN 이 되거나 0점으로 보입니다. */
+  {
+    const st = list.map(c => myRates[c.id]?.stars).filter(s => s != null);
+    const avg = st.length ? (st.reduce((a, b) => a + b, 0) / st.length) : null;
+    $('shelfcount').textContent =
+      !list.length ? '' :
+      (HAS_STARS(kind) && avg != null)
+        ? `${list.length}곳 · 평균 ★${avg.toFixed(1)}`
+        : `${list.length}곳`;
+  }
   $('shelflist').innerHTML = list.length
     ? list.map(c => {
         const r = myRates[c.id] || {};
@@ -5157,9 +5177,13 @@ async function openShelf(kind){
         </div>` +
         /* 한줄평은 한줄평 탭에서만 펼칩니다. 내 평가 목록에서는 별점만 봅니다 —
            어떤 줄만 두 줄이 되면 목록이 들쭉날쭉해집니다. */
+        /* ⚠ **들여쓰기를 여기서 px 로 적지 않습니다.** 예전엔 `padding-left:60px`
+           이었는데, 썸네일이 56 → 76px 로 커지면서(b270) 25px 이 어긋났습니다.
+           재보니 실제로는 0px 에서 시작해 **85px 이 밀려 있었습니다.**
+           줄 안의 자리는 `.rrow` 격자가 알고 있으므로 CSS 에서 맞춥니다 —
+           숫자를 두 곳에 적으면 한쪽만 고치게 됩니다. */
         (kind === 'comment' && r.comment
-          ? `<div class="memo" style="padding:0 0 10px 60px; margin-top:-6px">
-               ${esc(r.comment)}</div>` : '');
+          ? `<div class="rcmt">${esc(r.comment)}</div>` : '');
       }).join('')
     : `<div class="empty">아직 없어요.</div>`;
 }
@@ -6611,7 +6635,7 @@ function mapLinks(o, city){
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
- * 여행 목록(b289). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
+ * 여행 목록(b290). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
  * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
  * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
  * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.

@@ -868,6 +868,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 하나 바뀔 때마다 여기도 고쳐야 합니다. */
 .rrow:has(> .stars){ display:grid; grid-template-columns:auto 1fr auto;
                      align-items:center; column-gap:9px; row-gap:4px; }
+/* 한줄평은 **줄 밖에 붙는 딸린 글**입니다(`.rrow` 다음 형제).
+   글자와 세로줄을 맞춰야 그 줄에 딸린 것으로 읽힙니다 —
+   썸네일 폭(76) + 칸 사이(9) = 85px.
+   ⚠ 이 값을 코드에 적지 마십시오. 예전에 60px 로 박아뒀다가 썸네일이
+   56 → 76 으로 커지면서 25px 이 어긋났습니다. 여기 한 곳에서만 정합니다. */
+.rcmt{ margin:-2px 0 10px 85px; color:var(--ink-48); font-size:var(--f-md);
+       line-height:1.5; word-break:keep-all; }
 .rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:stretch;
                               width:76px; height:auto; }
 .rrow:has(> .stars) > .t{ grid-column:2; grid-row:1; }
