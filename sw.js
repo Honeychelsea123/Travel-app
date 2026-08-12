@@ -38,7 +38,7 @@ const isCodeUrl = url =>
   url.hostname === 'esm.sh'
   || (['unpkg.com', 'cdn.jsdelivr.net'].includes(url.hostname)
       && /\.(js|css|mjs)$/i.test(url.pathname))
-  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b295) ──────────────
+  /* ── 로고 글꼴(Dongle)도 안 잘리는 통에 둡니다 (b282) ──────────────
    * 워드마크 '기로'를 Dongle 로 씁니다. 글꼴 조각은 원래 타일과 같은 통에
    * 두었는데(부팅을 막지 않으므로), **로고는 다릅니다** — 400개가 차서
    * 밀려나면 어느 날 갑자기 상단바 글꼴만 바뀝니다. 앱 이름이 흔들리는 것은
@@ -180,11 +180,33 @@ self.addEventListener('fetch', e => {
         const c = await caches.open(SHELL);
         const hit = await c.match(req);
         if (hit) return hit;
-        const res = await fetch(req);
+
+        /* ⚠ **여기서 throw 하면 앱이 통째로 무너집니다.**
+           전에는 `await fetch(req)` 였습니다. 새 판(b295)이 막 올라가서 아직
+           아무것도 안 담겼는데 그 순간 통신이 한 번 끊기면, `respondWith` 가
+           거절되고 브라우저는 그 파일을 **못 받은 것으로** 처리합니다.
+           app.css 하나가 그렇게 되면 `.hide` 조차 안 먹어서 숨겨둔 화면이
+           전부 한꺼번에 쏟아집니다. 실기기에서 그렇게 터졌습니다(b295).
+           비행기모드가 아니라 **잠깐 끊긴 것만으로도** 납니다. */
+        const res = await fetch(req).catch(() => null);
         /* 새것을 **담고 나서** 옛 판을 지웁니다. 순서가 중요합니다 —
            먼저 지우면 받아오다 실패했을 때 둘 다 없어집니다. */
-        if (res.ok){ await c.put(req, res.clone()); await dropOldVersions(c, req); }
-        return res;
+        if (res && res.ok){
+          await c.put(req, res.clone()); await dropOldVersions(c, req);
+          return res;
+        }
+
+        /* 못 받았습니다. **옛 판이라도 줍니다.**
+           맨 위에 "꼬리표를 무시하면 안 된다"고 적어둔 것과 어긋나 보이지만,
+           그건 **받을 수 있을 때** 이야기입니다. 지금은 옛 판을 주거나
+           아무것도 못 주거나 둘뿐이고, 옛 CSS 는 CSS 없는 것보다 낫습니다.
+           옛 판이 남아 있는 것은 위에서 새것을 담은 뒤에야 옛것을 지우기
+           때문입니다 — 이 경우엔 안 담겼으니 그대로 있습니다.
+           ⚠ 새 화면에 옛 코드가 붙는 위험은 그대로입니다. 그래서 이건
+             **마지막 수단**이고, 화면 쪽이 새 빌드를 알아채면 새로고침합니다. */
+        const old = await c.match(req, { ignoreSearch:true });
+        if (old) return old;
+        return res || Response.error();
       })());
       return;
     }
