@@ -108,25 +108,25 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b306">
+<link rel="stylesheet" href="app.css?v=b307">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b306">
-<link rel="modulepreload" href="dom.js?v=b306">
-<link rel="modulepreload" href="db.js?v=b306">
-<link rel="modulepreload" href="calc.js?v=b306">
-<link rel="modulepreload" href="rec.js?v=b306">
-<link rel="modulepreload" href="stars.js?v=b306">
-<link rel="modulepreload" href="net.js?v=b306">
-<link rel="modulepreload" href="admin.js?v=b306">
-<link rel="modulepreload" href="ui.js?v=b306">
-<link rel="modulepreload" href="card.js?v=b306">
-<link rel="modulepreload" href="trip.js?v=b306">
-<link rel="modulepreload" href="rate.js?v=b306">
-<link rel="modulepreload" href="cities.js?v=b306">
-<link rel="modulepreload" href="ai.js?v=b306">
+<link rel="modulepreload" href="supabase.js?v=b307">
+<link rel="modulepreload" href="dom.js?v=b307">
+<link rel="modulepreload" href="db.js?v=b307">
+<link rel="modulepreload" href="calc.js?v=b307">
+<link rel="modulepreload" href="rec.js?v=b307">
+<link rel="modulepreload" href="stars.js?v=b307">
+<link rel="modulepreload" href="net.js?v=b307">
+<link rel="modulepreload" href="admin.js?v=b307">
+<link rel="modulepreload" href="ui.js?v=b307">
+<link rel="modulepreload" href="card.js?v=b307">
+<link rel="modulepreload" href="trip.js?v=b307">
+<link rel="modulepreload" href="rate.js?v=b307">
+<link rel="modulepreload" href="cities.js?v=b307">
+<link rel="modulepreload" href="ai.js?v=b307">
 </head>
 <body>
 <!-- ── 스플래시(런치 스크린) ────────────────────────────────────────
@@ -157,9 +157,22 @@ document.fonts?.load('700 1em Dongle').then(() => {
       <path d="M78 52 H34 L20 63 L34 74 H78 Q83 74 83 63 Q83 52 78 52 Z"/>
     </g>
   </svg>
-  <div id="splashwm" style="font:700 30px/1 -apple-system,BlinkMacSystemFont,
-       'Apple SD Gothic Neo','Pretendard Variable',Pretendard,sans-serif;
-       color:#11141A; letter-spacing:-.5px">기로</div>
+  <!-- ── 워드마크는 **글자가 아니라 경로**입니다 ───────────────────────
+       홈 화면 앱에서 이 글자가 자꾸 다른 글씨체로 바뀌며 깜빡였습니다.
+       런치 PNG 에는 Dongle 이 이미 찍혀 있는데 화면 쪽은 매번 웹폰트를
+       기다렸기 때문입니다. 숨겼다 보여주든 load() 를 기다리든,
+       **글꼴에 매달려 있는 한** 언젠가는 어긋납니다. 세 번 고쳐도 안 됐습니다.
+       Dongle 의 글자 모양을 경로로 뽑아 박았습니다 — 받아올 것이 없으니
+       깜빡일 수가 없고, 연결이 없어도 늘 같은 모양입니다.
+       ⚠ 런치 PNG 도 **같은 경로**로 그립니다(tools/gen-splash.ps1).
+         한쪽만 고치면 두 장이 또 어긋납니다.
+         경로를 다시 뽑는 것은 tools/wordmark-path.ps1.
+       상자 57px 안에서 잉크(49.32×29.53)를 가운데 — PNG 와 같은 규칙. -->
+  <div id="splashwm" style="height:57px; display:flex; align-items:center;
+       justify-content:center">
+    <svg width="49.32" height="29.53" viewBox="1.14 18.36 49.32 29.53"
+         role="img" aria-label="기로"><path fill="#11141A" d="M16.25 37.4 C16.25 38.04 16.01 38.59 15.53 39.05 C15.06 39.51 14.48 39.73 13.79 39.73 C13.15 39.73 12.61 39.51 12.17 39.05 C11.73 38.59 11.51 38.04 11.51 37.4 L11.51 32.61 C11.51 31.89 11.32 31.32 10.94 30.9 C10.56 30.48 10.03 30.27 9.35 30.27 L3.59 30.27 C2.87 30.27 2.28 30.06 1.82 29.65 C1.37 29.23 1.14 28.68 1.14 27.99 C1.14 27.27 1.37 26.71 1.82 26.31 C2.28 25.91 2.87 25.71 3.59 25.71 L12.65 25.71 C13.64 25.71 14.49 26.01 15.19 26.6 C15.89 27.19 16.25 28.09 16.25 29.3 ZM24.8 41.16 C24.8 41.88 24.58 42.47 24.14 42.93 C23.7 43.38 23.14 43.61 22.46 43.61 C21.77 43.61 21.19 43.38 20.69 42.93 C20.2 42.47 19.95 41.88 19.95 41.16 L19.95 26.17 C19.95 25.98 20.02 25.7 20.15 25.34 C20.28 24.98 20.53 24.63 20.89 24.29 C21.25 23.95 21.77 23.77 22.46 23.77 C23.18 23.77 23.75 23.99 24.17 24.43 C24.59 24.87 24.8 25.45 24.8 26.17 ZM42.59 41.96 C42.59 42.91 43.09 43.38 44.07 43.38 L48.06 43.38 C48.86 43.38 49.46 43.62 49.86 44.1 C50.26 44.57 50.46 45.07 50.46 45.61 C50.46 46.21 50.24 46.75 49.8 47.2 C49.37 47.66 48.79 47.89 48.06 47.89 L32.28 47.89 C31.59 47.89 31.03 47.66 30.59 47.2 C30.16 46.75 29.94 46.21 29.94 45.61 C29.94 45.07 30.13 44.57 30.51 44.1 C30.89 43.62 31.48 43.38 32.28 43.38 L36.32 43.38 C37.31 43.38 37.8 42.93 37.8 42.01 L37.8 40.87 C37.8 40.08 38.05 39.47 38.55 39.05 L36.32 39.05 C35.33 39.05 34.48 38.72 33.76 38.05 C33.04 37.39 32.67 36.52 32.67 35.46 L32.67 30.04 C32.67 28.94 33.05 28.05 33.81 27.37 C34.57 26.68 35.49 26.34 36.55 26.34 L40.43 26.34 C41.11 26.34 41.57 26.19 41.79 25.88 C42.02 25.58 42.14 25.29 42.14 25.03 L42.14 24.52 C42.14 24.14 42.03 23.78 41.82 23.46 C41.61 23.14 41.09 22.98 40.26 22.98 L35.24 22.98 C34.56 22.98 33.99 22.77 33.53 22.35 C33.07 21.93 32.85 21.36 32.85 20.64 C32.85 19.99 33.07 19.45 33.53 19.02 C33.99 18.58 34.56 18.36 35.24 18.36 L43.22 18.36 C44.32 18.36 45.2 18.66 45.87 19.27 C46.53 19.88 46.87 20.77 46.87 21.95 L46.87 27.31 C46.87 28.37 46.51 29.23 45.78 29.87 C45.06 30.52 44.21 30.84 43.22 30.84 L39.17 30.84 C38.45 30.84 38 31 37.83 31.33 C37.66 31.65 37.58 31.96 37.58 32.27 L37.58 32.67 C37.58 33.05 37.66 33.45 37.83 33.86 C38 34.28 38.51 34.49 39.34 34.49 L45.21 34.49 C45.9 34.49 46.46 34.7 46.9 35.12 C47.33 35.54 47.55 36.11 47.55 36.83 C47.55 37.51 47.33 38.05 46.9 38.45 C46.46 38.85 45.9 39.05 45.21 39.05 L41.79 39.05 C42.33 39.51 42.59 40.11 42.59 40.87 Z"/></svg>
+  </div>
   <!-- ⚠ **글꼴 목록을 app.css 의 `--sf` 와 맞춰야 합니다.**
        처음에는 여기만 시스템 글꼴로 적었더니 윈도우에서 맑은 고딕이 나왔습니다.
        `Pretendard Variable` 은 위(48줄)에서 **이미 불러오고 있습니다** —
@@ -170,45 +183,8 @@ document.fonts?.load('700 1em Dongle').then(() => {
        color:#8a8a8f; letter-spacing:-.2px">기록이 길이 되다</div>
 </div>
 <script>
-  /* ── 워드마크는 Dongle 입니다 ────────────────────────────────────
-     Dongle 은 아주 납작해서 1.9배(30 → 57)로 키워야 제 크기가 나옵니다.
-     안 실렸는데 그 크기를 쓰면 시스템 글꼴이 57px 로 나와 화면을 뚫습니다.
-     그래서 **실렸을 때만** 바꿉니다.
-
-     ⚠ **정해지기 전에는 안 보여줍니다.** 전에는 일단 시스템 글꼴 30px 로
-       그려두고 Dongle 이 오면 57px 로 바꿨는데, 처음 여는 날은 글자가
-       눈앞에서 **다른 글씨체로 바뀌었습니다.** 그게 스플래시에서 제일
-       크게 보이는 깜빡임이었습니다.
-       숨겨두었다가 정해지면 그때 보여줍니다. 늦게 나타나는 것은
-       바뀌는 것보다 훨씬 덜 거슬립니다.
-     ⚠ 글꼴이 영영 안 오는 날(연결 없음·차단)도 있습니다. 0.6초까지만
-       기다리고 그다음엔 시스템 글꼴 30px 로 보여줍니다 — 로고가 아예
-       안 나오는 것이 제일 나쁩니다. */
-  (function(){
-    var el = document.getElementById('splashwm');
-    if (!el) return;
-    if (!document.fonts || !document.fonts.check) return;   /* 옛 브라우저는 그대로 */
-    el.style.visibility = 'hidden';
-    var done = false;
-    var show = function(dongle){
-      if (done) return; done = true;
-      if (dongle){ el.style.font = "700 57px/1 Dongle, sans-serif"; el.style.letterSpacing = '0'; }
-      el.style.visibility = '';
-    };
-    /* ⚠ **`check()` 만 믿으면 안 됩니다.** "쓸 수 있다" 고만 답하고 실제
-       글리프는 아직 없는 경우가 있습니다(사파리). 그러면 57px 로 키워
-       그렸는데 대체 글꼴이 나오고, 잠시 뒤 진짜 Dongle 로 바뀝니다 —
-       홈 화면 앱에서 런치 PNG(Dongle 57px)와 나란히 놓이면 그 바뀜이
-       그대로 보였습니다. 사파리로 열면 런치 이미지가 없어 비교 대상이
-       없으니 멀쩡해 보입니다. 그래서 "웹페이지는 되는데 웹앱만" 이었습니다.
-       `load()` 는 **정말로 받아온 뒤에** 끝납니다. 이미 있으면 곧바로. */
-    document.fonts.load('700 1em Dongle')
-      .then(function(f){ show(!!(f && f.length) && document.fonts.check('700 1em Dongle')); })
-      .catch(function(){ show(false); });
-    /* 글꼴이 영영 안 오는 날도 있습니다. 스플래시가 1.1초는 서 있으므로
-       0.9초까지 기다렸다가 그때는 시스템 글꼴로 보여줍니다. */
-    setTimeout(function(){ show(false); }, 900);
-  })();
+  /* 워드마크는 이제 글꼴이 아니라 경로입니다(위 splashwm 참고).
+     Dongle 을 기다리던 코드는 걷었습니다 — 기다릴 것이 없습니다. */
 
   /* ── 얼마나 오래 보여줄 것인가 ────────────────────────────────────
      처음에는 app.js 가 화면을 정하자마자 걷었습니다. 그런데 캐시에서 여는
@@ -1512,7 +1488,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b306</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b307</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1980,7 +1956,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b306"></script>
+<script type="module" src="app.js?v=b307"></script>
 </body>
 </html>
 

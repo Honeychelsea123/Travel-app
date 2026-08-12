@@ -76,9 +76,24 @@ foreach ($d in $devices) {
   $y += $markPx + $gap
 
   $brInk = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#11141A"))
-  # Dongle 은 상자 위쪽이 크게 비어 있어 그대로 그리면 아래로 처집니다.
-  # 상자 안에서 세로 가운데. MeasureString 의 상자가 실제보다 크므로 그 차이만큼 올립니다.
-  $g.DrawString("기로", $fWm, $brInk, [single](($w - $sWm.Width)/2), [single]($y + ($wmBox - $sWm.Height)/2))
+  # ── 워드마크는 **글자가 아니라 경로**로 그립니다 ──────────────────
+  # 화면 스플래시도 같은 경로(SVG)를 씁니다. 한쪽은 글자로 그리고 한쪽은
+  # 경로로 그리면 자리와 두께가 미세하게 달라지고, 홈 화면 앱에서 런치
+  # PNG 와 나란히 놓일 때 그 차이가 깜빡임으로 보입니다.
+  # 경로를 뽑는 것은 tools/wordmark-path.ps1 이고, 나온 값을 index.html 에
+  # 그대로 붙여 씁니다. **여기와 거기가 같은 모양이어야 합니다.**
+  $wmPath = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $sfT = [System.Drawing.StringFormat]::GenericTypographic
+  $wmPath.AddString("기로", $pfc.Families[($pfc.Families | ForEach-Object {$_.Name}).IndexOf("Dongle")],
+                    [int][System.Drawing.FontStyle]::Bold, $wmPx,
+                    (New-Object System.Drawing.PointF(0,0)), $sfT)
+  $wb = $wmPath.GetBounds()
+  # 잉크를 상자(57×배율) 안에서 가운데에 놓습니다 — 화면 쪽과 같은 규칙.
+  $mx = New-Object System.Drawing.Drawing2D.Matrix
+  $mx.Translate([single](($w - $wb.Width)/2 - $wb.X), [single]($y + ($wmBox - $wb.Height)/2 - $wb.Y))
+  $wmPath.Transform($mx)
+  $g.FillPath($brInk, $wmPath)
+  $wmPath.Dispose(); $mx.Dispose()
   $y += $wmBox + $gap
 
   $brTag = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#8A8A8F"))
