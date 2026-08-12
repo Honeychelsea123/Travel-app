@@ -239,6 +239,111 @@ update public.cities set
   summary_url = 'https://ko.wikipedia.org/wiki/아베이루'
 where name = '아베이루' and country = 'PT';
 
+-- ── 3묶음 ──────────────────────────────────────────────────────────
+-- ⚠ **여기서 제일 위험한 것을 만났습니다.** 대만 '이란(宜蘭)'을 한국어 위키에서
+--   찾으면 **나라 이란(Iran)** 문서로 갑니다. 도시 문서는 '이란시' 입니다.
+--   '자이(嘉義)'·'타이둥(台東)'도 동음이의로 빠집니다 → '자이시' · '타이둥시'.
+--   이름이 짧고 흔한 한자음일수록 이런 일이 잦습니다.
+update public.cities set
+  summary = '대만 북동부 이란현의 중심 도시. 온천과 논이 함께 있는 평야에 자리하고, 근교 자오시 온천과 우스비 폭포로 갑니다. 매년 여름 국제 어린이 민속예술제가 열립니다. 타이베이에서 기차나 버스로 한 시간 남짓입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/이란시'
+where name = '이란' and country = 'TW';
+
+update public.cities set
+  summary = '일본에서 가장 오래된 신사 가운데 하나인 이즈모타이샤가 있는 시마네의 도시. 인연을 맺어주는 신을 모신다 하여 참배객이 끊이지 않습니다. 음력 10월에 전국의 신이 모인다는 이야기가 전해집니다. 이즈모 소바가 명물입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/이즈모시'
+where name = '이즈모' and country = 'JP';
+
+update public.cities set
+  summary = '대만 남서부 자난 평야의 도시. 아리산으로 올라가는 산악 철도가 여기서 출발합니다. 닭고기 덮밥 지러우판이 이 도시의 이름을 달고 팔립니다. 타이베이에서 고속철로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/자이시'
+where name = '자이' and country = 'TW';
+
+update public.cities set
+  summary = '대만 동남쪽 해안의 도시. 태평양을 따라 산과 논이 이어지는 화둥 종곡이 시작되는 곳입니다. 여름에 열기구 축제가 열리고 뤼다오·란위섬으로 배가 나갑니다. 타이베이에서 기차로 네 시간, 비행기로는 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/타이둥시'
+where name = '타이둥' and country = 'TW';
+
+update public.cities set
+  summary = '말레이시아 페락주의 주도. 주석 광산으로 번성한 옛 도시라 식민지 시절 건물이 그대로 남아 있습니다. 화이트커피가 이곳에서 시작됐고 노점 음식으로 이름났습니다. 쿠알라룸푸르에서 북쪽으로 200km, 기차로 두 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/이포'
+where name = '이포' and country = 'MY';
+
+update public.cities set
+  summary = '말레이 반도 최남단, 다리 하나로 싱가포르와 이어진 도시. 레고랜드와 대형 쇼핑몰이 모여 있어 싱가포르에서 건너와 놀고 갑니다. 물가가 싱가포르보다 크게 쌉니다. 출퇴근 시간에는 국경 다리가 매우 붐빕니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/조호르바루'
+where name = '조호르바루' and country = 'MY';
+
+update public.cities set
+  summary = '경상남도청이 있는 남해안의 계획도시. 진해의 벚꽃길이 봄마다 사람을 불러 모으고, 마산어시장과 돝섬이 가까이 있습니다. 바다를 낀 공업 도시라 항구 풍경이 함께 있습니다. 서울에서 KTX로 세 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/창원시'
+where name = '창원' and country = 'KR';
+
+update public.cities set
+  summary = '히바 칸국의 수도였던 우즈베키스탄의 성곽 도시. 흙벽으로 둘러싸인 이찬 칼라 안에 미나레트와 마드라사가 그대로 남아 있습니다. 우즈베키스탄에서 처음 세계유산이 된 곳입니다. 성벽 위에서 지는 해를 봅니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/히바'
+where name = '히바' and country = 'UZ';
+
+update public.cities set
+  summary = '실크로드의 오아시스 도시. 천 년 넘은 미르아랍 마드라사와 칼란 미나레트가 중심에 서 있고 구시가 전체가 세계유산입니다. 히바·사마르칸트와 묶어 도는 것이 보통입니다. 여름은 매우 덥고 봄가을이 좋습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/부하라'
+where name = '부하라' and country = 'UZ';
+
+update public.cities set
+  summary = '초원 한가운데 새로 지은 카자흐스탄의 수도. 바이테렉 전망탑과 칸 샤티르처럼 눈에 띄는 현대 건축이 모여 있습니다. 겨울에는 영하 30도까지 내려가는 세계에서 손꼽히게 추운 수도입니다. 여름이 짧고 다니기 좋습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아스타나'
+where name = '아스타나' and country = 'KZ';
+
+update public.cities set
+  summary = '흰 화산암으로 지어 하얀 도시라 불리는 페루 남부의 도시. 산타 카탈리나 수도원과 아르마스 광장이 중심이고 미스티 화산이 배경에 섭니다. 콜카 협곡으로 콘도르를 보러 갑니다. 해발 2,300m라 고산 적응지로도 들릅니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아레키파'
+where name = '아레키파' and country = 'PE';
+
+update public.cities set
+  summary = '캐나다 노스웨스트 준주의 주도. 오로라를 보러 가는 도시로 알려져 겨울이면 밤마다 사람들이 호수 밖으로 나갑니다. 여름에는 백야에 가까운 긴 해가 이어집니다. 밴쿠버나 캘거리에서 비행기로 갑니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/옐로나이프'
+where name = '옐로나이프' and country = 'CA';
+
+update public.cities set
+  summary = '노르웨이 남서쪽의 항구 도시. 나무로 지은 흰 집이 늘어선 옛 시가지와 북해 유전으로 세워진 석유 박물관이 함께 있습니다. 뤼세 피오르의 프레이케스톨렌으로 가는 출발점입니다. 트레킹은 여름철에 합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/스타방에르'
+where name = '스타방에르' and country = 'NO';
+
+update public.cities set
+  summary = '송네 피오르 끝에 자리한 노르웨이의 작은 마을. 산을 굽이굽이 오르는 플롬 산악열차가 이곳에서 출발합니다. 피오르 유람선과 열차를 이어 타는 길이 대표적입니다. 마을 자체는 작아 대개 하루 머물다 갑니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/플롬'
+where name = '플롬' and country = 'NO';
+
+update public.cities set
+  summary = '암스테르담 서쪽의 운하 도시. 큰 성 바보 교회가 선 광장과 골목의 작은 안뜰 호프여가 대표적입니다. 봄이면 근교 큐켄호프 튤립 정원으로 가는 길목이 됩니다. 암스테르담에서 기차로 15분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/하를럼'
+where name = '하를럼' and country = 'NL';
+
+update public.cities set
+  summary = '홍해에 면한 이집트의 휴양 도시. 산호초가 가까워 다이빙과 스노클링으로 이름났습니다. 사막과 바다가 맞닿아 사파리도 함께 합니다. 겨울에도 따뜻해 유럽에서 피한지로 찾습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/후르가다'
+where name = '후르가다' and country = 'EG';
+
+update public.cities set
+  summary = '대서양에 면한 모로코의 휴양 도시. 1960년 지진으로 무너진 뒤 새로 지어 도시가 반듯하고 긴 해변이 이어집니다. 서핑과 아르간 오일로 알려졌습니다. 마라케시에서 차로 세 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아가디르'
+where name = '아가디르' and country = 'MA';
+
+update public.cities set
+  summary = '흑해에 면한 튀르키예 북동부의 도시. 절벽에 붙어 있는 쉬멜라 수도원과 우준괼 호수가 대표적입니다. 비가 잦아 산이 늘 푸릅니다. 이스탄불에서 비행기로 두 시간이고 여름이 성수기입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/트라브존'
+where name = '트라브존' and country = 'TR';
+
+update public.cities set
+  summary = '중국 안후이성의 산 도시. 기송·괴석·운해·온천을 사절이라 부르는 황산이 유네스코 세계유산입니다. 케이블카로 오르지만 능선은 걸어야 합니다. 근처 훙춘과 시디의 옛 마을도 세계유산입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/황산시'
+where name = '황산' and country = 'CN';
+
+update public.cities set
+  summary = '아오모리의 성 마을. 벚나무 2,600그루가 둘러싼 히로사키성이 일본에서 손꼽히는 벚꽃 명소입니다. 해자를 꽃잎이 덮는 봄이 절정이고, 가을에는 사과가 나옵니다. 여름 네부타 축제도 함께 열립니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/히로사키시'
+where name = '히로사키' and country = 'JP';
+
 commit;
 
 -- 확인 — 아직 비어 있는 곳이 몇 곳인지
