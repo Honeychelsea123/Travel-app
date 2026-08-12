@@ -108,25 +108,25 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b299">
+<link rel="stylesheet" href="app.css?v=b300">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b299">
-<link rel="modulepreload" href="dom.js?v=b299">
-<link rel="modulepreload" href="db.js?v=b299">
-<link rel="modulepreload" href="calc.js?v=b299">
-<link rel="modulepreload" href="rec.js?v=b299">
-<link rel="modulepreload" href="stars.js?v=b299">
-<link rel="modulepreload" href="net.js?v=b299">
-<link rel="modulepreload" href="admin.js?v=b299">
-<link rel="modulepreload" href="ui.js?v=b299">
-<link rel="modulepreload" href="card.js?v=b299">
-<link rel="modulepreload" href="trip.js?v=b299">
-<link rel="modulepreload" href="rate.js?v=b299">
-<link rel="modulepreload" href="cities.js?v=b299">
-<link rel="modulepreload" href="ai.js?v=b299">
+<link rel="modulepreload" href="supabase.js?v=b300">
+<link rel="modulepreload" href="dom.js?v=b300">
+<link rel="modulepreload" href="db.js?v=b300">
+<link rel="modulepreload" href="calc.js?v=b300">
+<link rel="modulepreload" href="rec.js?v=b300">
+<link rel="modulepreload" href="stars.js?v=b300">
+<link rel="modulepreload" href="net.js?v=b300">
+<link rel="modulepreload" href="admin.js?v=b300">
+<link rel="modulepreload" href="ui.js?v=b300">
+<link rel="modulepreload" href="card.js?v=b300">
+<link rel="modulepreload" href="trip.js?v=b300">
+<link rel="modulepreload" href="rate.js?v=b300">
+<link rel="modulepreload" href="cities.js?v=b300">
+<link rel="modulepreload" href="ai.js?v=b300">
 </head>
 <body>
 <!-- ── 스플래시(런치 스크린) ────────────────────────────────────────
@@ -149,7 +149,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
      이어붙인 티가 안 납니다. 바꿀 때 같이 바꾸십시오. -->
 <div id="splash" style="position:fixed; inset:0; z-index:9999; background:#fff;
      display:flex; flex-direction:column; align-items:center; justify-content:center;
-     gap:18px; transition:opacity .38s ease; -webkit-user-select:none; user-select:none">
+     gap:18px; -webkit-user-select:none; user-select:none">
   <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden="true">
     <rect width="96" height="96" rx="22.4" fill="#F25E26"/>
     <g transform="translate(9.6,9.6) scale(0.8)" fill="#fff">
@@ -205,10 +205,11 @@ document.fonts?.load('700 1em Dongle').then(() => {
     if (!s) return;
     var left = SPLASH_MIN - (new Date().getTime() - SPLASH_T0);
     if (left > 0){ setTimeout(window.__hideSplash, left); return; }
-    s.style.opacity = '0';
-    /* 위 style 의 transition(.38s)보다 넉넉히 뒤에 지웁니다.
-       먼저 지우면 사라지는 것이 아니라 툭 끊깁니다. */
-    setTimeout(function(){ s.remove(); }, 420);
+    /* **페이드 없이 그냥 뗍니다.** 처음엔 opacity 로 0.38초 디졸브를
+       넣었는데, iOS 런치 이미지 → 이 상자로 이미 한 번 넘어온 뒤라
+       거기서 또 흐려지면 넘어가는 단계가 셋으로 보였습니다.
+       한 장으로 서 있다가 한 번에 앱이 되는 편이 낫습니다. */
+    s.remove();
   };
   setTimeout(window.__hideSplash, 3200);
 </script>
@@ -1456,7 +1457,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b299</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b300</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1924,7 +1925,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b299"></script>
+<script type="module" src="app.js?v=b300"></script>
 </body>
 </html>
 
