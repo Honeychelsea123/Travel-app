@@ -645,6 +645,7 @@ Deno.serve(async (req) => {
       ['plans', '[일정]'], ['expenses', '[최근 지출]'], ['legs', '[구간]'],
       ['trip', '[여행]·[오늘]'], ['members', '[일행]'], ['bookings', '[예약]'],
       ['packing', '[준비물]'], ['ratings', '[높게 준 도시]'], ['prefs', '[취향]'],
+      ['placerates', '[높게 준 장소]'], ['candidates', '[담아둔 곳]'],
     ];
     // 'general' 은 자료가 아니라 "내가 원래 알던 것"이라 짝이 없습니다.
     const SRC_ALL = [...SRC_MAP.map(([k]) => k), 'general'];
@@ -670,8 +671,18 @@ Deno.serve(async (req) => {
     const meP = Promise.all([
       asUser.from('user_prefs').select('*').maybeSingle(),
       asUser.from('city_ratings')
-        .select('stars,cities(name,country)')
+        .select('stars,comment,cities(name,country)')
         .not('stars', 'is', null).order('stars', { ascending: false }).limit(12),
+      /* ⚠ **장소 별점이 도시 별점보다 취향을 훨씬 잘 말합니다** (2026-08-12).
+         '도쿄 4.5' 는 도쿄를 좋아한다는 말이지만, '신주쿠 이자카야 4 ·
+         메이지 신궁 4 · 하라주쿠 4' 는 **무엇을 하는 것을 좋아하는지**를
+         말합니다. 어디로 갈지보다 그 도시에서 뭘 할지를 정할 때 필요한 것이
+         이쪽입니다. 재보니 18건이 쌓여 있는데 AI 는 한 번도 못 봤습니다. */
+      asUser.from('plan_ratings')
+        .select('stars,plans(title,category)')
+        .not('stars', 'is', null).order('stars', { ascending: false }).limit(20),
+      /* 한줄평은 **본인이 직접 쓴 말**이라 별점보다 진합니다
+         ("노잼 도시지만 좋았다" 같은 것은 점수로는 안 나옵니다). */
     ]);
 
     // 아래 안전장치에서도 씁니다 — 좌표가 구간 중심에서 먼지 봐야 하므로.
@@ -692,7 +703,7 @@ Deno.serve(async (req) => {
       //   · 어떤 곳에 별을 높게 줬는지 → **취향의 유일한 근거인데 안 봤습니다**
       // 같은 Promise.all 에 넣습니다 — 줄을 더 세우면 제일 느린 하나만큼만 늘어납니다.
       const [tripRes, legRes, planRes, expRes,
-             memRes, bookRes, packRes] = await Promise.all([
+             memRes, bookRes, candRes, packRes] = await Promise.all([
         asUser.from('trips')
           .select('title,destination,country,start_date,end_date,timezone,currency,' +
                   'home_currency,walk_max_km,transit_factor,transit_base_min')
@@ -722,6 +733,11 @@ Deno.serve(async (req) => {
           .select('kind,title,start_date,start_time,end_date,end_time')
           .eq('trip_id', trip_id).is('deleted_at', null)
           .order('start_date').limit(20),
+        /* ⚠ **담아둔 곳을 몰라서 이미 담은 데를 또 권했습니다.** '갈 만한 곳'에
+           담아둔 후보는 "가고 싶다고 이미 정한 것"이라 제일 강한 신호인데
+           AI 는 못 보고 있었습니다. 재보니 이 여행에만 여섯 곳이 있습니다. */
+        asUser.from('candidates').select('title,category')
+          .eq('trip_id', trip_id).is('deleted_at', null).limit(30),
         asUser.from('packing').select('title,done')
           .eq('trip_id', trip_id).is('deleted_at', null).limit(60),
       ]);
@@ -803,13 +819,24 @@ Deno.serve(async (req) => {
               `- 아직 안 챙김: ${left.slice(0, 25).join(', ') || '(없음)'}\n` +
               `- 이미 챙김(다시 권하지 마라): ${done.slice(0, 25).join(', ') || '(없음)'}`;
           })(),
+          '',
+          /* 담아뒀다는 것은 **가고 싶다고 이미 정했다**는 뜻입니다.
+             제일 강한 신호인데 AI 는 못 보고 있었습니다. */
+          (() => {
+            // deno-lint-ignore no-explicit-any
+            const cd = (candRes.data ?? []) as any[];
+            return cd.length
+              ? '[담아둔 곳] 가고 싶다고 이미 골라둔 곳이다. **다시 권하지 마라.**\n' +
+                cd.map((c) => `- ${c.title}${c.category ? ` (${c.category})` : ''}`).join('\n')
+              : '';
+          })(),
         ].filter((s) => s !== '').join('\n');
       }
     }
 
     // ── 사람에게 딸린 자료 ── 여행을 골랐든 안 골랐든 늘 붙입니다.
     // 여행 블록 밖에 있는 것이 핵심입니다 — 위 주석 참고.
-    const [prefRes, rateRes] = await meP;
+    const [prefRes, rateRes, placeRes] = await meP;
     {
       const p = prefRes.data ?? {};
       const bits = [
@@ -828,10 +855,27 @@ Deno.serve(async (req) => {
         rs.length
           // **이 앱이 남들과 다른 자리입니다** — 다녀온 뒤의 기록.
           // 그 사람이 실제로 좋아한 곳이 일반적인 추천보다 낫습니다.
-          ? '[높게 준 도시] 이 사람의 취향은 여기서 읽는다.\n' +
+          ? '[높게 준 도시] 어디를 좋아하는지.\n' +
             // deno-lint-ignore no-explicit-any
-            rs.map((r: any) => `- ${r.cities.name} ${r.stars}점`).join('\n')
+            rs.map((r: any) => `- ${r.cities.name} ${r.stars}점` +
+              (r.comment ? ` — 본인 한줄평: "${String(r.comment).slice(0, 60)}"` : ''))
+              .join('\n')
           : '',
+        /* **여기가 도시 별점보다 값집니다.** '도쿄 4.5' 는 도쿄를 좋아한다는
+           말이고, '신주쿠 이자카야 4 · 메이지 신궁 4' 는 **무엇을 하는 것을
+           좋아하는지**를 말합니다. 그 도시에서 뭘 할지 정할 때 쓰는 것이 이쪽입니다. */
+        (() => {
+          // deno-lint-ignore no-explicit-any
+          const ps = (placeRes.data ?? []).filter((r: any) => r.plans?.title);
+          return ps.length
+            ? '[높게 준 장소] 무엇을 하는 것을 좋아하는지. 어디로 갈지보다 ' +
+              '그 도시에서 뭘 할지 정할 때 여기서 읽는다.\n' +
+              // deno-lint-ignore no-explicit-any
+              ps.map((r: any) =>
+                `- ${r.plans.title}${r.plans.category ? ` (${r.plans.category})` : ''} ${r.stars}점`)
+                .join('\n')
+            : '';
+        })(),
       ].filter(Boolean).join('\n');
       if (mine) ctx = ctx ? ctx + '\n\n' + mine : mine;
     }
@@ -952,6 +996,12 @@ Deno.serve(async (req) => {
       '  없는 목록을 처음부터 늘어놓으면 이미 챙긴 것을 또 챙기게 한다.',
       '- 어디가 좋을지 물으면 [높게 준 도시]와 [취향]을 근거로 삼는다.',
       '  그 사람이 실제로 좋아한 곳이 일반적인 추천보다 낫다.',
+      '- **무엇을 할지**를 정할 때는 [높게 준 장소]를 본다. 어디를 좋아하는지와',
+      '  무엇을 하기를 좋아하는지는 다르다 — 도시 별점으로는 후자를 알 수 없다.',
+      '  한줄평이 붙어 있으면 그 말을 점수보다 무겁게 본다. 본인이 직접 쓴 것이다.',
+      '- **[담아둔 곳]에 이미 있는 곳은 다시 권하지 않는다.** 가고 싶다고 이미',
+      '  정해둔 것이라, 또 권하면 아무것도 모르고 말하는 것으로 보인다.',
+      '  대신 그 곳들과 어울리는 다른 곳이나 동선을 말한다.',
       '',
       shots.length
         ? `- 사진이 ${shots.length}장 함께 왔다. 사진에 보이는 것만 말하고, 안 보이는 것은 지어내지 않는다.\n` +
