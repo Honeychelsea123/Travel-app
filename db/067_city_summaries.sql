@@ -591,6 +591,238 @@ update public.cities set
   summary_url = 'https://ko.wikipedia.org/wiki/치앙라이'
 where name = '치앙라이' and country = 'TH';
 
+-- ── 6묶음 (마지막) ─────────────────────────────────────────────────
+update public.cities set
+  summary = '테킬라와 마리아치가 태어난 멕시코 제2의 도시. 대성당과 오스피시오 카바냐스가 세계유산이고 오로스코의 벽화가 그 안에 있습니다. 근교 테킬라 마을로 기차가 다닙니다. 멕시코시티에서 비행기로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/과달라하라 (멕시코)'
+where name = '과달라하라' and country = 'MX';
+
+update public.cities set
+  summary = '산으로 둘러싸인 멕시코 북부의 공업 도시. 마크로플라사 광장과 절벽이 갈라진 우아스테카 협곡이 대표적입니다. 카브리토 통구이가 이곳 음식입니다. 미국 국경에서 차로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/몬테레이 (누에보레온주)'
+where name = '몬테레이' and country = 'MX';
+
+update public.cities set
+  summary = '뉴질랜드 남섬 북쪽 끝의 햇빛 도시. 뉴질랜드에서 해가 가장 오래 나는 곳으로 꼽히고 아벨 타스만 국립공원의 관문입니다. 공예가와 와이너리가 많습니다. 웰링턴에서 배나 비행기로 갑니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/Nelson,_New_Zealand'
+where name = '넬슨' and country = 'NZ';
+
+update public.cities set
+  summary = '스코틀랜드 이민자가 세운 뉴질랜드 남섬의 도시. 세계에서 가장 가파른 볼드윈 거리와 기차역 건물이 대표적입니다. 오타고 반도에서 노란눈펭귄과 앨버트로스를 봅니다. 퀸스타운에서 차로 네 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/더니든'
+where name = '더니든' and country = 'NZ';
+
+update public.cities set
+  summary = '호주 뉴사우스웨일스의 항구 도시. 석탄 항구로 컸지만 지금은 해변과 노비스 곶 산책로로 찾습니다. 바다를 낀 오션 배스가 있습니다. 시드니에서 기차로 두 시간 반입니다.',
+  summary_url = 'https://en.wikipedia.org/wiki/Newcastle,_New_South_Wales'
+where name = '뉴캐슬' and country = 'AU';
+
+update public.cities set
+  summary = '호주 북쪽 끝 열대의 도시. 카카두와 리치필드 국립공원으로 가는 관문이고 미첼 거리와 노을 야시장이 중심입니다. 건기(5~10월)와 우기가 뚜렷해 건기에 갑니다. 동남아가 시드니보다 가깝습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/다윈 (오스트레일리아)'
+where name = '다윈' and country = 'AU';
+
+update public.cities set
+  summary = '호수를 가운데 두고 계획적으로 지은 호주의 수도. 국회의사당과 전쟁기념관, 국립미술관이 축을 이룹니다. 봄에는 플로리아드 꽃 축제가 열립니다. 시드니에서 차로 세 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/캔버라'
+where name = '캔버라' and country = 'AU';
+
+update public.cities set
+  summary = '필리핀 민다나오 최대의 도시. 두리안으로 이름났고 필리핀 최고봉 아포산이 곁에 있습니다. 이글 센터에서 필리핀 독수리를 봅니다. 마닐라·세부에서 비행기로 갑니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/다바오시'
+where name = '다바오' and country = 'PH';
+
+update public.cities set
+  summary = '싱가포르에서 배로 한 시간 거리인 인도네시아의 섬. 면세와 마사지, 골프를 하러 주말에 건너옵니다. 자유무역지대라 공장과 리조트가 함께 있습니다. 물가가 싱가포르보다 크게 쌉니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/바탐'
+where name = '바탐' and country = 'ID';
+
+update public.cities set
+  summary = '언덕에 색색의 집이 붙어 있는 칠레의 항구 도시. 골목마다 벽화가 그려져 있고 낡은 승강기 아센소르로 언덕을 오릅니다. 구시가가 유네스코 세계유산입니다. 산티아고에서 버스로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/발파라이소'
+where name = '발파라이소' and country = 'CL';
+
+update public.cities set
+  summary = '세상의 끝이라 불리는 아르헨티나 최남단 항구. 남극으로 가는 배가 여기서 뜨고 비글 해협 유람선이 다닙니다. 세상의 끝 기차와 국립공원이 있습니다. 여름(12~2월)에도 서늘합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/우수아이아'
+where name = '우수아이아' and country = 'AR';
+
+update public.cities set
+  summary = '안데스 기슭의 아르헨티나 와인 산지. 말벡 포도밭이 도시 밖으로 펼쳐지고 와이너리를 자전거로 돕니다. 아메리카 최고봉 아콩카과로 가는 길목입니다. 3월 포도 수확제가 가장 큰 축제입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/멘도사'
+where name = '멘도사' and country = 'AR';
+
+update public.cities set
+  summary = '비행기 모양으로 설계해 새로 지은 브라질의 수도. 니에메예르가 그린 곡선 건축이 도시 전체에 흩어져 있고 통째로 세계유산입니다. 대성당과 국회의사당이 대표적입니다. 걷기보다 차로 도는 도시입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/브라질리아'
+where name = '브라질리아' and country = 'BR';
+
+update public.cities set
+  summary = '아프리카 문화가 짙게 남은 브라질의 옛 수도. 파스텔색 건물이 늘어선 펠로리뉴 구시가가 세계유산입니다. 카포에이라와 아프로브라질 음식이 여기서 났습니다. 2월 카니발이 브라질에서 가장 큽니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/사우바도르'
+where name = '사우바도르' and country = 'BR';
+
+update public.cities set
+  summary = '남아프리카공화국 최대의 도시. 아파르트헤이트 박물관과 소웨토가 근현대사를 보여줍니다. 크루거 국립공원으로 가는 관문입니다. 구역에 따라 치안 차이가 커서 다닐 곳을 미리 확인합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/요하네스버그'
+where name = '요하네스버그' and country = 'ZA';
+
+update public.cities set
+  summary = '인도양에 면한 남아공의 항구 도시. 골든 마일 해변이 길게 이어지고 서핑으로 이름났습니다. 인도계 주민이 많아 커리 음식이 발달했습니다. 겨울에도 따뜻해 남아공에서 피한지로 찾습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/더반'
+where name = '더반' and country = 'ZA';
+
+update public.cities set
+  summary = '천산산맥 아래 자리한 키르기스스탄의 수도. 소련 시절 계획도시라 넓은 가로수길과 광장이 이어집니다. 알라 아르차 협곡이 차로 40분 거리라 도시에서 바로 산에 듭니다. 유목 문화를 보러 이식쿨호로 갑니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/비슈케크'
+where name = '비슈케크' and country = 'KG';
+
+update public.cities set
+  summary = '아랍에미리트의 문화 수도로 불리는 토후국. 이슬람 문명 박물관과 알 누르 모스크가 대표적이고 옛 시장 수크 알 아르사가 남아 있습니다. 두바이와 붙어 있어 차로 30분입니다. 술을 팔지 않는 곳입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/샤르자'
+where name = '샤르자' and country = 'AE';
+
+update public.cities set
+  summary = '브리티시컬럼비아의 주도이자 밴쿠버섬의 도시. 영국풍 의사당과 부차트 가든이 대표적이고 항구에서 고래 관찰선이 뜹니다. 캐나다에서 겨울이 가장 온화합니다. 밴쿠버에서 배로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/빅토리아 (브리티시컬럼비아주)'
+where name = '빅토리아' and country = 'CA';
+
+update public.cities set
+  summary = '밴쿠버 북쪽 산속의 스키 마을. 2010년 동계올림픽이 열린 곳이고 겨울에는 스키, 여름에는 산악자전거와 곤돌라를 탑니다. 마을에 차가 들어가지 않아 걸어 다닙니다. 밴쿠버에서 차로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/휘슬러 (브리티시컬럼비아주)'
+where name = '휘슬러' and country = 'CA';
+
+update public.cities set
+  summary = '모르몬교의 중심이자 유타의 주도. 템플 스퀘어가 도심에 있고 사방이 산이라 겨울 스키장이 가깝습니다. 소금 호수와 아치스·자이언 국립공원으로 가는 관문입니다. 2002년 동계올림픽이 열렸습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/솔트레이크시티'
+where name = '솔트레이크시티' and country = 'US';
+
+update public.cities set
+  summary = '미국 남부 조지아의 중심 도시. 코카콜라 박물관과 조지아 아쿠아리움, 마틴 루서 킹 목사 기념 구역이 대표적입니다. 세계에서 가장 붐비는 공항이 있어 갈아타는 곳으로도 지납니다. 1996년 올림픽이 열렸습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/애틀랜타'
+where name = '애틀랜타' and country = 'US';
+
+update public.cities set
+  summary = '텍사스 북부의 큰 도시. 케네디 대통령이 저격된 자리에 식스플로어 박물관이 있습니다. 카우보이 문화와 텍사스 바비큐가 함께 있습니다. 포트워스와 붙어 하나의 생활권을 이룹니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/댈러스'
+where name = '댈러스' and country = 'US';
+
+update public.cities set
+  summary = 'NASA 우주센터가 있는 텍사스 최대의 도시. 존슨 우주센터에서 관제실과 로켓을 봅니다. 미술관 구역과 멕시코 음식이 이 도시의 다른 얼굴입니다. 여름은 매우 덥고 습합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/휴스턴'
+where name = '휴스턴' and country = 'US';
+
+update public.cities set
+  summary = '미국 자동차 산업이 시작된 도시. 포드 박물관과 모타운 박물관이 그 역사를 보여줍니다. 쇠락했다가 도심을 다시 짓는 중이라 옛것과 새것이 섞여 있습니다. 강 건너가 캐나다 윈저입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/디트로이트'
+where name = '디트로이트' and country = 'US';
+
+update public.cities set
+  summary = '호수 만 개의 주라 불리는 미네소타의 도시. 강 건너 세인트폴과 쌍둥이 도시를 이루고 워커 아트센터의 조각 정원이 대표적입니다. 겨울이 길고 매우 춥습니다. 실내 통로가 도심 건물을 잇습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/미니애폴리스'
+where name = '미니애폴리스' and country = 'US';
+
+update public.cities set
+  summary = '캘리포니아의 주도. 골드러시 시절 거리를 남긴 올드 새크라멘토와 주 의사당이 중심입니다. 강 두 개가 만나 자전거길이 길게 이어집니다. 요세미티와 타호 호수로 가는 길목입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/새크라멘토'
+where name = '새크라멘토' and country = 'US';
+
+-- ── 7묶음 (끝) ─────────────────────────────────────────────────────
+update public.cities set
+  summary = '돗토리 사구로 알려진 일본 산인 지방의 도시. 바다에 면한 모래언덕을 걷고 낙타를 탑니다. 모래로만 작품을 만드는 사구 미술관이 곁에 있습니다. 오사카에서 특급으로 세 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/돗토리시'
+where name = '돗토리' and country = 'JP';
+
+update public.cities set
+  summary = '호수를 낀 시마네의 성 도시. 검은 마쓰에성 천수각이 국보이고 해자를 작은 배로 돕니다. 신지호로 지는 해가 일본에서 손꼽히는 노을로 꼽힙니다. 이즈모타이샤와 묶어 다닙니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/마쓰에시'
+where name = '마쓰에' and country = 'JP';
+
+update public.cities set
+  summary = '혼슈 서쪽 끝 간몬해협에 면한 도시. 복어 요리로 이름났고 가라토 시장에서 회를 사 먹습니다. 해협 아래 인도 터널로 규슈까지 걸어갑니다. 시모노세키 조약이 맺어진 곳이기도 합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/시모노세키시'
+where name = '시모노세키' and country = 'JP';
+
+update public.cities set
+  summary = '홋카이도 제2의 도시. 아사히야마 동물원이 동물의 움직임을 보여주는 전시로 이름났습니다. 겨울 겨울축제와 얼음 조각이 열리고 라멘이 이 도시의 음식입니다. 비에이·후라노로 가는 관문입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아사히카와시'
+where name = '아사히카와' and country = 'JP';
+
+update public.cities set
+  summary = '녹차와 겐지 이야기로 알려진 교토 남쪽의 도시. 십원 동전에 새겨진 뵤도인 봉황당과 우지가미 신사가 세계유산입니다. 찻집에서 말차를 갈아 마십니다. 교토에서 기차로 20분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/우지시'
+where name = '우지' and country = 'JP';
+
+update public.cities set
+  summary = '일본 3대 정원으로 꼽히는 고라쿠엔이 있는 도시. 검은 오카야마성이 정원 건너에 섭니다. 세토내해의 섬과 구라시키로 가는 길목입니다. 기비단고와 복숭아가 이곳 것입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/오카야마시'
+where name = '오카야마' and country = 'JP';
+
+update public.cities set
+  summary = '섬 다섯 개가 다리로 이어진 중국 푸젠의 항구 도시. 옛 조계지 구랑위섬이 유네스코 세계유산이고 차가 다니지 않습니다. 대만이 바다 건너 보입니다. 겨울에도 온화합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/샤먼시'
+where name = '샤먼' and country = 'CN';
+
+update public.cities set
+  summary = '중국 최남단 하이난섬의 휴양 도시. 야룽완과 다둥하이 해변에 리조트가 늘어서 있어 중국의 하와이로 불립니다. 겨울에도 20도가 넘습니다. 면세점이 커서 쇼핑하러도 옵니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/싼야시'
+where name = '싼야' and country = 'CN';
+
+update public.cities set
+  summary = '사시사철 봄이라 춘성이라 불리는 윈난의 성도. 석림과 뎬츠 호수가 근교에 있고 소수민족 문화가 섞여 있습니다. 다리·리장으로 가는 출발점입니다. 해발 1,900m라 여름에도 시원합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/쿤밍시'
+where name = '쿤밍' and country = 'CN';
+
+update public.cities set
+  summary = '베이징의 관문 항구 도시. 옛 조계지의 유럽식 건물이 하이허강을 따라 남아 있고 톈진의 눈 대관람차가 강 위에 섭니다. 만두 거우부리가 이곳 음식입니다. 베이징에서 고속철로 30분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/톈진시'
+where name = '톈진' and country = 'CN';
+
+update public.cities set
+  summary = '산둥반도의 해안 도시. 포도 산지로 중국 와인의 시작점이고 장위 와인 박물관이 있습니다. 펑라이각과 해변이 이어집니다. 인천에서 배와 비행기로 닿습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/옌타이시'
+where name = '옌타이' and country = 'CN';
+
+update public.cities set
+  summary = '산둥반도 동쪽 끝의 항구 도시. 한국과 가장 가까운 중국 도시라 인천에서 배가 다닙니다. 류궁다오섬과 해안 도로가 대표적입니다. 공기가 맑고 여름이 서늘합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/웨이하이시'
+where name = '웨이하이' and country = 'CN';
+
+update public.cities set
+  summary = '베트남 북부 최대의 항구 도시. 하롱베이와 깟바섬으로 가는 관문이고 프랑스 시절 건물이 남아 있습니다. 반다꾹이 이곳 음식입니다. 하노이에서 고속도로로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/하이퐁시'
+where name = '하이퐁' and country = 'VN';
+
+update public.cities set
+  summary = '포르투갈에서 가장 오래된 대학이 있는 도시. 조아니나 도서관과 대학 건물이 언덕 위에 있고 유네스코 세계유산입니다. 학생들이 검은 망토를 두르고 다닙니다. 포르투와 리스본 중간에 있습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/코임브라'
+where name = '코임브라' and country = 'PT';
+
+update public.cities set
+  summary = '포르투갈에서 가장 오래된 대성당이 있는 종교 도시. 부활절 성주간 행렬이 나라에서 가장 큽니다. 언덕 위 봉 제수스 두 몬트 계단이 대표적입니다. 포르투에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/브라가'
+where name = '브라가' and country = 'PT';
+
+update public.cities set
+  summary = '알가르베로 들어가는 관문 도시. 성벽 안 구시가와 뼈로 지은 예배당이 있고 앞바다에 히아 포르모자 갯벌 석호가 펼쳐집니다. 배를 타고 무인도 해변으로 갑니다. 공항이 있어 유럽에서 바로 옵니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/파루'
+where name = '파루' and country = 'PT';
+
+update public.cities set
+  summary = '이오니아해에 뜬 그리스의 섬. 베네치아가 지배한 흔적이 짙어 구시가가 이탈리아를 닮았고 세계유산입니다. 아킬레이온 궁전과 카노니 절벽이 대표적입니다. 그리스 섬 가운데 초록이 유난히 많습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/케르키라주'
+where name = '코르푸' and country = 'GR';
+
+update public.cities set
+  summary = '북아일랜드의 수도. 타이타닉이 지어진 조선소 자리에 타이타닉 박물관이 섰습니다. 분쟁의 흔적을 담은 벽화 거리를 택시로 돕니다. 자이언트 코즈웨이로 가는 출발점입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/벨파스트'
+where name = '벨파스트' and country = 'GB';
+
+update public.cities set
+  summary = '런던에서 가장 가까운 해변 도시. 자갈 해변과 부두 놀이공원, 인도풍 로열 파빌리온이 대표적입니다. 골목 상점가 레인스가 걷기 좋습니다. 런던에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/브라이턴'
+where name = '브라이턴' and country = 'GB';
+
 commit;
 
 -- 확인 — 아직 비어 있는 곳이 몇 곳인지
