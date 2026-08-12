@@ -6,22 +6,38 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb, FN } from './db.js?v=b291';
-import { $, esc, toast, copyText } from './dom.js?v=b291';
-import { starHtml, paintStars, markRated } from './stars.js?v=b291';
+import { sb } from './db.js?v=b292';
+
+/* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
+ * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
+ *   한 장이라 `?join=` 을 붙여도 메신저 미리보기 카드가 안 바뀝니다 —
+ *   크롤러는 자바스크립트를 안 돌리고 `<meta og:>` 만 읽습니다. 여행마다
+ *   다른 카드를 만들려면 여행마다 다른 HTML 을 내주는 자리가 있어야 합니다.
+ *   그 자리가 deno/join.ts 입니다. 사람은 눌러서 0.1초 만에 앱에 닿습니다.
+ *
+ * ⚠ **왜 Supabase 엣지 함수가 아닌가.** 처음엔 거기 올렸고 코드도 잘 돌았는데
+ *   카톡에 카드가 아예 안 떴습니다. 응답 헤더에 `Server: cloudflare` 와
+ *   `set-cookie: __cf_bm=`(봇 감지)이 있었습니다. 같은 링크를 github.io
+ *   주소로 보내면 카드가 떴고요. Cloudflare 를 안 지나는 자리로 옮겼습니다.
+ *   자세한 것은 deno/join.ts 머리말에.
+ *
+ * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
+const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
+import { $, esc, toast, copyText } from './dom.js?v=b292';
+import { starHtml, paintStars, markRated } from './stars.js?v=b292';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b291';
-import { loadAdmin } from './admin.js?v=b291';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b292';
+import { loadAdmin } from './admin.js?v=b292';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
    취향 계산은 재보니 무작위와 별 차이가 없었고(rec.js 맨 위),
-   확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
+   확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b292) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b291';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b291';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b292';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b292';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -30,21 +46,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b291';
+         setEditPlanId } from './trip.js?v=b292';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b291';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b292';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b291';
+         useCities, addCity, search } from './cities.js?v=b292';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b291';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b292';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b291';
+         askImageSize, personaStats, judgePersona } from './card.js?v=b292';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b291';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b292';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -102,7 +118,7 @@ function putHtml(id, html){
 }
 const dropHtml = id => { delete lastHtml[id]; };
 
-/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b291).
+/* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b292).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
    부르는 곳은 자체 점검 하나뿐이었고**, 값을 쓰는 자리(`#d0`·`#v0`)는
    어느 파일에도 없었습니다. 즉 `mark` 는 늘 첫 줄에서 되돌아왔고
@@ -2554,7 +2570,7 @@ async function tripPhoto(t){
 
   /* ── 그래도 없으면 **같은 나라의 대표 도시** 사진을 빌립니다 ──────────
    * '삼척'처럼 우리 목록에 없는 곳으로 만든 여행은 여기까지 옵니다.
-   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b291).
+   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b292).
    * 도시는 몰라도 **나라는 압니다.** 그 나라에서 한 곳을 빌려 옵니다.
    *
    * 고르는 순서: `pop_rank`(나라마다 한 곳씩 매겨둔 대표) → 없으면
@@ -6626,7 +6642,7 @@ function mapLinks(o, city){
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
- * 여행 목록(b291). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
+ * 여행 목록(b292). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
  * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
  * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
  * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.
@@ -8483,12 +8499,7 @@ $('i_make').addEventListener('click', async () => {
   if (error) return fail(error, 'mem');
   if (!data)  return fail('초대 링크를 만들지 못했어요. 만든 사람만 만들 수 있어요.', 'mem');
 
-  /* ⚠ **앱 주소가 아니라 엣지 함수 주소입니다.** 앱은 정적 파일 한 장이라
-     ?join= 를 붙여도 메신저 미리보기 카드가 안 바뀝니다(크롤러는 자바스크립트를
-     안 돌립니다). 그래서 여행 이름·사진이 든 카드를 만들 수 있는 자리를
-     한 번 거쳐서 앱으로 보냅니다. 사람은 눌러서 0.1초 만에 앱에 닿습니다.
-     예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
-  const link = FN + 'join?c=' + data.code;
+  const link = JOIN_URL + '?c=' + data.code;
   $('i_link').textContent = link;
   $('i_result').classList.remove('hide');
   /* 공유 시트를 열 수 있는 기기에서만 보내기 버튼을 답니다.
