@@ -72,7 +72,25 @@ foreach ($d in $devices) {
   $total = $markPx + $gap + $wmBox + $gap + $tagBox
   $y = ($h - $total) / 2
 
-  $g.DrawImage($mark, [int](($w - $markPx)/2), [int]$y, [int]$markPx, [int]$markPx)
+  # ── 마크는 **둥글게 잘라서** 넣습니다 ────────────────────────────
+  # icons/keyro-512.png 는 b301 에서 **모서리까지 꽉 찬 정사각형**이 됐습니다
+  # (홈 화면 아이콘 아래에 검정이 끼던 것을 고치면서 — iOS 는 자기가 깎고
+  #  남은 투명한 곳을 검정으로 채웁니다). 그대로 얹으면 런치 이미지의 마크만
+  # 각지고 화면 스플래시의 SVG(rx=22.4)는 둥글어서, 넘어갈 때 모서리가
+  # 깎이는 것이 보입니다. 여기서 같은 비율로 깎아 맞춥니다.
+  #   22.4 / 96 — index.html 의 <rect rx="22.4" viewBox="0 0 96 96"> 와 같은 값
+  $mx0 = [int](($w - $markPx)/2)
+  $rr  = [single]($markPx * 22.4 / 96)
+  $clip = New-Object System.Drawing.Drawing2D.GraphicsPath
+  $d2 = $rr * 2
+  $clip.AddArc([single]$mx0,            [single]$y,            $d2, $d2, 180, 90)
+  $clip.AddArc([single]($mx0+$markPx-$d2), [single]$y,            $d2, $d2, 270, 90)
+  $clip.AddArc([single]($mx0+$markPx-$d2), [single]($y+$markPx-$d2), $d2, $d2, 0,   90)
+  $clip.AddArc([single]$mx0,            [single]($y+$markPx-$d2), $d2, $d2, 90,  90)
+  $clip.CloseFigure()
+  $g.SetClip($clip)
+  $g.DrawImage($mark, $mx0, [int]$y, [int]$markPx, [int]$markPx)
+  $g.ResetClip(); $clip.Dispose()
   $y += $markPx + $gap
 
   $brInk = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml("#11141A"))
