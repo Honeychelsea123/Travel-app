@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b310';
+import { sb } from './db.js?v=b311';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b310';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b310';
-import { starHtml, paintStars, markRated } from './stars.js?v=b310';
+import { $, esc, toast, copyText } from './dom.js?v=b311';
+import { starHtml, paintStars, markRated } from './stars.js?v=b311';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b310';
-import { loadAdmin } from './admin.js?v=b310';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b311';
+import { loadAdmin } from './admin.js?v=b311';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b310';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b310';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b310';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b311';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b311';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,21 +46,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b310';
+         setEditPlanId } from './trip.js?v=b311';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b310';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b311';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b310';
+         useCities, addCity, search } from './cities.js?v=b311';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b310';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b311';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona } from './card.js?v=b310';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b311';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b310';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b311';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3633,7 +3633,7 @@ function closePersona(fromPop){
 $('openpersona').addEventListener('click', openPersona);
 $('personaback').addEventListener('click', () => closePersona());
 
-function drawPersona(s){
+async function drawPersona(s){
   /* 도시 3곳 미만이면 카드를 안 만듭니다. "이제 막 시작한 여행자"도
      3곳은 있어야 말이 됩니다. 대신 뭘 하면 되는지 알려줍니다. */
   if (s.cities < 3){
@@ -3652,25 +3652,14 @@ function drawPersona(s){
   const conts = Object.entries(s.byContinent).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   $('personabox').innerHTML = `
-    <div class="pcard" style="background:${PERSONA_BG[p.g]}">
-      <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">${PERSONA_ICON[p.ic] || ''}</svg>
-
-      <div class="ptitle">${esc(p.title)}</div>
-
-      <div class="pnums">${s.countries}개국 <i>·</i> ${s.cities}도시</div>
-
-      ${s.best.length ? `<div class="pbest">
-        <div class="pl">가장 좋았던 곳</div>
-        ${s.best.map(b => `<div class="pb">${esc(b.name)}
-           <span>★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}</span></div>`).join('')}
-      </div>` : ''}
-
-      ${conts.length ? `<div class="pconts">${
-        conts.map(([k, n]) => `${esc(k)} ${n}`).join(' · ')}</div>` : ''}
-
-      <div class="pbrand">기로</div>
-    </div>
+    <!-- ⚠ **화면 카드를 따로 그리지 않습니다.** 여기는 아래에서 만든
+         **진짜 그림**이 들어올 자리입니다.
+         전에는 이 자리에 `.pcard` 를 HTML 로 다시 그렸습니다. 그런데
+         내보내는 그림 쪽만 사진 배경으로 고쳐지고 화면 쪽은 옛 그러데이션
+         그대로 남아서, 사용자가 보는 것과 올리는 것이 **아예 다른 카드**가
+         됐습니다. 보는 쪽이 겨자색 증명서라 아무도 안 올립니다.
+         본 것이 곧 올리는 것이어야 합니다. -->
+    <div class="pcardwrap" id="pcardwrap"></div>
 
     <div style="display:flex; gap:8px; margin-bottom:var(--s-sm)">
       <button class="small" id="p_img" style="flex:1">이미지로 저장</button>
@@ -3731,7 +3720,26 @@ function drawPersona(s){
     }
     toast(await copyText(`${text}\n${url}`) ? '복사했어요' : text);
   };
+
+  /* ── 화면 카드 = 내보내는 그림 ──────────────────────────────────
+     같은 `spec` 으로 만든 **그 파일**을 그대로 띄웁니다. 두 벌로 그리면
+     언젠가 한쪽만 고쳐서 둘이 어긋납니다 — 실제로 그랬습니다.
+     4:5 로 만듭니다. 인스타 피드에서 세로가 정사각보다 화면을 훨씬 많이
+     먹고, 고르는 목록에서도 세로가 먼저입니다(card.js 의 IMG_SIZES).
+     못 그려도 조용히 넘어갑니다 — 아래 '왜 이렇게 나왔나요' 는 그대로
+     보이고, 저장·공유 단추도 따로 그리므로 여전히 됩니다. */
+  try {
+    const { blob } = await cardImage(spec, 'portrait');
+    if (personaUrl) URL.revokeObjectURL(personaUrl);   /* 다시 그릴 때마다 쌓입니다 */
+    personaUrl = URL.createObjectURL(blob);
+    const box = $('pcardwrap');
+    if (box) box.innerHTML =
+      `<img src="${personaUrl}" alt="${esc(p.title)} 성향 카드">`;
+  } catch {}
 }
+/* 방금 만든 카드 그림의 주소. 다시 그릴 때 앞것을 놓아줍니다 —
+   안 놓으면 화면을 드나들 때마다 메모리에 그림이 쌓입니다. */
+let personaUrl = '';
 
 /* ── 후보와 빈 시간 ──────────────────────────────────────────────────
  * 도쿄 앱에서 가장 잘 굴러가던 기능입니다. 가고 싶은 곳을 모아두고,
