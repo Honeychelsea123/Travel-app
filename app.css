@@ -689,7 +689,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .trip{ display:flex; align-items:center; gap:var(--s-sm); padding:var(--s-sm) 0;
        cursor:pointer; }
 .trip + .trip{ border-top:1px solid var(--divider-soft); }
-.trip .thumb{ flex:none; width:52px; height:52px; border-radius:var(--r-sm);
+/* ── 여행 사진은 크게 ────────────────────────────────────────────────
+   52px 이었습니다. 줄 안에 제목·날짜·단추가 3단으로 쌓여 있어서 줄 높이는
+   90px 가까운데 사진만 52 라, 사진 위아래로 빈 자리가 남아 목록이 휑해
+   보였습니다. 줄 높이를 채우게 키웁니다.
+   ⚠ 공용 `.thumb`(56px)을 안 건드립니다 — 기록 탭·보관함의 도시 목록은
+     한 줄에 한 가지만 있어서 지금 크기가 맞습니다. 여기만 다릅니다. */
+.trip .thumb{ flex:none; width:84px; height:84px; border-radius:var(--r-sm);
               object-fit:cover; background:var(--parchment); }
 .trip .t{ flex:1; min-width:0; }
 /* **또 같은 자리였습니다** (b279, 규칙 검사로 찾음). `b` 에 크기를 안 적어
