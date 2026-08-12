@@ -13,10 +13,16 @@
    멈추면 app.js 가 아예 실행되지 않습니다 — b227 에서 leaflet 을 뺀 것과 같은
    문제이고 이쪽은 앱 전체가 매달립니다. 판도 `@2` 라 조용히 바뀌었습니다.
    자세한 것은 supabase.js 머리말에. */
-import { createClient } from './supabase.js?v=b290';
+import { createClient } from './supabase.js?v=b291';
 
 const SUPABASE_URL = 'https://qahqqhjleqfrsjiixnas.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ymbrt_00OqzQjT3SrweZgQ_Lu0cw64V';
+
+/* 엣지 함수 주소. 초대 링크가 여기를 지나갑니다 —
+   메신저 미리보기 카드는 자바스크립트를 안 돌려서, 여행마다 다른 카드를
+   만들려면 여행마다 다른 HTML 을 내주는 자리가 있어야 합니다.
+   자세한 것은 supabase/functions/join/index.ts 머리말에. */
+export const FN = SUPABASE_URL + '/functions/v1/';
 
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { storageKey:'t2-auth', persistSession:true, autoRefreshToken:true,
