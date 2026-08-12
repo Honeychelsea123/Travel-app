@@ -344,6 +344,253 @@ update public.cities set
   summary_url = 'https://ko.wikipedia.org/wiki/히로사키시'
 where name = '히로사키' and country = 'JP';
 
+-- ── 4묶음 ──────────────────────────────────────────────────────────
+update public.cities set
+  summary = '백제의 옛 도읍 웅진. 공산성과 무령왕릉이 시내에 있고 백제역사유적지구로 유네스코 세계유산에 올랐습니다. 가을 백제문화제 때 금강에 유등이 뜹니다. 부여와 묶어 하루씩 도는 것이 보통입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/공주시'
+where name = '공주' and country = 'KR';
+
+update public.cities set
+  summary = '백제의 마지막 도읍 사비. 부소산성과 낙화암, 정림사지 오층석탑이 남아 있고 백제역사유적지구로 세계유산입니다. 궁남지의 연꽃이 여름에 핍니다. 공주와 함께 도는 것이 보통입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/부여군'
+where name = '부여' and country = 'KR';
+
+update public.cities set
+  summary = '초록 계단이 산을 덮은 차밭으로 알려진 전남의 군. 대한다원 차밭과 율포 해변이 대표적이고 5월에 다향대축제가 열립니다. 겨울에는 차밭에 불을 밝힙니다. 광주에서 차로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/보성군'
+where name = '보성' and country = 'KR';
+
+update public.cities set
+  summary = '대나무로 이름난 전남의 군. 죽녹원 대숲길과 관방제림 고목 산책로가 대표적이고 메타세쿼이아 가로수길이 이어집니다. 떡갈비와 대통밥이 이곳 음식입니다. 광주에서 차로 40분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/담양군'
+where name = '담양' and country = 'KR';
+
+update public.cities set
+  summary = '조선의 계획도시가 성곽째 남은 경기도의 도시. 화성이 유네스코 세계유산이고 성벽을 따라 한 바퀴 걷습니다. 행궁 앞 통닭거리와 왕갈비가 이곳 음식입니다. 서울에서 지하철로 닿습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/수원시'
+where name = '수원' and country = 'KR';
+
+update public.cities set
+  summary = '명나라의 도읍이었던 장강 가의 도시. 명효릉과 중산릉, 성벽이 남아 있고 부자묘 일대가 번화합니다. 난징대학살 기념관이 있어 근대사를 함께 봅니다. 상하이에서 고속철로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/난징시'
+where name = '난징' and country = 'CN';
+
+update public.cities set
+  summary = '루이 14세가 지은 궁전으로 알려진 파리 근교 도시. 거울의 방과 정원, 마리 앙투아네트의 별궁이 대표적입니다. 정원이 매우 넓어 자전거나 꼬마열차를 탑니다. 파리에서 RER로 한 시간이고 월요일은 휴관입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/베르사유'
+where name = '베르사유' and country = 'FR';
+
+update public.cities set
+  summary = '아레강이 감싸 도는 스위스의 수도. 중세 아케이드가 6km 이어지는 구시가가 유네스코 세계유산입니다. 시계탑 치트글로게와 아인슈타인이 살던 집이 그 안에 있습니다. 여름에는 강물에 몸을 맡기고 떠내려갑니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/베른'
+where name = '베른' and country = 'CH';
+
+update public.cities set
+  summary = '스페인의 옛 수도. 좁은 골목이 얽힌 언덕 전체가 세계유산이고 대성당과 알카사르가 중심에 섭니다. 기독교·이슬람·유대 문화가 겹쳐 남은 도시입니다. 마드리드에서 고속철로 30분이라 당일치기가 많습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/톨레도'
+where name = '톨레도' and country = 'ES';
+
+update public.cities set
+  summary = '2천 년 된 로마 수도교가 도심을 가로지르는 스페인의 도시. 디즈니 성의 본보기로 알려진 알카사르와 대성당이 있습니다. 새끼돼지 통구이가 이곳 음식입니다. 마드리드에서 고속철로 30분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/세고비아'
+where name = '세고비아' and country = 'ES';
+
+update public.cities set
+  summary = '이슬람 사원 안에 성당이 들어선 메스키타로 알려진 안달루시아의 도시. 유대인 지구의 흰 골목과 꽃을 건 안뜰이 이어집니다. 5월 파티오 축제 때 안뜰을 열어 보여줍니다. 여름은 매우 덥습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/코르도바 (스페인)'
+where name = '코르도바' and country = 'ES';
+
+update public.cities set
+  summary = '독일 국경에 붙은 알자스의 마을. 목조 가옥과 운하가 있는 프티트 베니스 구역이 대표적입니다. 겨울 크리스마스 마켓으로 이름났고 알자스 와인길이 여기서 이어집니다. 스트라스부르에서 기차로 30분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/콜마르'
+where name = '콜마르' and country = 'FR';
+
+update public.cities set
+  summary = '노이슈반슈타인성으로 가는 길목의 바이에른 마을. 성 두 채가 호수와 알프스를 배경으로 서 있습니다. 성은 예약제라 미리 표를 사야 합니다. 뮌헨에서 기차와 버스로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/퓌센'
+where name = '퓌센' and country = 'DE';
+
+update public.cities set
+  summary = '절벽에 색색의 집이 붙어 있는 이탈리아 리구리아의 다섯 마을. 마을 사이를 기차와 해안 산책로가 잇습니다. 통째로 유네스코 세계유산이고 국립공원입니다. 길이 좁아 성수기에는 매우 붐빕니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/친퀘테레'
+where name = '친퀘테레' and country = 'IT';
+
+update public.cities set
+  summary = '나폴리만 절벽 위에 앉은 이탈리아 남부의 휴양 도시. 아말피 해안과 카프리섬으로 가는 배가 여기서 뜹니다. 레몬으로 만든 리몬첼로가 이곳 술입니다. 나폴리에서 사철로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/소렌토'
+where name = '소렌토' and country = 'IT';
+
+update public.cities set
+  summary = '콜럼버스가 태어난 이탈리아 최대의 항구 도시. 좁은 골목 카루지가 얽힌 구시가와 왕궁 거리가 유네스코 세계유산입니다. 페스토와 포카치아가 이곳에서 났습니다. 친퀘테레로 가는 길목이기도 합니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/제노바'
+where name = '제노바' and country = 'IT';
+
+update public.cities set
+  summary = '에트나 화산 아래 시칠리아 동쪽 항구 도시. 화산암으로 지어 건물이 검고, 바로크 구시가가 세계유산입니다. 아침 어시장이 활기찹니다. 에트나 화산과 타오르미나로 가는 출발점입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/카타니아'
+where name = '카타니아' and country = 'IT';
+
+update public.cities set
+  summary = '비잔틴 모자이크로 이름난 이탈리아 북부의 도시. 산 비탈레 성당과 갈라 플라치디아 영묘의 천장이 대표적이고 여덟 곳이 세계유산입니다. 단테가 묻힌 곳이기도 합니다. 볼로냐에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/라벤나'
+where name = '라벤나' and country = 'IT';
+
+update public.cities set
+  summary = '이탈리아 남동쪽 아드리아해의 항구 도시. 구시가 바리 베키아의 골목에서 할머니들이 오레키에테를 손으로 빚어 팝니다. 성 니콜라 성당이 중심에 있습니다. 그리스와 크로아티아로 가는 배가 뜹니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/바리'
+where name = '바리' and country = 'IT';
+
+update public.cities set
+  summary = '교황이 머물렀던 프랑스 남부의 성벽 도시. 교황궁과 끊어진 생베네제 다리가 세계유산입니다. 여름이면 도시 전체가 연극제로 채워집니다. 프로방스를 도는 거점으로 삼기 좋습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아비뇽'
+where name = '아비뇽' and country = 'FR';
+
+update public.cities set
+  summary = '붉은 벽돌로 지어 장밋빛 도시라 불리는 프랑스 남서부의 도시. 에어버스 본사가 있어 항공우주 박물관이 함께 있습니다. 카술레가 이곳 음식이고 미디 운하가 지납니다. 학생이 많아 밤이 활기찹니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/툴루즈'
+where name = '툴루즈' and country = 'FR';
+
+update public.cities set
+  summary = '레만호에 면한 스위스의 도시. 국제올림픽위원회 본부와 올림픽 박물관이 있고 언덕 위 대성당에서 호수가 내려다보입니다. 호숫가 우시 지구가 산책하기 좋습니다. 제네바에서 기차로 40분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/로잔'
+where name = '로잔' and country = 'CH';
+
+update public.cities set
+  summary = '루벤스가 살던 벨기에의 항구 도시. 다이아몬드 거래로 이름났고 중앙역이 유럽에서 손꼽히게 아름다운 역으로 꼽힙니다. 성모 대성당에 루벤스의 제단화가 있습니다. 브뤼셀에서 기차로 40분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/안트베르펜'
+where name = '안트베르펜' and country = 'BE';
+
+update public.cities set
+  summary = '대학으로 이름난 벨기에의 도시. 레이스처럼 조각된 시청사와 유럽에서 가장 오래된 가톨릭 대학이 있습니다. 스텔라 아르투아가 이곳에서 만들어집니다. 브뤼셀에서 기차로 25분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/뢰번'
+where name = '뢰번' and country = 'BE';
+
+update public.cities set
+  summary = '네덜란드 정부와 국제사법재판소가 있는 도시. 평화궁과 마우리츠하위스 미술관이 대표적이고 진주 귀걸이를 한 소녀가 거기 있습니다. 스헤베닝언 해변이 트램으로 이어집니다. 암스테르담에서 기차로 50분입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/헤이그'
+where name = '헤이그' and country = 'NL';
+
+-- ── 5묶음 ──────────────────────────────────────────────────────────
+update public.cities set
+  summary = '마스강이 지나는 네덜란드 최남단의 도시. 유럽연합의 출발이 된 마스트리흐트 조약이 여기서 맺어졌습니다. 800년 된 교회를 고쳐 만든 서점이 유명합니다. 벨기에·독일 국경이 차로 20분 거리입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/마스트리흐트'
+where name = '마스트리흐트' and country = 'NL';
+
+update public.cities set
+  summary = '모차르트가 아닌 무기의 도시로 시작한 오스트리아 제2의 도시. 시계탑이 선 슐로스베르크 언덕과 붉은 지붕 구시가가 세계유산입니다. 강 위에 뜬 인공섬과 현대미술관이 대비를 이룹니다. 빈에서 기차로 두 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/그라츠'
+where name = '그라츠' and country = 'AT';
+
+update public.cities set
+  summary = '도나우강에 면한 오스트리아의 공업 도시. 전자예술 축제 아르스 일렉트로니카로 이름났고 그 미술관이 강가에 있습니다. 린처 토르테가 이곳 과자입니다. 빈과 잘츠부르크 사이에 있습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/린츠'
+where name = '린츠' and country = 'AT';
+
+update public.cities set
+  summary = '뉘른베르크 재판과 크리스마스 마켓으로 알려진 독일 바이에른의 도시. 언덕 위 황제성과 구시가가 강을 끼고 있습니다. 손가락만 한 뉘른베르크 소시지가 명물입니다. 뮌헨에서 고속열차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/뉘른베르크'
+where name = '뉘른베르크' and country = 'DE';
+
+update public.cities set
+  summary = '벤츠와 포르쉐가 태어난 독일 남서부의 도시. 두 브랜드의 박물관이 도시 양쪽에 있습니다. 포도밭이 시내까지 들어와 있고 가을에는 대규모 맥주 축제가 열립니다. 프랑크푸르트에서 고속열차로 한 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/슈투트가르트'
+where name = '슈투트가르트' and country = 'DE';
+
+update public.cities set
+  summary = '난쟁이 동상을 찾아다니는 폴란드의 도시. 오데르강의 섬과 다리가 얽혀 있고 색색의 시장 광장이 중심입니다. 백 년 홀이 유네스코 세계유산입니다. 크라쿠프·프라하와 기차로 이어집니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/브로츠와프'
+where name = '브로츠와프' and country = 'PL';
+
+update public.cities set
+  summary = '체코 제2의 도시이자 모라바 지방의 중심. 미스 반 데어 로에가 지은 투겐타트 저택이 세계유산입니다. 프라하보다 조용하고 물가가 쌉니다. 프라하에서 기차로 두 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/브르노'
+where name = '브르노' and country = 'CZ';
+
+update public.cities set
+  summary = '온천으로 세워진 체코 서부의 도시. 골짜기를 따라 파스텔색 온천장이 늘어서 있고 컵을 들고 다니며 온천수를 마십니다. 베헤로프카와 온천 과자가 이곳 것입니다. 프라하에서 버스로 두 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/카를로비바리'
+where name = '카를로비바리' and country = 'CZ';
+
+update public.cities set
+  summary = '옥빛 호수 열여섯 개가 폭포로 이어지는 크로아티아의 국립공원. 나무 데크를 따라 물 위를 걷고 배로 큰 호수를 건넙니다. 유네스코 세계유산입니다. 자그레브와 자다르 사이에 있어 오가는 길에 들릅니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/플리트비체 호수 국립공원'
+where name = '플리트비체' and country = 'HR';
+
+update public.cities set
+  summary = '이스트라반도 서쪽 바다에 튀어나온 크로아티아의 항구 마을. 언덕 꼭대기 성 에우페미아 성당 종탑이 멀리서도 보입니다. 이탈리아 지배가 길어 음식과 말에 그 흔적이 남았습니다. 근처 숲에서 송로버섯이 납니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/로비니'
+where name = '로비니' and country = 'HR';
+
+update public.cities set
+  summary = '오스만 제국의 첫 수도. 초록 모스크와 초록 영묘가 이름을 남겼고 실크로드 시장 한이 남아 있습니다. 겨울에는 울루산에서 스키를 탑니다. 이스탄불에서 배와 버스로 두 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/부르사'
+where name = '부르사' and country = 'TR';
+
+update public.cities set
+  summary = '에게해에 면한 튀르키예 제3의 도시. 해안 산책로 코르돈과 시계탑 광장이 중심이고 케이블카로 언덕에 오릅니다. 고대 도시 에페소스와 파묵칼레로 가는 길목입니다. 이스탄불보다 여유롭습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/이즈미르'
+where name = '이즈미르' and country = 'TR';
+
+update public.cities set
+  summary = '튀르키예의 수도. 아타튀르크 영묘가 언덕을 차지하고 있고 아나톨리아 문명 박물관에 히타이트 유물이 모여 있습니다. 성곽 안 옛 마을이 남아 있습니다. 이스탄불에서 고속철로 네 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/앙카라'
+where name = '앙카라' and country = 'TR';
+
+update public.cities set
+  summary = '모로코의 수도. 하산 탑과 무함마드 5세 영묘, 바다에 면한 우다이아 카스바가 대표적입니다. 파란 흰 골목이 조용해 마라케시와 결이 다릅니다. 카사블랑카에서 기차로 한 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/라바트'
+where name = '라바트' and country = 'MA';
+
+update public.cities set
+  summary = '지브롤터 해협을 사이에 두고 스페인과 마주 보는 모로코의 항구. 메디나와 카스바에서 두 대륙이 만나는 바다가 보입니다. 유럽에서 배로 한 시간이라 당일로 건너오기도 합니다. 헤라클레스 동굴이 근교에 있습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/탕헤르'
+where name = '탕헤르' and country = 'MA';
+
+update public.cities set
+  summary = '나일강과 사막이 만나는 이집트 남쪽 도시. 필레 신전과 미완성 오벨리스크가 있고 여기서 아부심벨로 갑니다. 펠루카를 타고 강을 떠다니는 것이 이 도시의 방식입니다. 여름은 매우 덥고 겨울이 성수기입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아스완'
+where name = '아스완' and country = 'EG';
+
+update public.cities set
+  summary = '지중해에 면한 이집트 제2의 도시. 고대 도서관을 기려 지은 알렉산드리아 도서관과 카이트베이 요새가 해안에 있습니다. 그리스·로마 유적이 도심에 섞여 있습니다. 카이로에서 기차로 두 시간 반입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/알렉산드리아'
+where name = '알렉산드리아' and country = 'EG';
+
+update public.cities set
+  summary = '시크교의 중심인 황금 사원이 있는 인도 북서부의 도시. 금박 사원이 연못 한가운데 서 있고 누구에게나 무료로 밥을 냅니다. 파키스탄 국경의 와가 국기 하강식도 함께 봅니다. 델리에서 기차로 여섯 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/암리차르'
+where name = '암리차르' and country = 'IN';
+
+update public.cities set
+  summary = '호수 위에 궁전이 뜬 인도 라자스탄의 도시. 시티 팰리스와 물 위의 레이크 팰리스가 대표적이라 백색 도시로 불립니다. 골목마다 세밀화 공방이 있습니다. 자이푸르·조드푸르와 묶어 돕니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/우다이푸르'
+where name = '우다이푸르' and country = 'IN';
+
+update public.cities set
+  summary = '벵골만에 면한 인도 남부의 도시. 마리나 해변이 길게 이어지고 마하발리푸람 석조 유적이 근교에 있습니다. 남인도 음식과 카르나틱 음악의 중심입니다. 덥고 습해 12월에서 2월이 다니기 좋습니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/첸나이'
+where name = '첸나이' and country = 'IN';
+
+update public.cities set
+  summary = '인도 정보기술 산업의 중심 도시. 해발 900m 고원이라 인도에서 기후가 온화한 편입니다. 라루바그 식물원과 큐본 공원이 도심에 있습니다. 남인도를 도는 관문으로 쓰입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/벵갈루루'
+where name = '벵갈루루' and country = 'IN';
+
+update public.cities set
+  summary = '벵골만에 면한 인도 동부의 옛 수도. 영국 식민 시절 건물이 늘어서 있고 하우라 다리와 빅토리아 기념관이 대표적입니다. 노란 택시와 손수레가 아직 다닙니다. 10월 두르가 푸자 때 도시가 축제로 뒤덮입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/콜카타'
+where name = '콜카타' and country = 'IN';
+
+update public.cities set
+  summary = '아유타야 왕조의 옛 도읍. 무너진 사원과 나무뿌리에 감긴 불상 머리가 그대로 남아 유네스코 세계유산입니다. 자전거나 툭툭으로 유적 사이를 옮겨 다닙니다. 방콕에서 기차나 배로 당일치기가 됩니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/아유타야'
+where name = '아유타야' and country = 'TH';
+
+update public.cities set
+  summary = '태국 최북단의 도시. 흰색 사원 왓 롱 쿤과 푸른 사원이 근교에 있고 미얀마·라오스와 만나는 골든 트라이앵글로 갑니다. 산악 마을과 차밭이 이어집니다. 치앙마이에서 버스로 세 시간입니다.',
+  summary_url = 'https://ko.wikipedia.org/wiki/치앙라이'
+where name = '치앙라이' and country = 'TH';
+
 commit;
 
 -- 확인 — 아직 비어 있는 곳이 몇 곳인지
