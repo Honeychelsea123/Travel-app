@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b304';
+import { $, esc, toast } from './dom.js?v=b305';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -39,6 +39,10 @@ const GRAD = {
   speed: ['#1f6f7a', '#2f9aa8'],      /* 리포트 · 속도 — 청록 */
   even:  ['#4a5568', '#6b7688'],      /* 리포트 · 기본 — 무채색 */
 };
+/* 듀오톤의 어두운 쪽. 검정이 아니라 **살짝 푸른 잉크**입니다 —
+   순검정으로 깔면 사진이 죽은 듯 납작해지고, 흰 글자와의 대비도
+   너무 세서 눈이 아픕니다. 밝은 쪽은 그 카드의 색(c2)을 씁니다. */
+const DUO_INK = '#141821';
 const cssGrad = g => `linear-gradient(160deg,${(GRAD[g] || GRAD.even).join(',')})`;
 export const PERSONA_BG = Object.fromEntries(Object.keys(GRAD).map(k => [k, cssGrad(k)]));
 
@@ -108,9 +112,13 @@ export const REPORT_ICON = {
  * 화면에는 멀쩡히 보이는데 저장한 파일만 깨져서 알아채기도 어렵습니다.
  * 그래서 쓸 굵기·크기를 하나씩 load() 로 부르고 fonts.ready 까지 기다립니다.
  * 그래도 안 오면 기기 기본 글꼴로 그립니다 — 네모보다는 낫습니다. */
+/* 앞에 적은 것이 기본이고 고르는 목록에서도 먼저 나옵니다.
+   **세로(4:5)를 앞에 둡니다** — 인스타 피드에서 세로가 정사각보다 화면을
+   훨씬 많이 먹습니다. 같은 카드라도 눈에 들어오는 크기가 다릅니다. */
 const IMG_SIZES = {
-  square: { w:1080, h:1080, ko:'정사각 (1080×1080)' },   /* 인스타 피드 */
-  story:  { w:1080, h:1920, ko:'스토리 (1080×1920)' },   /* 인스타·카톡 스토리 */
+  portrait: { w:1080, h:1350, ko:'세로 (1080×1350)' },   /* 인스타 피드 — 기본 */
+  square:   { w:1080, h:1080, ko:'정사각 (1080×1080)' },
+  story:    { w:1080, h:1920, ko:'스토리 (1080×1920)' }, /* 인스타·카톡 스토리 */
 };
 
 let fontReady = null;
@@ -236,6 +244,31 @@ export async function cardImage(spec, mode = 'square'){
       const s = Math.max(W / ph.width, H / ph.height);
       const dw = ph.width * s, dh = ph.height * s;
       g.drawImage(ph, (W - dw) / 2, (H - dh) / 2, dw, dh);
+
+      /* ── 듀오톤 ────────────────────────────────────────────────────
+       * 사진을 **날것으로 쓰지 않습니다.** 469곳 사진은 출처가 제각각이라
+       * 어떤 건 좋고 어떤 건 흐리고 색이 튑니다. 그 편차가 그대로 나오면
+       * 카드마다 품질이 달라 보이고, 그게 제일 아마추어처럼 읽힙니다.
+       *
+       * 밝기만 남기고(흑백) 두 색 사이로 다시 칠합니다 —
+       * 어두운 곳은 잉크, 밝은 곳은 그 카드의 색. 그러면
+       *   · 흐린 사진도 **의도한 톤**으로 읽히고
+       *   · 카드마다 인상이 같아 **브랜드**로 보이고
+       *   · 흰 글자 대비가 늘 확보됩니다(밝은 하늘 위에서 글자가 묻히던 것)
+       * 좋은 사진이 필요한 게 아니라 **같은 처리**가 필요합니다.
+       *
+       * 캔버스 합성으로 합니다 — 픽셀을 하나씩 만지면 1080×1350 에서
+       * 눈에 띄게 느립니다(재봄).
+       *   1) `saturation` 으로 색을 빼서 흑백을 만들고
+       *   2) `lighten` 으로 어두운 쪽 바닥을 잉크색으로 올리고
+       *   3) `multiply` 로 밝은 쪽을 카드 색으로 눌러 물들입니다 */
+      g.globalCompositeOperation = 'saturation';
+      g.fillStyle = '#808080'; g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = 'lighten';
+      g.fillStyle = DUO_INK;  g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = 'multiply';
+      g.fillStyle = c2;       g.fillRect(0, 0, W, H);
+      g.globalCompositeOperation = 'source-over';
       /* **글자가 읽히려면 사진을 눌러야 합니다.** 위는 살짝, 아래는 깊게 —
          글자가 아래쪽에 모여 있고 위쪽은 사진을 보여주는 자리입니다. */
       /* **처음 값으로는 글자가 사진에 묻혔습니다.** 방콕 사진으로 그려보니

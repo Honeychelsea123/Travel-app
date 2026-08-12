@@ -108,25 +108,25 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b304">
+<link rel="stylesheet" href="app.css?v=b305">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b304">
-<link rel="modulepreload" href="dom.js?v=b304">
-<link rel="modulepreload" href="db.js?v=b304">
-<link rel="modulepreload" href="calc.js?v=b304">
-<link rel="modulepreload" href="rec.js?v=b304">
-<link rel="modulepreload" href="stars.js?v=b304">
-<link rel="modulepreload" href="net.js?v=b304">
-<link rel="modulepreload" href="admin.js?v=b304">
-<link rel="modulepreload" href="ui.js?v=b304">
-<link rel="modulepreload" href="card.js?v=b304">
-<link rel="modulepreload" href="trip.js?v=b304">
-<link rel="modulepreload" href="rate.js?v=b304">
-<link rel="modulepreload" href="cities.js?v=b304">
-<link rel="modulepreload" href="ai.js?v=b304">
+<link rel="modulepreload" href="supabase.js?v=b305">
+<link rel="modulepreload" href="dom.js?v=b305">
+<link rel="modulepreload" href="db.js?v=b305">
+<link rel="modulepreload" href="calc.js?v=b305">
+<link rel="modulepreload" href="rec.js?v=b305">
+<link rel="modulepreload" href="stars.js?v=b305">
+<link rel="modulepreload" href="net.js?v=b305">
+<link rel="modulepreload" href="admin.js?v=b305">
+<link rel="modulepreload" href="ui.js?v=b305">
+<link rel="modulepreload" href="card.js?v=b305">
+<link rel="modulepreload" href="trip.js?v=b305">
+<link rel="modulepreload" href="rate.js?v=b305">
+<link rel="modulepreload" href="cities.js?v=b305">
+<link rel="modulepreload" href="ai.js?v=b305">
 </head>
 <body>
 <!-- ── 스플래시(런치 스크린) ────────────────────────────────────────
@@ -195,12 +195,19 @@ document.fonts?.load('700 1em Dongle').then(() => {
       if (dongle){ el.style.font = "700 57px/1 Dongle, sans-serif"; el.style.letterSpacing = '0'; }
       el.style.visibility = '';
     };
-    if (document.fonts.check('700 1em Dongle')) show(true);
-    else {
-      document.fonts.ready.then(function(){ show(document.fonts.check('700 1em Dongle')); })
-                          .catch(function(){ show(false); });
-      setTimeout(function(){ show(false); }, 600);
-    }
+    /* ⚠ **`check()` 만 믿으면 안 됩니다.** "쓸 수 있다" 고만 답하고 실제
+       글리프는 아직 없는 경우가 있습니다(사파리). 그러면 57px 로 키워
+       그렸는데 대체 글꼴이 나오고, 잠시 뒤 진짜 Dongle 로 바뀝니다 —
+       홈 화면 앱에서 런치 PNG(Dongle 57px)와 나란히 놓이면 그 바뀜이
+       그대로 보였습니다. 사파리로 열면 런치 이미지가 없어 비교 대상이
+       없으니 멀쩡해 보입니다. 그래서 "웹페이지는 되는데 웹앱만" 이었습니다.
+       `load()` 는 **정말로 받아온 뒤에** 끝납니다. 이미 있으면 곧바로. */
+    document.fonts.load('700 1em Dongle')
+      .then(function(f){ show(!!(f && f.length) && document.fonts.check('700 1em Dongle')); })
+      .catch(function(){ show(false); });
+    /* 글꼴이 영영 안 오는 날도 있습니다. 스플래시가 1.1초는 서 있으므로
+       0.9초까지 기다렸다가 그때는 시스템 글꼴로 보여줍니다. */
+    setTimeout(function(){ show(false); }, 900);
   })();
 
   /* ── 얼마나 오래 보여줄 것인가 ────────────────────────────────────
@@ -1505,7 +1512,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b304</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b305</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- 여행 상세 -->
@@ -1973,7 +1980,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </main>
 
-<script type="module" src="app.js?v=b304"></script>
+<script type="module" src="app.js?v=b305"></script>
 </body>
 </html>
 
