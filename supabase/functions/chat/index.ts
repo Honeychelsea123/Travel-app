@@ -655,6 +655,18 @@ Deno.serve(async (req) => {
     // **"등록된 취향이 없어서 어렵다"**고 답했습니다. 별점이 74개나 있는데요.
     // 여행을 안 골랐을 때가 바로 이 자료가 제일 쓸모 있는 자리입니다.
     // 여행 자료를 받는 동안 같이 돌게 여기서 걸어둡니다.
+    /* ⚠ **오늘 날짜는 여행에 딸린 것이 아닙니다.** b274 에서 `[오늘]` 을
+       여행 블록 안에 넣었더니, **여행을 안 고르면 AI 가 오늘이 며칠인지
+       모릅니다.** 처음부터 끝까지 눌러보다 잡았습니다 —
+       "오늘 며칠이야?" 에 "선택된 여행이 없어 알 수 없다"고 답했습니다.
+       취향·별점에서 이미 한 번 고친 것과 **똑같은 실수**입니다.
+       사람에게 딸린 것과 여행에 딸린 것을 가르는 자리가 여기입니다.
+       시간대는 고른 여행이 있으면 그 여행지, 없으면 집(한국)으로 봅니다. */
+    const todayIn = (tz?: string) => {
+      try { return new Date().toLocaleDateString('en-CA', { timeZone: tz || 'Asia/Seoul' }); }
+      catch { return new Date().toLocaleDateString('en-CA'); }
+    };
+
     const meP = Promise.all([
       asUser.from('user_prefs').select('*').maybeSingle(),
       asUser.from('city_ratings')
@@ -722,11 +734,7 @@ Deno.serve(async (req) => {
         const exp = expRes.data;
 
         // 여행지 시간대로 오늘을 셉니다. 사람이 묻는 '오늘'은 지금 서 있는 곳의 오늘입니다.
-        let todayThere = '';
-        try {
-          todayThere = new Date().toLocaleDateString('en-CA',
-            { timeZone: trip.timezone || 'Asia/Seoul' });
-        } catch { todayThere = new Date().toLocaleDateString('en-CA'); }
+        const todayThere = todayIn(trip.timezone);
         // 며칠째인지도 같이 셉니다. AI 가 날짜 뺄셈을 하게 두면 틀립니다.
         const D1 = 86400000;
         const gap = Math.round(
@@ -812,6 +820,10 @@ Deno.serve(async (req) => {
       // deno-lint-ignore no-explicit-any
       const rs = (rateRes.data ?? []).filter((r: any) => r.cities?.name);
       const mine = [
+        /* **여행을 안 골라도 오늘은 알아야 합니다.** 위 여행 블록에도
+           `[오늘]` 이 있지만 그건 여행지 시간대로 센 것이라 더 정확합니다.
+           여행이 있으면 그쪽이 먼저 나오므로 여기 것은 안 씁니다. */
+        tripRow ? '' : `[오늘] ${todayIn()}`,
         bits.length ? `[취향] ${bits.join(' · ')}` : '',
         rs.length
           // **이 앱이 남들과 다른 자리입니다** — 다녀온 뒤의 기록.
