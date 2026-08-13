@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b315';
+import { $, esc, toast } from './dom.js?v=b316';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -562,27 +562,33 @@ export function personaStats(rows, world = {}){
  * 규모가 오히려 더 희소한 축이라 위로 올렸습니다.
  * 50개국은 4대륙보다 훨씬 드뭅니다. 12개국(size3)은 파고드는 유형 뒤에 뒀습니다 —
  * 12개국을 다니면서 한 나라를 깊게 파는 사람은 그쪽이 더 그 사람다운 설명입니다. */
+/* ⚠ **문구는 카드의 얼굴입니다(b316 에 전면 교체).**
+   전에는 열여덟 중 열둘이 '~하는 사람' 으로 끝났습니다. 그 반복이 카드를
+   블로그 목록처럼 읽히게 만들었습니다. 제목은 설명이 아니라 **한마디 선언**
+   이어야 합니다 — 인스타에 올라간 카드에서 사람들이 읽는 것은 그 한 줄뿐입니다.
+   새로 쓸 때 지킬 것: 길어야 여덟 자, '사람' 으로 안 끝내기, 설명하지 말고
+   말하기('남들이 안 가는 도시 매니아' → '아무도 안 가는 쪽'). */
 const PERSONA_RULES = [
   /* 시작 단계 — 다른 판정이 무의미한 구간 */
-  { id:'start1', t:'이제 막 시작한 여행자', g:'start', ic:'foot1', f:s => s.cities <= 3 },
-  { id:'start2', t:'슬슬 감이 오는 중',     g:'start', ic:'foot3', f:s => s.cities <= 7 },
+  { id:'start1', t:'이제 시작', g:'start', ic:'foot1', f:s => s.cities <= 3 },
+  { id:'start2', t:'감이 오는 중', g:'start', ic:'foot3', f:s => s.cities <= 7 },
 
   /* 규모 (큰 쪽) — 가장 희소합니다 */
-  { id:'size1', t:'세계를 절반쯤 본 사람', g:'size', ic:'crown', f:s => s.countries >= 50 },
+  { id:'size1', t:'지구의 절반', g:'size', ic:'crown', f:s => s.countries >= 50 },
 
   /* 특이한 유형 */
-  { id:'rare1', t:'남들이 안 가는 도시 매니아', g:'rare', ic:'compass',
+  { id:'rare1', t:'아무도 안 가는 쪽', g:'rare', ic:'compass',
     f:s => s.avgFame >= 2.5 && s.cities >= 8 },
-  { id:'size2', t:'여권이 두꺼운 사람', g:'size', ic:'passport', f:s => s.countries >= 25 },
-  { id:'rare2', t:'지구 반대편만 골라 가는 사람', g:'rare', ic:'globe',
+  { id:'size2', t:'여권이 모자란다', g:'size', ic:'passport', f:s => s.countries >= 25 },
+  { id:'rare2', t:'지구 반대편', g:'rare', ic:'globe',
     f:s => ['남아메리카','아프리카','오세아니아'].filter(k => s.byContinent[k]).length >= 2 },
-  { id:'rare3', t:'대륙 순례자', g:'rare', ic:'route', f:s => s.continents >= 4 },
-  { id:'rare4', t:'국경을 밥 먹듯 넘는 사람', g:'rare', ic:'stamp',
+  { id:'rare3', t:'대륙을 건너다', g:'rare', ic:'route', f:s => s.continents >= 4 },
+  { id:'rare4', t:'국경은 그냥 선', g:'rare', ic:'stamp',
     f:s => s.citiesPerCountry <= 1.2 && s.countries >= 8 },
 
   /* 한 곳에 파고드는 유형 — 나라·대륙 이름이 문구에 그대로 들어갑니다 */
   { id:'deep1', g:'deep', ic:'pinheart', f:s => s.topCountryN >= 6,
-    t:s => `${s.topCountryName} 덕후` },
+    t:s => `${s.topCountryName}에 진심` },
   /* 문서의 기준은 "그 대륙 8곳"이었는데, 한국인에게 아시아 8곳은 흔합니다.
      9도시 매긴 사람이 "아시아 정복 중"이 되면서 그 아래 규칙이 전부 막혔습니다
      (꾸준한 여행자 · 가면 바로 가는 사람 · 별점 성향이 다 안 나왔습니다).
@@ -591,27 +597,27 @@ const PERSONA_RULES = [
   { id:'deep2', g:'deep', ic:'flag',
     f:s => s.topContinentN >= 15 && s.topContinentN >= s.cities * 0.7,
     t:s => `${s.topContinent} 정복 중` },
-  { id:'deep3', t:'깊게 파는 사람', g:'deep', ic:'lens', f:s => s.citiesPerCountry >= 3 },
+  { id:'deep3', t:'한 곳을 깊게', g:'deep', ic:'lens', f:s => s.citiesPerCountry >= 3 },
 
   /* 규모 (작은 쪽) */
-  { id:'size3', t:'꾸준한 여행자', g:'size', ic:'bag', f:s => s.countries >= 12 },
+  { id:'size3', t:'꾸준히, 멀리', g:'size', ic:'bag', f:s => s.countries >= 12 },
 
   /* 별점 성향 */
-  { id:'taste1', t:'어딜 가도 좋은 사람', g:'taste', ic:'starsmile',
+  { id:'taste1', t:'어디든 좋았다', g:'taste', ic:'starsmile',
     f:s => s.avgRating >= 4.5 && s.cities >= 8 },
-  { id:'taste2', t:'웬만해선 만족 안 하는 사람', g:'taste', ic:'starhalf',
+  { id:'taste2', t:'쉽게 안 준다', g:'taste', ic:'starhalf',
     f:s => s.avgRating <= 2.8 && s.cities >= 8 },
-  { id:'taste3', t:'호불호가 뚜렷한 사람', g:'taste', ic:'starsplit',
+  { id:'taste3', t:'좋거나, 아니거나', g:'taste', ic:'starsplit',
     f:s => s.lowRatio >= 0.3 && s.highRatio >= 0.3 },
 
   /* 계획 성향 */
-  { id:'plan1', t:'꿈이 더 많은 사람', g:'plan', ic:'shoot',
+  { id:'plan1', t:'갈 곳이 더 많다', g:'plan', ic:'shoot',
     f:s => s.wishCount >= s.cities * 2 },
-  { id:'plan2', t:'가면 바로 가는 사람', g:'plan', ic:'bolt',
+  { id:'plan2', t:'마음먹으면 간다', g:'plan', ic:'bolt',
     f:s => s.wishCount <= 2 && s.cities >= 10 },
 
   /* 어디에도 안 걸렸을 때 */
-  { id:'base', t:'여행을 아는 사람', g:'size', ic:'bag', f:() => true },
+  { id:'base', t:'길이 되는 중', g:'size', ic:'bag', f:() => true },
 ];
 
 export function judgePersona(s){
