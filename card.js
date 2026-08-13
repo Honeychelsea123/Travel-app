@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b316';
+import { $, esc, toast } from './dom.js?v=b319';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -28,16 +28,20 @@ import { $, esc, toast } from './dom.js?v=b316';
  *
  * 색을 두 벌로 적어두면(화면용 CSS 와 이미지용 캔버스) 한쪽만 고치는 사고가 납니다.
  * 여기 한 번만 적고 양쪽에서 꺼내 씁니다. */
+/* ⚠ **채도를 전부 낮췄습니다(b317).** 전에는 아홉 색이 다 선명했습니다
+   (금색 #d4af37 · 하늘색 #5aa9e6). 선명한 색은 활기차지만 감성적이지
+   않습니다 — 광고 배너의 색입니다. 바랜 색으로 바꾸면 그것만으로 톤이
+   달라집니다. 어두운 바탕 위에 옅게 번지는 자리라 더 그렇습니다. */
 const GRAD = {
-  start: ['#9aa0a6', '#6f7378'],      /* 시작 단계 — 연한 회색 */
-  rare:  ['#2b3a67', '#6b4fa8'],      /* 특이한 유형 — 남색→보라 */
-  deep:  ['#1f6f4a', '#2c7d58'],      /* 파고드는 유형 — 진한 초록 */
-  taste: ['#c2681f', '#e0913a'],      /* 별점 성향 — 주황 */
-  size:  ['#a8801f', '#d4af37'],      /* 규모 — 금색 */
-  plan:  ['#2f7ec2', '#5aa9e6'],      /* 계획 성향 — 하늘색 */
-  spend: ['#b0533f', '#d4784f'],      /* 리포트 · 지출 — 붉은 주황 */
-  speed: ['#1f6f7a', '#2f9aa8'],      /* 리포트 · 속도 — 청록 */
-  even:  ['#4a5568', '#6b7688'],      /* 리포트 · 기본 — 무채색 */
+  start: ['#6f7378', '#54585d'],      /* 시작 단계 — 바랜 회색 */
+  rare:  ['#3b3f6b', '#4a3f66'],      /* 특이한 유형 — 먹빛 남보라 */
+  deep:  ['#2f5548', '#37604f'],      /* 파고드는 유형 — 이끼 */
+  taste: ['#9a5a35', '#b06f42'],      /* 별점 성향 — 흙빛 주황 */
+  size:  ['#8a7440', '#a08a52'],      /* 규모 — 바랜 금 */
+  plan:  ['#3d5f7d', '#4d7392'],      /* 계획 성향 — 바랜 남색 */
+  spend: ['#8f5145', '#a36455'],      /* 리포트 · 지출 — 마른 벽돌 */
+  speed: ['#2f5a60', '#3c6d74'],      /* 리포트 · 속도 — 바랜 청록 */
+  even:  ['#4a5058', '#5b626b'],      /* 리포트 · 기본 — 무채색 */
 };
 const cssGrad = g => `linear-gradient(160deg,${(GRAD[g] || GRAD.even).join(',')})`;
 export const PERSONA_BG = Object.fromEntries(Object.keys(GRAD).map(k => [k, cssGrad(k)]));
@@ -117,11 +121,41 @@ const IMG_SIZES = {
   story:    { w:1080, h:1920, ko:'스토리 (1080×1920)' }, /* 인스타·카톡 스토리 */
 };
 
+/* ── 명조체 ──────────────────────────────────────────────────────────
+ * 카드 글자가 전부 고딕(Pretendard) 하나였습니다. 한국 디자인에서 감성은
+ * 대체로 **명조**에서 옵니다 — 고딕 숫자 옆에 명조 문장이 있으면 그 대비
+ * 자체가 분위기를 만듭니다. 전부 바꾸지 않고 **한줄평과 맺음말만** 씁니다.
+ *
+ * ⚠ **index.html 에 안 넣습니다.** 카드는 가끔 만드는 것이라, 앱을 여는
+ *   모든 사람이 이 글꼴을 받을 이유가 없습니다. 카드를 만들 때 그 자리에서
+ *   붙입니다. 서비스워커가 fonts.gstatic 을 셸에 담으므로 두 번째부터는
+ *   받아올 것이 없습니다(sw.js 의 isCodeUrl). */
+const SERIF = '"Nanum Myeongjo", serif';
+let serifCss = null;
+function addSerifCss(){
+  /* ⚠ **CSS 가 붙기를 기다려야 합니다.** 처음엔 link 만 꽂고 바로
+     `fonts.load('… Nanum Myeongjo')` 를 불렀는데, 그때는 아직 @font-face 가
+     등록되기 전이라 아무것도 안 받아오고 조용히 지나갔습니다 —
+     재보니 `fonts.check` 가 false 였고 카드가 기기 기본 명조로 나왔습니다.
+     2.5초는 안 오는 날의 상한입니다. 못 와도 카드는 나옵니다. */
+  if (serifCss) return serifCss;
+  const l = document.createElement('link');
+  l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap';
+  serifCss = new Promise(res => {
+    l.onload = res; l.onerror = res; setTimeout(res, 2500);
+  });
+  document.head.appendChild(l);
+  return serifCss;
+}
+
 let fontReady = null;
 async function ensureFont(){
   if (fontReady) return fontReady;
+  const serifWait = addSerifCss();
   fontReady = (async () => {
     if (!document.fonts) return false;
+    await serifWait;                 /* @font-face 가 등록된 뒤에 불러야 받아옵니다 */
     /* 쓸 조합을 다 불러둡니다. 하나라도 빠지면 그 크기만 네모가 됩니다. */
     /* **여기 빠진 조합은 저장한 그림에서만 네모가 됩니다.** 화면은 멀쩡해서
        알아채기 어렵습니다. 위 cardImage 의 F(굵기, 크기) 를 바꾸면 여기도
@@ -131,6 +165,14 @@ async function ensureFont(){
     try {
       await Promise.all(want.map(([w, px]) =>
         document.fonts.load(`${w} ${px}px Pretendard`, '가나다 ABC 123 ★')));
+      /* 명조와 워드마크 글꼴도 같이. **못 와도 카드는 나옵니다** —
+         명조가 없으면 기기 기본 명조로, Dongle 이 없으면 고딕으로 그려집니다.
+         글꼴 하나 때문에 카드 전체를 못 만드는 일은 없어야 합니다. */
+      await Promise.all([
+        document.fonts.load('400 52px "Nanum Myeongjo"', '가나다'),
+        document.fonts.load('400 26px "Nanum Myeongjo"', '가나다'),
+        document.fonts.load('700 40px Dongle', '기로'),
+      ].map(p => p.catch(() => null)));
       await document.fonts.ready;
       return document.fonts.check('700 76px Pretendard', '가나다');
     } catch { return false; }
@@ -339,6 +381,16 @@ export async function cardImage(spec, mode = 'square'){
     g.globalAlpha = 1;
   });
 
+  /* ── 시간 ──────────────────────────────────────────────────────────
+   * 카드에 시간이 하나도 없었습니다. 시간이 없으면 기록이 아니라 성적표입니다.
+   * '2026.08.13 기준' 보다 **'첫 기록으로부터 1,247일'** 이 훨씬 셉니다 —
+   * 앞의 것은 만든 날짜고 뒤의 것은 그 사람이 쌓아온 시간입니다.
+   * 명조로 흐리게. 위의 라벨(여행 성향)과 아래 큰 숫자 사이에서 숨을 쉽니다. */
+  if (spec.date) add(52, y => {
+    g.font = `400 30px ${SERIF}`; g.globalAlpha = .55;
+    g.fillText(spec.date, cx, y + 32); g.globalAlpha = 1;
+  });
+
   /* **아이콘을 크게 넣던 것을 뺐습니다.** 176px 짜리 선 아이콘 하나가
      카드 한복판을 차지했는데, 그건 '자리 채우는 그림'이지 볼거리가
      아닙니다. 사진이 배경이 된 지금은 더 그렇습니다.
@@ -386,6 +438,28 @@ export async function cardImage(spec, mode = 'square'){
     g.fillText(spec.note, cx, y + 32); g.globalAlpha = 1;
   });
 
+  /* ── 그 사람이 쓴 문장 ─────────────────────────────────────────────
+   * 카드에 있는 것이 전부 숫자였습니다. 숫자는 자랑이지 감성이 아닙니다.
+   * 이 앱에는 **그 사람이 직접 쓴 한줄평**이 있습니다 — 남의 사진도 아니고
+   * 통계도 아닌 자기 문장이 박히면 그게 감성입니다.
+   * **명조로 씁니다.** 위아래가 전부 고딕이라 여기만 명조면 그 대비가
+   * 문장을 따옴표처럼 감쌉니다.
+   * 없으면 안 그립니다 — 억지로 채우면 그게 더 허전합니다. */
+  if (spec.quote?.text){
+    g.font = `400 52px ${SERIF}`;
+    const qs = wrapText(g, `“${spec.quote.text}”`, maxW).slice(0, 3);
+    const from = spec.quote.from || '';
+    add(28 + qs.length * 74 + (from ? 56 : 0), y => {
+      g.font = `400 52px ${SERIF}`;
+      qs.forEach((line, i) => g.fillText(line, cx, y + 56 + i * 74));
+      if (from){
+        g.font = `400 26px ${SERIF}`; g.globalAlpha = .6;
+        g.fillText('— ' + from, cx, y + 56 + qs.length * 74 + 18);
+        g.globalAlpha = 1;
+      }
+    });
+  }
+
   if (spec.list?.length){
     const list = spec.list.slice(0, 3);
     add(36 + 46 + list.length * 58, y => {
@@ -418,24 +492,57 @@ export async function cardImage(spec, mode = 'square'){
      34px·28px 글자가 18px 간격이면 겹칩니다 — 실제로 겹쳐서 나왔습니다.
      이름을 그리고 그 폭만큼 옮겨 주소를 이어 붙입니다. */
   g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 14; g.shadowOffsetY = 1;
-  g.font = F(700, 34); g.globalAlpha = .96;
+  /* ── 서명은 **Dongle** 로 ────────────────────────────────────────
+   * 워드마크 글꼴인데 카드에서는 안 쓰고 있었습니다. 앱 상단바는 Dongle 인데
+   * 카드 서명만 고딕이라 둘이 남처럼 보였습니다. 여기서 한 번 쓰면 브랜드가
+   * 따뜻하게 이어집니다.
+   * Dongle 은 아주 납작해서 1.9배로 키워야 제 크기가 나옵니다(34 → 65).
+   * **안 실렸으면 고딕으로 그립니다** — 그때 65px 을 쓰면 글자가 밖으로
+   * 나갑니다(스플래시에서 겪은 것과 같은 함정). */
+  const dongle = document.fonts?.check?.('700 1em Dongle');
+  g.font = dongle ? '700 65px Dongle, sans-serif' : F(700, 34);
+  g.globalAlpha = .96;
   g.fillText('기로', cx, H - 62);
-  const nameW = g.measureText('기로').width;
   g.globalAlpha = 1;
-  /* **주소는 이름만큼 또렷해야 합니다.** 처음에 24px·42% 로 넣었다가 재보니
-     배경 대비가 이름의 3분의 2뿐이었습니다(+63 vs +88). 1080px 폭에 24px 이면
-     폰 화면에서 9pt 도 안 되는데, 그걸 흐리게까지 하면 **읽어서 칠 수가 없습니다.**
-     읽으라고 넣은 글자입니다. 광고처럼 안 보이는 선에서 최대한 또렷하게. */
-  /* ⚠ **주소를 뺐습니다(b313).** 찾아올 길을 남긴다는 취지는 맞았는데,
-     지금 주소가 `honeychelsea123.github.io/Travel-app` 입니다. 인스타에
-     올리는 카드에 남의 깃허브 경로가 박히면 그 한 줄이 카드 전체를 개인
-     습작으로 만듭니다. 없느니만 못합니다.
-     도메인을 사면 되살리십시오 — `appUrlText()` 는 그대로 두었고 여기
-     네 줄이면 됩니다. `keyro.app` 정도면 서명으로 읽힙니다. */
-  void nameW;
+
+  /* ── 맺음말 ────────────────────────────────────────────────────────
+   * 통계 카드를 포스터로 바꾸는 한 줄입니다. 앱 첫 화면과 같은 말이라
+   * 카드를 본 사람이 앱을 열었을 때 같은 목소리로 이어집니다.
+   * 명조로, 아주 흐리게 — 읽으라고 넣은 것이 아니라 **여운**입니다. */
+  g.font = `400 26px ${SERIF}`; g.globalAlpha = .42;
+  g.fillText('기록이 길이 되다', cx, H - 26);
+  g.globalAlpha = 1;
   g.shadowColor = 'transparent'; g.shadowBlur = 0; g.shadowOffsetY = 0;
 
-  return { blob: await new Promise(r => cv.toBlob(r, 'image/png')), fontOk: ok };
+  /* ── 필름 그레인 ────────────────────────────────────────────────────
+   * 평평한 디지털 그러데이션은 차갑습니다. 아주 고운 노이즈를 얹으면
+   * 인쇄물이나 필름처럼 읽힙니다 — 어두운 바탕에서 특히 잘 먹습니다.
+   * ⚠ 1080×1350 픽셀을 하나씩 만지면 느립니다. 작은 조각(160×160)에 한 번만
+   *   찍어두고 그것을 타일처럼 반복해 깝니다(재봄: 눈에 안 띄는 시간).
+   * 아주 옅게(.055) 얹습니다. 보이면 그건 노이즈고, 안 보여야 질감입니다. */
+  try {
+    const gs = 160;
+    const gc = document.createElement('canvas'); gc.width = gc.height = gs;
+    const gg = gc.getContext('2d');
+    const im = gg.createImageData(gs, gs);
+    for (let i = 0; i < im.data.length; i += 4){
+      const v = 128 + (Math.random() * 2 - 1) * 110;
+      im.data[i] = im.data[i+1] = im.data[i+2] = v; im.data[i+3] = 255;
+    }
+    gg.putImageData(im, 0, 0);
+    g.globalAlpha = .055;
+    g.globalCompositeOperation = 'overlay';
+    const pat = g.createPattern(gc, 'repeat');
+    g.fillStyle = pat; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+  } catch {}   /* 질감 하나 때문에 카드를 못 만들면 안 됩니다 */
+
+  /* ⚠ **PNG 가 아니라 JPEG 입니다(b317).** 필름 그레인을 얹으면서 파일이
+     2MB 가 됐습니다 — 노이즈는 무손실 압축이 제일 못 줄이는 것입니다.
+     사진 같은 그림이라 투명도가 필요 없고, .92 면 글자 가장자리도 멀쩡합니다.
+     재봄: 2,098KB → 아래 참고. */
+  return { blob: await new Promise(r => cv.toBlob(r, 'image/jpeg', .92)), fontOk: ok };
 }
 
 /* 저장하거나 공유합니다. 휴대폰은 공유창으로 넘기는 편이 훨씬 빠릅니다 —
@@ -443,7 +550,7 @@ export async function cardImage(spec, mode = 'square'){
 async function saveCardImage(spec, mode, name){
   toast('이미지 만드는 중…');
   const { blob, fontOk } = await cardImage(spec, mode);
-  const file = new File([blob], name + '.png', { type:'image/png' });
+  const file = new File([blob], name + '.jpg', { type:'image/jpeg' });
   if (navigator.canShare?.({ files:[file] })){
     /* **주소를 같이 넘깁니다.** 전에는 `{files, title}` 만 보내서, 카톡으로
        보내면 그림만 가고 링크가 없었습니다. 받은 사람이 궁금해도 갈 곳이
@@ -460,7 +567,7 @@ async function saveCardImage(spec, mode, name){
     catch (e){ if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name + '.png';
+  a.href = URL.createObjectURL(blob); a.download = name + '.jpg';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast(fontOk ? '이미지를 저장했어요' : '저장했어요. (글꼴을 못 받아 기본 글꼴로 그렸어요)');

@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b316';
+import { sb } from './db.js?v=b319';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b316';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b316';
-import { starHtml, paintStars, markRated } from './stars.js?v=b316';
+import { $, esc, toast, copyText } from './dom.js?v=b319';
+import { starHtml, paintStars, markRated } from './stars.js?v=b319';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b316';
-import { loadAdmin } from './admin.js?v=b316';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b319';
+import { loadAdmin } from './admin.js?v=b319';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b316';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b316';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b316';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b319';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b319';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,21 +46,21 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b316';
+         setEditPlanId } from './trip.js?v=b319';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b316';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b319';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b316';
+         useCities, addCity, search } from './cities.js?v=b319';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b316';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b319';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b316';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b319';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b316';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b319';
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -3615,7 +3615,7 @@ async function openPersona(){
 
   await loadCities();
   const { data, error } = await sb.from('city_ratings')
-    .select('city_id,stars,want').eq('user_id', me.id);
+    .select('city_id,stars,want,comment,created_at').eq('user_id', me.id);
   if (error){
     $('personabox').innerHTML =
       `<div class="card"><div class="empty">불러오지 못했어요.</div></div>`;
@@ -3630,6 +3630,44 @@ async function openPersona(){
     .filter(r => r.stars != null)
     .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
     .filter(Boolean))];
+
+  /* 별자리 지도에 찍을 점. 별점을 매긴 도시의 좌표를 지도 좌표로 옮깁니다.
+     좌표가 없는 도시는 건너뜁니다 — 한 점 없는 것이 엉뚱한 자리보다 낫습니다. */
+  st.dots = (data || [])
+    .filter(r => r.stars != null)
+    .map(r => (cities || []).find(c => c.id === r.city_id))
+    .filter(c => c && c.center_lat != null && c.center_lng != null)
+    .map(c => ({ x: (c.center_lng + 180) / 360 * 1000,
+                 y: (90 - c.center_lat) / 180 * 500 }));
+
+  /* ── 카드에 올릴 그 사람의 문장 ────────────────────────────────────
+   * **제일 높게 매긴 곳의 한줄평**을 씁니다. 아무 문장이나 가져오면
+   * 불평이 카드에 박힐 수 있습니다 — 자랑하려고 올리는 카드입니다.
+   * 같은 별점이면 짧은 것을 고릅니다. 카드에서 세 줄이 넘으면 잘립니다. */
+  {
+    const withText = (data || [])
+      .filter(r => r.stars != null && String(r.comment || '').trim())
+      .sort((a, b) => (b.stars - a.stars) ||
+                      (String(a.comment).length - String(b.comment).length));
+    const q = withText[0];
+    if (q){
+      const city = (cities || []).find(c => c.id === q.city_id);
+      const yr = String(q.created_at || '').slice(0, 4);
+      st.quote = { text: String(q.comment).trim(),
+                   from: [city?.name, yr].filter(Boolean).join(', ') };
+    }
+  }
+
+  /* 첫 기록으로부터 며칠. 하루 미만이면 안 씁니다 — '0일' 은 아무 말도
+     안 하는 것보다 나쁩니다. */
+  {
+    const t = (data || []).map(r => Date.parse(r.created_at)).filter(n => n > 0);
+    if (t.length){
+      const d = Math.floor((Date.now() - Math.min(...t)) / 86400000);
+      if (d >= 1) st.days = d;
+    }
+  }
+
   drawPersona(st);
 }
 
@@ -3718,17 +3756,23 @@ async function drawPersona(s){
    * ⚠ 화면에 그려진 `#worldland` 를 그대로 쓰지 않습니다. 지도 화면을
    *   한 번도 안 열었으면 `been` 표시가 없어 텅 빈 지도가 나옵니다.
    *   여기서 사본을 떠서 직접 칠합니다. */
-  const gone = new Set(s.codes || []);
+  /* ⚠ **나라를 칠하는 대신 도시에 점을 찍습니다(b317).** 칠한 정치 지도는
+   *   정확하지만 딱딱합니다 — 국경선이 주인공이 되어 버립니다. 다녀온 도시
+   *   자리에 점만 찍으면 **별자리**처럼 보이고, 나라가 아니라 그 사람이
+   *   지나온 자리가 보입니다. 좌표는 `cities` 에 이미 있습니다.
+   *   땅은 아주 흐리게 남겨 어디가 어디인지만 알게 합니다.
+   *
+   * 좌표 옮기기: 세계지도는 등장방형이라 그냥 비례로 놓으면 맞습니다.
+   *   x = (경도+180)/360 × 1000,  y = (90-위도)/180 × 500
+   *   보기창이 `0 19 1000 387` 인 것은 남극과 북극 끝을 잘라낸 것입니다. */
   let art = '';
   const src = document.getElementById('worldland');
-  if (src && gone.size){
-    const holder = document.createElement('div');
-    holder.innerHTML = src.innerHTML;
-    holder.querySelectorAll('path').forEach(pa =>
-      pa.setAttribute('class', gone.has(pa.dataset.c) ? 'been' : ''));
+  if (src){
+    const dots = (s.dots || [])
+      .map(d => `<circle cx="${d.x.toFixed(1)}" cy="${d.y.toFixed(1)}" r="4.6"/>`).join('');
     art = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
-             <style>path{fill:rgba(255,255,255,.13)} path.been{fill:#fff}</style>
-             ${holder.innerHTML}</svg>`;
+             <style>path{fill:rgba(255,255,255,.10)} circle{fill:#fff}</style>
+             ${src.innerHTML}${dots}</svg>`;
   }
   const spec = {
     g: p.g, icon: PERSONA_ICON[p.ic] || '',
@@ -3737,19 +3781,30 @@ async function drawPersona(s){
     big: String(s.countries), bigUnit: '개국',
     sub: '여행 성향',
     title: p.title,
-    nums: `${s.cities}개 도시 · ${s.continents}대륙`,
-    /* ⚠ **대륙별 숫자를 뺐습니다(b315).** '아시아 40 · 유럽 32 · 북아메리카 2'
-       는 이미 위 `nums` 가 '3대륙' 이라고 말한 것을 한 번 더 풀어 쓴 줄이라,
-       읽는 사람에게 새로 주는 것이 없으면서 카드를 목록으로 만듭니다.
-       인스타에서 먹히는 것은 큰 것 하나와 작은 것 하나입니다.
-       그 숫자는 화면의 '왜 이렇게 나왔나요' 에 그대로 있습니다. */
-    listTitle: s.best.length ? '가장 좋았던 곳' : '',
-    list: s.best.map(b => `${b.name} ★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}`),
+    /* 한줄평이 있으면 이 줄도 뺍니다 — 큰 숫자(27개국)와 제목과 문장,
+       셋이면 충분합니다. 넷째 줄부터는 카드가 목록으로 읽힙니다.
+       '74개 도시 · 3대륙' 은 화면의 '왜 이렇게 나왔나요' 에 그대로 있습니다. */
+    nums: s.quote ? '' : `${s.cities}개 도시 · ${s.continents}대륙`,
+    /* 첫 기록으로부터 며칠. **만든 날짜가 아니라 쌓아온 시간**입니다 —
+       '2026.08.13 기준' 은 아무 감흥이 없지만 '1,247일' 은 다릅니다. */
+    date: s.days ? `첫 기록으로부터 ${s.days.toLocaleString()}일` : '',
+    /* ⚠ **그 사람이 쓴 문장이 있으면 그것이 주인공입니다(b317).**
+       숫자는 자랑이고 문장은 감성입니다. 한줄평이 있으면 목록 대신 그것을
+       넣고, 없을 때만 '가장 좋았던 곳' 세 줄로 돌아갑니다 —
+       둘 다 넣으면 다시 여섯 덩어리가 되어 목록으로 읽힙니다.
+       대륙별 숫자('아시아 40 · 유럽 32')는 b315 에서 뺐습니다. 위 `nums` 가
+       '3대륙' 이라고 말한 것을 풀어 쓴 줄이라 새로 주는 것이 없었습니다. */
+    quote: s.quote || null,
+    listTitle: !s.quote && s.best.length ? '가장 좋았던 곳' : '',
+    list: s.quote ? [] :
+      s.best.map(b => `${b.name} ★${Number(b.stars) % 1 ? b.stars : Math.round(b.stars)}`),
   };
   $('p_img').onclick = () => askImageSize(spec, 'aitrip-성향');
   $('p_share').onclick = async () => {
-    const text = `내 여행 성향: ${p.title}\n${spec.nums}${
-      spec.note ? '\n' + spec.note : ''}`;
+    /* 글로 나가는 것은 카드와 별개입니다 — 카드에서 뺀 숫자도 여기서는
+       씁니다. 그림을 못 보는 곳(문자·메모)에서는 그 숫자가 전부입니다. */
+    const text = `내 여행 성향: ${p.title}\n` +
+      `${s.countries}개국 · ${s.cities}개 도시 · ${s.continents}대륙`;
     const url = location.origin + location.pathname;
     if (navigator.share){
       try { await navigator.share({ title:'내 여행 성향', text, url }); return; }
