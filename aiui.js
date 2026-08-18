@@ -11,7 +11,14 @@
  * 큰 덩어리는 작은 조각부터 떼어내면 남은 것이 저절로 작아집니다.
  *
  * 층: dom.js 만 씁니다. 여행도 로그인한 사람도 모릅니다. */
-import { $, esc } from './dom.js?v=b326';
+import { $, esc, toast } from './dom.js?v=b327';
+import { sb } from './db.js?v=b327';
+import { fail } from './net.js?v=b327';
+
+/* 대화를 저장할 때 로그인한 사람이 필요합니다. app.js 만 아는 값이라 받습니다 —
+   로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
+let ctx = { me: () => null };
+export function setAiUiCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 답을 기다리는 동안 ──────────────────────────────────────────────
  * 보내기 단추만 흐려지는 것으로는 "지금 무슨 일이 벌어지고 있다"가 안 읽힙니다.
@@ -178,7 +185,7 @@ $('ai_send').addEventListener('click', async () => {
   /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다.
      여행을 안 골랐으면 trip_id 를 비워 둡니다 — 그것도 남습니다 (029).
      사진 자체는 저장하지 않습니다 — 대화 기록이 금방 수십 MB 가 됩니다. */
-  await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
+  await sb.from('chats').insert({ trip_id: tripId || null, user_id: ctx.me().id,
                                   role: 'user',
                                   content: (shots.length ? `[사진 ${shots.length}장] ` : '') + msg });
   await loadChats(tripId);
@@ -223,7 +230,7 @@ $('ai_send').addEventListener('click', async () => {
   }
   if (data?.error) return fail(data.error, 'ai');
 
-  await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
+  await sb.from('chats').insert({ trip_id: tripId || null, user_id: ctx.me().id,
                                   role: 'model', content: data.reply });
   await loadChats(tripId);
   drawSources(data.sources, data.web);

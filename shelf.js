@@ -14,16 +14,18 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b326';
-import { openCity } from './city.js?v=b326';
-import { sb } from './db.js?v=b326';
-import { cities, countryName } from './cities.js?v=b326';
-import { myRates, cityStat, visited } from './rate.js?v=b326';
-import { starHtml } from './stars.js?v=b326';
+import { $, esc, toast } from './dom.js?v=b327';
+import { openCity } from './city.js?v=b327';
+import { sb } from './db.js?v=b327';
+import { cities, countryName } from './cities.js?v=b327';
+import { myRates, cityStat, visited } from './rate.js?v=b327';
+import { starHtml } from './stars.js?v=b327';
+import { fail } from './net.js?v=b327';
+import { arm } from './ui.js?v=b327';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
-  loadFootprint: () => {}, todayYmd: () => '',
+  loadFootprint: () => {}, todayYmd: () => '', saveRate: async () => {},
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -45,6 +47,10 @@ const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 /* ── 보관함 정렬·거르기 ─────────────────────────────────────────────
  * 매긴 것이 쌓이면 목록이 길어져 찾을 수가 없습니다.
  * 별점이 없는 보관함(가보고 싶은 곳)에서는 아예 안 나옵니다 — 거를 것이 없습니다. */
+/* 지금 보고 있는 보관함 종류. **app.js 에 있던 것을 여기로 옮겼습니다(b327)** —
+   쓰는 곳이 여기뿐인데 저쪽에 남아 있어서 떼어낸 뒤 'shelfKind is not defined'
+   로 보관함이 통째로 안 열렸습니다. 한 곳에서만 쓰는 것은 그 곳에 둡니다. */
+let shelfKind = 'mine';
 let shelfSort = 'new';
 const HAS_STARS = k => k === 'mine' || k === 'comment' || k === 'place' || k === 'spot';
 
@@ -363,7 +369,7 @@ $('shelflist').addEventListener('click', async e => {
     const next = Number(myRates[cityId]?.stars) === v ? null : v;
     paintStars(wrap, next, true);
     markRated(row, next);
-    await saveRate(cityId, { stars: next }, true);
+    await ctx.saveRate(cityId, { stars: next }, true);
 
     /* 지웠으면 목록에서도 빼야 합니다. 저장은 되는데 줄이 그대로 남아 있어서
        "안 지워진다"로 보였습니다 — 새로고침해야 사라졌습니다.
@@ -376,7 +382,7 @@ $('shelflist').addEventListener('click', async e => {
   const w = e.target.closest('button[data-want]');
   if (w){
     const on = !myRates[w.dataset.want]?.want;
-    await saveRate(w.dataset.want, { want: on }, true);
+    await ctx.saveRate(w.dataset.want, { want: on }, true);
     w.classList.toggle('on', on);
     /* 별점과 같은 이유입니다 — "가보고 싶은 곳"에서 하트를 끄면 그 줄도 빠져야 합니다. */
     if (!on && shelfKind === 'want') dropRow(w.closest('.rrow'));

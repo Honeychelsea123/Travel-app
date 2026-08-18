@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b326';
-import { sb } from './db.js?v=b326';
-import { fail, netTimeout } from './net.js?v=b326';
+import { $, esc, toast, copyText } from './dom.js?v=b327';
+import { sb } from './db.js?v=b327';
+import { fail, netTimeout } from './net.js?v=b327';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
