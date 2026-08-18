@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-18. `app.js` 9,169 → 5,534줄. 열두 조각이 나갔다. **처음의 40%만 남았다.**
+2026-08-19. `app.js` 9,169 → 5,241줄. 열네 조각이 나갔다. **처음의 57%를 걷었다.**
 
 ## 왜 하나
 
@@ -24,6 +24,8 @@
 | `member.js` | 269 | 일행 · 초대 링크 | me, loadTrips, openTrip |
 | `planmap.js` | 195 | 일정 지도 · 지도 링크 | **없음** |
 | `citysearch.js` | 268 | 도시 검색 · 도시 자료 받기 | **없음** |
+| `review.js` | 233 | 여행 후기 · 후기 사진 | me |
+| `profile.js` | 131 | 프로필 사진 · 이름 · 글자 크기 | me |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
@@ -129,8 +131,6 @@ ctx 도 같이 줄입니다.
 
 | 덩어리 | 줄 범위 | 줄 | ctx | 내보낼 것 |
 |---|---|---|---|---|
-| **프로필** | 101 | **1** (me) | applyTs · shrink |
-| **여행 후기 · 후기 사진** | 204 | **2** (me, shrink) | loadReview |
 | 내 자료 내려받기 | 185 | 4 | — |
 | 평가 화면 | 285 | 4 | — |
 | 후보와 빈 시간 | 308 | 4 | — |
@@ -145,7 +145,24 @@ ctx 도 같이 줄입니다.
 **줄 번호는 일부러 안 적는다.** 한 조각을 뗄 때마다 전부 밀린다 —
 b337 표의 번호는 b338 에서 이미 틀렸다. **뗄 때 다시 잰다**(재는 법은 아래).
 
-위 둘(ctx 1~2, 305줄)이 지금 제일 싸다.
+**ctx 개수도 다시 재라.** 위 숫자는 b337 에 잰 것인데, 그때 쓰던 스크립트가
+여러 줄짜리 `let` 뭉치를 못 봤다(아래 b339 항목). 실제로는 대부분 `me` 가
+하나 더 붙는다 — 프로필도 'ctx 1' 로 적혀 있었지만 다시 재니 `me`·`myAvatar`
+둘이었다. **아래 '재는 법' 의 `awk` 판을 쓰라.** grep 판은 틀린다.
+
+### ctx 로 셌지만 같이 가야 하는 것 (b340, 열세·열네 번째)
+
+프로필과 후기를 뗄 때도 `JOIN_URL` 때와 같은 일이 있었다.
+
+- `myReview`(내가 쓴 후기) — 쓰는 곳이 후기 블록뿐이라 **같이 데려왔다.**
+- `myAvatar`(올린 사진 주소) — 로그인 직후에도 채우므로 profile.js 가
+  **내보내되 고치는 길은 `setMyAvatar` 로** 냈다(trip.js 와 같은 꼴).
+  `import` 한 값에 밖에서 `=` 를 하면 이쪽 안쪽만 어긋난다.
+
+**닮았다고 합치지는 않았다.** profile.js 의 `shrink` 와 review.js 의
+`fitImage` 는 둘 다 사진을 줄이지만, 앞은 얼굴이라 가운데를 정사각으로
+잘라내고 뒤는 풍경이라 비를 지킨다. 합치면 둘 중 하나가 틀리게 된다.
+양쪽 주석에 서로를 가리켜 두었다.
 
 ### 많이 불린다는 것은 떼지 말라는 뜻이 아니다 (b338, 열한 번째)
 
@@ -194,10 +211,11 @@ app.js 의 `import { … flagOk … } from './map.js'` 는 그대로 뒀다.
 
 ### 제일 큰 것은 여전히 일정
 
-`여행 상세` 에서 지출·준비·일행은 다 뗐고 **일정만 남았다**(3566–5571 언저리,
-후기·정보 수정·지도를 빼면 약 1,200줄). 통째로는 못 뗀다 — `drawPlans` 하나를
-app.js 곳곳이 부른다. 여기는 **위 네 개를 먼저 떼서 app.js 를 5,200줄대로
-줄여둔 다음**, 일정 안에서 다시 화면 단위로 자르는 것이 순서다.
+`여행 상세` 에서 지출·준비·일행·후기·지도는 다 뗐고 **일정만 남았다**
+(약 1,100줄). 통째로는 못 뗀다 — `drawPlans` 하나를 app.js 곳곳이 부른다.
+b340 까지 싼 것을 다 떼서 app.js 가 5,241줄이 됐으니, **다음은 여기다.**
+일정 안에서 다시 화면 단위로 자른다 — 끌어서 순서 바꾸기(227줄)가
+자기 안에서 닫혀 있어 보이니 거기부터 재 볼 것.
 
 ### ctx 가 아니라 같이 가야 하는 것도 있다 (b337, 열 번째)
 
@@ -247,18 +265,36 @@ grep -c "\bJOIN_URL\b" app.js     # 선언 1 + 쓰임 1 = 2  -> 같이 간다
 재는 법(그대로 붙여 쓰면 된다 — bash 변수 이름은 **ASCII 로**, 한글로 쓰면
 `command not found` 가 난다):
 
+**⚠ 앱 상태를 `awk` 로 모은다.** `grep` 은 줄 단위라 여러 줄에 걸친
+`let me = null, … ;` 뭉치를 못 읽는다 — b339 에서 그것 때문에 `hitList` 를
+놓쳤고, b340 에서 프로필의 `me`·`myAvatar` 도 안 보였다.
+
 ```sh
-s=5544; e=5851                      # 블록의 시작과 끝(다음 머리말 줄)
-sed -n "${s},$((e-1))p" app.js > /tmp/blk.js
-sed -n "1,$((s-1))p;${e},\$p" app.js > /tmp/rst.js
-grep -oE '^(async )?function [A-Za-z_$][A-Za-z0-9_$]*|^(const|let|var) [A-Za-z_$][A-Za-z0-9_$]*' \
-  /tmp/rst.js | awk '{print $NF}' | sort -u > /tmp/rstdecl.txt
-sed 's|/\*|\n&|g' /tmp/blk.js | grep -v '^[[:space:]]*\*' \
+# 1) app.js 가 가진 이름 전부 (여러 줄짜리 선언 포함)
+awk '/^(const|let|var)[ ]/ { c=1; buf="" } c { buf=buf" "$0; if (/;/) { c=0; print buf } }' app.js \
+  | sed 's|/\*[^*]*\*/| |g' | tr ',' '\n' | sed 's/=.*//' \
+  | sed 's/^[[:space:]]*\(const\|let\|var\)[[:space:]]*//' | tr -d ' ;' \
+  | grep -E '^[A-Za-z_$][A-Za-z0-9_$]*$' > /tmp/rd.txt
+grep -oE '^(async )?function [A-Za-z_$][A-Za-z0-9_$]*' app.js | awk '{print $NF}' >> /tmp/rd.txt
+sort -u -o /tmp/rd.txt /tmp/rd.txt
+
+# 2) 블록이 쓰는 이름 (주석·속성·객체 열쇠 빼고)
+s=3010; e=3110                       # 블록의 시작과 끝
+sed -n "${s},${e}p" app.js > /tmp/blk.js
+sed 's|/\*|\n&|g' /tmp/blk.js | grep -v '^[[:space:]]*[*/]' \
   | sed 's|\.[[:space:]]*[A-Za-z_$][A-Za-z0-9_$]*| |g' \
   | sed 's|[A-Za-z_$][A-Za-z0-9_$]*[[:space:]]*:| |g' \
-  | grep -oE '\b[A-Za-z_$][A-Za-z0-9_$]*\b' | sort -u > /tmp/blkuse.txt
-comm -12 /tmp/rstdecl.txt /tmp/blkuse.txt      # <- 이게 ctx 후보다
+  | grep -oE '\b[A-Za-z_$][A-Za-z0-9_$]*\b' | sort -u > /tmp/bu.txt
+
+# 3) 블록이 스스로 선언한 것은 뺀다
+grep -oE '^(async )?function [A-Za-z_$][A-Za-z0-9_$]*|^(const|let|var) [A-Za-z_$][A-Za-z0-9_$]*' \
+  /tmp/blk.js | awk '{print $NF}' | sort -u > /tmp/bd.txt
+comm -12 /tmp/rd.txt /tmp/bu.txt | comm -23 - /tmp/bd.txt    # <- 이게 ctx 후보다
 ```
+
+나온 이름을 **하나씩 `grep -c` 로 확인한다.** 블록 밖에서도 쓰면 진짜 ctx 고,
+블록 안에서만 쓰면 **같이 데려갈 것**이다(`JOIN_URL`·`myReview` 가 그랬다).
+주석에서만 언급되는 것도 걸린다(`shrink` 가 그랬다) — 그건 아무것도 아니다.
 
 **⚠ 판 번호(`?v=`)를 섞지 마라.** 새 파일에 `?v=b336` 을 적고 나머지가
 `b335` 이면 **모듈이 두 벌 로드된다.** `dom.js` 는 괜찮지만 `trip.js` 가

@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b339';
+import { sb } from './db.js?v=b340';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b339';
-import { starHtml, paintStars, markRated } from './stars.js?v=b339';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b340';
+import { starHtml, paintStars, markRated } from './stars.js?v=b340';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b339';
-import { loadAdmin } from './admin.js?v=b339';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b340';
+import { loadAdmin } from './admin.js?v=b340';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b339';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b339';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b339';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b340';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b340';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,52 +33,54 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b339';
+         setEditPlanId, nameOf } from './trip.js?v=b340';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b339';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b340';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b339';
+         useCities, addCity, search } from './cities.js?v=b340';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b339';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b340';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b339';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b340';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b339';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b340';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b339';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b340';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b339';
+         isCityOpen, clearCityOpen } from './city.js?v=b340';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b339';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b340';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b339';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b340';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b339';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b339';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b339';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b339';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b339';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b339';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b340';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b340';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b340';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b340';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b340';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b340';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b340';
+import { loadReview, setReviewCtx } from './review.js?v=b340';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b339';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b340';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b339';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b340';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -103,6 +105,8 @@ setCardsCtx({ me: () => me, closeAi, loadPlans, review });
    (지출이 일정 줄에 금액으로 붙어서 지출을 고치면 일정도 다시 그려야 합니다.) */
 setExpenseCtx({ me: () => me, drawPlans });
 setMemberCtx({ me: () => me, loadTrips, openTrip });
+setProfileCtx({ me: () => me });
+setReviewCtx({ me: () => me });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -121,7 +125,7 @@ let me = null,
     channel = null, bumpTimer = null, bumpPending = null,
     appTab = 'home',
     lastHomeSig = '',
-    tripFilter = 'up', rateShown = 80, rateObs = null, openReview = false, myAvatar = null, myReview = {},
+    tripFilter = 'up', rateShown = 80, rateObs = null, openReview = false,
     /* 기록 목록을 마지막으로 그린 글자. 같으면 다시 안 그립니다 — 사진이
        깜빡이는 것을 막습니다(drawRatings 참고). **목록을 밖에서 건드리면
        반드시 '' 로 되돌립니다.** 안 그러면 "같으니 건드리지 말자"가
@@ -3007,107 +3011,10 @@ $('readall').addEventListener('click', async e => {
   loadNotifs();
 });
 
-/* ── 프로필 사진 ────────────────────────────────────────────────────
- * 폰 사진은 5MB 가 넘기도 합니다. 그대로 올리면 통을 낭비하고 목록도 느려집니다.
- * 256px 정사각으로 줄여서 올립니다 — 88px 로 그리는 자리라 그 이상은 필요 없습니다. */
-function shrink(file, size = 256){
-  return new Promise((ok, no) => {
-    const img = new Image();
-    img.onload = () => {
-      /* 가운데를 정사각으로 잘라냅니다. 안 그러면 세로 사진이 찌그러집니다. */
-      const s = Math.min(img.width, img.height);
-      const cv = document.createElement('canvas');
-      cv.width = cv.height = size;
-      cv.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2,
-                                    s, s, 0, 0, size, size);
-      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 바꾸지 못했어요.')),
-                'image/jpeg', 0.85);
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = () => no(new Error('사진을 읽지 못했어요.'));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-$('avatarbtn').addEventListener('click', () => $('avatarfile').click());
-
-$('avatarfile').addEventListener('change', async e => {
-  const f = e.target.files?.[0];
-  e.target.value = '';                     /* 같은 파일을 또 골라도 걸리게 */
-  if (!f) return;
-  $('avaerr').classList.add('hide');
-  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있어요.', 'ava');
-
-  const before = $('avatar').src;
-  $('avatar').style.opacity = '.4';
-  try {
-    const blob = await shrink(f);
-    /* 파일 이름을 고정해 옛 사진이 쌓이지 않게 합니다. */
-    const path = `${me.id}/avatar.jpg`;
-    const up = await sb.storage.from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (up.error) throw up.error;
-
-    /* 이름이 같으니 주소도 같습니다. 그대로 두면 옛 사진이 캐시에서 나옵니다. */
-    const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl
-              + '?v=' + Date.now();
-    const r = await sb.from('profiles').update({ avatar_url: url })
-      .eq('id', me.id).select('avatar_url').maybeSingle();
-    if (r.error) throw r.error;
-    if (!r.data) throw new Error(NOROW.save);
-
-    $('avatar').src = url;
-    myAvatar = url;
-  } catch (err) {
-    $('avatar').src = before;
-    fail(/bucket|not found/i.test(err.message || '')
-      ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
-      : err, 'ava');
-  }
-  $('avatar').style.opacity = '';
-});
-
-/* ── 이름 ── profiles.display_name 은 모든 여행에서 쓰는 이름입니다.
-   여행마다 다르게 부르고 싶으면 그 여행의 trip_members.nickname 을 씁니다. */
-$('editname').addEventListener('click', () => {
-  $('namebox').classList.toggle('hide');
-  if ($('namebox').classList.contains('hide')) return;
-  $('n_name').value = $('name').textContent;
-  $('n_name').focus();
-});
-$('n_cancel').addEventListener('click', () => $('namebox').classList.add('hide'));
-$('n_save').addEventListener('click', async () => {
-  const v = $('n_name').value.trim();
-  if (!v) return fail('이름을 적어주세요.', 'trip');
-  const r = await sb.from('profiles').update({ display_name: v })
-    .eq('id', me.id).select('id');
-  if (r.error) return fail(r.error, 'trip');
-  if (!r.data?.length) return fail(NOROW.edit, 'trip');
-  $('name').textContent = v;
-  /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이 바뀝니다. */
-  if (!myAvatar) $('avatar').src = avatarOf(me.id, v);
-  $('namebox').classList.add('hide');
-});
-
-/* ── 글자 크기 ──────────────────────────────────────────────────────
- * 사람마다 다릅니다. 도쿄 앱은 공유값이라 한 명이 키우면 전원 화면이 커졌습니다.
- * 기기에도 저장해서 다음에 열 때 깜빡이지 않고 바로 그 크기로 뜨게 합니다. */
-function applyTs(v){
-  document.documentElement.style.setProperty('--ts', v);
-  document.querySelectorAll('#tsbtns button').forEach(b =>
-    b.classList.toggle('on', Number(b.dataset.ts) === Number(v)));
-}
-$('tsbtns').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-ts]'); if (!b) return;
-  const v = Number(b.dataset.ts);
-  applyTs(v);
-  localStorage.setItem('t2:ts', v);
-  const r = await sb.from('user_prefs')
-    .update({ text_scale: v, updated_at: new Date().toISOString() })
-    .eq('user_id', me.id).select('user_id');
-  if (r.error) fail(r.error, 'trip');
-});
-
+/* ── 프로필 ───────────────────────────────────────────────────────────
+ * 사진·이름·글자 크기는 profile.js 로 옮겼습니다(b340, 열세 번째 조각).
+ * ctx 는 하나(me)입니다. `myAvatar` 도 그리로 갔습니다 — 아래 로그인
+ * 직후에 채우는 자리는 setMyAvatar 로 넣습니다. */
 /* ── 여행 목록의 사진 ────────────────────────────────────────────────
  * 전에는 `t.cities?.image_url` **하나만** 봤습니다. 그건 여행에 직접 붙은
  * 도시(`trips.city_id`)의 사진이라, 우리 목록에 없는 곳으로 만든 여행은
@@ -3657,210 +3564,10 @@ $('legs').addEventListener('click', async e => {
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
-/* ── 여행 후기 ──────────────────────────────────────────────────────
- * 끝난 여행에만 나옵니다. 일정을 쓰던 사람이 그대로 평가로 넘어가는 자리라,
- * 기록 탭을 따로 찾아가게 하지 않습니다.
- * 같은 여행도 사람마다 느낌이 다르므로 후기는 한 사람에 한 줄입니다. */
-async function loadReview(){
-  const ended = trip.end_date < todayYmd();
-  $('reviewbox').classList.toggle('hide', !ended);
-  if (!ended) return;
-
-  const ids = legs.map(l => l.city_id).filter(Boolean);
-  const [mine, rates, all] = await Promise.all([
-    sb.from('trip_reviews').select('stars,comment')
-      .eq('trip_id', trip.id).eq('user_id', me.id).maybeSingle(),
-    ids.length ? sb.from('city_ratings').select('city_id,stars')
-                   .eq('user_id', me.id).in('city_id', ids)
-               : Promise.resolve({ data: [] }),
-    sb.from('trip_reviews').select('user_id,stars,comment').eq('trip_id', trip.id),
-  ]);
-
-  myReview = mine.data || {};
-  $('rv_when').textContent = `${trip.end_date} 종료`;
-  $('rv_stars').innerHTML = starHtml(myReview.stars);
-  $('rv_note').value = myReview.comment || '';
-  growNote();
-  loadPhotos();          /* 사진은 안 기다립니다 — 글과 별점이 먼저 떠야 합니다 */
-
-  const got = Object.fromEntries((rates.data || []).map(r => [r.city_id, r.stars]));
-  $('rv_cities').innerHTML = ids.length
-    ? `<div class="daysep">다녀온 곳</div>` + legs.filter(l => l.city_id).map(l =>
-        `<div class="rrow" style="padding:9px 0">
-           <div class="t"><b>${esc(l.destination)}</b>
-             <span class="stars" data-rvcity="${esc(l.city_id)}">${
-               starHtml(got[l.city_id])}</span></div>
-         </div>`).join('')
-    : '';
-
-  /* 일행이 남긴 후기. 같이 간 사람끼리는 서로 봅니다. */
-  const others = (all.data || []).filter(r => r.user_id !== me.id && (r.stars || r.comment));
-  $('rv_others').innerHTML = others.length
-    ? `<div class="daysep">일행의 후기</div>` + others.map(r =>
-        `<div class="rrow" style="padding:9px 0">
-           <div class="t"><b>${esc(nameOf(r.user_id))}</b>
-             ${r.comment ? `<span class="memo">${esc(r.comment)}</span>` : ''}
-             <span class="stars" style="pointer-events:none">${starHtml(r.stars)}</span></div>
-         </div>`).join('')
-    : '';
-}
-
-async function saveReview(patch){
-  const r = await sb.from('trip_reviews')
-    .upsert({ trip_id: trip.id, user_id: me.id, ...myReview, ...patch },
-            { onConflict: 'trip_id,user_id' })
-    .select('stars,comment').maybeSingle();
-  if (r.error) return fail(r.error, 'rv');
-  myReview = r.data || myReview;
-  $('rv_stars').innerHTML = starHtml(myReview.stars);
-}
-
-$('reviewbox').addEventListener('click', async e => {
-  /* 사진 지우기 — 한 번 더 묻습니다. 통에서도 같이 지웁니다. */
-  const del = e.target.closest('[data-rvdel]');
-  if (del){
-    if (del.dataset.armed !== '1'){ arm(del, '정말 지울까요?'); return; }
-    const p = rvPhotos.find(x => x.id === del.dataset.rvdel);
-    if (!p) return;
-    del.disabled = true;
-    const r = await sb.from('trip_photos').delete().eq('id', p.id).select('id');
-    del.disabled = false; disarm(del); del.textContent = '×';
-    if (r.error) return fail(r.error, 'rv');
-    /* 표에서 지운 뒤 통에서도 지웁니다. 순서가 반대면 파일만 사라지고
-       줄이 남아 깨진 사진이 뜹니다. 통 쪽이 실패해도 화면은 맞습니다. */
-    await sb.storage.from('trip-photos').remove([p.path]);
-    await loadPhotos();
-    return;
-  }
-
-  const st = e.target.closest('.st'); if (!st) return;
-  const wrap = st.closest('.stars');
-  const box = st.getBoundingClientRect();
-  const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-
-  if (wrap.dataset.rvcity){
-    /* 여기서 매긴 것이 곧 기록 탭의 도시 별점입니다. 두 벌로 두지 않습니다. */
-    const cur = [...wrap.querySelectorAll('.st i')]
-      .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
-    const next = Math.abs(cur - v) < 0.01 ? null : v;
-    const up = await sb.from('city_ratings')
-      .upsert({ user_id: me.id, city_id: wrap.dataset.rvcity, stars: next },
-              { onConflict: 'user_id,city_id' }).select('stars').maybeSingle();
-    if (up.error) return fail(up.error, 'rv');
-    wrap.innerHTML = starHtml(next);
-    return;
-  }
-  if (wrap.id === 'rv_stars'){
-    const next = Number(myReview.stars) === v ? null : v;
-    await saveReview({ stars: next });
-  }
-});
-
-/* 후기 글은 칸을 벗어날 때 저장합니다. 글자마다 보내면 요청이 쏟아집니다. */
-$('rv_note').addEventListener('change', () =>
-  saveReview({ comment: $('rv_note').value.trim() || null }));
-/* 쓴 만큼 칸이 자랍니다. 두 줄에 고정해두면 긴 글을 좁은 구멍으로 씁니다. */
-function growNote(){
-  const t = $('rv_note');
-  t.style.height = 'auto';
-  t.style.height = Math.min(t.scrollHeight, 320) + 'px';
-}
-$('rv_note').addEventListener('input', growNote);
-
-/* ── 후기 사진 ───────────────────────────────────────────────────────
- * 통은 **비공개**입니다. 주소를 알아도 그냥은 안 열립니다(db/052).
- * 그래서 볼 때마다 잠깐 열리는 주소를 받아 씁니다(createSignedUrl).
- *
- * 폰 사진은 5MB 가 넘기도 합니다. 그대로 올리면 통도 낭비하고 여행지에서
- * 데이터도 씁니다. 긴 변 1280 으로 줄여 올립니다 — 화면에서 보는 크기의
- * 두 배쯤이라 확대해도 뭉개지지 않습니다. */
-const RV_MAX = 30;           /* 여행 하나에 이만큼. 통이 무한하지 않습니다 */
-let rvPhotos = [];
-
-function fitImage(file, max = 1280, q = 0.82){
-  return new Promise((ok, no) => {
-    const img = new Image();
-    img.onload = () => {
-      /* 가로세로 비를 지킵니다. 정사각으로 자르는 avatar 쪽(shrink)과 다릅니다 —
-         여행 사진은 잘라내면 정작 찍은 것이 잘려 나갑니다. */
-      const s = Math.min(1, max / Math.max(img.width, img.height));
-      const cv = document.createElement('canvas');
-      cv.width  = Math.round(img.width  * s);
-      cv.height = Math.round(img.height * s);
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      URL.revokeObjectURL(img.src);
-      cv.toBlob(b => b ? ok(b) : no(new Error('사진을 못 읽었어요')), 'image/jpeg', q);
-    };
-    img.onerror = () => no(new Error('사진을 못 읽었어요'));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-async function loadPhotos(){
-  const { data, error } = await sb.from('trip_photos')
-    .select('id,path,user_id,created_at').eq('trip_id', trip.id).order('created_at');
-  if (error){ $('rv_shots').innerHTML = ''; return fail(error, 'rv'); }
-  rvPhotos = data || [];
-  await drawPhotos();
-}
-
-async function drawPhotos(){
-  const box = $('rv_shots');
-  if (!rvPhotos.length){ box.innerHTML = ''; $('rv_shotnote').textContent = ''; return; }
-  /* 주소를 하나씩 받으면 사진 수만큼 왕복합니다. 한 번에 받습니다. */
-  const { data: urls } = await sb.storage.from('trip-photos')
-    .createSignedUrls(rvPhotos.map(p => p.path), 3600);
-  const by = Object.fromEntries((urls || []).map(u => [u.path, u.signedUrl]));
-  box.innerHTML = rvPhotos.map(p =>
-    `<div class="rvshot">
-       <img src="${esc(by[p.path] || '')}" alt="" loading="lazy">
-       ${p.user_id === me.id
-         ? `<button class="x" data-rvdel="${esc(p.id)}" aria-label="지우기">×</button>` : ''}
-     </div>`).join('');
-  $('rv_shotnote').textContent = `${rvPhotos.length}장`;
-}
-
-$('rv_file').addEventListener('change', async e => {
-  const files = [...(e.target.files || [])];
-  e.target.value = '';                    /* 같은 사진을 다시 골라도 걸리게 */
-  if (!files.length) return;
-  const room = RV_MAX - rvPhotos.length;
-  if (room <= 0) return fail(`사진은 여행 하나에 ${RV_MAX}장까지예요.`, 'rv');
-  const take = files.slice(0, room);
-  if (files.length > room)
-    toast(`${RV_MAX}장까지라서 ${take.length}장만 넣었어요.`);
-
-  const lab = $('rv_add').querySelector('span');
-  const orig = lab.textContent;
-  let done = 0;
-  for (const f of take){
-    lab.textContent = `올리는 중… ${++done}/${take.length}`;
-    try {
-      const blob = await fitImage(f);
-      /* 경로 맨 앞이 여행 id 여야 통 정책이 참여자인지 가릅니다(db/052). */
-      const name = (crypto.randomUUID ? crypto.randomUUID()
-                                      : String(Date.now()) + Math.random()).slice(0, 36);
-      const path = `${trip.id}/${me.id}/${name}.jpg`;
-      const up = await sb.storage.from('trip-photos')
-        .upload(path, blob, { contentType:'image/jpeg' });
-      if (up.error) throw up.error;
-      const r = await sb.from('trip_photos')
-        .insert({ trip_id: trip.id, user_id: me.id, path });
-      if (r.error){
-        /* 표에 못 넣었으면 통에 남은 파일도 치웁니다 — 안 그러면 아무도
-           모르는 사진이 통에만 쌓입니다. */
-        await sb.storage.from('trip-photos').remove([path]);
-        throw r.error;
-      }
-    } catch (err){
-      lab.textContent = orig;
-      return fail(err, 'rv');
-    }
-  }
-  lab.textContent = orig;
-  await loadPhotos();
-});
-
+/* ── 여행 후기 ────────────────────────────────────────────────────────
+ * 후기·후기 사진은 review.js 로 옮겼습니다(b340, 열네 번째 조각).
+ * ctx 는 하나(me)입니다. `myReview` 도 그리로 갔습니다 — 쓰는 곳이
+ * 거기뿐이었습니다. */
 /* ── 여행 정보 수정 ─────────────────────────────────────────────── */
 $('editbtn').addEventListener('click', () => {
   $('editcard').classList.toggle('hide');
@@ -5443,7 +5150,7 @@ async function render(session){
      처음에는 이메일 앞부분을 이름으로 씁니다. 본인이 바꾸면 그게 남습니다. */
   $('name').textContent = (me.email || '').split('@')[0];
   applyTs(localStorage.getItem('t2:ts') || 1);
-  myAvatar = '';
+  setMyAvatar('');
   /* 사진을 올린 적이 없으면 여기서 끝입니다. src 를 비워두면 흰 네모가 됩니다 —
      이름 첫 글자를 그려 넣습니다. 아래에서 진짜 사진이 오면 갈아 끼웁니다. */
   $('avatar').src = avatarOf(me.id, $('name').textContent);
@@ -5452,7 +5159,7 @@ async function render(session){
     .then(r => {
       if (!r.data) return;
       if (r.data.display_name) $('name').textContent = r.data.display_name;
-      if (r.data.avatar_url){ myAvatar = r.data.avatar_url; $('avatar').src = myAvatar; }
+      if (r.data.avatar_url){ setMyAvatar(r.data.avatar_url); $('avatar').src = r.data.avatar_url; }
       else $('avatar').src = avatarOf(me.id, $('name').textContent);  /* 별명이 늦게 와도 맞게 */
     }).catch(() => {});
 
