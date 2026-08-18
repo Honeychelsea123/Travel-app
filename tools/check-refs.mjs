@@ -20,7 +20,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 /* app.js 에서 떼어낸 것들. 새 조각을 만들면 여기 더하십시오 —
    안 더하면 그 파일은 아무도 안 봅니다. */
 const 볼것 = readdirSync('.').filter(f =>
-  ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js'].includes(f));
+  ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js', 'report.js'].includes(f));
 
 const 벗기기 = s => s
   .replace(/\/\*[\s\S]*?\*\//g, ' ')
