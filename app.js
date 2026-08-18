@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b337';
+import { sb } from './db.js?v=b338';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b337';
-import { starHtml, paintStars, markRated } from './stars.js?v=b337';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b338';
+import { starHtml, paintStars, markRated } from './stars.js?v=b338';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b337';
-import { loadAdmin } from './admin.js?v=b337';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b338';
+import { loadAdmin } from './admin.js?v=b338';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b337';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b337';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b337';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b338';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b338';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,50 +33,51 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b337';
+         setEditPlanId, nameOf } from './trip.js?v=b338';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b337';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b338';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b337';
+         useCities, addCity, search } from './cities.js?v=b338';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b337';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b338';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b337';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b338';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b337';
+         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b338';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b337';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b338';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b337';
+         isCityOpen, clearCityOpen } from './city.js?v=b338';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b337';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b338';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b337';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b338';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b337';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b337';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b337';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b337';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b338';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b338';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b338';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b338';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b338';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b337';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b338';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b337';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b338';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -4314,181 +4315,10 @@ $('days').addEventListener('change', e => {
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
-/* ── 일정 지도 ───────────────────────────────────────────────────────
- * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.
- * 좌표가 있는 일정만 찍고, 하나도 없으면 통째로 접습니다.
- * 글자는 영어 지도를 씁니다 — 현지 문자로만 나오면 어디가 어딘지 못 읽습니다. */
-let lmap = null, lmarks = null;
-
-/* ── Leaflet 은 쓸 때 불러옵니다 ──────────────────────────────────────
- * 전에는 index.html 의 head 에 defer 로 걸려 있었습니다. 그런데 defer
- * 스크립트와 모듈 스크립트는 **문서 순서대로** 실행됩니다. unpkg 가 느리거나
- * 매달리면 뒤에 있는 app.js 가 아예 실행되지 않고, 그러면 __t2booted 가
- * 안 켜져 부팅 실패 상자만 남습니다. **캐시가 멀쩡해도 그렇습니다** —
- * 재현해서 확인했습니다. 지도 하나가 앱 전체를 붙잡을 이유가 없습니다.
- *
- * 여기서 부르면 늦어도 지도만 늦습니다. 못 받아오면 지도만 안 나옵니다.
- * 실패하면 약속을 지워 다음에 다시 해봅니다 — 한 번 끊겼다고 영영 포기하면
- * 연결이 돌아와도 지도가 안 나옵니다. */
-let leafletP = null, leafletWaiting = false;
-function ensureLeaflet(){
-  if (window.L) return Promise.resolve(true);
-  if (leafletP) return leafletP;
-  leafletP = new Promise(resolve => {
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(css);
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload  = () => resolve(true);
-    s.onerror = () => { leafletP = null; resolve(false); };
-    document.head.appendChild(s);
-  });
-  return leafletP;
-}
-
-/* **지도는 기본으로 접습니다.** 재보니 앱 폭 480px 에서 첫 일정 줄이
-   3일 여행 560px, 11일 여행 722px 아래에서 시작했습니다. 아이폰 홈 화면
-   앱의 세로 여유가 780px 안팎이라 긴 여행은 일정이 한 줄도 안 보였습니다.
-   지도는 190px 을 먹는데, 여는 목적이 대개 "오늘 뭐 하지"라 매번 필요하진
-   않습니다. 고른 것은 기기에 남겨서 지도를 즐겨 보는 사람은 한 번만 켜면
-   됩니다. */
-let mapOpen = localStorage.getItem('t2:map') === '1';
-
-function drawMapBtn(pts){
-  const b = $('mapbtn');
-  /* 찍을 게 없으면 단추도 없앱니다 — 눌러서 빈 지도를 보게 할 이유가 없습니다. */
-  b.classList.toggle('hide', !pts);
-  b.classList.toggle('on', mapOpen && !!pts);
-}
-
-$('mapbtn').addEventListener('click', () => {
-  mapOpen = !mapOpen;
-  localStorage.setItem('t2:map', mapOpen ? '1' : '0');
-  drawPlanMap();
-});
-
-function drawPlanMap(){
-  const box = $('planmap');
-  /* **찍을 것을 먼저 세고 나서 Leaflet 을 부릅니다.** 전에는 순서가 반대라,
-     지도를 볼 생각이 없어도 열기만 하면 CDN 에서 스크립트와 CSS 를
-     받아왔습니다. 이제 접혀 있으면 아예 안 받습니다. */
-  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
-  if (catFilter) show = show.filter(p => p.category === catFilter);
-  const pts = show.filter(p => p.lat != null && p.lng != null);
-  drawMapBtn(pts.length);
-  if (!pts.length || !mapOpen){ box.classList.add('hide'); return; }
-
-  /* 아직 안 왔으면 자리를 감춰두고 불러옵니다. 오면 그때 다시 그립니다 —
-     그래서 부르는 쪽(열 곳)은 이 함수가 기다리는지 몰라도 됩니다. */
-  if (!window.L){
-    box.classList.add('hide');
-    if (!leafletWaiting){
-      leafletWaiting = true;
-      ensureLeaflet().then(ok => { leafletWaiting = false; if (ok) drawPlanMap(); });
-    }
-    return;
-  }
-  box.classList.remove('hide');
-
-  if (!lmap){
-    lmap = L.map(box, { zoomControl:false, attributionControl:false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { maxZoom:19, subdomains:'abcd' }).addTo(lmap);
-    L.control.attribution({ prefix:false })
-      .addAttribution('&copy; OpenStreetMap &copy; CARTO').addTo(lmap);
-    lmarks = L.layerGroup().addTo(lmap);
-  }
-  lmarks.clearLayers();
-
-  /* 번호를 붙여야 그날 어떤 차례로 도는지 보입니다. */
-  pts.forEach((p, i) => {
-    const m = L.marker([p.lat, p.lng], { icon: L.divIcon({
-      className:'pmk', iconSize:[26,26], iconAnchor:[13,13],
-      html:`<span>${i + 1}</span>` }) });
-    m.bindPopup(`<b>${esc(p.title)}</b>` +
-      (p.start_time ? `<br>${esc(hm(p.start_time))}` : ''));
-    m.addTo(lmarks);
-  });
-  /* 하루만 보고 있으면 다니는 순서를 선으로 잇습니다. */
-  if (pickedDay && pts.length > 1)
-    L.polyline(pts.map(p => [p.lat, p.lng]),
-      { color:'#0066cc', weight:2, opacity:.5, dashArray:'4 4' }).addTo(lmarks);
-
-  const b = L.latLngBounds(pts.map(p => [p.lat, p.lng]));
-  lmap.fitBounds(b, { padding:[28,28], maxZoom:15 });
-  setTimeout(() => lmap.invalidateSize(), 50);   /* 접혀 있다 펴지면 크기를 다시 잽니다 */
-}
-
-/* ── 메모 쪼개기 ─────────────────────────────────────────────────────
- * 메모 한 덩어리를 그대로 뿌리면 읽히지 않습니다. 실제 메모는 이런 꼴입니다.
- *   "🚇 이동방법: 신바시역 ➡️ [긴자선] 탑승 / 💰 교통비: 약 210엔 / 7번 출구 도보 4분"
- * 슬래시로 자르되 괄호 안의 슬래시는 건드리지 않습니다.
- * "이동방법:" "교통비:" 처럼 앞에 이름이 붙은 조각은 따로 모읍니다. */
-function splitParts(s){
-  const raw = String(s).split(/\s+\/\s+/), out = [];
-  let buf = '', depth = 0;
-  for (const piece of raw){
-    buf = buf ? buf + ' / ' + piece : piece;
-    depth += (piece.match(/[([]/g) || []).length - (piece.match(/[)\]]/g) || []).length;
-    if (depth <= 0){ out.push(buf); buf = ''; depth = 0; }
-  }
-  if (buf) out.push(buf);
-  return out;
-}
-/* ── 지도 링크 ───────────────────────────────────────────────────────
- * '지도에서 보기'가 **제목만으로 검색**하고 있었습니다
- * (`?api=1&query=아카리조명`). 이름이 같은 가게는 세계에 여럿이라 구글이
- * 아무 곳이나 고릅니다 — 사용자가 "엉뚱한 곳이 나온다"고 한 것이 이것입니다.
- *
- * 그런데 우리는 **더 정확한 것을 이미 둘이나 갖고 있었습니다.**
- *   1. 메모에 붙여넣은 지도 주소 — 사용자가 직접 그 자리를 짚어준 것
- *   2. 좌표(`lat`·`lng`) — 재보니 100개 중 89개에 들어 있는데 한 번도 안 썼습니다
- * 둘 다 버리고 이름으로 검색하고 있었습니다.
- *
- * **순서는 메모의 주소가 먼저입니다.** 좌표는 '좌표 채우기'가 짐작해 넣은
- * 것이고 메모의 주소는 사람이 손으로 짚은 것입니다. 짐작보다 사람이 먼저입니다.
- * 좌표만 있으면 `/@lat,lng,17z` 로 **그 자리를 보면서 이름을 찾게** 합니다 —
- * `query=lat,lng` 로 핀만 찍으면 정확은 해도 가게 정보(영업시간·후기)가
- * 통째로 사라집니다. 이 꼴이면 이름을 못 찾아도 **지도는 옳은 자리**에 섭니다.
- * 둘 다 없으면 이름에 **그 구간의 도시**를 붙입니다 — 그것만으로도 나라를
- * 건너뛰는 일은 없어집니다. */
-
-/* 어느 앱에서 복사했는지는 사용자가 정할 일입니다. 구글·애플·네이버·카카오를
-   다 받습니다. 짧은 주소(maps.app.goo.gl)는 우리가 펴볼 수 없으므로 그대로 엽니다 —
-   펴보려고 남의 서버에 물어보면 응답이 달라지는 문제가 생깁니다(b265 에서 겪음). */
-const MAP_URL = new RegExp('^https?://(?:' + [
-  'maps\\.app\\.goo\\.gl', 'goo\\.gl/maps', 'maps\\.google\\.[a-z.]+',
-  '(?:www\\.)?google\\.[a-z.]+/maps', 'maps\\.apple\\.com',
-  'naver\\.me', '(?:m\\.)?map\\.naver\\.com', 'place\\.map\\.kakao\\.com', 'kko\\.to',
-].join('|') + ')(?:[/?]|$)', 'i');
-
-function memoMapUrl(...texts){
-  for (const t of texts)
-    for (const m of String(t || '').matchAll(/https?:\/\/[^\s<>"']+/g))
-      /* 문장 끝의 문장부호가 주소에 딸려 들어옵니다 */
-      if (MAP_URL.test(m[0])) return m[0].replace(/[),.;]+$/, '');
-  return null;
-}
-
-/* 한 줄(일정 또는 후보)에서 '지도에서 보기'·'길찾기' 주소를 만듭니다.
-   `city` 는 이름만으로는 어느 나라인지 모를 때 붙일 도시 이름입니다. */
-function mapLinks(o, city){
-  const geo = o.lat != null && o.lng != null;
-  const name = encodeURIComponent(o.title_local || o.title || '');
-  const q = encodeURIComponent([o.title_local || o.title, city].filter(Boolean).join(' '));
-  const url = memoMapUrl(o.memo, o.move_note);
-  const see = url ? url
-    : geo ? (name ? `https://www.google.com/maps/search/${name}/@${o.lat},${o.lng},17z`
-                  : `https://www.google.com/maps/search/?api=1&query=${o.lat},${o.lng}`)
-    : `https://www.google.com/maps/search/?api=1&query=${q}`;
-  /* 길찾기는 **목적지를 알아야** 합니다. 짧은 주소로는 알 수 없으므로
-     좌표가 있으면 좌표로, 없으면 이름+도시로 갑니다. */
-  const go = `https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=${
-    geo ? `${o.lat},${o.lng}` : q}`;
-  return { see, go };
-}
+/* ── 일정 지도 · 지도 링크 ────────────────────────────────────────────
+ * 지도(Leaflet)·메모 쪼개기·지도 링크는 planmap.js 로 옮겼습니다
+ * (b338, 열한 번째 조각). **딸린 것이 없어 ctx 가 없습니다.**
+ * 여기서는 맨 위에서 넷을 가져다 쓰기만 합니다. */
 
 /* 지도 주소는 **틀려도 화면에서는 멀쩡해 보입니다** — 눌러서 딴 데가 나와야
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
