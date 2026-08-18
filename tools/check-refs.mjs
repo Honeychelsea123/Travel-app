@@ -1,80 +1,72 @@
-/* 떼어낸 모듈이 **없는 이름을 쓰고 있지 않은지** 봅니다.
+/* 떼어낸 모듈이 **app.js 에만 있는 이름을 그대로 들고 나왔는지** 봅니다.
  *
- * 왜 따로 필요한가:
- *   `shelfKind is not defined` · `avgTail is not defined` — app.js 를 쪼개면서
- *   두 번 같은 사고가 났습니다. 문법은 멀쩡하니 check-syntax 가 못 잡고,
- *   그 줄은 **로그인해서 그 화면을 열어야** 도니까 check-app 도 못 잡습니다.
- *   실기기에서 눌러보고서야 알았습니다.
+ * 왜 이것만 보나:
+ *   app.js 를 쪼개면서 같은 사고가 네 번 났습니다 —
+ *   shelfKind · avgTail · cityOpen · localTime. 전부 모양이 같습니다.
+ *   문법은 멀쩡하니 check-syntax 가 못 잡고, 그 줄은 로그인해서 그 화면을
+ *   열어야 도니까 check-app 도 못 잡습니다. 실기기에서 눌러보고서야 알았습니다.
  *
- * 어떻게:
- *   파일에서 쓰는 이름을 모으고, 그 파일이 스스로 정의했거나 import 한 것과
- *   표준 전역을 뺍니다. 남는 것이 있으면 알려줍니다.
- *   **완벽하지 않습니다** — 대충 세는 것이라 놓치기도 하고 헛짚기도 합니다.
- *   그래도 "app.js 에만 있던 이름을 그대로 들고 나왔다" 는 딱 잡힙니다.
- *   그게 쪼개기에서 나는 사고의 전부였습니다. */
-import { readFileSync } from 'node:fs';
+ * ⚠ **처음에는 '못 찾는 이름 전부' 를 알려주게 만들었다가 물렸습니다.**
+ *   글자열 안의 HTML(div·span·style)과 표준 이름(Error·addEventListener)이
+ *   섞여 한 파일에 열 몇 개씩 나왔습니다. 그중 진짜는 하나도 없었습니다.
+ *   **잡음 많은 검사는 안 보게 되고, 안 보는 검사는 없는 검사입니다.**
+ *   그래서 딱 하나만 봅니다: 그 이름이 app.js 에 선언돼 있는가.
+ *   실제로 났던 사고가 그것뿐이었고, 헛짚을 자리가 없습니다.
+ *
+ * 여기서 못 잡는 것: 오타 난 이름, 다른 모듈에서 와야 하는데 아무 데도 없는 것.
+ * 그건 브라우저가 그 줄을 실제로 돌릴 때 납니다. */
+import { readFileSync, readdirSync } from 'node:fs';
 
-const 볼것 = ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js'];
+/* app.js 에서 떼어낸 것들. 새 조각을 만들면 여기 더하십시오 —
+   안 더하면 그 파일은 아무도 안 봅니다. */
+const 볼것 = readdirSync('.').filter(f =>
+  ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js'].includes(f));
 
-/* 브라우저·표준이 주는 것들. 여기 없는 것이 나오면 알려주고, 진짜 표준이면
-   여기 더하십시오 — 목록을 늘리는 것이 못 본 척하는 것보다 낫습니다. */
-const 표준 = new Set(`Math JSON Date Promise Object Array String Number Boolean Symbol
-document window location console navigator screen performance history
-setTimeout clearTimeout setInterval clearInterval requestAnimationFrame
-fetch URL URLSearchParams Image File FileReader Blob FormData Set Map WeakMap Intl
-localStorage sessionStorage crypto AbortSignal AbortController Response Request Headers
-Event CustomEvent Element HTMLElement Node NodeList DOMParser XMLSerializer
-encodeURIComponent decodeURIComponent atob btoa isNaN parseInt parseFloat structuredClone
-Infinity NaN undefined globalThis createImageBitmap getComputedStyle matchMedia
-alert confirm prompt`.split(/\s+/).filter(Boolean));
+const 벗기기 = s => s
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/\/\/[^\n]*/g, ' ')
+  /* 글자열은 통째로 지웁니다. 안에 적힌 이름은 코드가 아닙니다.
+     이스케이프까지 따지지 않습니다 — 이름을 세는 데는 이 정도면 됩니다. */
+  .replace(/`[^`]*`/g, ' ')
+  .replace(/'[^']*'/g, ' ')
+  .replace(/"[^"]*"/g, ' ');
 
-const 예약 = new Set(`await async function const let var return if else for of in new typeof
-null true false this catch try throw finally class extends export import from default
-case switch break continue do while delete void instanceof yield get set static super
-arguments eval of as`.split(/\s+/).filter(Boolean));
+/* app.js 가 스스로 선언한 이름들. 이것을 모듈이 맨몸으로 쓰고 있으면
+   떼어낼 때 들고 나온 것입니다. */
+const appCode = 벗기기(readFileSync('app.js', 'utf8'));
+const appOnly = new Set();
+for (const m of appCode.matchAll(/^(?:async[ ]+)?function[ ]+([A-Za-z_$][A-Za-z0-9_$]*)/gm)) appOnly.add(m[1]);
+for (const m of appCode.matchAll(/^(?:const|let|var)[ ]+([A-Za-z_$][A-Za-z0-9_$]*)/gm)) appOnly.add(m[1]);
+/* `let a = 1, b = 2;` 처럼 한 줄에 여럿 적은 것도 셉니다. */
+for (const m of appCode.matchAll(/^(?:const|let|var)[ ]+([^;=]+)=/gm))
+  for (const p of m[1].split(',')) { const n = p.trim(); if (/^[A-Za-z_$][\w$]*$/.test(n)) appOnly.add(n); }
+/* app.js 가 남에게서 가져온 것은 app.js 것이 아닙니다 — 모듈도 똑같이
+   가져다 쓰면 되므로 여기서 빼야 헛짚지 않습니다. */
+for (const m of appCode.matchAll(/\bimport\s*\{([^}]*)\}/g))
+  for (const p of m[1].split(',')) appOnly.delete(p.trim().split(/\s+as\s+/).pop().trim());
 
 let 틀림 = 0;
 for (const f of 볼것){
-  const src = readFileSync(f, 'utf8');
-  /* 주석과 글자열을 걷어냅니다 — 거기 적힌 이름은 코드가 아닙니다. */
-  const code = src
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/[^\n]*/g, ' ')
-    /* 글자열은 통째로 지웁니다. 안에 적힌 이름은 코드가 아닙니다.
-       이스케이프까지 따지지 않습니다 — 이름을 세는 데는 이 정도로 충분하고,
-       역슬래시를 쓰면 이 파일을 만들 때 또 먹힙니다(실제로 두 번 먹혔습니다). */
-    .replace(/`[^`]*`/g, " ")
-    .replace(/'[^']*'/g, " ")
-    .replace(/"[^"]*"/g, " ");
-
-  const 정의 = new Set();
-  for (const m of code.matchAll(/\b(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) 정의.add(m[1]);
-  for (const m of code.matchAll(/\bfunction\s*\(([^)]*)\)/g))
-    for (const p of m[1].split(',')) { const n = p.trim().split(/[=:\s]/)[0]; if (n) 정의.add(n); }
-  /* 화살표·구조분해·for 문의 이름까지 다 세지는 못합니다. 그래서 아래에서
-     '점 뒤' 와 '속성 이름' 을 빼고, 남는 것만 봅니다. */
-  for (const m of code.matchAll(/(?:\(|,)\s*([A-Za-z_$][\w$]*)\s*(?:=[^,)]*)?\s*(?=[,)])/g)) 정의.add(m[1]);
-  for (const m of code.matchAll(/\b(?:for)\s*\(\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g)) 정의.add(m[1]);
-  for (const m of code.matchAll(/\{([^{}]*)\}\s*=/g))
-    for (const p of m[1].split(',')) { const n = p.trim().split(/[=:\s]/)[0]; if (n) 정의.add(n); }
+  const code = 벗기기(readFileSync(f, 'utf8'));
+  const 있음 = new Set();
+  for (const m of code.matchAll(/\b(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) 있음.add(m[1]);
   for (const m of code.matchAll(/\bimport\s*\{([^}]*)\}/g))
-    for (const p of m[1].split(',')) { const n = p.trim().split(/\s+as\s+/).pop().trim(); if (n) 정의.add(n); }
-  for (const m of code.matchAll(/\bcatch\s*\(\s*([A-Za-z_$][\w$]*)/g)) 정의.add(m[1]);
+    for (const p of m[1].split(',')) 있음.add(p.trim().split(/\s+as\s+/).pop().trim());
 
-  /* 점 뒤에 오는 것(속성)과 `이름:` (객체 열쇠)은 변수가 아닙니다. */
-  const 쓰임 = new Set();
-  const 지운점 = code.replace(/\.\s*[A-Za-z_$][\w$]*/g, ' ')
-                     .replace(/([A-Za-z_$][\w$]*)\s*:/g, ' ');
-  for (const m of 지운점.matchAll(/\b([A-Za-z_$][\w$]*)\b/g)) 쓰임.add(m[1]);
+  /* 점 뒤(속성)와 `이름:`(객체 열쇠)은 변수가 아닙니다. */
+  const 평평 = code.replace(/\.\s*[A-Za-z_$][\w$]*/g, ' ')
+                   .replace(/([A-Za-z_$][\w$]*)\s*:/g, ' ');
+  const 들고나온것 = new Set();
+  for (const m of 평평.matchAll(/\b([A-Za-z_$][\w$]*)\b/g))
+    if (appOnly.has(m[1]) && !있음.has(m[1])) 들고나온것.add(m[1]);
 
-  const 없는것 = [...쓰임].filter(n =>
-    !정의.has(n) && !표준.has(n) && !예약.has(n) && n !== '$' && !/^[A-Z_0-9]+$/.test(n));
-
-  if (없는것.length){
-    틀림 += 없는것.length;
-    console.error('  X   ' + f + ' — 못 찾는 이름: ' + 없는것.join(' '));
-    console.log('::error file=' + f + '::못 찾는 이름: ' + 없는것.join(' '));
+  if (들고나온것.size){
+    틀림 += 들고나온것.size;
+    const 목록 = [...들고나온것].join(' ');
+    console.error('  X   ' + f + ' — app.js 것을 그대로 씀: ' + 목록);
+    console.log('::error file=' + f + '::app.js 것을 그대로 씁니다: ' + 목록 +
+                ' (ctx 로 받거나, 쓰는 쪽으로 옮기거나, 아래층으로 내리십시오)');
   } else console.log('  ok  ' + f);
 }
-console.log('\n' + 볼것.length + '개 모듈, 못 찾는 이름 ' + 틀림 + '개');
+console.log('\n' + 볼것.length + '개 모듈, 들고 나온 이름 ' + 틀림 + '개');
 process.exit(틀림 ? 1 : 0);
