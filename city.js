@@ -13,12 +13,12 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc } from './dom.js?v=b325';
-import { sb } from './db.js?v=b325';
-import { cities, countryName, continentOf } from './cities.js?v=b325';
-import { myRates, cityStat, visited } from './rate.js?v=b325';
-import { starHtml } from './stars.js?v=b325';
-import { fail } from './net.js?v=b325';
+import { $, esc } from './dom.js?v=b326';
+import { sb } from './db.js?v=b326';
+import { cities, countryName, continentOf } from './cities.js?v=b326';
+import { myRates, cityStat, visited } from './rate.js?v=b326';
+import { starHtml } from './stars.js?v=b326';
+import { fail } from './net.js?v=b326';
 
 let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {} };
 export function setCityCtx(o){ ctx = { ...ctx, ...o }; }

@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b325';
+import { sb } from './db.js?v=b326';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b325';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b325';
-import { starHtml, paintStars, markRated } from './stars.js?v=b325';
+import { $, esc, toast, copyText } from './dom.js?v=b326';
+import { starHtml, paintStars, markRated } from './stars.js?v=b326';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b325';
-import { loadAdmin } from './admin.js?v=b325';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b326';
+import { loadAdmin } from './admin.js?v=b326';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b325';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b325';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b325';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b326';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b326';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,34 +46,39 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b325';
+         setEditPlanId } from './trip.js?v=b326';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b325';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b326';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b325';
+         useCities, addCity, search } from './cities.js?v=b326';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b325';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b326';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b325';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b326';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b325';
+         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b326';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b325';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b326';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
-import { openCity, closeCity, setCityCtx } from './city.js?v=b325';
+import { openCity, closeCity, setCityCtx } from './city.js?v=b326';
+/* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
+   aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
+   얽힘이 적은 앞부분만 가져왔습니다. */
+import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
+         aiShots, SHOT_MAX, SRC_KO } from './aiui.js?v=b326';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b325';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b326';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b325';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b326';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -1571,226 +1576,6 @@ function aiToBottom(){
   go();
   requestAnimationFrame(go);
 }
-
-/* ── 답을 기다리는 동안 ──────────────────────────────────────────────
- * 보내기 단추만 흐려지는 것으로는 "지금 무슨 일이 벌어지고 있다"가 안 읽힙니다.
- * 20초쯤 걸리는데 화면이 멈춘 것처럼 보이면 다시 누르게 됩니다.
- * 대화가 이어지는 자리, 곧 **AI 가 말할 자리에** 점 세 개를 띄웁니다.
- * 저장하지 않습니다 — 답이 오면 loadChats 가 화면을 다시 그리면서 사라집니다. */
-function showTyping(){
-  hideTyping();
-  const box = $('chat');
-  if (!box) return;
-  const el = document.createElement('div');
-  el.className = 'msg ai typing';
-  el.id = 'typing';
-  el.setAttribute('aria-label', '답변을 만드는 중');
-  el.innerHTML = '<i></i><i></i><i></i>';
-  box.appendChild(el);
-  aiToBottom();
-}
-function hideTyping(){ document.getElementById('typing')?.remove(); }
-
-/* 여러 줄 입력칸. 쓴 만큼 늘어나야 자기가 뭘 쓰는지 보입니다.
-   height 를 먼저 비워야 줄어들 때도 따라 줄어듭니다 — 안 그러면 한 번 커진
-   채로 안 돌아옵니다.
-
-   **b173 에서 이 칸을 contenteditable 로 바꿨다가 b174 에서 되돌렸습니다.**
-   iOS 가 textarea 위에 붙이는 ∧ ∨ ✓ 막대를 없애려던 것이었는데, 재보니
-   contenteditable 에도 똑같이 붙습니다 — 홈 화면 앱 vv.h 가 424 에서 1px 도
-   안 움직였습니다. 그러면 placeholder·글자수·한글 조합을 손으로 흉내 낸
-   코드만 남습니다. 브라우저가 이미 맞게 해주는 것을 다시 만들 이유가 없습니다.
-   **막대는 없앨 수 없습니다. 덮는 쪽으로 가야 합니다.** */
-function growMsg(){
-  const el = $('ai_msg');
-  el.style.height = 'auto';
-  el.style.height = el.scrollHeight + 'px';
-}
-$('ai_msg').addEventListener('input', growMsg);
-
-$('ai_msg').addEventListener('keydown', e => {
-  /* 줄바꿈이 필요할 때가 있습니다. Enter 는 보내기, Shift+Enter 는 줄바꿈.
-     한글 조합 중(isComposing)에 Enter 를 가로채면 마지막 글자가 잘려 나갑니다. */
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){
-    e.preventDefault(); $('ai_send').click();
-  }
-});
-
-/* 빠른 질문(추천 문구 4개)은 b178 에서 걷어냈습니다. */
-
-/* ── 사진 첨부 ──────────────────────────────────────────────────────
- * 간판·메뉴판·티켓을 찍어 물어보는 자리입니다. 글로 옮겨 적는 것보다 빠릅니다.
- * 그대로 보내면 4MB 짜리가 올라갑니다. 로밍에서 그건 안 됩니다.
- * 긴 쪽을 1024 로 줄이고 JPEG 로 다시 굽습니다 — 글자를 읽을 만큼은 남습니다.
- * 프로필 사진용 shrink 를 쓰지 않는 이유는 그건 정사각으로 잘라내기 때문입니다.
- * 메뉴판이 잘리면 물어볼 것이 사라집니다. */
-/* 여러 장을 붙일 수 있습니다. 메뉴판이 두 장으로 나뉘어 있거나
-   가게 앞과 안을 같이 보여줘야 할 때가 있습니다.
-   대신 장수를 막습니다 — 한 번에 다 올리면 함수가 거절하고 요금도 그만큼 듭니다. */
-const SHOT_MAX = 4;
-let aiShots = [];                        /* [{mime, data(base64), url}] */
-
-function fitJpeg(file, max = 1024){
-  return new Promise((ok, no) => {
-    const img = new Image();
-    img.onload = () => {
-      const s = Math.min(1, max / Math.max(img.width, img.height));
-      const cv = document.createElement('canvas');
-      cv.width  = Math.round(img.width  * s);
-      cv.height = Math.round(img.height * s);
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      URL.revokeObjectURL(img.src);
-      /* dataURL 은 "data:image/jpeg;base64,...." 입니다. 쉼표 뒤가 알맹이입니다. */
-      const url = cv.toDataURL('image/jpeg', 0.82);
-      ok({ mime:'image/jpeg', data:url.slice(url.indexOf(',') + 1), url });
-    };
-    img.onerror = () => no(new Error('사진을 읽지 못했어요.'));
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-$('ai_cam').addEventListener('click', () => $('ai_file').click());
-function drawShot(){
-  $('ai_shotwrap').classList.toggle('hide', !aiShots.length);
-  $('ai_shotwrap').innerHTML = aiShots.map((s, i) =>
-    `<span class="shot1"><img src="${s.url}" alt="">
-       <button class="x" data-shotx="${i}" aria-label="빼기">×</button></span>`).join('') +
-    (aiShots.length ? `<span class="shotn">${aiShots.length}/${SHOT_MAX}</span>` : '');
-}
-$('ai_shotwrap').addEventListener('click', e => {
-  const b = e.target.closest('[data-shotx]'); if (!b) return;
-  aiShots.splice(+b.dataset.shotx, 1);
-  drawShot();
-});
-$('ai_file').addEventListener('change', async e => {
-  const files = [...(e.target.files || [])];
-  e.target.value = '';                   /* 같은 사진을 또 골라도 걸리게 */
-  if (!files.length) return;
-  $('aierr').classList.add('hide');
-  for (const f of files){
-    if (aiShots.length >= SHOT_MAX){ toast(`사진은 ${SHOT_MAX}장까지예요.`); break; }
-    let s;
-    try { s = await fitJpeg(f); } catch (err){ return fail(err, 'ai'); }
-    /* 여기서도 너무 크면 함수가 거절합니다. 대략 1.4배로 부풀어 오릅니다. */
-    if (s.data.length > 2_600_000){ toast('너무 큰 사진 한 장은 건너뛰었어요.'); continue; }
-    aiShots.push(s);
-  }
-  drawShot();
-});
-
-/* ── 출처 ───────────────────────────────────────────────────────────
- * AI 가 무엇을 보고 답했는지 답니다. 인터넷 검색이 아니라 **이 앱의 자료** 중
- * 무엇을 근거로 삼았는지입니다 — 그건 우리가 확인할 수 있습니다.
- * "일반지식"이 붙었다면 우리가 확인해 준 것이 아무것도 없다는 뜻입니다. */
-/* 넷을 더 답니다 — 서버가 AI 에게 일행 · 예약 · 준비물 · 내 별점을 같이
-   넘기게 됐습니다(2026-08-10). **모르는 이름은 아래 filter 가 조용히 버리므로**
-   서버만 고치고 여기를 안 고치면 근거 칩이 안 뜹니다. */
-const SRC_KO = { plans:'이 여행 일정', expenses:'지출 기록', legs:'여행 구간',
-                 trip:'여행 정보', members:'일행', bookings:'예약',
-                 packing:'준비물', ratings:'내가 매긴 별점', prefs:'내 취향',
-                 placerates:'내가 매긴 장소 별점', candidates:'담아둔 곳',
-                 general:'일반 지식 — 직접 확인이 필요해요' };
-function drawSources(list, web){
-  const box = $('aisrc'); if (!box) return;
-  const arr = (Array.isArray(list) ? list : []).filter(s => SRC_KO[s]);
-  const links = Array.isArray(web) ? web.filter(w => w?.link) : [];
-  box.classList.toggle('hide', !arr.length && !links.length);
-  box.innerHTML =
-    (arr.length ? '<b>근거</b>' + arr.map(s =>
-       `<span class="srcchip${s === 'general' ? ' warn' : ''}">${esc(SRC_KO[s])}</span>`).join('')
-     : '') +
-    /* 검색해서 답한 경우에는 어디서 읽었는지 **링크째** 답니다.
-       눌러서 직접 볼 수 있어야 "검색했다"는 말이 확인 가능한 말이 됩니다.
-       영업시간·가격은 틀렸을 때 여행이 어긋나므로 특히 그렇습니다. */
-    (links.length
-      ? `<div class="weblinks"><b>검색해서 답했어요</b>` +
-        links.map((w, i) => `<a href="${esc(w.link)}" target="_blank" rel="noopener">
-             ${i + 1}. ${esc(w.title || w.link)}</a>`).join('') + '</div>'
-      : '');
-}
-
-/* 예시를 누르면 **바로 보냅니다.** 입력칸에 넣어만 주면 한 번 더 눌러야 하고,
-   그러면 예시가 "고르는 것"이 아니라 "지우고 다시 쓰는 것"이 됩니다.
-   빈 화면에서만 보이므로 대화가 시작되면 저절로 사라집니다. */
-$('chat').addEventListener('click', e => {
-  const b = e.target.closest('[data-ask]'); if (!b) return;
-  $('ai_msg').value = b.dataset.ask;
-  $('ai_send').click();
-});
-
-$('ai_send').addEventListener('click', async () => {
-  const shots = aiShots.slice();
-  /* 사진만 보내도 됩니다. "이거 뭐야?"를 매번 타이핑하게 할 이유가 없습니다. */
-  const msg = $('ai_msg').value.trim() ||
-              (shots.length ? '이 사진에 대해 알려줘.' : '');
-  const tripId = $('ai_trip').value;
-  $('aierr').classList.add('hide');
-  if (!msg) return;
-  $('ai_msg').value = ''; growMsg();   /* 여러 줄로 늘어나 있던 것을 한 줄로 되돌립니다 */
-  $('cards').innerHTML = '';
-  aiShots = []; drawShot();
-  $('aisrc').classList.add('hide');
-  /* 글자를 갈아끼우면 안에 있는 비행기 그림이 사라집니다.
-     흐리게만 하고 그림은 그대로 둡니다. */
-  $('ai_send').disabled = true; $('ai_send').classList.add('sending');
-
-  /* 물어본 것을 먼저 남깁니다. 답이 실패해도 무엇을 물었는지는 보여야 합니다.
-     여행을 안 골랐으면 trip_id 를 비워 둡니다 — 그것도 남습니다 (029).
-     사진 자체는 저장하지 않습니다 — 대화 기록이 금방 수십 MB 가 됩니다. */
-  await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
-                                  role: 'user',
-                                  content: (shots.length ? `[사진 ${shots.length}장] ` : '') + msg });
-  await loadChats(tripId);
-  showTyping();          /* 답이 올 자리에 점 세 개. 화면이 멈춘 게 아니라는 표시 */
-
-  /* 사진을 붙이면 점 세 개가 **영원히** 돌았습니다. 요청이 끝나지도, 실패하지도
-     않으면 화면은 알 길이 없습니다 — 원인이 무엇이든 그 상태로 두면 안 됩니다.
-     기다릴 시간을 정해두고, 넘으면 그렇다고 말합니다.
-     사진은 올려 보내는 것 자체가 오래 걸려 넉넉히 줍니다. */
-  const wait = shots.length ? 150000 : 90000;
-  const { data, error } = await Promise.race([
-    sb.functions.invoke('chat',
-      { body: { trip_id: tripId || null, message: msg,
-                /* 한 장만 보낼 때도 images 로 보냅니다. 서버가 옛 image 도 받아주지만
-                   보내는 쪽이 두 갈래면 언젠가 한쪽만 고칩니다. */
-                images: shots.map(s => ({ mime: s.mime, data: s.data })) } }),
-    new Promise(r => setTimeout(() => r({ data:null, error:{ message:
-      shots.length
-        ? `사진을 읽는 데 ${Math.round(wait / 1000)}초를 넘겼어요. ` +
-          '사진을 한 장으로 줄이거나 다시 찍어서 올려보세요.'
-        : `답을 기다린 시간이 ${Math.round(wait / 1000)}초를 넘겼어요. 다시 물어봐주세요.`
-    } }), wait)),
-  ]);
-
-  $('ai_send').disabled = false; $('ai_send').classList.remove('sending');
-  hideTyping();          /* 실패해도 반드시 걷습니다. 남으면 영영 생각하는 척합니다 */
-
-  if (error){
-    /* 함수가 오류를 내면 본문에 이유가 들어 있습니다. 그대로 보여줍니다. */
-    let why = error.message;
-    try { why = (await error.context?.json())?.error || why; } catch {}
-    /* 예전에는 'Failed to send'(요청이 도중에 끊김)까지 "함수가 안 올라갔다"로
-       묶어놨습니다. 둘은 전혀 다릅니다 — 하나는 배포 문제고 하나는 서버가
-       일하다 죽은 것입니다. 같은 문구를 내놓으니 엉뚱한 데를 보게 됩니다. */
-    return fail(
-      /not found|404/i.test(why)
-        ? 'AI 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
-      : /Failed to send|Load failed|NetworkError/i.test(why)
-        ? '답을 만들다 끊겼어요. 글이 너무 길거나 링크가 무거우면 그럴 수 있어요. ' +
-          '링크를 하나만 넣거나 글을 줄여서 다시 해보세요.'
-      : why, 'ai');
-  }
-  if (data?.error) return fail(data.error, 'ai');
-
-  await sb.from('chats').insert({ trip_id: tripId || null, user_id: me.id,
-                                  role: 'model', content: data.reply });
-  await loadChats(tripId);
-  drawSources(data.sources, data.web);
-  drawCards(data);
-  /* drawChats 안에서 한 번 내리지만 그때는 출처와 제안 카드가 아직 없습니다.
-     다 그리고 나서 한 번 더 내려야 새 답변의 끝이 보입니다. */
-  aiToBottom();
-});
 
 /* ── 제안 카드 ──────────────────────────────────────────────────────
  * AI 는 직접 쓰지 않습니다 (문서 7장). 제안만 카드로 내고 담는 것은 사용자가 합니다.

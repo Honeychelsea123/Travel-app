@@ -14,12 +14,12 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b325';
-import { openCity } from './city.js?v=b325';
-import { sb } from './db.js?v=b325';
-import { cities, countryName } from './cities.js?v=b325';
-import { myRates, cityStat, visited } from './rate.js?v=b325';
-import { starHtml } from './stars.js?v=b325';
+import { $, esc, toast } from './dom.js?v=b326';
+import { openCity } from './city.js?v=b326';
+import { sb } from './db.js?v=b326';
+import { cities, countryName } from './cities.js?v=b326';
+import { myRates, cityStat, visited } from './rate.js?v=b326';
+import { starHtml } from './stars.js?v=b326';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
