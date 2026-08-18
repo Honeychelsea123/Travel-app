@@ -206,3 +206,18 @@ if (typeof window !== 'undefined') window.__rateCheck = () => {
   console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
   return out;
 };
+/* ── 남들 평균 한 조각 ────────────────────────────────────────────────
+ * `· 평균 4.2 (7명)` 을 만듭니다. 기록 탭과 보관함이 같이 씁니다 —
+ * 두 곳에 따로 적어두면 한쪽만 고치게 됩니다.
+ *
+ * ⚠ **`n_rated` 에는 나도 들어 있습니다.** 그래서 나 말고 한 명이라도
+ *   더 매겼을 때만 답니다. 안 그러면 내가 매긴 도시 목록에서 `★★★☆☆`
+ *   바로 옆에 `평균 3.0 (1명)` 이 붙습니다 — 내 별점을 숫자로 한 번 더
+ *   읽어주는 것이라 아무 말도 안 하는 것과 같습니다.
+ *   기록 탭처럼 내가 안 매긴 도시가 섞인 목록에서는 `n_rated` 가 1이어도
+ *   그건 남 한 명이므로 그대로 나옵니다. 그래서 숫자를 빼서 셉니다. */
+export function avgTail(stat, mine){
+  const others = (stat?.n_rated || 0) - (mine?.stars != null ? 1 : 0);
+  return others > 0
+    ? ` · 평균 ${Number(stat.avg_stars).toFixed(1)} (${stat.n_rated}명)` : '';
+}
