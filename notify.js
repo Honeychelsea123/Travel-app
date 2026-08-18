@@ -14,9 +14,9 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, toast } from './dom.js?v=b342';
-import { sb } from './db.js?v=b342';
-import { fail, NOROW } from './net.js?v=b342';
+import { $, toast } from './dom.js?v=b343';
+import { sb } from './db.js?v=b343';
+import { fail, NOROW } from './net.js?v=b343';
 
 let ctx = { me: () => null, loadNotifs: async () => {} };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
