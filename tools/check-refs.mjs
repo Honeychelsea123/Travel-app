@@ -40,9 +40,12 @@ for (const f of 볼것){
   const code = src
     .replace(/\/\*[\s\S]*?\*\//g, ' ')
     .replace(/\/\/[^\n]*/g, ' ')
-    .replace(/`(?:\.|[^`\])*`/g, ' ')
-    .replace(/'(?:\.|[^'\])*'/g, ' ')
-    .replace(/"(?:\.|[^"\])*"/g, ' ');
+    /* 글자열은 통째로 지웁니다. 안에 적힌 이름은 코드가 아닙니다.
+       이스케이프까지 따지지 않습니다 — 이름을 세는 데는 이 정도로 충분하고,
+       역슬래시를 쓰면 이 파일을 만들 때 또 먹힙니다(실제로 두 번 먹혔습니다). */
+    .replace(/`[^`]*`/g, " ")
+    .replace(/'[^']*'/g, " ")
+    .replace(/"[^"]*"/g, " ");
 
   const 정의 = new Set();
   for (const m of code.matchAll(/\b(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) 정의.add(m[1]);
