@@ -43,7 +43,7 @@ import { readFileSync, readdirSync } from 'node:fs';
    그대로 죽었을 것입니다. app.js 는 자기가 선언한 것이 대부분이라
    여기 들어가도 조용합니다. 말할 때는 진짜입니다. */
 const 모듈 = ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js',
-              'report.js', 'cards.js', 'expense.js', 'prep.js', 'member.js', 'planmap.js', 'app.js'];
+              'report.js', 'cards.js', 'expense.js', 'prep.js', 'member.js', 'planmap.js', 'citysearch.js', 'app.js'];
 
 /* 이름을 내보낼 수 있는 파일 전부. 여기 없는 파일이 내보내는 이름은
    후보에 안 들어가므로 검사가 그냥 조용합니다 — 틀린 말은 안 합니다. */
@@ -131,6 +131,25 @@ for (const f of 전부){
 const app = 소스['app.js'] || '';
 for (const m of app.matchAll(/^(?:async[ ]+)?function[ ]+([A-Za-z_$][\w$]*)/gm)) if (!어디.has(m[1])) 어디.set(m[1], 'app.js');
 for (const m of app.matchAll(/^(?:const|let|var)[ ]+([A-Za-z_$][\w$]*)/gm))      if (!어디.has(m[1])) 어디.set(m[1], 'app.js');
+
+/* ⚠ **줄 맨 앞의 `let` 만 보면 뒷줄이 통째로 빠집니다(b339).**
+   app.js 의 앱 상태는 이렇게 한 뭉치로 적혀 있습니다:
+
+       let me = null,
+           picked = null, hitList = [], cursor = 0,     <- 이 줄은 `let` 으로 안 시작한다
+           appTab = 'home',
+
+   도시 검색을 떼면서 `hitList` 를 그대로 들고 나갔는데 **세는 데서도 검사에서도
+   안 보였습니다.** 브라우저에서 그 화면을 눌러보고서야 알았습니다
+   (`hitList is not defined`). 정확히 이 검사가 막으라고 있는 사고입니다.
+
+   그래서 `let`/`const`/`var` 뭉치를 세미콜론까지 통째로 읽고 그 안의 이름을
+   다 셉니다. 등호 오른쪽(값)은 이름이 아니므로 `=` 앞만 봅니다. */
+for (const m of app.matchAll(/^(?:const|let|var)[ ]+([^;]*);/gm))
+  for (const 조각 of m[1].split(',')){
+    const n = 조각.split('=')[0].trim();
+    if (/^[A-Za-z_$][\w$]*$/.test(n) && !어디.has(n)) 어디.set(n, 'app.js');
+  }
 /* app.js 가 남에게서 가져온 것은 app.js 것이 아닙니다. */
 for (const m of app.matchAll(/\bimport\s*\{([^}]*)\}/g))
   for (const p of m[1].split(',')){
@@ -151,6 +170,12 @@ const 담기 = (덩어리, 집합) => {
 function 있는이름(코드){
   const s = new Set();
   for (const m of 코드.matchAll(/\b(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g)) s.add(m[1]);
+  /* 한 뭉치로 적은 선언의 **둘째 이름부터**도 셉니다(b339). 위 줄은 첫 이름만
+     잡습니다 — `let a = 1, b = 2;` 의 `b` 가 빠져서 자기 파일 안에서 선언한
+     것을 '없다'고 말합니다. app.js 에서 열아홉 개가 그렇게 나왔습니다.
+     세미콜론까지 훑으므로 가끔 넉넉히 셉니다. 그 방향이 안전합니다 —
+     넉넉히 세면 조용해질 뿐이고, 모자라게 세면 없는 사고를 지어냅니다. */
+  for (const m of 코드.matchAll(/\b(?:const|let|var)\s+([^;]*);/g)) 담기(m[1], s);
   for (const m of 코드.matchAll(/\bimport\s*\{([^}]*)\}/g))
     for (const p of m[1].split(',')) s.add(p.trim().split(/\s+as\s+/).pop().trim());
   for (const m of 코드.matchAll(/(?:function\s*[A-Za-z_$][\w$]*\s*|function\s*|catch\s*)\(([^()]*)\)/g)) 담기(m[1], s);

@@ -117,3 +117,40 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-go]');
   if (b) $(b.dataset.go)?.click();
 });
+
+/* ── 국기 ─────────────────────────────────────────────────────────────
+ * 나라 코드로 국기를 만듭니다. ISO 3166-1 두 글자를 지역표시기호로 옮기는
+ * 규칙이라 나라마다 따로 적어둘 것이 없습니다 — 적어두면 언젠가 틀립니다.
+ *
+ * ── 같은 규칙이 두 곳에 있었습니다(b339) ─────────────────────────────
+ * app.js 에 `flagOf` 가 있고, map.js 의 '다녀온 국가' 안에 **같은 계산이
+ * 인라인으로 한 번 더** 적혀 있었습니다(`+127397`, 0x1F1E6-65 와 같은 수).
+ * 도시 검색을 떼어내다 발견했습니다. 둘을 여기 하나로 모읍니다.
+ *
+ * 짝인 `flagOk` 도 map.js 에서 같이 내렸습니다. 떨어뜨려 두면 도시 검색이
+ * 국기 하나 때문에 지도 화면을 import 하게 됩니다 — 화면이 화면에 기대는
+ * 모양이라 층이 꼬입니다. 둘 다 앱 상태를 모르고 브라우저만 있으면 되므로
+ * 여기 있을 자격이 됩니다. */
+export function flagOf(code){
+  if (!/^[A-Za-z]{2}$/.test(code || '')) return '';
+  return String.fromCodePoint(...[...code.toUpperCase()]
+    .map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+}
+
+/* 이 기기가 국기를 그릴 수 있나. 한 번만 재고 기억합니다 —
+   캔버스 글자 재기는 값싸지만 나라 스물일곱 번 부를 일은 아닙니다.
+   못 그리는 기기(윈도우 크롬)에서 합치지 않으면 화면이 "KR JP IT CH…"
+   코드 나열이 되어 없느니만 못합니다. 실기기에서 재보고 알았습니다. */
+let flagCan = null;
+export function flagOk(){
+  if (flagCan != null) return flagCan;
+  try {
+    const g = document.createElement('canvas').getContext('2d');
+    g.font = '20px sans-serif';
+    /* 🇰🇷 가 한 글자로 합쳐지면 폭이 🇰 하나와 비슷합니다.
+       못 합치면 두 글자를 나란히 그려서 정확히 두 배가 됩니다. */
+    flagCan = g.measureText('\u{1F1F0}\u{1F1F7}').width
+            < g.measureText('\u{1F1F0}').width * 2 - 1;
+  } catch { flagCan = false; }
+  return flagCan;
+}

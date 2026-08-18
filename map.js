@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b338';
-import { openCity } from './city.js?v=b338';
-import { distKm } from './calc.js?v=b338';
-import { sb } from './db.js?v=b338';
-import { cities, countryName, continentOf } from './cities.js?v=b338';
-import { PERSONA_ICON, askImageSize } from './card.js?v=b338';
+import { $, esc, toast, flagOf, flagOk } from './dom.js?v=b339';
+import { openCity } from './city.js?v=b339';
+import { distKm } from './calc.js?v=b339';
+import { sb } from './db.js?v=b339';
+import { cities, countryName, continentOf } from './cities.js?v=b339';
+import { PERSONA_ICON, askImageSize } from './card.js?v=b339';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -239,21 +239,8 @@ $('mapbig').addEventListener('click', () => {
  *
  * 지도 화면과 같은 자료(my_visited)를 씁니다. 다른 데서 세면 두 화면의
  * 숫자가 언젠가 갈립니다. */
-/* 이 기기가 국기를 그릴 수 있나. 한 번만 재고 기억합니다 —
-   캔버스 글자 재기는 값싸지만 나라 스물일곱 번 부를 일은 아닙니다. */
-let flagCan = null;
-export function flagOk(){
-  if (flagCan != null) return flagCan;
-  try {
-    const g = document.createElement('canvas').getContext('2d');
-    g.font = '20px sans-serif';
-    /* 🇰🇷 가 한 글자로 합쳐지면 폭이 🇰 하나와 비슷합니다.
-       못 합치면 두 글자를 나란히 그려서 정확히 두 배가 됩니다. */
-    flagCan = g.measureText('\u{1F1F0}\u{1F1F7}').width
-            < g.measureText('\u{1F1F0}').width * 2 - 1;
-  } catch { flagCan = false; }
-  return flagCan;
-}
+/* flagOk 는 dom.js 로 내렸습니다(b339, 맨 위 import). 짝인 flagOf 도 거기
+   있습니다 — 아래에서 같은 계산을 인라인으로 한 번 더 적고 있었습니다. */
 
 export async function openCountries(){
   $('profpane').classList.add('hide');
@@ -311,9 +298,9 @@ export async function openCountries(){
      "KR JP IT CH LV US…" 코드 나열이 되어 없느니만 못합니다.
      실기기에서 재보고 알았습니다(윈도우 크롬).
      합쳐지는지는 폭으로 압니다 — 합쳐지면 한 글자 폭, 아니면 두 글자 폭. */
-  const flag = code => !flagOk() ? '' :
-    String(code || '').toUpperCase().replace(/[^A-Z]/g, '')
-      .slice(0, 2).replace(/./g, c => String.fromCodePoint(c.charCodeAt(0) + 127397));
+  /* 국기 만들기는 dom.js 의 flagOf 하나입니다(b339). 여기 인라인으로
+     같은 계산이 적혀 있었습니다 — 두 곳에 두면 언젠가 한쪽만 고칩니다. */
+  const flag = code => flagOk() ? flagOf(code) : '';
 
   const head = `<div class="card ctryhero">
     <div class="big">${codes.length}<i>개국</i></div>
