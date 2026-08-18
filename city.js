@@ -13,12 +13,20 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc } from './dom.js?v=b328';
-import { sb } from './db.js?v=b328';
-import { cities, countryName, continentOf } from './cities.js?v=b328';
-import { myRates, cityStat, visited } from './rate.js?v=b328';
-import { starHtml } from './stars.js?v=b328';
-import { fail } from './net.js?v=b328';
+import { $, esc } from './dom.js?v=b329';
+import { sb } from './db.js?v=b329';
+import { cities, countryName, continentOf } from './cities.js?v=b329';
+import { myRates, cityStat, visited } from './rate.js?v=b329';
+import { starHtml } from './stars.js?v=b329';
+import { fail } from './net.js?v=b329';
+
+/* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
+   여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
+   'cityOpen is not defined' 로 도시 화면이 빈 채로 열렸습니다.
+   app.js 는 읽고 비우는 길만 씁니다(아래 둘). */
+let cityOpen = null;
+export const isCityOpen = () => cityOpen != null;
+export function clearCityOpen(){ cityOpen = null; }
 
 let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {} };
 export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
