@@ -1,0 +1,14 @@
+{
+  "name": "keyro",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "기로 — 여행 기록 PWA. 빌드는 안 합니다(아래 참고). 검사만 합니다.",
+  "scripts": {
+    "check": "node tools/check-syntax.mjs",
+    "test": "node tools/check-syntax.mjs && node tools/check-app.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

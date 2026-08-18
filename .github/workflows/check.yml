@@ -1,0 +1,44 @@
+# 배포 전 검사.
+#
+# **왜 생겼는지 적어둡니다.** b311 에서 템플릿 문자열 안에 백틱 하나가
+# 들어가 app.js 가 파싱조차 안 됐는데, 그대로 GitHub Pages 에 올라갔고
+# 사용자가 "불러오는 중만 뜬다"고 알려줄 때까지 아무도 몰랐습니다.
+# 사람이 눈으로 잡을 종류가 아닙니다.
+#
+# 두 단계입니다.
+#   1. 문법  — 의존성 없이 `node --check`. 빠르고 늘 됩니다.
+#   2. 앱    — 진짜 브라우저로 띄우고 자체 점검 열한 개를 돌립니다.
+#              제일 중요한 것은 '#sub 가 불러오는 중에서 벗어났는가' 입니다.
+#
+# ⚠ 이 검사는 **배포를 막지 않습니다.** GitHub Pages 는 push 하면 알아서
+#   올라가고, 그 앞에 관문을 두려면 Pages 를 Actions 배포로 바꿔야 합니다.
+#   지금은 "올라갔는데 빨간불" 을 보여주는 것까지입니다. 그것만으로도
+#   b311 은 몇 분 만에 알아챘을 것입니다. 관문이 필요해지면 그때 바꿉니다.
+
+name: check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 문법
+        run: node tools/check-syntax.mjs
+
+      # 브라우저는 무겁습니다. 문법이 깨졌으면 여기까지 올 필요가 없어서
+      # 위 단계가 실패하면 자동으로 멈춥니다.
+      - name: 브라우저 설치
+        run: npm install && npx playwright install --with-deps chromium
+
+      - name: 앱이 뜨는가
+        run: node tools/check-app.mjs
