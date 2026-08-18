@@ -8,7 +8,7 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b319';
+import { $, esc, toast } from './dom.js?v=b320';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -951,6 +951,14 @@ if (typeof window !== 'undefined') window.__drawCheck = async () => {
     const g = cv.getContext('2d'); g.drawImage(bmp, 0, 0);
     return { g, W: cv.width, H: cv.height, size: blob.size };
   };
+  /* 배경에 옅게 깔린 것을 재려면 '아주 밝은 점이 몇 개인가' 가 아니라
+     '전체가 얼마나 밝아졌는가' 를 봐야 합니다. */
+  const 평균밝기 = x => {
+    const d = x.g.getImageData(0, Math.round(x.H * .20), x.W, Math.round(x.H * .22)).data;
+    let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += d[i];
+    return s / (d.length / 4);
+  };
   const 밝은픽셀 = x => {
     const d = x.g.getImageData(0, Math.round(x.H * .45), x.W, Math.round(x.H * .2)).data;
     let n = 0;
@@ -984,7 +992,11 @@ if (typeof window !== 'undefined') window.__drawCheck = async () => {
         <style>path{fill:rgba(255,255,255,.16)}path.been{fill:#fff}</style>${paths}</svg>`;
     const 없음 = await 그리기(base);
     const 있음 = await 그리기({ ...base, art, artRatio: 387/1000 });
-    if (밝은픽셀(있음) < 밝은픽셀(없음) * 2) m.push('지도를 넣었는데 그림이 안 바뀜');
+    /* ⚠ **'밝은 픽셀 수' 로 재던 것을 '평균 밝기' 로 바꿨습니다.**
+       b315 에서 지도를 배경으로 옮기면서 50% 투명으로 깔립니다. 흰색이
+       회색(128)이 되어 '밝은 픽셀(235 이상)' 이 하나도 안 잡혔고, 그림은
+       멀쩡한데 검사만 실패했습니다. 규칙이 화면보다 옛것이면 소음입니다. */
+    if (평균밝기(있음) < 평균밝기(없음) + 3) m.push('지도를 넣었는데 그림이 안 바뀜');
     /* **그림이 깨져도 카드는 나와야 합니다.** 지도 하나 때문에 공유를 통째로
        못 하게 되면 안 됩니다. */
     const 깨짐 = await 그리기({ ...base, art:'<svg>망가진 것', artRatio: .4 });
