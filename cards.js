@@ -13,7 +13,7 @@
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
 import { $, esc, toast } from './dom.js?v=b335';
-import { asDate, D1 } from './calc.js?v=b335';
+import { asDate, D1, ymd } from './calc.js?v=b335';
 import { setAiTripId, setSuggested, suggested } from './ai.js?v=b335';
 import { sb } from './db.js?v=b335';
 import { fail, netTimeout, NOROW } from './net.js?v=b335';
@@ -25,7 +25,7 @@ export const LVCOLOR = { 심각:'var(--bad)', 주의:'var(--k-food)', 참고:'va
 
 let ctx = {
   me: () => null, closeAi: () => {}, loadPlans: async () => {},
-  review: () => ({}), ymd: d => '',
+  review: () => ({}),
 };
 export function setCardsCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -85,9 +85,9 @@ export function drawCards(d){
            날짜 문자열을 다룰 때는 앱의 다른 곳과 같이 asDate(UTC 자정) + D1 로
            셈하고 ymd 로 되돌립니다. 둘이 짝이라 시간대를 안 탑니다. */
         const out = []; const e = trip.end_date;
-        for (let d = asDate(trip.start_date), i = 1; ctx.ymd(d) <= e && i <= 60;
+        for (let d = asDate(trip.start_date), i = 1; ymd(d) <= e && i <= 60;
              d = new Date(d.getTime() + D1), i++){
-          const v = ctx.ymd(d);
+          const v = ymd(d);
           out.push(`<option value="${v}">Day ${i} · ${v.slice(5)}</option>`);
         }
         return out.join('');

@@ -22,10 +22,11 @@ import { myRates, cityStat, visited, avgTail } from './rate.js?v=b335';
 import { starHtml, paintStars, markRated } from './stars.js?v=b335';
 import { fail } from './net.js?v=b335';
 import { arm } from './ui.js?v=b335';
+import { todayYmd } from './calc.js?v=b335';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
-  loadFootprint: () => {}, todayYmd: () => '', saveRate: async () => {},
+  loadFootprint: () => {}, saveRate: async () => {},
   openTrip: async () => {},
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
@@ -76,7 +77,7 @@ $('shelffilter').addEventListener('click', e => {
 /* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
    따로 적게 하지 않고, 다녀온 여행의 그 분류만 모아 별점을 받습니다. */
 async function openPlaceShelf(kind){
-  const today = ctx.todayYmd();
+  const today = todayYmd();
   const cats = SHELF_CAT[kind] || SHELF_CAT.place;
   const [ps, rs] = await Promise.all([
     sb.from('plans').select('id,title,memo,category,date,trip_id,trips(title,end_date)')

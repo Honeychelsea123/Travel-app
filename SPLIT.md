@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-18. `app.js` 9,169 → 6,898줄. 일곱 조각이 나갔다.
+2026-08-18. `app.js` 9,169 → 6,462줄. 여덟 조각이 나갔다.
 
 ## 왜 하나
 
@@ -13,16 +13,24 @@
 | 파일 | 줄 | 무엇 | ctx |
 |---|---|---|---|
 | `map.js` | 597 | 세계지도 · 다녀온 국가 | me, loadCities |
+| `expense.js` | 419 | 지출 · 환율 · 정산 | **me, drawPlans** |
 | `report.js` | 412 | 여행 리포트 | me, openAi, openDraft, openNew, closeReview, loadChats |
-| `shelf.js` | 391 | 보관함 · 배지 | me, loadCities, loadRateData, loadFootprint, todayYmd, saveRate, openTrip |
-| `cards.js` | 369 | AI 제안 카드 | me, closeAi, loadPlans, review, ymd |
+| `shelf.js` | 391 | 보관함 · 배지 | me, loadCities, loadRateData, loadFootprint, saveRate, openTrip |
+| `cards.js` | 369 | AI 제안 카드 | me, closeAi, loadPlans, review |
 | `persona.js` | 258 | 성향 카드 | me, loadCities, showApp |
 | `aiui.js` | 235 | AI 화면 부품(점·사진·출처) | me, aiToBottom, loadChats, drawCards |
 | `city.js` | 173 | 도시 한 곳 | me, saveRate, drawRatings, openTrip, loadHome, appTab |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
-`md`·`avatarOf`·`avatarImg`→`dom.js` · `hm`→`calc.js` (b335)
+`md`·`avatarOf`·`avatarImg`·`emptyDo`→`dom.js` ·
+`hm`·`ymd`·`todayYmd`→`calc.js` · `nameOf`→`trip.js` (b335)
+
+**ctx 는 줄어들어야 정상입니다.** 지출을 떼면서 딸린 것이 여섯이었는데,
+넷을 아래층으로 내리니 둘이 됐습니다. 덤으로 `shelf.js` 에서 `todayYmd` 가,
+`cards.js` 에서 `ymd` 가 빠졌습니다 — **떼어낼수록 얽힘이 줄어드는 자리를
+고르는 것이 요령입니다.** 한 조각을 위해 내린 것이 이미 나간 조각들의
+ctx 도 같이 줄입니다.
 
 ## ⚠ 떼어낸 일곱 조각에 **열두 개**가 숨어 있었다 (b335)
 
@@ -107,9 +115,13 @@
 
 ## 남은 것 (큰 순서)
 
-| 덩어리 | 어림 | 메모 |
+| 덩어리 | 줄 | 메모 |
 |---|---|---|
-| 여행 상세(일정·지출·준비·일행) | 1,000+ | **제일 크다.** 화면 단위로 더 잘게 잘라야 한다 |
+| 일정(끌어서 순서·불러오기·오늘 화면·탭·쓸어넘기기) | ~700 | 여행 상세에 남은 것 중 제일 크다. 여기서 또 잘라야 한다 |
+| 여행 정보 수정 · 후기 · 후기 사진 | ~400 | 4169~4500 근처. 저장 경로가 셋이라 같이 봐야 한다 |
+| 붙여넣은 지도 링크에서 위치 찾기 | ~180 | 6102~6282. 혼자 닫혀 있어 **가장 쉬운 다음 칼** |
+| 준비물 · 서류 · 예약 · 링크 | ~310 | 5544~5851. 넷이 닮은 목록이라 한 파일이 맞다 |
+| 일행 · 초대 링크 | ~210 | 5851~6072. `nameOf` 가 이미 trip.js 로 갔다 |
 | 프로필 | ~300 | 사진·이름·글자 크기 |
 | AI 일정 초안 | ~250 | `draftTrip`·`draftOut` 상태를 같이 옮긴다 |
 | 홈 | ~250 | 히어로·발자국 |
@@ -117,9 +129,21 @@
 | 여기 가봤어요 | ~200 | `quizPool` |
 | 후보와 빈 시간 | ~120 | `cands`·`fitList` |
 
-여행 상세가 제일 크고, `trip.js` 가 가진 상태를 가장 많이 쓴다.
-일정 하나, 지출 하나… 로 나눠야 한다. **다음은 지출**(`app.js` 의
-'지출'~'예약' 사이, 환율·일정에 붙이기·나눠 내기까지 한 덩어리, 약 410줄).
+### 지출을 떼어보고 알게 된 것 (b335, 여덟 번째)
+
+**여행 상세는 통째로는 못 떼고, 화면 단위로는 잘 떼진다.** 지출이 그 증거다 —
+1,000줄짜리 덩어리 안에서 419줄이 ctx 둘만 남기고 깨끗하게 빠졌다.
+잘 닫혀 있어서다: 자기 자료(`expenses`)를 자기가 받아오고, 자기 화면만
+그리고, **밖에서 부르는 길이 `loadExpenses` 하나뿐**이었다.
+
+그러니 다음 칼도 같은 것을 먼저 재라 — `grep` 으로 **밖이 그 블록의 이름을
+몇 개나 부르는지** 센다. 하나나 둘이면 뗄 자리다. 지출은 둘이었는데
+(`loadExpenses`·`nameOf`) 그중 `nameOf` 는 애초에 지출 것이 아니었다.
+
+**딸린 것(ctx)이 많아 보이면 내릴 수 있는 것부터 본다.** 처음 센 여섯 중
+넷이 아래층으로 갈 것이었다(`nameOf`·`todayYmd`·`emptyDo`, 그리고 `legFor` 는
+`legNear(legs, …)` 한 줄이라 래퍼를 버렸다). **ctx 여섯은 "이 조각은 아직
+못 뗀다" 가 아니라 "아래층에 갈 것이 섞여 있다" 는 뜻일 때가 많다.**
 
 ## 아직 눈으로 못 본 것
 
@@ -131,3 +155,17 @@
 b335 에서 고친 12개도 **바로 그 두 화면에 몰려 있었다**(report.js 2개,
 cards.js 7개). 우연이 아니다 — 아무도 안 열어본 화면이 제일 많이 깨져 있다.
 로그인해서 리포트와 제안 카드를 한 번씩 열어보는 것이 지금 제일 값싼 확인이다.
+
+지출은 로그인 없이도 **빈 화면까지는** 돌려봤다. trip.js 에 가짜 여행과
+일행을 넣고 `loadExpenses()` 를 직접 불렀더니 '아직 지출이 없어요' 가 떴다.
+그 한 번으로 새 import 가 다 맞는지 확인된다(`emptyDo`·`nameOf`·`drawOffbar`).
+
+```js
+const t = await import('./trip.js?v=b335'), e = await import('./expense.js?v=b335');
+t.setTrip({ id:'…', start_date:'2026-09-12', end_date:'2026-09-18', home_currency:'KRW' });
+t.setMembers([{ user_id:'u1', nickname:'서희' }]); t.setLegs([]); t.setPlans([]);
+await e.loadExpenses();
+```
+
+**아직 못 본 것: 지출이 실제로 있을 때** — 환율 못박기, 정산 송금 줄,
+일정에 붙이기. 로그인해서 지출 두 건을 서로 다른 통화로 넣어보면 한 번에 본다.

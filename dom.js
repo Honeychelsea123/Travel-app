@@ -94,3 +94,26 @@ export function avatarImg(url, seed, label, style, cls){
   return `<img ${cls ? `class="${cls}" ` : ''}src="${esc(url || fb)}" alt="" data-fb="${fb}"
     onerror="this.onerror=null;this.src=this.dataset.fb"${style ? ` style="${style}"` : ''}>`;
 }
+
+/* ── 빈 화면 ──────────────────────────────────────────────────────────
+ * "아직 지출이 없어요." 한 줄만 두면 처음 온 사람은 여기서 멈춥니다.
+ * 추가 단추는 카드 오른쪽 위에 작게 있어서 눈이 안 갑니다.
+ * **빈 화면은 앱이 처음 쓰는 사람을 가르칠 유일한 기회입니다.**
+ * 무엇을 하면 되는지 그 자리에 큼직하게 둡니다.
+ *
+ * **app.js 에 있던 것을 여기로 내렸습니다(b335)** — 지출을 떼어내니
+ * 이것 하나 때문에 ctx 가 한 줄 늘어나게 생겼습니다. esc 밖에 안 쓰므로
+ * 여기 있을 자격이 됩니다. 다음에 떼는 화면들도 다 이걸 씁니다. */
+export function emptyDo(text, label, btnId){
+  return `<div class="empty emptydo">
+    <div class="t">${esc(text)}</div>
+    ${btnId ? `<button class="primary" data-go="${esc(btnId)}">${esc(label)}</button>` : ''}
+  </div>`;
+}
+/* 빈 화면의 단추는 원래 있던 단추를 대신 눌러줍니다 — 여는 방법을 두 벌로
+   만들면 한쪽만 고치는 날이 옵니다. **위 함수와 붙여 둡니다**: 떨어뜨리면
+   단추만 옮기고 손잡이를 두고 가는 날이 옵니다. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-go]');
+  if (b) $(b.dataset.go)?.click();
+});

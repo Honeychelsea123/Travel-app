@@ -36,9 +36,14 @@
 import { readFileSync, readdirSync } from 'node:fs';
 
 /* app.js 에서 떼어낸 것들. 새 조각을 만들면 여기 더하십시오 —
-   안 더하면 그 파일은 아무도 안 봅니다. */
-const 모듈 = ['persona.js', 'map.js', 'shelf.js', 'city.js',
-              'aiui.js', 'report.js', 'cards.js'];
+   안 더하면 그 파일은 아무도 안 봅니다.
+
+   **app.js 자신도 넣습니다(b335).** 조각을 떼어내면 app.js 쪽에 부르는 줄만
+   남는 일이 생깁니다 — 지출을 뗄 때 drawExpenses 를 부르는 자리가 남았으면
+   그대로 죽었을 것입니다. app.js 는 자기가 선언한 것이 대부분이라
+   여기 들어가도 조용합니다. 말할 때는 진짜입니다. */
+const 모듈 = ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js',
+              'report.js', 'cards.js', 'expense.js', 'app.js'];
 
 /* 이름을 내보낼 수 있는 파일 전부. 여기 없는 파일이 내보내는 이름은
    후보에 안 들어가므로 검사가 그냥 조용합니다 — 틀린 말은 안 합니다. */

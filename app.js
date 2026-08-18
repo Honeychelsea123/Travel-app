@@ -23,7 +23,7 @@ import { sb } from './db.js?v=b335';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText, md, avatarOf, avatarImg } from './dom.js?v=b335';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b335';
 import { starHtml, paintStars, markRated } from './stars.js?v=b335';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
@@ -46,7 +46,7 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b335';
+         setEditPlanId, nameOf } from './trip.js?v=b335';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
@@ -83,10 +83,11 @@ import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b335';
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
          LVCOLOR, setCardsCtx } from './cards.js?v=b335';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b335';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
          askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b335';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm } from './calc.js?v=b335';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b335';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -95,17 +96,21 @@ import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
    loadCities·showApp 은 함수 선언이라 여기서 참조해도 됩니다(끌어올려집니다). */
 setPersonaCtx({ me: () => me, loadCities, showApp });
 setMapCtx({ me: () => me, loadCities });
-/* ⚠ **todayYmd 만 화살표로 감쌉니다.** 나머지 다섯은 `function` 선언이라
-   끌어올려져서 여기서 이름만 적어도 됩니다. `todayYmd` 는 `const` 화살표라
-   이 줄에서는 아직 없습니다 — 그대로 적으면 앱이 통째로 안 뜹니다
-   (Cannot access 'todayYmd' before initialization). 부를 때 찾게 미룹니다. */
+/* ⚠ 전에는 여기 `todayYmd: () => todayYmd()` 처럼 화살표로 감싼 줄이 있었습니다.
+   `const` 화살표는 끌어올려지지 않아서 이 줄에서는 아직 없었기 때문입니다
+   (Cannot access 'todayYmd' before initialization — 앱이 통째로 안 떴습니다).
+   b335 에서 `ymd`·`todayYmd` 를 calc.js 로 내리면서 그 걱정이 사라졌습니다 —
+   import 는 끌어올려지고, 쓰는 쪽이 직접 가져오니 ctx 에서 아예 빠집니다. */
 setShelfCtx({ me: () => me, loadCities, loadRateData, loadFootprint,
-              todayYmd: () => todayYmd(), saveRate, openTrip });
+              saveRate, openTrip });
 setCityCtx({ me: () => me, saveRate, drawRatings, openTrip,
              loadHome, appTab: () => appTab });
 setAiUiCtx({ me: () => me, aiToBottom, loadChats, drawCards });
 setReportCtx({ me: () => me, openAi, openDraft, openNew, closeReview, loadChats });
-setCardsCtx({ me: () => me, closeAi, loadPlans, review, ymd: d => ymd(d) });
+setCardsCtx({ me: () => me, closeAi, loadPlans, review });
+/* 지출은 app.js 에서 둘만 알면 됩니다 — 누가 로그인했나, 일정을 다시 그려라.
+   (지출이 일정 줄에 금액으로 붙어서 지출을 고치면 일정도 다시 그려야 합니다.) */
+setExpenseCtx({ me: () => me, drawPlans });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -917,23 +922,8 @@ $('f_country').addEventListener('change', drawCountryNote);
 /* 찾기(search)는 cities.js 로 갔습니다 — 초성·시작 우선·40개 자르기 규칙은
    사전이 아는 것입니다. 부르는 쪽은 그대로입니다. */
 
-/* ── 빈 화면 ──────────────────────────────────────────────────────────
- * "아직 지출이 없어요." 한 줄만 두면 처음 온 사람은 여기서 멈춥니다.
- * 추가 단추는 카드 오른쪽 위에 작게 있어서 눈이 안 갑니다.
- * **빈 화면은 앱이 처음 쓰는 사람을 가르칠 유일한 기회입니다.**
- * 무엇을 하면 되는지 그 자리에 큼직하게 둡니다. */
-function emptyDo(text, label, btnId){
-  return `<div class="empty emptydo">
-    <div class="t">${esc(text)}</div>
-    ${btnId ? `<button class="primary" data-go="${esc(btnId)}">${esc(label)}</button>` : ''}
-  </div>`;
-}
-/* 빈 화면의 단추는 원래 있던 단추를 대신 눌러줍니다 — 여는 방법을 두 벌로
-   만들면 한쪽만 고치는 날이 옵니다. */
-document.addEventListener('click', e => {
-  const b = e.target.closest('[data-go]');
-  if (b) $(b.dataset.go)?.click();
-});
+/* emptyDo 와 그 data-go 손잡이는 dom.js 로 내렸습니다(b335, 맨 위 import).
+   떼어내는 화면마다 빈 상태를 그리므로 ctx 로 넘길 것이 아니었습니다. */
 
 /* 나라 코드로 국기를 만듭니다. ISO 3166-1 두 글자를 지역표시기호로 옮기는
    규칙이라 나라마다 따로 적어둘 것이 없습니다 — 적어두면 언젠가 틀립니다. */
@@ -3584,29 +3574,9 @@ $('trips').addEventListener('click', async e => {
 });
 
 /* ── 여행 상세 ──────────────────────────────────────────────────── */
-/* **날짜 문자열을 만드는 함수가 둘입니다. 섞으면 하루가 어긋납니다.**
- *
- * `asDate` 가 **UTC 자정**을 쓰므로(위 줄), 날짜 계산으로 만든 Date 를 다시
- * 문자열로 돌릴 때는 UTC 로 읽어야 짝이 맞습니다. 그게 `ymd` 입니다.
- *   ymd(asDate('2026-08-14'))  →  '2026-08-14'   (어느 시간대에서나)
- *
- * 그런데 **"오늘이 며칠인가"는 UTC 로 물으면 안 됩니다.** `new Date()` 는
- * 지금 이 순간이고, 그것을 UTC 로 자르면 한국(UTC+9)에서는
- * **자정부터 오전 9시까지 어제가 나옵니다.** 실측(b248):
- *   00:30 KST → 08-08   05:00 → 08-08   08:59 → 08-08   09:01 → 08-09
- * 하루의 9시간 동안 앱이 어제를 오늘로 알고 있었습니다 — '오늘 화면',
- * 지난 여행 판정, 지출 날짜 기본값이 다 여기에 걸려 있습니다.
- *
- * 달력의 '오늘' 표시는 더 나빴습니다. 로컬 자정을 만들어 ymd 로 돌렸는데
- * 그건 KST 에서 **하루 종일** 전날입니다.
- *
- * 그래서 "오늘"은 따로 둡니다. 여기는 달력이 보여주는 날짜라 로컬이 맞습니다. */
-const ymd = d => d.toISOString().slice(0,10);
-const todayYmd = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
-         `${String(d.getDate()).padStart(2, '0')}`;
-};
+/* ymd · todayYmd 는 calc.js 로 내렸습니다(b335, 맨 위 import). 왜 둘인지,
+   왜 하나는 UTC 고 하나는 로컬인지는 거기 적어뒀습니다. shelf.js·cards.js 가
+   ctx 로 받던 것도 걷었습니다 — 이제 각자 import 합니다. */
 /* hm 은 calc.js 로 내렸습니다(b335, 맨 위 import). city.js 도 씁니다. */
 
 /* 문서의 표시 규칙 그대로입니다.
@@ -5568,415 +5538,9 @@ function inTrip(on){
 }
 
 /* ── 지출 ───────────────────────────────────────────────────────── */
-/* money/NO_CENTS 는 calc.js 로 옮겼습니다 (맨 위 import) — drawSettle 이
-   정산 단위를 고를 때도 같은 NO_CENTS 를 씁니다. */
-/* ── 환율 ───────────────────────────────────────────────────────────
- * 유럽중앙은행이 매일 내는 값을 씁니다. 키가 없어도 되고 공개 자료입니다.
- *
- * **쓴 날의 환율을 지출에 못박아 저장합니다.** 볼 때마다 새로 받아오면
- * 오늘 본 사람과 내일 본 사람의 "너 나한테 얼마"가 달라집니다.
- * 정산은 사람마다 같은 숫자가 나와야 합니다.
- *
- * 실패하면 환산을 안 하고 통화별로 나눠 보여줍니다. 틀린 숫자를 내놓느니
- * 안 내놓는 편이 낫습니다. */
-/* 기준을 EUR 로 고정합니다.
-   from=KRW 로 받으면 EUR 이 0.0006 처럼 네 자리로 잘려 와서 되돌릴 때
-   1,667원이 됩니다. 실제는 1,658원 — 0.5% 가 틀어집니다.
-   EUR 기준이면 KRW=1657.99 로 제대로 옵니다. */
-/* 주소가 api.frankfurter.app 에서 api.frankfurter.dev/v1 로 옮겨갔습니다.
-   옛 주소도 301 로 넘겨주긴 하는데 **그 301 응답에 CORS 헤더가 없습니다.**
-   브라우저는 리다이렉트를 따라가기 전에 그걸 보고 막아버립니다 — 그래서
-   통화와 상관없이 환율이 전부 실패했습니다. 화면에는 "유럽중앙은행이 안 내는
-   통화일 수 있다"고 떴는데, GBP 는 당연히 내는 통화입니다. 틀린 진단이었습니다.
-   (curl 로는 멀쩡히 보여서 더 헷갈립니다. curl 은 CORS 를 안 봅니다.) */
-const FX_API = 'https://api.frankfurter.dev/v1';
-
-/* 왜 실패했는지 부르는 쪽이 알아야 안내를 제대로 씁니다. */
-let fxLastFail = '';
-
-async function fxFor(date){
-  const key = `t2:fx:${date}`;
-  const hit = localStorage.getItem(key);
-  if (hit){ try { return JSON.parse(hit); } catch { localStorage.removeItem(key); } }
-
-  /* 아직 환율이 안 나온 날짜(미래·오늘·주말)는 404 입니다. 그럴 땐 최신값을 씁니다. */
-  for (const d of [date, 'latest']){
-    try {
-      const r = await fetch(`${FX_API}/${d}?base=EUR`);
-      if (!r.ok) continue;
-      const j = await r.json();
-      if (!j?.rates) continue;
-      const v = { date: j.date, rates: j.rates };
-      try { localStorage.setItem(key, JSON.stringify(v)); } catch {}
-      fxLastFail = '';
-      return v;
-    } catch { fxLastFail = 'net'; }   /* 연결 자체가 안 된 것 */
-  }
-  if (!fxLastFail) fxLastFail = 'net';
-  return null;
-}
-
-/* 현지 통화 1 = 집 통화 얼마. 못 구하면 null 이고 환산하지 않습니다. */
-async function rateOf(cur, home, date){
-  if (cur === home) return 1;
-  const fx = await fxFor(date);
-  if (!fx) return null;
-  const at = c => c === 'EUR' ? 1 : fx.rates[c];   /* 기준이 EUR 이라 EUR 은 1 */
-  const a = at(cur), b = at(home);
-  return (a && b) ? b / a : null;
-}
-
-/* 일행 이름. **사람을 가리켜야 합니다.**
-   전에는 이름이 없으면 '아직 이름을 안 정했어요' 였습니다. 일행 목록에서는
-   말이 되지만 정산의 송금 줄에 들어가면 이렇게 됩니다:
-
-       아직 이름을 안 정했어요 → 첼시꿀  ₩10,000
-
-   **누가 보내야 하는지를 말하는 자리인데 사람을 못 가리킵니다.** 게다가 이름을
-   안 정한 사람이 둘이면 줄이 통째로 똑같아져서 구분이 아예 안 됩니다.
-   들어온 순서로 번호를 붙입니다 — loadMembers 가 joined_at 으로 정렬하므로
-   다시 열어도 같은 사람이 같은 번호입니다.
-   **이름을 만드는 곳은 여기 하나뿐입니다** — 일행 목록도 이걸 씁니다.
-   전에는 같은 문구가 두 곳에 베껴져 있었습니다. */
-const nameOf = id => {
-  const i = members.findIndex(x => x.user_id === id);
-  if (i < 0) return '알 수 없음';
-  const m = members[i];
-  return m.nickname || m.profiles?.display_name || `일행 ${i + 1}`;
-};
-
-async function loadExpenses(){
-  $('experr').classList.add('hide');
-  const { data, error } = await netTimeout(sb.from('expenses')
-    /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
-       비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
-    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,' +
-            'plan_id,expense_shares(user_id,weight)')
-    .eq('trip_id', trip.id)
-    .is('deleted_at', null)
-    .order('date', { ascending:false }).order('created_at', { ascending:false }));
-  if (error){
-    if (isOffline(error)){ offNote('expenses'); $('exptotal').innerHTML = ''; drawOffbar(); return; }
-    $('expenses').innerHTML = ''; return fail(error, 'exp'); }
-  setExpenses(data);
-  drawExpenses();
-  drawSettle();
-  /* **일정 줄이 지출을 씁니다**(plan_id 로 붙은 금액). 둘은 같이 출발해서
-     어느 쪽이 먼저 올지 모르므로, 지출이 늦게 오면 일정을 다시 그립니다.
-     안 그러면 여행을 연 첫 화면에서만 금액이 안 붙어 있습니다. */
-  if ((plans || []).length) drawPlans();
-}
-
-function drawExpenses(){
-  if (!expenses.length){
-    $('exptotal').innerHTML = '';
-    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.', '첫 지출 넣기', 'addexpbtn');
-    return;
-  }
-  const byCur = {};
-  for (const e of expenses) byCur[e.currency] = (byCur[e.currency] || 0) + Number(e.amount);
-  const detail = Object.entries(byCur).map(([c, v]) => money(v, c)).join(' · ');
-
-  /* 환산된 것만 합칩니다. 못 구한 환율을 짐작해 채우면 틀린 총액이 나옵니다. */
-  const done = expenses.filter(e => e.amount_home != null);
-  const missing = expenses.length - done.length;
-  const total = done.reduce((s, e) => s + Number(e.amount_home), 0);
-
-  /* 분류별로 얼마나 썼는지. 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
-     환산된 것만 셉니다 — 못 구한 환율을 섞으면 비중이 틀립니다. */
-  const byCat = {};
-  done.forEach(e => {
-    const k = e.category || '기타';
-    byCat[k] = (byCat[k] || 0) + Number(e.amount_home);
-  });
-  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-  const bar = total > 0
-    ? `<div class="cbar">${cats.map(([k, v]) =>
-        `<i class="k-${esc(k)}" style="width:${(v / total * 100).toFixed(2)}%"></i>`).join('')}</div>
-       <div class="clegend">${cats.map(([k, v]) =>
-        `<span><i class="k-${esc(k)}"></i>${esc(k)}
-           <b>${esc(money(v, trip.home_currency))}</b>
-           <em>${Math.round(v / total * 100)}%</em></span>`).join('')}</div>`
-    : '';
-
-  $('exptotal').innerHTML =
-    `<div class="picked" style="margin-bottom:var(--s-sm); display:block">
-       <div class="c">모두 합쳐</div>
-       ${done.length
-         ? `<b style="font-size:calc(21px * var(--ts))">${esc(money(total, trip.home_currency))}</b>`
-         : ''}
-       <div class="c">${esc(detail)}</div>
-       ${missing ? `<div class="c" style="color:var(--bad); margin-top:6px">
-            환율을 못 구한 지출 ${missing}건은 합계에서 빠졌어요.
-            <button class="ghost" id="fxfill" style="padding:2px 8px; color:var(--primary)">
-              환율 채우기</button></div>` : ''}
-       ${bar}
-     </div>`;
-  if (missing) $('fxfill').onclick = fillRates;
-
-  let html = '', last = null;
-  for (const e of expenses){
-    if (e.date !== last){
-      html += `<div class="daysep">${esc(dayLabel(e.date, trip))}</div>`;
-      last = e.date;
-    }
-    const k = e.category ? 'k-' + e.category : '';
-    /* 몫이 따로 적힌 지출은 그렇다고 적어줍니다. 안 적으면 정산 숫자만 보고
-       왜 나만 많이 나왔는지 알 수가 없습니다. */
-    const sh = (e.expense_shares || []).length;
-    const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : '결제자 없음',
-                 sh ? `${sh}명이 나눠 냄` : null, e.memo]
-                .filter(Boolean).join(' · ');
-    html += `<div class="plan">
-      <span class="kdot ${esc(k)}"></span>
-      <div class="body"><b>${esc(e.title)}</b>
-        ${e.category ? `<span class="ktag ${esc(k)}">${esc(e.category)}</span>` : ''}
-        ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
-      <div class="amt">
-        <b>${esc(money(Number(e.amount), e.currency))}</b>
-        ${e.currency !== trip.home_currency && e.amount_home != null
-          ? `<div class="memo">${
-              esc(money(Number(e.amount_home), trip.home_currency))}</div>` : ''}</div>
-      ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-xact="del" data-id="${esc(e.id)}"
-                 style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
-  }
-  $('expenses').innerHTML = html;
-}
-
-/* 정산 — 비어 있으면 전원 균등입니다 (문서의 expense_shares 규칙).
-   나간 사람도 셈에 넣습니다. 빼면 그 사람이 낸 돈이 갈 곳이 없어집니다.
-   집 통화 하나로 정산합니다 — 실제로 "너 나한테 12만원" 하고 보내지,
-   유로 따로 프랑 따로 보내지 않습니다. */
-/* settleMath 는 calc.js 로 옮겼습니다 (맨 위 import, 그대로 옮겼습니다 — 규칙과
-   자투리 처리 설명은 거기 있습니다). b231 에서 __settleCheck 도 그리로 갔습니다 —
-   셈과 그 검사가 다른 파일에 있으면 둘은 반드시 어긋납니다. */
-
-function drawSettle(){
-  const active = members.filter(m => !m.left_at);
-  /* 애매한 것이 하나라도 섞이면 합이 안 맞습니다. 쓸 수 있는 것만 씁니다. */
-  const rows    = expenses.filter(e => e.amount_home != null && e.payer_id);
-  const noFx    = expenses.filter(e => e.amount_home == null).length;
-  const noPayer = expenses.filter(e => e.amount_home != null && !e.payer_id).length;
-
-  if (!rows.length || members.length < 2){
-    setSettleOn(false); $('settlecard').classList.add('hide'); return;
-  }
-  setSettleOn(true);
-  $('settlecard').classList.toggle('hide', tab !== 'exp');
-
-  const cur = trip.home_currency;
-  /* 화면이 찍는 자리와 같은 단위로 셈해야 숫자끼리 아귀가 맞습니다. */
-  const { total, bal, moves } =
-    settleMath(rows, active, NO_CENTS.includes(cur) ? 1 : 0.01);
-
-  const skipped = [
-    noFx    ? `환율을 못 구한 ${noFx}건` : '',
-    noPayer ? `누가 냈는지 안 적은 ${noPayer}건` : '',
-  ].filter(Boolean).join(' · ');
-
-  /* .row 로 늘어놓았더니 이름·금액이 다 17px 이라 한 사람이 세 줄을 먹고,
-     정작 중요한 "누가 누구에게 얼마"가 스크롤 아래로 밀렸습니다.
-     대시보드와 같은 촘촘한 줄(.arow)을 씁니다 — 금액은 자릿수를 맞춰 훑히게. */
-  $('settle').innerHTML =
-    `<div class="stltop">
-       <span class="v">${esc(money(total, cur))}</span>
-       <span class="k">${active.length}명이 나눠요</span></div>
-
-     <div class="agrp">누가 얼마</div>
-     ${bal.slice().reverse().map(b => `<div class="arow">
-        <span class="k"><b>${esc(nameOf(b.id))}</b>
-          <span class="m">낸 돈 ${esc(money(b.paid, cur))} ·
-               쓴 돈 ${esc(money(b.owed, cur))}</span></span>
-        <span class="v" style="color:${b.v >= 0 ? 'var(--ok)' : 'var(--bad)'}">${
-          b.v >= 0 ? '+' : '−'}${esc(money(Math.abs(b.v), cur))}</span>
-      </div>`).join('')}
-
-     <div class="agrp">이렇게 보내면 끝나요</div>
-     ${moves.length
-       ? moves.map(m => `<div class="arow stlmove">
-            <span class="k"><b>${esc(nameOf(m.from))}</b>
-              <span class="ar">→</span> <b>${esc(nameOf(m.to))}</b></span>
-            <span class="v">${esc(money(m.v, cur))}</span></div>`).join('')
-       : '<div class="empty" style="padding:10px 0">딱 맞아요. 주고받을 것이 없어요.</div>'}
-
-     ${skipped ? `<div class="snote" style="color:var(--bad)">
-          ${esc(skipped)}은 이 정산에 안 들어갔어요.</div>` : ''}`;
-}
-
-/* 환율이 비어 있는 지출을 그날 환율로 채웁니다.
-   과거 날짜는 그날 값을, 아직 안 나온 날짜는 가장 최근 값을 씁니다. */
-async function fillRates(){
-  const btn = $('fxfill');
-  btn.disabled = true; btn.innerHTML = '<span class="load">채우는 중…</span>';
-  let ok = 0, fail_ = 0;
-  for (const e of expenses.filter(x => x.amount_home == null)){
-    const r = await rateOf(e.currency, trip.home_currency, e.date);
-    if (r == null){ fail_++; continue; }
-    const up = await sb.from('expenses')
-      .update({ fx_rate: r, amount_home: Number(e.amount) * r })
-      .eq('id', e.id).select('id');
-    if (up.error || !up.data?.length) fail_++; else ok++;
-  }
-  await loadExpenses();
-  /* 예전에는 실패하면 무조건 "유럽중앙은행이 안 내는 통화"라고 했습니다.
-     실제로는 환율 서비스에 아예 연결이 안 되고 있었는데 그 안내를 보고
-     통화 탓을 하게 됩니다. 무엇이 안 됐는지 갈라서 말합니다. */
-  if (fail_) fail(fxLastFail === 'net'
-    ? `${ok}건을 채웠어요. ${fail_}건은 환율 서비스에 연결하지 못했어요. ` +
-      `잠시 뒤 다시 눌러보시고, 계속 안 되면 금액을 직접 적어주세요.`
-    : `${ok}건을 채웠어요. ${fail_}건은 환율이 없어요 ` +
-      `(유럽중앙은행이 안 내는 통화입니다).`, 'exp');
-}
-
-$('addexpbtn').addEventListener('click', () => {
-  $('expcard').classList.toggle('hide');
-  if ($('expcard').classList.contains('hide')) return;
-  /* 통화는 그날 있는 곳이 기본입니다. 구간마다 나라가 다르면 통화도 다릅니다.
-     집 통화도 함께 둡니다 — 한국에서 미리 결제한 것들 때문입니다. */
-  const curs = [...new Set([...legs.map(l => l.currency),
-                            trip.currency, trip.home_currency, 'USD', 'EUR'])];
-  $('x_cur').innerHTML = curs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  $('x_payer').innerHTML = members.map(m =>
-    `<option value="${esc(m.user_id)}"${m.user_id === me.id ? ' selected' : ''}>` +
-    `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
-    `<option value="">공동 (결제자 없음)</option>`;
-  $('x_date').value = pickedDay || todayYmd();
-  drawExpPlans();
-  drawShareChips();
-  syncExpCur();
-  $('x_title').focus();
-});
-
-/* ── 지출을 일정에 붙이기 ───────────────────────────────────────────
- * `expenses.plan_id` 는 **처음부터 표에 있었는데 채울 길이 없었습니다**
- * (001_schema 439줄). expense_shares 와 같은 경우입니다.
- *
- * 붙여두면 일정 줄에서 그날 그 자리에 얼마 썼는지가 바로 보입니다 —
- * 지출 탭으로 건너가 제목을 눈으로 짝지을 일이 없어집니다.
- *
- * **고른 날의 일정만 내놓습니다.** 11일치를 다 늘어놓으면 고를 수가 없고,
- * 다른 날 일정에 붙으면 그 줄의 합계가 엉뚱해집니다.
- * 날짜를 바꾸면 목록도 따라 바뀝니다 — 안 그러면 8/14 일정을 고른 채로
- * 날짜만 8/16 으로 바꿔 저장하는 일이 생깁니다. */
-function drawExpPlans(){
-  const d = $('x_date').value;
-  const list = (plans || []).filter(p => p.date === d);
-  const keep = $('x_plan').value;
-  $('x_plan').innerHTML = '<option value="">안 고름</option>' +
-    list.map(p => `<option value="${esc(p.id)}">${
-      p.start_time ? esc(hm(p.start_time)) + ' · ' : ''}${esc(p.title)}</option>`).join('');
-  /* 날짜가 그대로면 고른 것을 지키고, 바뀌었으면 저절로 '안 고름'이 됩니다. */
-  if (keep && list.some(p => p.id === keep)) $('x_plan').value = keep;
-  const none = !list.length;
-  $('x_plan').disabled = none;
-  $('x_plan').previousElementSibling.textContent =
-    none ? '어디서 (이 날은 일정이 없어요)' : '어디서 (선택)';
-}
-$('x_date').addEventListener('change', drawExpPlans);
-
-/* ── 누가 나눠 내나 ─────────────────────────────────────────────────
- * expense_shares 표는 처음부터 있었는데 채울 길이 없었습니다. 여기가 그 길입니다.
- * 처음에는 전원이 켜져 있습니다 — 대부분은 손댈 일이 없고, 손대지 않으면
- * 아무 줄도 안 만들어 균등으로 둡니다. 있는 그대로가 기본값입니다.
- * 혼자 가는 여행에서는 아예 안 보여줍니다. */
-function drawShareChips(){
-  const active = members.filter(m => !m.left_at);
-  $('x_sharebox').classList.toggle('hide', active.length < 2);
-  $('x_shares').innerHTML = active.map(m =>
-    `<button class="day on" data-share="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</button>`
-  ).join('');
-}
-$('x_shares').addEventListener('click', e => {
-  const b = e.target.closest('[data-share]'); if (!b) return;
-  b.classList.toggle('on');
-  /* 아무도 없으면 나눌 수가 없습니다. 마지막 하나는 못 끄게 합니다. */
-  if (!$('x_shares').querySelector('.on')){
-    b.classList.add('on');
-    toast('적어도 한 명은 있어야 해요.');
-  }
-});
-const pickedShares = () =>
-  [...$('x_shares').querySelectorAll('[data-share].on')].map(b => b.dataset.share);
-/* 날짜를 바꾸면 그날 있는 곳의 통화로 맞춥니다. */
-function syncExpCur(){
-  const l = legFor($('x_date').value);
-  if (l) $('x_cur').value = l.currency;
-}
-$('x_date').addEventListener('change', syncExpCur);
-$('x_cancel').addEventListener('click', () => {
-  $('expcard').classList.add('hide'); $('expformerr').classList.add('hide');
-});
-
-$('x_create').addEventListener('click', async () => {
-  const btn = $('x_create');
-  $('expformerr').classList.add('hide');
-  const title = $('x_title').value.trim();
-  /* 12,000 처럼 쉼표를 넣는 사람이 많습니다. 그대로 받으면 NaN 이 됩니다. */
-  const amount = Number($('x_amount').value.replace(/[,\s]/g, ''));
-  const date = $('x_date').value;
-
-  if (!title)                    return fail('무엇에 썼는지 적어주세요.', 'expform');
-  if (!isFinite(amount) || amount <= 0)
-                                 return fail('금액을 숫자로 적어주세요.', 'expform');
-  if (!date)                     return fail('날짜를 골라주세요.', 'expform');
-
-  btn.disabled = true; btn.innerHTML = '<span class="load">넣는 중…</span>';
-  /* 쓴 날 환율을 여기서 못박습니다. 나중에 볼 때마다 새로 받아오면
-     사람마다 정산 금액이 달라집니다. */
-  const cur = $('x_cur').value;
-  const rate = await rateOf(cur, trip.home_currency, date);
-
-  const r = await write({ table:'expenses', action:'insert', row:{
-    trip_id: trip.id, title, amount, date, currency: cur,
-    fx_rate: rate, amount_home: rate == null ? null : amount * rate,
-    category: $('x_cat').value || null,
-    plan_id: $('x_plan').value || null,
-    payer_id: $('x_payer').value || null,
-    memo: $('x_memo').value.trim() || null
-  }});
-  btn.disabled = false; btn.textContent = '넣기';
-
-  if (!r.ok) return fail(r.why, 'expform');
-
-  /* 몫을 손대지 않았으면(전원 켜짐) 아무 줄도 안 만듭니다 — 그게 곧 균등입니다.
-     줄을 만들어 두면 나중에 일행이 늘었을 때 그 사람이 빠집니다. */
-  const active = members.filter(m => !m.left_at);
-  const picked = $('x_sharebox').classList.contains('hide') ? [] : pickedShares();
-  const partial = picked.length && picked.length < active.length;
-
-  $('x_title').value = ''; $('x_amount').value = ''; $('x_memo').value = '';
-  $('expcard').classList.add('hide');
-
-  if (r.queued){
-    /* 큐에 쌓인 지출은 아직 id 가 없어서 몫을 붙일 수가 없습니다.
-       조용히 균등으로 두면 나중에 정산이 틀립니다. 그래서 말합니다. */
-    return toast(partial
-      ? '연결이 없어 들고 있어요. 나눠 낼 사람은 연결된 뒤 다시 지정해주세요.'
-      : '연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
-  }
-  if (partial && r.id){
-    const sh = await sb.from('expense_shares')
-      .insert(picked.map(uid => ({ expense_id: r.id, user_id: uid, weight: 1 })))
-      .select('user_id');
-    if (sh.error) fail(sh.error, 'exp');
-  }
-  await loadExpenses();
-});
-
-$('expenses').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-xact]'); if (!b) return;
-  if (b.dataset.armed !== '1'){
-    arm(b, '정말 지울까요?'); return;
-  }
-  b.disabled = true;
-  const r = await write({ table:'expenses', action:'delete', id: b.dataset.id });
-  b.disabled = false;
-  if (!r.ok) return fail(r.why, 'exp');
-  if (r.queued){ b.closest('.plan, .ev')?.remove(); return toast('연결이 없어 들고 있어요.'); }
-  await loadExpenses();
-});
-
+/* 지출·환율·정산은 expense.js 로 옮겼습니다(b335, 여덟 번째 조각).
+   nameOf 는 지출 것이 아니라 일행 것이라 trip.js 로 내렸습니다 — 후기·
+   준비물·일행 화면도 그것을 씁니다. */
 /* ── 예약 ───────────────────────────────────────────────────────────
  * 여행 중에 제일 자주 열어보는 것입니다 — 항공편 번호, 숙소 예약번호.
  * 읽기 전용 공유 링크에는 절대 안 나갑니다 (get_shared_trip 에 아예 없습니다). */
