@@ -4,13 +4,15 @@
  * 값을 돌려줍니다. 그래야 여행·일행을 실제로 만들지 않고도 콘솔에서
  * 지어낸 값으로 검사할 수 있습니다(맨 아래 __calcCheck · __settleCheck).
  *
- * app.js 에서 흔히 쓰는 D1/asDate 를 여기서도 한 줄씩 다시 적어 둡니다.
- * app.js 는 이 값을 화면 갱신 로직 곳곳에서 이미 씁니다 — 그쪽까지
- * import 로 엮으면 이 파일이 다시 app.js 에 기대게 되어 "DOM을 모른다"는
- * 약속이 깨집니다. 한 줄짜리라 베끼는 편이 더 안전합니다.
+ * D1/asDate 를 **여기서 내보냅니다**(b331).
+ * 원래는 app.js 에도 같은 두 줄이 따로 있었습니다. 주석에 이유가 적혀 있었는데
+ * — app.js 에서 가져오면 이 파일이 app.js 에 기대게 된다 — 방향이 반대라
+ * 그 걱정이 없습니다. 이쪽이 내보내고 저쪽이 가져다 씁니다.
+ * 리포트를 떼어내려다 보니 그쪽도 같은 둘을 쓰고 있었습니다 —
+ * **두 곳 이상이 쓰는 것은 아래층으로 내립니다.**
  */
-const D1 = 864e5;
-const asDate = s => new Date(s + 'T00:00:00Z');
+export const D1 = 864e5;
+export const asDate = s => new Date(s + 'T00:00:00Z');
 
 /* 두 좌표 사이 직선거리(km). 실제 경로가 아니라 어림입니다. */
 export function distKm(a, b, c, d){
@@ -406,4 +408,5 @@ if (typeof window !== 'undefined') window.__settleCheck = () => {
   console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
   return out;
 };
+
 
