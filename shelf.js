@@ -14,15 +14,15 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b335';
-import { openCity } from './city.js?v=b335';
-import { sb } from './db.js?v=b335';
-import { cities, countryName } from './cities.js?v=b335';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b335';
-import { starHtml, paintStars, markRated } from './stars.js?v=b335';
-import { fail } from './net.js?v=b335';
-import { arm } from './ui.js?v=b335';
-import { todayYmd } from './calc.js?v=b335';
+import { $, esc, toast } from './dom.js?v=b336';
+import { openCity } from './city.js?v=b336';
+import { sb } from './db.js?v=b336';
+import { cities, countryName } from './cities.js?v=b336';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b336';
+import { starHtml, paintStars, markRated } from './stars.js?v=b336';
+import { fail } from './net.js?v=b336';
+import { arm } from './ui.js?v=b336';
+import { todayYmd } from './calc.js?v=b336';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),

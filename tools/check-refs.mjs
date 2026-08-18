@@ -43,7 +43,7 @@ import { readFileSync, readdirSync } from 'node:fs';
    그대로 죽었을 것입니다. app.js 는 자기가 선언한 것이 대부분이라
    여기 들어가도 조용합니다. 말할 때는 진짜입니다. */
 const 모듈 = ['persona.js', 'map.js', 'shelf.js', 'city.js', 'aiui.js',
-              'report.js', 'cards.js', 'expense.js', 'app.js'];
+              'report.js', 'cards.js', 'expense.js', 'prep.js', 'app.js'];
 
 /* 이름을 내보낼 수 있는 파일 전부. 여기 없는 파일이 내보내는 이름은
    후보에 안 들어가므로 검사가 그냥 조용합니다 — 틀린 말은 안 합니다. */
@@ -118,8 +118,11 @@ for (const f of 전부) 소스[f] = 벗기기(readFileSync(f, 'utf8'));
 
 /* ── 이 저장소가 아는 이름 → 어느 파일에 있나 ───────────────────────── */
 const 어디 = new Map();
+/* **떼어낸 모듈이 내보내는 것도 셉니다(b336).** 전에는 여기서 걸렀는데,
+   그러면 `city.js` 의 `openCity` 를 `shelf.js` 가 import 없이 부르는 것을
+   못 봅니다 — 조각끼리 서로 부르는 자리가 이미 여럿입니다. 자기가 내보낸
+   이름은 자기 파일 안에서 선언으로도 잡히니 헛짚지 않습니다. */
 for (const f of 전부){
-  if (모듈.includes(f)) continue;
   for (const m of 소스[f].matchAll(/\bexport\s+(?:async\s+)?(?:function|const|let|var|class)\s+([A-Za-z_$][\w$]*)/g))
     if (!어디.has(m[1])) 어디.set(m[1], f);
 }
