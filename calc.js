@@ -410,3 +410,8 @@ if (typeof window !== 'undefined') window.__settleCheck = () => {
 };
 
 
+
+/* '09:30:00' → '09:30'. 화면에 초를 보여줄 일이 없습니다.
+   **app.js 에 있던 것을 여기로 내렸습니다(b335)** — city.js 가 일정 시각을
+   찍는 자리에서 이것을 쓰는데 import 가 없었습니다. */
+export const hm = t => t ? String(t).slice(0,5) : '';

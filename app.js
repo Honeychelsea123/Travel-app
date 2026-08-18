@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b334';
+import { sb } from './db.js?v=b335';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b334';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b334';
-import { starHtml, paintStars, markRated } from './stars.js?v=b334';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg } from './dom.js?v=b335';
+import { starHtml, paintStars, markRated } from './stars.js?v=b335';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b334';
-import { loadAdmin } from './admin.js?v=b334';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b335';
+import { loadAdmin } from './admin.js?v=b335';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b334';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b334';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b334';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b335';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b335';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,47 +46,47 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b334';
+         setEditPlanId } from './trip.js?v=b335';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b334';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b335';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b334';
+         useCities, addCity, search } from './cities.js?v=b335';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b334';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b335';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b334';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b335';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b334';
+         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b335';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b334';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b335';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b334';
+         isCityOpen, clearCityOpen } from './city.js?v=b335';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b334';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b335';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b334';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b335';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b334';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b335';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b334';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b335';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate } from './calc.js?v=b334';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm } from './calc.js?v=b335';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -1498,47 +1498,9 @@ async function loadChats(tripId){
     : `오늘 ${left.used}회 · 남은 ${Math.max(0, left.limit - left.used)}회`;
 }
 
-/* AI 는 마크다운으로 씁니다. 그대로 찍으면 별표가 글자로 보입니다.
-   반드시 먼저 이스케이프하고 나서 태그로 바꿉니다 — 순서를 바꾸면
-   AI 가 돌려준 글이 그대로 HTML 이 됩니다. */
-function md(s){
-  return esc(s)
-    .replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>')
-    .replace(/^\s*[*-]\s+/gm, '· ')
-    .replace(/^\s*(#{1,4})\s+(.+)$/gm, '<b>$2</b>')
-    .replace(/\n/g, '<br>');
-}
-
-/* ── 기본 프로필 그림 ────────────────────────────────────────────────
- * 구글에서 사진을 안 받기로 했으니(041) 새로 가입하면 그림이 아예 없습니다.
- * src 가 빈 <img> 는 흰 네모나 깨진 아이콘으로 보입니다 — 실제로 그랬습니다.
- *
- * 이름 첫 글자를 그려 채웁니다. **글자로 만드는 것이라 저장소도 네트워크도
- * 안 씁니다** — 비행기모드에서도 나오고 사진 값도 안 듭니다.
- * 색은 계정 id 에서 뽑으므로 기기를 바꿔도 같은 사람은 같은 색입니다. */
-const AV_BG = ['#4a7ebb', '#5a9367', '#b4794a', '#8a6bb1',
-               '#c06a6a', '#3f8f93', '#a1783f', '#6b7fa8'];
-function avatarOf(seed, label){
-  const s = String(seed || '');
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  /* 이모지는 서로게이트 쌍이라 [0] 으로 자르면 반쪽만 남아 깨집니다.
-     영문은 대문자로 올립니다 — 한글·이모지는 대소문자가 없어 그대로입니다. */
-  const ch = ([...String(label || '').trim()][0] || '·').toUpperCase();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">`
-    + `<rect width="64" height="64" rx="32" fill="${AV_BG[h % AV_BG.length]}"/>`
-    + `<text x="32" y="34" fill="#fff" font-size="30" font-weight="600"`
-    + ` text-anchor="middle" dominant-baseline="central"`
-    + ` font-family="-apple-system,'Apple SD Gothic Neo',sans-serif">${esc(ch)}</text></svg>`;
-  /* encodeURIComponent 가 따옴표까지 인코딩해서 그대로 속성에 넣어도 안전합니다. */
-  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-}
-/* 올려둔 사진의 주소가 깨졌을 때 숨기면 흰 구멍이 남습니다. 기본 그림으로 되돌립니다. */
-function avatarImg(url, seed, label, style, cls){
-  const fb = avatarOf(seed, label);
-  return `<img ${cls ? `class="${cls}" ` : ''}src="${esc(url || fb)}" alt="" data-fb="${fb}"
-    onerror="this.onerror=null;this.src=this.dataset.fb"${style ? ` style="${style}"` : ''}>`;
-}
+/* md · avatarOf · avatarImg 는 dom.js 로 내렸습니다(b335, 맨 위 import).
+   여기 있는 동안 city.js 와 report.js 가 import 없이 쓰고 있었습니다 —
+   둘 다 템플릿 문자열 안이라 검사가 못 봤습니다. */
 
 function drawChats(rows){
   /* 이름표를 떼고 좌우로 갈랐습니다. 누가 한 말인지 읽지 않아도 보입니다.
@@ -3645,7 +3607,7 @@ const todayYmd = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-` +
          `${String(d.getDate()).padStart(2, '0')}`;
 };
-const hm  = t => t ? String(t).slice(0,5) : '';
+/* hm 은 calc.js 로 내렸습니다(b335, 맨 위 import). city.js 도 씁니다. */
 
 /* 문서의 표시 규칙 그대로입니다.
      여행 기간 안  Day 1 · 9월 12일 토요일
