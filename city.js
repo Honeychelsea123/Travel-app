@@ -13,12 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc } from './dom.js?v=b329';
-import { sb } from './db.js?v=b329';
-import { cities, countryName, continentOf } from './cities.js?v=b329';
-import { myRates, cityStat, visited } from './rate.js?v=b329';
-import { starHtml } from './stars.js?v=b329';
-import { fail } from './net.js?v=b329';
+import { $, esc } from './dom.js?v=b330';
+import { sb } from './db.js?v=b330';
+import { cities, countryName, continentOf } from './cities.js?v=b330';
+import { myRates, cityStat, visited } from './rate.js?v=b330';
+import { starHtml } from './stars.js?v=b330';
+import { localTime } from './calc.js?v=b330';
+import { fail } from './net.js?v=b330';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -28,7 +29,8 @@ let cityOpen = null;
 export const isCityOpen = () => cityOpen != null;
 export function clearCityOpen(){ cityOpen = null; }
 
-let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {} };
+let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {},
+            openTrip: async () => {}, loadHome: async () => {}, appTab: () => '' };
 export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 도시 상세 ──────────────────────────────────────────────────────
@@ -138,14 +140,14 @@ export function closeCity(fromPop){
   cityOpen = null;
   $('cityview').classList.add('hide');
   /* 열었던 탭으로 돌아갑니다. 홈에서 열고 기록 탭에 떨어지면 이상합니다. */
-  if (appTab === 'home'){ $('homeview').classList.remove('hide'); loadHome(); }
-  else if (appTab === 'set') $('setview').classList.remove('hide');
+  if (ctx.appTab() === 'home'){ $('homeview').classList.remove('hide'); ctx.loadHome(); }
+  else if (ctx.appTab() === 'set') $('setview').classList.remove('hide');
   else { $('rateview').classList.remove('hide'); ctx.drawRatings(); }
 }
 
 $('cityview').addEventListener('click', async e => {
   const t = e.target.closest('[data-cvtrip]');
-  if (t){ closeCity(); return openTrip(t.dataset.cvtrip); }
+  if (t){ closeCity(); return ctx.openTrip(t.dataset.cvtrip); }
 
   const st = e.target.closest('#cv_stars .st');
   if (st){

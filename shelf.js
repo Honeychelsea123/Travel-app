@@ -14,18 +14,19 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b329';
-import { openCity } from './city.js?v=b329';
-import { sb } from './db.js?v=b329';
-import { cities, countryName } from './cities.js?v=b329';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b329';
-import { starHtml } from './stars.js?v=b329';
-import { fail } from './net.js?v=b329';
-import { arm } from './ui.js?v=b329';
+import { $, esc, toast } from './dom.js?v=b330';
+import { openCity } from './city.js?v=b330';
+import { sb } from './db.js?v=b330';
+import { cities, countryName } from './cities.js?v=b330';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b330';
+import { starHtml, paintStars, markRated } from './stars.js?v=b330';
+import { fail } from './net.js?v=b330';
+import { arm } from './ui.js?v=b330';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
   loadFootprint: () => {}, todayYmd: () => '', saveRate: async () => {},
+  openTrip: async () => {},
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -159,7 +160,7 @@ async function openReviewShelf(){
    여기서도 고치게 하면 같은 폼이 두 벌이 됩니다. */
 $('shelflist').addEventListener('click', e => {
   const c = e.target.closest('[data-rvtrip]');
-  if (c) openTrip(c.dataset.rvtrip);
+  if (c) ctx.openTrip(c.dataset.rvtrip);
 });
 
 /* ── 여행 배지 ───────────────────────────────────────────────────────

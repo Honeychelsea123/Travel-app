@@ -11,13 +11,14 @@
  * 큰 덩어리는 작은 조각부터 떼어내면 남은 것이 저절로 작아집니다.
  *
  * 층: dom.js 만 씁니다. 여행도 로그인한 사람도 모릅니다. */
-import { $, esc, toast } from './dom.js?v=b329';
-import { sb } from './db.js?v=b329';
-import { fail } from './net.js?v=b329';
+import { $, esc, toast } from './dom.js?v=b330';
+import { sb } from './db.js?v=b330';
+import { fail } from './net.js?v=b330';
 
 /* 대화를 저장할 때 로그인한 사람이 필요합니다. app.js 만 아는 값이라 받습니다 —
    로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
-let ctx = { me: () => null };
+let ctx = { me: () => null, aiToBottom: () => {}, loadChats: async () => {},
+            drawCards: () => {} };
 export function setAiUiCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 답을 기다리는 동안 ──────────────────────────────────────────────
@@ -35,7 +36,7 @@ export function showTyping(){
   el.setAttribute('aria-label', '답변을 만드는 중');
   el.innerHTML = '<i></i><i></i><i></i>';
   box.appendChild(el);
-  aiToBottom();
+  ctx.aiToBottom();
 }
 export function hideTyping(){ document.getElementById('typing')?.remove(); }
 
@@ -188,7 +189,7 @@ $('ai_send').addEventListener('click', async () => {
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: ctx.me().id,
                                   role: 'user',
                                   content: (shots.length ? `[사진 ${shots.length}장] ` : '') + msg });
-  await loadChats(tripId);
+  await ctx.loadChats(tripId);
   showTyping();          /* 답이 올 자리에 점 세 개. 화면이 멈춘 게 아니라는 표시 */
 
   /* 사진을 붙이면 점 세 개가 **영원히** 돌았습니다. 요청이 끝나지도, 실패하지도
@@ -232,11 +233,11 @@ $('ai_send').addEventListener('click', async () => {
 
   await sb.from('chats').insert({ trip_id: tripId || null, user_id: ctx.me().id,
                                   role: 'model', content: data.reply });
-  await loadChats(tripId);
+  await ctx.loadChats(tripId);
   drawSources(data.sources, data.web);
-  drawCards(data);
+  ctx.drawCards(data);
   /* drawChats 안에서 한 번 내리지만 그때는 출처와 제안 카드가 아직 없습니다.
      다 그리고 나서 한 번 더 내려야 새 답변의 끝이 보입니다. */
-  aiToBottom();
+  ctx.aiToBottom();
 });
 
