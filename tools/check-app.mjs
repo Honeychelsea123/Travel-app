@@ -30,7 +30,7 @@ const server = createServer(async (req, res) => {
   try {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/' || p.endsWith('/')) p += 'index.html';
-    const file = join(process.cwd(), normalize(p).replace(/^(\.\.[/\])+/, ''));
+    const file = join(process.cwd(), normalize(p).split('..').join(''));
     const body = await readFile(file);
     res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' });
     res.end(body);
