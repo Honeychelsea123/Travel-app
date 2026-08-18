@@ -1,0 +1,337 @@
+/* ── 갈 만한 곳 · 빈 시간 · 좌표 채우기 ───────────────────────────────
+ * 일정에 넣을 후보를 모으고, 하루 중 **비어 있는 시간**을 찾아 "여기 넣으면
+ * 되겠네" 를 짚어 줍니다. 좌표가 없는 곳은 지도 서비스에 물어 채웁니다 —
+ * 좌표가 있어야 이동 시간을 계산할 수 있고, 그래야 빈 시간이 말이 됩니다.
+ *
+ * ── app.js 에서 떼어낸 열아홉 번째 조각입니다(b344) ──────────────────
+ * 세 머리말(`후보와 빈 시간` · `좌표 채우기` · `후보를 AI 에게 추천받기`)이
+ * 나란히 붙어 있었고 실제로도 한 줄기입니다 — 후보를 모으고(AI 든 검색이든),
+ * 좌표를 채우고, 그 좌표로 빈 시간을 잰다. 순서가 곧 이유입니다.
+ *
+ * app.js 만 아는 것은 셋입니다 — 일정 다시 받기, AI 화면 열기, 대화 다시 받기.
+ * `cands`·`fitList`·`DAY_END` 같은 상태는 이 블록에서만 쓰던 것이라
+ * 같이 데려왔습니다.
+ *
+ * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
+import { $, esc } from './dom.js?v=b344';
+import { sb } from './db.js?v=b344';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b344';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b344';
+import { trip, plans, legs } from './trip.js?v=b344';
+import { search } from './cities.js?v=b344';
+import { picked } from './citysearch.js?v=b344';
+import { mapLinks } from './planmap.js?v=b344';
+import { openPlanForm } from './cards.js?v=b344';
+import { syncSheets } from './ui.js?v=b344';
+
+let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
+export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
+
+/* ── 후보와 빈 시간 ──────────────────────────────────────────────────
+ * 도쿄 앱에서 가장 잘 굴러가던 기능입니다. 가고 싶은 곳을 모아두고,
+ * 일정 사이에 뜬 시간에 "여기 넣을 수 있어요"라고 알려줍니다.
+ *
+ * 도쿄에서 겪은 세 가지를 그대로 가져와 막습니다.
+ *   1. 밤에서 아침으로 걸친 구간을 빈 시간으로 잡던 것 (Day2 02:38~10:00)
+ *      → 낮 시간대로 잘라내고, 그러고도 한 시간이 남을 때만 씁니다.
+ *   2. 앞뒤 일정과 사실상 같은 자리를 또 제안하던 것
+ *      (우에노 공원을 우에노 온시 공원 옆에)  → 0.3km 안쪽이면 거릅니다.
+ *   3. 체류 시간으로 자르면 아무것도 안 남던 것
+ *      → 오가는 시간을 뺀 "머물 수 있는 시간"을 보여주고 사용자가 정하게 합니다.
+ *
+ * 이동 시간은 도쿄의 고정식 대신 v2 의 구간별 상수를 씁니다. 이쪽이 낫습니다. */
+const STAY = { 카페:40, 식사:60, 관광:90, 쇼핑:60, 이동:30, 숙소:0, 기타:60 };
+const stayMin = c => STAY[c] ?? 60;
+const DAY_START = 9 * 60, DAY_END = 21 * 60;   /* 이 밖은 자거나 쉬는 시간으로 봅니다 */
+const SAME_KM = 0.3;                           /* 이보다 가까우면 사실상 같은 자리 */
+let cands = [], fitList = [];
+
+const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
+                     return m ? +m[1] * 60 + +m[2] : 9999; };
+export const hhmm = m => { m = Math.max(0, Math.round(m));
+                    return ('0' + Math.floor(m / 60) % 24).slice(-2) +
+                           ':' + ('0' + (m % 60)).slice(-2); };
+/* legOf/tmin 은 calc.js 로 옮겼습니다(legFirst/travelMinutes) — legs 를 매개변수로
+   받게 바뀌어서 여기서는 모듈 전역 legs 를 넘겨주는 한 줄 래퍼만 둡니다. */
+const legOf = d => legFirst(legs, d);
+const tmin = (km, d) => travelMinutes(legs, km, d);
+
+function planGaps(){
+  const byDay = {}, out = [];
+  (plans || []).forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
+  Object.keys(byDay).forEach(d => {
+    const list = byDay[d].slice().sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
+    for (let i = 0; i < list.length - 1; i++){
+      const a = list[i], b = list[i + 1];
+      const t1 = toMin(a.start_time), t2 = toMin(b.start_time);
+      if (t1 >= 9999 || t2 >= 9999) continue;
+      /* v2 는 끝 시각을 받으므로 있으면 그걸 씁니다. 도쿄는 없어서 늘 어림했습니다. */
+      const e = toMin(a.end_time);
+      const aEnd = e < 9999 ? e : t1 + stayMin(a.category);
+      if (t2 - aEnd < 60) continue;              /* 한 시간도 안 남으면 넣을 자리가 아닙니다 */
+      const from = Math.max(aEnd, DAY_START), to = Math.min(t2, DAY_END);
+      if (to - from < 60) continue;
+      out.push({ date:d, after:a, before:b, from, to });
+    }
+  });
+  return out;
+}
+
+function findFits(){
+  const gaps = planGaps();
+  const cs = cands.filter(c => c.lat != null && c.lng != null);
+  const best = {};
+  gaps.forEach(g => {
+    if (g.after.lat == null || g.before.lat == null) return;
+    cs.forEach(c => {
+      const dA = distKm(g.after.lat, g.after.lng, c.lat, c.lng);
+      const dB = distKm(c.lat, c.lng, g.before.lat, g.before.lng);
+      if (dA == null || dB == null) return;
+      if (dA < SAME_KM || dB < SAME_KM) return;
+      const go = tmin(dA, g.date), back = tmin(dB, g.date);
+      const avail = (g.to - g.from) - go - back;
+      if (avail < 40) return;                    /* 40분도 안 되면 갈 만하지 않습니다 */
+      if (best[c.id] && best[c.id].avail >= avail) return;
+      best[c.id] = { cand:c, date:g.date, at:g.from + go, go, back, avail,
+                     tight: avail < stayMin(c.category), after:g.after.title };
+    });
+  });
+  return Object.values(best)
+    .sort((a, b) => (b.avail - a.avail) || (a.go - b.go)).slice(0, 3);
+}
+
+function drawCands(){
+  fitList = findFits();
+  $('fits').innerHTML = fitList.length
+    ? `<div class="daysep">빈 시간에 넣기 좋은 곳</div>` + fitList.map((f, i) =>
+        `<div class="picked" style="align-items:flex-start; margin-bottom:8px">
+           <div class="p" style="min-width:0">
+             <b>${esc(f.cand.title)}</b>
+             <div class="c">${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</div>
+             <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
+               <b>${f.avail}분</b> · 다음까지 ${f.back}분${
+               f.tight ? ' · 짧게 보고 나와야 해요' : ''}</div>
+           </div>
+           <button class="small" data-fit="${i}">넣기</button>
+         </div>`).join('')
+    : '';
+
+  $('cands').innerHTML = cands.length
+    /* 한 줄로 늘어놓으니 답답했습니다. 카드로 펼치고 할 수 있는 일을 다 답니다 —
+       일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
+    ? cands.map(c => {
+        const ml = mapLinks(c, trip?.destination);
+        /* '좌표 없음'은 개발자 말입니다. 사용자에게 뜻하는 것은 하나뿐입니다 —
+           이 곳은 지도에 안 뜬다. 아래 '좌표 채우기'가 채워줍니다. */
+        /* 현지 이름은 **우리말 이름과 다를 때만** 답니다. 국내 장소는 둘이
+           같아서 "삼고정문 / 식사 · 삼고정문"처럼 이름이 두 번 나왔습니다. */
+        const loc = c.title_local && c.title_local !== c.title ? c.title_local : null;
+        const sub = [c.category, loc].filter(Boolean);
+        return `<div class="cdc">
+          <div class="t"><b>${esc(c.title)}</b>${
+            c.lat == null ? ' <span class="val">지도에 아직 안 떠요</span>' : ''}</div>
+          ${sub.length ? `<div class="s">${sub.map(esc).join(' · ')}</div>` : ''}
+          ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
+          <div class="a">
+            <button class="ghost" data-candplan="${esc(c.id)}"
+                    style="color:var(--primary)">일정에 넣기</button>
+            <a href="${esc(ml.see)}" target="_blank" rel="noopener">지도</a>
+            <button class="ghost" data-canddel="${esc(c.id)}"
+                    style="color:var(--bad); margin-left:auto">삭제</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">갈 만한 곳이 아직 없어요.<br>AI 제안에서 담거나 아래에 적어보세요.</div>';
+  drawGeoBtn();
+}
+
+/* ── 좌표 채우기 ─────────────────────────────────────────────────────
+ * 좌표가 없으면 빈 시간 계산과 이동 어림에서 그 줄이 통째로 빠집니다.
+ * 도쿄 앱처럼 OpenStreetMap 을 씁니다 — 키도 한도도 없고 AI 횟수도 안 씁니다.
+ * 다만 초당 한 번이 그쪽 규칙이라 사이를 띄우고, 실패하면 더 두드리지 않습니다. */
+let geoBusy = false;
+
+/* 일정 제목은 장소 이름이 아닌 게 많습니다.
+ * "호텔 ➡️ 콜로세움 이동"은 두 지점이고 "트라스테베레 산책 & 저녁"은 할 일입니다.
+ * 찾을 만한 이름을 뽑아 넓혀가며 시도합니다.
+ * 이동 줄은 도착지를 씁니다 — 그 일정이 끝났을 때 서 있는 자리가 도착지입니다. */
+function geoQueries(title){
+  const t = String(title || '').replace(/[➡→⇒]️?|->/g, '>').replace(/\s+/g, ' ').trim();
+  const out = [];
+  const add = s => { s = String(s || '').replace(/\s+/g, ' ').trim();
+                     if (s && !out.includes(s)) out.push(s); };
+  const main = t.includes('>') ? t.split('>').pop() : t;
+  add(main.replace(/\s*이동\s*$/, ''));
+  if (!t.includes('>')) add(t);
+  const base = main.split(/[&/·,]/)[0]
+    .replace(/(쇼핑|점심|저녁|아침|브런치|산책|구경|관람|투어|체험|픽업|이동|출발|도착|입국|출국|체크인|체크아웃)/g, ' ');
+  add(base);
+  add(base.trim().split(' ')[0]);
+  return out.slice(0, 3);
+}
+
+export async function osmLookup(q){
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' +
+            encodeURIComponent(q);
+  try {
+    const r = await fetch(u, { headers: { 'Accept-Language': 'ko,en' } });
+    if (!r.ok) return r.status === 429 ? 'stop' : null;
+    const a = await r.json();
+    if (!a?.length) return null;
+    const lat = Number(a[0].lat), lng = Number(a[0].lon);
+    return (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
+  } catch { return null; }
+}
+
+/* 좌표가 없는 것들. 일정과 후보를 한 목록으로 다룹니다 —
+   버튼을 따로 두면 두 번 눌러야 하고 어느 쪽이 남았는지도 헷갈립니다. */
+const needCoord = () => [
+  ...(plans || []).filter(p => p.lat == null)
+    .map(p => ({ kind:'plans', id:p.id, title:p.title, date:p.date })),
+  ...(cands || []).filter(c => c.lat == null)
+    .map(c => ({ kind:'candidates', id:c.id, title:c.title })),
+];
+
+function drawGeoBtn(){
+  const list = needCoord();
+  const np = list.filter(x => x.kind === 'plans').length;
+  const b = $('geobtn');
+  b.classList.toggle('hide', !list.length && !geoBusy);
+  /* 일정 몇 곳인지 같이 적습니다. 후보가 비어 있으면 왜 뜨는지 모릅니다. */
+  b.textContent = geoBusy ? '중단하기'
+    : `좌표 채우기 · ${list.length}곳` + (np ? ` (일정 ${np}곳 포함)` : '');
+}
+
+$('geobtn').addEventListener('click', async () => {
+  if (geoBusy){ geoBusy = false; return; }
+  const list = needCoord();
+  if (!list.length) return;
+  geoBusy = true; drawGeoBtn();
+  let done = 0, miss = 0;
+
+  for (const it of list){
+    if (!geoBusy) break;
+    /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
+    const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
+    let hit = null;
+    for (const q of geoQueries(it.title)){
+      hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
+      if (hit === 'stop'){ geoBusy = false; break; }
+      if (hit) break;
+      await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
+    }
+    if (!geoBusy) break;
+    if (hit && hit !== 'stop'){
+      const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
+        .eq('id', it.id).select('id');
+      if (!r.error && r.data?.length) done++;
+    } else miss++;
+    $('geobtn').textContent = `채우는 중… ${done + miss}/${list.length}`;
+    await new Promise(r => setTimeout(r, 1100));
+  }
+
+  geoBusy = false;
+  await ctx.loadPlans();
+  await loadCands();
+  if (miss) fail(`${done}곳을 채웠어요. ${miss}곳은 못 찾았어요 — ` +
+                 `이름을 장소 이름으로 고치면 찾을 수 있어요.`, 'cand');
+}, false);
+
+async function loadCands(){
+  if (!trip) return;
+  const r = await netTimeout(sb.from('candidates')
+    .select('id,title,title_local,category,memo,lat,lng')
+    .eq('trip_id', trip.id).is('deleted_at', null).order('created_at'));
+  if (r.error){
+    if (isOffline(r.error)){ offNote('cands'); drawOffbar(); return; }
+    return fail(r.error, 'cand'); }
+  cands = r.data || [];
+  drawCands();
+}
+
+/* ── 후보를 AI 에게 추천받기 ─────────────────────────────────────────
+ * 그냥 "추천해줘"라고 물으면 이미 담아둔 곳을 또 말합니다.
+ * 담긴 것과 일정에 넣은 것을 같이 적어 보내 겹치지 않게 합니다.
+ *
+ * 답은 AI 시트에서 받습니다. 여기서 따로 그리면 담기 카드와 되돌리기를
+ * 두 벌로 만들게 되고, 언젠가 한쪽만 고칩니다. */
+$('c_ai').addEventListener('click', async () => {
+  if (!trip) return;
+  const taken = [...cands.map(c => c.title),
+                 ...plans.map(p => p.title)].filter(Boolean);
+  /* 너무 길면 물음이 목록에 묻힙니다. 앞쪽 40개면 겹침을 막기에 충분합니다. */
+  const list = [...new Set(taken)].slice(0, 40);
+
+  const leg = legs.length ? legs[0] : null;
+  const where = leg?.destination || trip.destination || '';
+  const msg = `${where} 에서 가볼 만한 곳을 추천해줘.` +
+    (list.length ? ` 다만 이미 담아뒀거나 일정에 넣은 곳은 빼줘: ${list.join(', ')}` : '');
+
+  /* 후보 시트를 닫고 AI 시트를 엽니다. 둘이 겹쳐 있으면 답을 못 봅니다. */
+  $('card-cand').classList.add('hide');
+  syncSheets();
+  ctx.openAi();
+  $('ai_trip').value = trip.id;
+  await ctx.loadChats(trip.id);
+  $('ai_msg').value = msg;
+  $('ai_send').click();
+});
+
+$('candbtn').addEventListener('click', async () => {
+  $('card-cand').classList.remove('hide');
+  $('card-cand').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  await loadCands();
+});
+$('candclose').addEventListener('click', () => $('card-cand').classList.add('hide'));
+
+$('c_add').addEventListener('click', async () => {
+  const t = $('c_title').value.trim();
+  if (!t) return;
+  /* 좌표는 안 받습니다. AI 제안으로 담으면 좌표가 같이 옵니다.
+     손으로 적은 것은 좌표가 없어 빈 시간 계산에서는 빠집니다. */
+  const r = await sb.from('candidates')
+    .insert({ trip_id: trip.id, title: t, source: 'manual' }).select('id');
+  if (r.error) return fail(r.error, 'cand');
+  if (!r.data?.length) return fail(NOROW.save, 'cand');
+  $('c_title').value = '';
+  await loadCands();
+});
+$('c_title').addEventListener('keydown', e => { if (e.key === 'Enter') $('c_add').click(); });
+
+$('card-cand').addEventListener('click', async e => {
+  const f = e.target.closest('[data-fit]');
+  if (f){
+    /* 제안한 자리 그대로 일정 칸을 채워 엽니다. 날짜와 시각까지 미리 넣습니다. */
+    const x = fitList[+f.dataset.fit]; if (!x) return;
+    /* 후보의 좌표도 같이 넘깁니다. 예전에는 폼을 거치면서 사라져서,
+       빈 시간을 좌표로 계산해 놓고 정작 넣은 일정에는 좌표가 없었습니다. */
+    openPlanForm({
+      title: x.cand.title, category: x.cand.category, memo: x.cand.memo,
+      date: x.date, start_time: hhmm(x.at),
+      end_time: hhmm(x.at + Math.min(x.avail, stayMin(x.cand.category))),
+      lat: x.cand.lat, lng: x.cand.lng,
+    });
+    $('card-cand').classList.add('hide');
+    return;
+  }
+  /* 후보를 일정으로. 빈 시간 제안을 안 거치고 바로 넣고 싶을 때 씁니다. */
+  const cp = e.target.closest('[data-candplan]');
+  if (cp){
+    const c = cands.find(x => x.id === cp.dataset.candplan); if (!c) return;
+    openPlanForm({ title: c.title, category: c.category, memo: c.memo,
+                   lat: c.lat, lng: c.lng });
+    $('card-cand').classList.add('hide');
+    return;
+  }
+
+  const d = e.target.closest('[data-canddel]');
+  if (d){
+    const r = await sb.from('candidates')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', d.dataset.canddel).select('id');
+    if (r.error) return fail(r.error, 'cand');
+    if (!r.data?.length) return fail(NOROW.del, 'cand');
+    await loadCands();
+  }
+});
+

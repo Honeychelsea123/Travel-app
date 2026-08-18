@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b343';
+import { sb } from './db.js?v=b344';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b343';
-import { starHtml, paintStars, markRated } from './stars.js?v=b343';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b344';
+import { starHtml, paintStars, markRated } from './stars.js?v=b344';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b343';
-import { loadAdmin } from './admin.js?v=b343';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b344';
+import { loadAdmin } from './admin.js?v=b344';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b343';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b343';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b343';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b344';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b344';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,58 +33,61 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b343';
+         setEditPlanId, nameOf } from './trip.js?v=b344';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b343';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b344';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b343';
+         useCities, addCity, search } from './cities.js?v=b344';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b343';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b344';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b343';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b344';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b343';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b344';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b343';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b344';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b343';
+         isCityOpen, clearCityOpen } from './city.js?v=b344';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b343';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b344';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b343';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b344';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b343';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b343';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b343';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b343';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b343';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b343';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b343';
-import { loadReview, setReviewCtx } from './review.js?v=b343';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b344';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b344';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b344';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b344';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b344';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b344';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b344';
+import { loadReview, setReviewCtx } from './review.js?v=b344';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b343';
-import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b343';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b343';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b344';
+import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b344';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b344';
+import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b344';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b344';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b343';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b344';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b343';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b344';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -113,6 +116,8 @@ setReviewCtx({ me: () => me });
 setRatingCtx({ me: () => me, fillCityList, showApp });
 setNotifyCtx({ me: () => me, loadNotifs });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
+setHomeCtx({ me: () => me, openTrip, showApp });
+setCandsCtx({ loadPlans, openAi, loadChats });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -130,7 +135,7 @@ let me = null,
        pick() 이 그리로 가면서 여기 남길 이유가 없어졌습니다. */
     channel = null, bumpTimer = null, bumpPending = null,
     appTab = 'home',
-    lastHomeSig = '',
+
     tripFilter = 'up', openReview = false;
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
@@ -884,980 +889,13 @@ function aiToBottom(){
  * 평가 화면과 평가 자료 받아오기는 rating.js 로 옮겼습니다
  * (b341, 열다섯 번째 조각). ctx 는 셋(me · fillCityList · showApp)입니다.
  * `rateShown`·`rateObs` 도 그리로 갔습니다 — 쓰는 곳이 거기뿐이었습니다. */
-/* ── 홈 ─────────────────────────────────────────────────────────────
- * 세 덩어리입니다.
- *   ① 히어로   — 다음 여행을 도시 사진 위에. 여행이 없으면 가고 싶은 곳.
- *   ② 가봤어요 — 안 매긴 도시 한 곳에 별을 매깁니다.
- *   ③ 발자국   — 195개국 중 몇 곳인지.
- *
- * ①은 1년에 두세 번만 의미가 있습니다. 나머지 360일을 ②③이 채웁니다.
- * 일정과 검토는 홈에서 뺐습니다 — 여행 탭과 AI 탭에 이미 있습니다. */
-
-/* 사진은 구간에 붙은 도시에서 가져옵니다.
-   예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
-async function tripPhoto(t){
-  /* **나라도 같이 받아옵니다.** 아래 대체 사진이 나라를 알아야 하는데,
-     `t.country` 는 부르는 두 곳(buildHome · pendingTrip)의 select 에 **없습니다**
-     (재봄). 부르는 쪽을 둘 다 고치는 대신, 구간에서 가져옵니다 —
-     구간에는 늘 나라가 붙어 있고 여기서 이미 한 번 물어보고 있습니다. */
-  const lg = await netTimeout(sb.from('trip_legs')
-    .select('city_id, country, cities(image_url)').eq('trip_id', t.id).order('start_date'));
-  const hit = (lg.data || []).find(l => l.cities?.image_url);
-  if (hit) return hit.cities.image_url;
-  const country = (lg.data || []).find(l => l.country)?.country || t.country;
-  /* 구간에 도시가 안 붙어 있으면 이름으로 마지막 한 번 찾아봅니다. */
-  const c = await netTimeout(sb.from('cities').select('image_url')
-    .eq('name', t.destination).not('image_url', 'is', null).limit(1));
-  if (c.data?.[0]?.image_url) return c.data[0].image_url;
-
-  /* ── 그래도 없으면 **같은 나라의 대표 도시** 사진을 빌립니다 ──────────
-   * '삼척'처럼 우리 목록에 없는 곳으로 만든 여행은 여기까지 옵니다.
-   * 그때 색만 깔면 화면에서 제일 큰 자리가 빈 덩어리가 됩니다(b281).
-   * 도시는 몰라도 **나라는 압니다.** 그 나라에서 한 곳을 빌려 옵니다.
-   *
-   * 고르는 순서: `pop_rank`(나라마다 한 곳씩 매겨둔 대표) → 없으면
-   * `fame` 이 낮은 것(1 이 누구나 아는 곳). **pop_rank 는 88개국 중
-   * 16개국에만 있어서** 그것만으로는 대부분의 나라에서 못 고릅니다.
-   * 이름순을 마지막 기준으로 둡니다 — 같은 여행이 열 때마다 다른 사진이면
-   * "내 여행"으로 안 읽힙니다. **늘 같은 것이 나와야 합니다.**
-   *
-   * ⚠ **이 사진은 그 사람이 가는 곳이 아닙니다.** 삼척 여행에 강릉 사진이
-   * 걸립니다(같은 강원도 동해안이라 그럴듯하지만, 프랑스 시골 여행에 파리
-   * 사진이 걸리는 경우도 있습니다). 그래서 **제목과 밑줄은 늘 진짜 목적지**를
-   * 적습니다 — 사진은 분위기고, 어디로 가는지는 글자가 말합니다.
-   * 지역까지 맞추려면 구간에 좌표가 있어야 하는데, 직접 쳐서 만든 구간은
-   * `center_lat` 이 비어 있어(재봄) 거리로는 못 고릅니다. */
-  if (!country) return null;
-  const n = await netTimeout(sb.from('cities')
-    .select('image_url,pop_rank,fame,name')
-    .eq('country', country).not('image_url', 'is', null)
-    .order('pop_rank', { ascending: true, nullsFirst: false })
-    .order('fame',     { ascending: true, nullsFirst: false })
-    .order('name').limit(1));
-  return n.data?.[0]?.image_url || null;
-}
-
-/* ── 사진이 없을 때의 히어로 ──────────────────────────────────────────
- * 도시 사진은 469곳에 다 있지만 **'삼척 여행'처럼 목록에 없는 곳으로 만든
- * 여행은 사진이 없습니다.** 그때 밋밋한 회색 판이 떴는데, 홈에서 제일 큰
- * 자리가 회색이면 앱이 덜 만들어진 것처럼 보입니다.
- *
- * 색을 이름에서 뽑습니다 — **같은 여행은 늘 같은 색**이라야 "내 여행"으로
- * 읽힙니다. 무작위면 열 때마다 달라져서 오히려 거슬립니다.
- * 색표는 성향 카드가 쓰는 것을 그대로 빌립니다(card.js 의 PERSONA_BG) —
- * 앱 안에서 색이 두 벌이 되면 같은 앱처럼 안 보입니다. */
-const HERO_BG = ['rare', 'deep', 'taste', 'size', 'plan', 'spend', 'speed'];
-function heroTint(seed){
-  const s = String(seed || '');
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return PERSONA_BG[HERO_BG[h % HERO_BG.length]];
-}
-
-function heroHtml(photo, dd, title, memo, btn){
-  /* 사진이 없으면 색을 깝니다. `.hero::after` 가 위에 어둡게 덮으므로
-     글자는 사진이 있을 때와 똑같이 읽힙니다.
-     **`noimg` 를 같이 답니다** — 사진이 없으면 236px 을 채울 것이 없어서
-     위쪽 절반이 빈 색 덩어리로 남습니다(사용자 지적). 높이 규칙을 갈라야
-     하는데, 그건 CSS 가 알아야 하므로 클래스로 알려줍니다. */
-  const tint = photo ? '' : ` style="background:${heroTint(title + memo)}"`;
-  return `<div class="hero${photo ? '' : ' noimg'}" id="hero"${tint}>
-    ${photo ? `<img src="${esc(photo)}" alt="" onerror="this.remove()">` : ''}
-    ${dd ? `<div class="dd">${esc(dd)}</div>` : ''}
-    <div class="ht">${esc(title)}</div>
-    <div class="hm">${esc(memo)}</div>
-    ${btn ? `<button class="hbtn" id="herobtn">${esc(btn)}</button>` : ''}
-  </div>`;
-}
-
-/* 홈은 받아올 것이 여럿입니다(도시·다음 여행·평가·발자국).
-   하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
-   중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
-async function loadHome(){
-  /* **오프라인이라고 미리 포기하지 않습니다 (b242).**
-     전에는 `if (netIsDown()) return offHome();` 로 시작했습니다. "어차피 하나도
-     못 오니 물어보지 말고 바로 알리자"는 뜻이었는데, buildHome 은 다음 여행을
-     **캐시에서 꺼내 그릴 줄 압니다**(cacheGet('nexttrip')).
-     그래서 비행기모드에서 처음 열면 D-35 히어로가 멀쩡히 나오는데,
-     여행 탭에 갔다 오면 그때는 netIsDown() 이 참이 되어 있어서 같은 화면이
-     "홈은 지금 볼 수 없어요"로 바뀌었습니다 — **뒤로 갈수록 못 보게 되는 셈**이라
-     사용자가 바로 알아챘습니다.
-     이제 질의가 전부 netTimeout 을 지나고, netTimeout 은 끊긴 걸 알면 **요청을
-     아예 안 만들고 즉시 돌아옵니다.** 기다릴 것이 없으니 미리 포기할 이유도
-     없어졌습니다. 그려보고, 정말 아무것도 못 그렸을 때만 안내합니다. */
-  /* 오프라인 안내는 한 곳에서만 만듭니다. 아래 두 군데가 같은 말을 해야 하는데
-     따로 적으면 갈립니다. */
-  const offHome = () => {
-    $('home').innerHTML =
-      `<div class="card"><div class="empty" style="padding:26px 12px">
-         연결이 없어 홈은 지금 볼 수 없어요.<br>
-         <span class="memo">다음 여행 · 평가 · 발자국은 서버에서 가져옵니다.</span>
-         <div style="margin-top:14px; font-size:var(--f-lg)">
-           <b>여행</b> 탭은 지금도 쓸 수 있어요.<br>
-           <span class="memo">한 번이라도 열어본 여행은 일정 · 지출 · 준비물까지
-           그대로 보입니다.</span></div>
-         <div style="margin-top:16px">
-           <button class="primary" id="hometotrip">여행 보러 가기</button></div>
-       </div></div>`;
-    $('hometotrip').onclick = () => showApp('trips');
-    drawOffbar();
-  };
-  /* 그린 것이 있나. **자리표시자("불러오는 중…")는 그린 것이 아닙니다** —
-     그게 남아 있으면 계속 돌기만 하고 사용자는 곧 뜰 줄 압니다. */
-  const 그렸나 = () => !$('home').querySelector('.load') &&
-                       !!$('home').querySelector('.hero, .card, .rvbar');
-  try {
-    await buildHome();
-    if (!그렸나()) offHome();
-    else if (netIsDown()) drawOffbar();   /* 캐시로 그렸으면 그렇다고 띠를 띄웁니다 */
-  }
-  catch (e){
-    if (그렸나()) return drawOffbar();    /* 도중에 죽었어도 뭔가 남았으면 둡니다 */
-    if (netIsDown()) return offHome();
-    $('home').innerHTML =
-      `<div class="card"><div class="empty">홈을 불러오지 못했어요.<br>
-         <button class="small" id="homeretry" style="margin-top:10px">다시 시도</button>
-       </div></div>`;
-    $('homeretry').onclick = loadHome;
-    drawOffbar();
-  }
-}
-
-async function buildHome(){
-  const today = todayYmd();
-  await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
-
-  /* 다녀왔는데 아직 별점을 안 매긴 여행. 앞으로 갈 여행이 먼저이므로
-     그때는 히어로 아래 얇은 띠로만 붙입니다 — 위가 두 덩어리가 되면 무겁습니다. */
-  const pend = await pendingTrip();
-  const rvBar = () => {
-    if (!pend) return;
-    const b = document.createElement('div');
-    b.className = 'rvbar';
-    b.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
-        <span>다녀오신 곳을 평가해주세요${
-          pend.places.length ? ` · ${pend.places.length}곳` : ''}</span></span>
-      <span class="go">평가 ›</span>`;
-    b.onclick = () => openReviewTrip(pend.trip.id);
-    $('home').appendChild(b);
-  };
-
-  let { data, error } = await netTimeout(sb.from('trips')
-    .select('id,title,destination,start_date,end_date,currency,timezone')
-    .gte('end_date', today)
-    .order('start_date').limit(1));
-  /* 다음 여행은 여행 중에 제일 보고 싶은 것입니다. 캐시로라도 보여줍니다. */
-  if (error){
-    data = cacheGet('nexttrip');
-    if (!data) throw error;
-    drawOffbar();
-  } else cacheSet('nexttrip', data);
-
-  /* 앞으로 갈 여행이 없고 평가만 남았으면, 그때는 평가를 크게 겁니다. */
-  if (!data.length && pend){
-    const photo = await tripPhoto(pend.trip);
-    $('home').innerHTML = heroHtml(photo, '',
-      `${pend.trip.title} 어땠어요?`,
-      '다녀오신 곳을 평가해주세요' +
-      (pend.places.length ? ` · ${pend.places.length}곳` : ''), '평가하기');
-    $('hero').onclick = () => openReviewTrip(pend.trip.id);
-    $('herobtn').onclick = e => { e.stopPropagation(); openReviewTrip(pend.trip.id); };
-    renderAiCard(null, 0);
-  await renderQuiz(); await renderFoot();
-    return;
-  }
-
-  if (!data.length){
-    /* 여행이 없으면 가고 싶다고 표시한 곳을 겁니다. 그것도 없으면 아무 곳이나 —
-       빈 화면보다는 사진 한 장이 훨씬 낫습니다. */
-    const w = await netTimeout(sb.from('city_ratings').select('cities(id,name,country,image_url)')
-      .eq('user_id', me.id).eq('want', true).limit(20));
-    const pool = (w.data || []).map(r => r.cities).filter(c => c?.image_url);
-    let pick = pool[Math.floor(Math.random() * pool.length)] || null;
-    const wanted = !!pick;
-    if (!pick){
-      const any = await netTimeout(sb.from('cities').select('id,name,country,image_url')
-        .not('image_url', 'is', null).limit(60));
-      const l = any.data || [];
-      pick = l[Math.floor(Math.random() * l.length)] || null;
-    }
-    /* **히어로에는 단추를 안 답니다.** 예전에는 여기에도 '새 여행'이 있어서
-       바로 아래 AI 카드의 '시작'과 같은 일을 하는 단추가 둘이었습니다.
-       홈에서 여행을 만드는 길은 4단계 카드 하나입니다.
-       이 사진은 "여기 어때요?" 하는 자리고, 누르면 그 도시를 보여줍니다. */
-    $('home').innerHTML = heroHtml(
-      pick?.image_url, '',
-      pick ? `${pick.name}, 어때요?` : '아직 잡아둔 여행이 없어요',
-      !pick   ? '아래에서 첫 여행을 만들어보세요'
-      : wanted ? '가보고 싶다고 표시해둔 곳이에요'
-               : (countryName[pick.country] || pick.country),
-      '');
-    if (pick?.id) $('hero').onclick = () => openCity(pick.id);
-    /* 여행이 없으면 AI 로 시작하는 것이 첫 걸음입니다. 맨 위에 둡니다. */
-    renderAiCard(null, 0);
-  await renderQuiz(); await renderFoot();
-    return;
-  }
-
-  const t = data[0];
-  const dday = Math.round((asDate(t.start_date) - asDate(today)) / D1);
-  const days = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
-  /* 여행 중이면 남은 날이 아니라 며칠째인지가 궁금합니다.
-     사진 위에 크게 올라가는 자리라 짧아야 합니다. */
-  const badge = dday > 0 ? `D-${dday}`
-              : dday === 0 ? 'D-DAY'
-              : `Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
-
-  /* 여행 중이면 오늘 몇 개인지만 한 줄로 얹습니다.
-     일정 목록 자체는 여행 탭에 있으니 홈에서 또 늘어놓지 않습니다. */
-  const [photo, cnt, all] = await Promise.all([
-    tripPhoto(t),
-    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today)),
-    /* 이 여행에 일정이 하나라도 있나. 아래 AI 카드가 무슨 말을 할지 정합니다 —
-       일정이 비어 있으면 그게 지금 제일 급한 일입니다. */
-    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null)),
-  ]);
-
-  const n = cnt.count || 0;
-
-  /* ── 자료가 그대로면 홈을 아예 다시 그리지 않습니다 ──────────────────
-     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 평가·새여행·퀴즈·발자국을
-     **덧붙이는** 구조라, 목록 하나만 지키는 방식(putHtml)으로는 안 됩니다.
-     히어로를 지우는 순간 뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
-     그래서 **그릴 내용이 같은지를 먼저 보고** 같으면 통째로 건너뜁니다.
-     사용자가 "홈의 평가·지도가 아직 깜빡인다"고 한 것이 이것입니다.
-
-     지문에 넣을 것은 **화면에 실제로 나오는 값**입니다. 퀴즈에 뜬 도시와
-     별점·다녀온 곳 수까지 넣어야 합니다 — 기록 탭에서 별을 매기고 홈으로
-     오면 발자국 숫자와 퀴즈 줄이 달라져야 하니까요. */
-  const sig = [photo, badge, t.id, t.title, days, n, all.count,
-               pend?.trip?.id || '', quizPool.slice(0, QUIZ_ROWS).map(c => c.id).join(),
-               visited.size, Object.keys(myRates || {}).length,
-               /* '가보고 싶어요' 를 누르면 아래 '확실한 것' 카드가 달라져야 합니다. */
-               Object.values(myRates || {}).filter(r => r.want).length].join('|');
-  if (sig === lastHomeSig && $('home').querySelector('.hero')) return;
-  lastHomeSig = sig;
-
-  $('home').innerHTML = heroHtml(photo, badge, t.title,
-    tripSub(t, days) +
-    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), '');
-  $('hero').onclick = () => openTrip(t.id);
-  rvBar();                    /* 평가할 여행이 남아 있으면 얇은 띠로 붙습니다 */
-
-  /* ── 순서는 여행이 언제냐가 정합니다 ──
-     36일 전인 사람에게 제일 급한 것은 일정이지, 다녀온 도시 평가가 아닙니다.
-     평가와 발자국은 다녀온 뒤에 보는 것이라 여행이 남아 있으면 아래로 내립니다.
-     반대로 여행이 끝났거나 없으면 그것들이 이 앱의 남은 재미입니다. */
-  renderAiCard(t, all.count || 0);
-  /* **새 여행으로 가는 길을 홈에 남겨둡니다.** AI 카드가 '다음 여행' 이야기를
-     하게 되면서, 여행이 이미 있는 사람은 홈에서 새 여행을 못 만들게 됐습니다.
-     카드를 하나 더 크게 얹으면 위가 무거워지므로 얇은 줄로 답니다. */
-  const nt = document.createElement('div');
-  nt.className = 'newtripbar';
-  nt.innerHTML = `<span class="ic">＋</span>
-    <span class="tx"><b>다음에 어디 갈까요?</b>
-      <span>어디로 언제 가는지만 정하면 돼요</span></span>
-    <span class="go">새 여행</span>`;
-  nt.onclick = () => openNew();
-  $('home').appendChild(nt);
-
-  await renderQuiz();
-  await renderFoot();
-}
-
-/* ── 여행 끝난 뒤 ────────────────────────────────────────────────────
- * 다녀오고 나면 앱을 안 엽니다. 그때 물어보는 것이 이 앱의 두 번째 축입니다.
- * 끝났는데 아직 별점을 안 매긴 여행이 있으면 홈 맨 위를 그것으로 채웁니다. */
-let rvTrip = null;   /* shelfKind 는 shelf.js 로 옮겼습니다(b327) — 거기서만 씁니다 */
-
-async function pendingTrip(){
-  const today = todayYmd();
-  /* **netTimeout 을 지나야 합니다.** 여기가 홈에서 제일 먼저 기다리는 질의인데
-     맨몸으로 나가고 있었습니다. 비행기모드에서는 응답이 안 오고 실패도 안 나서
-     여기서 멈췄고, 화면은 index.html 의 "불러오는 중…" 그대로 남았습니다.
-     사용자가 "계속 도니까 실제로 불러와지는 줄 안다"고 한 것이 이것입니다. */
-  const { data } = await netTimeout(sb.from('trips')
-    .select('id,title,destination,start_date,end_date')
-    .lt('end_date', today)
-    .order('end_date', { ascending:false }).limit(5));
-  if (!data?.length) return null;
-
-  for (const t of data){
-    const [lg, ps, cr, pr] = await Promise.all([
-      netTimeout(sb.from('trip_legs').select('city_id').eq('trip_id', t.id).not('city_id','is',null)),
-      netTimeout(sb.from('plans').select('id').eq('trip_id', t.id).is('deleted_at', null)
-        .in('category', ['식사','카페'])),
-      netTimeout(sb.from('city_ratings').select('city_id').eq('user_id', me.id).not('stars','is',null)),
-      netTimeout(sb.from('plan_ratings').select('plan_id').eq('user_id', me.id).not('stars','is',null)),
-    ]);
-    const rated = new Set((cr.data || []).map(r => r.city_id));
-    const done  = new Set((pr.data || []).map(r => r.plan_id));
-    const cities = [...new Set((lg.data || []).map(l => l.city_id))].filter(id => !rated.has(id));
-    const places = (ps.data || []).filter(p => !done.has(p.id)).map(p => p.id);
-    if (cities.length || places.length) return { trip: t, cities, places };
-  }
-  return null;
-}
-
-/* 리포트로 가는 길이 홈의 "평가 안 한 여행" 띠 하나뿐이었습니다.
-   평가를 마치면 그 띠가 사라지고 **리포트를 다시 볼 수 없었습니다.**
-   공유 카드를 만들어 두고 정작 열 길이 없으면 소용이 없습니다.
-   다녀온 여행 목록에서 바로 열 수 있게 합니다. */
-async function openTripReport(id){
-  rvTrip = id;
-  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
-    .forEach(v => $(v).classList.add('hide'));
-  $('reviewview').classList.remove('hide');
-  if (history.state?.t2 !== 'rv') history.pushState({ t2:'rv' }, '');
-  await loadCities();
-  await drawReport(id);
-}
-
-async function openReviewTrip(id){
-  rvTrip = id;
-  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
-    .forEach(v => $(v).classList.add('hide'));
-  $('reviewview').classList.remove('hide');
-  $('rv_report').classList.add('hide');
-  $('rv_rate').classList.remove('hide');
-  window.scrollTo({ top:0 });
-  if (history.state?.t2 !== 'rv') history.pushState({ t2:'rv' }, '');
-
-  await loadCities();
-  const [t, lg, ps, cr, pr] = await Promise.all([
-    sb.from('trips').select('title,start_date,end_date').eq('id', id).maybeSingle(),
-    sb.from('trip_legs').select('city_id').eq('trip_id', id).not('city_id','is',null),
-    sb.from('plans').select('id,title,category,date').eq('trip_id', id)
-      .is('deleted_at', null).in('category', ['식사','카페','관광','쇼핑']).order('date'),
-    sb.from('city_ratings').select('city_id,stars').eq('user_id', me.id),
-    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', me.id),
-  ]);
-  const cs = Object.fromEntries((cr.data || []).map(r => [r.city_id, r.stars]));
-  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, r.stars]));
-
-  $('rv_head').textContent = `${t.data?.title || '여행'} 어땠어요?`;
-  $('rv_sub').textContent  = '다녀오신 곳을 평가해주세요. 건너뛰어도 괜찮아요.';
-
-  const ids = [...new Set((lg.data || []).map(l => l.city_id))];
-  $('rvt_cities').innerHTML = ids.length
-    ? '<div class="daysep">도시</div>' + ids.map(cid => {
-        const c = (cities || []).find(x => x.id === cid); if (!c) return '';
-        return `<div class="rrow">
-          ${c.image_url ? `<img class="thumb" src="${esc(c.image_url)}" alt="">`
-                        : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
-          <div class="t"><b>${esc(c.name)}</b>
-            <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
-          <span class="stars" data-city="${esc(cid)}">${starHtml(cs[cid])}</span>
-        </div>`;
-      }).join('') : '';
-
-  /* 먹은 곳과 본 곳을 나눠 묻습니다. 리포트에서 둘을 견줘 보여주려면
-     따로 받아야 합니다 — "5만엔 오마카세보다 라멘에 별을 더 줬다" 같은 것. */
-  const ICON = { 식사:'🍽', 카페:'☕', 관광:'📸', 쇼핑:'🛍' };
-  const group = (title, list) => list.length
-    ? `<div class="daysep">${title}</div>` + list.map(p => `<div class="rrow">
-        <span class="thumb ph">${ICON[p.category] || '📍'}</span>
-        <div class="t"><b>${esc(p.title)}</b><span class="memo">${esc(p.date)}</span></div>
-        <span class="stars" data-plan="${esc(p.id)}">${starHtml(psr[p.id])}</span>
-      </div>`).join('') : '';
-  const all = ps.data || [];
-  $('rv_places').innerHTML =
-    group('먹은 곳', all.filter(p => ['식사','카페'].includes(p.category))) +
-    group('본 곳',   all.filter(p => ['관광','쇼핑'].includes(p.category)));
-}
-
-function closeReview(fromPop){
-  if (!fromPop && history.state?.t2 === 'rv'){ history.back(); return; }
-  $('reviewview').classList.add('hide');
-  showApp('home');
-}
-$('rvback').addEventListener('click', () => closeReview());
-
-/* 평가 줄. 도시는 city_ratings, 맛집은 plan_ratings 로 갑니다. */
-$('rv_rate').addEventListener('click', async e => {
-  const st = e.target.closest('.st'); if (!st) return;
-  const wrap = st.closest('.stars');
-  const box = st.getBoundingClientRect();
-  const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-  paintStars(wrap, v, true);
-  if (wrap.dataset.city) await saveRate(wrap.dataset.city, { stars: v }, true);
-  else await sb.from('plan_ratings').upsert(
-    { user_id: me.id, plan_id: wrap.dataset.plan, stars: v },
-    { onConflict: 'user_id,plan_id' });
-});
-
-/* ── 리포트 ──────────────────────────────────────────────────────────
- * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다. 옆으로 넘겨 보는 카드로 냅니다. */
-$('rv_done').addEventListener('click', () => drawReport(rvTrip));
-
-
-/* ── 여기 가봤어요? ──────────────────────────────────────────────────
- * 안 매긴 도시를 몇 곳씩 늘어놓고 아는 곳에만 별을 답니다.
- * 한 곳씩 크게 물어보면 모르는 도시가 나왔을 때 할 일이 없습니다.
- * 줄 모양은 기록 탭과 같게 맞춥니다.
- * 전부 받아오면 무거우니 임의의 구간에서 스무 곳만 집어 씁니다. */
-const QUIZ_ROWS = 5;
-let quizPool = [], quizFilling = false, quizFilled = 0;
-
-/* 처음 보이는 다섯 곳이 스플리트 · 브뤼헤 · 크레타뿐이면
-   "나 이런 데 안 가봤는데" 하고 바로 닫습니다.
-   누구나 이름은 아는 곳을 먼저 내보내고, 다른 도시 보기를 누를수록
-   생소한 곳이 나오게 합니다. 유행이 아니라 인지도 기준입니다. */
-const FAMOUS = new Set([
-  'seoul','busan','jeju','gyeongju','jeonju','gangneung','sokcho',
-  'tokyo','osaka','kyoto','fukuoka','sapporo','okinawa','nagoya','hakone','nara',
-  'beijing','shanghai','xian','hongkong','macau','taipei','qingdao',
-  'bangkok','chiangmai','phuket','pattaya','singapore','kualalumpur','bali','jakarta',
-  'hanoi','hochiminh','danang','nhatrang','phuquoc','siemreap','manila','cebu','boracay',
-  'guam','saipan','male','kathmandu','delhi','mumbai','agra','jaipur','colombo',
-  'dubai','abudhabi','doha','istanbul','cappadocia','cairo','telaviv','petra',
-  'paris','nice','london','edinburgh','dublin','rome','venice','florence','milan','naples',
-  'barcelona','madrid','seville','granada','lisbon','porto','amsterdam','brussels',
-  'berlin','munich','frankfurt','prague','vienna','salzburg','budapest','zurich',
-  'interlaken','lucerne','zermatt','copenhagen','stockholm','helsinki','oslo','reykjavik',
-  'athens','santorini','dubrovnik','krakow','warsaw',
-  'newyork','losangeles','sanfrancisco','lasvegas','honolulu','seattle','chicago',
-  'boston','washington','orlando','miami','toronto','vancouver','banff',
-  'mexicocity','cancun','rio','buenosaires','lima','cusco',
-  'sydney','melbourne','goldcoast','brisbane','cairns','auckland','queenstown',
-  'capetown','marrakech','nairobi',
-]);
-
-async function fillQuiz(){
-  if (quizFilling) return;
-  quizFilling = true;
-  try {
-    /* 기록 탭에서 별점을 매겨도 여기 남아 있던 것을 막습니다.
-       주머니를 들고 있다가 그대로 다시 그려서 이미 매긴 곳이 또 나왔습니다.
-       매번 매긴 목록을 받아 걸러냅니다. */
-    {
-      const r = await sb.from('city_ratings').select('city_id')
-        .eq('user_id', me.id).not('stars', 'is', null);
-      const done = new Set((r.data || []).map(x => x.city_id));
-      quizPool = quizPool.filter(c => !done.has(c.id));
-    }
-    if (quizPool.length >= QUIZ_ROWS) return;
-    /* 도시는 이미 다 받아 두었습니다. 서버에서 잘라 오면 id 순으로 붙어 있는
-       구간이 나와서 오타루 · 오타와 · 옥스퍼드처럼 이름이 몰립니다.
-       여기서 통째로 섞습니다. */
-    await loadCities();
-    const mine = await sb.from('city_ratings').select('city_id').eq('user_id', me.id);
-    const rated = new Set((mine.data || []).map(r => r.city_id));
-    const have  = new Set(quizPool.map(c => c.id));
-    let pool = (cities || []).filter(c => !rated.has(c.id) && !have.has(c.id));
-    /* 사진 있는 곳을 먼저 씁니다. 사진 칸을 못 받아온 경우에는 그냥 다 씁니다. */
-    const withImg = pool.filter(c => c.image_url);
-    if (withImg.length) pool = withImg;
-    /* 피셔–예이츠. sort(() => Math.random()-0.5) 로 섞으면 앞쪽이 덜 움직입니다. */
-    for (let i = pool.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    /* 처음 채울 때만 유명한 곳을 앞으로 당깁니다. 안에서는 여전히 무작위라
-       열 때마다 다른 도시가 나옵니다. 다 보고 나면 다음부터는 치우침 없이
-       뽑히므로, 다른 도시 보기를 누를수록 생소한 곳이 나옵니다. */
-    if (!quizFilled)
-      pool.sort((a, b) => (FAMOUS.has(b.id) ? 1 : 0) - (FAMOUS.has(a.id) ? 1 : 0));
-    quizFilled++;
-    quizPool = quizPool.concat(pool.slice(0, 40));
-  } finally { quizFilling = false; }
-}
-
-const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
-  ${c.image_url
-    ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
-           onerror="this.replaceWith(Object.assign(document.createElement('span'),
-             {className:'thumb ph', textContent:'${esc(c.name.slice(0,1))}'}))">`
-    : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
-  <div class="t"><b>${esc(c.name)}</b>
-    <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
-  <span class="stars" data-city="${esc(c.id)}">${starHtml(null)}</span>
-  <button class="ghost want" data-want="${esc(c.id)}" title="가보고 싶어요">♡</button>
-</div>`;
-
-async function renderQuiz(){
-  await fillQuiz();
-  const list = quizPool.slice(0, QUIZ_ROWS);
-  const box = document.createElement('div');
-  /* quiet — 위 두 색카드(이번 여행 · 다음 여행)는 지금 할 일이고,
-     이건 훑어보는 자료입니다. 같은 흰 카드로 두면 위계가 안 갈립니다. */
-  box.className = 'card quiet';
-  box.innerHTML = `<h2>여기 가보셨어요?</h2>
-    <div id="quizlist">${
-      list.length ? list.map(quizRow).join('')
-                  : '<div class="empty">물어볼 도시를 다 봤어요.</div>'}</div>
-    ${list.length ? `<button class="ghost" id="quizmore" style="width:100%; margin-top:6px">
-        다른 도시 보기</button>` : ''}`;
-  $('home').appendChild(box);
-}
-
-async function renderFoot(){
-  const [{ data: f }] = await Promise.all([
-    netTimeout(sb.rpc('my_footprint')),
-    refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
-  ]);
-  if (!f) return;
-  const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
-  const box = document.createElement('div');
-  box.className = 'card quiet'; box.id = 'homefp'; box.style.cursor = 'pointer';
-  box.innerHTML =
-    `<div class="row" style="border:0; padding:0; margin:0">
-       <span class="label" style="font-weight:600">내 발자국</span>
-       <span class="val">더보기 ›</span></div>
-     <div style="margin-top:8px; font-size:calc(15px * var(--ts))">${
-       f.countries
-         ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%`
-         : '별점을 매기면 여기에 쌓여요.'}</div>
-     ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}
-     <!-- 막대 아래에 지도도 같이. 숫자보다 칠해진 면적이 더 와닿습니다.
-          지도 좌표는 이미 문서에 있으니 그대로 빌려 씁니다. -->
-     <div class="minimap"><svg viewBox="0 19 1000 387"
-       preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg></div>`;
-  /* 다녀온 나라를 칠합니다. 누르면 큰 지도로 갑니다. */
-  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
-  box.querySelectorAll('.minimap path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  box.onclick = () => { showApp('set'); openMap(); };
-  $('home').appendChild(box);
-}
-
-/* 별을 매긴 줄은 빠지고 그 자리에 다음 도시가 들어옵니다.
-   화면을 통째로 다시 그리지 않아야 매기던 흐름이 안 끊깁니다. */
-$('home').addEventListener('click', async e => {
-  const st = e.target.closest('#quizlist .st');
-  if (st){
-    const wrap = st.closest('.stars'), row = st.closest('.rrow');
-    const cityId = wrap.dataset.city;
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
-    row.dataset.done = '1';
-
-    /* 별이 차는 것을 보여주고 밀어냅니다.
-       0.62초는 너무 짧았습니다 — 손이 미끄러져도 고칠 새가 없었습니다.
-       1.5초 두었다가 밀어냅니다. 그동안 다시 누르면 점수가 바뀝니다. */
-    paintStars(wrap, v, true);
-    markRated(row, v);
-    row.classList.add('rated');
-    await saveRate(cityId, { stars: v }, true);
-    quizPool = quizPool.filter(c => c.id !== cityId);
-
-    clearTimeout(row._go);                 /* 고쳐 누르면 시계를 다시 겁니다 */
-    row.dataset.done = '';
-    row._go = setTimeout(() => {
-      row.dataset.done = '1';
-      row.classList.add('gone');
-      setTimeout(async () => {
-        row.remove();
-        await fillQuiz();
-        const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-          .map(r => r.dataset.cityopen));
-        const nx = quizPool.find(c => !shown.has(c.id));
-        if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
-      }, 280);
-    }, 1500);
-    return;
-  }
-  const w = e.target.closest('#quizlist button[data-want]');
-  if (w){
-    const on = !myRates[w.dataset.want]?.want;
-    await saveRate(w.dataset.want, { want: on });
-    w.classList.toggle('on', on);
-    return;
-  }
-  /* 다섯 곳 다 모르는 곳일 수 있습니다. 통째로 갈아치웁니다.
-     예전에는 loadHome() 을 불러 홈 전체를 다시 그렸습니다. 그러면 히어로 사진과
-     다음 여행까지 새로 그려지면서 화면이 맨 위로 튀어 올랐습니다.
-     바꿔야 하는 것은 이 목록뿐이므로 여기만 갈아 끼웁니다 — 스크롤이 그대로 있습니다. */
-  const more = e.target.closest('#quizmore');
-  if (more){
-    more.disabled = true;
-    /* 지금 보이는 줄은 매긴 것까지 포함해 전부 물러납니다. */
-    const seen = new Set([...document.querySelectorAll('#quizlist .rrow')]
-      .map(r => r.dataset.cityopen));
-    quizPool = quizPool.filter(c => !seen.has(c.id));
-    await fillQuiz();
-    const list = quizPool.slice(0, QUIZ_ROWS);
-    $('quizlist').innerHTML = list.length
-      ? list.map(quizRow).join('')
-      : '<div class="empty">물어볼 도시를 다 봤어요.</div>';
-    more.disabled = false;
-    more.classList.toggle('hide', !list.length);
-    return;
-  }
-  const row = e.target.closest('#quizlist .rrow');
-  if (row) return openCity(row.dataset.cityopen);
-});
-
-/* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
-/* ── 내 발자국 ──────────────────────────────────────────────────────
- * 왓챠의 "696 평가 · 27 코멘트" 줄을 여행판으로 옮긴 것입니다.
- * 대륙별로 쪼개면 어디가 비었는지 보이고, 진행률은 채우고 싶게 만듭니다. */
-
-async function loadFootprint(){
-  /* 발자국 숫자는 서버가 셉니다. 오프라인이면 그대로 둡니다 —
-     0 으로 덮으면 다녀온 곳이 사라진 것처럼 보입니다. */
-  if (netIsDown()) return;
-  const { data, error } = await sb.rpc('my_footprint');
-  if (error || !data) return;
-  const f = data;
-  $('s_country').textContent = f.countries;
-  /* `f.cities`(다녀온 도시)를 쓰던 타일은 걷었습니다 — '매긴 곳'과 늘 같은
-     숫자로 보였습니다(index.html 의 그 자리에 왜 그런지 적어뒀습니다).
-     ⚠ 이제 **화면 어디서도 `f.cities` 를 안 씁니다.** 지도와 발자국은
-       `my_visited()` 를 직접 부릅니다(4487·4630줄). my_footprint 는 그대로
-       두는데, 지우려면 서버 함수를 고쳐야 하고 `countries` 는 여기서 씁니다. */
-  $('s_rated').textContent   = f.rated;
-  /* 한줄평 수는 my_footprint 에 없습니다. 개수만 따로 셉니다. */
-  sb.from('city_ratings').select('city_id', { count:'exact', head:true })
-    .eq('user_id', me.id).not('comment', 'is', null)
-    .then(r => { $('s_comment').textContent = r.count ?? 0; });
-  $('s_rated2').textContent  = f.rated;
-  /* 맛집은 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다.
-     평가 화면에서 관광지도 매기게 했더니 그것까지 세어 18 로 나왔습니다.
-     목록은 식사·카페만 보여주므로 세는 것도 같은 기준이어야 합니다. */
-  for (const [box, cats] of [['s_place', ['식사','카페']], ['s_spot', ['관광','쇼핑']]])
-    sb.from('plan_ratings')
-      .select('plan_id, plans!inner(category)', { count:'exact', head:true })
-      .eq('user_id', me.id).not('stars', 'is', null)
-      .in('plans.category', cats)
-      .then(r => { $(box).textContent = r.count ?? 0; });
-  $('s_want').textContent    = f.wants;
-  /* 후기를 남긴 여행 수. 목록과 같은 함수를 써야 숫자와 목록이 안 어긋납니다. */
-  sb.rpc('my_reviews')
-    .then(r => { $('s_review').textContent = (r.data || []).length; })
-    .catch(() => {});
-  /* 받은 배지 수. 여기서 부르는 김에 새로 받은 것도 기록됩니다 —
-     배지 화면을 안 열어봐도 받은 시각이 남습니다. */
-  sb.rpc('my_badges')
-    .then(r => { $('s_badge').textContent =
-      (r.data || []).filter(b => b.earned_at).length; })
-    .catch(() => {});
-
-  const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
-  $('s_prog').innerHTML = f.countries
-    ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%
-       <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
-    : '다녀온 곳을 표시하면 여기에 쌓여요.';
-
-  const by = f.by_continent || {};
-  $('s_cont').innerHTML = Object.entries(by)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, n]) => `<span class="day" style="cursor:default">${esc(k)}
-       <span class="n">${n}</span></span>`).join('');
-}
-
-
-/* ── 후보와 빈 시간 ──────────────────────────────────────────────────
- * 도쿄 앱에서 가장 잘 굴러가던 기능입니다. 가고 싶은 곳을 모아두고,
- * 일정 사이에 뜬 시간에 "여기 넣을 수 있어요"라고 알려줍니다.
- *
- * 도쿄에서 겪은 세 가지를 그대로 가져와 막습니다.
- *   1. 밤에서 아침으로 걸친 구간을 빈 시간으로 잡던 것 (Day2 02:38~10:00)
- *      → 낮 시간대로 잘라내고, 그러고도 한 시간이 남을 때만 씁니다.
- *   2. 앞뒤 일정과 사실상 같은 자리를 또 제안하던 것
- *      (우에노 공원을 우에노 온시 공원 옆에)  → 0.3km 안쪽이면 거릅니다.
- *   3. 체류 시간으로 자르면 아무것도 안 남던 것
- *      → 오가는 시간을 뺀 "머물 수 있는 시간"을 보여주고 사용자가 정하게 합니다.
- *
- * 이동 시간은 도쿄의 고정식 대신 v2 의 구간별 상수를 씁니다. 이쪽이 낫습니다. */
-const STAY = { 카페:40, 식사:60, 관광:90, 쇼핑:60, 이동:30, 숙소:0, 기타:60 };
-const stayMin = c => STAY[c] ?? 60;
-const DAY_START = 9 * 60, DAY_END = 21 * 60;   /* 이 밖은 자거나 쉬는 시간으로 봅니다 */
-const SAME_KM = 0.3;                           /* 이보다 가까우면 사실상 같은 자리 */
-let cands = [], fitList = [];
-
-const toMin = t => { const m = String(t || '').match(/^(\d{1,2}):(\d{2})/);
-                     return m ? +m[1] * 60 + +m[2] : 9999; };
-const hhmm = m => { m = Math.max(0, Math.round(m));
-                    return ('0' + Math.floor(m / 60) % 24).slice(-2) +
-                           ':' + ('0' + (m % 60)).slice(-2); };
-/* legOf/tmin 은 calc.js 로 옮겼습니다(legFirst/travelMinutes) — legs 를 매개변수로
-   받게 바뀌어서 여기서는 모듈 전역 legs 를 넘겨주는 한 줄 래퍼만 둡니다. */
-const legOf = d => legFirst(legs, d);
-const tmin = (km, d) => travelMinutes(legs, km, d);
-
-function planGaps(){
-  const byDay = {}, out = [];
-  (plans || []).forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
-  Object.keys(byDay).forEach(d => {
-    const list = byDay[d].slice().sort((a, b) => toMin(a.start_time) - toMin(b.start_time));
-    for (let i = 0; i < list.length - 1; i++){
-      const a = list[i], b = list[i + 1];
-      const t1 = toMin(a.start_time), t2 = toMin(b.start_time);
-      if (t1 >= 9999 || t2 >= 9999) continue;
-      /* v2 는 끝 시각을 받으므로 있으면 그걸 씁니다. 도쿄는 없어서 늘 어림했습니다. */
-      const e = toMin(a.end_time);
-      const aEnd = e < 9999 ? e : t1 + stayMin(a.category);
-      if (t2 - aEnd < 60) continue;              /* 한 시간도 안 남으면 넣을 자리가 아닙니다 */
-      const from = Math.max(aEnd, DAY_START), to = Math.min(t2, DAY_END);
-      if (to - from < 60) continue;
-      out.push({ date:d, after:a, before:b, from, to });
-    }
-  });
-  return out;
-}
-
-function findFits(){
-  const gaps = planGaps();
-  const cs = cands.filter(c => c.lat != null && c.lng != null);
-  const best = {};
-  gaps.forEach(g => {
-    if (g.after.lat == null || g.before.lat == null) return;
-    cs.forEach(c => {
-      const dA = distKm(g.after.lat, g.after.lng, c.lat, c.lng);
-      const dB = distKm(c.lat, c.lng, g.before.lat, g.before.lng);
-      if (dA == null || dB == null) return;
-      if (dA < SAME_KM || dB < SAME_KM) return;
-      const go = tmin(dA, g.date), back = tmin(dB, g.date);
-      const avail = (g.to - g.from) - go - back;
-      if (avail < 40) return;                    /* 40분도 안 되면 갈 만하지 않습니다 */
-      if (best[c.id] && best[c.id].avail >= avail) return;
-      best[c.id] = { cand:c, date:g.date, at:g.from + go, go, back, avail,
-                     tight: avail < stayMin(c.category), after:g.after.title };
-    });
-  });
-  return Object.values(best)
-    .sort((a, b) => (b.avail - a.avail) || (a.go - b.go)).slice(0, 3);
-}
-
-function drawCands(){
-  fitList = findFits();
-  $('fits').innerHTML = fitList.length
-    ? `<div class="daysep">빈 시간에 넣기 좋은 곳</div>` + fitList.map((f, i) =>
-        `<div class="picked" style="align-items:flex-start; margin-bottom:8px">
-           <div class="p" style="min-width:0">
-             <b>${esc(f.cand.title)}</b>
-             <div class="c">${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</div>
-             <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
-               <b>${f.avail}분</b> · 다음까지 ${f.back}분${
-               f.tight ? ' · 짧게 보고 나와야 해요' : ''}</div>
-           </div>
-           <button class="small" data-fit="${i}">넣기</button>
-         </div>`).join('')
-    : '';
-
-  $('cands').innerHTML = cands.length
-    /* 한 줄로 늘어놓으니 답답했습니다. 카드로 펼치고 할 수 있는 일을 다 답니다 —
-       일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
-    ? cands.map(c => {
-        const ml = mapLinks(c, trip?.destination);
-        /* '좌표 없음'은 개발자 말입니다. 사용자에게 뜻하는 것은 하나뿐입니다 —
-           이 곳은 지도에 안 뜬다. 아래 '좌표 채우기'가 채워줍니다. */
-        /* 현지 이름은 **우리말 이름과 다를 때만** 답니다. 국내 장소는 둘이
-           같아서 "삼고정문 / 식사 · 삼고정문"처럼 이름이 두 번 나왔습니다. */
-        const loc = c.title_local && c.title_local !== c.title ? c.title_local : null;
-        const sub = [c.category, loc].filter(Boolean);
-        return `<div class="cdc">
-          <div class="t"><b>${esc(c.title)}</b>${
-            c.lat == null ? ' <span class="val">지도에 아직 안 떠요</span>' : ''}</div>
-          ${sub.length ? `<div class="s">${sub.map(esc).join(' · ')}</div>` : ''}
-          ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
-          <div class="a">
-            <button class="ghost" data-candplan="${esc(c.id)}"
-                    style="color:var(--primary)">일정에 넣기</button>
-            <a href="${esc(ml.see)}" target="_blank" rel="noopener">지도</a>
-            <button class="ghost" data-canddel="${esc(c.id)}"
-                    style="color:var(--bad); margin-left:auto">삭제</button>
-          </div>
-        </div>`;
-      }).join('')
-    : '<div class="empty">갈 만한 곳이 아직 없어요.<br>AI 제안에서 담거나 아래에 적어보세요.</div>';
-  drawGeoBtn();
-}
-
-/* ── 좌표 채우기 ─────────────────────────────────────────────────────
- * 좌표가 없으면 빈 시간 계산과 이동 어림에서 그 줄이 통째로 빠집니다.
- * 도쿄 앱처럼 OpenStreetMap 을 씁니다 — 키도 한도도 없고 AI 횟수도 안 씁니다.
- * 다만 초당 한 번이 그쪽 규칙이라 사이를 띄우고, 실패하면 더 두드리지 않습니다. */
-let geoBusy = false;
-
-/* 일정 제목은 장소 이름이 아닌 게 많습니다.
- * "호텔 ➡️ 콜로세움 이동"은 두 지점이고 "트라스테베레 산책 & 저녁"은 할 일입니다.
- * 찾을 만한 이름을 뽑아 넓혀가며 시도합니다.
- * 이동 줄은 도착지를 씁니다 — 그 일정이 끝났을 때 서 있는 자리가 도착지입니다. */
-function geoQueries(title){
-  const t = String(title || '').replace(/[➡→⇒]️?|->/g, '>').replace(/\s+/g, ' ').trim();
-  const out = [];
-  const add = s => { s = String(s || '').replace(/\s+/g, ' ').trim();
-                     if (s && !out.includes(s)) out.push(s); };
-  const main = t.includes('>') ? t.split('>').pop() : t;
-  add(main.replace(/\s*이동\s*$/, ''));
-  if (!t.includes('>')) add(t);
-  const base = main.split(/[&/·,]/)[0]
-    .replace(/(쇼핑|점심|저녁|아침|브런치|산책|구경|관람|투어|체험|픽업|이동|출발|도착|입국|출국|체크인|체크아웃)/g, ' ');
-  add(base);
-  add(base.trim().split(' ')[0]);
-  return out.slice(0, 3);
-}
-
-async function osmLookup(q){
-  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' +
-            encodeURIComponent(q);
-  try {
-    const r = await fetch(u, { headers: { 'Accept-Language': 'ko,en' } });
-    if (!r.ok) return r.status === 429 ? 'stop' : null;
-    const a = await r.json();
-    if (!a?.length) return null;
-    const lat = Number(a[0].lat), lng = Number(a[0].lon);
-    return (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
-  } catch { return null; }
-}
-
-/* 좌표가 없는 것들. 일정과 후보를 한 목록으로 다룹니다 —
-   버튼을 따로 두면 두 번 눌러야 하고 어느 쪽이 남았는지도 헷갈립니다. */
-const needCoord = () => [
-  ...(plans || []).filter(p => p.lat == null)
-    .map(p => ({ kind:'plans', id:p.id, title:p.title, date:p.date })),
-  ...(cands || []).filter(c => c.lat == null)
-    .map(c => ({ kind:'candidates', id:c.id, title:c.title })),
-];
-
-function drawGeoBtn(){
-  const list = needCoord();
-  const np = list.filter(x => x.kind === 'plans').length;
-  const b = $('geobtn');
-  b.classList.toggle('hide', !list.length && !geoBusy);
-  /* 일정 몇 곳인지 같이 적습니다. 후보가 비어 있으면 왜 뜨는지 모릅니다. */
-  b.textContent = geoBusy ? '중단하기'
-    : `좌표 채우기 · ${list.length}곳` + (np ? ` (일정 ${np}곳 포함)` : '');
-}
-
-$('geobtn').addEventListener('click', async () => {
-  if (geoBusy){ geoBusy = false; return; }
-  const list = needCoord();
-  if (!list.length) return;
-  geoBusy = true; drawGeoBtn();
-  let done = 0, miss = 0;
-
-  for (const it of list){
-    if (!geoBusy) break;
-    /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
-    const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
-    let hit = null;
-    for (const q of geoQueries(it.title)){
-      hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
-      if (hit === 'stop'){ geoBusy = false; break; }
-      if (hit) break;
-      await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
-    }
-    if (!geoBusy) break;
-    if (hit && hit !== 'stop'){
-      const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
-        .eq('id', it.id).select('id');
-      if (!r.error && r.data?.length) done++;
-    } else miss++;
-    $('geobtn').textContent = `채우는 중… ${done + miss}/${list.length}`;
-    await new Promise(r => setTimeout(r, 1100));
-  }
-
-  geoBusy = false;
-  await loadPlans();
-  await loadCands();
-  if (miss) fail(`${done}곳을 채웠어요. ${miss}곳은 못 찾았어요 — ` +
-                 `이름을 장소 이름으로 고치면 찾을 수 있어요.`, 'cand');
-}, false);
-
-async function loadCands(){
-  if (!trip) return;
-  const r = await netTimeout(sb.from('candidates')
-    .select('id,title,title_local,category,memo,lat,lng')
-    .eq('trip_id', trip.id).is('deleted_at', null).order('created_at'));
-  if (r.error){
-    if (isOffline(r.error)){ offNote('cands'); drawOffbar(); return; }
-    return fail(r.error, 'cand'); }
-  cands = r.data || [];
-  drawCands();
-}
-
-/* ── 후보를 AI 에게 추천받기 ─────────────────────────────────────────
- * 그냥 "추천해줘"라고 물으면 이미 담아둔 곳을 또 말합니다.
- * 담긴 것과 일정에 넣은 것을 같이 적어 보내 겹치지 않게 합니다.
- *
- * 답은 AI 시트에서 받습니다. 여기서 따로 그리면 담기 카드와 되돌리기를
- * 두 벌로 만들게 되고, 언젠가 한쪽만 고칩니다. */
-$('c_ai').addEventListener('click', async () => {
-  if (!trip) return;
-  const taken = [...cands.map(c => c.title),
-                 ...plans.map(p => p.title)].filter(Boolean);
-  /* 너무 길면 물음이 목록에 묻힙니다. 앞쪽 40개면 겹침을 막기에 충분합니다. */
-  const list = [...new Set(taken)].slice(0, 40);
-
-  const leg = legs.length ? legs[0] : null;
-  const where = leg?.destination || trip.destination || '';
-  const msg = `${where} 에서 가볼 만한 곳을 추천해줘.` +
-    (list.length ? ` 다만 이미 담아뒀거나 일정에 넣은 곳은 빼줘: ${list.join(', ')}` : '');
-
-  /* 후보 시트를 닫고 AI 시트를 엽니다. 둘이 겹쳐 있으면 답을 못 봅니다. */
-  $('card-cand').classList.add('hide');
-  syncSheets();
-  openAi();
-  $('ai_trip').value = trip.id;
-  await loadChats(trip.id);
-  $('ai_msg').value = msg;
-  $('ai_send').click();
-});
-
-$('candbtn').addEventListener('click', async () => {
-  $('card-cand').classList.remove('hide');
-  $('card-cand').scrollIntoView({ behavior:'smooth', block:'nearest' });
-  await loadCands();
-});
-$('candclose').addEventListener('click', () => $('card-cand').classList.add('hide'));
-
-$('c_add').addEventListener('click', async () => {
-  const t = $('c_title').value.trim();
-  if (!t) return;
-  /* 좌표는 안 받습니다. AI 제안으로 담으면 좌표가 같이 옵니다.
-     손으로 적은 것은 좌표가 없어 빈 시간 계산에서는 빠집니다. */
-  const r = await sb.from('candidates')
-    .insert({ trip_id: trip.id, title: t, source: 'manual' }).select('id');
-  if (r.error) return fail(r.error, 'cand');
-  if (!r.data?.length) return fail(NOROW.save, 'cand');
-  $('c_title').value = '';
-  await loadCands();
-});
-$('c_title').addEventListener('keydown', e => { if (e.key === 'Enter') $('c_add').click(); });
-
-$('card-cand').addEventListener('click', async e => {
-  const f = e.target.closest('[data-fit]');
-  if (f){
-    /* 제안한 자리 그대로 일정 칸을 채워 엽니다. 날짜와 시각까지 미리 넣습니다. */
-    const x = fitList[+f.dataset.fit]; if (!x) return;
-    /* 후보의 좌표도 같이 넘깁니다. 예전에는 폼을 거치면서 사라져서,
-       빈 시간을 좌표로 계산해 놓고 정작 넣은 일정에는 좌표가 없었습니다. */
-    openPlanForm({
-      title: x.cand.title, category: x.cand.category, memo: x.cand.memo,
-      date: x.date, start_time: hhmm(x.at),
-      end_time: hhmm(x.at + Math.min(x.avail, stayMin(x.cand.category))),
-      lat: x.cand.lat, lng: x.cand.lng,
-    });
-    $('card-cand').classList.add('hide');
-    return;
-  }
-  /* 후보를 일정으로. 빈 시간 제안을 안 거치고 바로 넣고 싶을 때 씁니다. */
-  const cp = e.target.closest('[data-candplan]');
-  if (cp){
-    const c = cands.find(x => x.id === cp.dataset.candplan); if (!c) return;
-    openPlanForm({ title: c.title, category: c.category, memo: c.memo,
-                   lat: c.lat, lng: c.lng });
-    $('card-cand').classList.add('hide');
-    return;
-  }
-
-  const d = e.target.closest('[data-canddel]');
-  if (d){
-    const r = await sb.from('candidates')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', d.dataset.canddel).select('id');
-    if (r.error) return fail(r.error, 'cand');
-    if (!r.data?.length) return fail(NOROW.del, 'cand');
-    await loadCands();
-  }
-});
-
+/* ── 홈 ───────────────────────────────────────────────────────────────
+ * 홈 · 여기 가봤어요 · 내 발자국은 home.js 로 옮겼습니다
+ * (b344, 열여덟 번째 조각). 셋이 서로를 부르므로 한 파일입니다.
+ * ctx 는 셋(me · openTrip · showApp)입니다. */
+/* ── 갈 만한 곳 · 빈 시간 ─────────────────────────────────────────────
+ * 후보 모으기 · 좌표 채우기 · 빈 시간 찾기는 cands.js 로 옮겼습니다
+ * (b344, 열아홉 번째 조각). ctx 는 셋(loadPlans · openAi · loadChats)입니다. */
 /* ── AI 일정 초안 ────────────────────────────────────────────────────
  * 문서가 "P를 끌어오는 핵심"이라고 한 자리입니다.
  * 짜준 것을 바로 넣지 않습니다. 계산으로 한 번 검사해서 보여주고,
@@ -4397,7 +3435,7 @@ async function render(session){
     /* **앞사람 것을 남기지 않습니다.** 별점·다녀온 곳은 사람마다 다른데
        여태 로그아웃에도 로그인에도 비우는 코드가 없었습니다. 같은 기기에서
        계정을 바꾸면 앞사람 별점이 화면에 남았습니다. */
-    clearRates(); resetRateHtml(); lastHomeSig = ''; dropHtml('trips');
+    clearRates(); resetRateHtml(); resetHomeSig(); dropHtml('trips');
 
     /* 초대 링크로 왔으면 어떤 여행인지 먼저 보여줍니다.
        아직 참여자가 아니라 trips 를 못 읽으므로 이름과 날짜만 주는 함수를 씁니다. */
@@ -4418,7 +3456,7 @@ async function render(session){
   if (me?.id === session.user.id) return;      /* 토큰 갱신마다 다시 그리지 않습니다 */
   /* **여기까지 왔으면 다른 사람입니다**(같은 사람이면 위에서 돌아갑니다).
      로그아웃을 안 거치고 바로 갈아타는 길도 있으므로 여기서도 비웁니다. */
-  clearRates(); resetRateHtml(); lastHomeSig = ''; dropHtml('trips');
+  clearRates(); resetRateHtml(); resetHomeSig(); dropHtml('trips');
   /* 사람이 바뀌면 앞사람 화면을 반드시 다시 그립니다 */
   me = session.user;
 
