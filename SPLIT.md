@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 5,241줄. 열네 조각이 나갔다. **처음의 57%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 4,966줄. 열다섯 조각이 나갔다. **처음의 46%만 남았다.**
 
 ## 왜 하나
 
@@ -15,7 +15,7 @@
 | `map.js` | 597 | 세계지도 · 다녀온 국가 | me, loadCities |
 | `expense.js` | 419 | 지출 · 환율 · 정산 | **me, drawPlans** |
 | `report.js` | 412 | 여행 리포트 | me, openAi, openDraft, openNew, closeReview, loadChats |
-| `shelf.js` | 391 | 보관함 · 배지 | me, loadCities, loadRateData, loadFootprint, saveRate, openTrip |
+| `shelf.js` | 391 | 보관함 · 배지 | me, loadFootprint, openTrip |
 | `cards.js` | 369 | AI 제안 카드 | me, closeAi, loadPlans, review |
 | `persona.js` | 258 | 성향 카드 | me, loadCities, showApp |
 | `aiui.js` | 235 | AI 화면 부품(점·사진·출처) | me, aiToBottom, loadChats, drawCards |
@@ -26,6 +26,7 @@
 | `citysearch.js` | 268 | 도시 검색 · 도시 자료 받기 | **없음** |
 | `review.js` | 233 | 여행 후기 · 후기 사진 | me |
 | `profile.js` | 131 | 프로필 사진 · 이름 · 글자 크기 | me |
+| `rating.js` | 322 | 평가 화면 · 평가 자료 받기 | me, fillCityList, showApp |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
@@ -132,7 +133,6 @@ ctx 도 같이 줄입니다.
 | 덩어리 | 줄 범위 | 줄 | ctx | 내보낼 것 |
 |---|---|---|---|---|
 | 내 자료 내려받기 | 185 | 4 | — |
-| 평가 화면 | 285 | 4 | — |
 | 후보와 빈 시간 | 308 | 4 | — |
 | 알림(설정 · 푸시) | 284 | 7 | — |
 | 여기 가봤어요 · 발자국 | 257 | 7 | — |
@@ -163,6 +163,20 @@ b337 표의 번호는 b338 에서 이미 틀렸다. **뗄 때 다시 잰다**(�
 `fitImage` 는 둘 다 사진을 줄이지만, 앞은 얼굴이라 가운데를 정사각으로
 잘라내고 뒤는 풍경이라 비를 지킨다. 합치면 둘 중 하나가 틀리게 된다.
 양쪽 주석에 서로를 가리켜 두었다.
+
+### 조각이 조각을 부르면 고리를 조심하라 (b341, 열다섯 번째)
+
+`rating.js` 를 떼니 `saveRate`·`drawRatings`·`loadRateData` 가 모듈이 됐다.
+그동안 `city.js` 와 `shelf.js` 가 그 셋을 **ctx 로 받고** 있었으니, 이제
+직접 `import` 하면 끈이 빠진다. 그런데 둘 중 하나만 바꿨다.
+
+- `shelf.js` → **바꿨다.** ctx 가 여섯에서 셋으로 줄었다
+  (`loadCities`·`loadRateData`·`saveRate` 가 import 로).
+- `city.js` → **그대로 뒀다.** `rating.js` 가 `openCity` 를 import 하므로
+  저쪽이 `saveRate` 를 import 하면 **둘이 서로를 부르는 고리**가 된다.
+
+ES 모듈은 고리를 못 견디는 것은 아니지만, 값이 아직 안 채워진 채로 읽히는
+사고가 나기 쉽다. **한쪽만 부르는 사이인지 먼저 보고 바꾼다.**
 
 ### 많이 불린다는 것은 떼지 말라는 뜻이 아니다 (b338, 열한 번째)
 

@@ -14,19 +14,21 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b340';
-import { openCity } from './city.js?v=b340';
-import { sb } from './db.js?v=b340';
-import { cities, countryName } from './cities.js?v=b340';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b340';
-import { starHtml, paintStars, markRated } from './stars.js?v=b340';
-import { fail } from './net.js?v=b340';
-import { arm } from './ui.js?v=b340';
-import { todayYmd } from './calc.js?v=b340';
+import { $, esc, toast } from './dom.js?v=b341';
+import { openCity } from './city.js?v=b341';
+import { sb } from './db.js?v=b341';
+import { cities, countryName } from './cities.js?v=b341';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b341';
+import { starHtml, paintStars, markRated } from './stars.js?v=b341';
+import { fail } from './net.js?v=b341';
+import { arm } from './ui.js?v=b341';
+import { todayYmd } from './calc.js?v=b341';
+import { loadCities } from './citysearch.js?v=b341';
+import { loadRateData, saveRate } from './rating.js?v=b341';
 
 let ctx = {
-  me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
-  loadFootprint: () => {}, saveRate: async () => {},
+  me: () => null,
+  loadFootprint: () => {},
   openTrip: async () => {},
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
@@ -235,10 +237,10 @@ export async function openShelf(kind){
   if (kind === 'review') return openReviewShelf();
   if (kind === 'badge')  return openBadgeShelf();
 
-  await ctx.loadCities();
+  await loadCities();
   /* 전에는 여기서 오류를 안 봤습니다. 실패하면 평가가 하나도 없는 것처럼
      보이고, 공유 자료라 평가 화면까지 같이 비었습니다. 보고 있는 자리에 적습니다. */
-  const rd = await ctx.loadRateData();
+  const rd = await loadRateData();
   if (rd.error){
     $('shelfcount').textContent = '';
     $('shelflist').innerHTML =
@@ -371,7 +373,7 @@ $('shelflist').addEventListener('click', async e => {
     const next = Number(myRates[cityId]?.stars) === v ? null : v;
     paintStars(wrap, next, true);
     markRated(row, next);
-    await ctx.saveRate(cityId, { stars: next }, true);
+    await saveRate(cityId, { stars: next }, true);
 
     /* 지웠으면 목록에서도 빼야 합니다. 저장은 되는데 줄이 그대로 남아 있어서
        "안 지워진다"로 보였습니다 — 새로고침해야 사라졌습니다.
@@ -384,7 +386,7 @@ $('shelflist').addEventListener('click', async e => {
   const w = e.target.closest('button[data-want]');
   if (w){
     const on = !myRates[w.dataset.want]?.want;
-    await ctx.saveRate(w.dataset.want, { want: on }, true);
+    await saveRate(w.dataset.want, { want: on }, true);
     w.classList.toggle('on', on);
     /* 별점과 같은 이유입니다 — "가보고 싶은 곳"에서 하트를 끄면 그 줄도 빠져야 합니다. */
     if (!on && shelfKind === 'want') dropRow(w.closest('.rrow'));
