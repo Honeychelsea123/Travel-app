@@ -6,7 +6,7 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b323';
+import { sb } from './db.js?v=b325';
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
  * ⚠ **앱 주소가 아닙니다.** 앱은 GitHub Pages 에 올라간 정적 index.html
@@ -23,12 +23,12 @@ import { sb } from './db.js?v=b323';
  *
  * 예전에 보낸 `?join=` 링크도 그대로 됩니다 — 받는 쪽은 안 건드렸습니다. */
 const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
-import { $, esc, toast, copyText } from './dom.js?v=b323';
-import { starHtml, paintStars, markRated } from './stars.js?v=b323';
+import { $, esc, toast, copyText } from './dom.js?v=b325';
+import { starHtml, paintStars, markRated } from './stars.js?v=b325';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b323';
-import { loadAdmin } from './admin.js?v=b323';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b325';
+import { loadAdmin } from './admin.js?v=b325';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -36,8 +36,8 @@ import { loadAdmin } from './admin.js?v=b323';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b323';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b323';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b325';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b325';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -46,30 +46,34 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId } from './trip.js?v=b323';
+         setEditPlanId } from './trip.js?v=b325';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b323';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b325';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b323';
+         useCities, addCity, search } from './cities.js?v=b325';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b323';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b325';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b323';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b325';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b323';
+         shutBigMap, flagOk, UN_COUNTRIES, setMapCtx } from './map.js?v=b325';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b323';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b325';
+/* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
+   map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
+   import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
+import { openCity, closeCity, setCityCtx } from './city.js?v=b325';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b323';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b325';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b323';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS } from './calc.js?v=b325';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -77,13 +81,14 @@ import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
    로그인 전의 null 을 영영 들고 있게 됩니다.
    loadCities·showApp 은 함수 선언이라 여기서 참조해도 됩니다(끌어올려집니다). */
 setPersonaCtx({ me: () => me, loadCities, showApp });
-setMapCtx({ me: () => me, loadCities, openCity });
+setMapCtx({ me: () => me, loadCities });
 /* ⚠ **todayYmd 만 화살표로 감쌉니다.** 나머지 다섯은 `function` 선언이라
    끌어올려져서 여기서 이름만 적어도 됩니다. `todayYmd` 는 `const` 화살표라
    이 줄에서는 아직 없습니다 — 그대로 적으면 앱이 통째로 안 뜹니다
    (Cannot access 'todayYmd' before initialization). 부를 때 찾게 미룹니다. */
-setShelfCtx({ me: () => me, loadCities, loadRateData, loadFootprint, openCity,
+setShelfCtx({ me: () => me, loadCities, loadRateData, loadFootprint,
               todayYmd: () => todayYmd() });
+setCityCtx({ me: () => me, saveRate, drawRatings });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -2426,154 +2431,6 @@ async function saveRate(cityId, patch, quiet){
   /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다. */
   if (!quiet) drawRatings();
 }
-
-/* ── 도시 상세 ──────────────────────────────────────────────────────
- * 왓챠는 포스터를 누르면 작품 페이지가 열립니다. 여행앱에서는 그보다 쓸모가
- * 있는데, **내가 그 도시에서 뭘 했는지**를 같이 보여줄 수 있기 때문입니다.
- * 일정에 이미 다 적혀 있으니 새로 입력받을 것이 없습니다. */
-async function openCity(id){
-  const c = (cities || []).find(x => x.id === id);
-  if (!c) return;
-  cityOpen = c;
-  if (history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
-
-  /* 홈에서도 지도에서도 도시를 열 수 있습니다 — 열린 탭이 뭐든 다 덮어야 합니다.
-     setview 안쪽(프로필/지도/설정) 상태는 건드리지 않아서 닫으면 그대로 돌아옵니다. */
-  $('rateview').classList.add('hide');
-  $('homeview').classList.add('hide');
-  $('setview').classList.add('hide');
-  $('cityview').classList.remove('hide');
-  window.scrollTo({ top:0 });
-
-  const r = myRates[id] || {}, s = cityStat[id];
-  $('cv_hero').style.backgroundImage = c.image_url ? `url("${c.image_url}")` : '';
-  $('cv_hero').classList.toggle('ph', !c.image_url);
-  $('cv_hero').textContent = c.image_url ? '' : c.name.slice(0, 1);
-  $('cv_name').textContent = c.name;
-  $('cv_sub').textContent = [countryName[c.country] || c.country, c.name_local,
-                             visited.has(id) ? '다녀옴' : null].filter(Boolean).join(' · ');
-  $('cv_avg').textContent  = s?.n_rated ? Number(s.avg_stars).toFixed(1) : '–';
-  $('cv_avgn').textContent = s?.n_rated ? `${s.n_rated}명이 매김` : '아직 아무도 안 매김';
-  $('cv_stars').innerHTML  = starHtml(r.stars);
-  $('cv_want').classList.toggle('on', !!r.want);
-  $('cv_note').value = r.comment || '';
-  cvNoteDirty();
-
-  /* 위키백과 요약. 없는 도시는 아래 사실만 보여줍니다. */
-  $('cv_about').classList.toggle('hide', !c.summary);
-  if (c.summary){
-    $('cv_summary').textContent = c.summary;
-    $('cv_src').href = c.summary_url || '#';
-  }
-  /* API 없이 이미 아는 것들 — 나라·대륙·통화·시간대.
-     '다니기'(대중교통 등급)는 걷어냈습니다. 등급을 알아도 할 수 있는 일이
-     없고, 정작 필요한 것은 이동 시간인데 그건 일정 화면이 따로 말해줍니다.
-     transit_grade 자체는 그 계산에 계속 쓰이므로 DB 에는 그대로 둡니다. */
-  $('cv_facts').innerHTML = [
-    ['대륙', continentOf[c.country]],
-    ['통화', c.currency],
-    ['현지 시각', (localTime(c.timezone) || '').replace('현지 ', '')],
-  ].filter(([, v]) => v).map(([k, v]) =>
-    `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
-
-  /* 남들 한줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
-  const { data: cm } = await sb.rpc('city_comments', { p_city: id });
-  const others = (cm || []).filter(x => x.user_id !== me.id);
-  $('cv_comments').innerHTML = others.length
-    ? `<div class="daysep">다른 사람들</div>` + others.map(x =>
-        `<div class="rrow" style="padding:10px 0">
-           ${avatarImg(x.avatar_url, x.user_id, x.name,
-                       'width:36px; height:36px; border-radius:50%; object-fit:cover', 'thumb')}
-           <div class="t"><b>${esc(x.name)}</b>
-             <span class="memo">${esc(x.comment)}</span>
-             <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span></div>
-         </div>`).join('')
-    : '';
-
-  /* 이 도시를 구간으로 가진 내 여행들. RLS 가 내 것만 내려줍니다. */
-  const { data: lg, error } = await sb.from('trip_legs')
-    .select('trip_id,start_date,end_date,trips(id,title,start_date,end_date)')
-    .eq('city_id', id).order('start_date', { ascending:false });
-  if (error) return fail(error, 'cv');
-
-  if (!lg?.length){
-    $('cv_trips').innerHTML =
-      '<div class="empty">아직 이 도시로 간 여행이 없어요.</div>';
-    return;
-  }
-  /* 그 구간 날짜에 걸린 일정만 가져옵니다 — 다른 도시 일정이 섞이면 안 됩니다. */
-  const { data: ps } = await sb.from('plans')
-    .select('trip_id,date,start_time,category,title')
-    .in('trip_id', lg.map(l => l.trip_id))
-    .is('deleted_at', null).order('date').order('start_time');
-
-  $('cv_trips').innerHTML = lg.map(l => {
-    const t = l.trips;
-    const mine = (ps || []).filter(p => p.trip_id === l.trip_id
-                    && p.date >= l.start_date && p.date <= l.end_date);
-    return `<div style="margin-bottom:var(--s-md)">
-      <div class="row" style="border:0; padding:0; margin:0; cursor:pointer"
-           data-cvtrip="${esc(t.id)}">
-        <span class="label"><b>${esc(t.title)}</b>
-          <div class="memo">${esc(dateRange(l.start_date, l.end_date))} · ${mine.length}곳</div>
-        </span><span class="val">여행 보기 ›</span></div>
-      ${mine.map(p => {
-        const k = p.category ? 'k-' + p.category : '';
-        return `<div class="plan" style="padding:7px 0">
-          <span class="kdot ${esc(k)}"></span>
-          <div class="body"><b>${esc(p.title)}</b>
-            <span class="memo">${esc(p.date)}${
-              p.start_time ? ' ' + hm(p.start_time) : ''}</span></div></div>`;
-      }).join('')}
-    </div>`;
-  }).join('');
-}
-
-function closeCity(fromPop){
-  if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
-  cityOpen = null;
-  $('cityview').classList.add('hide');
-  /* 열었던 탭으로 돌아갑니다. 홈에서 열고 기록 탭에 떨어지면 이상합니다. */
-  if (appTab === 'home'){ $('homeview').classList.remove('hide'); loadHome(); }
-  else if (appTab === 'set') $('setview').classList.remove('hide');
-  else { $('rateview').classList.remove('hide'); drawRatings(); }
-}
-
-$('cityview').addEventListener('click', async e => {
-  const t = e.target.closest('[data-cvtrip]');
-  if (t){ closeCity(); return openTrip(t.dataset.cvtrip); }
-
-  const st = e.target.closest('#cv_stars .st');
-  if (st){
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
-    const cur = myRates[cityOpen.id]?.stars;
-    await saveRate(cityOpen.id, { stars: Number(cur) === v ? null : v });
-    return openCity(cityOpen.id);
-  }
-  if (e.target.closest('#cv_want')){
-    await saveRate(cityOpen.id, { want: !myRates[cityOpen.id]?.want });
-    $('cv_want').classList.toggle('on', !!myRates[cityOpen.id]?.want);
-  }
-});
-/* 쓴 것이 저장된 것과 다를 때만 버튼이 살아납니다 —
-   눌러도 아무 일 없는 버튼이 켜져 있으면 저장됐는지 헷갈립니다. */
-function cvNoteDirty(){
-  const now   = $('cv_note').value.trim();
-  const saved = (myRates[cityOpen?.id]?.comment || '').trim();
-  const b = $('cv_save');
-  b.disabled = now === saved;
-  b.textContent = now ? '등록' : '지우기';
-}
-$('cv_note').addEventListener('input', cvNoteDirty);
-$('cv_save').addEventListener('click', async () => {
-  const v = $('cv_note').value.trim() || null;
-  $('cv_save').disabled = true;
-  await saveRate(cityOpen.id, { comment: v });
-  $('cv_save').textContent = v ? '등록했어요' : '지웠어요';
-  /* 남들 한줄평 목록에 내 것이 바로 끼어들어야 남긴 느낌이 납니다. */
-  await openCity(cityOpen.id);
-});
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * 세 덩어리입니다.

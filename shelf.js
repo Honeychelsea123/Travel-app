@@ -14,15 +14,16 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b323';
-import { sb } from './db.js?v=b323';
-import { cities, countryName } from './cities.js?v=b323';
-import { myRates, cityStat, visited } from './rate.js?v=b323';
-import { starHtml } from './stars.js?v=b323';
+import { $, esc, toast } from './dom.js?v=b325';
+import { openCity } from './city.js?v=b325';
+import { sb } from './db.js?v=b325';
+import { cities, countryName } from './cities.js?v=b325';
+import { myRates, cityStat, visited } from './rate.js?v=b325';
+import { starHtml } from './stars.js?v=b325';
 
 let ctx = {
   me: () => null, loadCities: async () => {}, loadRateData: async () => ({}),
-  loadFootprint: () => {}, openCity: async () => {}, todayYmd: () => '',
+  loadFootprint: () => {}, todayYmd: () => '',
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -382,7 +383,7 @@ $('shelflist').addEventListener('click', async e => {
     return;
   }
   const row = e.target.closest('[data-cityopen]');
-  if (row) await ctx.openCity(row.dataset.cityopen);
+  if (row) await openCity(row.dataset.cityopen);
 });
 
 /* AI 는 어디서든 한 번에 갑니다. 여행을 보고 있었으면 그 여행을 물어볼

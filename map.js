@@ -12,17 +12,18 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b322';
-import { sb } from './db.js?v=b322';
-import { cities, countryName, continentOf } from './cities.js?v=b322';
-import { PERSONA_ICON, askImageSize } from './card.js?v=b322';
+import { $, esc, toast } from './dom.js?v=b325';
+import { openCity } from './city.js?v=b325';
+import { sb } from './db.js?v=b325';
+import { cities, countryName, continentOf } from './cities.js?v=b325';
+import { PERSONA_ICON, askImageSize } from './card.js?v=b325';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
    여기서 내보내고 app.js 가 가져다 씁니다. */
 export const UN_COUNTRIES = 195;
 
-let ctx = { me: () => null, loadCities: async () => {}, openCity: async () => {} };
+let ctx = { me: () => null, loadCities: async () => {} };
 export function setMapCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 세계지도와 통계 ─────────────────────────────────────────────────
@@ -388,7 +389,7 @@ $('ctrypane').addEventListener('click', e => {
      **도시 칩보다 먼저 봅니다** — 펴진 도시 칩도 나라 칩 안에 있지 않으므로
      순서 문제는 없지만, 앞으로 겹칠 때를 대비해 좁은 쪽을 먼저 둡니다. */
   const p = e.target.closest('[data-pin]');
-  if (p) return ctx.openCity(p.dataset.pin);
+  if (p) return openCity(p.dataset.pin);
   const c = e.target.closest('[data-ctry]');
   if (c){
     const box = $('ctrypane').querySelector(
@@ -590,7 +591,7 @@ $('mappane').addEventListener('click', e => {
   const z = e.target.closest('[data-zoom]');
   if (z) return setMapView(z.dataset.zoom);
   const p = e.target.closest('[data-pin]');
-  if (p) return ctx.openCity(p.dataset.pin);
+  if (p) return openCity(p.dataset.pin);
 });
 
 /* 톱니를 누르면 설정, 뒤로 누르면 프로필. 설정을 프로필에 다 늘어놓으면

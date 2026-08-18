@@ -22,8 +22,12 @@ OLD=$(grep -o 'app\.css?v=b[0-9]*' index.html | head -1 | sed 's/.*?v=//')
 [ -z "$OLD" ] && { echo "index.html 에서 지금 판을 못 찾았습니다"; exit 1; }
 [ "$OLD" = "$NEW" ] && { echo "이미 $NEW 입니다"; exit 1; }
 
-FILES="admin.js app.js app.css card.js db.js index.html net.js sw.js ui.js
-       ai.js calc.js cities.js dom.js rate.js stars.js trip.js rec.js"
+# ⚠ **새 파일을 만들면 여기 더해야 했습니다.** 안 더하면 그 파일 안의 ?v= 만
+# 옛 판으로 남고, 브라우저는 옛 모듈을 그대로 씁니다 — 새 화면에 옛 코드가
+# 붙는 것이라 조용히 깨집니다. b324 에서 실제로 그랬습니다(map·shelf·persona).
+# 그래서 이름을 적지 않고 **있는 대로** 씁니다. `_` 로 시작하는 것은 실험용
+# 껍데기라 뺍니다(_mock.html 등).
+FILES=$(ls *.js *.css *.html 2>/dev/null | grep -v '^_')
 
 for f in $FILES; do
   [ -f "$f" ] || continue
