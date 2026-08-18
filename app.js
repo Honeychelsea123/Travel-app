@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b341';
+import { sb } from './db.js?v=b342';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b341';
-import { starHtml, paintStars, markRated } from './stars.js?v=b341';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b342';
+import { starHtml, paintStars, markRated } from './stars.js?v=b342';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b341';
-import { loadAdmin } from './admin.js?v=b341';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b342';
+import { loadAdmin } from './admin.js?v=b342';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b341';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b341';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b341';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b342';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b342';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,56 +33,57 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b341';
+         setEditPlanId, nameOf } from './trip.js?v=b342';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b341';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b342';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b341';
+         useCities, addCity, search } from './cities.js?v=b342';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b341';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b342';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b341';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b342';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b341';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b342';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b341';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b342';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b341';
+         isCityOpen, clearCityOpen } from './city.js?v=b342';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b341';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b342';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b341';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b342';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b341';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b341';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b341';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b341';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b341';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b341';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b341';
-import { loadReview, setReviewCtx } from './review.js?v=b341';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b342';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b342';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b342';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b342';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b342';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b342';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b342';
+import { loadReview, setReviewCtx } from './review.js?v=b342';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b341';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b342';
+import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b342';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b341';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b342';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b341';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b342';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -109,6 +110,7 @@ setMemberCtx({ me: () => me, loadTrips, openTrip });
 setProfileCtx({ me: () => me });
 setReviewCtx({ me: () => me });
 setRatingCtx({ me: () => me, fillCityList, showApp });
+setNotifyCtx({ me: () => me, loadNotifs });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -321,104 +323,11 @@ addEventListener('unhandledrejection', e => {
   logError(r?.message || String(r), 'promise', r?.stack);
 });
 
-/* ── 알림 설정 ──────────────────────────────────────────────────────
- * 끌 수 없는 알림은 결국 앱 자체를 지우게 만듭니다.
- * **화면에서 숨기는 것이 아니라 서버에서 아예 안 만듭니다** (035 의 notify_wants).
- * 화면에서 거르면 줄은 계속 쌓이고, 기기를 바꾸면 안 보이던 것이 우르르 나옵니다.
- *
- * 나중에 잠금화면 알림(푸시)을 붙일 때 이 스위치들을 그대로 씁니다 —
- * "무엇을 알릴지"는 여기서 정하고, 그때는 "어떻게 받을지" 하나만 더 붙입니다. */
-/* 처음엔 종류별로 셋을 두었는데 알림이 셋뿐이라 설정이 알림보다 복잡했습니다.
-   스위치 하나로 줄였습니다. **표의 종류별 칸(035)은 그대로 둡니다** —
-   기본값이 켬이라 전체 스위치만 보면 되고, 나중에 다시 나누고 싶으면
-   화면만 붙이면 됩니다. 안 쓰는 칸을 지우려고 마이그레이션을 또 돌릴 이유가 없습니다. */
-async function loadNotifPrefs(){
-  /* **`*` 를 씁니다.** 칸을 하나씩 적었더니 064·065 를 올릴 때마다 여기도
-     고쳐야 했고, 한 번 빠뜨리면 "설정이 저장은 되는데 다시 열면 사라진다"가
-     됩니다. 아직 안 올린 곳에서는 그 칸이 안 올 뿐 질의는 성공합니다 —
-     칸 이름을 적으면 그때는 질의 자체가 실패해서 카드가 통째로 사라집니다. */
-  const { data, error } = await sb.from('user_prefs')
-    .select('*').eq('user_id', me.id).maybeSingle();
-  /* 035 를 아직 안 올렸으면 칸이 없어서 질의가 실패합니다.
-     그때는 설정 카드를 아예 숨깁니다 — 눌러도 저장이 안 되는 스위치를 두면 안 됩니다. */
-  if (error){ $('notifprefcard').classList.add('hide'); return; }
-  $('notifprefcard').classList.remove('hide');
-  $('nf_all').checked = data ? data.notify_all !== false : true;
-  /* 064 를 아직 안 올린 곳에서는 칸이 없습니다. 그때는 기본값으로 그립니다 —
-     화면이 비는 것보다 낫고, 저장할 때 오류가 뜨면 그때 알게 됩니다. */
-  putKinds(data?.notify_plan || 'first', data?.notify_flight !== false);
-  saveHomeTz(data?.home_tz);
-  drawPushRow();
-}
-
-/* **집이 어느 시간대인지 브라우저만 압니다.**
- * 출국편 알림이 1시간 일찍 오던 것을 여기서 막습니다 — 사람이 적는 출발
- * 시각은 표에 적힌 그대로, 즉 **출발 공항의 현지 시각**입니다. 그런데 우리는
- * 출발 공항을 모릅니다. 여행 첫날까지의 비행기는 집에서 뜬다고 보고(065),
- * 그 '집'이 어디인지를 여기서 알려줍니다.
- *
- * **바뀌었을 때만 씁니다.** 설정 화면을 열 때마다 upsert 하면 쓸 일 없는
- * 쓰기가 계속 나갑니다. 이사하거나 오래 머무는 곳이 바뀌면 그때 한 번입니다. */
-async function saveHomeTz(now){
-  let tz = '';
-  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
-  if (!tz || tz === now) return;
-  /* 065 를 아직 안 올렸으면 칸이 없어 실패합니다. 조용히 넘어갑니다 —
-     이건 사용자가 부탁한 일이 아니라 우리가 알아서 하는 일입니다. */
-  await sb.from('user_prefs')
-    .upsert({ user_id: me.id, home_tz: tz }, { onConflict:'user_id' });
-}
-
-/* 고른 것을 화면에 얹습니다. 저장한 뒤에도 이 함수로 다시 그립니다 —
-   두 곳에서 따로 칠하면 한쪽만 고치게 됩니다. */
-function putKinds(plan, flight){
-  document.querySelectorAll('#nf_plan [data-pl]').forEach(b =>
-    b.classList.toggle('on', b.dataset.pl === plan));
-  $('nf_flight').checked = flight;
-}
-
-async function saveKinds(row){
-  $('nferr').classList.add('hide');
-  const r = await sb.from('user_prefs')
-    .upsert({ user_id: me.id, ...row }, { onConflict:'user_id' })
-    .select('notify_plan,notify_flight');
-  if (r.error || !r.data?.length){
-    await loadNotifPrefs();               /* 화면을 진짜 값으로 되돌립니다 */
-    return fail(r.error || NOROW.save, 'nf');
-  }
-  putKinds(r.data[0].notify_plan, r.data[0].notify_flight);
-  return true;
-}
-
-$('nf_plan').addEventListener('click', async e => {
-  const b = e.target.closest('[data-pl]'); if (!b) return;
-  /* 먼저 칠하고 저장합니다. 기다렸다 칠하면 누른 것이 안 눌린 것처럼 보입니다. */
-  putKinds(b.dataset.pl, $('nf_flight').checked);
-  if (await saveKinds({ notify_plan: b.dataset.pl }))
-    toast({ all:'모든 일정을 알려드려요', first:'그날 첫 일정만 알려드려요',
-            off:'일정 알림을 껐어요' }[b.dataset.pl]);
-});
-
-$('notifprefcard').addEventListener('change', async e => {
-  if (e.target.id !== 'nf_flight') return;
-  await saveKinds({ notify_flight: $('nf_flight').checked });
-});
-
-$('notifprefcard').addEventListener('change', async e => {
-  if (e.target.id !== 'nf_all') return;
-  $('nferr').classList.add('hide');
-  const on = $('nf_all').checked;
-  /* 설정 줄이 아직 없는 계정도 있어서 upsert 로 넣습니다. */
-  const r = await sb.from('user_prefs')
-    .upsert({ user_id: me.id, notify_all: on }, { onConflict:'user_id' })
-    .select('user_id');
-  if (r.error){ $('nf_all').checked = !on; return fail(r.error, 'nf'); }
-  if (!r.data?.length){ $('nf_all').checked = !on;
-                        return fail(NOROW.save, 'nf'); }
-  toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
-  loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
-});
-
+/* ── 알림 설정 ────────────────────────────────────────────────────────
+ * 알림 설정과 잠금화면 알림(Web Push)은 notify.js 로 옮겼습니다
+ * (b342, 열여섯 번째 조각). ctx 는 둘(me · loadNotifs)입니다.
+ * **그 둘 사이에 있던 '만든 사람이 켜고 끄는 것들'과 '알림을 눌렀을 때'는
+ * 여기 남깁니다** — 앞은 앱 껍데기고 뒤는 여행 화면을 부릅니다. */
 /* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
  * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
  * 배포는 몇 분 걸리고 그 사이에도 돈이 나가거나 잘못된 알림이 계속 갑니다.
@@ -500,109 +409,6 @@ async function openFromUrl(href){
 }
 navigator.serviceWorker?.addEventListener('message', e => {
   if (e.data?.t2 === 'open') openFromUrl(e.data.url);
-});
-
-/* ── 잠금화면 알림 (Web Push) ───────────────────────────────────────
- * `notify_all` 이 "무엇을 알릴지"이고, 여기는 "어떻게 받을지"입니다.
- * 스위치를 두 벌 두면 하나를 껐는데 다른 쪽으로 계속 옵니다 —
- * 그래서 이 스위치는 **기기 등록**만 맡습니다. 무엇을 보낼지는
- * 위 스위치가 정합니다(035 의 notify_wants).
- *
- * **아이폰은 홈 화면에 담아야만 됩니다.** 사파리 탭에서는 `PushManager`
- * 자체가 없습니다. 눌러도 안 되는 스위치를 두면 고장으로 보이므로,
- * 못 하는 자리에서는 왜 못 하는지 적어둡니다. */
-const VAPID_PUB = 'BKHqArbSZ6R78C-rwKrRs42lvSgYadpp5LLGfJUh2Xg4jzbcJiUv_5NanYsyYoRaeJtGuD9w7cs51vP1xveNBqM';
-
-/* base64url → 바이트. 브라우저가 이 꼴로만 키를 받습니다. */
-function b64ToBytes(s){
-  const p = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4);
-  const raw = atob(p);
-  return Uint8Array.from(raw, c => c.charCodeAt(0));
-}
-
-const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window
-                  && 'Notification' in window;
-
-async function drawPushRow(){
-  const sw = $('nf_push'), why = $('pushwhy');
-  why.classList.add('hide');
-  /* **종류 고르기는 켜져 있을 때만 보여줍니다.** 안 받는 사람에게 무엇을
-     받을지 묻는 칸이 세 줄 서 있으면 설정이 알림보다 복잡해집니다. */
-  const kinds = on => $('pushkinds').classList.toggle('hide', !on);
-  kinds(false);
-  if (!pushOk()){
-    sw.checked = false; sw.disabled = true;
-    why.textContent = matchMedia('(display-mode: standalone)').matches
-      ? '이 기기는 잠금화면 알림을 지원하지 않아요.'
-      : '홈 화면에 담아서 열면 잠금화면 알림을 켤 수 있어요. ' +
-        '(공유 → 홈 화면에 추가)';
-    why.classList.remove('hide');
-    return;
-  }
-  if (Notification.permission === 'denied'){
-    sw.checked = false; sw.disabled = true;
-    why.textContent = '기기 설정에서 이 앱의 알림이 꺼져 있어요. 거기서 켜주세요.';
-    why.classList.remove('hide');
-    return;
-  }
-  sw.disabled = false;
-  const reg = await navigator.serviceWorker.getRegistration();
-  sw.checked = !!(await reg?.pushManager.getSubscription());
-  kinds(sw.checked);
-}
-
-$('notifprefcard').addEventListener('change', async e => {
-  if (e.target.id !== 'nf_push') return;
-  const on = $('nf_push').checked;
-  $('nferr').classList.add('hide');
-  const reg = await navigator.serviceWorker.getRegistration();
-  if (!reg){ $('nf_push').checked = false; return fail('앱을 새로고침한 뒤 다시 켜주세요.', 'nf'); }
-
-  if (!on){
-    const sub = await reg.pushManager.getSubscription();
-    if (sub){
-      /* **표에서 먼저 지우고 기기에서 뗍니다.** 순서가 반대면 표에 죽은
-         주소가 남아 보낼 때마다 실패합니다. */
-      await sb.from('push_subs').delete().eq('endpoint', sub.endpoint);
-      await sub.unsubscribe();
-    }
-    toast('잠금화면 알림을 껐어요');
-    return drawPushRow();
-  }
-
-  /* 허락은 **사용자가 스위치를 켠 그 순간**에만 물을 수 있습니다.
-     앱을 열자마자 물으면 대부분 거절합니다. */
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted'){ $('nf_push').checked = false; return drawPushRow(); }
-
-  let sub;
-  try {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUB) });
-  } catch (err){
-    $('nf_push').checked = false;
-    return fail('알림을 켜지 못했어요. 잠시 뒤 다시 눌러주세요.', 'nf');
-  }
-
-  const j = sub.toJSON();
-  const r = await sb.from('push_subs').upsert({
-    user_id: me.id, endpoint: sub.endpoint,
-    p256dh: j.keys.p256dh, auth: j.keys.auth,
-    ua: navigator.userAgent.slice(0, 200),
-  }, { onConflict: 'endpoint' }).select('id');
-
-  if (r.error || !r.data?.length){
-    await sub.unsubscribe();          /* 표에 못 넣었으면 기기 등록도 물립니다 */
-    $('nf_push').checked = false;
-    return fail(r.error || NOROW.save, 'nf');
-  }
-  /* **집 시간대를 여기서도 씁니다.** 위의 loadNotifPrefs 가 이미 하지만,
-     그건 "설정 화면을 열었다"에 기대고 있습니다. 스위치가 나중에 다른
-     자리로 옮겨가면 집 시간대가 조용히 안 채워지고, 그러면 출국편 알림이
-     다시 1시간 일찍 옵니다. 켜는 자리에서 챙기면 그 고리가 끊어집니다. */
-  saveHomeTz();
-  toast('이제 잠금화면으로 알려드려요');
-  drawPushRow();
 });
 
 /* ── 탈퇴 ───────────────────────────────────────────────────────────
