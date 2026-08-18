@@ -85,18 +85,18 @@ for (const c of 결과.점검){
   const 봐줌 = c.이름 === '__designCheck';
   const 표 = c.틀림 === 0 ? '✓' : (봐줌 ? '△' : '✗');
   console.log(`  ${표} ${c.이름}  ${c.틀림 ? c.틀림 + '건  ' + c.자세히 : ''}`);
-  if (c.틀림 !== 0 && !봐줌) 실패++;
+  if (c.틀림 !== 0 && !봐줌){ 실패++; console.log('::error file=' + c.이름 + '::' + c.틀림 + '건 — ' + c.자세히); }
 }
 
 console.log('\n── 앱이 살아 있는가 ──');
 /* index.html 의 처음 글자입니다. 그대로면 render() 가 한 번도 안 돌았다는 뜻. */
 const 죽음 = !결과.부팅 || /불러오는 중/.test(결과.sub);
 console.log(`  ${죽음 ? '✗' : '✓'} 부팅=${결과.부팅} · sub="${결과.sub}"`);
-if (죽음) 실패++;
+if (죽음){ 실패++; console.log('::error::앱이 안 떴습니다. 부팅=' + 결과.부팅 + ' sub="' + 결과.sub + '"'); }
 
 if (오류.length){
   console.log('\n── 콘솔 오류 ──');
-  for (const e of 오류.slice(0, 10)) console.log('  ' + e);
+  for (const e of 오류.slice(0, 10)){ console.log('  ' + e); console.log('::warning::' + e.slice(0, 200)); }
   /* 오류는 세지만 실패로 안 칩니다 — 연결이 없는 CI 에서는 Supabase 호출이
      당연히 실패합니다. 사람이 보라고 찍어둡니다. */
 }
