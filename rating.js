@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b371';
-import { sb } from './db.js?v=b371';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b371';
-import { dateRange } from './calc.js?v=b371';
-import { starHtml, paintStars, markRated } from './stars.js?v=b371';
-import { cities, countryName, addCity } from './cities.js?v=b371';
+import { $, esc } from './dom.js?v=b372';
+import { sb } from './db.js?v=b372';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b372';
+import { dateRange } from './calc.js?v=b372';
+import { starHtml, paintStars, markRated } from './stars.js?v=b372';
+import { cities, countryName, addCity } from './cities.js?v=b372';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter } from './rate.js?v=b371';
-import { openCity } from './city.js?v=b371';
-import { loadCities } from './citysearch.js?v=b371';
+         putRateFilter } from './rate.js?v=b372';
+import { openCity } from './city.js?v=b372';
+import { loadCities } from './citysearch.js?v=b372';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
