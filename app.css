@@ -275,14 +275,11 @@ a.btn:active{ transform:scale(.96); }
    숫자를 표로만 늘어놓으면 서른 줄이 같은 무게로 보여서 아무것도 안 읽힙니다.
    하루에 한 번 볼 때 이것만 봐도 되는 넷을 위에 큼직하게 깔고,
    돈이 나가는 둘은 막대로, 나머지는 표로 내립니다. */
-.atiles{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:4px 0 2px; }
-.atile{ background:var(--pearl); border:1px solid var(--divider-soft);
-        border-radius:var(--r-sm); padding:11px 13px; min-width:0; }
-.atile .k{ font-size:var(--f-xs); color:var(--ink-48);
-           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.atile .v{ font-size:var(--f-2xl); font-weight:700; line-height:1.25;
-           letter-spacing:-.5px; margin-top:1px; }
-.atile .d{ font-size:var(--f-xs); color:var(--ink-48); margin-top:1px; }
+/* ⚠ 여기 요약 띠(`.atiles`·`.atile`)가 있었는데 **b380 에서 걷었습니다.**
+   "하루에 한 번 볼 때 이것만 봐도 되는 넷" 이라는 뜻이었는데, 재보니
+   **넷 다 아래 표에 그대로 또 나왔습니다** — 요약이 아래를 줄여준 것이
+   아니라 같은 말을 한 번 더 한 것이었습니다(`최근 30일 203회` 는 세 번).
+   대시보드가 2,848px 이었던 이유의 한 몫입니다. */
 
 /* 예산 막대. 70% 부터 노랑, 90% 부터 빨강 — 색이 바뀌는 게 곧 신호입니다. */
 .abar{ margin:10px 0 0; }

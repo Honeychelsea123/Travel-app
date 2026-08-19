@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b379';
-import { sb } from './db.js?v=b379';
-import { fail, netTimeout } from './net.js?v=b379';
+import { $, esc, toast, copyText } from './dom.js?v=b380';
+import { sb } from './db.js?v=b380';
+import { fail, netTimeout } from './net.js?v=b380';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -45,13 +45,10 @@ export async function loadAdmin(){
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
   const num = v => Number(v ?? 0);
 
-  /* 큰 숫자 넷. 하루에 한 번 볼 때 이것만 봐도 되는 것들입니다.
-     delta 는 "어제 대비"가 아니라 "최근 7일에 늘어난 만큼"입니다 — 하루 단위는
-     너무 튀어서 추세가 안 보입니다. */
-  const tile = (label, value, delta) => `<div class="atile">
-    <div class="k">${esc(label)}</div>
-    <div class="v">${esc(value)}</div>
-    ${delta ? `<div class="d">${esc(delta)}</div>` : ''}</div>`;
+  /* ⚠ 여기 `tile()`(요약 띠 한 칸)이 있었는데 **b380 에서 부르는 곳이 0 이
+     됐습니다.** 요약 띠 자체를 걷었기 때문입니다(아래 그 자리에 사연).
+     쓰는 데가 없어진 함수는 남겨두면 다음 사람이 "왜 안 쓰지" 를 한 번
+     생각하게 됩니다. `.atiles`·`.atile` CSS 도 같이 걷었습니다. */
 
   /* 예산 막대. 숫자만 늘어놓으면 "많은 건가?"를 판단 못 합니다.
      80% 를 넘으면 색이 바뀝니다 — 그때부터는 손을 써야 합니다. */
@@ -100,13 +97,11 @@ export async function loadAdmin(){
            알겠어요</button>
        </div></div>` : '') +
 
-    `<div class="atiles">
-      ${tile('가입자', n(d.users_total) + '명', `최근 7일에 ${n(d.users_7d)}명 늘었습니다`)}
-      ${tile('최근 7일 쓴 사람', n(d.touched_7d) + '명', `그중 AI까지 쓴 사람 ${n(d.active_7d)}명`)}
-      ${tile('만들어진 여행', n(d.trips_total) + '개', `지금 여행 중인 것 ${n(d.trips_now)}개`)}
-      ${tile('오늘 AI 호출', n(d.ai_today) + '회', `어제는 ${n(d.ai_yday)}회`)}
-    </div>` +
-
+    /* ⚠ 여기 요약 띠(`.atiles`) 넉 장이 있었습니다 — **b380 에서 걷었습니다.**
+       가입자 · 최근 7일 쓴 사람 · 만들어진 여행 · 오늘 AI. 재보니 **넷 다 아래
+       상세에 그대로 또 나옵니다**(`최근 30일 203회` 는 세 번 나왔습니다).
+       요약이 아래를 줄여주는 것이 아니라 같은 말을 한 번 더 하는 것이라,
+       빼도 잃는 정보가 0 입니다. 대시보드가 2,848px 이었던 이유의 한 몫입니다. */
     `<div class="agrp">이번 달 얼마나 썼나</div>` +
     bar('AI · Gemini', d.ai_month, d.ai_budget, d.ai_pct, days) +
     bar('웹 검색 · Tavily', d.se_month, d.se_budget, d.se_pct,
@@ -171,13 +166,33 @@ export async function loadAdmin(){
   });
 
   const f = await netTimeout(sb.rpc('admin_feed'), 8000);
-  const rows = f.data || [];
-  $('adm_feedcard').classList.toggle('hide', !rows.length);
+  const all = f.data || [];
+
+  /* ── 옛 오류는 접습니다 (b380) ────────────────────────────────────────
+   * 오류는 90일 보관이라(db/042) **두 달치가 한 목록에 섞입니다.** 실제로
+   * `shelfKind`(b326) 나 b311 짜리처럼 **이미 고친 것**이 위에 그대로 쌓여
+   * 있어서, 지금 급한 것을 찾으려면 눈으로 걸러야 했습니다.
+   * 오늘 이 목록으로 라이브 버그 둘을 잡았는데, 그건 새 줄이 위에 있었기
+   * 때문입니다 — 옛것이 많아지면 그 값이 사라집니다.
+   *
+   * **오류만 7일로 자릅니다. 신고는 그대로 둡니다** — 2주 전에 온 신고도
+   * 아직 안 읽었으면 여전히 할 일입니다. 시간이 지난다고 없어지지 않습니다.
+   * 접은 개수는 적어 둡니다. 조용히 사라지면 "왜 안 보이지"가 됩니다. */
+  const 이레전 = Date.now() - 7 * 864e5;
+  const 옛오류 = (x) => x.kind === '오류' &&
+                        new Date(x.at || 0).getTime() < 이레전;
+  const rows = all.filter(x => !옛오류(x));
+  const 접힘 = all.length - rows.length;
+
+  $('adm_feedcard').classList.toggle('hide', !rows.length && !접힘);
   $('adm_feed').innerHTML = rows.map(x => `<div class="arow">
       <span class="k"><b>${esc(x.kind)}</b> ${esc(String(x.body).slice(0, 120))}
         <span class="m">${esc((x.at || '').slice(0, 16).replace('T', ' '))}${
           x.build ? ' · ' + esc(x.build) : ''}</span></span>
-      ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`).join('');
+      ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`).join('')
+    + (접힘 ? `<div class="anote">7일보다 오래된 오류 ${접힘}건은 접었습니다.
+        전부 보려면 프로필 → <b>내 계정</b>의 '최근에 생긴 문제'.</div>` : '')
+    + (!rows.length ? `<div class="empty">최근 7일에는 아무 일도 없었어요.</div>` : '');
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
