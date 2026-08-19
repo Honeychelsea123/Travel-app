@@ -17,21 +17,21 @@
  * `channel`·`bumpTimer`·`bumpPending` 은 실시간의 상태라 같이 왔습니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc } from './dom.js?v=b366';
-import { sb } from './db.js?v=b366';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b366';
-import { D1, asDate, dateRange, localTime } from './calc.js?v=b366';
+import { $, esc } from './dom.js?v=b367';
+import { sb } from './db.js?v=b367';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b367';
+import { D1, asDate, dateRange, localTime } from './calc.js?v=b367';
 import { trip, plans, legs, members, expenses, bookings,
-         setTrip, setPickedDay } from './trip.js?v=b366';
-import { loadCities } from './citysearch.js?v=b366';
-import { clearCityOpen } from './city.js?v=b366';
-import { loadReview } from './review.js?v=b366';
-import { loadMembers } from './member.js?v=b366';
-import { loadExpenses } from './expense.js?v=b366';
-import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b366';
-import { inTrip, showTab } from './tabs.js?v=b366';
-import { loadLegs, fillCityList } from './legs.js?v=b366';
-import { loadPlans, backToList } from './tripview.js?v=b366';
+         setTrip, setPickedDay } from './trip.js?v=b367';
+import { loadCities } from './citysearch.js?v=b367';
+import { clearCityOpen } from './city.js?v=b367';
+import { loadReview } from './review.js?v=b367';
+import { loadMembers } from './member.js?v=b367';
+import { loadExpenses } from './expense.js?v=b367';
+import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b367';
+import { inTrip, showTab } from './tabs.js?v=b367';
+import { loadLegs, fillCityList } from './legs.js?v=b367';
+import { loadPlans, backToList } from './tripview.js?v=b367';
 
 let ctx = { me: () => null, appTab: () => '' };
 export function setOpenTripCtx(o){ ctx = { ...ctx, ...o }; }
@@ -188,14 +188,14 @@ function watch(){
     .on('postgres_changes', { event:'*', schema:'public', table:'trips',
                               filter:'id=eq.' + trip.id },
         () => bump('trip'))
-    .subscribe(st => {
-      $('live').classList.toggle('hide', st !== 'SUBSCRIBED');
-    });
+    /* ⚠ 여기서 `#live`(● 바로 반영) 를 켜고 껐습니다. **b367 에서 없앴습니다** —
+       사연은 index.html 의 그 자리에 적어뒀습니다. 구독은 그대로 하고
+       상태만 화면에 안 알립니다. */
+    .subscribe();
 }
 export function unwatch(){
   if (channel){ sb.removeChannel(channel); channel = null; }
   clearTimeout(bumpTimer); bumpPending = null;
-  $('live').classList.add('hide');
 }
 function bump(what){
   (bumpPending ||= new Set()).add(what);

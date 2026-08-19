@@ -18,14 +18,14 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b366';
-import { featOn, flags } from './flags.js?v=b366';
-import { fail, write } from './net.js?v=b366';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b366';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b366';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b366';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b366';
-import { STAY_MIN, mins } from './plancheck.js?v=b366';
+import { $, esc, emptyDo } from './dom.js?v=b367';
+import { featOn, flags } from './flags.js?v=b367';
+import { fail, write } from './net.js?v=b367';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b367';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b367';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b367';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b367';
+import { STAY_MIN, mins } from './plancheck.js?v=b367';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -59,17 +59,34 @@ function evRows(date){
   return [...$('plans').querySelectorAll(`.ev[data-d="${CSS.escape(date)}"]`)];
 }
 
-$('plans').addEventListener('pointerdown', e => {
-  const grip = e.target.closest('[data-grip]');
-  if (!grip || dragOn) return;
-  const el = grip.closest('.ev');
-  const r  = el.getBoundingClientRect();
+/* ── 꾹 눌러야 끌립니다 (b367) ────────────────────────────────────────
+ * 전에는 손잡이에 손가락이 닿는 순간 바로 끌기가 시작됐고, 손잡이에는
+ * `touch-action:none` 이 걸려 있어 **브라우저가 그 자리에서는 스크롤을
+ * 아예 못 했습니다.** 손잡이 폭이 28px 인데 일정 줄마다 하나씩 있으니,
+ * 목록을 굴리려다 거기 닿으면 굴러가는 대신 일정이 끌려갔습니다 —
+ * 사용자가 "스크롤하다가 자꾸 눌러져서 일정이 꼬인다"고 한 것이 이것입니다.
+ *
+ * 이제 **가만히 누르고 있어야** 시작합니다. 그 전에 손가락이 움직이면
+ * 굴리려는 것으로 보고 없던 일로 합니다.
+ *   · 손잡이의 `touch-action` 을 `pan-y` 로 바꿨습니다(app.css) — 평소에는
+ *     브라우저가 그냥 굴립니다.
+ *   · 끌기가 시작된 뒤에는 `touchmove` 를 막아 굴림을 끊습니다. **iOS 는
+ *     `pointermove` 의 preventDefault 로는 안 멈춥니다** — 아래 따로 답니다.
+ *   · 아직 안 움직였을 때 시작하므로 굴림이 시작되기 전에 가로챕니다.
+ * 마우스는 그대로 바로 끕니다 — 굴리기와 헷갈릴 일이 없습니다. */
+const HOLD_MS = 320, MOVE_TOL = 8;
+let holdTimer = null, holdAt = null;
 
-  e.preventDefault();
+const cancelHold = () => { clearTimeout(holdTimer); holdTimer = null; holdAt = null; };
+
+function startDrag(grip, x, y, pointerId){
+  const el = grip.closest('.ev');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
   /* 손가락을 붙잡아 둡니다. 안 그러면 목록 밖(지도 위 등)으로 나가는 순간
      움직임이 끊깁니다. **못 붙잡아도 그냥 갑니다** — 붙잡기는 나아지자고
      하는 것이지 없으면 못 하는 일이 아닙니다. */
-  try { grip.setPointerCapture(e.pointerId); } catch {}
+  try { if (pointerId != null) grip.setPointerCapture(pointerId); } catch {}
   document.body.classList.add('reordering');
 
   /* 빈 칸은 **같은 높이**로 만들어 둡니다. 안 그러면 들어올리는 순간
@@ -86,10 +103,40 @@ $('plans').addEventListener('pointerdown', e => {
   el.style.top  = r.top + 'px';
 
   dragOn = { el, hole, grip, id: el.dataset.ev, date: el.dataset.d,
-             dy: e.clientY - r.top, top: r.top };
+             dy: y - r.top, top: r.top };
+}
+
+$('plans').addEventListener('pointerdown', e => {
+  const grip = e.target.closest('[data-grip]');
+  if (!grip || dragOn) return;
+  if (e.pointerType === 'mouse'){
+    e.preventDefault();
+    return startDrag(grip, e.clientX, e.clientY, e.pointerId);
+  }
+  /* **여기서 preventDefault 를 하면 안 됩니다.** 하는 순간 굴림이 막혀서
+     고친 뜻이 없어집니다. 가만히 있는지 지켜보기만 합니다. */
+  holdAt = { x:e.clientX, y:e.clientY, grip, pointerId:e.pointerId };
+  clearTimeout(holdTimer);
+  holdTimer = setTimeout(() => {
+    if (!holdAt) return;
+    const h = holdAt; holdAt = null; holdTimer = null;
+    startDrag(h.grip, h.x, h.y, h.pointerId);
+  }, HOLD_MS);
 }, false);
 
+/* 끌기가 시작된 뒤에만 굴림을 끊습니다. **iOS 에서는 이 줄이 있어야 멈춥니다** —
+   `pointermove` 의 preventDefault 로는 밑에서 도는 touchmove 가 안 막힙니다.
+   `passive:false` 여야 preventDefault 가 먹습니다. */
+$('plans').addEventListener('touchmove', e => { if (dragOn) e.preventDefault(); },
+                            { passive:false });
+
 $('plans').addEventListener('pointermove', e => {
+  /* 아직 기다리는 중이면, 움직였는지만 봅니다 — 움직였으면 굴리려는 것입니다. */
+  if (holdAt && !dragOn){
+    if (Math.abs(e.clientY - holdAt.y) > MOVE_TOL ||
+        Math.abs(e.clientX - holdAt.x) > MOVE_TOL) cancelHold();
+    return;
+  }
   if (!dragOn) return;
   e.preventDefault();
   const y = e.clientY - dragOn.dy;
@@ -167,8 +214,12 @@ async function dropOrder(){
     if (!r.ok){ await ctx.loadPlans(); return fail(r.why, 'plan'); }
   }
 }
-$('plans').addEventListener('pointerup', dropOrder, false);
-$('plans').addEventListener('pointercancel', dropOrder, false);
+/* ⚠ **기다리는 중이면 먼저 끕니다.** 안 끄면 손을 뗀 뒤에 타이머가 터져
+   손가락도 없는데 줄이 들어올려집니다. `pointercancel` 은 브라우저가 굴림을
+   가져갈 때도 오므로 여기가 "굴리려던 것이었다"를 아는 자리이기도 합니다. */
+const endPointer = e => { cancelHold(); dropOrder(e); };
+$('plans').addEventListener('pointerup', endPointer, false);
+$('plans').addEventListener('pointercancel', endPointer, false);
 
 export function drawPlans(){
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;

@@ -1438,11 +1438,15 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
  * 들어올린 줄을 화면에 띄워 손가락을 그대로 따라오게 하고, 원래 자리는
  * 빈 칸으로 남겨 그 칸이 목록 사이를 옮겨 다닙니다.
  *
- * 손잡이에 `touch-action:none` 을 줘야 브라우저가 세로 스크롤로 채가지
- * 않습니다. **줄 전체에 주면 목록을 굴릴 수가 없습니다** — 손잡이만. */
+ * ⚠ 여기 `touch-action:none` 이었습니다(b367 에서 `pan-y` 로). 그러면
+ * **손잡이 위에서는 브라우저가 아예 못 굴립니다.** 손잡이는 28px 인데 일정
+ * 줄마다 하나씩 있어서, 목록을 굴리려다 거기 닿으면 굴러가는 대신 일정이
+ * 끌려갔습니다 — "스크롤하다가 자꾸 눌러져서 일정이 꼬인다".
+ * 이제 평소에는 그냥 굴러가고, **꾹 누르고 있어야** 끌기가 시작됩니다.
+ * 굴림을 끊는 것은 그때 planview.js 의 touchmove 가 합니다. */
 .ev .grip{ flex:none; width:28px; align-self:stretch; display:flex;
   align-items:center; justify-content:center; cursor:grab;
-  color:var(--hairline); font-size:var(--f-lg); touch-action:none;
+  color:var(--hairline); font-size:var(--f-lg); touch-action:pan-y;
   user-select:none; -webkit-user-select:none; }
 .ev .grip:active{ cursor:grabbing; }
 /* 들어올린 줄. 화면 좌표로 띄우므로 목록 흐름에서 빠져 있습니다. */
