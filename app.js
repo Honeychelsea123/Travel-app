@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b349';
+import { sb } from './db.js?v=b350';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b349';
-import { starHtml, paintStars, markRated } from './stars.js?v=b349';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b350';
+import { starHtml, paintStars, markRated } from './stars.js?v=b350';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b349';
-import { loadAdmin } from './admin.js?v=b349';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b350';
+import { loadAdmin } from './admin.js?v=b350';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b349';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b349';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b349';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b350';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b350';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,67 +33,68 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b349';
+         setEditPlanId, nameOf } from './trip.js?v=b350';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b349';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b350';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b349';
+         useCities, addCity, search } from './cities.js?v=b350';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b349';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b350';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b349';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b350';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b349';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b350';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b349';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b350';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b349';
+         isCityOpen, clearCityOpen } from './city.js?v=b350';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b349';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b350';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b349';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b350';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b349';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b349';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b349';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b349';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b349';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b349';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b349';
-import { loadReview, setReviewCtx } from './review.js?v=b349';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b350';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b350';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b350';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b350';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b350';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b350';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b350';
+import { loadReview, setReviewCtx } from './review.js?v=b350';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b349';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b349';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b349';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b350';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b350';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b350';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b349';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b349';
-import './selfcheck.js?v=b349';
-import { guessCat, setBringCtx } from './bring.js?v=b349';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b349';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b349';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b349';
-import { setAccountCtx } from './account.js?v=b349';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b350';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b350';
+import './selfcheck.js?v=b350';
+import { guessCat, setBringCtx } from './bring.js?v=b350';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b350';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b350';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b350';
+import { setAccountCtx } from './account.js?v=b350';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b350';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b349';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b350';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b349';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b350';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -123,6 +124,7 @@ setRatingCtx({ me: () => me, fillCityList, showApp });
 setNotifyCtx({ me: () => me });
 setAiScreenCtx({ me: () => me });
 setAccountCtx({ me: () => me, logError });
+setDraftCtx({ me: () => me, fillCityList, showApp, openTrip });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -578,238 +580,11 @@ $('tripfilter').addEventListener('click', e => {
 /* ── 갈 만한 곳 · 빈 시간 ─────────────────────────────────────────────
  * 후보 모으기 · 좌표 채우기 · 빈 시간 찾기는 cands.js 로 옮겼습니다
  * (b344, 열아홉 번째 조각). ctx 는 셋(loadPlans · openAi · loadChats)입니다. */
-/* ── AI 일정 초안 ────────────────────────────────────────────────────
- * 문서가 "P를 끌어오는 핵심"이라고 한 자리입니다.
- * 짜준 것을 바로 넣지 않습니다. 계산으로 한 번 검사해서 보여주고,
- * 넣을지는 사람이 정합니다 — AI 는 쓰지 않고 제안만 합니다. */
-let draftTrip = null, draftOut = null;
-
-/* 짜준 것을 기기에 남겨둡니다. 화면을 나갔다 오면 사라지던 것을 막습니다 —
-   AI 횟수를 써서 받은 결과인데 넣기도 전에 날리면 안 됩니다.
-   서버에 두지 않는 것은 아직 내 것도 아닌 초안이기 때문입니다.
-   넣거나 지우면 그때 없앱니다. */
-const DKEY = id => 't2:draft:' + id;
-function saveDraft(id, out){
-  try { localStorage.setItem(DKEY(id), JSON.stringify({ ...out, at: Date.now() })); }
-  catch {}                              /* 저장 공간이 꽉 차도 초안 자체는 살아 있습니다 */
-}
-function readDraft(id){
-  try {
-    const s = localStorage.getItem(DKEY(id));
-    if (!s) return null;
-    const d = JSON.parse(s);
-    /* 두 주가 지난 초안은 여행 날짜가 지났을 수 있습니다. 붙들고 있지 않습니다. */
-    if (!d?.actions?.length || Date.now() - (d.at || 0) > 14 * 864e5){
-      localStorage.removeItem(DKEY(id)); return null;
-    }
-    return d;
-  } catch { return null; }
-}
-const dropDraft = id => { try { localStorage.removeItem(DKEY(id)); } catch {} };
-
-/* preselect 를 주면 그 여행을 고른 채로 엽니다 — 새 여행 마지막 단계에서
-   'AI 가 짜줄게요' 로 들어올 때 씁니다.
-   lean 이면 묻는 칸(d_ask)을 접습니다. 거기서 방금 다 고르고 왔으니까요. */
-async function openDraft(preselect, lean){
-  const today = todayYmd();
-  const { data } = await sb.from('trips')
-    .select('id,title,destination,start_date,end_date')
-    .gte('end_date', today).order('start_date').limit(20);
-
-  ['homeview','listview','rateview','aiview','setview','cityview']
-    .forEach(v => $(v).classList.add('hide'));
-  $('draftview').classList.remove('hide');
-  movePrefs('d_prefslot');        /* 새 여행 화면에 가 있었다면 도로 가져옵니다 */
-  window.scrollTo({ top:0 });
-  if (history.state?.t2 !== 'draft') history.pushState({ t2:'draft' }, '');
-
-  /* 여행이 하나도 없으면 새로 만드는 쪽이 처음부터 열려 있어야 합니다. */
-  const list = data || [];
-  if (preselect) draftTrip = preselect;
-  else draftTrip = list.some(t => t.id === draftTrip) ? draftTrip
-                 : (list[0]?.id || 'new');
-  $('d_trips').innerHTML = list.map(t => {
-    const n = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
-    return `<span class="day${t.id === draftTrip ? ' on' : ''}" data-dtrip="${esc(t.id)}">
-      ${esc(t.title)} <span class="n">${n}일</span></span>`;
-  }).join('') +
-    `<span class="day" data-dtrip="new">＋ 새 여행</span>`;
-
-  /* 새 여행에서 넘어왔으면 묻는 칸을 접고, 제목을 그 여행 이름으로 답니다.
-     'AI 일정 만들기'라고 적혀 있으면 아직 만드는 중인 줄 압니다. */
-  const mine = list.find(t => t.id === draftTrip);
-  $('d_ask').classList.toggle('hide', !!lean);
-  $('d_more').classList.toggle('hide', !lean);
-  $('d_title').textContent = lean && mine ? mine.title : 'AI 일정 만들기';
-
-  await loadCities();
-  fillCityList();
-  /* 접혀 있던 옛날 폼(어디로·시작·며칠)은 이제 안 씁니다. 여행 만들기는
-     새 여행 화면 한 군데서만 합니다 — '새 여행' 칩이 그리로 보냅니다. */
-  $('d_new').classList.add('hide');
-  $('drafterr').classList.add('hide');
-  showSavedDraft();
-}
-
-/* 저장해 둔 초안이 있으면 되살립니다. 없으면 결과 자리를 비웁니다. */
-function showSavedDraft(){
-  const d = draftTrip && draftTrip !== 'new' ? readDraft(draftTrip) : null;
-  if (d){ draftOut = d; drawDraft(); $('d_go').textContent = '다시 짜기'; }
-  else  { draftOut = null; $('d_result').innerHTML = ''; $('d_go').textContent = '일정 짜기'; }
-}
-
-function closeDraft(fromPop){
-  if (!fromPop && history.state?.t2 === 'draft'){ history.back(); return; }
-  $('draftview').classList.add('hide');
-  $('reviewview').classList.add('hide');
-  showApp('home');
-}
-$('draftback').addEventListener('click', () => closeDraft());
-
-/* 접어둔 것을 도로 펼칩니다. 다시 짜고 싶을 때 취향을 바꿀 길입니다. */
-$('d_more').addEventListener('click', () => {
-  $('d_ask').classList.remove('hide');
-  $('d_more').classList.add('hide');
-  $('d_ask').scrollIntoView({ behavior:'smooth', block:'nearest' });
-});
-
-$('draftview').addEventListener('click', e => {
-  const t = e.target.closest('[data-dtrip]');
-  if (!t) return;
-  /* 여기서도 여행을 만들 수 있게 옛날 폼(d_new)이 접혀 있었습니다. 그러면
-     만드는 길이 셋이 됩니다 — 홈, 여행 탭, 그리고 여기. 모양도 다 다릅니다.
-     그 화면으로 보냅니다. 만들고 나면 'AI가 짜줄게요'로 여기 다시 옵니다. */
-  if (t.dataset.dtrip === 'new'){ openNew(); return; }
-  draftTrip = t.dataset.dtrip;
-  document.querySelectorAll('#d_trips .day').forEach(x =>
-    x.classList.toggle('on', x.dataset.dtrip === draftTrip));
-  showSavedDraft();            /* 여행마다 초안이 따로 있습니다 */
-});
-
-/* 칩 고르기. 속도와 아침은 하나만, 뭘 위주로는 여러 개입니다.
-   **prefblock 자신에 답니다.** 이 칸들은 새 여행 3단계와 초안 화면을
-   오가므로, 바깥 화면에 걸어두면 옮겨간 쪽에서 안 눌립니다. */
-$('prefblock').addEventListener('click', e => {
-  for (const [box, key] of [['d_pace','pace'], ['d_morning','morning']]){
-    const one = e.target.closest(`#${box} [data-${key}]`);
-    if (one){
-      document.querySelectorAll(`#${box} .day`).forEach(x => x.classList.remove('on'));
-      one.classList.add('on');
-      return;
-    }
-  }
-  const f = e.target.closest('#d_focus [data-focus]');
-  if (f) f.classList.toggle('on');
-});
-
-$('d_go').addEventListener('click', async () => {
-  if (!draftTrip) return fail('여행을 골라주세요.', 'draft');
-  /* 여행이 하나도 없으면 'new' 가 골라져 있습니다. 짤 여행이 없으니
-     만드는 화면으로 보냅니다 — 여기서 만들지는 않습니다. */
-  if (draftTrip === 'new') return openNew();
-  $('drafterr').classList.add('hide');
-  $('d_go').disabled = true; $('d_go').textContent = '짜는 중… 20초쯤 걸립니다';
-  $('d_result').innerHTML = '';
-
-  const prefs = {
-    pace:    document.querySelector('#d_pace .on')?.dataset.pace || 'normal',
-    morning: document.querySelector('#d_morning .on')?.dataset.morning || 'early',
-    focus:   [...document.querySelectorAll('#d_focus .on')].map(x => x.dataset.focus),
-  };
-  const { data, error } = await sb.functions.invoke('chat',
-    { body: { trip_id: draftTrip, mode: 'draft', prefs,
-              message: $('d_note').value.trim() || null } });
-
-  $('d_go').disabled = false; $('d_go').textContent = '다시 짜기';
-
-  if (error){
-    let why = error.message;
-    try { why = (await error.context?.json())?.error || why; } catch {}
-    return fail(/not found|Failed to send/i.test(why)
-      ? 'AI 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
-      : why, 'draft');
-  }
-  if (data?.error) return fail(data.error, 'draft');
-  if (!data?.actions?.length)
-    return fail('일정을 만들지 못했습니다. 다시 눌러보세요.', 'draft');
-
-  draftOut = data;
-  saveDraft(draftTrip, data);
-  drawDraft();
-});
-
-function drawDraft(){
-  const acts = [...(draftOut.actions || [])]
-    .sort((a, b) => (a.date + (a.start_time || '99:99'))
-                     .localeCompare(b.date + (b.start_time || '99:99')));
-  /* 짜준 것을 그대로 믿지 않습니다. 우리 계산기로 한 번 훑습니다 — 공짜입니다. */
-  const t = { start_date: acts[0].date, end_date: acts[acts.length - 1].date };
-  const found = review(t, acts.map(a => ({ ...a, id: 'x' })), legs || []);
-  const bad = found.filter(f => f.lv === '심각');
-
-  const days = draftOut.days || [...new Set(acts.map(a => a.date))].sort();
-  const empty = days.filter(d => !acts.some(a => a.date === d));
-
-  const byDay = {};
-  acts.forEach(a => (byDay[a.date] = byDay[a.date] || []).push(a));
-
-  $('d_result').innerHTML =
-    `<div class="card">
-       <h2>이렇게 짜봤어요 <span class="val">${acts.length}개</span></h2>
-       ${draftOut.reply ? `<div class="memo" style="margin-bottom:10px">${
-         esc(draftOut.reply).slice(0, 400)}</div>` : ''}
-       ${bad.length || empty.length
-         ? `<div class="row" style="border:0; padding:0 0 10px; margin:0">
-              <span class="kdot" style="margin-top:6px; background:var(--bad)"></span>
-              <span class="label"><b>넣기 전에 봐주세요</b>
-                <div class="memo">${esc([
-                  ...bad.slice(0, 3).map(f => f.t),
-                  empty.length ? `${empty.length}일이 비어 있어요` : ''
-                ].filter(Boolean).join(' · '))}</div></span>
-            </div>`
-         : `<div class="memo" style="margin-bottom:10px">
-              겹치거나 무리한 일정은 없어요.</div>`}
-
-       ${days.map(d => `<div style="margin-top:10px">
-         <div class="label" style="font-weight:600">${esc(dayLabel(d, { start_date: days[0] }))}</div>
-         ${(byDay[d] || []).map(a => `<div class="plan">
-            <div class="when">${esc(a.start_time || '–')}</div>
-            <span class="kdot ${a.category ? 'k-' + esc(a.category) : ''}"></span>
-            <div class="body"><b>${esc(a.title)}</b>${
-              a.memo ? `<span class="memo">${esc(a.memo)}</span>` : ''}</div>
-          </div>`).join('') || '<div class="empty">이 날은 비어 있어요.</div>'}
-       </div>`).join('')}
-
-       <button class="primary" id="d_apply" style="width:100%; margin-top:14px">
-         이대로 ${acts.length}개 넣기</button>
-       <button class="ghost" id="d_drop" style="width:100%; margin-top:6px">
-         이 초안 지우기</button>
-       <div class="memo" style="text-align:center; margin-top:8px">
-         넣은 뒤에도 하나씩 고치거나 지울 수 있어요.
-         넣기 전까지는 이 초안이 기기에 남아 있어요.</div>
-     </div>`;
-
-  $('d_drop').onclick = () => { dropDraft(draftTrip); showSavedDraft(); };
-
-  $('d_apply').onclick = async () => {
-    $('d_apply').disabled = true; $('d_apply').innerHTML = '<span class="load">넣는 중…</span>';
-    const rows = acts.map(a => ({
-      trip_id: draftTrip, date: a.date, start_time: a.start_time,
-      title: a.title, category: a.category, memo: a.memo,
-      lat: a.lat, lng: a.lng, created_by: me.id,
-    }));
-    /* RLS 에 막히면 오류가 아니라 0행이 돌아옵니다. 넣은 수를 반드시 세야 합니다. */
-    const r = await sb.from('plans').insert(rows).select('id');
-    if (r.error){ $('d_apply').disabled = false; return fail(r.error, 'draft'); }
-    if (!r.data?.length){
-      $('d_apply').disabled = false;
-      return fail('하나도 넣지 못했습니다. 이 여행에 쓸 권한이 있는지 확인해주세요.', 'draft');
-    }
-    dropDraft(draftTrip);          /* 넣었으니 더 들고 있을 이유가 없습니다 */
-    closeDraft();
-    openTrip(draftTrip);
-  };
-}
+/* ── AI 일정 초안 ─────────────────────────────────────────────────────
+ * draft.js 로 옮겼습니다(b350, 스물여섯 번째 조각).
+ * ctx 는 넷(me · fillCityList · showApp · openTrip)입니다.
+ * **아래 showProfile 부터는 화면 전환 가족이라 남겼습니다** — 위 머리말이
+ * 그것까지 덮고 있었을 뿐입니다. */
 
 function showProfile(setting){
   shutBigMap();
