@@ -18,15 +18,16 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b359';
-import { fail, write } from './net.js?v=b359';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b359';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b359';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b359';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b359';
-import { STAY_MIN, mins } from './plancheck.js?v=b359';
+import { $, esc, emptyDo } from './dom.js?v=b360';
+import { featOn, flags } from './flags.js?v=b360';
+import { fail, write } from './net.js?v=b360';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b360';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b360';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b360';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b360';
+import { STAY_MIN, mins } from './plancheck.js?v=b360';
 
-let ctx = { featOn: () => false, flags: () => ({}), loadPlans: async () => {} };
+let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* 어느 일정 줄을 펼쳐 놓았나. **app.js 에 있던 것을 여기로 옮겼습니다(b354)** —
@@ -50,7 +51,7 @@ export const openPlans = new Set();
  * **분류로 거르는 중에는 손잡이를 안 답니다.** 걸러진 목록에서 끌면
  * 화면에 없는 줄의 시각까지 섞여 돌아갑니다 — 보이지 않는 것이 바뀝니다. */
 const canReorder = () =>
-  trip?.myRole !== 'viewer' && !catFilter && ctx.featOn('reorder') && !ctx.flags().readonly;
+  trip?.myRole !== 'viewer' && !catFilter && featOn('reorder') && !flags.readonly;
 
 let dragOn = null;      /* {el, hole, id, date, dy, ids} */
 

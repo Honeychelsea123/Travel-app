@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 919줄. 서른다섯 조각이 나갔다. **90%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 863줄. 서른여섯 조각이 나갔다. **91%를 걷었다.**
 
 ## 왜 하나
 
@@ -41,12 +41,13 @@
 | `triplist.js` | 265 | 여행 목록 · 카드 사진 | me, openTrip, logError |
 | `tabs.js` | 165 | 여행 상세 탭 · 좌우 쓸어 넘기기 | appTab, showApp |
 | `planline.js` | 122 | 일정 줄 그리기 부품(분류 칩 · 메모) | drawDays, drawPlans |
-| `planview.js` | 264 | 일정 그리기 · 끌어서 순서 바꾸기 | featOn, flags, loadPlans |
-| `geocode.js` | 219 | 붙여넣은 지도 링크에서 위치 찾기 | drawDays, featOn, loadPlans |
+| `planview.js` | 264 | 일정 그리기 · 끌어서 순서 바꾸기 | loadPlans |
+| `geocode.js` | 219 | 붙여넣은 지도 링크에서 위치 찾기 | drawDays, loadPlans |
 | `legs.js` | 168 | 구간(날짜를 도시로 나눈 것) · 도시 고르개 | drawDays, drawTripHeader, fetchTrip |
 | `tripview.js` | 270 | 여행 상세 뼈대 — 날짜 줄 · 일정 받기 · 정보 수정 | appTab, showApp, openTrip, drawToday |
 | `today.js` | 173 | 오늘 화면 · 날씨 | **없음** |
 | `opentrip.js` | 224 | 여행 열기 · 머리말 · 실시간 | me, appTab |
+| `flags.js` | 79 | 만든 사람이 켜고 끄는 것들 | **없음** |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·

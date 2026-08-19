@@ -16,17 +16,18 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b359';
-import { sb } from './db.js?v=b359';
-import { fail, write } from './net.js?v=b359';
-import { trip, plans, setPlans, editPlanId, setEditPlanId } from './trip.js?v=b359';
-import { arm } from './ui.js?v=b359';
-import { drawCats } from './planline.js?v=b359';
-import { drawPlanMap } from './planmap.js?v=b359';
-import { drawPlans } from './planview.js?v=b359';
-import { osmLookup } from './cands.js?v=b359';
+import { $, toast } from './dom.js?v=b360';
+import { featOn } from './flags.js?v=b360';
+import { sb } from './db.js?v=b360';
+import { fail, write } from './net.js?v=b360';
+import { trip, plans, setPlans, editPlanId, setEditPlanId } from './trip.js?v=b360';
+import { arm } from './ui.js?v=b360';
+import { drawCats } from './planline.js?v=b360';
+import { drawPlanMap } from './planmap.js?v=b360';
+import { drawPlans } from './planview.js?v=b360';
+import { osmLookup } from './cands.js?v=b360';
 
-let ctx = { drawDays: () => {}, featOn: () => false, loadPlans: async () => {} };
+let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* 일정 칸을 새로 열 때 앞사람 흔적을 지웁니다. app.js 가 두 변수를
@@ -51,7 +52,7 @@ let planGeo = null, geoAsked = '';
 const MAPURL = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps)\S*/i;
 
 async function sniffMapLink(){
-  if (!ctx.featOn('maplink')) return;
+  if (!featOn('maplink')) return;
   const hit = ($('p_memo').value + ' ' + $('p_title').value).match(MAPURL);
   const note = $('p_geonote');
   if (!hit){ geoAsked = ''; planGeo = null; note.classList.add('hide'); return; }
