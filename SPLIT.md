@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 2,424줄. 스물여섯 조각이 나갔다. **74%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 2,185줄. 스물일곱 조각이 나갔다. **76%를 걷었다.**
 
 ## 왜 하나
 
@@ -38,11 +38,13 @@
 | `aiscreen.js` | 153 | AI 화면 여닫기 · 대화 | me |
 | `account.js` | 223 | 내 계정 — 자료 받기 · 버그 신고 · 탈퇴 | me, logError |
 | `draft.js` | 267 | AI 일정 초안 | me, fillCityList, showApp, openTrip |
+| `triplist.js` | 265 | 여행 목록 · 카드 사진 | me, openTrip, logError |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
 `md`·`avatarOf`·`avatarImg`·`emptyDo`→`dom.js` ·
-`hm`·`ymd`·`todayYmd`→`calc.js` · `nameOf`→`trip.js` (b335)
+`hm`·`ymd`·`todayYmd`→`calc.js` · `nameOf`→`trip.js` (b335) ·
+`flagOf`·`flagOk`→`dom.js` (b339) · `putHtml`·`dropHtml`→`dom.js` (b351)
 
 **ctx 는 줄어들어야 정상입니다.** 지출을 떼면서 딸린 것이 여섯이었는데,
 넷을 아래층으로 내리니 둘이 됐습니다. 덤으로 `shelf.js` 에서 `todayYmd` 가,
@@ -144,7 +146,7 @@ ctx 도 같이 줄입니다.
 | 덩어리 | 줄 | ctx | 메모 |
 |---|---|---|---|
 | 서비스 워커 | 85 | 1 (`logError`) | 앱 껍데기 쪽이다 |
-| 여행 목록의 사진 + 여행 목록 | 228 | 6 | `loadTrips`·`fillTripPhotos` 를 내보낸다 |
+
 | 여행 정보 수정 | 226 | **11** | 일정 화면과 깊이 물려 있다 — 일정 뒤에 |
 | **일정** | ~900 | — | 마지막 산. 아래 참고 |
 

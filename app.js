@@ -6,16 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b350';
+import { sb } from './db.js?v=b351';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b350';
-import { starHtml, paintStars, markRated } from './stars.js?v=b350';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
+         putHtml, dropHtml } from './dom.js?v=b351';
+import { starHtml, paintStars, markRated } from './stars.js?v=b351';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b350';
-import { loadAdmin } from './admin.js?v=b350';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b351';
+import { loadAdmin } from './admin.js?v=b351';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b350';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b350';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b350';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b351';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b351';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,68 +34,69 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b350';
+         setEditPlanId, nameOf } from './trip.js?v=b351';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b350';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b351';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b350';
+         useCities, addCity, search } from './cities.js?v=b351';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b350';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b351';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b350';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b351';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b350';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b351';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b350';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b351';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b350';
+         isCityOpen, clearCityOpen } from './city.js?v=b351';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b350';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b351';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b350';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b351';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b350';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b350';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b350';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b350';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b350';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b350';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b350';
-import { loadReview, setReviewCtx } from './review.js?v=b350';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b351';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b351';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b351';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b351';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b351';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b351';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b351';
+import { loadReview, setReviewCtx } from './review.js?v=b351';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b350';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b350';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b350';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b351';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b351';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b351';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b350';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b350';
-import './selfcheck.js?v=b350';
-import { guessCat, setBringCtx } from './bring.js?v=b350';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b350';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b350';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b350';
-import { setAccountCtx } from './account.js?v=b350';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b350';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b351';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b351';
+import './selfcheck.js?v=b351';
+import { guessCat, setBringCtx } from './bring.js?v=b351';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b351';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b351';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b351';
+import { setAccountCtx } from './account.js?v=b351';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b351';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b351';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b350';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b351';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b350';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b351';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -125,6 +127,7 @@ setNotifyCtx({ me: () => me });
 setAiScreenCtx({ me: () => me });
 setAccountCtx({ me: () => me, logError });
 setDraftCtx({ me: () => me, fillCityList, showApp, openTrip });
+setTripListCtx({ me: () => me, openTrip, logError });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -147,9 +150,7 @@ let me = null,
     /* picked · hitList · cursor 는 citysearch.js 로 옮겼습니다(b339) —
        pick() 이 그리로 가면서 여기 남길 이유가 없어졌습니다. */
     channel = null, bumpTimer = null, bumpPending = null,
-    appTab = 'home',
-
-    tripFilter = 'up';
+    appTab = 'home';
 
 /* 기기에 저장해 둔 글자 크기를 그리기 전에 먼저 씌웁니다 — 안 그러면 한 번 깜빡입니다. */
 {
@@ -157,28 +158,9 @@ let me = null,
   if (v) document.documentElement.style.setProperty('--ts', v);
 }
 
-/* ── 같은 것을 다시 그리지 않습니다 ──────────────────────────────────
- * **탭을 누를 때마다 목록을 통째로 갈아끼우고 있었습니다.** 글자는 똑같이
- * 다시 그려도 티가 안 나는데 **사진은 요소가 버려졌다 새로 만들어져서**
- * 빈 칸이 보였다 채워집니다. 주소가 같아도 그렇습니다 — 요소가 새것이라
- * 처음부터 다시 그리기 때문입니다.
- *
- * b276 에서 기록 탭만 고쳤는데 사용자가 **홈의 평가·지도와 여행 목록도
- * 그대로 깜빡인다**고 했습니다. 같은 구조가 네 곳인데 한 곳만 봤던 것입니다.
- * 그래서 규칙을 여기 한 곳에 둡니다.
- *
- * ⚠ **비교는 우리가 만든 글자끼리** 합니다. `el.innerHTML` 을 도로 읽으면
- *   브라우저가 따옴표와 속성 순서를 제 식대로 바꿔 놓아 **늘 다르다고 나옵니다.**
- * ⚠ **밖에서 그 상자를 손대면 반드시 `dropHtml` 로 무효로** 하십시오.
- *   안 그러면 "같으니 건드리지 말자"가 화면과 어긋난 채로 굳습니다. */
-const lastHtml = {};
-function putHtml(id, html){
-  if (lastHtml[id] === html) return false;      /* 안 바뀌었으면 손대지 않습니다 */
-  $(id).innerHTML = html;
-  lastHtml[id] = html;
-  return true;
-}
-const dropHtml = id => { delete lastHtml[id]; };
+/* lastHtml · putHtml · dropHtml 은 dom.js 로 내렸습니다(b351, 맨 위 import).
+   $ 하나만 쓰는 것이라 거기가 맞고, 네 화면이 쓰므로 app.js 에 두면
+   떼어낸 조각마다 ctx 가 두 줄씩 늘어납니다. */
 
 /* 자체 점검 표시(`mark`)와 그것을 채우던 질의 셋을 걷었습니다 (b278).
    "부르는 곳이 여러 군데라 함수는 남겨둔다"고 적혀 있었는데 **세어보니
@@ -546,7 +528,7 @@ $('appbar').addEventListener('click', e => {
 
 $('tripfilter').addEventListener('click', e => {
   const b = e.target.closest('button[data-f]'); if (!b) return;
-  tripFilter = b.dataset.f;
+  setTripFilter(b.dataset.f);
   document.querySelectorAll('#tripfilter button').forEach(x =>
     x.classList.toggle('on', x.dataset.f === tripFilter));
   loadTrips();
@@ -633,234 +615,11 @@ $('setview').addEventListener('click', e => {
  * 사진·이름·글자 크기는 profile.js 로 옮겼습니다(b340, 열세 번째 조각).
  * ctx 는 하나(me)입니다. `myAvatar` 도 그리로 갔습니다 — 아래 로그인
  * 직후에 채우는 자리는 setMyAvatar 로 넣습니다. */
-/* ── 여행 목록의 사진 ────────────────────────────────────────────────
- * 전에는 `t.cities?.image_url` **하나만** 봤습니다. 그건 여행에 직접 붙은
- * 도시(`trips.city_id`)의 사진이라, 우리 목록에 없는 곳으로 만든 여행은
- * ('삼척') 늘 비어서 색 칸에 첫 글자만 떴습니다.
- *
- * 고르는 순서는 `tripPhoto()` 와 **같습니다**(구간 도시 › 나라 대표).
- * 목적지 이름으로 찾는 단계는 뺐습니다 — 이름이 맞으면 애초에 `city_id` 가
- * 붙어 있어서 첫 줄에서 걸립니다.
- *
- * ⚠ **줄마다 부르지 않습니다.** `tripPhoto()` 는 여행 하나에 질의를 최대
- *   3번 합니다. 목록이 열 개면 서른 번입니다. 여기서는 빠진 것만 모아
- *   **두 번**에 끝냅니다(구간 한 번, 나라 대표 한 번).
- *
- * ⚠ 이 사진은 그 사람이 가는 곳이 아닐 수 있습니다 — 삼척 여행에 강릉
- *   사진이 걸립니다. 사진은 분위기고, 어디로 가는지는 **글자**가 말합니다.
- *   `tripPhoto()` 머리말에 같은 이야기를 적어뒀습니다. */
-async function fillTripPhotos(rows){
-  const need = (rows || []).filter(t => !t.cities?.image_url);
-  if (!need.length) return;
-
-  const lg = await netTimeout(sb.from('trip_legs')
-    .select('trip_id,country,start_date,cities(image_url)')
-    .in('trip_id', need.map(t => t.id)).order('start_date'));
-
-  const byTrip = {}, legCountry = {};
-  for (const l of (lg.data || [])){
-    if (!byTrip[l.trip_id] && l.cities?.image_url) byTrip[l.trip_id] = l.cities.image_url;
-    if (!legCountry[l.trip_id] && l.country)       legCountry[l.trip_id] = l.country;
-  }
-
-  /* 구간에서 못 찾은 것만 나라로 갑니다. 나라는 겹치므로 한 번에 묻습니다. */
-  const rest = need.filter(t => !byTrip[t.id]);
-  const countries = [...new Set(rest.map(t => legCountry[t.id] || t.country).filter(Boolean))];
-  const rep = {};
-  if (countries.length){
-    /* 같은 여행은 열 때마다 같은 사진이어야 합니다 — 다르면 "내 여행"으로
-       안 읽힙니다. pop_rank › fame › 이름 순으로 **늘 같은 것**을 고릅니다. */
-    const c = await netTimeout(sb.from('cities')
-      .select('country,image_url,pop_rank,fame,name')
-      .in('country', countries).not('image_url', 'is', null)
-      .order('pop_rank', { ascending:true, nullsFirst:false })
-      .order('fame',     { ascending:true, nullsFirst:false })
-      .order('name',     { ascending:true }));
-    for (const row of (c.data || [])) if (!rep[row.country]) rep[row.country] = row.image_url;
-  }
-
-  for (const t of need) t._photo = byTrip[t.id] || rep[legCountry[t.id] || t.country] || null;
-}
-
-async function loadTrips(){
-  /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
-     않으면 방금 만든 여행조차 여기 안 나옵니다. */
-  const today = todayYmd();
-  let q = sb.from('trips')
-    .select('id,title,destination,start_date,end_date,currency,timezone,' +
-            /* `country` 는 사진 대체에 씁니다(아래 fillTripPhotos). */
-    'transit_factor,city_id,country,cities(image_url),' +
-            'trip_members(user_id,role),trip_reviews(user_id,stars)');
-  /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
-  if (tripFilter === 'past')
-    q = q.lt('end_date', today)
-         .order('start_date', { ascending:false });
-  else
-    q = q.gte('end_date', today)
-         .order('start_date', { ascending:true });
-  let { data, error } = await netTimeout(q);
-
-  /* 못 받아왔으면 지난번 목록을 씁니다. 여행 목록이 안 나오면 여행 중에
-     일정으로 들어갈 길 자체가 없어집니다. */
-  const ck = 'trips:' + tripFilter;
-  if (error){
-    const old = cacheGet(ck);
-    if (!old){ dropHtml('trips'); $('trips').innerHTML = '<div class="empty">불러오지 못했어요</div>';
-               return fail(error); }
-    data = old; error = null; drawOffbar();
-  } else {
-    await fillTripPhotos(data);
-    cacheSet(ck, data);   /* 사진까지 담아둡니다 — 비행기모드에서도 같은 줄이 나옵니다 */
-    /* 목록에 있는 여행은 **열어본 적 없어도** 비행기모드에서 열려야 합니다.
-       한 줄씩 미리 담아둡니다 — 목록을 받을 때 이미 필요한 값이 다 왔습니다.
-       이걸 안 하면 "열어본 적 있는 여행만 열림"이 되는데,
-       그건 정작 여행 가서 처음 여는 순간에 안 열린다는 뜻입니다. */
-    for (const t of data){
-      const k = 'trip:' + t.id;
-      if (!cacheGet(k)) cacheSet(k, { ...t, home_currency: t.currency || 'KRW' });
-    }
-  }
-
-  if (!data.length){
-    dropHtml('trips'); $('trips').innerHTML =
-      tripFilter === 'past' ? '<div class="empty">아직 다녀온 여행이 없어요.</div>' :
-      '<div class="empty">앞으로 갈 여행이 없어요.<br>새 여행을 눌러 만들어보세요.</div>';
-    return;
-  }
-  const tripsHtml = data.map(t => {
-    const role = (t.trip_members || []).find(m => m.user_id === me.id)?.role || '';
-    const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
-    const a = `data-id="${esc(t.id)}" data-title="${esc(t.title)}"`;
-    /* 소유자만 지웁니다. 일행은 나갈 뿐입니다 — 남의 여행을 지울 수는 없습니다.
-       (RLS 도 같은 규칙을 걸어두었으니 버튼을 숨기는 건 안내일 뿐입니다.) */
-    /* 보관은 뺐습니다. 날짜가 지나면 저절로 "다녀온"으로 넘어가는데
-       거기서 또 손으로 치우게 하면 두 곳에 나뉘어 어디 있는지 헷갈립니다. */
-    /* 일정 화면 위에서 사진과 정보를 걷어냈으니 고치는 길이 여기 있어야 합니다. */
-    /* 다녀온 여행에는 리포트로 가는 길을 답니다. 전에는 홈의 "평가 안 한 여행" 띠
-       하나뿐이라, 평가를 마치고 나면 리포트를 다시 볼 방법이 없었습니다. */
-    const report = t.end_date < today
-      ? `<button class="ghost" data-act="report" ${a}
-                 style="color:var(--primary)">리포트</button>` : '';
-    /* **지우기를 상시로 두지 않습니다.** 줄마다 빨간 '삭제'가 손가락 닿는
-       자리에 늘 있었습니다. 되돌릴 수 없는 것을 스치기 쉬운 곳에 둘 이유가
-       없습니다. ⋯ 뒤로 넣고, 누르면 그 줄에서만 펼칩니다. */
-    const more = (role === 'owner'
-      ? `<button class="ghost" data-act="edit" ${a}>수정</button>` +
-        `<button class="ghost" data-act="delete" ${a} style="color:var(--bad)">삭제</button>`
-      : `<button class="ghost" data-act="leave" ${a}>나가기</button>`);
-    const acts = report +
-      `<button class="ghost" data-act="more" ${a} aria-label="더보기">더보기</button>` +
-      `<span class="tmore hide">${more}</span>`;
-    /* 글자만 있으면 어느 여행인지 한눈에 안 들어옵니다.
-       그 여행의 첫 도시 사진을 왼쪽에 답니다. 없으면 첫 글자만. */
-    /* `_photo` 는 fillTripPhotos 가 채웁니다 — 우리 도시 목록에 없는 곳으로
-       만든 여행('삼척')이 늘 빈 칸이던 것을 메웁니다. */
-    const img = t.cities?.image_url || t._photo;
-    /* **사진이 없으면 회색 칸에 '삼' 한 글자만 떠 있었습니다.** 글자 하나가
-       제목 왼쪽에 덩그러니 놓이면 제목을 두 번 읽는 것처럼 보입니다.
-       홈 히어로가 쓰는 색(heroTint)을 그대로 깔면 같은 여행은 어디서나
-       같은 색이라 목록에서도 눈으로 짚입니다. */
-    const tint = ` style="background:${heroTint(t.title)}; color:#fff"`;
-    return `<div class="trip" data-open="${esc(t.id)}">
-      ${img ? `<img class="thumb" src="${esc(img)}" alt="" loading="lazy"
-                   onerror="this.replaceWith(Object.assign(document.createElement('span'),
-                     {className:'thumb ph', textContent:'${esc(t.title.slice(0,1))}',
-                      style:'background:${heroTint(t.title)}; color:#fff'}))">`
-            : `<span class="thumb ph"${tint}>${esc(t.title.slice(0,1))}</span>`}
-      <div class="t">
-      <b>${esc(t.title)}</b>
-      <span class="meta">${esc(tripSub(t, days))}</span>
-      <div style="margin-top:4px">${acts}</div>
-    </div>${
-      /* 다녀왔는데 아직 후기를 안 남긴 여행. 여기가 평가로 들어가는 입구입니다. */
-      t.end_date < today && !(t.trip_reviews || []).some(r => r.user_id === me.id)
-        ? '<span class="badge" style="background:#fdf3e6; color:#f5a623; font-weight:600">' +
-          '후기 전</span>'
-        /* 'OWNER' 만 영어로 떠 있었습니다. 앱 전체가 한국어입니다. */
-        : `<span class="badge">${esc(ROLE_KO[role] || role)}</span>`}</div>`;
-  }).join('');
-  /* 기록 탭과 **같은 이유**입니다(drawRatings 참고). 탭을 누를 때마다
-     `loadTrips` 가 돌고 여기서 목록을 통째로 갈아끼우면, 글자는 티가 안 나도
-     **여행 사진이 버려졌다 새로 만들어져** 빈 칸이 보였다 채워집니다.
-     한 자도 안 달라졌으면 손대지 않습니다. */
-  putHtml('trips', tripsHtml);
-}
-
-/* 줄마다 버튼을 달면 목록을 다시 그릴 때마다 이벤트를 다시 붙여야 합니다.
-   상자 하나에만 붙이고 눌린 버튼을 찾아 씁니다. */
-$('trips').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-act]');
-  if (!b){
-    /* 버튼이 아니면 줄을 누른 것입니다 — 그 여행을 엽니다. */
-    const row = e.target.closest('.trip[data-open]');
-    if (row) await openTrip(row.dataset.open);
-    return;
-  }
-  const { act, id, title } = b.dataset;
-
-  if (act === 'cancelact') return loadTrips();
-
-  /* ⋯ — 그 줄에서만 펼칩니다. 다른 줄이 열려 있으면 접습니다.
-     여러 줄이 동시에 펼쳐져 있으면 어느 여행의 삭제인지 헷갈립니다. */
-  if (act === 'more'){
-    const wrap = b.nextElementSibling;
-    const open = wrap.classList.contains('hide');
-    document.querySelectorAll('#trips .tmore').forEach(x => x.classList.add('hide'));
-    document.querySelectorAll('#trips [data-act="more"]').forEach(x => x.textContent = '더보기');
-    wrap.classList.toggle('hide', !open);
-    b.textContent = open ? '닫기' : '더보기';
-    return;
-  }
-
-  /* 고치기 — 여행을 열고 수정 칸을 바로 펼칩니다. */
-  if (act === 'report') return openTripReport(id);
-  if (act === 'edit'){ await openTrip(id); $('editbtn').click(); return; }
-
-  /* 되돌릴 수 없는 일은 그 자리에서 한 번 더 묻습니다.
-     window.confirm 은 내장 브라우저나 iframe 안에서 조용히 막혀 false 를
-     돌려줍니다. 그러면 요청도 안 보내고 아무 말도 없이 끝납니다 —
-     실제로 그래서 "삭제가 안 먹는다"가 됐습니다. 화면 안에서 묻습니다. */
-  if ((act === 'delete' || act === 'leave') && b.dataset.armed !== '1'){
-    const wrap = b.parentElement;
-    const msg = act === 'delete'
-      ? '일정 · 지출 · 예약 · 준비물 · 사진이 함께 사라져요. 되돌릴 수 없어요.'
-      : '목록에서 사라져요. 넣은 지출은 정산을 위해 남아요.';
-    wrap.innerHTML =
-      `<div style="color:var(--bad); font-size:calc(12px * var(--ts)); margin-bottom:4px">
-         ${esc(msg)}</div>
-       <button class="ghost" data-act="cancelact">취소</button>
-       <button class="ghost" data-act="${esc(act)}" data-armed="1"
-               data-id="${esc(id)}" data-title="${esc(title)}"
-               style="color:var(--bad); font-weight:600">
-         정말 ${act === 'delete' ? '삭제' : '나가기'}</button>`;
-    return;
-  }
-
-  b.disabled = true;
-  $('triperr').classList.add('hide');
-
-  /* .select() 를 붙여 실제로 몇 줄이 바뀌었는지 받습니다.
-     RLS 가 막으면 Postgres 는 오류를 내지 않고 0건을 처리합니다.
-     이걸 안 세면 "눌러도 아무 일도 안 일어남"이 되고 원인을 알 수 없습니다. */
-  let r;
-  if (act === 'delete')          r = await sb.from('trips').delete().eq('id', id).select('id');
-  else if (act === 'leave')      r = await sb.from('trip_members')
-                                      .update({ left_at: new Date().toISOString() })
-                                      .eq('trip_id', id).eq('user_id', me.id).select('trip_id');
-  b.disabled = false;
-
-  if (r?.error) return fail(r.error, 'trip');
-  if (!r?.data?.length){
-    /* 여행 id(UUID)와 동작 이름을 화면에 적고 있었습니다. 사용자가 볼 것이
-       아니라 고치는 사람이 볼 것이므로 기록으로 보냅니다. */
-    logError(`여행 ${act} 0건 — trip=${id}`, 'trip');
-    return fail(act === 'leave'
-      ? '이 여행에서 나가지 못했어요. 잠시 뒤 다시 해주세요.'
-      : '이 여행을 지울 권한이 없어요. 만든 사람만 지울 수 있어요.', 'trip');
-  }
-  await loadTrips();
-});
-
+/* ── 여행 목록 ────────────────────────────────────────────────────────
+ * 여행 목록과 카드 사진 채우기는 triplist.js 로 옮겼습니다
+ * (b351, 스물일곱 번째 조각). ctx 는 셋(me · openTrip · logError)입니다.
+ * `tripFilter` 도 그리로 갔습니다 — 아래 거르개 단추는 setTripFilter 로
+ * 넣습니다(밖에서 `=` 로 넣으면 import 한 값은 안 바뀝니다). */
 /* ── 여행 상세 ──────────────────────────────────────────────────── */
 /* ymd · todayYmd 는 calc.js 로 내렸습니다(b335, 맨 위 import). 왜 둘인지,
    왜 하나는 UTC 고 하나는 로컬인지는 거기 적어뒀습니다. shelf.js·cards.js 가
