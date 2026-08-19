@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b347';
+import { sb } from './db.js?v=b348';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b347';
-import { starHtml, paintStars, markRated } from './stars.js?v=b347';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b348';
+import { starHtml, paintStars, markRated } from './stars.js?v=b348';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b347';
-import { loadAdmin } from './admin.js?v=b347';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b348';
+import { loadAdmin } from './admin.js?v=b348';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b347';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b347';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b347';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b348';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b348';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,65 +33,66 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b347';
+         setEditPlanId, nameOf } from './trip.js?v=b348';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b347';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b348';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b347';
+         useCities, addCity, search } from './cities.js?v=b348';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b347';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b348';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b347';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b348';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b347';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b348';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b347';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b348';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b347';
+         isCityOpen, clearCityOpen } from './city.js?v=b348';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b347';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b348';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b347';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b348';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b347';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b347';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b347';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b347';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b347';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b347';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b347';
-import { loadReview, setReviewCtx } from './review.js?v=b347';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b348';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b348';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b348';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b348';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b348';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b348';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b348';
+import { loadReview, setReviewCtx } from './review.js?v=b348';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b347';
-import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b347';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b347';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b348';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b348';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b348';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b347';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b347';
-import './selfcheck.js?v=b347';
-import { guessCat, setBringCtx } from './bring.js?v=b347';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b347';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b347';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b348';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b348';
+import './selfcheck.js?v=b348';
+import { guessCat, setBringCtx } from './bring.js?v=b348';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b348';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b348';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b348';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b347';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b348';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b347';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b348';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -118,7 +119,8 @@ setMemberCtx({ me: () => me, loadTrips, openTrip });
 setProfileCtx({ me: () => me });
 setReviewCtx({ me: () => me });
 setRatingCtx({ me: () => me, fillCityList, showApp });
-setNotifyCtx({ me: () => me, loadNotifs });
+setNotifyCtx({ me: () => me });
+setAiScreenCtx({ me: () => me });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -685,90 +687,9 @@ $('tripfilter').addEventListener('click', e => {
  * (b347, 스물세 번째 조각). ctx 는 하나(loadChats)입니다.
  * `loadAi`(AI 남은 횟수)도 그 범위에 섞여 있어 같이 갔습니다 — 여기
  * 홀로 남길 20줄이 아니라서지, 거기가 옳은 자리라서는 아닙니다. */
-/* ── AI 대화 ────────────────────────────────────────────────────────
- * 키는 화면에 없습니다. Edge Function 뒤에 있고 우리는 그 함수만 부릅니다.
- * 대화는 사람별로 나눠 저장합니다 — 섞이면 AI 가 남의 질문을 맥락으로 씁니다
- * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
-async function loadChats(tripId){
-  /* AI 는 서버가 있어야 합니다. 오프라인이면 물어봐도 답이 안 옵니다.
-     "불러오는 중…"을 남겨두면 하루 종일 기다리게 됩니다. 못 쓴다고 적습니다.
-     입력칸도 막습니다 — 쓸 수 있게 두면 써 보고 나서야 안 되는 걸 압니다. */
-  if (netIsDown()){
-    $('chat').innerHTML = '<div class="empty">연결이 없어 AI 는 지금 쓸 수 없어요.<br>' +
-      '일정과 지출은 그대로 보실 수 있어요.</div>';
-    $('ai_msg').disabled = true; $('ai_send').disabled = true;
-    return;
-  }
-  $('ai_msg').disabled = false; $('ai_send').disabled = false;
-
-  /* 여행을 안 골랐을 때 나눈 대화도 남깁니다 (029). trip_id 가 비어 있는 줄입니다.
-     eq 로는 null 을 못 찾습니다 — is 를 써야 합니다. */
-  let q = sb.from('chats').select('role,content').eq('user_id', me.id);
-  q = tripId ? q.eq('trip_id', tripId) : q.is('trip_id', null);
-  const { data } = await netTimeout(q.order('created_at').limit(40));
-  drawChats(data || []);
-  /* 쓴 횟수와 **남은 횟수를 따로** 적습니다. 전에는 "3/15회"였는데,
-     이건 읽는 사람이 빼야 남은 수가 나옵니다 — 정작 궁금한 쪽을 안 알려준
-     셈입니다. 한도가 없으면 limit 이 null 로 옵니다(db/046). 그때 그대로
-     찍으면 "3/null회"가 되므로 남은 자리에는 '무제한'을 적습니다. */
-  const { data: left } = await sb.rpc('ai_left');
-  if (left) $('ai_left').textContent = left.limit == null
-    ? `오늘 ${left.used}회 · 남은 횟수 무제한`
-    : `오늘 ${left.used}회 · 남은 ${Math.max(0, left.limit - left.used)}회`;
-}
-
-/* md · avatarOf · avatarImg 는 dom.js 로 내렸습니다(b335, 맨 위 import).
-   여기 있는 동안 city.js 와 report.js 가 import 없이 쓰고 있었습니다 —
-   둘 다 템플릿 문자열 안이라 검사가 못 봤습니다. */
-
-function drawChats(rows){
-  /* 이름표를 떼고 좌우로 갈랐습니다. 누가 한 말인지 읽지 않아도 보입니다.
-     답변마다 붙는 'AI 생성' 꼬리표는 멋이 아니라 의무입니다 —
-     인공지능기본법(2026.1.22 시행) 제31조가 생성형 AI 결과물에 그 사실을
-     표시하라고 정합니다. 화면에 한 번만 적어두는 것으로는 '결과물 표시'가
-     아니라서, 답변 하나하나에 답니다. */
-  /* 빈 상태일 때만 대화칸을 키워 안내와 예시를 가운데 세웁니다.
-     **스크롤 상자(.aiscroll)는 건드리지 않습니다** — 거기를 손댔다가
-     aiToBottom 이 엉뚱한 상자를 굴리던 사고가 이미 한 번 있었습니다. */
-  $('chat').classList.toggle('isempty', !rows.length);
-  $('chat').innerHTML = rows.length
-    ? rows.map(m => m.role === 'user'
-        ? `<div class="msg me">${md(m.content)}</div>`
-        : `<div class="msg ai">${md(m.content)}<div class="aitag">AI가 생성한 답변입니다 · 영업시간·요금은 직접 확인해 주세요</div></div>`
-      ).join('')
-    /* 빈 화면에 붙던 안내(생성형 AI · 미국 Google 서버 전송)는 b178 에서
-       뺐습니다. **답변마다 붙는 aitag 는 그대로 둡니다** — 인공지능기본법
-       제31조가 요구하는 것은 결과물 표시라서 저 안내로는 대신할 수 없습니다.
-       국외 이전 고지는 개인정보처리방침 7번에 그대로 있습니다. */
-    /* **처음 열면 411px 가 빈 흰 자리였습니다** (실제 화면에서 잼).
-       안내 한 줄만 있고 그 아래가 통째로 비었습니다. 대화창의 제일 큰 벽은
-       "뭘 물어야 하지"인데, 그 벽 앞에 빈 화면을 내주고 있었던 것입니다.
-       **눌러서 바로 보내지는 예시를 깝니다.** 한 번 눌러보면 어떤 것을
-       물을 수 있는지 알게 되고, 다음부터는 자기 말로 칩니다.
-       여행을 고른 상태면 그 여행에 대한 것을 묻습니다 — 고르개가 바로
-       위에 있는데 예시가 일반적인 이야기면 둘이 따로 놉니다. */
-    : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>
-       <div class="asks">${(aiTripId
-          ? ['비 오면 뭐 하지?', '이 일정 너무 빡빡한가?', '근처 맛집 알려줘', '뭘 챙겨야 해?']
-          : ['3박 4일로 어디가 좋을까?', '지금 가기 좋은 곳은?', '혼자 가기 좋은 도시', '예산 100만원이면?']
-        ).map(q => `<button type="button" class="ask" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>`;
-  aiToBottom();
-}
-
-/* 새 답변이 와도 화면이 그대로라 스크롤을 내려야만 읽을 수 있었습니다.
-   **#chat 을 굴리고 있었는데 그건 스크롤 상자가 아닙니다.** 대화·근거·제안 카드를
-   한 덩어리로 묶으면서 스크롤이 바깥 .aiscroll 로 옮겨졌는데(app.css),
-   굴리는 코드는 옛 상자에 그대로 남아 있었습니다. 아무 일도 안 일어난 것입니다.
-   답변 뒤에는 출처와 제안 카드가 더 붙으므로, 그것들이 그려진 **다음 프레임**에
-   한 번 더 내립니다. 안 그러면 카드 높이만큼 모자랍니다. */
-function aiToBottom(){
-  const box = document.querySelector('.aichat .aiscroll');
-  if (!box) return;
-  const go = () => { box.scrollTop = box.scrollHeight; };
-  go();
-  requestAnimationFrame(go);
-}
-
+/* ── AI 대화 ──────────────────────────────────────────────────────────
+ * AI 화면 여닫기와 대화 그리기는 aiscreen.js 로 옮겼습니다
+ * (b348, 스물네 번째 조각). ctx 는 하나(me)입니다. */
 /* ── 평가 ───────────────────────────────────────────────────────────
  * 일정 앱은 1년에 두 번 열립니다. 돌아올 이유를 만드는 자리입니다.
  * 추천은 하지 않습니다 — 예상 별점은 근거보다 세게 들리고,
@@ -1117,123 +1038,10 @@ $('setview').addEventListener('click', e => {
   /* 다녀온 여행 칸은 없앴습니다. 여행 탭에 이미 있습니다. */
   openShelf(b.dataset.shelf);
 });
-
-function openAi(){
-  if (trip) setAiTripId(trip.id);
-  $('notifpanel').classList.add('hide');
-  $('aiview').classList.remove('hide');
-  $('sheetbg').classList.remove('hide');
-  document.body.classList.add('sheeton');
-  if (history.state?.t2 !== 'ai') history.pushState({ t2:'ai' }, '');
-  loadAi();
-}
-function closeAi(fromPop){
-  if (!fromPop && history.state?.t2 === 'ai'){ history.back(); return; }
-  $('aiview').classList.add('hide');
-  /* 다른 시트가 열려 있을 수도 있으니 뒷판은 그쪽 규칙에 맡깁니다. */
-  syncSheets();
-}
-$('aibtn').addEventListener('click', openAi);
-$('ai_close').addEventListener('click', () => closeAi());
-
-/* 대화 지우기. 여행 없이 나눈 것은 trip_id 가 비어 있어 is 로 지웁니다. */
-$('ai_wipe').addEventListener('click', async e => {
-  const b = e.currentTarget;
-  if (b.dataset.armed !== '1'){ arm(b, '정말 지울까요?'); return; }
-  const id = $('ai_trip').value;
-  let q = sb.from('chats').delete().eq('user_id', me.id);
-  q = id ? q.eq('trip_id', id) : q.is('trip_id', null);
-  const r = await q.select('id');
-  disarm(b);
-  if (r.error) return fail(r.error, 'ai');
-  await loadChats(id);
-  /* 대화만 지우고 **제안 카드는 그대로 뒀습니다.** 화면에서 보면 지우기를
-     눌렀는데 일정 목록이 안 없어지는 것이라 고장으로 보입니다.
-     카드는 그 대화에 딸린 것이니 같이 걷습니다. 출처 줄도 마찬가지입니다. */
-  $('cards').innerHTML = '';
-  $('aisrc').classList.add('hide');
-  /* null 로 두면 안 됩니다 — 다른 곳이 suggested.actions 를 그대로 읽습니다.
-     처음 모양(빈 배열 둘)으로 되돌립니다. */
-  clearSuggested();
-  lastTake = [];
-  toast(`${r.data?.length ?? 0}개를 지웠어요`);
-});
-
-/* 종을 누르면 그 자리에서 펼쳐집니다. 프로필로 넘어가게 하면
-   보던 화면을 잃고 돌아오기도 번거롭습니다. */
-$('bell').addEventListener('click', async e => {
-  e.stopPropagation();
-  const open = $('notifpanel').classList.toggle('hide');
-  if (open) return;
-  await loadNotifs();
-  /* 목록을 열었으면 읽은 것입니다. 종에 붙은 숫자를 지웁니다.
-     전에는 "모두 읽음"을 따로 눌러야만 지워져서, 봤는데도 계속 1 이 붙어 있었습니다.
-     1.2초 뒤에 처리하는 이유는 **어느 것이 새 것이었는지 보이게** 하려는 것입니다 —
-     열자마자 전부 흐려지면 뭐가 새로 온 건지 알 수가 없습니다. */
-  clearTimeout(readTimer);
-  readTimer = setTimeout(async () => {
-    if ($('notifpanel').classList.contains('hide')) return;   /* 벌써 닫았으면 그만 */
-    const r = await netTimeout(sb.from('notifications')
-      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
-    if (!r.error && r.data?.length) loadNotifs();
-  }, 1200);
-});
-let readTimer = null;
-/* 바깥을 누르면 닫힙니다. */
-document.addEventListener('click', e => {
-  if (!$('notifpanel').classList.contains('hide') &&
-      !e.target.closest('#notifpanel')) $('notifpanel').classList.add('hide');
-});
-
-async function loadNotifs(){
-  /* 알림은 서버에만 있습니다. 오프라인이면 종 숫자도 못 셉니다. */
-  if (netIsDown()){
-    $('notifs').innerHTML = '<div class="empty">연결이 없어 알림은 지금 볼 수 없어요.</div>';
-    $('readall').classList.add('hide');
-    return;
-  }
-  const { data, error } = await sb.from('notifications')
-    .select('id,kind,body,created_at,read_at')
-    .order('created_at', { ascending:false }).limit(30);
-  const unread = (data || []).filter(n => !n.read_at).length;
-  $('belldot').textContent = unread > 9 ? '9+' : unread;
-  $('belldot').classList.toggle('hide', !unread);
-
-  if (error || !data?.length){
-    $('notifs').innerHTML = '<div class="empty">알림이 없어요.</div>';
-    $('readall').classList.add('hide');
-    return;
-  }
-  /* 읽은 것만 있으면 "모두 읽음" 대신 "지우기"를 답니다.
-     읽어도 목록에 계속 쌓이면 결국 아무도 안 봅니다. */
-  $('readall').classList.remove('hide');
-  $('readall').textContent = unread ? '모두 읽음' : '지우기';
-  $('readall').dataset.act = unread ? 'read' : 'clear';
-
-  $('notifs').innerHTML = data.map(n =>
-    `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
-       ${esc(n.body)}</span>
-     <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`).join('');
-}
-$('readall').addEventListener('click', async e => {
-  e.stopPropagation();
-  const b = $('readall');
-  if (b.dataset.act === 'clear'){
-    /* 읽은 것만 지웁니다. 안 읽은 것이 사이에 있으면 그건 남깁니다. */
-    const r = await netTimeout(sb.from('notifications').delete()
-      .not('read_at', 'is', null).select('id'));
-    if (r.error) return fail(r.error);
-    /* 039 를 안 올렸으면 정책이 없어 0건이 지워집니다. 조용히 넘어가면
-       버튼이 고장 난 것처럼 보입니다. */
-    if (!r.data?.length) return toast('지우지 못했어요. 잠시 뒤 다시 해주세요.');
-  } else {
-    const r = await netTimeout(sb.from('notifications')
-      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
-    if (r.error) return fail(r.error);
-  }
-  loadNotifs();
-});
-
+/* ── AI 화면 여닫기 ───────────────────────────────────────────────────
+ * openAi · closeAi · 대화 지우기는 aiscreen.js 로 갔습니다(b348).
+ * 바로 아래 있던 **종 알림은 notify.js 로** 갔습니다 — 옆줄에 있었을 뿐
+ * 상관없는 것이었습니다. */
 /* ── 프로필 ───────────────────────────────────────────────────────────
  * 사진·이름·글자 크기는 profile.js 로 옮겼습니다(b340, 열세 번째 조각).
  * ctx 는 하나(me)입니다. `myAvatar` 도 그리로 갔습니다 — 아래 로그인

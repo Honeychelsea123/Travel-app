@@ -14,11 +14,11 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, toast } from './dom.js?v=b347';
-import { sb } from './db.js?v=b347';
-import { fail, NOROW } from './net.js?v=b347';
+import { $, esc, toast } from './dom.js?v=b348';
+import { sb } from './db.js?v=b348';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b348';
 
-let ctx = { me: () => null, loadNotifs: async () => {} };
+let ctx = { me: () => null };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 알림 설정 ──────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ $('notifprefcard').addEventListener('change', async e => {
   if (!r.data?.length){ $('nf_all').checked = !on;
                         return fail(NOROW.save, 'nf'); }
   toast(on ? '알림을 다시 받아요' : '알림을 껐어요');
-  ctx.loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
+  loadNotifs();          /* 껐으면 종에 남아 있던 개수도 다시 셉니다 */
 });
 
 /* ── 잠금화면 알림 (Web Push) ───────────────────────────────────────
@@ -220,5 +220,87 @@ $('notifprefcard').addEventListener('change', async e => {
   saveHomeTz();
   toast('이제 잠금화면으로 알려드려요');
   drawPushRow();
+});
+
+
+/* ── 종 알림 — 읽는 자리 ──────────────────────────────────────────────
+ * 만드는 쪽은 서버(db/063)입니다. 여기는 읽고 보여주고 읽음 표시만 합니다.
+ * **app.js 에서 여기로 옮겼습니다(b348).** 원래는 AI 화면 여닫기 바로 옆에
+ * 있었는데 상관없는 것이었습니다 — 알림은 알림 파일이 맞습니다.
+ * 덕분에 이 파일의 ctx 에서 `loadNotifs` 가 빠졌습니다(둘 → 하나). */
+
+/* 종을 누르면 그 자리에서 펼쳐집니다. 프로필로 넘어가게 하면
+   보던 화면을 잃고 돌아오기도 번거롭습니다. */
+$('bell').addEventListener('click', async e => {
+  e.stopPropagation();
+  const open = $('notifpanel').classList.toggle('hide');
+  if (open) return;
+  await loadNotifs();
+  /* 목록을 열었으면 읽은 것입니다. 종에 붙은 숫자를 지웁니다.
+     전에는 "모두 읽음"을 따로 눌러야만 지워져서, 봤는데도 계속 1 이 붙어 있었습니다.
+     1.2초 뒤에 처리하는 이유는 **어느 것이 새 것이었는지 보이게** 하려는 것입니다 —
+     열자마자 전부 흐려지면 뭐가 새로 온 건지 알 수가 없습니다. */
+  clearTimeout(readTimer);
+  readTimer = setTimeout(async () => {
+    if ($('notifpanel').classList.contains('hide')) return;   /* 벌써 닫았으면 그만 */
+    const r = await netTimeout(sb.from('notifications')
+      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
+    if (!r.error && r.data?.length) loadNotifs();
+  }, 1200);
+});
+let readTimer = null;
+/* 바깥을 누르면 닫힙니다. */
+document.addEventListener('click', e => {
+  if (!$('notifpanel').classList.contains('hide') &&
+      !e.target.closest('#notifpanel')) $('notifpanel').classList.add('hide');
+});
+
+export async function loadNotifs(){
+  /* 알림은 서버에만 있습니다. 오프라인이면 종 숫자도 못 셉니다. */
+  if (netIsDown()){
+    $('notifs').innerHTML = '<div class="empty">연결이 없어 알림은 지금 볼 수 없어요.</div>';
+    $('readall').classList.add('hide');
+    return;
+  }
+  const { data, error } = await sb.from('notifications')
+    .select('id,kind,body,created_at,read_at')
+    .order('created_at', { ascending:false }).limit(30);
+  const unread = (data || []).filter(n => !n.read_at).length;
+  $('belldot').textContent = unread > 9 ? '9+' : unread;
+  $('belldot').classList.toggle('hide', !unread);
+
+  if (error || !data?.length){
+    $('notifs').innerHTML = '<div class="empty">알림이 없어요.</div>';
+    $('readall').classList.add('hide');
+    return;
+  }
+  /* 읽은 것만 있으면 "모두 읽음" 대신 "지우기"를 답니다.
+     읽어도 목록에 계속 쌓이면 결국 아무도 안 봅니다. */
+  $('readall').classList.remove('hide');
+  $('readall').textContent = unread ? '모두 읽음' : '지우기';
+  $('readall').dataset.act = unread ? 'read' : 'clear';
+
+  $('notifs').innerHTML = data.map(n =>
+    `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
+       ${esc(n.body)}</span>
+     <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`).join('');
+}
+$('readall').addEventListener('click', async e => {
+  e.stopPropagation();
+  const b = $('readall');
+  if (b.dataset.act === 'clear'){
+    /* 읽은 것만 지웁니다. 안 읽은 것이 사이에 있으면 그건 남깁니다. */
+    const r = await netTimeout(sb.from('notifications').delete()
+      .not('read_at', 'is', null).select('id'));
+    if (r.error) return fail(r.error);
+    /* 039 를 안 올렸으면 정책이 없어 0건이 지워집니다. 조용히 넘어가면
+       버튼이 고장 난 것처럼 보입니다. */
+    if (!r.data?.length) return toast('지우지 못했어요. 잠시 뒤 다시 해주세요.');
+  } else {
+    const r = await netTimeout(sb.from('notifications')
+      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
+    if (r.error) return fail(r.error);
+  }
+  loadNotifs();
 });
 

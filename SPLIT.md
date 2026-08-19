@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 3,029줄. 스물세 조각이 나갔다. **67%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 2,837줄. 스물네 조각이 나갔다. **69%를 걷었다.**
 
 ## 왜 하나
 
@@ -27,7 +27,7 @@
 | `review.js` | 233 | 여행 후기 · 후기 사진 | me |
 | `profile.js` | 131 | 프로필 사진 · 이름 · 글자 크기 | me |
 | `rating.js` | 322 | 평가 화면 · 평가 자료 받기 | me, fillCityList, showApp |
-| `notify.js` | 224 | 알림 설정 · 잠금화면 알림 | me, loadNotifs |
+| `notify.js` | 306 | 알림 설정 · 잠금화면 알림 · 종 | me |
 | `newtrip.js` | 276 | 새 여행 마법사 · 달력 | me, loadTrips, openTrip, openDraft |
 | `home.js` | 710 | 홈 · 여기 가봤어요 · 내 발자국 | me, openTrip, showApp |
 | `cands.js` | 337 | 갈 만한 곳 · 빈 시간 · 좌표 채우기 | loadPlans, openAi, loadChats |
@@ -35,6 +35,7 @@
 | `bring.js` | 210 | 일정 불러오기 · 분류 짐작 | openAi, loadChats, loadPlans |
 | `trash.js` | 120 | 지운 것 되살리기 | loadPlans |
 | `plancheck.js` | 158 | 일정 검토(AI 없이 계산으로) | loadChats |
+| `aiscreen.js` | 153 | AI 화면 여닫기 · 대화 | me |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
@@ -140,11 +141,13 @@ ctx 도 같이 줄입니다.
 
 | 덩어리 | 줄 범위 | 줄 | ctx | 내보낼 것 |
 |---|---|---|---|---|
-| AI 일정 초안 | 260 | 6 | `draftOut`·`fillCityList`·`me`·`openTrip`·`review`·`showApp` |
-| 여행 목록의 사진 + 여행 목록 | 228 | 8 | `loadTrips`·`fillTripPhotos` 를 내보낸다 |
-| 여행 정보 수정 | 226 | **12** | 일정 화면과 깊이 물려 있다 — 일정 뒤에 |
-| 내 자료 내려받기 | 185 | 4 | ⚠ 그 범위 안에 **AI 화면 열기/닫기와 알림 읽기가 섞여 있다.** 머리말만 믿지 말고 `선언` 을 보라 |
-| **일정** | ~1,100 | — | 마지막 산. 아래 참고 |
+| 내 자료 내려받기 | 68 | 3 | AI·알림을 걷어내니 68줄만 남았다 |
+| 탈퇴 | 88 | 1 (`me`) | |
+| 서비스 워커 | 85 | 1 (`logError`) | 앱 껍데기 쪽이다 |
+| AI 일정 초안 | 260 | 4 | `fillCityList`·`me`·`openTrip`·`showApp` |
+| 여행 목록의 사진 + 여행 목록 | 228 | 6 | `loadTrips`·`fillTripPhotos` 를 내보낸다 |
+| 여행 정보 수정 | 226 | **11** | 일정 화면과 깊이 물려 있다 — 일정 뒤에 |
+| **일정** | ~900 | — | 마지막 산. 아래 참고 |
 
 ### 남은 것을 왜 여기서 멈췄나 (b344)
 
