@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b354';
-import { sb } from './db.js?v=b354';
-import { fail } from './net.js?v=b354';
-import { D1, asDate, ymd, hm, dayLabel, hop } from './calc.js?v=b354';
-import { trip } from './trip.js?v=b354';
-import { aiTripId } from './ai.js?v=b354';
-import { runReview } from './cards.js?v=b354';
+import { $, esc } from './dom.js?v=b355';
+import { sb } from './db.js?v=b355';
+import { fail } from './net.js?v=b355';
+import { D1, asDate, ymd, hm, dayLabel, hop } from './calc.js?v=b355';
+import { trip } from './trip.js?v=b355';
+import { aiTripId } from './ai.js?v=b355';
+import { runReview } from './cards.js?v=b355';
 
 let ctx = { loadChats: async () => {} };
 

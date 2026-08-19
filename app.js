@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b354';
+import { sb } from './db.js?v=b355';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml } from './dom.js?v=b354';
-import { starHtml, paintStars, markRated } from './stars.js?v=b354';
+         putHtml, dropHtml } from './dom.js?v=b355';
+import { starHtml, paintStars, markRated } from './stars.js?v=b355';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b354';
-import { loadAdmin } from './admin.js?v=b354';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b355';
+import { loadAdmin } from './admin.js?v=b355';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b354';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b354';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b354';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b355';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b355';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,73 +34,74 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b354';
+         setEditPlanId, nameOf } from './trip.js?v=b355';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b354';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b355';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b354';
+         useCities, addCity, search } from './cities.js?v=b355';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b354';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b355';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b354';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b355';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b354';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b355';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b354';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b355';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b354';
+         isCityOpen, clearCityOpen } from './city.js?v=b355';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b354';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b355';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b354';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b355';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b354';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b354';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b354';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b354';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b354';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b354';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b354';
-import { loadReview, setReviewCtx } from './review.js?v=b354';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b355';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b355';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b355';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b355';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b355';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b355';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b355';
+import { loadReview, setReviewCtx } from './review.js?v=b355';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b354';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b354';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b354';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b355';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b355';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b355';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b354';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b354';
-import './selfcheck.js?v=b354';
-import { guessCat, setBringCtx } from './bring.js?v=b354';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b354';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b354';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b354';
-import { setAccountCtx } from './account.js?v=b354';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b354';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b354';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b354';
-import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b354';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b355';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b355';
+import './selfcheck.js?v=b355';
+import { guessCat, setBringCtx } from './bring.js?v=b355';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b355';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b355';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b355';
+import { setAccountCtx } from './account.js?v=b355';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b355';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b355';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b355';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b355';
+import { resetGeo, setGeocodeCtx } from './geocode.js?v=b355';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b354';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b355';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b354';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b355';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b354';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b355';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -138,6 +139,7 @@ setPlanLineCtx({ drawDays, drawPlans });
    앱이 통째로 안 뜹니다(Cannot access before initialization).
    SPLIT.md '겪은 함정' 1번을 그대로 밟았습니다. 부를 때 찾게 미룹니다. */
 setPlanViewCtx({ featOn: k => featOn(k), flags: () => flags, loadPlans });
+setGeocodeCtx({ drawDays, featOn: k => featOn(k), loadPlans });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -1368,7 +1370,7 @@ $('addplanbtn').addEventListener('click', () => {
   planSeedGeo = null;
   /* 앞서 붙여넣은 링크의 결과도 같이 버립니다. 안 그러면 다음 일정에
      엉뚱한 위치가 딸려 들어갑니다 — 조용히 틀리는 종류입니다. */
-  planGeo = null; geoAsked = ''; $('p_geonote').classList.add('hide');
+  resetGeo();
   $('plancard').classList.toggle('hide');
   if ($('plancard').classList.contains('hide')) return;
   $('p_date').value = pickedDay || trip.start_date;
@@ -1390,186 +1392,11 @@ $('p_cancel').addEventListener('click', () => {
   $('plancard').classList.add('hide'); $('planformerr').classList.add('hide');
 });
 
-/* ── 붙여넣은 지도 링크에서 위치 찾기 ───────────────────────────────
- * 사용자가 실제로 하던 일: 구글 지도에서 '공유'로 링크를 복사해 메모에
- * 붙여넣습니다. 그런데 그건 **글자로만 남았습니다** — 지도에는 안 뜨고,
- * 좌표를 채우려면 어느 탭에 숨어 있는지도 모르는 단추를 찾아야 했습니다.
- *
- * **짧은 주소(maps.app.goo.gl)는 브라우저에서 못 폅니다.** 리다이렉트를
- * 읽어야 하는데 구글이 CORS 를 안 줍니다. 서버(chat 함수의 mode:'map')가
- * 폅니다 — 거기 이미 펴고 뽑는 코드가 있고, AI 는 안 씁니다(한도 안 닳음).
- *
- * 같은 링크를 두 번 묻지 않습니다. 글자를 고칠 때마다 나가면 안 됩니다. */
-let planGeo = null, geoAsked = '';
-const MAPURL = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.[a-z.]+\/maps)\S*/i;
-
-async function sniffMapLink(){
-  if (!featOn('maplink')) return;
-  const hit = ($('p_memo').value + ' ' + $('p_title').value).match(MAPURL);
-  const note = $('p_geonote');
-  if (!hit){ geoAsked = ''; planGeo = null; note.classList.add('hide'); return; }
-  const url = hit[0];
-  if (url === geoAsked) return;
-  geoAsked = url;
-
-  note.classList.remove('hide');
-  note.textContent = '지도에서 위치를 찾는 중…';
-  const r = await sb.functions.invoke('chat', { body:{ mode:'map', message:url } });
-  if (r.error || r.data?.error){
-    planGeo = null;
-    note.textContent = '이 링크를 읽지 못했어요. 그냥 넣어도 괜찮아요.';
-    return;
-  }
-
-  let { name, lat, lng } = r.data || {};
-  /* **주소는 나오는데 좌표는 없는 링크가 많습니다.** 실제로 재봤습니다:
-       maps.app.goo.gl/18Sbe4… → 이름 "OZEKI Tokyo Gallery, 1 Chome-2-6 …"
-       좌표 null
-     구글이 짧은 주소를 펼 때 좌표 없이 주소만 실어 보내는 판이 있습니다.
-     그러면 우리에게는 **주소 한 줄**이 남는데, 그건 이미 좌표로 바꿀 수
-     있습니다 — 앱이 '좌표 채우기'에서 쓰는 그 검색입니다. 이어 붙입니다. */
-  if (lat == null && name){
-    note.textContent = '주소로 위치를 찾는 중…';
-    const hit = await osmLookup(name);
-    if (hit && hit !== 'stop'){ lat = hit.lat; lng = hit.lng; }
-  }
-
-  if (lat == null){
-    planGeo = null;
-    /* **못 찾아도 넣기는 됩니다.** 위치가 없을 뿐입니다 — 막으면 안 됩니다. */
-    note.textContent = name
-      ? `${name} · 지도 위치는 못 찾았어요. 그냥 넣어도 괜찮아요.`
-      : '이 링크에서는 위치를 못 찾았어요. 그냥 넣어도 괜찮아요.';
-    if (name && !$('p_title').value.trim()) $('p_title').value = name.split(',')[0].trim();
-    return;
-  }
-  planGeo = { lat, lng };
-  note.textContent = name ? `위치를 찾았어요 · ${name.split(',')[0].trim()}`
-                          : '위치를 찾았어요';
-  /* 제목이 비어 있으면 채워줍니다. 링크만 붙여넣고 이름을 또 치게 할
-     이유가 없습니다. 이미 적었으면 안 건드립니다. */
-  if (r.data.name && !$('p_title').value.trim()) $('p_title').value = r.data.name;
-}
-let geoTimer = null;
-['p_memo', 'p_title'].forEach(id => $(id).addEventListener('input', () => {
-  clearTimeout(geoTimer); geoTimer = setTimeout(sniffMapLink, 500);
-}));
-
-$('p_create').addEventListener('click', async () => {
-  $('planformerr').classList.add('hide');
-  /* 붙여넣고 바로 눌렀을 수 있습니다. 아직 안 물어봤으면 여기서 물어봅니다. */
-  await sniffMapLink();
-  const title = $('p_title').value.trim(), date = $('p_date').value;
-  const st = $('p_start').value, et = $('p_end').value;
-
-  if (!title) return fail('무엇을 하는지 적어주세요.', 'planform');
-  if (!date)  return fail('날짜를 골라주세요.', 'planform');
-  if (st && et && et < st) return fail('끝나는 시각이 시작보다 빨라요.', 'planform');
-
-  /* 같은 날 맨 뒤로 보냅니다. 소수를 쓰면 나중에 둘 사이에 끼울 때
-     그 둘만 건드리면 됩니다 — 같이 편집할 때 서로의 순서를 안 덮습니다. */
-  const sameDay = plans.filter(p => p.date === date);
-  const sort = sameDay.length ? Math.max(...sameDay.map(p => +p.sort_order)) + 1 : 0;
-
-  const row = {
-    title, date,
-    start_time: st || null, end_time: et || null,
-    category: $('p_cat').value || null,
-    memo: $('p_memo').value.trim() || null,
-  };
-  /* ── 낙관적 저장 ──
-     서버 대답을 기다리는 동안 화면을 붙잡아 두지 않습니다. 먼저 반영하고 뒤에서 보냅니다.
-     여행지에서는 이 기다림이 5초씩 걸립니다. 그동안 앱이 멈춘 것처럼 보였습니다.
-     실패하면 되돌립니다 — 되돌릴 수 있게 이전 모습을 들고 있습니다. */
-  const editing = editPlanId;
-  const before  = editing ? { ...plans.find(p => p.id === editing) } : null;
-  const tmpId   = 'tmp:' + Math.random().toString(36).slice(2);
-
-  /* 카드나 후보에서 넘어온 좌표. 폼에는 칸이 없어서 따로 들고 있었습니다.
-     **고치는 중일 때는 쓰지 않습니다** — 그 일정이 이미 가진 좌표를 덮습니다. */
-  /* **붙여넣은 지도 링크가 먼저입니다.** 방금 사람이 직접 준 위치라
-     카드에서 딸려온 것보다 확실합니다. 고치는 중이어도 링크를 새로
-     붙여넣었으면 그건 "여기로 바꿔달라"는 뜻이므로 씁니다. */
-  const geo = planGeo || ((!editing && planSeedGeo) ? planSeedGeo : null);
-
-  if (editing){
-    const i = plans.findIndex(p => p.id === editing);
-    if (i >= 0) plans[i] = { ...plans[i], ...row };
-  } else {
-    plans.push({ id: tmpId, trip_id: trip.id, sort_order: sort,
-                 lat: geo?.lat ?? null, lng: geo?.lng ?? null,
-                 move_note:null, ...row });
-  }
-  plans.sort((a, b) => a.date.localeCompare(b.date)
-    || String(a.start_time ?? '~').localeCompare(String(b.start_time ?? '~'))
-    || (+a.sort_order) - (+b.sort_order));
-
-  $('p_title').value = ''; $('p_memo').value = '';
-  $('p_start').value = ''; $('p_end').value = '';
-  setEditPlanId(null);
-  $('plancard').classList.add('hide');
-  drawDays(); drawCats(); drawPlans(); drawPlanMap();
-
-  planSeedGeo = null;               /* 한 번 쓰고 비웁니다. 다음 일정에 묻으면 안 됩니다 */
-  /* **고칠 때도 좌표를 같이 보냅니다.** 전에는 넣을 때만 실려서, 이미 있는
-     일정에 지도 링크를 붙여넣어도 지도에 안 떴습니다 — 그 일정을 지우고
-     다시 만들어야 했습니다. 링크를 새로 붙여넣은 경우(planGeo)만 덮습니다. */
-  const r = await write(editing
-    ? { table:'plans', action:'update', id:editing,
-        row:{ ...row, ...(planGeo || {}) } }
-    : { table:'plans', action:'insert',
-        row:{ trip_id: trip.id, sort_order: sort, ...row, ...(geo || {}) } });
-
-  if (!r.ok){
-    /* 되돌립니다. 저장 안 된 것이 화면에 남아 있으면 여행 중에 그걸 믿고 움직입니다. */
-    if (editing){ const i = plans.findIndex(p => p.id === editing); if (i >= 0) plans[i] = before; }
-    else setPlans(plans.filter(p => p.id !== tmpId));
-    drawDays(); drawCats(); drawPlans(); drawPlanMap();
-    $('plancard').classList.remove('hide');
-    return fail(r.why, 'planform');
-  }
-  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
-  await loadPlans();                       /* 임시 id 를 진짜 id 로 바꿉니다 */
-});
-
-$('plans').addEventListener('click', async e => {
-  const b = e.target.closest('button[data-pact]'); if (!b) return;
-  const id = b.dataset.id;
-
-  /* 고치기 — 일정 칸을 그 줄 내용으로 채워 엽니다. 새로 적게 하지 않습니다. */
-  if (b.dataset.pact === 'edit'){
-    const p = plans.find(x => x.id === id); if (!p) return;
-    $('addplanbtn').click();
-    $('p_title').value = p.title || '';
-    $('p_date').value  = p.date || '';
-    $('p_start').value = p.start_time ? p.start_time.slice(0,5) : '';
-    $('p_end').value   = p.end_time ? p.end_time.slice(0,5) : '';
-    $('p_cat').value   = p.category || '';
-    $('p_memo').value  = p.memo || '';
-    setEditPlanId(id);
-    $('p_create').textContent = '고치기';
-    return;
-  }
-
-  if (b.dataset.armed !== '1'){          /* 확인창을 안 쓰는 이유는 목록 쪽과 같습니다 */
-    arm(b, '정말 지울까요?'); return;
-  }
-  /* 지우는 것도 먼저 화면에서 뺍니다. 진짜로 지우지는 않고 숨깁니다 —
-     여럿이 쓰면 남이 지운 것을 되살릴 방법이 필요합니다. */
-  const gone = plans.find(p => p.id === id);
-  setPlans(plans.filter(p => p.id !== id));
-  drawDays(); drawCats(); drawPlans(); drawPlanMap();
-
-  const r = await write({ table:'plans', action:'delete', id });
-  if (!r.ok){
-    if (gone) plans.push(gone);
-    drawDays(); drawCats(); drawPlans(); drawPlanMap();
-    return fail(r.why, 'plan');
-  }
-  if (r.queued) return toast('연결이 없어 들고 있어요. 터지면 바로 보냅니다.');
-  await loadPlans();
-});
-
+/* ── 붙여넣은 지도 링크에서 위치 찾기 ─────────────────────────────────
+ * geocode.js 로 옮겼습니다(b355, 서른한 번째 조각).
+ * ctx 는 셋(drawDays · featOn · loadPlans)입니다.
+ * `planGeo`·`geoAsked` 도 그리로 갔습니다 — 위 일정 칸이 비우던 자리는
+ * `resetGeo()` 로 바뀌었습니다. */
 /* ── 첫 화면 사진 ────────────────────────────────────────────────────
  * 앱을 처음 보는 사람이 제일 먼저 보는 화면인데 도시 사진을 469장
  * 가지고도 한 장을 안 쓰고 채도 높은 그러데이션을 깔고 있었습니다.
