@@ -18,14 +18,14 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b367';
-import { featOn, flags } from './flags.js?v=b367';
-import { fail, write } from './net.js?v=b367';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b367';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b367';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b367';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b367';
-import { STAY_MIN, mins } from './plancheck.js?v=b367';
+import { $, esc, emptyDo } from './dom.js?v=b368';
+import { featOn, flags } from './flags.js?v=b368';
+import { fail, write } from './net.js?v=b368';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b368';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b368';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b368';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b368';
+import { STAY_MIN, mins } from './plancheck.js?v=b368';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -298,7 +298,9 @@ export function drawPlans(){
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
-        <span class="ev__chev">›</span>${canReorder() ? `
+        ${/* `›` 를 뗐습니다(b368) — 장식이었고 오른쪽에 열을 하나 더
+              만들었습니다. 펼치는 것은 줄 아무 데나 누르면 됩니다. */''}${
+        canReorder() ? `
         <span class="grip" data-grip aria-label="끌어서 순서 바꾸기">≡</span>` : ''}
       </div>
       <div class="detail">

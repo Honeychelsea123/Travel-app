@@ -825,8 +825,21 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
            color:#fff; font-size:12px; font-weight:700; border:2px solid #fff;
            box-shadow:0 2px 6px rgba(0,0,0,.28); }
 .leaflet-container{ font:inherit }
-/* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다. */
-.hopline{ margin:0 0 0 22px; padding:5px 0 5px 14px; border-left:2px dashed var(--hairline);
+/* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다.
+ *
+ * ⚠ **그 세로선이 색점과 44px 어긋나 있었습니다**(b368 에서 맞춤). 색점은
+ * 67px 에 세로로 늘어서는데 점선은 23px 이라, 하루를 훑는 **등뼈가 둘로
+ * 갈라져** 보였습니다. 이름 붙이기 어려운데 목록이 지저분해 보이는 것이
+ * 이런 자리입니다. 이제 점 → 점선 → 점이 한 줄로 이어집니다.
+ *
+ * **두 곳에 따로 적어서 어긋났던 것이므로 한 곳에서 셉니다.** 시각열 폭과
+ * 색점 반지름이 바뀌면 둘 다 따라옵니다 — 안 그러면 또 벌어집니다.
+ * 글자는 제목과 같은 왼쪽에서 시작합니다(내용 열 하나). 위계는 자리가
+ * 아니라 크기와 색이 만듭니다 — 이동 줄은 더 작고 흐립니다. */
+#plans{ --when-w:50px;
+        --spine:calc(var(--when-w) + var(--s-sm) + 4.5px);   /* 색점 가운데 */ }
+.hopline{ margin:0 0 0 calc(var(--spine) - 1px);             /* 2px 선의 가운데를 등뼈에 */
+          padding:5px 0 5px 15px; border-left:2px dashed var(--hairline);
           color:var(--ink-48); font-size:var(--f-sm); }
 .hopline.bad{ border-left-color:var(--bad); color:var(--bad); font-weight:600; }
 /* 프로필 숫자 줄 — 왓챠의 "696 평가 | 27 코멘트" 자리 */
@@ -1463,11 +1476,14 @@ body.reordering .ev:not(.lift){ transition:transform .12s ease; }
 body.reordering{ user-select:none; -webkit-user-select:none; }
 .ev__row{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0;
           align-items:flex-start; cursor:pointer; }
-.ev__chev{ align-self:center; color:var(--ink-48); flex:none;
-           transition:transform var(--t) var(--ease); font-size:var(--f-xl); }
-.ev.is-open .ev__chev{ transform:rotate(90deg); }
+/* ⚠ 여기 `.ev__chev`(`›`)가 있었습니다. **b368 에서 없앴습니다.**
+   줄마다 `›` 와 `≡` 가 17px 간격으로 **오른쪽에 열을 둘** 만들며 서른세 번
+   되풀이됐습니다 — 오른쪽 가장자리가 시끄러운 것이 이것이었습니다.
+   그리고 `›` 는 **장식이었습니다**: 펼치는 손잡이는 `#plans` 전체에 걸려
+   있어서(today.js) 줄 아무 데나 눌러도 펼쳐집니다. 지워도 동작은 그대로고
+   정렬선만 하나 줄어듭니다. 펼쳐졌다는 신호는 아래 `.detail` 이 합니다. */
 /* .plan 쪽과 같은 이유입니다 — 시각은 훑는 기준, 이름은 계단의 '항목' 칸. */
-.ev .when{ flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
+.ev .when{ flex:none; width:var(--when-w); color:var(--ink-80); font-size:var(--f-md);
            font-weight:600;
            font-variant-numeric:tabular-nums; padding-top:2px; }
 .ev .body{ flex:1; min-width:0; }
