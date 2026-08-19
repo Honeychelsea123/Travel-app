@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b353';
+import { sb } from './db.js?v=b354';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml } from './dom.js?v=b353';
-import { starHtml, paintStars, markRated } from './stars.js?v=b353';
+         putHtml, dropHtml } from './dom.js?v=b354';
+import { starHtml, paintStars, markRated } from './stars.js?v=b354';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b353';
-import { loadAdmin } from './admin.js?v=b353';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b354';
+import { loadAdmin } from './admin.js?v=b354';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b353';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b353';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b353';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b354';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b354';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,72 +34,73 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b353';
+         setEditPlanId, nameOf } from './trip.js?v=b354';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b353';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b354';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b353';
+         useCities, addCity, search } from './cities.js?v=b354';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b353';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b354';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b353';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b354';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b353';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b354';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b353';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b354';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b353';
+         isCityOpen, clearCityOpen } from './city.js?v=b354';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b353';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b354';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b353';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b354';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b353';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b353';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b353';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b353';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b353';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b353';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b353';
-import { loadReview, setReviewCtx } from './review.js?v=b353';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b354';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b354';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b354';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b354';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b354';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b354';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b354';
+import { loadReview, setReviewCtx } from './review.js?v=b354';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b353';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b353';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b353';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b354';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b354';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b354';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b353';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b353';
-import './selfcheck.js?v=b353';
-import { guessCat, setBringCtx } from './bring.js?v=b353';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b353';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b353';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b353';
-import { setAccountCtx } from './account.js?v=b353';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b353';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b353';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b353';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b354';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b354';
+import './selfcheck.js?v=b354';
+import { guessCat, setBringCtx } from './bring.js?v=b354';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b354';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b354';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b354';
+import { setAccountCtx } from './account.js?v=b354';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b354';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b354';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b354';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b354';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b353';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b354';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b353';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b354';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b353';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b354';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -133,6 +134,10 @@ setDraftCtx({ me: () => me, fillCityList, showApp, openTrip });
 setTripListCtx({ me: () => me, openTrip, logError });
 setTabsCtx({ appTab: () => appTab, showApp });
 setPlanLineCtx({ drawDays, drawPlans });
+/* ⚠ featOn 은 const 화살표라 이 줄에서는 아직 없습니다 — 그대로 적으면
+   앱이 통째로 안 뜹니다(Cannot access before initialization).
+   SPLIT.md '겪은 함정' 1번을 그대로 밟았습니다. 부를 때 찾게 미룹니다. */
+setPlanViewCtx({ featOn: k => featOn(k), flags: () => flags, loadPlans });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -1181,233 +1186,11 @@ $('days').addEventListener('change', e => {
  * drawCats · parseMemo · nice · lineChips · dayStat 는 planline.js 로
  * 옮겼습니다(b353, 스물아홉 번째 조각). ctx 는 둘(drawDays · drawPlans).
  * b345 에 '추천 검사' 머리말 아래 섞여 있던 것을 그때는 두고 갔던 것입니다. */
-/* ── 끌어서 순서 바꾸기 ─────────────────────────────────────────────
- * **목록은 `date · start_time · sort_order` 로 줄을 세웁니다**(loadPlans).
- * 그래서 `sort_order` 만 바꾸면 시각이 있는 줄은 **놓자마자 제자리로
- * 돌아갑니다.** 순서를 손으로 바꾸려면 시각을 같이 다뤄야 합니다.
- *
- * 규칙은 하나입니다 — **시각은 그 자리에 그대로 있고 일정만 자리를 옮깁니다.**
- * 하루의 시각들을 자리표로 보고, 새 순서에 앞에서부터 다시 나눠 줍니다.
- *   09:00 A · 12:00 B · 15:00 C   에서 A 를 맨 뒤로 끌면
- *   09:00 B · 12:00 C · 15:00 A
- * 하루의 뼈대(언제 움직이는가)가 안 흔들리고, 도로 끌면 그대로 되돌아옵니다.
- * 시각이 없는 줄은 없는 채로 남고 `sort_order` 만 따라갑니다.
- *
- * **분류로 거르는 중에는 손잡이를 안 답니다.** 걸러진 목록에서 끌면
- * 화면에 없는 줄의 시각까지 섞여 돌아갑니다 — 보이지 않는 것이 바뀝니다. */
-const canReorder = () =>
-  trip?.myRole !== 'viewer' && !catFilter && featOn('reorder') && !flags.readonly;
-
-let dragOn = null;      /* {el, hole, id, date, dy, ids} */
-
-function evRows(date){
-  return [...$('plans').querySelectorAll(`.ev[data-d="${CSS.escape(date)}"]`)];
-}
-
-$('plans').addEventListener('pointerdown', e => {
-  const grip = e.target.closest('[data-grip]');
-  if (!grip || dragOn) return;
-  const el = grip.closest('.ev');
-  const r  = el.getBoundingClientRect();
-
-  e.preventDefault();
-  /* 손가락을 붙잡아 둡니다. 안 그러면 목록 밖(지도 위 등)으로 나가는 순간
-     움직임이 끊깁니다. **못 붙잡아도 그냥 갑니다** — 붙잡기는 나아지자고
-     하는 것이지 없으면 못 하는 일이 아닙니다. */
-  try { grip.setPointerCapture(e.pointerId); } catch {}
-  document.body.classList.add('reordering');
-
-  /* 빈 칸은 **같은 높이**로 만들어 둡니다. 안 그러면 들어올리는 순간
-     목록이 위로 솟아서 손가락 밑이 딴 곳이 됩니다. */
-  el.style.width  = r.width + 'px';
-  el.style.height = r.height + 'px';
-  const hole = el.cloneNode(true);
-  hole.classList.add('hole');
-  hole.removeAttribute('data-ev');
-  el.after(hole);
-
-  el.classList.add('lift');
-  el.style.left = r.left + 'px';
-  el.style.top  = r.top + 'px';
-
-  dragOn = { el, hole, grip, id: el.dataset.ev, date: el.dataset.d,
-             dy: e.clientY - r.top, top: r.top };
-}, false);
-
-$('plans').addEventListener('pointermove', e => {
-  if (!dragOn) return;
-  e.preventDefault();
-  const y = e.clientY - dragOn.dy;
-  dragOn.el.style.top = y + 'px';
-
-  /* 화면 끝에 닿으면 목록을 굴려 줍니다. 안 그러면 하루가 길 때
-     화면 밖으로는 아예 못 옮깁니다. */
-  const edge = 90;
-  if (e.clientY < edge)                 scrollBy(0, -12);
-  else if (e.clientY > innerHeight - edge) scrollBy(0, 12);
-
-  /* **같은 날 안에서만 옮깁니다.** 날을 옮기는 것은 수정 폼의 날짜 칸이
-     할 일입니다 — 끌어서 넘기면 어느 날에 놓였는지 확인할 자리가 없습니다. */
-  const mid  = y + dragOn.el.offsetHeight / 2;
-  const rows = evRows(dragOn.date).filter(r => r !== dragOn.el && r !== dragOn.hole);
-  if (!rows.length) return;
-
-  /* **줄과 줄 사이에는 빈 자리가 있습니다** — 날짜 머리글, 이동 시간 줄.
-     거기에 놓으면 걸리는 줄이 없어서 아무 일도 안 일어났습니다.
-     실제로 끌어보고 알았습니다: 아래로는 되는데 **위로는 안 갔습니다**.
-     첫 줄 위는 날짜 머리글 자리라 그 위에 놓을 방법이 아예 없었습니다.
-     그래서 위아래 끝은 따로 봅니다. */
-  const first = rows[0].getBoundingClientRect();
-  const last  = rows[rows.length - 1].getBoundingClientRect();
-  if (mid < first.top + first.height / 2) return void rows[0].before(dragOn.hole);
-  if (mid > last.top + last.height / 2)   return void rows[rows.length - 1].after(dragOn.hole);
-
-  for (const row of rows){
-    const rr = row.getBoundingClientRect();
-    if (mid > rr.top && mid < rr.bottom){
-      row[mid > rr.top + rr.height / 2 ? 'after' : 'before'](dragOn.hole);
-      break;
-    }
-  }
-}, false);
-
-async function dropOrder(){
-  const d = dragOn; if (!d) return;
-  dragOn = null;
-  document.body.classList.remove('reordering');
-  d.el.classList.remove('lift');
-  d.el.removeAttribute('style');
-  d.hole.replaceWith(d.el);
-
-  /* 화면에 보이는 새 순서 그대로 읽습니다. */
-  const ids = evRows(d.date).map(x => x.dataset.ev);
-  const day = plans.filter(p => p.date === d.date);
-  if (ids.length !== day.length) return drawPlans();   /* 어긋나면 다시 그립니다 */
-
-  const slots = day.map(p => ({ s:p.start_time, e:p.end_time }));
-  const next  = ids.map(id => day.find(p => p.id === id));
-  if (next.some(p => !p)) return drawPlans();
-
-  /* 바뀐 것만 씁니다. 안 바뀐 줄까지 쓰면 실시간이 남에게 열 번 튑니다. */
-  const jobs = [];
-  next.forEach((p, i) => {
-    const s = slots[i].s, e = slots[i].e;
-    if (p.start_time === s && p.end_time === e && +p.sort_order === i) return;
-    p.start_time = s; p.end_time = e; p.sort_order = i;
-    jobs.push({ table:'plans', action:'update', id:p.id,
-                row:{ start_time:s, end_time:e, sort_order:i } });
-  });
-  if (!jobs.length) return;
-
-  /* 먼저 화면부터 맞춥니다 — 저장을 기다리는 동안 손을 뗀 자리에 그대로
-     있어야 옮겨진 것으로 보입니다. */
-  setPlans([...plans].sort((a, b) =>
-    a.date.localeCompare(b.date)
-    || (a.start_time || '99:99').localeCompare(b.start_time || '99:99')
-    || (+a.sort_order) - (+b.sort_order)));
-  drawPlans(); drawPlanMap();
-
-  for (const j of jobs){
-    const r = await write(j);
-    if (!r.ok){ await loadPlans(); return fail(r.why, 'plan'); }
-  }
-}
-$('plans').addEventListener('pointerup', dropOrder, false);
-$('plans').addEventListener('pointercancel', dropOrder, false);
-
-function drawPlans(){
-  let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
-  if (catFilter) show = show.filter(p => p.category === catFilter);
-  if (!show.length){
-    $('plans').innerHTML = pickedDay
-      ? '<div class="empty">이 날은 비어 있어요.</div>'
-      : emptyDo('아직 일정이 없어요.', '첫 일정 넣기', 'addplanbtn');
-    return;
-  }
-  let html = '', last = null, prev = null;
-  for (const p of show){
-    /* 앞 일정과 이 일정 사이에 얼마나 걸리는지. 좌표가 둘 다 있어야 잽니다.
-       시간이 모자라면 빨갛게 — 이게 "이 하루가 물리적으로 가능한가"입니다. */
-    if (prev && prev.date === p.date){
-      const h = hop(prev, p, legs);
-      if (h){
-        let warn = '';
-        if (prev.start_time && p.start_time){
-          const end = prev.end_time ? mins(prev.end_time)
-                    : mins(prev.start_time) + (STAY_MIN[prev.category] ?? 30);
-          const gap = mins(p.start_time) - end;
-          /* 음수면 "-20분밖에 없어요"가 됩니다. 앞 일정이 이미 넘겼다는 뜻입니다. */
-          if (gap < h.min)
-            warn = gap < 0 ? ' · 앞 일정이 이미 넘겼어요' : ` · ${gap}분밖에 없어요`;
-        }
-        html += `<div class="hopline${warn ? ' bad' : ''}">
-          ${h.walk ? '도보' : '이동'} 약 ${h.min}분 · ${h.km.toFixed(1)}km${esc(warn)}</div>`;
-      }
-    }
-    prev = p;
-
-    if (p.date !== last){                       /* 전체 보기에서 날짜가 바뀌면 머리글 */
-      if (!pickedDay){
-        const l = legs.length > 1 ? legFor(p.date) : null;
-        /* 날짜 옆에 그날 요약을 답니다 — 어느 날이 빡빡한지 여기서 바로 보입니다. */
-        html += `<div class="daysep">${esc(dayLabel(p.date, trip))}` +
-                `${l ? ' · ' + esc(l.destination) : ''}` +
-                `<span class="dstat">${esc(dayStat(p.date))}</span></div>`;
-      }
-      last = p.date;
-    }
-    const when = p.start_time ? hm(p.start_time) + (p.end_time ? `<br>~${hm(p.end_time)}` : '')
-                              : '<span style="opacity:.45">–</span>';
-    /* 분류는 색으로 먼저 읽히게 합니다 — 메모를 안 읽어도 눈으로 찾게 됩니다. */
-    const k = p.category ? 'k-' + p.category : '';
-    const mm = parseMemo([p.memo, p.move_note].filter(Boolean).join(' / '));
-    /* 그 자리에서 실제로 쓴 돈. **예상(메모의 cost)과 갈라 적습니다** —
-       "예상 3,000엔"과 "쓴 돈 3,400엔"은 다른 이야기고, 여행 중에 궁금한
-       것은 뒤쪽입니다. 환산값이 없는 줄(환율을 못 받은 날)은 빼고 셉니다.
-       한 푼도 안 쓴 일정에는 아무것도 안 답니다 — ₩0 이 줄마다 붙으면
-       실제로 쓴 줄이 안 보입니다. */
-    const spent = (expenses || [])
-      .filter(x => x.plan_id === p.id && x.amount_home != null)
-      .reduce((s, x) => s + Number(x.amount_home), 0);
-    /* 부제에는 분류와 값만. 자세한 것은 펼쳐야 나옵니다. */
-    const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null,
-                 spent ? money(spent, trip.home_currency) : null]
-                  .filter(Boolean).join(' · ');
-    /* 이름만으로는 어느 나라인지 모릅니다. 그날 구간의 도시를 같이 넘깁니다
-       (구간이 하나뿐이면 여행의 대표 도시). */
-    const ml = mapLinks(p, legFor(p.date)?.destination || trip?.destination);
-    const open = openPlans.has(p.id);
-
-    html += `<div class="ev${open ? ' is-open' : ''}" data-ev="${esc(p.id)}"
-                  data-d="${esc(p.date)}">
-      <div class="ev__row">
-        <div class="when">${when}</div>
-        <span class="kdot ${esc(k)}"></span>
-        <div class="body"><b>${esc(p.title)}</b>
-          <span class="memo">${esc(sub)}${
-            /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
-            ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
-        <span class="ev__chev">›</span>${canReorder() ? `
-        <span class="grip" data-grip aria-label="끌어서 순서 바꾸기">≡</span>` : ''}
-      </div>
-      <div class="detail">
-        ${mm.move ? `<div class="drow"><b>이동</b> ${esc(nice(mm.move))}</div>` : ''}
-        ${mm.cost ? `<div class="drow"><b>예상</b> ${esc(nice(mm.cost))}</div>` : ''}
-        ${mm.notes.map(n => `<div class="dnote">${esc(nice(n))}</div>`).join('')}
-        <div class="dacts">
-          <a href="${esc(ml.see)}" target="_blank" rel="noopener">지도에서 보기</a>
-          <a href="${esc(ml.go)}" target="_blank" rel="noopener">길찾기</a>
-          ${trip.myRole === 'viewer' ? '' :
-            `<button class="ghost" data-pact="edit" data-id="${esc(p.id)}">수정</button>
-             <button class="ghost" data-pact="del" data-id="${esc(p.id)}"
-                     style="color:var(--bad); margin-left:auto">삭제</button>`}
-        </div>
-      </div>
-    </div>`;
-  }
-  $('plans').innerHTML = html;
-}
-
+/* ── 일정 화면 ────────────────────────────────────────────────────────
+ * 일정 그리기(drawPlans)와 끌어서 순서 바꾸기는 planview.js 로 옮겼습니다
+ * (b354, 서른 번째 조각). ctx 는 셋(featOn · flags · loadPlans).
+ * `openPlans`(펼친 줄) 도 그리로 갔습니다 — Set 이라 아래 손잡이가
+ * add/delete 해도 저쪽이 같은 것을 봅니다. */
 /* ── 일정 불러오기 ────────────────────────────────────────────────────
  * 분류 짐작과 파일·사진에서 불러오기는 bring.js 로 옮겼습니다
  * (b346, 스물한 번째 조각). ctx 는 셋(openAi · loadChats · loadPlans)입니다. */
@@ -1540,8 +1323,7 @@ async function drawToday(){
         ${esc(blank.map(p => p.title).slice(0, 3).join(' · '))}</div>` : ''}`;
 }
 
-/* 펼친 줄은 기억해 둡니다. 지우거나 고쳐서 다시 그려도 그대로 열려 있어야 합니다. */
-const openPlans = new Set();
+/* 펼친 줄(openPlans)은 planview.js 로 갔습니다(b354) — 그리는 쪽이 거깁니다. */
 $('plans').addEventListener('click', e => {
   if (e.target.closest('a, button')) return;      /* 링크와 버튼은 각자 일합니다 */
   /* 손잡이를 눌렀다 뗀 것은 '펼치기'가 아닙니다. 끌지 않고 톡 눌러도

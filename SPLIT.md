@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 1,971줄. 스물아홉 조각이 나갔다. **79%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 1,750줄. 서른 조각이 나갔다. **81%를 걷었다.**
 
 ## 왜 하나
 
@@ -41,6 +41,7 @@
 | `triplist.js` | 265 | 여행 목록 · 카드 사진 | me, openTrip, logError |
 | `tabs.js` | 165 | 여행 상세 탭 · 좌우 쓸어 넘기기 | appTab, showApp |
 | `planline.js` | 122 | 일정 줄 그리기 부품(분류 칩 · 메모) | drawDays, drawPlans |
+| `planview.js` | 264 | 일정 그리기 · 끌어서 순서 바꾸기 | featOn, flags, loadPlans |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
