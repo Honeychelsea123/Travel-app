@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 2,185줄. 스물일곱 조각이 나갔다. **76%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 2,050줄. 스물여덟 조각이 나갔다. **78%를 걷었다.**
 
 ## 왜 하나
 
@@ -39,6 +39,7 @@
 | `account.js` | 223 | 내 계정 — 자료 받기 · 버그 신고 · 탈퇴 | me, logError |
 | `draft.js` | 267 | AI 일정 초안 | me, fillCityList, showApp, openTrip |
 | `triplist.js` | 265 | 여행 목록 · 카드 사진 | me, openTrip, logError |
+| `tabs.js` | 165 | 여행 상세 탭 · 좌우 쓸어 넘기기 | appTab, showApp |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
