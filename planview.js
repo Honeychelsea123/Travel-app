@@ -18,18 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b375';
-import { featOn, flags } from './flags.js?v=b375';
-import { fail, write } from './net.js?v=b375';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b375';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b375';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b375';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b375';
-import { STAY_MIN, mins } from './plancheck.js?v=b375';
-/* 좌표 없는 일정을 알리는 띠. **cands.js 는 이 파일을 안 부르므로 고리가
-   안 생깁니다**(b375 에 확인). 일정을 그릴 때마다 다시 세야 해서 여기서 부릅니다 —
-   채우고 나면 띠가 저절로 사라져야 합니다. */
-import { drawGeoBtn } from './cands.js?v=b375';
+import { $, esc, emptyDo } from './dom.js?v=b376';
+import { featOn, flags } from './flags.js?v=b376';
+import { fail, write } from './net.js?v=b376';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b376';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b376';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b376';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b376';
+import { STAY_MIN, mins } from './plancheck.js?v=b376';
+/* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
+   고리가 안 생깁니다**(b375 에 확인). */
+import { fillOnePlan } from './cands.js?v=b376';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -109,6 +108,25 @@ function startDrag(grip, x, y, pointerId){
   dragOn = { el, hole, grip, id: el.dataset.ev, date: el.dataset.d,
              dy: y - r.top, top: r.top };
 }
+
+/* '지도에 안 떠요' 를 누르면 그 한 곳만 찾습니다(b376).
+   ⚠ **`<button>` 이라 줄 펼치기와 안 부딪힙니다** — today.js 의 펼치기
+   손잡이가 `closest('a, button')` 을 먼저 걸러냅니다.
+   찾는 동안 글자를 바꿔 살아 있다는 것을 보입니다. 못 찾으면 왜 그런지와
+   무엇을 하면 되는지를 그 자리에 남깁니다 — 다시 눌러도 같은 결과라
+   재촉해봐야 소용이 없기 때문입니다. */
+$('plans').addEventListener('click', async e => {
+  const b = e.target.closest('[data-geo]'); if (!b) return;
+  e.stopPropagation();
+  if (b.disabled) return;
+  const p = plans.find(x => x.id === b.dataset.geo);
+  b.disabled = true; b.textContent = '찾는 중…';
+  const ok = await fillOnePlan(b.dataset.geo, p?.title || '', p?.date);
+  if (ok === true) return;                       /* loadPlans 가 다시 그립니다 */
+  b.disabled = false;
+  b.textContent = ok === 'stop' ? '지도에 안 떠요' : '이름으로 못 찾았어요';
+  b.classList.toggle('miss', ok !== 'stop');
+}, false);
 
 $('plans').addEventListener('pointerdown', e => {
   const grip = e.target.closest('[data-grip]');
@@ -226,9 +244,6 @@ $('plans').addEventListener('pointerup', endPointer, false);
 $('plans').addEventListener('pointercancel', endPointer, false);
 
 export function drawPlans(){
-  /* 좌표 없는 일정이 몇인지 다시 셉니다. **거르는 중이어도 전체를 셉니다** —
-     '식사'만 보는 중이라고 다른 분류의 빠진 좌표가 없어지는 것은 아닙니다. */
-  drawGeoBtn();
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
   if (!show.length){
@@ -313,7 +328,16 @@ export function drawPlans(){
         <div class="when">${when}</div>
         <span class="kdot ${esc(k)}"${
           p.category ? ` title="${esc(p.category)}" aria-label="${esc(p.category)}"` : ''}></span>
-        <div class="body"><b>${esc(p.title)}</b>
+        <div class="body"><b>${esc(p.title)}${
+          /* 좌표가 없으면 지도에도 안 뜨고 이동 시간도 못 잽니다(b376).
+             **띠로 크게 알리지 않습니다** — 못 찾는 곳이면 영영 안 사라져서
+             재촉만 됩니다. 그 줄에 작게 사실만 적고, 누르면 그 한 곳만
+             찾아봅니다. 말투는 후보 카드가 이미 쓰는 것과 같게 둡니다.
+             ⚠ **`<b>` 안에 넣습니다.** 밖에 두면 `.ev .body b` 가
+             `display:block` 이라 아랫줄로 떨어져 줄 높이가 49 → 74px 로
+             부풉니다(재봄). 제목 끝에 이어 붙어야 합니다. */
+          p.lat == null ? `<button class="nogeo" data-geo="${esc(p.id)}"
+            >지도에 안 떠요</button>` : ''}</b>${''}
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>

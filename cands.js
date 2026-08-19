@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b375';
-import { sb } from './db.js?v=b375';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b375';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b375';
-import { trip, plans, legs } from './trip.js?v=b375';
-import { search } from './cities.js?v=b375';
-import { picked } from './citysearch.js?v=b375';
-import { mapLinks } from './planmap.js?v=b375';
-import { openPlanForm } from './cards.js?v=b375';
-import { syncSheets } from './ui.js?v=b375';
+import { $, esc, emptyDo } from './dom.js?v=b376';
+import { sb } from './db.js?v=b376';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b376';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b376';
+import { trip, plans, legs } from './trip.js?v=b376';
+import { search } from './cities.js?v=b376';
+import { picked } from './citysearch.js?v=b376';
+import { mapLinks } from './planmap.js?v=b376';
+import { openPlanForm } from './cards.js?v=b376';
+import { syncSheets } from './ui.js?v=b376';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -211,19 +211,42 @@ export function drawGeoBtn(){
     b.textContent = geoBusy ? '중단하기'
       : `좌표 채우기 · ${list.length}곳` + (np ? ` (일정 ${np}곳 포함)` : '');
   }
-  /* 일정 쪽 띠는 **일정이 몇 곳인지**로 말합니다 — 그 화면에서 눈에 보이는
-     것이 일정이라, 후보까지 섞어 세면 숫자가 화면과 안 맞습니다.
-     누르면 후보까지 같이 채웁니다(어차피 한 번에 하는 것이 낫습니다). */
-  const g = $('geoplans');
-  if (g){
-    g.classList.toggle('hide', !np && !geoBusy);
-    g.textContent = geoBusy ? '채우는 중… 누르면 멈춰요'
-      : `일정 ${np}곳이 지도에 안 떠요 · 좌표 채우기`;
-  }
+  /* ⚠ 여기 일정 화면에 띠(`#geoplans`)를 띄웠다가 **b376 에서 걷었습니다.**
+     `일정 2곳이 지도에 안 떠요` 를 화면 폭만큼 크게 띄웠는데, 눌러서 못
+     찾으면(이름이 장소 이름이 아니면 흔합니다) **그 뒤로 영영 안 사라집니다.**
+     고칠 수 없는 것을 계속 재촉하는 띠가 됩니다 — cards.js 에 적어둔
+     "늘 켜져 있는 경고는 경고가 아니라 배경입니다" 를 그대로 어겼습니다.
+     지금은 **그 줄에 작게** 답니다(planview.js). 사실을 알리되 재촉하지
+     않고, 누르면 그 한 곳만 찾아봅니다. */
 }
 
-/* 두 입구가 같은 일을 합니다 — 함수 하나로 두고 둘 다 여기 겁니다.
-   두 벌로 적으면 한쪽만 고치는 날이 옵니다. */
+/* ── 한 곳만 찾기 ────────────────────────────────────────────────────
+ * 일정 줄의 '지도에 안 떠요' 를 누르면 **그 한 곳만** 찾습니다(b376).
+ * 일괄 채우기와 같은 식을 써야 결과가 갈리지 않으므로 여기 한 곳에 둡니다.
+ * 돌려주는 값: true = 채움, false = 못 찾음. */
+async function geoOne(it){
+  /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
+  const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
+  let hit = null;
+  for (const q of geoQueries(it.title)){
+    hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
+    if (hit === 'stop') return 'stop';
+    if (hit) break;
+    await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
+  }
+  if (!hit) return false;
+  const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
+    .eq('id', it.id).select('id');
+  return !r.error && !!r.data?.length;
+}
+
+/* 일정 한 줄에서 부릅니다. 찾으면 일정을 다시 받아 화면이 저절로 고쳐집니다. */
+export async function fillOnePlan(id, title, date){
+  const ok = await geoOne({ kind:'plans', id, title, date });
+  if (ok === true) await ctx.loadPlans();
+  return ok;
+}
+
 async function fillCoords(){
   if (geoBusy){ geoBusy = false; return; }
   const list = needCoord();
@@ -233,25 +256,10 @@ async function fillCoords(){
 
   for (const it of list){
     if (!geoBusy) break;
-    /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
-    const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
-    let hit = null;
-    for (const q of geoQueries(it.title)){
-      hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
-      if (hit === 'stop'){ geoBusy = false; break; }
-      if (hit) break;
-      await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
-    }
-    if (!geoBusy) break;
-    if (hit && hit !== 'stop'){
-      const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
-        .eq('id', it.id).select('id');
-      if (!r.error && r.data?.length) done++;
-    } else miss++;
-    /* **둘 다에 씁니다.** 누른 쪽이 숨은 단추가 아닐 수 있습니다. */
-    const 진행 = `채우는 중… ${done + miss}/${list.length}`;
-    if ($('geobtn'))  $('geobtn').textContent  = 진행;
-    if ($('geoplans')) $('geoplans').textContent = 진행;
+    const ok = await geoOne(it);
+    if (ok === 'stop'){ geoBusy = false; break; }
+    if (ok) done++; else miss++;
+    $('geobtn').textContent = `채우는 중… ${done + miss}/${list.length}`;
     await new Promise(r => setTimeout(r, 1100));
   }
 
@@ -265,7 +273,6 @@ async function fillCoords(){
                  `이름을 장소 이름으로 고치면 찾을 수 있어요.`, 'cand');
 }
 $('geobtn').addEventListener('click', fillCoords, false);
-$('geoplans').addEventListener('click', fillCoords, false);
 
 async function loadCands(){
   if (!trip) return;

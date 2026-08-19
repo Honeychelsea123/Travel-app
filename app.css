@@ -499,9 +499,17 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .srow .label{ flex:1; min-width:0; }
 .srow .memo{ margin-top:1px; }
 /* 설명 글. .empty 를 쓰면 위아래 20px 씩 먹어 카드가 쓸데없이 커집니다. */
-/* 좌표 채우기 띠 (b375). `.offbar` 의 얼굴을 그대로 쓰되 누를 수 있게만
-   합니다 — 앱에서 '봐야 하는 알림'은 이미 그 생김새라 새로 만들지 않습니다. */
-.geobar{ width:100%; cursor:pointer; }
+/* 좌표 없는 일정 줄에 붙는 작은 표시 (b376).
+   ⚠ b375 에 화면 폭만큼 큰 띠(`.geobar`)로 만들었다가 걷었습니다 — 눌러서
+   못 찾으면 영영 안 사라져서 재촉만 됐습니다. **제목 옆에 작게**, 사실만.
+   누를 수는 있지만 눌러 달라고 조르지는 않는 크기입니다. */
+.nogeo{ margin-left:6px; padding:1px 7px; border-radius:var(--r-pill);
+        border:1px solid var(--hairline); background:none;
+        color:var(--ink-48); font-size:var(--f-xs); font-weight:500;
+        vertical-align:2px; }
+.nogeo:disabled{ opacity:.6; }
+/* 못 찾은 뒤에는 더 조용해집니다 — 다시 눌러도 같은 결과입니다. */
+.nogeo.miss{ border-style:dashed; }
 
 .snote{ color:var(--ink-48); font-size:var(--f-sm); line-height:1.5;
         padding:7px 0 0; }
