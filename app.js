@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b345';
+import { sb } from './db.js?v=b346';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b345';
-import { starHtml, paintStars, markRated } from './stars.js?v=b345';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b346';
+import { starHtml, paintStars, markRated } from './stars.js?v=b346';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b345';
-import { loadAdmin } from './admin.js?v=b345';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b346';
+import { loadAdmin } from './admin.js?v=b346';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b345';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b345';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b345';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b346';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b346';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,62 +33,64 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b345';
+         setEditPlanId, nameOf } from './trip.js?v=b346';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b345';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b346';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b345';
+         useCities, addCity, search } from './cities.js?v=b346';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b345';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b346';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b345';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b346';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b345';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b346';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b345';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b346';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b345';
+         isCityOpen, clearCityOpen } from './city.js?v=b346';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b345';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b346';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b345';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b346';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b345';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b345';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b345';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b345';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b345';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b345';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b345';
-import { loadReview, setReviewCtx } from './review.js?v=b345';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b346';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b346';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b346';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b346';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b346';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b346';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b346';
+import { loadReview, setReviewCtx } from './review.js?v=b346';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b345';
-import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b345';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b345';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b346';
+import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b346';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b346';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b345';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b345';
-import './selfcheck.js?v=b345';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b346';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b346';
+import './selfcheck.js?v=b346';
+import { guessCat, setBringCtx } from './bring.js?v=b346';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b346';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b345';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b346';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b345';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b346';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -119,6 +121,8 @@ setNotifyCtx({ me: () => me, loadNotifs });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
+setBringCtx({ openAi, loadChats, loadPlans });
+setTrashCtx({ loadPlans });
 
 /* 지도 좌표를 제자리에 넣습니다. 쓰는 쪽(핀 · 발자국 미니지도)보다 먼저여야 합니다.
    **이 줄은 진입점에 있어야 합니다** — 모듈이 아니라 화면에 쓰는 일이고,
@@ -2439,186 +2443,9 @@ function drawPlans(){
   $('plans').innerHTML = html;
 }
 
-/* ── 분류 짐작 ──────────────────────────────────────────────────────
- * "라멘"이라고 적었으면 분류는 식사입니다. 매번 고르게 할 이유가 없습니다.
- * 다만 **짐작일 뿐이라 사용자가 고른 것을 덮지 않습니다.**
- * 한 번이라도 직접 골랐으면 그때부터는 손대지 않습니다 —
- * 자동으로 바꿔버리면 고쳐도 고쳐도 되돌아가는 것처럼 느껴집니다. */
-const CAT_HINTS = [
-  ['카페', /커피|카페|디저트|라떼|아메리카노|빵집|베이커리|케이크|아이스크림|젤라또|스타벅스|블루보틀/],
-  ['식사', /라멘|스시|초밥|식당|맛집|점심|저녁|아침|브런치|디너|런치|장어|야키니쿠|야키토리|규카츠|카레|덮밥|정식|코스|오마카세|이자카야|국수|파스타|피자|버거|타코|쌀국수|딤섬|훠궈|바비큐|스테이크|해산물|시장|포차|술집|바\b/],
-  ['숙소', /호텔|숙소|체크인|체크아웃|료칸|게스트하우스|에어비앤비|민박|리조트|숙박/],
-  ['이동', /공항|기차|신칸센|버스|지하철|전철|페리|렌터카|택시|이동|환승|입국|출국|탑승|고속철|KTX|열차/i],
-  ['쇼핑', /쇼핑|백화점|아울렛|면세|마트|드럭스토어|기념품|상점가|편집샵|서점/],
-  ['관광', /신사|절|사원|성\b|박물관|미술관|공원|전망대|타워|궁|유적|해변|해수욕장|산\b|호수|폭포|온천|테마파크|동물원|수족관|야경|다리|광장|성당|모스크/],
-];
-function guessCat(text){
-  const t = String(text || '');
-  for (const [cat, re] of CAT_HINTS) if (re.test(t)) return cat;
-  return '';
-}
-
-/* ── 일정 불러오기 ──────────────────────────────────────────────────
- * 이미 짜둔 일정을 손으로 옮겨 적는 것이 제일 귀찮은 일입니다.
- * 사진·파일·붙여넣은 글 아무 것으로나 받아서 AI 가 읽고 카드로 만듭니다.
- *
- * **바로 저장하지 않습니다.** AI 가 잘못 읽을 수 있고, 남의 일정이 통째로
- * 들어가면 되돌리기가 번거롭습니다. 카드로 보여주고 담는 것은 사용자가 합니다
- * (담기·되돌리기는 AI 시트에 이미 있는 것을 그대로 씁니다).
- *
- * 엑셀(.xlsx)은 그대로 못 읽습니다. 압축된 XML 덩어리라 읽으려면 400KB 짜리
- * 라이브러리를 붙여야 하는데, 표를 복사해서 붙여넣으면 탭으로 나뉜 글이 그대로
- * 들어옵니다. 그게 더 빠르고 가볍습니다. */
-let impShots = [], impFiles = [];
-
-/* 엑셀은 압축된 XML 덩어리라 그냥은 못 읽습니다. 읽으려면 도구가 필요한데,
-   그걸 늘 받아두면 앱이 1MB 가까이 무거워집니다. 엑셀을 고른 순간에만 받습니다.
-   한 번 받으면 서비스워커가 담아둬서 다음부터는 비행기모드에서도 됩니다. */
-let xlsxLib = null;
-async function loadXlsx(){
-  if (xlsxLib) return xlsxLib;
-  await new Promise((ok, no) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-    s.onload = ok;
-    s.onerror = () => no(new Error('엑셀 읽는 도구를 못 받았어요. 연결을 확인해주세요.'));
-    document.head.appendChild(s);
-  });
-  xlsxLib = window.XLSX;
-  if (!xlsxLib) throw new Error('엑셀 읽는 도구를 못 받았어요.');
-  return xlsxLib;
-}
-
-/* 엑셀을 글자로 바꿉니다. 시트가 여럿이면 시트 이름을 붙여 이어 씁니다 —
-   "숙소" 시트와 "일정" 시트가 나뉘어 있는 파일이 흔합니다. */
-async function xlsxToText(file){
-  const X = await loadXlsx();
-  const wb = X.read(await file.arrayBuffer(), { type:'array' });
-  return wb.SheetNames.map(name =>
-    `[${name}]\n` + X.utils.sheet_to_csv(wb.Sheets[name])).join('\n\n').slice(0, 8000);
-}
-
-$('impbtn').addEventListener('click', () => {
-  $('importcard').classList.toggle('hide');
-  $('imperr').classList.add('hide');
-  if ($('importcard').classList.contains('hide')) return;
-  impShots = []; impFiles = [];
-  $('imp_text').value = '';
-  drawImpPicked();
-});
-$('imp_cancel').addEventListener('click', () => $('importcard').classList.add('hide'));
-$('imp_pick').addEventListener('click', () => $('imp_file').click());
-
-function drawImpPicked(){
-  $('imp_shots').classList.toggle('hide', !impShots.length);
-  $('imp_shots').innerHTML = impShots.map((s, i) =>
-    `<span class="shot1"><img src="${s.url}" alt="">
-       <button class="x" data-impx="${i}" aria-label="빼기">×</button></span>`).join('');
-  $('imp_files').classList.toggle('hide', !impFiles.length);
-  $('imp_files').textContent = impFiles.length
-    ? '파일 ' + impFiles.map(f => f.name).join(' · ') : '';
-}
-$('imp_shots').addEventListener('click', e => {
-  const b = e.target.closest('[data-impx]'); if (!b) return;
-  impShots.splice(+b.dataset.impx, 1); drawImpPicked();
-});
-
-$('imp_file').addEventListener('change', async e => {
-  const files = [...(e.target.files || [])];
-  e.target.value = '';
-  $('imperr').classList.add('hide');
-  for (const f of files){
-    if (f.type.startsWith('image/')){
-      if (impShots.length >= SHOT_MAX){ toast(`사진은 ${SHOT_MAX}장까지예요.`); continue; }
-      try { impShots.push(await fitJpeg(f)); } catch (err){ fail(err, 'imp'); }
-      continue;
-    }
-    if (/\.xlsx?$/i.test(f.name)){
-      toast('엑셀을 읽는 중…');
-      try { impFiles.push({ name: f.name, text: await xlsxToText(f) }); }
-      catch (err){ fail(err, 'imp'); }
-      continue;
-    }
-    if (/\.pdf$/i.test(f.name)){
-      fail('PDF 는 아직 못 읽어요. 화면을 캡처해서 사진으로 올려주세요.', 'imp');
-      continue;
-    }
-    /* 나머지는 글자 파일로 봅니다. CSV·TSV·메모장이 여기 들어옵니다. */
-    try {
-      const text = await f.text();
-      impFiles.push({ name: f.name, text: text.slice(0, 8000) });
-    } catch { fail(`${f.name} 을 읽지 못했어요.`, 'imp'); }
-  }
-  drawImpPicked();
-});
-
-$('imp_go').addEventListener('click', async () => {
-  const b = $('imp_go');
-  $('imperr').classList.add('hide');
-  const typed = $('imp_text').value.trim();
-  const fileText = impFiles.map(f => `[${f.name}]\n${f.text}`).join('\n\n');
-  const text = [typed, fileText].filter(Boolean).join('\n\n');
-  if (!text && !impShots.length)
-    return fail('사진이나 파일을 고르거나, 일정을 붙여넣어주세요.', 'imp');
-
-  /* 20~30초가 걸리는 일입니다. "읽는 중…" 하나만 두면 멈춘 줄 알고 다시 누릅니다.
-     지금 무엇을 하고 있는지 단계로 바꿔 보여줍니다. 진짜 진행률은 알 수 없지만
-     **글자가 바뀌는 것만으로도 살아 있다는 신호가 됩니다.** */
-  /* 문구에 '블로그'를 박아두면 구글 지도 링크를 넣었을 때 틀린 말이 됩니다.
-     읽는 대상이 무엇이든 맞는 말로 둡니다. */
-  const hasLink = /https?:\/\//.test(text);
-  const steps = [
-    [0,     hasLink ? '링크를 여는 중…' : '읽는 중…'],
-    [4000,  hasLink ? '링크 안을 읽는 중…' : '내용을 살펴보는 중…'],
-    [9000,  '날짜와 장소를 골라내는 중…'],
-    [16000, '거의 다 됐어요…'],
-    [26000, '조금만 더요. 글이 길면 오래 걸려요…'],
-  ];
-  const timers = steps.map(([ms, msg]) => setTimeout(
-    () => { b.innerHTML = `<span class="load">${esc(msg)}</span>`; }, ms));
-
-  b.disabled = true; b.innerHTML = `<span class="load">${esc(steps[0][1])}</span>`;
-  const { data, error } = await sb.functions.invoke('chat', {
-    body: { trip_id: trip.id, mode: 'import', message: text.slice(0, 8000),
-            images: impShots.map(s => ({ mime: s.mime, data: s.data })) },
-  });
-  timers.forEach(clearTimeout);
-  b.disabled = false; b.textContent = '읽어오기';
-
-  /* 링크를 줬는데 못 읽었으면 그 사실을 말해줍니다. 조용히 넘어가면
-     "링크를 왜 무시하지?"만 알고 이유를 모릅니다. */
-  const bad = (data?.blogs || []).filter(x => !x.ok);
-  if (bad.length)
-    toast(bad.length === 1 ? '링크 1개는 못 읽었어요 (로그인이 필요하거나 막힌 글)'
-                           : `링크 ${bad.length}개는 못 읽었어요`);
-
-  if (error || data?.error){
-    let why = data?.error || error?.message || '';
-    try { why = (await error?.context?.json())?.error || why; } catch {}
-    return fail(why, 'imp');
-  }
-  /* **후보(places)만 나올 수 있습니다.** 구글 지도 링크처럼 날짜가 없는 것은
-     일정이 아니라 후보로 옵니다. actions 만 세면 멀쩡히 읽어놓고
-     "일정을 못 찾았어요"로 튕깁니다. */
-  const got = (data.actions?.length || 0) + (data.places?.length || 0);
-  if (!got)
-    return fail(bad.length
-      ? '링크를 못 읽었어요. 로그인이 필요한 글이거나 막아둔 블로그일 수 있어요. ' +
-        '글을 복사해서 아래 칸에 붙여넣으면 그대로 읽어드려요.'
-      : '일정을 못 찾았어요. 사진이 흐리거나 형식이 낯설 수 있어요.', 'imp');
-
-  /* 결과는 AI 시트에서 봅니다. 담기·되돌리기가 거기 이미 있습니다 —
-     여기서 또 만들면 두 벌이 되고 언젠가 한쪽만 고칩니다. */
-  $('importcard').classList.add('hide');
-  syncSheets();
-  openAi();
-  $('ai_trip').value = trip.id;
-  await loadChats(trip.id);
-  drawSources(data.sources, data.web);
-  drawCards(data);
-  toast(`${got}개를 읽었어요. 확인하고 담아주세요.`);
-});
-
+/* ── 일정 불러오기 ────────────────────────────────────────────────────
+ * 분류 짐작과 파일·사진에서 불러오기는 bring.js 로 옮겼습니다
+ * (b346, 스물한 번째 조각). ctx 는 셋(openAi · loadChats · loadPlans)입니다. */
 /* ── 날씨 ───────────────────────────────────────────────────────────
  * open-meteo 는 키가 없어도 됩니다. 키를 받아 어딘가에 두는 순간
  * 그 키가 새는 걱정이 하나 늘어납니다.
@@ -2767,96 +2594,9 @@ $('days').addEventListener('click', e => {
   drawDays(); drawCats(); drawPlans(); drawPlanMap();
 });
 
-/* ── 지운 것 되살리기 ────────────────────────────────────────────────
- * 지울 때 deleted_at 만 찍고 진짜로는 안 지워 왔습니다. 그런데 되살리는 길이
- * 없어서 결국 영영 지운 것과 같았습니다. 여기가 그 길입니다.
- * 표 셋(일정·지출·예약)을 각각 물으면 화면 코드가 세 배가 되므로
- * 032 의 deleted_items 가 한 번에 모아 줍니다. */
-const TRASH_KO = { plan:'일정', expense:'지출', booking:'예약' };
-$('trashhead').addEventListener('click', () => {
-  const open = $('trash').classList.toggle('hide');
-  $('trashcaret').textContent = open ? '펴기' : '접기';
-});
-const TRASH_TABLE = { plan:'plans', expense:'expenses', booking:'bookings' };
-
-async function loadTrash(){
-  const card = $('card-trash');
-  const kind = TAB_TRASH[tab];
-  /* 되살릴 것이 없으면 카드를 아예 안 보여줍니다. "지운 것이 없어요"만 적힌
-     빈 카드는 매번 자리만 먹고, 그걸 보려고 탭을 여는 사람은 없습니다. */
-  const hideCard = () => card.classList.add('hide');
-  if (!kind) return hideCard();
-
-  $('trasherr').classList.add('hide');
-  const { data, error } = await netTimeout(sb.rpc('deleted_items', { p_trip: trip.id }));
-  if (error){
-    /* 못 불러오면 조용히 접습니다. 되살리기는 급한 기능이 아니라
-       여기서 오류 상자를 띄우면 정작 보러 온 일정 위에 얹힙니다. */
-    if (isOffline(error)) drawOffbar();
-    return hideCard();
-  }
-
-  const rows = (data || []).filter(r => r.kind === kind);
-  if (!rows.length) return hideCard();
-
-  card.classList.remove('hide');
-  $('trashtitle').textContent = `지운 ${TRASH_KO[kind]}`;
-  $('trashcount').textContent = `${rows.length}개`;
-  /* 탭을 옮기면 다시 접습니다. 한 번 편 채로 따라다니면 접은 뜻이 없습니다. */
-  $('trash').classList.add('hide');
-  $('trashcaret').textContent = '펴기';
-  /* 되살리기 옆에 '완전 삭제'를 둡니다. 지운 것이 여기 계속 쌓이면
-     목록이 길어져 정작 되살릴 것을 못 찾습니다. 진짜로 지우는 것이라
-     한 번 더 물어봅니다(arm) — 되살릴 길이 그때는 없습니다. */
-  $('trash').innerHTML = rows.map(r => `<div class="arow">
-      <span class="k"><b>${esc(r.title)}</b>
-        <span class="m">${esc(r.sub || '')}</span></span>
-      ${trip.myRole === 'viewer' ? ''
-        : `<button class="ghost" data-undel="${esc(r.kind)}:${esc(r.id)}"
-                   style="color:var(--primary); padding:4px 6px">되살리기</button>
-           <button class="ghost" data-zap="${esc(r.kind)}:${esc(r.id)}"
-                   style="color:var(--bad, #c0392b); padding:4px 6px">완전 삭제</button>`}
-      </div>`).join('');
-}
-
-/* 되살렸든 지웠든 원래 자리도 다시 그려야 합니다. */
-async function afterTrash(kind){
-  await loadTrash();
-  if (kind === 'plan')    await loadPlans();
-  if (kind === 'expense') await loadExpenses();
-  if (kind === 'booking') await loadBookings();
-}
-
-$('trash').addEventListener('click', async e => {
-  const z = e.target.closest('[data-zap]');
-  if (z){
-    /* 한 번 더 묻습니다. 여기서 지우면 정말 없어집니다. */
-    if (z.dataset.armed !== '1'){ arm(z, '정말 지울까요?'); return; }
-    const [kind, id] = z.dataset.zap.split(':');
-    z.disabled = true; z.innerHTML = '<span class="load">지우는 중…</span>';
-    /* 이미 지운 것만 지웁니다. deleted_at 조건을 빼면, 그 사이 딴 기기에서
-       되살려 놓은 줄까지 여기서 없앨 수 있습니다. */
-    const r = await sb.from(TRASH_TABLE[kind]).delete()
-      .eq('id', id).not('deleted_at', 'is', null).select('id');
-    z.disabled = false; disarm(z); z.textContent = '완전 삭제';
-    if (r.error) return fail(r.error, 'trash');
-    if (!r.data?.length) return fail(NOROW.del, 'trash');
-    toast('완전히 지웠어요.');
-    return afterTrash(kind);
-  }
-
-  const b = e.target.closest('[data-undel]'); if (!b) return;
-  const [kind, id] = b.dataset.undel.split(':');
-  b.disabled = true; b.innerHTML = '<span class="load">되살리는 중…</span>';
-  const r = await sb.from(TRASH_TABLE[kind])
-    .update({ deleted_at: null }).eq('id', id).select('id');
-  b.disabled = false; b.textContent = '되살리기';
-  if (r.error) return fail(r.error, 'trash');
-  if (!r.data?.length) return fail('되살리지 못했어요. 다시 눌러주세요.', 'trash');
-  toast('되살렸어요.');
-  await afterTrash(kind);
-});
-
+/* ── 지운 것 되살리기 ─────────────────────────────────────────────────
+ * trash.js 로 옮겼습니다(b346, 스물두 번째 조각). ctx 는 하나(loadPlans).
+ * TAB_TRASH 도 그리로 갔습니다 — 아래 탭 구역이 거기서 가져다 씁니다. */
 /* ── 탭 ─────────────────────────────────────────────────────────────
  * 카드를 한 화면에 다 쌓아두면 예약·준비물까지 붙였을 때 감당이 안 됩니다.
  * DOM 순서는 그대로 두고 보이는 것만 고릅니다 — display:none 이라 사이가 안 벌어집니다. */
@@ -2870,8 +2610,6 @@ const TABS = {
   prep:  ['card-book', 'bookcard', 'card-pack', 'card-link', 'card-trash'],
   mem:   ['card-mem'],
 };
-/* 어느 탭이 어떤 것을 되살리는가 */
-const TAB_TRASH = { plans:'plan', exp:'expense', prep:'booking' };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
 

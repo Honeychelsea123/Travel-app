@@ -16,11 +16,11 @@
  *   값으로 받으면 로그인 전의 null 을 영영 들고 있게 됩니다.
  *
  * 층: dom.js · db.js · cities.js · card.js 만 씁니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b345';
-import { sb } from './db.js?v=b345';
-import { cities, countryName, continentOf } from './cities.js?v=b345';
+import { $, esc, toast, copyText } from './dom.js?v=b346';
+import { sb } from './db.js?v=b346';
+import { cities, countryName, continentOf } from './cities.js?v=b346';
 import { PERSONA_ICON, personaStats, judgePersona,
-         askImageSize, cardImage } from './card.js?v=b345';
+         askImageSize, cardImage } from './card.js?v=b346';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
