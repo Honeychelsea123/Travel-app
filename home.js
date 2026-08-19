@@ -16,23 +16,23 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b378';
-import { sb } from './db.js?v=b378';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b378';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b378';
-import { starHtml, paintStars, markRated } from './stars.js?v=b378';
-import { cities, countryName } from './cities.js?v=b378';
-import { myRates, visited } from './rate.js?v=b378';
-import { plans } from './trip.js?v=b378';
-import { openCity } from './city.js?v=b378';
-import { loadCities, pick } from './citysearch.js?v=b378';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b378';
-import { openMap, UN_COUNTRIES } from './map.js?v=b378';
+import { $, esc } from './dom.js?v=b379';
+import { sb } from './db.js?v=b379';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b379';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b379';
+import { starHtml, paintStars, markRated } from './stars.js?v=b379';
+import { cities, countryName } from './cities.js?v=b379';
+import { myRates, visited } from './rate.js?v=b379';
+import { plans } from './trip.js?v=b379';
+import { openCity } from './city.js?v=b379';
+import { loadCities, pick } from './citysearch.js?v=b379';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b379';
+import { openMap, UN_COUNTRIES } from './map.js?v=b379';
 /* `aiPrompt` 는 무엇을 권할지만 정합니다 — 여행이 있을 때는 히어로 단추로,
    없을 때는 `renderAiCard` 가 카드로 그립니다(b377). */
-import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b378';
-import { PERSONA_BG } from './card.js?v=b378';
-import { openNew } from './newtrip.js?v=b378';
+import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b379';
+import { PERSONA_BG } from './card.js?v=b379';
+import { openNew } from './newtrip.js?v=b379';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -135,15 +135,19 @@ function heroHtml(photo, dd, title, memo, btn, ai){
     ${photo ? `<img src="${esc(photo)}" alt="" onerror="this.remove()">` : ''}
     ${dd ? `<div class="dd">${esc(dd)}</div>` : ''}
     <div class="ht">${esc(title)}</div>
-    <div class="hm">${esc(memo)}</div>
-    ${/* ⚠ **글자만으로는 뜻이 안 통했습니다**(b378). b377 에 `뭐 더 넣을까 묻기`
-          라고 적었더니 사용자가 "그게 뭐야" 라고 물었습니다 — 어디에 넣는지도
-          누구에게 묻는지도 안 드러납니다. 원래 카드는 두 줄이었고(`도쿄, 뭐 더
-          넣을까요?` + `빈 시간에 넣을 곳을 찾아드려요`) **뜻은 아랫줄이 지고
-          있었는데**, 단추 하나로 압축하면서 그 줄을 버린 것이 잘못이었습니다.
-          이제 **아이콘이 '누가'를, 글자가 '무엇이 되는지'를** 맡습니다 —
-          별 두 개는 앱에서 이미 AI 를 뜻하고, 글자는 `일정 추가` 로 짧습니다. */''}${
-      btn ? `<button class="hbtn" id="herobtn">${ai ? AI_MARK : ''}${esc(btn)}</button>` : ''}
+    ${/* ⚠ **단추를 밑에 또 쌓으면 왼쪽 아래가 무거워집니다**(b379). 히어로는
+          `justify-content:flex-end` 라 D-23 · 도시 · 날짜 · 단추가 **왼쪽 아래에
+          네 층으로** 쌓였고, 사진은 위쪽만 보이는데 글은 아래로 처졌습니다.
+          날짜와 **같은 줄**에 두고 단추만 오른쪽으로 보냅니다 — 층이 하나
+          줄고 좌우로 나뉘어 사진이 더 보입니다.
+
+          글자는 b378 에서 정한 대로 짧게 두고 아이콘이 '누가'를 맡습니다.
+          (원래 카드는 두 줄이었고 뜻은 아랫줄이 지고 있었는데, 단추 하나로
+          압축하면서 그 줄을 버린 것이 `뭐 더 넣을까 묻기` 였습니다.) */''}
+    <div class="hrow">
+      <div class="hm">${esc(memo)}</div>
+      ${btn ? `<button class="hbtn" id="herobtn">${ai ? AI_MARK : ''}${esc(btn)}</button>` : ''}
+    </div>
   </div>`;
 }
 
