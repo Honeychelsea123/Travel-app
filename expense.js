@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b362';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b362';
+import { $, esc, toast, emptyDo } from './dom.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b363';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b363';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b362';
-import { arm } from './ui.js?v=b362';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b363';
+import { arm } from './ui.js?v=b363';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -110,7 +110,8 @@ export async function loadExpenses(){
 function drawExpenses(){
   if (!expenses.length){
     $('exptotal').innerHTML = '';
-    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.', '첫 지출 넣기', 'addexpbtn');
+    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.', '첫 지출 넣기', 'addexpbtn',
+                                      '넣어두면 일행과 나눠 낼 몫이 자동으로 계산돼요.');
     return;
   }
   const byCur = {};

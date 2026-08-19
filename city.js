@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg } from './dom.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { cities, countryName, continentOf } from './cities.js?v=b362';
-import { myRates, cityStat, visited } from './rate.js?v=b362';
-import { starHtml } from './stars.js?v=b362';
-import { localTime, dateRange, hm } from './calc.js?v=b362';
-import { fail } from './net.js?v=b362';
+import { $, esc, avatarImg, emptyDo } from './dom.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { cities, countryName, continentOf } from './cities.js?v=b363';
+import { myRates, cityStat, visited } from './rate.js?v=b363';
+import { starHtml } from './stars.js?v=b363';
+import { localTime, dateRange, hm } from './calc.js?v=b363';
+import { fail } from './net.js?v=b363';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -103,8 +103,10 @@ export async function openCity(id){
   if (error) return fail(error, 'cv');
 
   if (!lg?.length){
+    /* 도시 화면 안이라 '새 여행' 단추가 여기 없습니다 — 글만 둡니다. */
     $('cv_trips').innerHTML =
-      '<div class="empty">아직 이 도시로 간 여행이 없어요.</div>';
+      emptyDo('아직 이 도시로 간 여행이 없어요.', null, null,
+              '여행을 만들 때 이 도시를 고르면 여기에 모여요.');
     return;
   }
   /* 그 구간 날짜에 걸린 일정만 가져옵니다 — 다른 도시 일정이 섞이면 안 됩니다. */

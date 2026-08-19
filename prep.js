@@ -12,12 +12,12 @@
  * closeDocs. 서류는 시트로 열리므로 닫는 길만 밖에서 필요합니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b362';
-import { hm } from './calc.js?v=b362';
-import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b362';
-import { arm } from './ui.js?v=b362';
+import { $, esc, toast, emptyDo } from './dom.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b363';
+import { hm } from './calc.js?v=b363';
+import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b363';
+import { arm } from './ui.js?v=b363';
 
 /* ── 예약 ───────────────────────────────────────────────────────────
  * 여행 중에 제일 자주 열어보는 것입니다 — 항공편 번호, 숙소 예약번호.
@@ -57,7 +57,10 @@ export async function loadBookings(){
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-bact="del" data-id="${esc(b.id)}"
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
-  }).join('') : '<div class="empty">항공권·숙소 예약을 넣어두면 여행 중에 찾기 쉬워요.</div>';
+  }).join('')
+    /* 예약은 `추가` 를 눌러야 폼이 열립니다 — 숨어 있으니 단추를 답니다. */
+    : emptyDo('아직 넣어둔 예약이 없어요.', '첫 예약 넣기', 'addbookbtn',
+              '항공권·숙소를 넣어두면 여행 중에 찾기 쉬워요.');
 }
 
 /* ── 여행 서류 ──────────────────────────────────────────────────────
@@ -213,7 +216,9 @@ export async function loadPacking(){
               `<button class="ghost" data-kact="del" data-id="${esc(p.id)}"
                        style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
       ).join('')
-    : '<div class="empty">챙길 것을 적어두세요.</div>';
+    /* 입력폼이 바로 아래 늘 보입니다 — 단추를 달지 않습니다. */
+    : emptyDo('아직 챙길 것이 없어요.', null, null,
+              '아래에 적어두면 빠뜨리지 않아요.');
 }
 
 /* 분류는 짐 싸는 순서대로 둡니다 — 없으면 못 가는 것부터. */
@@ -288,7 +293,9 @@ export async function loadLinks(){
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-lkact="del" data-id="${esc(l.id)}"
                  style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
-    : '<div class="empty">예약 확인 페이지나 블로그를 담아두세요.</div>';
+    /* 여기도 입력폼이 늘 보입니다. */
+    : emptyDo('아직 담아둔 링크가 없어요.', null, null,
+              '예약 확인 페이지나 블로그를 담아두세요.');
 }
 
 $('l_add').addEventListener('click', async () => {

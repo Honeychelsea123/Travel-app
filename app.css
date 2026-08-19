@@ -850,8 +850,25 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 
 /* ── 빈 화면 ── 무엇을 하면 되는지 그 자리에 둡니다 */
 .emptydo{ padding:26px 8px 22px; }
-.emptydo .t{ margin-bottom:14px; }
-.emptydo .primary{ flex:none; padding:11px 22px; }
+/* 사이 간격을 **아래 것에** 답니다(b363). 제목에 달아두면 안내 줄이 있을 때와
+   없을 때가 달라져서, 줄을 더할 때마다 여기를 같이 고쳐야 합니다. */
+.emptydo .t{ margin-bottom:0; }
+.emptydo .h{ margin-top:6px; }
+.emptydo .primary{ margin-top:14px; flex:none; padding:11px 22px; }
+
+/* 빈 화면에 큰 단추가 떠 있으면 머리말의 작은 `추가` 는 감춥니다 (b363).
+   같은 일을 하는 단추가 20px 거리에 둘이 서 있었습니다.
+
+   **조건을 자바스크립트로 세 곳에 흩지 않습니다.** 지출·일정·예약이
+   각자 "비었으면 감춰라"를 들고 있으면 한 곳만 고치는 날이 옵니다.
+   `.emptydo` 가 화면에 있느냐를 CSS 가 직접 봅니다 — 조건이 한 곳입니다.
+
+   ⚠ **`.small` 을 통째로 감추면 안 됩니다.** 예약 머리말에는 `서류` 가
+   같은 `.small` 로 나란히 있는데 그건 다른 일입니다. 감출 것에만
+   `.addbtn` 을 답니다.
+   ⚠ `[data-go]` 를 꼭 봅니다. 단추 없는 빈 화면(준비물·링크처럼 폼이
+   이미 보이는 자리)에서는 머리말 단추가 유일한 길이라 감추면 안 됩니다. */
+.card:has(.emptydo [data-go]) h2 .addbtn{ display:none; }
 
 /* 여행 목록의 ⋯ 뒤에 숨긴 것 (수정·삭제·나가기).
    되돌릴 수 없는 것을 손가락 닿는 자리에 상시로 두지 않습니다. */

@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml } from './dom.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b362';
-import { todayYmd } from './calc.js?v=b362';
-import { cities } from './cities.js?v=b362';
-import { trip } from './trip.js?v=b362';
-import { tripSub } from './rating.js?v=b362';
-import { heroTint, openTripReport } from './home.js?v=b362';
-import { ROLE_KO } from './member.js?v=b362';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b363';
+import { todayYmd } from './calc.js?v=b363';
+import { cities } from './cities.js?v=b363';
+import { trip } from './trip.js?v=b363';
+import { tripSub } from './rating.js?v=b363';
+import { heroTint, openTripReport } from './home.js?v=b363';
+import { ROLE_KO } from './member.js?v=b363';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -125,8 +125,14 @@ export async function loadTrips(){
 
   if (!data.length){
     dropHtml('trips'); $('trips').innerHTML =
-      tripFilter === 'past' ? '<div class="empty">아직 다녀온 여행이 없어요.</div>' :
-      '<div class="empty">앞으로 갈 여행이 없어요.<br>새 여행을 눌러 만들어보세요.</div>';
+      /* 지난 여행은 만들 수 있는 것이 아니라 단추가 없습니다. 앞으로 갈
+         여행은 **글로 '새 여행을 눌러보세요' 라고 가리키고 있었습니다** —
+         가리키는 대신 그 단추를 여기 답니다. */
+      tripFilter === 'past'
+        ? emptyDo('아직 다녀온 여행이 없어요.', null, null,
+                  '여행이 끝나면 여기로 옮겨져요.')
+        : emptyDo('앞으로 갈 여행이 없어요.', '새 여행 만들기', 'newtripbtn',
+                  '날짜와 도시만 정하면 나머지는 채워가면 돼요.');
     return;
   }
   const tripsHtml = data.map(t => {

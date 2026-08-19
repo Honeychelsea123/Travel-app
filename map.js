@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk } from './dom.js?v=b362';
-import { openCity } from './city.js?v=b362';
-import { distKm } from './calc.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { cities, countryName, continentOf } from './cities.js?v=b362';
-import { PERSONA_ICON, askImageSize } from './card.js?v=b362';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b363';
+import { openCity } from './city.js?v=b363';
+import { distKm } from './calc.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { cities, countryName, continentOf } from './cities.js?v=b363';
+import { PERSONA_ICON, askImageSize } from './card.js?v=b363';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -267,8 +267,10 @@ export async function openCountries(){
 
   if (!codes.length){
     $('ctrylist').innerHTML =
-      '<div class="card"><div class="empty">아직 다녀온 곳이 없어요.<br>' +
-      '도시에 별점을 매기거나 지난 여행을 넣으면 여기 쌓여요.</div></div>';
+      '<div class="card">' +
+      emptyDo('아직 다녀온 곳이 없어요.', null, null,
+              '도시에 별점을 매기거나 지난 여행을 넣으면 여기 쌓여요.') +
+      '</div>';
     return;
   }
 
@@ -481,7 +483,8 @@ export async function openMap(){
           `<button data-pin="${esc(c.id)}">${esc(c.name)}${
             stars[c.id] ? ` ★${stars[c.id]}` : ''}</button>`).join('')}</div>
       </div>`).join('')
-    : '<div class="empty">아직 다녀온 곳이 없어요.</div>';
+    : emptyDo('아직 다녀온 곳이 없어요.', null, null,
+              '도시에 별점을 매기면 그 나라가 칠해져요.');
 
   /* ── 기록 ── 숫자를 곱씹게 만드는 자리 ── */
   const withPos = mapCities.filter(c => c.center_lat != null);

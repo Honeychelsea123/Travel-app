@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b362';
-import { openCity } from './city.js?v=b362';
-import { sb } from './db.js?v=b362';
-import { cities, countryName } from './cities.js?v=b362';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b362';
-import { starHtml, paintStars, markRated } from './stars.js?v=b362';
-import { fail } from './net.js?v=b362';
-import { arm } from './ui.js?v=b362';
-import { todayYmd } from './calc.js?v=b362';
-import { loadCities } from './citysearch.js?v=b362';
-import { loadRateData, saveRate } from './rating.js?v=b362';
+import { $, esc, toast, emptyDo, josa } from './dom.js?v=b363';
+import { openCity } from './city.js?v=b363';
+import { sb } from './db.js?v=b363';
+import { cities, countryName } from './cities.js?v=b363';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b363';
+import { starHtml, paintStars, markRated } from './stars.js?v=b363';
+import { fail } from './net.js?v=b363';
+import { arm } from './ui.js?v=b363';
+import { todayYmd } from './calc.js?v=b363';
+import { loadCities } from './citysearch.js?v=b363';
+import { loadRateData, saveRate } from './rating.js?v=b363';
 
 let ctx = {
   me: () => null,
@@ -56,6 +56,27 @@ const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
    로 보관함이 통째로 안 열렸습니다. 한 곳에서만 쓰는 것은 그 곳에 둡니다. */
 let shelfKind = 'mine';
 let shelfSort = 'new';
+
+/* ── 빈 보관함 (b363) ────────────────────────────────────────────────
+ * 전에는 두 곳 다 그냥 **'아직 없어요.'** 였습니다. 무엇이 없는지가 안
+ * 적혀 있어서, 어느 타일로 들어왔는지 잊으면 읽고도 모릅니다.
+ * 이름은 SHELF 표에서 꺼내 씁니다 — **조사는 `josa` 가 붙입니다.**
+ * '다녀온 도시**가**' / '가보고 싶은 곳**이**' 를 손으로 적으면 이름을
+ * 바꾸는 날 한쪽을 놓칩니다.
+ *
+ * 여기를 지나는 것은 도시 평가 넷(been·want·mine·comment)입니다 —
+ * 맛집·관광지·후기·배지는 각자 다른 함수로 빠집니다. */
+const SHELF_HINT = {
+  been:    '도시를 열어 다녀왔다고 표시하면 여기에 모여요.',
+  want:    '도시 옆 하트를 누르면 여기에 모여요.',
+  mine:    '도시에 별을 남기면 여기에 모여요.',
+  comment: '별과 함께 한줄평을 적으면 여기에 모여요.',
+};
+/* **두 곳에서 씁니다**(그릴 때 · 마지막 줄을 지웠을 때). 문구를 양쪽에
+   적으면 한쪽만 고치는 날이 옵니다. */
+const shelfEmpty = () =>
+  emptyDo(`아직 ${josa(SHELF[shelfKind] || '담아둔 것', '이', '가')} 없어요.`,
+          null, null, SHELF_HINT[shelfKind]);
 const HAS_STARS = k => k === 'mine' || k === 'comment' || k === 'place' || k === 'spot';
 
 /* 목록을 정렬 규칙에 맞게 세웁니다.
@@ -134,8 +155,8 @@ async function openReviewShelf(){
   $('shelfcount').textContent = list.length ? `${list.length}개` : '';
   if (!list.length){
     $('shelflist').innerHTML =
-      `<div class="empty">아직 남긴 후기가 없어요.<br>
-         여행이 끝나면 그 여행 화면에서 별점과 글, 사진을 남길 수 있어요.</div>`;
+      emptyDo('아직 남긴 후기가 없어요.', null, null,
+              '여행이 끝나면 그 여행 화면에서 별점과 글, 사진을 남길 수 있어요.');
     return;
   }
   /* 표지 사진은 비공개 통에 있습니다. 잠깐 열리는 주소를 한 번에 받습니다. */
@@ -299,7 +320,7 @@ export async function openShelf(kind){
         (kind === 'comment' && r.comment
           ? `<div class="rcmt">${esc(r.comment)}</div>` : '');
       }).join('')
-    : `<div class="empty">아직 없어요.</div>`;
+    : shelfEmpty();
 }
 
 export function closeShelf(fromPop){
@@ -320,7 +341,7 @@ function dropRow(row){
       row.remove();
       const n = $('shelflist').querySelectorAll('.rrow').length;
       $('shelfcount').textContent = n ? `${n}곳` : '';
-      if (!n) $('shelflist').innerHTML = '<div class="empty">아직 없어요.</div>';
+      if (!n) $('shelflist').innerHTML = shelfEmpty();
     }, 260);
   }, 700);
 }

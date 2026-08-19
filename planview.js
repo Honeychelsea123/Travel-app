@@ -18,14 +18,14 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b362';
-import { featOn, flags } from './flags.js?v=b362';
-import { fail, write } from './net.js?v=b362';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b362';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b362';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b362';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b362';
-import { STAY_MIN, mins } from './plancheck.js?v=b362';
+import { $, esc, emptyDo } from './dom.js?v=b363';
+import { featOn, flags } from './flags.js?v=b363';
+import { fail, write } from './net.js?v=b363';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b363';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b363';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b363';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b363';
+import { STAY_MIN, mins } from './plancheck.js?v=b363';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -174,9 +174,14 @@ export function drawPlans(){
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
   if (!show.length){
+    /* 날을 골라 둔 채로 비어 있는 것은 **여행에 일정이 없는 것과 다릅니다** —
+       다른 날에는 있을 수 있습니다. 그래서 단추를 안 답니다(달면 머리말의
+       `추가` 가 CSS 규칙에 걸려 사라지는데, 여기서는 그것이 유일한 길입니다). */
     $('plans').innerHTML = pickedDay
-      ? '<div class="empty">이 날은 비어 있어요.</div>'
-      : emptyDo('아직 일정이 없어요.', '첫 일정 넣기', 'addplanbtn');
+      ? emptyDo('이 날은 아직 비어 있어요.', null, null,
+                '위에서 모든 날을 누르면 전체가 보여요.')
+      : emptyDo('아직 일정이 없어요.', '첫 일정 넣기', 'addplanbtn',
+                '첫 줄만 넣으면 나머지는 이어서 채우기 쉬워요.');
     return;
   }
   let html = '', last = null, prev = null;
