@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b348';
+import { sb } from './db.js?v=b349';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b348';
-import { starHtml, paintStars, markRated } from './stars.js?v=b348';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b349';
+import { starHtml, paintStars, markRated } from './stars.js?v=b349';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b348';
-import { loadAdmin } from './admin.js?v=b348';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b349';
+import { loadAdmin } from './admin.js?v=b349';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b348';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b348';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b348';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b349';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b349';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,66 +33,67 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b348';
+         setEditPlanId, nameOf } from './trip.js?v=b349';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b348';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b349';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b348';
+         useCities, addCity, search } from './cities.js?v=b349';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b348';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b349';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b348';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b349';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b348';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b349';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b348';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b349';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b348';
+         isCityOpen, clearCityOpen } from './city.js?v=b349';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b348';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b349';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b348';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b349';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b348';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b348';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b348';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b348';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b348';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b348';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b348';
-import { loadReview, setReviewCtx } from './review.js?v=b348';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b349';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b349';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b349';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b349';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b349';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b349';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b349';
+import { loadReview, setReviewCtx } from './review.js?v=b349';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b348';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b348';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b348';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b349';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b349';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b349';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b348';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b348';
-import './selfcheck.js?v=b348';
-import { guessCat, setBringCtx } from './bring.js?v=b348';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b348';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b348';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b348';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b349';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b349';
+import './selfcheck.js?v=b349';
+import { guessCat, setBringCtx } from './bring.js?v=b349';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b349';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b349';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b349';
+import { setAccountCtx } from './account.js?v=b349';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b348';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b349';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b348';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b349';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -121,6 +122,7 @@ setReviewCtx({ me: () => me });
 setRatingCtx({ me: () => me, fillCityList, showApp });
 setNotifyCtx({ me: () => me });
 setAiScreenCtx({ me: () => me });
+setAccountCtx({ me: () => me, logError });
 setNewTripCtx({ me: () => me, loadTrips, openTrip, openDraft });
 setHomeCtx({ me: () => me, openTrip, showApp });
 setCandsCtx({ loadPlans, openAi, loadChats });
@@ -427,144 +429,10 @@ navigator.serviceWorker?.addEventListener('message', e => {
   if (e.data?.t2 === 'open') openFromUrl(e.data.url);
 });
 
-/* ── 탈퇴 ───────────────────────────────────────────────────────────
- * 이메일·이름·사진을 모으고 있으니 지울 길이 반드시 있어야 합니다.
- *
- * 세 가지를 지킵니다.
- *   1. **무엇이 지워지는지 누르기 전에 보여줍니다.** "정말요?"만 묻고 실행하면
- *      무엇을 잃는지 모른 채 누르게 됩니다.
- *   2. **글자를 적게 합니다.** 버튼 두 번으로 계정이 사라지면 안 됩니다.
- *   3. **일행이 있는 여행은 안 지웁니다.** 내 계정 하나 지우자고 남의 일정을
- *      없앨 수는 없습니다. 나만 빠지고 주인이면 다음 사람에게 넘깁니다.
- */
-const DEL_WORD = '탈퇴합니다';
-
-$('delbtn').addEventListener('click', async () => {
-  const box = $('delbox');
-  if (!box.classList.contains('hide')){ box.classList.add('hide'); return; }
-  box.classList.remove('hide');
-  $('delerr').classList.add('hide');
-  $('del_word').value = ''; $('del_go').disabled = true;
-
-  const { data, error } = await sb.rpc('delete_preview');
-  if (error){
-    /* 036 을 아직 안 올렸으면 함수가 없습니다. 세는 것만 건너뛰고 나머지는 그대로. */
-    $('delwhat').innerHTML =
-      `<div class="empty" style="text-align:left">무엇이 지워지는지 세지 못했어요.<br>
-         <span class="memo">${esc(error.message || '')}</span></div>`;
-    return;
-  }
-  const d = data || {};
-  const row = (k, v, m) => v ? `<div class="row"><span class="label">${esc(k)}
-      ${m ? `<div class="memo">${esc(m)}</div>` : ''}</span>
-      <span class="val"><b>${v}</b></span></div>` : '';
-  $('delwhat').innerHTML =
-    `<div class="daysep">지워지는 것</div>` +
-    row('나 혼자인 여행', d.solo_trips, '그 안의 일정·지출·예약까지 함께') +
-    row('일정', d.plans) +
-    row('지출', d.expenses) +
-    row('도시 별점', d.city_ratings) +
-    row('가보고 싶은 곳', d.wants) +
-    row('맛집·관광지 별점', d.plan_ratings) +
-    row('AI 대화', d.chats) +
-    `<div class="row"><span class="label">계정
-       <div class="memo">이름 · 이메일 · 프로필 사진</div></span>
-       <span class="val"><b>삭제</b></span></div>` +
-    (d.shared_trips
-      ? `<div class="daysep">남는 것</div>
-         <div class="row"><span class="label">일행이 있는 여행
-           <div class="memo">일정은 그대로 두고 나만 빠져요. 제가 주인이면
-             다음 일행에게 넘어가요. 제가 낸 지출은 남지만 결제자 칸이 비워져요</div></span>
-           <span class="val"><b>${d.shared_trips}</b></span></div>` : '');
-});
-
-$('del_cancel').addEventListener('click', () => {
-  $('delbox').classList.add('hide'); $('delerr').classList.add('hide');
-});
-/* 정확히 적었을 때만 열립니다. 앞뒤 공백은 봐줍니다 — 자동완성이 붙일 때가 있습니다. */
-$('del_word').addEventListener('input', () => {
-  $('del_go').disabled = $('del_word').value.trim() !== DEL_WORD;
-});
-
-$('del_go').addEventListener('click', async () => {
-  if ($('del_word').value.trim() !== DEL_WORD) return;
-  const b = $('del_go');
-  $('delerr').classList.add('hide');
-  b.disabled = true; b.innerHTML = '<span class="load">지우는 중…</span>';
-
-  const { data, error } = await sb.functions.invoke('delete-me',
-    { body: { confirm: 'DELETE' } });
-
-  if (error || data?.error){
-    b.disabled = false; b.textContent = '영구 삭제';
-    let why = data?.error || error?.message || '';
-    try { why = (await error?.context?.json())?.error || why; } catch {}
-    return fail(/not found|Failed to send/i.test(why)
-      ? '탈퇴 기능이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
-      : why, 'del');
-  }
-
-  /* 계정이 없어졌으니 남은 토큰도 버리고 첫 화면으로 보냅니다.
-     캐시에 남은 내 자료도 지웁니다 — 안 지우면 다음 사람이 그걸 봅니다. */
-  try {
-    Object.keys(localStorage).filter(k => k.startsWith('t2:'))
-      .forEach(k => localStorage.removeItem(k));
-  } catch {}
-  await sb.auth.signOut().catch(() => {});
-  alert('탈퇴가 끝났어요. 그동안 고마웠어요.');
-  location.replace(location.pathname);
-});
-
-/* ── 버그 신고 ──────────────────────────────────────────────────────
- * 앱이 스스로 터진 것(client_errors)만 모으면 절반만 압니다.
- * 제일 흔한 문제는 안 터집니다 — "눌러도 아무 일이 안 나요".
- * 그건 사람이 적어줘야 알 수 있습니다. */
-$('rpbtn').addEventListener('click', () => {
-  $('rpbox').classList.toggle('hide');
-  $('rperr').classList.add('hide');
-  if (!$('rpbox').classList.contains('hide')) $('rp_body').focus();
-});
-$('rp_cancel').addEventListener('click', () => $('rpbox').classList.add('hide'));
-$('rpkind').addEventListener('click', e => {
-  const b = e.target.closest('[data-rk]'); if (!b) return;
-  $('rpkind').querySelectorAll('.day').forEach(x => x.classList.toggle('on', x === b));
-});
-
-$('rp_send').addEventListener('click', async () => {
-  const b = $('rp_send');
-  $('rperr').classList.add('hide');
-  const body = $('rp_body').value.trim();
-  if (body.length < 5) return fail('무엇이 불편했는지 조금만 더 적어주세요.', 'rp');
-
-  b.disabled = true; b.innerHTML = '<span class="load">보내는 중…</span>';
-  const r = await netTimeout(sb.from('reports').insert({
-    user_id: me.id,
-    kind: $('rpkind').querySelector('.on')?.dataset.rk || '버그',
-    body,
-    /* 어느 빌드에서 났는지가 제일 중요한 단서입니다. 기기 종류도 같이.
-       일정·지출 내용은 안 보냅니다 — 고치는 데 필요 없습니다. */
-    build: $('build')?.textContent || '',
-    ua: navigator.userAgent.slice(0, 300),
-  }).select('id'));
-  b.disabled = false; b.textContent = '보내기';
-
-  if (r.error) return fail(r.error, 'rp');
-  /* 040 을 안 올렸으면 표가 없어 0건이 됩니다. 그건 만든 사람이 할 일이라
-     화면에는 안 적습니다 — 사용자는 마이그레이션 번호를 모릅니다. */
-  if (!r.data?.length){
-    logError('버그 신고 저장 0건 — db/040 미적용 가능성', 'report');
-    return fail('보내지 못했어요. 잠시 뒤 다시 해주세요.', 'rp');
-  }
-  $('rp_body').value = '';
-  $('rpbox').classList.add('hide');
-  toast('보냈어요. 읽고 고칠게요.');
-});
-
-
-/* 초성('ㄷㅋ'→도쿄)과 찾기는 cities.js 로 갔습니다 (맨 위 import) —
-   사전이 아는 규칙이라 사전 옆에 있어야 하고, 거기서는 로그인 없이도
-   콘솔에서 돌려볼 수 있습니다(__citiesCheck). */
-
+/* ── 내 계정 ──────────────────────────────────────────────────────────
+ * 탈퇴 · 버그 신고 · 내 자료 내려받기는 account.js 로 옮겼습니다
+ * (b349, 스물다섯 번째 조각). ctx 는 둘(me · logError)이고 **내보내는 것이
+ * 없습니다** — 셋 다 자기 단추에 자기가 붙습니다. */
 /* ── 로그인 ─────────────────────────────────────────────────────── */
 $('login').addEventListener('click', async () => {
   $('login').disabled = true;
@@ -970,64 +838,8 @@ $('gear').addEventListener('click', () => {
    홈에서 뒤로가기를 눌렀을 때 다시 그 안으로 들어가지 않습니다. */
 $('setback').addEventListener('click', () => showProfile(false));
 
-/* ── 내 자료 내려받기 ────────────────────────────────────────────────
- * 데이터베이스에는 되돌리기가 없습니다. 잘못 지우면 그냥 사라집니다.
- * 서버 열쇠를 쓰지 않고 내 권한으로만 읽습니다 — RLS 가 내 것만 내줍니다.
- * 남의 여행에 초대돼 있으면 그 여행도 같이 받습니다. 볼 수 있는 것이 곧 내 자료입니다. */
-$('dumpbtn').addEventListener('click', async () => {
-  const b = $('dumpbtn');
-  $('dumperr').classList.add('hide');
-  b.disabled = true; b.innerHTML = '<span class="load">모으는 중…</span>';
-
-  /* 표마다 조건이 다르지 않습니다. RLS 가 이미 걸러 주므로 통째로 받습니다. */
-  const TABLES = ['trips', 'trip_legs', 'trip_members', 'plans', 'expenses',
-                  'expense_shares', 'bookings', 'packing', 'links', 'candidates',
-                  'city_ratings', 'plan_ratings', 'trip_reviews', 'chats',
-                  'profiles', 'user_prefs'];
-  /* 표 이름을 한국어로 옮기는 짝. **위로 올려두었습니다** — 아래 목록만
-     쓰고 있었고, 정작 오류 문구는 `city_ratings(PGRST301)` 처럼 표 이름과
-     오류 코드를 그대로 내보내고 있었습니다. 둘이 같은 짝을 써야 합니다. */
-  const NAME = { trips:'여행', trip_legs:'구간', trip_members:'일행', plans:'일정',
-                 expenses:'지출', expense_shares:'분담', bookings:'예약',
-                 packing:'준비물', links:'링크', candidates:'후보',
-                 city_ratings:'도시 별점', plan_ratings:'맛집 별점',
-                 trip_reviews:'여행 후기', chats:'AI 대화',
-                 profiles:'프로필', user_prefs:'설정' };
-  const out = { app:'기로', savedAt:new Date().toISOString(), user:me.id, data:{} };
-  const failed = [];
-  for (const t of TABLES){
-    const r = await sb.from(t).select('*');
-    if (r.error){
-      failed.push(NAME[t] || t);
-      logError(`내려받기 실패 ${t}: ${r.error.code || ''} ${r.error.message || ''}`, 'dump');
-      continue;
-    }
-    out.data[t] = r.data || [];
-  }
-  /* 도시 목록은 우리가 만든 자료라 안 넣습니다 — 잃어버릴 것은 내가 쓴 것뿐입니다. */
-
-  const n = Object.values(out.data).reduce((s, v) => s + v.length, 0);
-  const blob = new Blob([JSON.stringify(out, null, 1)], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `aitrip-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(a.href);
-
-  b.disabled = false; b.textContent = '다시 받기';
-  /* 총합만 보면 맞는지 알 수가 없습니다. 표마다 몇 개인지 늘어놓습니다 —
-     "일정 0" 같은 것이 눈에 띄어야 빈 백업을 붙들고 있지 않습니다. */
-  $('dumplist').classList.remove('hide');
-  $('dumplist').innerHTML =
-    `<div class="daysep">받은 것 · 모두 ${n.toLocaleString()}개</div>` +
-    TABLES.map(t => `<div class="row" style="padding:5px 0">
-        <span class="label memo">${esc(NAME[t] || t)}</span>
-        <span class="val"${(out.data[t]?.length ? '' : ' style="color:var(--ink-48)"')}>${
-          out.data[t] == null ? '못 읽었어요' : out.data[t].length.toLocaleString()}</span>
-      </div>`).join('');
-  toast(`${n.toLocaleString()}개를 저장했어요`);
-  if (failed.length)
-    fail('일부는 못 받았어요: ' + failed.join(', ') + '. 잠시 뒤 다시 받아주세요.', 'dump');
-});
+/* 내 자료 내려받기도 account.js 로 갔습니다(b349). 아래 '보관함·지도 열기'
+   손잡이는 **여기 남깁니다** — 바로 붙어 있었지만 화면 넘기기입니다. */
 
 /* 보관함과 숫자를 누르면 평가 탭으로 걸러서 보냅니다. */
 $('setview').addEventListener('click', e => {
