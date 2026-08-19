@@ -853,9 +853,22 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .stats b{ font-size:var(--f-3xl); font-weight:700; letter-spacing:-.02em; }
 .stats span{ font-size:var(--f-sm); color:var(--ink-48); }
 
+/* ── 얼마나 왔나 (b371) ──────────────────────────────────────────────
+ * `195개국 중 13.8%` 는 이 화면에서 **제일 오래 보게 되는 수**인데 13px
+ * 회색으로 계단의 맨 아래에 적혀 있었습니다. 통계 숫자(25px)와 견주면
+ * 한참 아래라, 정작 "채우고 싶게" 만들 자리가 곁다리로 보였습니다.
+ *
+ * **계단은 지킵니다** — 통계 25px 가 여전히 맨 위고, 이건 그 아래 21px 입니다.
+ * 같게 하면 무엇이 요약이고 무엇이 진행인지 갈리지 않습니다.
+ * 설명(`195개국 중`)은 13px 회색 그대로 — 커져야 하는 것은 숫자입니다. */
+.prog{ text-align:center; margin-top:14px;
+       color:var(--ink-48); font-size:var(--f-md); }
+.prog b{ font-size:var(--f-2xl); font-weight:700; color:var(--primary);
+         letter-spacing:-.02em; margin-left:2px; }
+
 /* 채워지는 게 보이면 채우고 싶어집니다 */
-.bar{ height:6px; border-radius:var(--r-pill); background:var(--parchment); overflow:hidden;
-      margin-top:8px; }
+.bar{ height:10px; border-radius:var(--r-pill); background:var(--parchment); overflow:hidden;
+      margin-top:10px; }
 .bar i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--primary); }
 
 /* 보관함 — 격자 타일에서 **목록**으로 (b370).
