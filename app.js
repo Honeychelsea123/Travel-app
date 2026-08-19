@@ -6,16 +6,16 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b344';
+import { sb } from './db.js?v=b345';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
-import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b344';
-import { starHtml, paintStars, markRated } from './stars.js?v=b344';
+import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo } from './dom.js?v=b345';
+import { starHtml, paintStars, markRated } from './stars.js?v=b345';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b344';
-import { loadAdmin } from './admin.js?v=b344';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b345';
+import { loadAdmin } from './admin.js?v=b345';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -23,8 +23,8 @@ import { loadAdmin } from './admin.js?v=b344';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b344';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b344';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b345';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b345';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -33,61 +33,62 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, nameOf } from './trip.js?v=b344';
+         setEditPlanId, nameOf } from './trip.js?v=b345';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b344';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b345';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b344';
+         useCities, addCity, search } from './cities.js?v=b345';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b344';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b345';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b344';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b345';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b344';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b345';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b344';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b345';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b344';
+         isCityOpen, clearCityOpen } from './city.js?v=b345';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b344';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b345';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b344';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b345';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b344';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b344';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b344';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b344';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b344';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b344';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b344';
-import { loadReview, setReviewCtx } from './review.js?v=b344';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b345';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b345';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b345';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b345';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b345';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b345';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b345';
+import { loadReview, setReviewCtx } from './review.js?v=b345';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b344';
-import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b344';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b344';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b345';
+import { loadNotifPrefs, setNotifyCtx } from './notify.js?v=b345';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b345';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b344';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b344';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b345';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b345';
+import './selfcheck.js?v=b345';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b344';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b345';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b344';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b345';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -2131,180 +2132,11 @@ $('days').addEventListener('change', e => {
 
 /* 지도 주소는 **틀려도 화면에서는 멀쩡해 보입니다** — 눌러서 딴 데가 나와야
    압니다. 그래서 눌러보지 않고도 알 수 있게 검사를 답니다. */
-/* ── 디자인 규칙 검사 ────────────────────────────────────────────────
- * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
- * 여행 목록(b279). 뿌리는 늘 같습니다: `b` 에 크기를 안 적으면 본문
- * 기본값(17px/700)을 받아 **항목 이름이 카드 제목을 이깁니다.**
- * 눈으로 훑어서는 세 번 다 못 잡았고, 재보고서야 잡았습니다.
- * 그래서 규칙을 코드에 둡니다. 화면을 새로 만들면 콘솔에서 돌리십시오.
- *
- *   카드 제목 17/700 › 구역 머리 15/700 › 항목 15/600 › 설명 13/400
- *
- * 배율(--ts)을 걷어내고 **설계값으로** 잽니다 — 사용자가 '작게'로 보고
- * 있으면 모든 수가 0.9배로 나와서 규칙과 안 맞습니다. */
-window.__designCheck = () => {
-  const ts = parseFloat(getComputedStyle(document.documentElement)
-               .getPropertyValue('--ts')) || 1;
-  const out = [], seen = new Set();
-  for (const e of document.querySelectorAll('main *, #aiview *')){
-    if (!e.offsetParent) continue;
-    const box = e.getBoundingClientRect(); if (box.height < 6) continue;
-    /* 자기가 직접 글자를 갖고 있는 것만 봅니다. 감싸는 상자는 자식의
-       크기를 물려받아 보여서 엉뚱하게 걸립니다. */
-    if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) continue;
-    const g = getComputedStyle(e);
-    const fs = Math.round(parseFloat(g.fontSize) / ts), fw = +g.fontWeight;
-    const tag = e.tagName, key = tag + '.' + (e.className || '-');
-    const say = (rule, why) => { const k = rule + key; if (seen.has(k)) return;
-      seen.add(k); out.push({ 규칙:rule, 자리:key, 값:`${fs}px/${fw}`,
-        글자:e.textContent.trim().replace(/\s+/g, ' ').slice(0, 20), 왜:why }); };
-
-    /* 히어로 숫자(D-3)와 카드 제목은 일부러 큽니다 — 빼고 봅니다.
-       ⚠ **계단을 벌리면서 눈금도 같이 올렸습니다**(b293). 카드 제목이
-         17 › 21, 항목 이름이 15 › 17 이 됐는데, 눈금을 17 에 두면 이제
-         **항목 이름이 전부 걸립니다.** 규칙이 화면보다 옛것이면 매번
-         걸리는 것을 무시하게 되고, 그러면 진짜가 섞여도 안 보입니다. */
-    const big = fs >= 21 && fw >= 700;
-    /* `.dd`(D-1 숫자)와 `.ht`(그 아래 여행 이름)는 히어로입니다 — 사진 위에
-       크게 얹는 자리라 카드 제목 규격을 안 따릅니다. 빼고 봅니다. */
-    const 제목 = /^H[12]$/.test(tag) || e.closest('h1,h2')
-                 || e.classList.contains('dd') || e.classList.contains('ht');
-    if (big && !제목) say('①제목처럼 큼', tag === 'B'
-      ? 'b 에 크기를 안 적어 본문 기본값을 받았습니다 → 17/600'
-      : '21/700 은 카드 제목 자리입니다');
-    /* 굵기는 셋뿐입니다(400·600·700). 650·750 은 폰트에 없어서 브라우저가
-       흉내 내고, 선명해지는 대신 뭉갭니다. 새로 끼어들면 여기서 걸립니다. */
-    if (![400, 600, 700].includes(fw)) say('④굵기 셋 밖', `${fw} — 400·600·700 만 씁니다`);
-    if (e.classList.contains('memo') && (fs > 13 || fw >= 600))
-      say('②설명 규격밖', '설명은 13/400 회색입니다');
-    /* ③ 은 **이미 보고 그대로 두기로 한 것입니다** (2026-08-11, 사용자 결정).
-       머리줄의 작은 단추 여덟이 31~36px 로 44 에 못 미칩니다. 다 키우면
-       머리줄이 통째로 두꺼워져 사진 중심 방향과 어긋나서, 실기기에서 눌러보고
-       답답할 때 손보기로 했습니다. **아래 결과가 나와도 할 일이 아닙니다** —
-       새로 생긴 것이 있는지 보는 눈금으로만 쓰십시오. */
-    if ((tag === 'BUTTON' || tag === 'A') && box.height < 44 && e.textContent.trim())
-      say('③손가락 자리(둘 것)', `${Math.round(box.width)}×${Math.round(box.height)} — 44 미만`);
-  }
-  if (out.length) console.table(out); else console.log('디자인 규칙 위반 없음 ✅');
-  return { 위반:out.length, 항목:out };
-};
-
-/* ── 추천 검사 ───────────────────────────────────────────────────────
- * 점수식은 **틀려도 화면에서는 그럴듯해 보입니다** — 도시 이름이 나오니까요.
- * 실제로 만들면서 두 번 틀렸고 둘 다 눈으로는 못 잡았습니다:
- *   1) 기저율로 안 나눠서 `도시`(48%에 붙음)가 취향 1등이 됐습니다
- *   2) 싫어한 도시가 5곳뿐인데 그대로 반영해 `미식`이 "내 30% vs 전체 25%"
- *      인데도 음수로 나왔습니다
- * 그래서 **지어낸 사람**으로 돌려봅니다. 실제 자료로만 보면 내 취향 하나만
- * 확인하게 되고, 그건 표본 하나입니다. */
-window.__recCheck = () => {
-  const T = [];
-  const t = (name, ok, detail) => T.push({ 검사:name, 결과: ok ? 'OK' : '틀림', detail });
-  /* 태그가 다른 가짜 도시들 */
-  const mk = (id, tags, fame = 2) =>
-    ({ id, name:id, country:id.slice(0, 2), tags, fame, image_url:'x' });
-  const world = [
-    mk('a1', ['해변']), mk('a2', ['해변']), mk('a3', ['해변']), mk('a4', ['해변']),
-    mk('b1', ['미술']), mk('b2', ['미술']),
-    mk('c1', ['도시']), mk('c2', ['도시']), mk('c3', ['도시']), mk('c4', ['도시']),
-    mk('d1', ['자연']), mk('d2', ['자연']),
-  ];
-  /* ① 흔한 태그가 취향으로 둔갑하지 않는가 — 위 1) 을 막는 검사 */
-  {
-    /* 도시(4곳)와 미술(2곳) 을 똑같이 하나씩 좋아했다. 비율로 보면 미술이 세다. */
-    const r = [{ city_id:'c1', stars:5 }, { city_id:'b1', stars:5 }];
-    const ts = tasteOf(world, r);
-    t('흔한 태그가 취향으로 둔갑하지 않는다', ts['미술'] > ts['도시'],
-      `미술 ${ts['미술'].toFixed(3)} vs 도시 ${ts['도시'].toFixed(3)}`);
-  }
-  /* ② 싫어함이 적을 때 과하게 반영되지 않는가 — 위 2) 를 막는 검사 */
-  {
-    const many = [...Array(15)].map((_, i) => ({ city_id:'a' + (i % 4 + 1), stars:5 }));
-    const one  = [...many, { city_id:'b1', stars:1 }];
-    const A = tasteOf(world, many), B = tasteOf(world, one);
-    t('싫어함 한 건이 취향을 뒤집지 못한다',
-      Math.abs(B['해변'] - A['해변']) < 0.25,
-      `해변 ${A['해변'].toFixed(3)} → ${B['해변'].toFixed(3)}`);
-  }
-  /* ③ 아무것도 안 매긴 사람에게 터지지 않는가 */
-  {
-    const r = recommend(world, [], {});
-    t('별점이 하나도 없어도 안 터진다', Array.isArray(r.main), `${r.main.length}곳`);
-  }
-  /* ④ 이미 매긴 곳·다녀온 곳이 추천에 안 나오는가 */
-  {
-    const r = recommend(world, [{ city_id:'a1', stars:5 }], { visited:new Set(['a2']) });
-    const ids = [...r.main, ...r.other].map(x => x.city.id);
-    t('매긴 곳·다녀온 곳은 빠진다', !ids.includes('a1') && !ids.includes('a2'), ids.join(','));
-  }
-  /* ⑤ 같은 나라가 두 번 나오지 않는가 */
-  {
-    const same = [...Array(6)].map((_, i) => mk('kr' + i, ['미술']));
-    const r = recommend([...world, ...same], [{ city_id:'b1', stars:5 }], {});
-    const cs = [...r.main, ...r.other].map(x => x.city.country);
-    t('같은 나라가 두 번 안 나온다', cs.length === new Set(cs).size, cs.join(','));
-  }
-  /* ⑥ 태그가 없는 도시는 점수를 못 낸다(그대로 두면 0 점으로 섞입니다) */
-  t('태그 없는 도시는 점수가 없다', scoreCity({ tags:[] }, {}) === null, '');
-  /* ⑦ 이유가 붙는가 — 이유 없는 추천은 무작위와 구별되지 않습니다 */
-  {
-    const r = recommend(world, [{ city_id:'b1', stars:5 }], {});
-    t('왜 나왔는지가 붙는다', r.main.every(x => Array.isArray(x.why)),
-      r.main[0] ? r.main[0].why.join('·') : '-');
-  }
-  const bad = T.filter(x => x.결과 !== 'OK');
-  console.table(T);
-  bad.forEach(x => console.error('✗ ' + x.검사 + ' — ' + x.detail));
-  return { 전체:T.length, 틀림:bad.length };
-};
-
-window.__mapCheck = () => {
-  const T = [];
-  const t = (name, got, want) => T.push({ name, ok: got === want, got, want });
-  const S = 'https://www.google.com/maps/search/';
-
-  /* 1. 사용자가 손으로 짚은 주소가 제일 먼저다 — 좌표가 있어도 */
-  t('메모의 짧은 주소를 그대로 연다',
-    mapLinks({ title:'아카리조명', memo:'https://maps.app.goo.gl/vykxwqgPhrYdhTf16?g_st=ipc' }, '도쿄').see,
-    'https://maps.app.goo.gl/vykxwqgPhrYdhTf16?g_st=ipc');
-  t('메모의 주소가 좌표를 이긴다',
-    mapLinks({ title:'아카리조명', lat:35.6, lng:139.7, memo:'https://maps.app.goo.gl/x' }, '도쿄').see,
-    'https://maps.app.goo.gl/x');
-
-  /* 2. 좌표가 있으면 그 자리를 보면서 이름을 찾는다 */
-  t('좌표는 @lat,lng 로 자리를 잡는다',
-    mapLinks({ title:'콜로세오', lat:41.8902, lng:12.4922 }, '로마').see,
-    S + '%EC%BD%9C%EB%A1%9C%EC%84%B8%EC%98%A4/@41.8902,12.4922,17z');
-  t('이름이 없으면 좌표에 핀만 찍는다',
-    mapLinks({ title:'', lat:41.8902, lng:12.4922 }, '로마').see,
-    S + '?api=1&query=41.8902,12.4922');
-
-  /* 3. 둘 다 없으면 이름 + 도시 — 이것이 '엉뚱한 곳'을 막는 마지막 그물 */
-  t('좌표도 주소도 없으면 도시를 붙인다',
-    mapLinks({ title:'아카리조명' }, '도쿄').see,
-    S + '?api=1&query=%EC%95%84%EC%B9%B4%EB%A6%AC%EC%A1%B0%EB%AA%85%20%EB%8F%84%EC%BF%84');
-
-  /* 4. 길찾기는 짧은 주소로 못 간다 — 목적지를 알아야 하므로 좌표/이름으로 */
-  t('길찾기는 좌표를 쓴다',
-    mapLinks({ title:'콜로세오', lat:41.89, lng:12.49, memo:'https://maps.app.goo.gl/x' }, '로마').go,
-    'https://www.google.com/maps/dir/?api=1&travelmode=transit&destination=41.89,12.49');
-
-  /* 5. 지도가 아닌 주소는 안 물어야 한다 — 블로그 링크를 메모에 적는 일이 잦다 */
-  t('블로그 주소는 지도로 안 쓴다',
-    memoMapUrl('참고 https://blog.naver.com/abc/123'), null);
-  t('문장 끝의 마침표는 주소에서 뗀다',
-    memoMapUrl('여기다 https://maps.app.goo.gl/abc.'), 'https://maps.app.goo.gl/abc');
-  t('구글 지도 긴 주소도 받는다',
-    memoMapUrl('https://www.google.com/maps/place/Tokyo/@35.6,139.7,12z'),
-    'https://www.google.com/maps/place/Tokyo/@35.6,139.7,12z');
-  t('goo.gl 이라도 지도가 아니면 안 쓴다', memoMapUrl('https://goo.gl/abcd'), null);
-
-  const bad = T.filter(x => !x.ok);
-  console.table(T.map(x => ({ 검사:x.name, 결과:x.ok ? 'OK' : '틀림' })));
-  bad.forEach(x => console.error(`✗ ${x.name}\n  나온 것: ${x.got}\n  나와야: ${x.want}`));
-  return { 전체:T.length, 틀림:bad.length };
-};
-
+/* 자체 점검 셋(__designCheck · __recCheck · __mapCheck)은 selfcheck.js 로
+   옮겼습니다(b345, 스무 번째 조각). 딸린 것이 0 이라 ctx 가 없습니다.
+   아래 일정 줄 그리기 부품(parseMemo · nice · lineChips · drawCats ·
+   dayStat)은 일정 화면 것이라 여기 남깁니다 — 위 머리말이 그것들까지
+   덮고 있었을 뿐입니다. */
 function parseMemo(memo){
   const out = { move:'', cost:'', notes:[] };
   if (!memo) return out;
