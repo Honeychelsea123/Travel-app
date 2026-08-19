@@ -12,12 +12,12 @@
  * 보내야 해서 저쪽을 부를 일이 생깁니다.
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b365';
-import { asDate, D1, ymd } from './calc.js?v=b365';
-import { setAiTripId, setSuggested, suggested } from './ai.js?v=b365';
-import { sb } from './db.js?v=b365';
-import { fail, netTimeout, NOROW } from './net.js?v=b365';
-import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b365';
+import { $, esc, toast } from './dom.js?v=b366';
+import { asDate, D1, ymd } from './calc.js?v=b366';
+import { setAiTripId, setSuggested, suggested } from './ai.js?v=b366';
+import { sb } from './db.js?v=b366';
+import { fail, netTimeout, NOROW } from './net.js?v=b366';
+import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b366';
 
 /* 검토 결과의 등급 색. **app.js 에도 같은 표가 있었는데 여기서 내보냅니다** —
    두 곳에 적어두면 언젠가 한쪽만 고칩니다(D1·asDate 에서 겪은 것과 같은 일). */
@@ -180,7 +180,9 @@ export function openPlanForm(seed){
   $('p_end').value   = seed.end_time || '';
   setPlanSeedGeo((seed.lat != null && seed.lng != null)
     ? { lat: seed.lat, lng: seed.lng } : null);
-  $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+  /* 시트로 뜨므로 끌어올 것이 없습니다 — 여기 있던 scrollIntoView 는 뗐습니다
+     (b366). 누르는 순간에는 아직 문서 맨 아래의 보통 요소라 화면이 밑으로
+     굴러갔습니다. 사연은 app.js 의 addplanbtn 자리에 적어뒀습니다. */
 }
 
 /* 카드 한 장을 담습니다. 담긴 줄의 id 를 돌려줍니다 (되돌리기용).

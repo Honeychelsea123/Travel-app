@@ -18,14 +18,14 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b365';
-import { featOn, flags } from './flags.js?v=b365';
-import { fail, write } from './net.js?v=b365';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b365';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b365';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b365';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b365';
-import { STAY_MIN, mins } from './plancheck.js?v=b365';
+import { $, esc, emptyDo } from './dom.js?v=b366';
+import { featOn, flags } from './flags.js?v=b366';
+import { fail, write } from './net.js?v=b366';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b366';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b366';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b366';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b366';
+import { STAY_MIN, mins } from './plancheck.js?v=b366';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }

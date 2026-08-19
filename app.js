@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b365';
+import { sb } from './db.js?v=b366';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml } from './dom.js?v=b365';
-import { starHtml, paintStars, markRated } from './stars.js?v=b365';
+         putHtml, dropHtml } from './dom.js?v=b366';
+import { starHtml, paintStars, markRated } from './stars.js?v=b366';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b365';
-import { loadAdmin } from './admin.js?v=b365';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b366';
+import { loadAdmin } from './admin.js?v=b366';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b365';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b365';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b365';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b366';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b366';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,80 +34,80 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b365';
+         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b366';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b365';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b366';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b365';
+         useCities, addCity, search } from './cities.js?v=b366';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b365';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b366';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b365';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b366';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b365';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b366';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b365';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b366';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b365';
+         isCityOpen, clearCityOpen } from './city.js?v=b366';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b365';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b366';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b365';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b366';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b365';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b365';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b365';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b365';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b365';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b365';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b365';
-import { loadReview, setReviewCtx } from './review.js?v=b365';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b366';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b366';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b366';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b366';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b366';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b366';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b366';
+import { loadReview, setReviewCtx } from './review.js?v=b366';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b365';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b365';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b365';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b366';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b366';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b366';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b365';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b365';
-import './selfcheck.js?v=b365';
-import { guessCat, setBringCtx } from './bring.js?v=b365';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b365';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b365';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b365';
-import { setAccountCtx } from './account.js?v=b365';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b365';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b365';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b365';
-import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b365';
-import { resetGeo, setGeocodeCtx } from './geocode.js?v=b365';
-import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b365';
-import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b365';
-import { drawToday } from './today.js?v=b365';
-import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b365';
-import { flags, featOn, loadFlags } from './flags.js?v=b365';
-import { setSwRegCtx } from './swreg.js?v=b365';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b366';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b366';
+import './selfcheck.js?v=b366';
+import { guessCat, setBringCtx } from './bring.js?v=b366';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b366';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b366';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b366';
+import { setAccountCtx } from './account.js?v=b366';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b366';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b366';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b366';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b366';
+import { resetGeo, setGeocodeCtx } from './geocode.js?v=b366';
+import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b366';
+import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b366';
+import { drawToday } from './today.js?v=b366';
+import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b366';
+import { flags, featOn, loadFlags } from './flags.js?v=b366';
+import { setSwRegCtx } from './swreg.js?v=b366';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b365';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b366';
 import { PERSONA_ICON, REPORT_ICON, PERSONA_BG, REPORT_BG,
-         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b365';
+         askImageSize, personaStats, judgePersona, cardImage } from './card.js?v=b366';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b365';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b366';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -580,7 +580,23 @@ $('addplanbtn').addEventListener('click', () => {
   $('p_date').value = pickedDay || trip.start_date;
   $('p_date').min = '';                    /* 여행 기간 밖도 넣을 수 있어야 합니다 */
   $('p_cat').dataset.touched = '';         /* 새 폼이니 짐작을 다시 켭니다 */
-  $('p_title').focus();
+  /* ⚠ **여기서 아무것도 스크롤하지 않습니다. 초점도 주지 않습니다**(b366).
+     전에는 `$('p_title').focus()` 가 있었고, 그것이 두 가지를 하고 있었습니다 —
+     키보드를 띄우고, 겸사겸사 폼으로 화면을 끌어가고.
+
+     **그런데 끌어갈 곳이 문서 맨 아래였습니다.** `#plancard` 는 일정 목록
+     전체를 지나 있습니다. 그래서 `추가` 를 누르면 화면이 맨 밑으로
+     굴러갔습니다 — 사용자가 그렇게 말해줬고, 재보니 스크롤 0 → 5881 이었습니다.
+
+     끌어갈 필요가 애초에 없습니다. `plancard` 는 `SHEETS` 에 있어서
+     `syncSheets` 가 `.assheet`(`position:fixed`, 화면 바닥)로 바꿉니다.
+     **다만 그 변환은 MutationObserver 라 한 박자 늦게 옵니다** — 누르는
+     순간에는 아직 문서 아래의 보통 요소라, 그때 스크롤하면 맨 밑으로 갑니다.
+     재서 확인했습니다(누른 직후 `position: static`, 잠시 뒤 `fixed`).
+     **시트로 뜨는 것에는 scrollIntoView 를 걸지 마십시오.**
+
+     초점도 안 줍니다. 열자마자 키보드가 화면 절반을 덮으면, 날짜나 분류를
+     먼저 정하려던 사람은 그것부터 내려야 합니다. 칸을 누르면 그때 올라옵니다. */
 });
 
 /* 제목·메모를 치는 대로 분류를 짐작해 미리 골라둡니다.

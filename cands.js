@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b365';
-import { sb } from './db.js?v=b365';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b365';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b365';
-import { trip, plans, legs } from './trip.js?v=b365';
-import { search } from './cities.js?v=b365';
-import { picked } from './citysearch.js?v=b365';
-import { mapLinks } from './planmap.js?v=b365';
-import { openPlanForm } from './cards.js?v=b365';
-import { syncSheets } from './ui.js?v=b365';
+import { $, esc, emptyDo } from './dom.js?v=b366';
+import { sb } from './db.js?v=b366';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b366';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b366';
+import { trip, plans, legs } from './trip.js?v=b366';
+import { search } from './cities.js?v=b366';
+import { picked } from './citysearch.js?v=b366';
+import { mapLinks } from './planmap.js?v=b366';
+import { openPlanForm } from './cards.js?v=b366';
+import { syncSheets } from './ui.js?v=b366';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -279,9 +279,13 @@ $('c_ai').addEventListener('click', async () => {
   $('ai_send').click();
 });
 
+/* ⚠ 여기 `scrollIntoView` 가 있었습니다(b366 에서 뗌). `card-cand` 도 `SHEETS`
+   라 화면 바닥에 시트로 뜨는데, **그 변환이 한 박자 늦게 와서** 누르는 순간에는
+   아직 문서 맨 아래의 보통 요소입니다. 그래서 열 때 화면이 밑으로 굴러갔고,
+   닫으면 그 자리에 남아 "닫았더니 맨 밑" 이 됐습니다.
+   끌어갈 필요가 없으니 아예 안 움직입니다 — 열기 전 자리에 그대로 있습니다. */
 $('candbtn').addEventListener('click', async () => {
   $('card-cand').classList.remove('hide');
-  $('card-cand').scrollIntoView({ behavior:'smooth', block:'nearest' });
   await loadCands();
 });
 $('candclose').addEventListener('click', () => $('card-cand').classList.add('hide'));

@@ -744,14 +744,26 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .days select{ width:auto; flex:1; min-width:180px; padding:7px 14px;
               border-radius:var(--r-pill); }
 
-/* 지도 접기/펴기 띠 (b365). 전에는 머리줄의 `지도` 단추였는데, 지도가 이미
-   펼쳐져 있는데 위에 그 단추가 또 서 있어서 무슨 뜻인지 알 수가 없었습니다.
-   **여는 것을 열리는 자리에 둡니다** — 접혀 있으면 이 띠가 지도 자리를
-   대신하고, 펴지면 지도 바로 위 손잡이가 됩니다.
-   글자는 planmap.js 가 상태에 따라 갈아끼웁니다(여기서는 모양만). */
+/* 지도 접기/펴기 (b365, b366 에서 고침).
+   글자는 planmap.js 가 상태에 따라 갈아끼웁니다(여기서는 모양만).
+
+   ⚠ **b365 에서는 지도 위에 늘 띠 한 줄을 얹었습니다.** 그러면 지도를
+   펴 놓은 사람은 190px 짜리 지도 위에 40px 을 더 내주게 됩니다 —
+   사용자가 "공간 차지한다"고 한 것이 이것입니다. 원래 이 화면은 첫 일정
+   줄을 위로 끌어올리려고 애쓰던 자리인데 거꾸로 갔습니다.
+
+   **펴져 있을 때는 지도 안 모서리로 들어갑니다**(자리 0). 접혀 있을 때만
+   띠가 되고, 그때는 지도가 없으니 그 줄이 지도 자리를 대신합니다. */
+#mapwrap{ position:relative; }
 .maptoggle{ width:100%; justify-content:center; margin-bottom:var(--s-sm);
             background:var(--parchment); color:var(--dim); border-color:transparent;
-            font-size:var(--f-md); padding:9px 12px; border-radius:var(--r-md); }
+            font-size:var(--f-md); padding:7px 12px; border-radius:var(--r-md); }
+/* 펴진 상태 — 지도 위에 겹칩니다. Leaflet 의 판은 200~700, 조작 단추가
+   800 대라 그 위(900)에 둡니다. 지도가 비쳐야 하니 반투명 흰 바탕입니다. */
+.maptoggle.on{ position:absolute; z-index:900; top:8px; right:8px;
+               width:auto; margin:0; padding:5px 11px;
+               background:rgba(255,255,255,.92); color:var(--ink-80);
+               box-shadow:var(--lift-1); border-radius:var(--r-pill); }
 
 .plan{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0; align-items:flex-start; }
 .plan + .plan{ border-top:1px solid var(--divider-soft); }
