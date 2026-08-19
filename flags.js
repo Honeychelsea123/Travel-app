@@ -16,8 +16,8 @@
  * **작은 것을 아래로 내리면 위쪽 여럿이 가벼워집니다**(b351 의 putHtml 과 같은 꼴).
  *
  * 층: db.js · net.js 만 씁니다. */
-import { sb } from './db.js?v=b360';
-import { netTimeout, setReadOnly } from './net.js?v=b360';
+import { sb } from './db.js?v=b361';
+import { netTimeout, setReadOnly } from './net.js?v=b361';
 
 /* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
  * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
