@@ -848,7 +848,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .stats button{ flex:1; border:0; background:none; padding:6px 0;
                display:flex; flex-direction:column; align-items:center; gap:1px;
                border-radius:var(--r-sm); }
-.stats button + button{ border-left:1px solid var(--divider-soft); }
+/* ⚠ 여기 세로 구분선이 있었습니다(b370 에서 뗌). 숫자 셋을 나누는 데는
+   여백으로 충분하고, 세로선은 카드 안에 격자를 하나 더 그립니다. */
 .stats b{ font-size:var(--f-3xl); font-weight:700; letter-spacing:-.02em; }
 .stats span{ font-size:var(--f-sm); color:var(--ink-48); }
 
@@ -857,13 +858,19 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
       margin-top:8px; }
 .bar i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--primary); }
 
-.shelf{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.shelf button{ display:flex; align-items:center; gap:8px; padding:13px 14px;
-               border:1px solid var(--hairline); border-radius:var(--r-sm);
-               background:var(--pearl); font-size:var(--f-lg); }
-.shelf .ic{ font-size:var(--f-xl); line-height:1; }
-.shelf span:not(.ic){ flex:1; text-align:left; color:var(--ink-80); }
-.shelf b{ font-variant-numeric:tabular-nums; }
+/* 보관함 — 격자 타일에서 **목록**으로 (b370).
+   여섯 개가 다 테두리 상자라 **카드 안에 카드가 여섯**이었습니다. 테두리를
+   걷고 줄 사이만 실선으로 나누면 앱의 다른 목록(.row)과 같은 생김새가 됩니다 —
+   새로 만드는 것이 아니라 이미 있는 모양을 쓰는 것입니다.
+   아이콘은 하단바와 같은 선 아이콘이라 **단색입니다.** 색으로 나누면
+   여섯 색이 다시 생기고, 그게 걷어내려던 것이었습니다. */
+.shelf button{ display:flex; align-items:center; gap:12px; width:100%;
+               padding:13px 2px; border:0; border-radius:var(--r-sm);
+               background:none; font-size:var(--f-lg); }
+.shelf button + button{ border-top:1px solid var(--divider-soft); }
+.shelf svg{ flex:none; color:var(--ink-48); }
+.shelf span{ flex:1; text-align:left; color:var(--ink-80); }
+.shelf b{ font-variant-numeric:tabular-nums; color:var(--ink); }
 
 /* 별점 — 왼쪽 절반은 반 개, 오른쪽 절반은 한 개.
    **반 칸이 곧 터치 목표라 별이 작으면 반 칸은 그 절반입니다.**
@@ -1841,8 +1848,12 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 
 /* 나란히 둔 단추 둘. 기본 크기로 두면 글자가 두 줄로 접힙니다 —
    좁은 화면에서 반씩 나눠 쓰는 자리입니다. */
-.twobtn button{ padding:11px 6px; font-size:var(--f-md);
-                white-space:nowrap; }
+/* 둘은 같은 무게입니다 — 한쪽만 진하면 다른 쪽이 곁다리로 보여 안 눌립니다.
+   그런데 **둘 다 진하게** 하니(전에는 둘 다 .primary) 파란 덩어리가 화면을
+   가로질렀습니다(b370). 무게는 같게 두고 색만 덜어낸 테두리형입니다. */
+.twobtn button{ padding:11px 6px; font-size:var(--f-md); white-space:nowrap;
+                background:none; color:var(--ink);
+                border:1px solid var(--hairline); }
 
 /* ── 후기 사진 ───────────────────────────────────────────────────────
  * 넉 장씩 정사각으로 깝니다. 세로·가로가 섞여 있어도 줄이 안 흔들립니다.

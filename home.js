@@ -16,21 +16,21 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b369';
-import { sb } from './db.js?v=b369';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b369';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b369';
-import { starHtml, paintStars, markRated } from './stars.js?v=b369';
-import { cities, countryName } from './cities.js?v=b369';
-import { myRates, visited } from './rate.js?v=b369';
-import { plans } from './trip.js?v=b369';
-import { openCity } from './city.js?v=b369';
-import { loadCities, pick } from './citysearch.js?v=b369';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b369';
-import { openMap, UN_COUNTRIES } from './map.js?v=b369';
-import { drawReport, renderAiCard } from './report.js?v=b369';
-import { PERSONA_BG } from './card.js?v=b369';
-import { openNew } from './newtrip.js?v=b369';
+import { $, esc } from './dom.js?v=b370';
+import { sb } from './db.js?v=b370';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b370';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b370';
+import { starHtml, paintStars, markRated } from './stars.js?v=b370';
+import { cities, countryName } from './cities.js?v=b370';
+import { myRates, visited } from './rate.js?v=b370';
+import { plans } from './trip.js?v=b370';
+import { openCity } from './city.js?v=b370';
+import { loadCities, pick } from './citysearch.js?v=b370';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b370';
+import { openMap, UN_COUNTRIES } from './map.js?v=b370';
+import { drawReport, renderAiCard } from './report.js?v=b370';
+import { PERSONA_BG } from './card.js?v=b370';
+import { openNew } from './newtrip.js?v=b370';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -695,8 +695,12 @@ export async function loadFootprint(){
     .catch(() => {});
 
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
+  /* ⚠ 여기 `195개국 중 27개국 · 13.8%` 라고 적었는데, **바로 위 통계 줄이
+     이미 `27 국가` 를 크게 보여주고 있습니다**(b370). 같은 화면에 같은 수가
+     두 번이면 읽는 사람이 둘을 견주느라 한 번 멈춥니다. 여기서는 위가 안
+     말해주는 것만 — 전체 중 얼마나 왔는지 — 남깁니다. */
   $('s_prog').innerHTML = f.countries
-    ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%
+    ? `${UN_COUNTRIES}개국 중 <b>${pct.toFixed(1)}%</b>
        <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
     : '다녀온 곳을 표시하면 여기에 쌓여요.';
 
