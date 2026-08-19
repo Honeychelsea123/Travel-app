@@ -18,14 +18,14 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b368';
-import { featOn, flags } from './flags.js?v=b368';
-import { fail, write } from './net.js?v=b368';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b368';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b368';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b368';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b368';
-import { STAY_MIN, mins } from './plancheck.js?v=b368';
+import { $, esc, emptyDo } from './dom.js?v=b369';
+import { featOn, flags } from './flags.js?v=b369';
+import { fail, write } from './net.js?v=b369';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b369';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b369';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b369';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b369';
+import { STAY_MIN, mins } from './plancheck.js?v=b369';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -280,8 +280,19 @@ export function drawPlans(){
     const spent = (expenses || [])
       .filter(x => x.plan_id === p.id && x.amount_home != null)
       .reduce((s, x) => s + Number(x.amount_home), 0);
-    /* 부제에는 분류와 값만. 자세한 것은 펼쳐야 나옵니다. */
-    const sub = [p.category, mm.cost ? mm.cost.split(/[·,]/)[0].trim() : null,
+    /* 부제에는 값만. 자세한 것은 펼쳐야 나옵니다.
+       ⚠ **분류(`p.category`)를 여기서 뺐습니다(b368).** 왼쪽 색점이 이미 같은
+       것을 말하고 있어서 **한 줄에 같은 정보가 두 번** 나왔습니다 — `● 이동`.
+       색점만 남깁니다. 색과 이름을 짝지을 곳은 있습니다: 날짜 줄 끝의
+       `분류` 를 누르면 나오는 칩 줄(`#cats`)이 **카드와 같은 `--kc` 색으로**
+       `● 이동`·`● 숙소` 를 그립니다(planline.js 의 drawCats). 그게 범례입니다.
+       색만으로는 못 읽는 경우를 위해 색점에 이름을 달아 둡니다(아래 title). */
+    /* ⚠ 쉼표로 자르다가 **천 단위 쉼표까지 잘랐습니다**(b369 에서 고침).
+       `가격: 1인당 약 1,200엔` 이 `1인당 약 1` 로 나왔습니다 — 값이 여럿일 때
+       첫 번째만 쓰려던 것인데, 그 구분자는 `·` 이거나 `쉼표+빈칸` 입니다.
+       숫자 안의 쉼표는 뒤에 빈칸이 없습니다. 분류를 뺀 지금은 부제에 이것만
+       남아서 더 눈에 띕니다. */
+    const sub = [mm.cost ? mm.cost.split(/·|,\s/)[0].trim() : null,
                  spent ? money(spent, trip.home_currency) : null]
                   .filter(Boolean).join(' · ');
     /* 이름만으로는 어느 나라인지 모릅니다. 그날 구간의 도시를 같이 넘깁니다
@@ -293,7 +304,8 @@ export function drawPlans(){
                   data-d="${esc(p.date)}">
       <div class="ev__row">
         <div class="when">${when}</div>
-        <span class="kdot ${esc(k)}"></span>
+        <span class="kdot ${esc(k)}"${
+          p.category ? ` title="${esc(p.category)}" aria-label="${esc(p.category)}"` : ''}></span>
         <div class="body"><b>${esc(p.title)}</b>
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
