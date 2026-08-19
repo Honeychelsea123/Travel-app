@@ -16,21 +16,21 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b373';
-import { sb } from './db.js?v=b373';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b373';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b373';
-import { starHtml, paintStars, markRated } from './stars.js?v=b373';
-import { cities, countryName } from './cities.js?v=b373';
-import { myRates, visited } from './rate.js?v=b373';
-import { plans } from './trip.js?v=b373';
-import { openCity } from './city.js?v=b373';
-import { loadCities, pick } from './citysearch.js?v=b373';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b373';
-import { openMap, UN_COUNTRIES } from './map.js?v=b373';
-import { drawReport, renderAiCard } from './report.js?v=b373';
-import { PERSONA_BG } from './card.js?v=b373';
-import { openNew } from './newtrip.js?v=b373';
+import { $, esc } from './dom.js?v=b374';
+import { sb } from './db.js?v=b374';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b374';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b374';
+import { starHtml, paintStars, markRated } from './stars.js?v=b374';
+import { cities, countryName } from './cities.js?v=b374';
+import { myRates, visited } from './rate.js?v=b374';
+import { plans } from './trip.js?v=b374';
+import { openCity } from './city.js?v=b374';
+import { loadCities, pick } from './citysearch.js?v=b374';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b374';
+import { openMap, UN_COUNTRIES } from './map.js?v=b374';
+import { drawReport, renderAiCard } from './report.js?v=b374';
+import { PERSONA_BG } from './card.js?v=b374';
+import { openNew } from './newtrip.js?v=b374';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
