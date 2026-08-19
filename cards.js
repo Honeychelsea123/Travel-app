@@ -12,12 +12,12 @@
  * 보내야 해서 저쪽을 부를 일이 생깁니다.
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b364';
-import { asDate, D1, ymd } from './calc.js?v=b364';
-import { setAiTripId, setSuggested, suggested } from './ai.js?v=b364';
-import { sb } from './db.js?v=b364';
-import { fail, netTimeout, NOROW } from './net.js?v=b364';
-import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b364';
+import { $, esc, toast } from './dom.js?v=b365';
+import { asDate, D1, ymd } from './calc.js?v=b365';
+import { setAiTripId, setSuggested, suggested } from './ai.js?v=b365';
+import { sb } from './db.js?v=b365';
+import { fail, netTimeout, NOROW } from './net.js?v=b365';
+import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b365';
 
 /* 검토 결과의 등급 색. **app.js 에도 같은 표가 있었는데 여기서 내보냅니다** —
    두 곳에 적어두면 언젠가 한쪽만 고칩니다(D1·asDate 에서 겪은 것과 같은 일). */
@@ -38,9 +38,9 @@ export function drawCards(d){
   /* **같은 곳을 두 장으로 내지 않습니다.**
      "삼고정문 둘째날에 넣어줘" 처럼 한 곳을 말하면 AI 가 그것을 actions 에도
      places 에도 담아 보낼 때가 있습니다. 그러면 '일정으로 넣기' 아래 한 장,
-     '갈 만한 곳에 담기' 아래 한 장 — **같은 장소가 카드 둘**로 뜨고
+     '일정 후보로' 아래 한 장 — **같은 장소가 카드 둘**로 뜨고
      사용자는 둘이 무엇이 다른지 알 수가 없습니다.
-     일정 카드에는 이미 [일정에 넣기]와 [갈 만한 곳에 담기]가 **둘 다** 있으므로
+     일정 카드에는 이미 [일정에 넣기]와 [일정 후보로]가 **둘 다** 있으므로
      고를 것은 거기서 다 고를 수 있습니다. 이름이 겹치면 일정 카드만 남깁니다.
      (띄어쓰기·대소문자만 다른 것도 같은 곳으로 봅니다 — AI 가 매번 똑같이
       적어주지는 않습니다.) */
@@ -122,11 +122,11 @@ export function drawCards(d){
             <button class="small" data-take="a"  data-i="${i}"
                     data-label="일정에 넣기">일정에 넣기</button>
             <button class="small alt" data-take="ap" data-i="${i}"
-                    data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>
+                    data-label="일정 후보로">일정 후보로</button>
           </div>
         </div></div>`;
     }).join('') +
-    (places.length ? `<div class="daysep">갈 만한 곳에 담기</div>` : '') +
+    (places.length ? `<div class="daysep">일정 후보로 담기</div>` : '') +
     places.map((p, i) => {
       const k = p.category ? 'k-' + p.category : '';
       /* 위 일정 카드와 같은 자리에 둡니다 — 한쪽은 오른쪽, 한쪽은 아래면
@@ -143,7 +143,7 @@ export function drawCards(d){
           <span class="memo">${esc([loc, p.why].filter(Boolean).join(' · '))}</span>
           <div class="takepair">
             <button class="small" data-take="p" data-i="${i}"
-                    data-label="갈 만한 곳에 담기">갈 만한 곳에 담기</button>
+                    data-label="일정 후보로">일정 후보로</button>
           </div>
         </div></div>`;
     }).join('');

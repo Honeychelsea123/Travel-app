@@ -14,9 +14,9 @@
  *
  * 층: dom.js · calc.js · trip.js 만 씁니다. 네트워크도 DB 도 안 씁니다 —
  * Leaflet 을 받아오는 것 하나뿐입니다. */
-import { $, esc } from './dom.js?v=b364';
-import { hm } from './calc.js?v=b364';
-import { plans, pickedDay, catFilter } from './trip.js?v=b364';
+import { $, esc } from './dom.js?v=b365';
+import { hm } from './calc.js?v=b365';
+import { plans, pickedDay, catFilter } from './trip.js?v=b365';
 
 /* ── 일정 지도 ───────────────────────────────────────────────────────
  * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.
@@ -62,9 +62,14 @@ let mapOpen = localStorage.getItem('t2:map') === '1';
 
 function drawMapBtn(pts){
   const b = $('mapbtn');
-  /* 찍을 게 없으면 단추도 없앱니다 — 눌러서 빈 지도를 보게 할 이유가 없습니다. */
+  /* 찍을 게 없으면 띠도 없앱니다 — 눌러서 빈 지도를 보게 할 이유가 없습니다. */
   b.classList.toggle('hide', !pts);
   b.classList.toggle('on', mapOpen && !!pts);
+  /* **글자가 상태를 말해야 합니다**(b365). 전에는 머리줄에 `지도` 라고만
+     적혀 있어서, 지도가 이미 펼쳐진 채로 그 단추가 서 있으면 그것이 여는
+     것인지 닫는 것인지 알 수가 없었습니다. 지금 하면 무슨 일이 나는지를
+     적습니다. */
+  b.textContent = mapOpen ? '지도 접기' : '지도 보기';
 }
 
 $('mapbtn').addEventListener('click', () => {

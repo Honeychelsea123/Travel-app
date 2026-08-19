@@ -16,13 +16,13 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
  *     이미 떼어낸 aiui.js · cards.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b364';
-import { sb } from './db.js?v=b364';
-import { fail } from './net.js?v=b364';
-import { trip } from './trip.js?v=b364';
-import { syncSheets } from './ui.js?v=b364';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b364';
-import { drawCards } from './cards.js?v=b364';
+import { $, esc, toast } from './dom.js?v=b365';
+import { sb } from './db.js?v=b365';
+import { fail } from './net.js?v=b365';
+import { trip } from './trip.js?v=b365';
+import { syncSheets } from './ui.js?v=b365';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b365';
+import { drawCards } from './cards.js?v=b365';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }
@@ -87,15 +87,32 @@ async function xlsxToText(file){
     `[${name}]\n` + X.utils.sheet_to_csv(wb.Sheets[name])).join('\n\n').slice(0, 8000);
 }
 
-$('impbtn').addEventListener('click', () => {
-  $('importcard').classList.toggle('hide');
+/* ⚠ 전에는 머리줄의 `불러오기`(#impbtn)가 이걸 열었습니다. **그 단추가 무엇을
+   불러오는지 알 수 없다**는 말을 듣고 `추가` 폼 안의 두 갈래로 옮겼습니다
+   (b365). 일정이 생기는 길은 둘뿐이고 — 직접 적거나 이미 짜둔 것을 옮겨오거나 —
+   둘이 같은 자리에 있어야 설명이 필요 없습니다. */
+function openImport(){
+  /* 폼 둘이 나란히 서 있으면 어디에 적어야 하는지 헷갈립니다. */
+  $('plancard').classList.add('hide');
+  $('importcard').classList.remove('hide');
   $('imperr').classList.add('hide');
-  if ($('importcard').classList.contains('hide')) return;
   impShots = []; impFiles = [];
   $('imp_text').value = '';
   drawImpPicked();
+  $('importcard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+$('p_how_import').addEventListener('click', openImport);
+
+/* 닫으면 칩을 '직접 적기'로 되돌립니다. 안 그러면 다음에 `추가` 를 열었을 때
+   폼은 적는 화면인데 칩만 '사진·링크에서'를 가리키고 서 있습니다. */
+function resetHow(){
+  $('p_how_write').classList.add('on');
+  $('p_how_import').classList.remove('on');
+}
+$('p_how_write').addEventListener('click', resetHow);
+$('imp_cancel').addEventListener('click', () => {
+  $('importcard').classList.add('hide'); resetHow();
 });
-$('imp_cancel').addEventListener('click', () => $('importcard').classList.add('hide'));
 $('imp_pick').addEventListener('click', () => $('imp_file').click());
 
 function drawImpPicked(){
