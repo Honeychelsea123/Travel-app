@@ -34,6 +34,16 @@ export let plans = [], legs = [], members = [], expenses = [], bookings = [],
 export let pickedDay = null, tab = 'plans', catFilter = '',
            settleOn = false, todayOn = false, editPlanId = null;
 
+/* AI 제안 카드에서 일정 폼으로 들고 오는 좌표. **세 파일이 같이 씁니다** —
+   cards.js 가 담고, geocode.js 가 꺼내 쓰고 비우고, app.js 가 새 폼을 열 때
+   버립니다. 그래서 여기(공유 자료 자리)에 둡니다.
+   ⚠ **cards.js 안에 `let` 으로 숨어 있었습니다**(b363 까지). 나머지 둘은
+   그냥 이름을 부르고 있었고, 모듈은 늘 strict 라 `planSeedGeo is not defined`
+   로 터졌습니다 — **일정 탭의 `추가` 가 통째로 안 열렸습니다**(토글보다
+   앞줄이라 아무 일도 안 일어났습니다). check-refs 는 **아무도 내보내지 않는
+   이름**은 안 봅니다(잡음을 0 으로 두려고). 그 사각지대였습니다. */
+export let planSeedGeo = null;
+
 /* 닫을 때 같이 해야 하는 바깥일(실시간 구독 끊기). app.js 가 넣어 둡니다 —
    여기서 app.js 를 부르면 서로 부르는 꼴이 됩니다.
    (net.js 의 setOnDrained · ui.js 의 setSheetCloser 와 같은 방식입니다.) */
@@ -47,6 +57,7 @@ function blank(){
   transitLines = [];
   pickedDay = null; tab = 'plans'; catFilter = '';
   settleOn = false; todayOn = false; editPlanId = null;
+  planSeedGeo = null;
 }
 
 /* 여행 한 줄을 갈아끼웁니다.
@@ -81,6 +92,9 @@ export function setCatFilter(v){ catFilter = v || ''; }
 export function setSettleOn(v){ settleOn = !!v; }
 export function setTodayOn(v){ todayOn = !!v; }
 export function setEditPlanId(v){ editPlanId = v ?? null; }
+/* import 한 값에 밖에서 `=` 를 하면 그 파일 안쪽만 바뀝니다 — 반드시 이걸 씁니다
+   (setTrip · setMyAvatar 와 같은 꼴). */
+export function setPlanSeedGeo(v){ planSeedGeo = v ?? null; }
 
 /* ── 자가검사 (개발용) ─────────────────────────────────────────────────
  * 콘솔에서 __tripCheck() 를 부르면 아래를 다 돌려 봅니다.

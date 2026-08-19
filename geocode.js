@@ -16,16 +16,17 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b363';
-import { featOn } from './flags.js?v=b363';
-import { sb } from './db.js?v=b363';
-import { fail, write } from './net.js?v=b363';
-import { trip, plans, setPlans, editPlanId, setEditPlanId } from './trip.js?v=b363';
-import { arm } from './ui.js?v=b363';
-import { drawCats } from './planline.js?v=b363';
-import { drawPlanMap } from './planmap.js?v=b363';
-import { drawPlans } from './planview.js?v=b363';
-import { osmLookup } from './cands.js?v=b363';
+import { $, toast } from './dom.js?v=b364';
+import { featOn } from './flags.js?v=b364';
+import { sb } from './db.js?v=b364';
+import { fail, write } from './net.js?v=b364';
+import { trip, plans, setPlans, editPlanId, setEditPlanId,
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b364';
+import { arm } from './ui.js?v=b364';
+import { drawCats } from './planline.js?v=b364';
+import { drawPlanMap } from './planmap.js?v=b364';
+import { drawPlans } from './planview.js?v=b364';
+import { osmLookup } from './cands.js?v=b364';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -158,7 +159,7 @@ $('p_create').addEventListener('click', async () => {
   $('plancard').classList.add('hide');
   ctx.drawDays(); drawCats(); drawPlans(); drawPlanMap();
 
-  planSeedGeo = null;               /* 한 번 쓰고 비웁니다. 다음 일정에 묻으면 안 됩니다 */
+  setPlanSeedGeo(null);             /* 한 번 쓰고 비웁니다. 다음 일정에 묻으면 안 됩니다 */
   /* **고칠 때도 좌표를 같이 보냅니다.** 전에는 넣을 때만 실려서, 이미 있는
      일정에 지도 링크를 붙여넣어도 지도에 안 떴습니다 — 그 일정을 지우고
      다시 만들어야 했습니다. 링크를 새로 붙여넣은 경우(planGeo)만 덮습니다. */

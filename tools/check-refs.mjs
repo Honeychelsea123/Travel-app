@@ -118,6 +118,29 @@ for (const f of 전부) 소스[f] = 벗기기(readFileSync(f, 'utf8'));
 
 /* ── 이 저장소가 아는 이름 → 어느 파일에 있나 ───────────────────────── */
 const 어디 = new Map();
+
+/* ⚠ **쉼표로 그냥 자르면 괄호 안의 인자까지 선언 이름이 됩니다(b364).**
+
+     const shelfEmpty = () =>
+       emptyDo(`…`, null, null, SHELF_HINT[shelfKind]);
+
+   세미콜론까지 읽고 `,` 로 자르면 조각이 ` null` 이 되어 **`null` 이 이름으로
+   잡힙니다.** `있는이름`(이 파일이 가진 것) 쪽은 넉넉히 세어도 조용해질 뿐이라
+   괜찮지만, **후보 표(`어디`)에서 넉넉히 세면 없는 이름을 지어냅니다** —
+   실제로 스물세 개가 헛짚혔습니다. 후보 쪽은 **맨 바깥 쉼표에서만** 자릅니다. */
+function 바깥쉼표(s){
+  const out = []; let 깊이 = 0, buf = '';
+  for (const c of s){
+    if ('([{'.includes(c)) 깊이++;
+    else if (')]}'.includes(c)) 깊이--;
+    if (c === ',' && 깊이 === 0){ out.push(buf); buf = ''; continue; }
+    buf += c;
+  }
+  return out.concat(buf);
+}
+/* 값으로만 쓰이는 낱말은 이름이 아닙니다. */
+const 이름아님 = new Set(['null','undefined','true','false','this','new','typeof',
+                          'await','void','delete','in','of','instanceof']);
 /* **떼어낸 모듈이 내보내는 것도 셉니다(b336).** 전에는 여기서 걸렀는데,
    그러면 `city.js` 의 `openCity` 를 `shelf.js` 가 import 없이 부르는 것을
    못 봅니다 — 조각끼리 서로 부르는 자리가 이미 여럿입니다. 자기가 내보낸
@@ -146,10 +169,36 @@ for (const m of app.matchAll(/^(?:const|let|var)[ ]+([A-Za-z_$][\w$]*)/gm))     
    그래서 `let`/`const`/`var` 뭉치를 세미콜론까지 통째로 읽고 그 안의 이름을
    다 셉니다. 등호 오른쪽(값)은 이름이 아니므로 `=` 앞만 봅니다. */
 for (const m of app.matchAll(/^(?:const|let|var)[ ]+([^;]*);/gm))
-  for (const 조각 of m[1].split(',')){
+  for (const 조각 of 바깥쉼표(m[1])){
     const n = 조각.split('=')[0].trim();
-    if (/^[A-Za-z_$][\w$]*$/.test(n) && !어디.has(n)) 어디.set(n, 'app.js');
+    if (/^[A-Za-z_$][\w$]*$/.test(n) && !이름아님.has(n) && !어디.has(n))
+      어디.set(n, 'app.js');
   }
+/* ⚠ **아무도 내보내지 않는 이름은 통째로 안 보였습니다(b364).**
+   `planSeedGeo` 가 `cards.js` 안에 `let` 으로 숨어 있었는데 `geocode.js` 와
+   `app.js` 가 그냥 이름을 부르고 있었습니다. 모듈은 늘 strict 라
+   `planSeedGeo is not defined` 로 터집니다 — **일정 탭의 `추가` 가 통째로
+   안 열렸습니다.** 그런데 이 검사는 조용했습니다: 후보를 '누군가 내보내는
+   이름' 으로만 잡고 있었으니 사문(private)은 애초에 후보가 아니었습니다.
+
+   맨 바깥 선언은 **내보내든 안 내보내든** 셉니다. 헛짚을 걱정은 적습니다 —
+   쓰는 파일이 자기도 그 이름을 선언했으면 `있는이름` 에 걸려 조용합니다.
+   즉 **같은 이름을 두 파일이 각자 두는 것은 여전히 아무 말도 안 합니다.**
+   말하는 것은 '한 곳에만 있는데 다른 곳이 부르는' 경우뿐입니다. */
+for (const f of 전부){
+  if (f === 'app.js') continue;               /* app.js 는 위에서 이미 셌습니다 */
+  const s = 소스[f];
+  for (const m of s.matchAll(/^(?:export[ ]+)?(?:async[ ]+)?function[ ]+([A-Za-z_$][\w$]*)/gm))
+    if (!어디.has(m[1])) 어디.set(m[1], f);
+  /* 여러 줄짜리 뭉치도 세미콜론까지 읽습니다(b339 에서 app.js 에 한 것과 같습니다). */
+  for (const m of s.matchAll(/^(?:export[ ]+)?(?:const|let|var)[ ]+([^;]*);/gm))
+    for (const 조각 of 바깥쉼표(m[1])){
+      const n = 조각.split('=')[0].trim();
+      if (/^[A-Za-z_$][\w$]*$/.test(n) && !이름아님.has(n) && !어디.has(n))
+        어디.set(n, f);
+    }
+}
+
 /* app.js 가 남에게서 가져온 것은 app.js 것이 아닙니다. */
 for (const m of app.matchAll(/\bimport\s*\{([^}]*)\}/g))
   for (const p of m[1].split(',')){

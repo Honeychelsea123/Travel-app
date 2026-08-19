@@ -12,12 +12,12 @@
  * 보내야 해서 저쪽을 부를 일이 생깁니다.
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b363';
-import { asDate, D1, ymd } from './calc.js?v=b363';
-import { setAiTripId, setSuggested, suggested } from './ai.js?v=b363';
-import { sb } from './db.js?v=b363';
-import { fail, netTimeout, NOROW } from './net.js?v=b363';
-import { trip, plans, legs, setPlans, pickedDay } from './trip.js?v=b363';
+import { $, esc, toast } from './dom.js?v=b364';
+import { asDate, D1, ymd } from './calc.js?v=b364';
+import { setAiTripId, setSuggested, suggested } from './ai.js?v=b364';
+import { sb } from './db.js?v=b364';
+import { fail, netTimeout, NOROW } from './net.js?v=b364';
+import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b364';
 
 /* 검토 결과의 등급 색. **app.js 에도 같은 표가 있었는데 여기서 내보냅니다** —
    두 곳에 적어두면 언젠가 한쪽만 고칩니다(D1·asDate 에서 겪은 것과 같은 일). */
@@ -162,7 +162,10 @@ let lastTake = [];
  * 좌표는 폼에 칸이 없습니다. 여기 들고 있다가 저장할 때 같이 넣습니다 —
  * 안 그러면 이동시간 검사의 재료가 사라집니다. (후보 → 일정도 같은 구멍이
  * 있었습니다. 이 변수를 그쪽에서도 씁니다.) */
-let planSeedGeo = null;
+/* ⚠ 여기 `let planSeedGeo = null` 로 숨어 있었습니다(b364 에서 trip.js 로).
+   바로 위 주석이 "이 변수를 그쪽에서도 씁니다" 라고 이미 적어두고 있었는데,
+   정작 선언은 이 파일 안에만 있었습니다 — geocode.js 와 app.js 는 그냥
+   이름을 불렀고 셋 다 터졌습니다. **여럿이 쓰는 것은 trip.js 에 둡니다.** */
 
 export function openPlanForm(seed){
   /* 이미 열려 있으면 닫고 다시 엽니다. addplanbtn 이 toggle 이라
@@ -175,8 +178,8 @@ export function openPlanForm(seed){
   $('p_date').value  = seed.date || pickedDay || trip.start_date;
   $('p_start').value = seed.start_time || '';
   $('p_end').value   = seed.end_time || '';
-  planSeedGeo = (seed.lat != null && seed.lng != null)
-    ? { lat: seed.lat, lng: seed.lng } : null;
+  setPlanSeedGeo((seed.lat != null && seed.lng != null)
+    ? { lat: seed.lat, lng: seed.lng } : null);
   $('plancard').scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
@@ -219,6 +222,14 @@ async function takeCard(kind, i, tripId, day){
   if (!r.data?.length) throw new Error(NOROW.save);
   return { table:'candidates', id:r.data[0].id };
 }
+
+/* 밖에서 되돌릴 목록을 비우는 **유일한 길**입니다.
+   ⚠ `aiscreen.js` 가 '대화 지우기' 에서 `lastTake = []` 를 그냥 적고
+   있었습니다(b364 에서 고침). `lastTake` 는 이 파일 안의 `let` 이라 저쪽에는
+   없는 이름이고, 모듈은 늘 strict 라 **거기서 터져 지웠다는 말도 안 떴습니다.**
+   비운 뒤 단추까지 같이 감춥니다 — 목록만 비우고 단추를 두면 "0개 되돌리기"
+   가 남습니다. */
+export function clearLastTake(){ lastTake = []; showUndo(); }
 
 function showUndo(){
   const u = $('undotake'); if (!u) return;
