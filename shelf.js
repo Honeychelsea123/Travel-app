@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b346';
-import { openCity } from './city.js?v=b346';
-import { sb } from './db.js?v=b346';
-import { cities, countryName } from './cities.js?v=b346';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b346';
-import { starHtml, paintStars, markRated } from './stars.js?v=b346';
-import { fail } from './net.js?v=b346';
-import { arm } from './ui.js?v=b346';
-import { todayYmd } from './calc.js?v=b346';
-import { loadCities } from './citysearch.js?v=b346';
-import { loadRateData, saveRate } from './rating.js?v=b346';
+import { $, esc, toast } from './dom.js?v=b347';
+import { openCity } from './city.js?v=b347';
+import { sb } from './db.js?v=b347';
+import { cities, countryName } from './cities.js?v=b347';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b347';
+import { starHtml, paintStars, markRated } from './stars.js?v=b347';
+import { fail } from './net.js?v=b347';
+import { arm } from './ui.js?v=b347';
+import { todayYmd } from './calc.js?v=b347';
+import { loadCities } from './citysearch.js?v=b347';
+import { loadRateData, saveRate } from './rating.js?v=b347';
 
 let ctx = {
   me: () => null,
