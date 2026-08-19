@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b358';
-import { sb } from './db.js?v=b358';
-import { fail, netTimeout } from './net.js?v=b358';
-import { money, distKm, D1, asDate } from './calc.js?v=b358';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b358';
+import { $, esc, toast, copyText, md } from './dom.js?v=b359';
+import { sb } from './db.js?v=b359';
+import { fail, netTimeout } from './net.js?v=b359';
+import { money, distKm, D1, asDate } from './calc.js?v=b359';
+import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b359';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
