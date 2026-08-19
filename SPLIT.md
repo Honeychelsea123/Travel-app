@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 1,453줄. 서른두 조각이 나갔다. **84%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 1,232줄. 서른세 조각이 나갔다. **87%를 걷었다.**
 
 ## 왜 하나
 
@@ -44,6 +44,7 @@
 | `planview.js` | 264 | 일정 그리기 · 끌어서 순서 바꾸기 | featOn, flags, loadPlans |
 | `geocode.js` | 219 | 붙여넣은 지도 링크에서 위치 찾기 | drawDays, featOn, loadPlans |
 | `legs.js` | 168 | 구간(날짜를 도시로 나눈 것) · 도시 고르개 | drawDays, drawTripHeader, fetchTrip |
+| `tripview.js` | 270 | 여행 상세 뼈대 — 날짜 줄 · 일정 받기 · 정보 수정 | appTab, showApp, openTrip, drawToday |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
@@ -152,7 +153,7 @@ ctx 도 같이 줄입니다.
 |---|---|---|---|
 | 서비스 워커 | 85 | 1 (`logError`) | 앱 껍데기 쪽이다 |
 
-| 여행 정보 수정 | 226 | **11** | 일정 화면과 깊이 물려 있다 — 일정 뒤에 |
+
 | **일정** | ~900 | — | 마지막 산. 아래 참고 |
 
 ### 남은 것을 왜 여기서 멈췄나 (b344)

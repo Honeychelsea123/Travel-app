@@ -20,9 +20,9 @@
  * 사연은 각 머리말에 그대로 남겨뒀습니다.
  *
  * 층: 아래층만 씁니다(rec.js · planmap.js · cities.js). */
-import { recommend, scoreCity, tasteOf } from './rec.js?v=b356';
-import { mapLinks, memoMapUrl } from './planmap.js?v=b356';
-import { search } from './cities.js?v=b356';
+import { recommend, scoreCity, tasteOf } from './rec.js?v=b357';
+import { mapLinks, memoMapUrl } from './planmap.js?v=b357';
+import { search } from './cities.js?v=b357';
 
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
