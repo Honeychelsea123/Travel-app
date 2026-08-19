@@ -499,6 +499,10 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .srow .label{ flex:1; min-width:0; }
 .srow .memo{ margin-top:1px; }
 /* 설명 글. .empty 를 쓰면 위아래 20px 씩 먹어 카드가 쓸데없이 커집니다. */
+/* 좌표 채우기 띠 (b375). `.offbar` 의 얼굴을 그대로 쓰되 누를 수 있게만
+   합니다 — 앱에서 '봐야 하는 알림'은 이미 그 생김새라 새로 만들지 않습니다. */
+.geobar{ width:100%; cursor:pointer; }
+
 .snote{ color:var(--ink-48); font-size:var(--f-sm); line-height:1.5;
         padding:7px 0 0; }
 /* 설정 카드는 줄만 늘어놓는 자리라 안팎 여백을 다른 카드보다 줄입니다.

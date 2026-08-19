@@ -18,14 +18,18 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b374';
-import { featOn, flags } from './flags.js?v=b374';
-import { fail, write } from './net.js?v=b374';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b374';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b374';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b374';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b374';
-import { STAY_MIN, mins } from './plancheck.js?v=b374';
+import { $, esc, emptyDo } from './dom.js?v=b375';
+import { featOn, flags } from './flags.js?v=b375';
+import { fail, write } from './net.js?v=b375';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b375';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b375';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b375';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b375';
+import { STAY_MIN, mins } from './plancheck.js?v=b375';
+/* 좌표 없는 일정을 알리는 띠. **cands.js 는 이 파일을 안 부르므로 고리가
+   안 생깁니다**(b375 에 확인). 일정을 그릴 때마다 다시 세야 해서 여기서 부릅니다 —
+   채우고 나면 띠가 저절로 사라져야 합니다. */
+import { drawGeoBtn } from './cands.js?v=b375';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -222,6 +226,9 @@ $('plans').addEventListener('pointerup', endPointer, false);
 $('plans').addEventListener('pointercancel', endPointer, false);
 
 export function drawPlans(){
+  /* 좌표 없는 일정이 몇인지 다시 셉니다. **거르는 중이어도 전체를 셉니다** —
+     '식사'만 보는 중이라고 다른 분류의 빠진 좌표가 없어지는 것은 아닙니다. */
+  drawGeoBtn();
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
   if (!show.length){

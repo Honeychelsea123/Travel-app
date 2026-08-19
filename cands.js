@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b374';
-import { sb } from './db.js?v=b374';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b374';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b374';
-import { trip, plans, legs } from './trip.js?v=b374';
-import { search } from './cities.js?v=b374';
-import { picked } from './citysearch.js?v=b374';
-import { mapLinks } from './planmap.js?v=b374';
-import { openPlanForm } from './cards.js?v=b374';
-import { syncSheets } from './ui.js?v=b374';
+import { $, esc, emptyDo } from './dom.js?v=b375';
+import { sb } from './db.js?v=b375';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b375';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b375';
+import { trip, plans, legs } from './trip.js?v=b375';
+import { search } from './cities.js?v=b375';
+import { picked } from './citysearch.js?v=b375';
+import { mapLinks } from './planmap.js?v=b375';
+import { openPlanForm } from './cards.js?v=b375';
+import { syncSheets } from './ui.js?v=b375';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -194,17 +194,37 @@ const needCoord = () => [
     .map(c => ({ kind:'candidates', id:c.id, title:c.title })),
 ];
 
-function drawGeoBtn(){
+/* ⚠ **입구가 둘입니다**(b375). 후보 카드의 `#geobtn` 과 일정 카드의
+   `#geoplans`. 전에는 후보 쪽 하나뿐이었는데, 좌표가 없어 생기는 일(지도에
+   안 뜸 · 이동 시간 못 잼 · 빈 시간에서 빠짐)은 **일정 화면에 나타납니다.**
+   후보가 하나도 없으면 그 화면을 열 이유가 없으니 고치는 길이 있는 줄도
+   몰랐습니다.
+   **진행 표시를 둘 다에 씁니다.** 숨은 단추에만 쓰면 누른 사람은 몇 초 동안
+   아무 반응도 못 봅니다(한 곳당 1.1초씩 걸립니다). */
+export function drawGeoBtn(){
   const list = needCoord();
   const np = list.filter(x => x.kind === 'plans').length;
   const b = $('geobtn');
-  b.classList.toggle('hide', !list.length && !geoBusy);
-  /* 일정 몇 곳인지 같이 적습니다. 후보가 비어 있으면 왜 뜨는지 모릅니다. */
-  b.textContent = geoBusy ? '중단하기'
-    : `좌표 채우기 · ${list.length}곳` + (np ? ` (일정 ${np}곳 포함)` : '');
+  if (b){
+    b.classList.toggle('hide', !list.length && !geoBusy);
+    /* 일정 몇 곳인지 같이 적습니다. 후보가 비어 있으면 왜 뜨는지 모릅니다. */
+    b.textContent = geoBusy ? '중단하기'
+      : `좌표 채우기 · ${list.length}곳` + (np ? ` (일정 ${np}곳 포함)` : '');
+  }
+  /* 일정 쪽 띠는 **일정이 몇 곳인지**로 말합니다 — 그 화면에서 눈에 보이는
+     것이 일정이라, 후보까지 섞어 세면 숫자가 화면과 안 맞습니다.
+     누르면 후보까지 같이 채웁니다(어차피 한 번에 하는 것이 낫습니다). */
+  const g = $('geoplans');
+  if (g){
+    g.classList.toggle('hide', !np && !geoBusy);
+    g.textContent = geoBusy ? '채우는 중… 누르면 멈춰요'
+      : `일정 ${np}곳이 지도에 안 떠요 · 좌표 채우기`;
+  }
 }
 
-$('geobtn').addEventListener('click', async () => {
+/* 두 입구가 같은 일을 합니다 — 함수 하나로 두고 둘 다 여기 겁니다.
+   두 벌로 적으면 한쪽만 고치는 날이 옵니다. */
+async function fillCoords(){
   if (geoBusy){ geoBusy = false; return; }
   const list = needCoord();
   if (!list.length) return;
@@ -228,16 +248,24 @@ $('geobtn').addEventListener('click', async () => {
         .eq('id', it.id).select('id');
       if (!r.error && r.data?.length) done++;
     } else miss++;
-    $('geobtn').textContent = `채우는 중… ${done + miss}/${list.length}`;
+    /* **둘 다에 씁니다.** 누른 쪽이 숨은 단추가 아닐 수 있습니다. */
+    const 진행 = `채우는 중… ${done + miss}/${list.length}`;
+    if ($('geobtn'))  $('geobtn').textContent  = 진행;
+    if ($('geoplans')) $('geoplans').textContent = 진행;
     await new Promise(r => setTimeout(r, 1100));
   }
 
   geoBusy = false;
   await ctx.loadPlans();
   await loadCands();
+  /* loadPlans 가 일정을 다시 그리면서 띠도 새로 셉니다. 그래도 여기서 한 번
+     더 부릅니다 — 후보만 채워진 경우에는 일정 쪽이 안 다시 그려집니다. */
+  drawGeoBtn();
   if (miss) fail(`${done}곳을 채웠어요. ${miss}곳은 못 찾았어요 — ` +
                  `이름을 장소 이름으로 고치면 찾을 수 있어요.`, 'cand');
-}, false);
+}
+$('geobtn').addEventListener('click', fillCoords, false);
+$('geoplans').addEventListener('click', fillCoords, false);
 
 async function loadCands(){
   if (!trip) return;
