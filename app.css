@@ -1453,38 +1453,31 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
                 margin-top:1px; word-break:keep-all }
 .rvbar .go{ flex:none; font-size:var(--f-sm); font-weight:600; color:#8a5a00 }
 
-/* 새 여행으로 가는 줄. AI 카드가 '다음 여행' 이야기를 하게 되면서 홈에서
-   새 여행을 만들 길이 사라졌습니다.
-   **바로 위 AI 카드와 같은 크기로 맞춥니다.** 처음에는 얇은 줄로 뒀는데
-   위 카드보다 눈에 띄게 작아서 곁다리로 보였습니다. 둘은 같은 무게입니다 —
-   하나는 이번 여행, 하나는 다음 여행.
-   **색은 다르게 둡니다.** 크기까지 같고 색까지 같으면 두 카드가 한 덩어리로
-   보여서 무엇이 무엇인지 갈리지 않습니다. 위(AI·이번 여행)는 보라,
-   여기(다음 여행)는 청록입니다. */
+/* 새 여행으로 가는 줄. **홈에서 새 여행을 만들 길은 늘 있어야 합니다** —
+   그 길이 사라져서 한 번 고친 자리고, b377 에서 제가 또 없앴다가 b378 에
+   되살렸습니다. 다음 여행에 일정을 더하는 것도, 새 여행을 짜는 것도
+   홈에서 다 돼야 합니다.
+
+   ⚠ **크기 근거가 없어졌습니다.** 전에는 "바로 위 AI 카드와 같은 크기로
+   맞춘다"였는데(둘은 같은 무게 — 하나는 이번 여행, 하나는 다음 여행),
+   b377 에서 **그 AI 카드가 히어로 안으로 들어갔습니다.** 짝이 없어졌는데
+   크기만 남아서 혼자 큰 카드로 떠 있었습니다.
+   이제 위의 `.rvbar`(평가 띠)와 **같은 얇은 줄**로 맞춥니다. 둘이 한 식구로
+   읽히고, 색만 갈라 둡니다 — 평가는 답을 기다리는 일이라 호박색,
+   여기는 언제나 열려 있는 길이라 수수한 색입니다. */
 /* AI 카드와 **같은 모양**입니다. 색으로 갈랐더니 채도 높은 카드 두 장이
    나란히 서서 화면 위쪽이 통째로 시끄러웠습니다. 둘 다 흰 카드로 두고,
    무엇을 하는 곳인지는 아이콘과 글자가 말합니다. */
-.newtripbar{ position:relative; overflow:hidden; cursor:pointer;
-             display:flex; align-items:center; gap:13px;
-             padding:14px 16px; margin-bottom:var(--s-xs); border-radius:var(--r-sm);
-             background:var(--card, #fff); color:var(--ink);
-             box-shadow:var(--lift-0); }
-.newtripbar > *{ position:relative; z-index:1 }
-/* 이쪽 아이콘만 톤을 낮춥니다 — AI 가 이 앱이 내세우는 것이라
-   눈이 그쪽으로 먼저 가야 합니다. 둘이 똑같이 파랗면 순서가 없어집니다. */
-.newtripbar .ic{ flex:none; width:38px; height:38px; border-radius:var(--r-sm);
-                 background:var(--parchment); color:var(--ink-48); display:flex;
-                 align-items:center; justify-content:center;
-                 font-size:var(--f-2xl); }
-.newtripbar .tx{ flex:1; min-width:0; }
-.newtripbar .tx b{ display:block; font-size:var(--f-xl); font-weight:700; }
-.newtripbar .tx span{ display:block; margin-top:2px; color:var(--ink-48);
-                      font-size:var(--f-sm); }
-/* 단추도 톤을 낮춥니다. 파란 단추 둘이 나란히 있으면 어느 쪽을 먼저
-   눌러야 하는지가 없어집니다. */
-.newtripbar .go{ flex:none; padding:8px 16px; border-radius:var(--r-pill);
-                 background:var(--parchment); color:var(--ink);
-                 font-size:var(--f-md); font-weight:700; }
+.newtripbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
+             margin:-4px 0 12px; padding:11px 14px; border-radius:var(--r-sm);
+             background:var(--pearl); border:1px solid var(--hairline); }
+.newtripbar .t{ flex:1; min-width:0 }
+.newtripbar .t b{ display:block; font-size:var(--f-md); font-weight:600;
+                  color:var(--ink); word-break:keep-all }
+.newtripbar .t span{ display:block; font-size:var(--f-xs); color:var(--ink-48);
+                     margin-top:1px; word-break:keep-all }
+.newtripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
+                 color:var(--ink-48) }
 
 /* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
    일정 목록에서 쓰는 분류 색을 그대로 씁니다. */

@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b377';
-import { sb } from './db.js?v=b377';
-import { fail, netTimeout } from './net.js?v=b377';
-import { money, distKm, D1, asDate } from './calc.js?v=b377';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b377';
+import { $, esc, toast, copyText, md } from './dom.js?v=b378';
+import { sb } from './db.js?v=b378';
+import { fail, netTimeout } from './net.js?v=b378';
+import { money, distKm, D1, asDate } from './calc.js?v=b378';
+import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b378';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
@@ -375,23 +375,28 @@ async function askReportAi(id, f){
    이야기인데 히어로(도쿄) 바로 밑에 따로 선 카드였습니다. 같은 것을 말하는
    덩어리가 둘로 나뉘어 있었습니다. 그리는 것은 두 곳이지만 **무엇을 권할지는
    여기 한 곳**입니다.
-   `heroGo` 는 히어로 단추에 쓰는 짧은 말입니다. 카드에서는 옆에 설명이
-   붙지만(`sub`) 히어로에서는 단추 글자만 남으므로, `물어보기` 처럼 무엇을
-   묻는지 모를 말 대신 그 자리에서 읽히는 말을 씁니다. */
+   `heroGo` 는 히어로 단추에 쓰는 말입니다. 카드에서는 옆에 설명(`sub`)이
+   붙지만 히어로에서는 단추 글자만 남습니다.
+   ⚠ b377 에 `뭐 더 넣을까 묻기` 라고 적었더니 사용자가 **"그게 뭐야"** 라고
+   물었습니다 — 어디에 넣는지도 누구에게 묻는지도 안 드러납니다. 설명을 지고
+   있던 줄을 버리고 그 뜻을 글자 하나에 다 담으려 한 것이 잘못이었습니다.
+   b378 에서 **아이콘이 '누가'를, 글자가 '무엇이 되는지'를** 맡게 나눴습니다.
+   히어로 단추 앞에 앱의 AI 표시(별 두 개)가 붙으므로 글자에는 AI 를 안
+   적습니다 — `일정 추가` · `일정 짜기` · `여행 만들기`. */
 export function aiPrompt(nextTrip, nextPlans){
   return !nextTrip
     ? { title:'AI와 함께 떠나볼까요?', sub:'뭘 좋아하는지만 알려주세요',
-        go:'시작', heroGo:'AI로 시작', go2:() => ctx.openNew() }
+        go:'시작', heroGo:'여행 만들기', go2:() => ctx.openNew() }
     : nextPlans === 0
     ? { title:`${nextTrip.title} 일정이 비어 있어요`,
-        sub:'AI가 하루씩 짜드릴게요', go:'짜기', heroGo:'AI로 일정 짜기',
+        sub:'AI가 하루씩 짜드릴게요', go:'짜기', heroGo:'일정 짜기',
         go2:() => ctx.openDraft(nextTrip.id, true) }
     /* **여기는 초안 화면이 아니라 비서로 보냅니다.** 처음에 초안으로 보냈더니
        "빈 시간에 넣을 곳을 찾아드려요"라고 해놓고 일정을 통째로 다시 짜는
        화면이 떴습니다. 이미 31개가 들어 있는 여행에서요. 말과 행동이 달랐습니다.
        뭘 더 넣을지 물어보는 자리는 비서입니다. */
     : { title:`${nextTrip.title}, 뭐 더 넣을까요?`,
-        sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기', heroGo:'뭐 더 넣을까 묻기',
+        sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기', heroGo:'일정 추가',
         go2:async () => { ctx.openAi(); $('ai_trip').value = nextTrip.id;
                           await ctx.loadChats(nextTrip.id); } };
 }

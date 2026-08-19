@@ -16,23 +16,23 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b377';
-import { sb } from './db.js?v=b377';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b377';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b377';
-import { starHtml, paintStars, markRated } from './stars.js?v=b377';
-import { cities, countryName } from './cities.js?v=b377';
-import { myRates, visited } from './rate.js?v=b377';
-import { plans } from './trip.js?v=b377';
-import { openCity } from './city.js?v=b377';
-import { loadCities, pick } from './citysearch.js?v=b377';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b377';
-import { openMap, UN_COUNTRIES } from './map.js?v=b377';
+import { $, esc } from './dom.js?v=b378';
+import { sb } from './db.js?v=b378';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b378';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b378';
+import { starHtml, paintStars, markRated } from './stars.js?v=b378';
+import { cities, countryName } from './cities.js?v=b378';
+import { myRates, visited } from './rate.js?v=b378';
+import { plans } from './trip.js?v=b378';
+import { openCity } from './city.js?v=b378';
+import { loadCities, pick } from './citysearch.js?v=b378';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b378';
+import { openMap, UN_COUNTRIES } from './map.js?v=b378';
 /* `aiPrompt` 는 무엇을 권할지만 정합니다 — 여행이 있을 때는 히어로 단추로,
    없을 때는 `renderAiCard` 가 카드로 그립니다(b377). */
-import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b377';
-import { PERSONA_BG } from './card.js?v=b377';
-import { openNew } from './newtrip.js?v=b377';
+import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b378';
+import { PERSONA_BG } from './card.js?v=b378';
+import { openNew } from './newtrip.js?v=b378';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -114,7 +114,17 @@ export function heroTint(seed){
   return PERSONA_BG[HERO_BG[h % HERO_BG.length]];
 }
 
-function heroHtml(photo, dd, title, memo, btn){
+/* 히어로 단추에 붙는 AI 표시. **상단바의 것과 같은 그림입니다**(index.html
+   의 `#aibtn`) — 앱에서 'AI 가 해준다'는 이 별 두 개입니다. 두 곳에 그리지만
+   같은 모양이어야 뜻이 통합니다. */
+const AI_MARK =
+  `<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"
+        style="margin-right:5px; vertical-align:-3px; color:var(--primary)">
+     <path d="M11 3l1.7 4.6L17 9.3l-4.3 1.7L11 15.6 9.3 11 5 9.3l4.3-1.7z"/>
+     <path d="M18 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" opacity=".7"/>
+   </svg>`;
+
+function heroHtml(photo, dd, title, memo, btn, ai){
   /* 사진이 없으면 색을 깝니다. `.hero::after` 가 위에 어둡게 덮으므로
      글자는 사진이 있을 때와 똑같이 읽힙니다.
      **`noimg` 를 같이 답니다** — 사진이 없으면 236px 을 채울 것이 없어서
@@ -126,7 +136,14 @@ function heroHtml(photo, dd, title, memo, btn){
     ${dd ? `<div class="dd">${esc(dd)}</div>` : ''}
     <div class="ht">${esc(title)}</div>
     <div class="hm">${esc(memo)}</div>
-    ${btn ? `<button class="hbtn" id="herobtn">${esc(btn)}</button>` : ''}
+    ${/* ⚠ **글자만으로는 뜻이 안 통했습니다**(b378). b377 에 `뭐 더 넣을까 묻기`
+          라고 적었더니 사용자가 "그게 뭐야" 라고 물었습니다 — 어디에 넣는지도
+          누구에게 묻는지도 안 드러납니다. 원래 카드는 두 줄이었고(`도쿄, 뭐 더
+          넣을까요?` + `빈 시간에 넣을 곳을 찾아드려요`) **뜻은 아랫줄이 지고
+          있었는데**, 단추 하나로 압축하면서 그 줄을 버린 것이 잘못이었습니다.
+          이제 **아이콘이 '누가'를, 글자가 '무엇이 되는지'를** 맡습니다 —
+          별 두 개는 앱에서 이미 AI 를 뜻하고, 글자는 `일정 추가` 로 짧습니다. */''}${
+      btn ? `<button class="hbtn" id="herobtn">${ai ? AI_MARK : ''}${esc(btn)}</button>` : ''}
   </div>`;
 }
 
@@ -308,32 +325,32 @@ async function buildHome(){
   const ai = aiPrompt(t, all.count || 0);
   $('home').innerHTML = heroHtml(photo, badge, t.title,
     tripSub(t, days) +
-    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), ai.heroGo);
+    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''),
+    ai.heroGo, true);          /* true = AI 표시를 단추 앞에 붙입니다 */
   $('hero').onclick = () => ctx.openTrip(t.id);
   /* 히어로를 누르면 여행이 열리므로 단추는 번짐을 막아야 합니다. */
   $('herobtn').onclick = e => { e.stopPropagation(); ai.go2(); };
 
-  /* ── 권유는 하나만 (b377, B) ──────────────────────────────────────────
-     히어로 밑에 평가 띠 · AI 카드 · 새 여행 줄이 **줄줄이 셋**이었습니다.
-     하나씩 더할 때는 다 맞는 판단이었습니다 — 주석에도 "위가 두 덩어리가
-     되면 무겁다", "카드를 하나 더 얹으면 무거우니 얇은 줄로" 라고 적혀
-     있습니다. 그런데 얇은 것 셋이 서면 191px 에 생김새가 셋입니다.
-     **하나씩 더할 때는 안 보이고 모아 놓아야 보이는 종류입니다.**
+  /* ── 히어로 밑에는 얇은 줄 둘 (b378) ─────────────────────────────────
+     b377 에서 "권유는 하나만" 이라며 평가가 있으면 새 여행을 감췄는데
+     **틀렸습니다.** 홈에서 다음 여행에 일정을 더하는 것도, 새 여행을 짜는
+     것도 다 돼야 합니다 — 그리고 이건 **이미 한 번 고쳤던 버그**입니다.
+     바로 아래 CSS 주석에 "새 여행으로 가는 길을 홈에 남겨둡니다. AI 카드가
+     '다음 여행' 이야기를 하게 되면서 여행이 이미 있는 사람은 홈에서 새
+     여행을 못 만들게 됐습니다" 라고 적혀 있습니다. 제가 그걸 되살렸습니다.
 
-     AI 는 위 히어로가 맡았으니 남은 둘 중 하나만 답니다.
-     평가가 먼저입니다 — 다녀온 여행이 답을 기다리는 것이고, 새 여행은
-     아무 때나 만들 수 있습니다. 평가할 것이 없을 때만 새 여행이 나옵니다. */
+     지저분했던 것은 **개수가 아니라 생김새가 셋**이었던 것입니다. AI 가
+     히어로로 갔으니 둘만 남고, 둘을 같은 얇은 줄로 맞추면 한 식구로 읽힙니다.
+     색만 갈라 둡니다 — 평가는 답을 기다리는 일(호박색), 새 여행은 언제나
+     열려 있는 길(수수한 색). */
   if (pend) rvBar();
-  else {
-    const nt = document.createElement('div');
-    nt.className = 'newtripbar';
-    nt.innerHTML = `<span class="ic">＋</span>
-      <span class="tx"><b>다음에 어디 갈까요?</b>
-        <span>어디로 언제 가는지만 정하면 돼요</span></span>
-      <span class="go">새 여행</span>`;
-    nt.onclick = () => openNew();
-    $('home').appendChild(nt);
-  }
+  const nt = document.createElement('div');
+  nt.className = 'newtripbar';
+  nt.innerHTML = `<span class="t"><b>다음에 어디 갈까요?</b>
+      <span>어디로 언제 가는지만 정하면 돼요</span></span>
+    <span class="go">새 여행 ›</span>`;
+  nt.onclick = () => openNew();
+  $('home').appendChild(nt);
 
   await renderQuiz();
   await renderFoot();
