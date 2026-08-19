@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b376';
-import { sb } from './db.js?v=b376';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b377';
+import { sb } from './db.js?v=b377';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b376';
-import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b376';
+         cacheGet, cacheSet } from './net.js?v=b377';
+import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b377';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던

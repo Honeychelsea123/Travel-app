@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b376';
-import { sb } from './db.js?v=b376';
-import { fail, netTimeout } from './net.js?v=b376';
-import { money, distKm, D1, asDate } from './calc.js?v=b376';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b376';
+import { $, esc, toast, copyText, md } from './dom.js?v=b377';
+import { sb } from './db.js?v=b377';
+import { fail, netTimeout } from './net.js?v=b377';
+import { money, distKm, D1, asDate } from './calc.js?v=b377';
+import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b377';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
@@ -363,29 +363,41 @@ async function askReportAi(id, f){
 }
 
 /* AI 일정 만들기 — 이 앱이 내세우는 기능이라 홈 위쪽에 둡니다. */
-export function renderAiCard(nextTrip, nextPlans){
-  /* ── 무엇을 권할지는 그 사람의 여행이 정합니다 ──
-     "AI와 함께 떠나볼까요?" 하나만 늘 띄우면, 다음 주에 도쿄 가는 사람에게도
-     일정이 텅 빈 사람에게도 같은 말을 합니다. 지금 제일 급한 것을 말합니다.
-       · 곧 가는데 일정이 비었다 → 그 여행을 짜자 (제일 급합니다)
-       · 곧 가는데 일정이 있다   → 다듬거나 물어보자
-       · 여행이 없다             → 새로 만들자 */
-  const ai = !nextTrip
+/* ── 무엇을 권할지는 그 사람의 여행이 정합니다 ──
+   "AI와 함께 떠나볼까요?" 하나만 늘 띄우면, 다음 주에 도쿄 가는 사람에게도
+   일정이 텅 빈 사람에게도 같은 말을 합니다. 지금 제일 급한 것을 말합니다.
+     · 곧 가는데 일정이 비었다 → 그 여행을 짜자 (제일 급합니다)
+     · 곧 가는데 일정이 있다   → 다듬거나 물어보자
+     · 여행이 없다             → 새로 만들자
+
+   ⚠ **판단만 따로 뺐습니다(b377).** 여행이 있을 때는 이 권유가 카드가 아니라
+   **히어로의 단추**로 들어갑니다 — `도쿄, 뭐 더 넣을까요?` 는 도쿄 여행
+   이야기인데 히어로(도쿄) 바로 밑에 따로 선 카드였습니다. 같은 것을 말하는
+   덩어리가 둘로 나뉘어 있었습니다. 그리는 것은 두 곳이지만 **무엇을 권할지는
+   여기 한 곳**입니다.
+   `heroGo` 는 히어로 단추에 쓰는 짧은 말입니다. 카드에서는 옆에 설명이
+   붙지만(`sub`) 히어로에서는 단추 글자만 남으므로, `물어보기` 처럼 무엇을
+   묻는지 모를 말 대신 그 자리에서 읽히는 말을 씁니다. */
+export function aiPrompt(nextTrip, nextPlans){
+  return !nextTrip
     ? { title:'AI와 함께 떠나볼까요?', sub:'뭘 좋아하는지만 알려주세요',
-        go:'시작', go2:() => ctx.openNew() }
+        go:'시작', heroGo:'AI로 시작', go2:() => ctx.openNew() }
     : nextPlans === 0
     ? { title:`${nextTrip.title} 일정이 비어 있어요`,
-        sub:'AI가 하루씩 짜드릴게요', go:'짜기',
+        sub:'AI가 하루씩 짜드릴게요', go:'짜기', heroGo:'AI로 일정 짜기',
         go2:() => ctx.openDraft(nextTrip.id, true) }
     /* **여기는 초안 화면이 아니라 비서로 보냅니다.** 처음에 초안으로 보냈더니
        "빈 시간에 넣을 곳을 찾아드려요"라고 해놓고 일정을 통째로 다시 짜는
        화면이 떴습니다. 이미 31개가 들어 있는 여행에서요. 말과 행동이 달랐습니다.
        뭘 더 넣을지 물어보는 자리는 비서입니다. */
     : { title:`${nextTrip.title}, 뭐 더 넣을까요?`,
-        sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기',
+        sub:'빈 시간에 넣을 곳을 찾아드려요', go:'물어보기', heroGo:'뭐 더 넣을까 묻기',
         go2:async () => { ctx.openAi(); $('ai_trip').value = nextTrip.id;
                           await ctx.loadChats(nextTrip.id); } };
+}
 
+export function renderAiCard(nextTrip, nextPlans){
+  const ai = aiPrompt(nextTrip, nextPlans);
   const box = document.createElement('div');
   box.className = 'aicard';
   box.id = 'homeaicard';

@@ -16,21 +16,23 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b376';
-import { sb } from './db.js?v=b376';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b376';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b376';
-import { starHtml, paintStars, markRated } from './stars.js?v=b376';
-import { cities, countryName } from './cities.js?v=b376';
-import { myRates, visited } from './rate.js?v=b376';
-import { plans } from './trip.js?v=b376';
-import { openCity } from './city.js?v=b376';
-import { loadCities, pick } from './citysearch.js?v=b376';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b376';
-import { openMap, UN_COUNTRIES } from './map.js?v=b376';
-import { drawReport, renderAiCard } from './report.js?v=b376';
-import { PERSONA_BG } from './card.js?v=b376';
-import { openNew } from './newtrip.js?v=b376';
+import { $, esc } from './dom.js?v=b377';
+import { sb } from './db.js?v=b377';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b377';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b377';
+import { starHtml, paintStars, markRated } from './stars.js?v=b377';
+import { cities, countryName } from './cities.js?v=b377';
+import { myRates, visited } from './rate.js?v=b377';
+import { plans } from './trip.js?v=b377';
+import { openCity } from './city.js?v=b377';
+import { loadCities, pick } from './citysearch.js?v=b377';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b377';
+import { openMap, UN_COUNTRIES } from './map.js?v=b377';
+/* `aiPrompt` 는 무엇을 권할지만 정합니다 — 여행이 있을 때는 히어로 단추로,
+   없을 때는 `renderAiCard` 가 카드로 그립니다(b377). */
+import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b377';
+import { PERSONA_BG } from './card.js?v=b377';
+import { openNew } from './newtrip.js?v=b377';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -298,28 +300,40 @@ async function buildHome(){
   if (sig === lastHomeSig && $('home').querySelector('.hero')) return;
   lastHomeSig = sig;
 
+  /* ── 히어로 하나가 그 여행을 통째로 말합니다 (b377, C) ────────────────
+     전에는 히어로(`도쿄`) 바로 밑에 AI 카드가 따로 서서 `도쿄, 뭐 더
+     넣을까요?` 라고 했습니다. **같은 여행 이야기를 하는 덩어리가 둘**이라
+     위가 무거웠습니다. 권유를 히어로의 단추로 넣습니다 — 무엇을 권할지
+     정하는 곳은 그대로 report.js 한 곳입니다(`aiPrompt`). */
+  const ai = aiPrompt(t, all.count || 0);
   $('home').innerHTML = heroHtml(photo, badge, t.title,
     tripSub(t, days) +
-    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), '');
+    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''), ai.heroGo);
   $('hero').onclick = () => ctx.openTrip(t.id);
-  rvBar();                    /* 평가할 여행이 남아 있으면 얇은 띠로 붙습니다 */
+  /* 히어로를 누르면 여행이 열리므로 단추는 번짐을 막아야 합니다. */
+  $('herobtn').onclick = e => { e.stopPropagation(); ai.go2(); };
 
-  /* ── 순서는 여행이 언제냐가 정합니다 ──
-     36일 전인 사람에게 제일 급한 것은 일정이지, 다녀온 도시 평가가 아닙니다.
-     평가와 발자국은 다녀온 뒤에 보는 것이라 여행이 남아 있으면 아래로 내립니다.
-     반대로 여행이 끝났거나 없으면 그것들이 이 앱의 남은 재미입니다. */
-  renderAiCard(t, all.count || 0);
-  /* **새 여행으로 가는 길을 홈에 남겨둡니다.** AI 카드가 '다음 여행' 이야기를
-     하게 되면서, 여행이 이미 있는 사람은 홈에서 새 여행을 못 만들게 됐습니다.
-     카드를 하나 더 크게 얹으면 위가 무거워지므로 얇은 줄로 답니다. */
-  const nt = document.createElement('div');
-  nt.className = 'newtripbar';
-  nt.innerHTML = `<span class="ic">＋</span>
-    <span class="tx"><b>다음에 어디 갈까요?</b>
-      <span>어디로 언제 가는지만 정하면 돼요</span></span>
-    <span class="go">새 여행</span>`;
-  nt.onclick = () => openNew();
-  $('home').appendChild(nt);
+  /* ── 권유는 하나만 (b377, B) ──────────────────────────────────────────
+     히어로 밑에 평가 띠 · AI 카드 · 새 여행 줄이 **줄줄이 셋**이었습니다.
+     하나씩 더할 때는 다 맞는 판단이었습니다 — 주석에도 "위가 두 덩어리가
+     되면 무겁다", "카드를 하나 더 얹으면 무거우니 얇은 줄로" 라고 적혀
+     있습니다. 그런데 얇은 것 셋이 서면 191px 에 생김새가 셋입니다.
+     **하나씩 더할 때는 안 보이고 모아 놓아야 보이는 종류입니다.**
+
+     AI 는 위 히어로가 맡았으니 남은 둘 중 하나만 답니다.
+     평가가 먼저입니다 — 다녀온 여행이 답을 기다리는 것이고, 새 여행은
+     아무 때나 만들 수 있습니다. 평가할 것이 없을 때만 새 여행이 나옵니다. */
+  if (pend) rvBar();
+  else {
+    const nt = document.createElement('div');
+    nt.className = 'newtripbar';
+    nt.innerHTML = `<span class="ic">＋</span>
+      <span class="tx"><b>다음에 어디 갈까요?</b>
+        <span>어디로 언제 가는지만 정하면 돼요</span></span>
+      <span class="go">새 여행</span>`;
+    nt.onclick = () => openNew();
+    $('home').appendChild(nt);
+  }
 
   await renderQuiz();
   await renderFoot();
