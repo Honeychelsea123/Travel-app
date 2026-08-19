@@ -1,6 +1,6 @@
 # app.js 쪼개기 — 어디까지 했고 어떻게 이어가나
 
-2026-08-19. `app.js` 9,169 → 1,580줄. 서른한 조각이 나갔다. **83%를 걷었다.**
+2026-08-19. `app.js` 9,169 → 1,453줄. 서른두 조각이 나갔다. **84%를 걷었다.**
 
 ## 왜 하나
 
@@ -43,6 +43,7 @@
 | `planline.js` | 122 | 일정 줄 그리기 부품(분류 칩 · 메모) | drawDays, drawPlans |
 | `planview.js` | 264 | 일정 그리기 · 끌어서 순서 바꾸기 | featOn, flags, loadPlans |
 | `geocode.js` | 219 | 붙여넣은 지도 링크에서 위치 찾기 | drawDays, featOn, loadPlans |
+| `legs.js` | 168 | 구간(날짜를 도시로 나눈 것) · 도시 고르개 | drawDays, drawTripHeader, fetchTrip |
 
 아래층으로 내린 것: `avgTail`→`rate.js` · `D1`·`asDate`→`calc.js` ·
 `UN_COUNTRIES`→`map.js` · `LVCOLOR`→`cards.js` ·
