@@ -1,5 +1,7 @@
 /* ── 관리자 화면 ───────────────────────────────────────────────────────
- * 대시보드 · 조절 · 바뀐 것. 관리자만 보는 화면 전부입니다.
+ * 대시보드 · 조절. 관리자만 보는 화면 전부입니다.
+ *
+ * ('바뀐 것' 변경 이력은 b386 에서 걷었습니다 — 아래 그 자리에 사연.)
  *
  * **여기는 앱 상태를 하나도 안 봅니다.** trip · plans · me · legs 어느 것도
  * 읽지 않고, 필요한 숫자는 전부 서버 함수(admin_stats · admin_settings)에서
@@ -9,9 +11,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b385';
-import { sb } from './db.js?v=b385';
-import { fail, netTimeout } from './net.js?v=b385';
+import { $, esc, toast, copyText } from './dom.js?v=b386';
+import { sb } from './db.js?v=b386';
+import { fail, netTimeout } from './net.js?v=b386';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -377,45 +379,17 @@ $('admback').addEventListener('click', () => {
    (image_url 이 전부 우리 storage 주소이고 pexels 는 0 곳).
    supabase/functions/migrate-images 도 같이 지웠습니다. */
 
-/* ── 바뀐 것 ────────────────────────────────────────────────────────
- * 판마다 무엇이 바뀌었는지. 목록은 changes.js 에 따로 있습니다.
+/* ⚠ **'바뀐 것'(변경 이력) 화면을 걷었습니다 (b386).**
+ *  changes.js 에 판마다 무엇이 바뀌었는지 손으로 적어두는 화면이었습니다.
+ *  그런데 맨 위 항목이 b174–b181(2026-08-06)에 멈춰 있었습니다 —
+ *  **203판, 2주가 비어 있었습니다.** 관리자만 보는 화면이라 아무도 안 채웠습니다.
  *
- * **정적 import 를 쓰지 않습니다.** 그러면 오프라인에서 그 파일이 캐시에
- * 없을 때 모듈 로드가 통째로 실패해 앱이 안 뜹니다. 누를 때만 받아오고,
- * 못 받아오면 그 화면만 못 엽니다. 화면 판 번호를 붙여 옛 파일을 안 잡게 합니다. */
-let CHG = null;
-$('adm_chgcard').addEventListener('click', async () => {
-  $('admpane').classList.add('hide');
-  $('chgpane').classList.remove('hide');
-  window.scrollTo({ top:0, behavior:'smooth' });
-  if (CHG) return drawChanges();
-  try {
-    const v = $('build')?.textContent || '';
-    ({ CHANGES: CHG } = await import(`./changes.js?v=${encodeURIComponent(v)}`));
-    drawChanges();
-  } catch (e){
-    $('chglist').innerHTML = `<div class="card"><div class="empty" style="text-align:left">
-      목록을 못 받아왔어요. 연결이 없으면 이 화면은 안 열립니다.<br>
-      <span class="memo">${esc(String(e?.message || e))}</span></div></div>`;
-  }
-});
-$('chgback').addEventListener('click', () => {
-  $('chgpane').classList.add('hide');
-  $('admpane').classList.remove('hide');
-  window.scrollTo({ top:0, behavior:'smooth' });
-});
-
-const CHG_TAG = { '새로':'k-관광', '고침':'k-식사', '바뀜':'k-이동', '걷어냄':'' };
-function drawChanges(){
-  $('chglist').innerHTML = (CHG || []).map(r => `<div class="card">
-    <h2><span class="grow">${esc(r.t)}</span></h2>
-    <div class="memo" style="margin:-6px 0 10px">${esc(r.d)} · ${esc(r.v)}</div>
-    ${r.items.map(([tag, s]) => `<div class="plan">
-       <span class="kdot ${esc(CHG_TAG[tag] ?? '')}"></span>
-       <div class="body"><b style="font-size:calc(13px * var(--ts))">${esc(tag)}</b>
-         <span class="memo">${esc(s)}</span></div></div>`).join('')}
-  </div>`).join('');
-}
+ *  같은 기록이 git 에 이미 있고, **그쪽은 커밋할 때마다 저절로 최신**입니다.
+ *  손으로 쓰는 사본을 두면 반드시 어긋나고 실제로 어긋났습니다. 안 맞는
+ *  변경 이력은 없는 것보다 나쁩니다 — 앱이 멈춘 것처럼 보입니다.
+ *  다시 필요해지면 손으로 쓰지 말고 git log 에서 만들어내야 합니다.
+ *  같이 걷은 것: index.html 의 `adm_chgcard`·`chgpane`, changes.js,
+ *  sw.js 의 미리담기 한 줄. */
 
 /* 내가 낸 오류만 봅니다(RLS 가 그렇게 막아 뒀습니다).
    문의할 때 붙일 수 있게 복사도 됩니다 — 스크린샷보다 이쪽이 고치기 쉽습니다. */
