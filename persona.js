@@ -16,12 +16,12 @@
  *   값으로 받으면 로그인 전의 null 을 영영 들고 있게 됩니다.
  *
  * 층: dom.js · db.js · cities.js · card.js 만 씁니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b392';
-import { sb } from './db.js?v=b392';
-import { cities, countryName, continentOf } from './cities.js?v=b392';
+import { $, esc, toast, copyText } from './dom.js?v=b393';
+import { sb } from './db.js?v=b393';
+import { cities, countryName, continentOf } from './cities.js?v=b393';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         askImageSize, cardImage } from './card.js?v=b392';
+         shareCard, cardImage } from './card.js?v=b393';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -129,9 +129,14 @@ async function drawPersona(s, ax){
   $('personabox').innerHTML = `
     <div class="pcardwrap" id="pcardwrap"></div>
 
-    <div style="display:flex; gap:8px; margin-bottom:var(--s-sm)">
-      <button class="small" id="p_img" style="flex:1">이미지로 저장</button>
-      <button class="small" id="p_share" style="flex:1">공유</button>
+    <!-- ⚠ **단추가 둘이었습니다 — 「이미지로 저장」과 「공유」(b393).**
+         그런데 공유 쪽은 글만 보냈고, 저장 쪽은 **그림·글·주소를 다** 보냈습니다.
+         즉 앞엣것이 뒤엣것을 통째로 포함합니다. 카톡으로 보내보면 차이가
+         분명합니다 — 하나는 글 세 줄, 하나는 카드 그림.
+         **더 나은 쪽만 남깁니다.** 그림을 못 받는 기기에서는 card.js 가
+         알아서 글로 떨어뜨립니다(saveCardImage). -->
+    <div style="margin-bottom:var(--s-sm)">
+      <button class="primary" id="p_img" style="width:100%">공유하기</button>
     </div>
 
     <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
@@ -160,19 +165,13 @@ async function drawPersona(s, ax){
       </div>
     </div>`;
 
-  $('p_img').onclick = () => askImageSize(spec, `기로-${code}`);
-  $('p_share').onclick = async () => {
-    /* 글로 나가는 것은 카드와 별개입니다 — 그림을 못 보는 곳(문자·메모)에서는
-       이 글이 전부라, 카드에 그림으로만 있는 것도 여기서는 말로 씁니다. */
-    const text = `내 여행 성향: ${code} ${type.n}\n` +
-      `${spec.axisWords}\n${s.countries}개국 · ${s.cities}개 도시 · ${rank}`;
-    const url = location.origin + location.pathname;
-    if (navigator.share){
-      try { await navigator.share({ title:'내 여행 성향', text, url }); return; }
-      catch (e){ if (e?.name === 'AbortError') return; }
-    }
-    toast(await copyText(`${text}\n${url}`) ? '복사했어요' : text);
-  };
+  /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지
+     않고 `shareText` 로 옮겼습니다 — **그림을 못 받는 기기**(문자·메모)에서는
+     card.js 가 이 글로 떨어뜨립니다. 카드에 그림으로만 있는 것도 여기서는
+     말로 적혀 있어야 그때 뜻이 통합니다. */
+  spec.shareText = `내 여행 성향: ${code} ${type.n}\n` +
+    `${spec.axisWords}\n${s.countries}개국 · ${s.cities}개 도시 · ${rank}`;
+  $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
 
   /* 4:5 로 만듭니다. 인스타 피드에서 세로가 정사각보다 화면을 훨씬 많이
      먹고, 고르는 목록에서도 세로가 먼저입니다(card.js 의 IMG_SIZES).

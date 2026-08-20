@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b392';
-import { openCity } from './city.js?v=b392';
-import { distKm } from './calc.js?v=b392';
-import { sb } from './db.js?v=b392';
-import { cities, countryName, continentOf } from './cities.js?v=b392';
-import { PERSONA_ICON, askImageSize } from './card.js?v=b392';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b393';
+import { openCity } from './city.js?v=b393';
+import { distKm } from './calc.js?v=b393';
+import { sb } from './db.js?v=b393';
+import { cities, countryName, continentOf } from './cities.js?v=b393';
+import { PERSONA_ICON, shareCard } from './card.js?v=b393';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -318,7 +318,7 @@ export async function openCountries(){
           .map(c => countryName[c] || c).join(' · '))}${
           codes.length > 6 ? ` 외 ${codes.length - 6}개국` : ''}</div>`}
     <button class="small" id="ctry_share" style="width:100%; margin-top:14px">
-      이미지로 저장 · 공유</button>
+      공유하기</button>
   </div>`;
 
   $('ctrylist').innerHTML = head + order.filter(k => groups[k]?.length).map(k => {
@@ -350,7 +350,7 @@ export async function openCountries(){
   $('ctry_share').onclick = () => {
     const land = $('worldland')?.innerHTML || '';
     const top = codes.sort((a, b) => byC[b].length - byC[a].length).slice(0, 3);
-    askImageSize({
+    shareCard({
       g:'rare', icon: PERSONA_ICON.globe, sub:'다녀온 나라',
       big: String(codes.length), bigUnit:'개국',
       title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
@@ -425,7 +425,7 @@ export async function openMap(){
        ${UN_COUNTRIES}개국 중 <b>${gone.size}개국</b> · ${pct.toFixed(1)}%</div>
      <div class="fp"><i style="width:${Math.max(pct, 1.2).toFixed(1)}%"></i></div>
      <button class="ghost" id="fp_img" style="width:100%; margin-top:12px">
-       이미지로 저장 · 공유</button>`;
+       공유하기</button>`;
 
   /* ── 발자국을 카드로 ──────────────────────────────────────────────
      **여기가 이 앱에서 제일 내보이고 싶은 그림입니다.** 성향 카드보다
@@ -434,7 +434,7 @@ export async function openMap(){
      지도는 **화면에 그려져 있는 것을 그대로 빌려 씁니다** — 어느 나라를
      칠할지 다시 정하면 화면과 어긋납니다. 위에서 이미 .been 을 붙여뒀습니다.
      칠은 카드 배경(남색→보라) 위에 얹히므로 흰색 두 단계로만 씁니다. */
-  $('fp_img').onclick = () => askImageSize({
+  $('fp_img').onclick = () => shareCard({
     g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
     title:`${gone.size}개국`,
     nums:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,

@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b392';
-import { sb } from './db.js?v=b392';
-import { fail, netTimeout } from './net.js?v=b392';
-import { money, distKm, D1, asDate } from './calc.js?v=b392';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b392';
+import { $, esc, toast, copyText, md } from './dom.js?v=b393';
+import { sb } from './db.js?v=b393';
+import { fail, netTimeout } from './net.js?v=b393';
+import { money, distKm, D1, asDate } from './calc.js?v=b393';
+import { REPORT_ICON, REPORT_BG, shareCard, PERSONA_ICON } from './card.js?v=b393';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
@@ -326,21 +326,19 @@ export async function drawReport(id){
   $('rv_report').innerHTML = 영수증 +
     `<div class="card" style="margin-top:var(--s-sm)">
        <button class="ghost" id="rv_askai" style="width:100%">AI 한마디 듣기</button>
-       <div style="display:flex; gap:8px; margin-top:8px">
-         <button class="ghost" id="rv_img" style="flex:1">이미지로 저장</button>
-         <button class="ghost" id="rv_share" style="flex:1">공유</button>
-       </div>
+       <!-- 성향 카드와 같은 이유로 단추를 하나로 합쳤습니다(b393) —
+            글만 보내는 「공유」는 그림까지 보내는 쪽에 통째로 포함됩니다. -->
+       <button class="primary" id="rv_img" style="width:100%; margin-top:8px">공유하기</button>
        <button class="ghost" id="rv_home" style="width:100%; margin-top:6px">홈으로</button>
      </div>`;
 
   $('rv_home').onclick  = () => ctx.closeReview();
-  $('rv_share').onclick = () => shareReport();
   /* ⚠ **이미지는 화면과 내용이 다릅니다.** 하루별 흐름과 AI 문단은 빼고
      핵심만 남깁니다 — 그건 내가 볼 것이지 남에게 보일 것이 아닙니다.
      성향 카드에서는 "보는 것이 곧 올리는 것"이 규칙이었지만, 여기는
      **일부러 가르는 것**이라 다릅니다. 그 이유를 모르면 언젠가 "왜 두 벌이지"
      하고 합치게 됩니다. */
-  $('rv_img').onclick   = () => askImageSize({
+  $('rv_img').onclick   = () => shareCard({
     kind:'receipt',
     번호, dest: T.destination || T.title || '여행',
     from: T.start_date, to: T.end_date, days, 인원,
@@ -349,6 +347,9 @@ export async function drawReport(id){
     식비비중: foodPct,
     five: five.slice(0, 2), label,
     바: 바코드(id),
+    /* 그림을 못 받는 기기(문자·메모)에서는 이 글로 떨어집니다 —
+       예전 「공유」 단추가 보내던 그 글입니다(b393 에서 단추만 합쳤습니다). */
+    shareText: reportText(),
   }, '기로-영수증');
   $('rv_askai').onclick = () => askReportAi(id, { label, defLine, dayRows, hard,
                                                   spend, cur, days, top, pricey, psr });
@@ -365,16 +366,10 @@ function reportText(){
   ].filter(Boolean).join('\n');
 }
 
-async function shareReport(){
-  const url = location.origin + location.pathname;
-  const text = reportText();
-  if (navigator.share){
-    try { await navigator.share({ title:'여행 리포트', text, url }); return; }
-    catch (e){ if (e?.name === 'AbortError') return; }
-  }
-  try { await navigator.clipboard.writeText(`${text}\n${url}`); toast('복사했어요'); }
-  catch { toast(text); }
-}
+/* ⚠ 여기 `shareReport`(글만 보내기)가 있었습니다 — **b393 에서 걷었습니다.**
+   단추 둘 중 「공유」가 부르던 것인데, 그림까지 보내는 쪽이 이 글도 같이
+   보내므로 통째로 포함됩니다. 위 `reportText()` 는 남아 있고 `shareText` 로
+   넘어가서, 그림을 못 받는 기기에서 그대로 쓰입니다. */
 
 /* AI 한마디. 계산해 둔 사실만 넘기고 문장만 받습니다 —
    AI 가 숫자를 다시 세면 틀립니다. 부를 때만 부르므로 횟수도 아낍니다. */

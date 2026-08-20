@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b392';
+import { $, esc, toast } from './dom.js?v=b393';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm } from './calc.js?v=b392';
+import { distKm } from './calc.js?v=b393';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -290,7 +290,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b392`;
+    img.src = `./persona/${code}.png?v=b393`;
   });
 }
 
@@ -365,14 +365,18 @@ async function drawReceipt(s, W, H, F){
     g.textAlign = 'left';  g.fillText(k, L, y + U * .030);
     g.textAlign = 'right'; g.fillText(v, R, y + U * .030);
   });
-  const 굵은선 = () => 줄(.030, (y, U) => {
+  /* `선:true` 인 조각은 아래에서 남는 높이를 나눠 받습니다. 선은 늘어난 칸의
+     **가운데**에 놓아야 위아래가 고르게 벌어집니다 — 그래서 `h` 를 받습니다. */
+  const 선줄 = (h0, draw) => { const b = { h: h0, 선: true,
+    draw: (y, U) => draw(y + U * b.h / 2, U) }; 줄들.push(b); };
+  const 굵은선 = () => 선줄(.030, (y, U) => {
     g.strokeStyle = RC.잉크; g.lineWidth = Math.max(2, U * .0035);
-    g.beginPath(); g.moveTo(L, y + U * .015); g.lineTo(R, y + U * .015); g.stroke();
+    g.beginPath(); g.moveTo(L, y); g.lineTo(R, y); g.stroke();
   });
-  const 점선 = () => 줄(.026, (y, U) => {
+  const 점선 = () => 선줄(.026, (y, U) => {
     g.strokeStyle = RC.점선; g.lineWidth = Math.max(1, U * .002);
     g.setLineDash([U * .012, U * .010]);
-    g.beginPath(); g.moveTo(L, y + U * .013); g.lineTo(R, y + U * .013); g.stroke();
+    g.beginPath(); g.moveTo(L, y); g.lineTo(R, y); g.stroke();
     g.setLineDash([]);
   });
 
@@ -428,7 +432,23 @@ async function drawReceipt(s, W, H, F){
   const 여백 = W * .09;
   const 위 = 여백, 아래 = H - 여백;
   const U = Math.min(W, (아래 - 위) / 총);
-  const 글높이 = U * 총;
+
+  /* ── 남는 높이는 구획 사이로 ──────────────────────────────────────────
+   * ⚠ **스토리(9:16)에서 영수증이 가운데 조그맣게 떴습니다.** 내용이 짧아
+   *   자(U)가 폭에서 막히고 세로로 절반이 비었습니다.
+   *   **글자를 키우지는 않습니다** — 키우면 영수증이 아니라 포스터가 됩니다.
+   *   대신 **구분선 앞뒤를 벌립니다.** 진짜 영수증도 항목이 적으면 줄 사이가
+   *   성기지 않고 **구획 사이가 벌어집니다.** 줄 간격을 늘리면 글이 흩어져
+   *   보이지만, 구획 사이는 벌어져도 각 덩어리가 그대로 붙어 있습니다. */
+  const 선칸 = 줄들.filter(b => b.선).reduce((a, b) => a + b.h, 0);
+  const 남음 = (아래 - 위) - U * 총;
+  const 펼침 = (선칸 > 0 && 남음 > 0)
+    ? Math.min(3.2, 1 + 남음 / (U * 선칸))       /* 너무 벌리면 따로 논 것처럼 보입니다 */
+    : 1;
+  줄들.forEach(b => { if (b.선) b.h *= 펼침; });
+
+  const 총2 = 줄들.reduce((a, b) => a + b.h, 0);
+  const 글높이 = U * 총2;
   const 안여백 = U * .055;                       /* 종이 안쪽 위아래 여백 */
   const 종이위 = (H - 글높이) / 2 - 안여백;
   const 종이높이 = 글높이 + 안여백 * 2;
@@ -1017,6 +1037,15 @@ async function saveCardImage(spec, mode, name){
     try { await navigator.share(payload); return; }
     catch (e){ if (e?.name === 'AbortError') return; }
   }
+  /* ── 그림을 못 보내는 기기 ─────────────────────────────────────────
+   * ⚠ **전에는 여기서 곧장 내려받기로 떨어졌습니다.** 그런데 공유를 누른
+   *   사람이 원한 것은 파일이 아니라 **보내는 것**입니다. 그림이 안 되면
+   *   글이라도 보내는 편이 낫습니다 — 카드에 적힌 것이 글에도 있습니다.
+   *   내려받기는 그것마저 안 될 때의 마지막 수단으로 내립니다. */
+  if (spec.shareText && navigator.share){
+    try { await navigator.share({ title: spec.title, text: spec.shareText, url: appUrl() }); return; }
+    catch (e){ if (e?.name === 'AbortError') return; }
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name + ext;
   document.body.appendChild(a); a.click(); a.remove();
@@ -1026,28 +1055,22 @@ async function saveCardImage(spec, mode, name){
 
 /* 어느 크기로 뽑을지 묻습니다. 피드와 스토리는 비율이 아주 달라서
    하나로 뽑아두면 한쪽은 잘리거나 여백이 크게 남습니다. */
-export function askImageSize(spec, name){
-  const box = document.createElement('div');
-  box.className = 'card assheet';
-  box.style.cssText = 'position:fixed; left:0; right:0; bottom:0; z-index:1210';
-  box.innerHTML = `<h2>어떤 크기로 저장할까요?</h2>` +
-    Object.entries(IMG_SIZES).map(([k, v]) =>
-      `<button class="small" data-size="${k}"
-               style="width:100%; margin-bottom:8px">${esc(v.ko)}</button>`).join('') +
-    `<button class="ghost" data-size="" style="width:100%">닫기</button>`;
-  document.body.appendChild(box);
-  $('sheetbg').classList.remove('hide');
-  const shut = () => { box.remove(); $('sheetbg').classList.add('hide');
-                       $('sheetbg').removeEventListener('click', shut); };
-  /* 뒤를 눌러도 닫혀야 합니다. 이 시트는 코드에서 만든 것이라
-     syncSheets 가 모릅니다 — 안 달아두면 뒷판만 걷히고 시트가 남습니다. */
-  $('sheetbg').addEventListener('click', shut);
-  box.addEventListener('click', async e => {
-    const b = e.target.closest('[data-size]'); if (!b) return;
-    const k = b.dataset.size;
-    shut();
-    if (k) await saveCardImage(spec, k, name);
-  });
+/* ── 카드를 공유합니다 ────────────────────────────────────────────────
+ * ⚠ **전에는 크기를 먼저 물었습니다 — 세로·정사각·스토리 셋(b393 에서 걷음).**
+ *   물을 값어치가 없었습니다. 정사각은 세로가 있으면 고를 이유가 없고
+ *   (인스타 피드에서 세로가 화면을 더 먹습니다), 남은 둘 중 실제로 올리는
+ *   곳은 **스토리 하나**입니다 — 피드에 올리는 사람이 없습니다.
+ *   묻는 창이 하나 줄어서 공유하기 → 바로 공유창이 됩니다.
+ *
+ * ⚠ **단추도 하나로 합쳤습니다.** 「이미지로 저장」과 「공유」가 따로 있었는데,
+ *   공유 쪽은 글만 보내고 저장 쪽은 **그림·글·주소를 다** 보냈습니다.
+ *   앞엣것이 뒤엣것을 통째로 포함하니 더 나은 쪽만 남깁니다.
+ *
+ * 트레이드오프 하나는 알고 있습니다: 9:16 은 **카톡 대화에서 세로로 길게
+ * 잘려** 보입니다(눌러야 다 보입니다). 스토리에 올리는 것이 주 용도라
+ * 감수합니다. 되돌리려면 아래 'story' 를 'portrait' 로 바꾸면 됩니다. */
+export function shareCard(spec, name){
+  return saveCardImage(spec, 'story', name);
 }
 
 /* 평생 누적 값. 별점을 매긴 도시만 셉니다 — "가보고 싶어요"는 간 곳이 아닙니다.
