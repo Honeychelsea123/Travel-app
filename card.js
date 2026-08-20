@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b393';
+import { $, esc, toast } from './dom.js?v=b394';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm } from './calc.js?v=b393';
+import { distKm } from './calc.js?v=b394';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -290,7 +290,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b393`;
+    img.src = `./persona/${code}.png?v=b394`;
   });
 }
 
@@ -1170,17 +1170,57 @@ const pScale = (v, lo, hi) =>
 /* 모험력의 기준점. 한국에서 출발하니 서울입니다. */
 const SEOUL = [37.5665, 126.9780];
 
+/* ── 국내는 네 축 중 **둘에서만** 뺍니다(b394) ────────────────────────
+ * 단골력·모험력은 해외만, 개척력·만족력은 전부 셉니다.
+ * 짐작이 아니라 재보고 가른 것입니다(매긴 곳 74 = 국내 24 + 해외 50):
+ *
+ *     개척 36→39 · 단골 37→13 · 모험 71→85 · 만족 26→27
+ *
+ * **단골력은 개념이 틀려 있었습니다.** 「제일 많이 간 나라 ÷ 전체」인데
+ * 최다 나라가 한국(24/74)이라, 서울 사는 사람이 부산·강릉 간 것이
+ * "한 나라만 파는 성향" 으로 읽혔습니다. 국내 여행은 애초에 **나라를
+ * 고르는 행위가 아닙니다.** 24점 차이는 결과일 뿐 이유가 아닙니다.
+ *
+ * **모험력은 무게가 잘못됐습니다.** 국내 24곳의 평균 거리가 229km 인데
+ * 이것이 9,000km 짜리와 똑같이 한 표씩 평균에 들어갑니다. 강릉 한 번이
+ * 헬싱키 한 번을 상쇄합니다.
+ *
+ * **개척력·만족력은 그대로 둡니다.** 국내에서 숨은 곳을 찾아다니는 것도
+ * 개척의 증거이고, 별점이 후한지 까다로운지는 어디서나 같은 사람의
+ * 성질입니다(국내 ★3.56 · 해외 ★3.65 — 거의 같습니다). 3점·1점밖에
+ * 안 움직이는데 표본 24개를 버릴 이유가 없습니다.
+ *
+ * ⚠ **여기만 고치면 안 됩니다.** 화면(persona.js)의 '왜 이 코드인가요' 가
+ *   단골력 옆에 "한 나라당 몇 곳" 을 같이 보여줍니다. 그 숫자를 전체로
+ *   두면 축은 해외로 세는데 근거는 전체로 적혀, 왜 그렇게 나왔는지
+ *   따져보는 사람에게 앞뒤가 안 맞습니다. 그래서 아래에서 `나라당` 을
+ *   같이 내보냅니다. */
+const 국내 = 'KR';
+
+/* 해외가 이보다 적으면 두 축을 50 으로 두고 **화면에서 밝힙니다.**
+   1곳이면 「제일 많이 간 나라 ÷ 전체」가 1.0 이라 단골력이 100 으로 튑니다 —
+   해외 한 번 다녀온 사람이 '한 나라 순정파' 가 됩니다. 3곳이면 다 다른
+   나라일 때 0.33(→M), 한 나라일 때 1.0(→L) 이라 비로소 갈립니다. */
+const 해외문턱 = 3;
+
 export function personaAxes(rows, world = {}){
   const cities = world.cities || [];
   const info = id => cities.find(c => c.id === id);
   const rated = (rows || []).filter(r => r.stars != null);
 
   const fames = [], dists = [], stars = [], byCountry = {};
+  let 해외N = 0;
   for (const r of rated){
+    /* ↓ 만족력. 도시 목록에 없는 곳도 별점은 별점이라 셉니다. */
     stars.push(Number(r.stars));
     const c = info(r.city_id);
     if (!c) continue;
+    /* ↓ 개척력. 국내도 셉니다 — 위 설명 참고. */
     if (c.fame != null) fames.push(Number(c.fame));
+
+    /* ↓ 여기부터 **해외만**입니다(단골력·모험력). */
+    if (c.country === 국내) continue;
+    해외N++;
     if (c.center_lat != null && c.center_lng != null){
       const d = distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng);
       if (d != null) dists.push(d);
@@ -1189,10 +1229,14 @@ export function personaAxes(rows, world = {}){
   }
   const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
   const cityN = rated.length, countryN = Object.keys(byCountry).length;
+  /* 해외가 문턱을 넘어야 두 축을 셉니다. 넘지 못하면 50 으로 두고,
+     무엇이 안 정해졌는지 아래 `추정` 으로 알려 화면이 밝히게 합니다. */
+  const 셀만함 = 해외N >= 해외문턱;
 
   /* 개척력 — 유명도 평균(도시마다 1~3 등급이 매겨져 있습니다. 469곳 전부). */
   const fAvg = mean(fames);
-  /* 단골력 — 제일 많이 간 나라가 전체의 몇 할인가. 일본만 스물이면 100. */
+  /* 단골력 — 제일 많이 간 **해외** 나라가 해외 전체의 몇 할인가.
+     일본만 스물이면 100. 국내는 세지 않습니다(위 설명). */
   const topN = countryN ? Math.max(...Object.values(byCountry)) : 0;
   /* 모험력 — 서울에서 평균 몇 km. **로그를 씁니다** — 선형이면 유럽·남미가
      전부 100 에 몰립니다. 한국에서는 웬만한 데가 다 멀어서, 가까운 구간
@@ -1203,8 +1247,8 @@ export function personaAxes(rows, world = {}){
   const sAvg = mean(stars);
 
   const 개척 = fAvg == null ? 50 : pScale(fAvg, 1.10, 2.55);
-  const 단골 = cityN ? pScale(topN / cityN, 0.10, 0.70) : 50;
-  const 모험 = dAvg == null ? 50
+  const 단골 = 셀만함 ? pScale(topN / 해외N, 0.10, 0.70) : 50;
+  const 모험 = (!셀만함 || dAvg == null) ? 50
     : pScale(Math.log(Math.max(dAvg, 700) / 700), 0, Math.log(9500 / 700));
   const 만족 = sAvg == null ? 50 : pScale(sAvg, 3.20, 4.85);
 
@@ -1213,7 +1257,16 @@ export function personaAxes(rows, world = {}){
 
   return { code, 개척, 단골, 모험, 만족,
            cities: cityN, countries: countryN,
-           avgFame: fAvg, avgStar: sAvg, avgDist: dAvg };
+           /* ↓ 화면이 근거를 적을 때 씁니다. 축을 해외로 세면 근거도
+              해외로 적혀야 앞뒤가 맞습니다(위 ⚠ 참고). */
+           해외: 해외N, 해외문턱,
+           나라당: countryN ? 해외N / countryN : 0,
+           /* 문턱을 못 넘어 50 으로 둔 축들. 비어 있으면 다 셌다는 뜻입니다. */
+           추정: 셀만함 ? [] : ['단골력', '모험력'],
+           avgFame: fAvg, avgStar: sAvg,
+           /* 해외가 모자라면 거리 평균도 안 내놓습니다 — 축은 50 인데
+              옆에 "평균 230km" 가 적혀 있으면 그게 더 헷갈립니다. */
+           avgDist: 셀만함 ? dAvg : null };
 }
 
 /* 축이 뜻하는 말. 코드 밑에 한 줄로 깝니다. */
@@ -1429,6 +1482,60 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     if (s.topCountry !== 'JP') msgs.push(`제일 많이 간 나라 ${s.topCountry}`);
     if (s.topCountryName !== '일본') msgs.push(`나라 이름이 코드 그대로: ${s.topCountryName}`);
     bad('personaStats 세는 규칙', msgs);
+  }
+
+  /* 3-b. **국내는 네 축 중 둘에서만 빠집니다(b394).** 축마다 표본이 달라졌으니
+        어느 축이 무엇을 세는지 한 자리에서 못 박습니다.
+
+        ⚠ **글자가 뒤집히는 자료를 일부러 고릅니다.** 국내를 세느냐 마느냐로
+        단골력·모험력·개척력이 **전부 반대로 나오게** 짰습니다. 그래야 규칙을
+        되돌리는 순간 이 검사가 셋 다 빨갛게 뜹니다. 점수만 보면 몇 점
+        움직였는지로 다투게 되고, 그러면 아무것도 못 잡습니다. */
+  {
+    const fake = [
+      /* 국내 열 곳 — 가깝고(서울 근처) 숨은 곳(fame 3) */
+      ...Array.from({ length: 10 }, (_, i) =>
+        ({ id: 100 + i, country:'KR', fame:3, center_lat:36.5, center_lng:127.5 })),
+      /* 해외 세 곳 — 다 다른 나라, 다 멀리, 다 이름난 곳(fame 1) */
+      { id:1, country:'JP', fame:1, center_lat:-33.9, center_lng:151.2 },
+      { id:2, country:'FR', fame:1, center_lat: 48.9, center_lng:  2.35 },
+      { id:3, country:'US', fame:1, center_lat: 40.7, center_lng:-74.0 },
+    ];
+    const a = personaAxes(fake.map(c => ({ city_id:c.id, stars:5 })), { cities: fake });
+    const msgs = [];
+    if (a.해외 !== 3) msgs.push(`해외 ${a.해외} (3 기대)`);
+    /* 국내를 세면 최다 나라가 KR 10/13 = 0.77 → L. 해외만 세면 1/3 = 0.33 → M. */
+    if (a.code[1] !== 'M') msgs.push(`단골력 ${a.code[1]} — 국내를 세고 있습니다(M 기대)`);
+    /* 국내 열 곳(약 120km)이 평균에 들어가면 9,400km 가 2,265km 로 눌려 N 이 됩니다. */
+    if (a.code[2] !== 'D') msgs.push(`모험력 ${a.code[2]} — 국내를 세고 있습니다(D 기대)`);
+    /* 반대로 개척력은 국내를 **세야** 합니다. 다 세면 평균 2.54 → H,
+       해외만 세면 1.0 → F 입니다. 즉 이 줄은 방향이 반대입니다. */
+    if (a.code[0] !== 'H') msgs.push(`개척력 ${a.code[0]} — 국내를 빠뜨렸습니다(H 기대)`);
+    bad('국내가 단골력·모험력에서만 빠지는가', msgs);
+  }
+
+  /* 3-c. 문턱. 해외가 세 곳에 못 미치면 두 축을 50 으로 두고 **그 사실을
+        내놓습니다**(화면이 밝힐 수 있어야 하므로). 해외 한 곳이면
+        「제일 많이 간 나라 ÷ 전체」가 1.0 이라 단골력이 100 으로 튑니다. */
+  {
+    const fake = [
+      { id:100, country:'KR', fame:2, center_lat:36.5, center_lng:127.5 },
+      { id:101, country:'KR', fame:2, center_lat:35.1, center_lng:129.0 },
+      { id:102, country:'KR', fame:2, center_lat:37.4, center_lng:127.1 },
+      { id:1,   country:'JP', fame:1, center_lat:35.7, center_lng:139.7 },
+      { id:2,   country:'JP', fame:1, center_lat:35.0, center_lng:135.8 },
+    ];
+    const a = personaAxes(fake.map(c => ({ city_id:c.id, stars:4 })), { cities: fake });
+    const msgs = [];
+    if (a.해외 !== 2)    msgs.push(`해외 ${a.해외} (2 기대)`);
+    if (a.단골 !== 50)   msgs.push(`단골력 ${a.단골} (50 기대)`);
+    if (a.모험 !== 50)   msgs.push(`모험력 ${a.모험} (50 기대)`);
+    if (a.추정.length !== 2) msgs.push(`추정 ${JSON.stringify(a.추정)} (둘 기대)`);
+    /* 안 센 축 옆에 "평균 230km" 가 적혀 있으면 50 인 것이 더 헷갈립니다. */
+    if (a.avgDist != null) msgs.push(`거리 평균 ${a.avgDist} — 안 셌으면 안 내놔야 합니다`);
+    /* 문턱이 **엉뚱한 축까지** 얼리지 않는지. 개척력은 다섯 곳을 다 셉니다. */
+    if (a.개척 === 50)   msgs.push('개척력까지 50 — 문턱이 남의 축을 얼렸습니다');
+    bad('해외가 모자라면 두 축만 50 으로 두고 밝히는가', msgs);
   }
 
   /* 4. 인상 깊었던 곳 — 4.5 이상만, 별점 높은 순, 3개까지. */

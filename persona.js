@@ -16,12 +16,12 @@
  *   값으로 받으면 로그인 전의 null 을 영영 들고 있게 됩니다.
  *
  * 층: dom.js · db.js · cities.js · card.js 만 씁니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b393';
-import { sb } from './db.js?v=b393';
-import { cities, countryName, continentOf } from './cities.js?v=b393';
+import { $, esc, toast, copyText } from './dom.js?v=b394';
+import { sb } from './db.js?v=b394';
+import { cities, countryName, continentOf } from './cities.js?v=b394';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b393';
+         shareCard, cardImage } from './card.js?v=b394';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -126,6 +126,13 @@ async function drawPersona(s, ax){
     title: `${code} ${type.n}`,
   };
 
+  /* ⚠ **해외가 문턱(3곳)에 못 미쳐도 카드는 냅니다.** 막을까 하다 안 막았습니다 —
+     첫 카드를 못 보면 평가를 더 할 마음도 안 생깁니다. 대신 **덜 센 것을
+     숨기지 않습니다.** 한 번도 해외에 안 간 사람에게 '먼 길 마다않는 외골수'
+     라고 해 놓고 아무 말이 없으면, 맞는 줄 알거나 카드를 통째로 안 믿습니다.
+     둘 다 나쁩니다. */
+  const 덜셈 = ax.추정.length ? ' · 아직 모름' : '';
+
   $('personabox').innerHTML = `
     <div class="pcardwrap" id="pcardwrap"></div>
 
@@ -143,13 +150,25 @@ async function drawPersona(s, ax){
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
     <div class="card">
       <h2>왜 ${esc(code)} 인가요</h2>
+      ${ax.추정.length ? `<div class="empty" style="text-align:left; padding:4px 0 12px">
+        <b>${ax.추정.join('·')}은 아직 못 정했어요.</b> 이 둘은 <b>해외 도시로만</b>
+        셉니다 — 국내 여행은 나라를 고르는 일이 아니니까요.
+        해외 <b>${Math.max(1, ax.해외문턱 - ax.해외)}곳</b>만 더 매기면 정해져요.
+        <div class="memo" style="margin-top:4px">그때까지는 50점(가운데)으로 둡니다</div>
+      </div>` : ''}
       <div class="row"><span class="label">개척력 ${ax.개척}
         <div class="memo">유명한 곳(F) ↔ 숨은 곳(H) · 도시 유명도 평균 ${s.avgFame ? s.avgFame.toFixed(2) : '—'}</div></span>
         <span class="val">${esc(code[0])}</span></div>
-      <div class="row"><span class="label">단골력 ${ax.단골}
-        <div class="memo">여러 나라(M) ↔ 한 나라(L) · 한 나라당 ${s.citiesPerCountry.toFixed(1)}곳</div></span>
+      <!-- ⚠ **아래 둘은 해외만 셉니다(b394).** 그래서 근거 숫자도 s(전체)가
+           아니라 ax(해외) 에서 가져옵니다 — 축은 해외로 세는데 옆에 적힌
+           근거가 전체면, 왜 이렇게 나왔는지 따져보는 사람에게 앞뒤가 안 맞습니다.
+           s.citiesPerCountry 를 여기 쓰지 마십시오.
+           ⚠ **이 주석에 백틱을 쓰지 마십시오.** 여기는 템플릿 문자열 안이라
+              백틱 하나로 문자열이 끊기고 파일 전체가 안 읽힙니다(b394 에서 겪음). -->
+      <div class="row"><span class="label">단골력 ${ax.단골}${덜셈}
+        <div class="memo">여러 나라(M) ↔ 한 나라(L) · 해외 한 나라당 ${ax.나라당.toFixed(1)}곳</div></span>
         <span class="val">${esc(code[1])}</span></div>
-      <div class="row"><span class="label">모험력 ${ax.모험}
+      <div class="row"><span class="label">모험력 ${ax.모험}${덜셈}
         <div class="memo">가까이(N) ↔ 멀리(D) · 서울에서 평균 ${ax.avgDist ? Math.round(ax.avgDist).toLocaleString() + 'km' : '—'}</div></span>
         <span class="val">${esc(code[2])}</span></div>
       <div class="row"><span class="label">만족력 ${ax.만족}
@@ -157,11 +176,18 @@ async function drawPersona(s, ax){
         <span class="val">${esc(code[3])}</span></div>
       <div class="row"><span class="label">매긴 도시</span>
         <span class="val">${s.cities}곳 · ${s.countries}개국 · ${s.continents}대륙</span></div>
+      <!-- 위 네 줄이 서로 다른 표본을 쓰므로 **그 표본을 밝힙니다.** 안 밝히면
+           "74곳이라며 왜 한 나라당 3.8곳이지" 하고 계산이 틀린 줄 압니다. -->
+      <div class="row"><span class="label">그중 해외
+        <div class="memo">단골력·모험력은 이 ${ax.해외}곳으로만 셉니다</div></span>
+        <span class="val">${ax.해외}곳</span></div>
       ${s.days ? `<div class="row"><span class="label">첫 기록으로부터</span>
         <span class="val">${s.days.toLocaleString()}일</span></div>` : ''}
       <div class="empty" style="text-align:left; padding-top:10px">
         AI 가 아니라 위 숫자로만 정합니다. 같은 기록이면 언제 봐도 같은 결과예요.
         <b>50점을 넘느냐</b>로 글자가 갈립니다.
+        <b>단골력·모험력은 해외 도시만</b> 셉니다 — 부산에 간 것을 "한 나라만
+        파는 성향"으로 읽으면 안 되니까요. 개척력·만족력은 국내도 다 셉니다.
       </div>
     </div>`;
 
