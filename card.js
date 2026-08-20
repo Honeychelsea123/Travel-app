@@ -8,7 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b380';
+import { $, esc, toast } from './dom.js?v=b381';
+/* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
+   잎이라 고리가 안 생깁니다. */
+import { distKm } from './calc.js?v=b381';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -247,6 +250,190 @@ function wrapText(g, text, max){
   return fixed;
 }
 
+/* ── 성향 16유형 카드 그림 (b381) ─────────────────────────────────────
+ * **화면에 보이는 것이 곧 이 그림입니다.** HTML 로 한 벌 더 그리지 않습니다 —
+ * 이 파일 아래 원래 카드에 적힌 그대로, 두 벌로 그리면 언젠가 한쪽만 고쳐서
+ * 보는 것과 올리는 것이 달라집니다. 실제로 그랬던 자리입니다.
+ *
+ * 색은 유형이 정합니다 — `F`(유명한 곳)는 베이지, `H`(숨은 곳)는 세이지.
+ * 일러스트 배경과 같은 색이라 카드와 그림이 한 덩어리로 보입니다
+ * (design_handoff 의 팔레트 그대로).
+ *
+ * 세 크기(세로·정사각·스토리)를 다 그립니다. **높이에 맞춰 늘이지 않고
+ * 폭 기준으로 재고 세로는 여백으로 흡수합니다** — 스토리(1080×1920)에서
+ * 글자만 커지면 우스워집니다. */
+const P16_BG   = { F:'#FCF3E7', H:'#E4EBDF' };
+const P16_TINT = { F:'#E8D2A8', H:'#C3D2B6' };
+const P16_INK  = '#11141A';
+const P16_ORANGE = '#F25E26';
+
+function p16Image(code){
+  return new Promise(ok => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => ok(null);      /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
+    /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
+       옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
+       한 사람은 자기 유형 하나만 봅니다. */
+    img.src = `./persona/${code}.png?v=b381`;
+  });
+}
+
+/* ── 카드 한 장 그리기 ────────────────────────────────────────────────
+ * ⚠ **높이를 보고 그립니다.** 처음에는 `y` 를 폭(W)만으로 쌓았습니다. 세로
+ *   비율이 셋(4:5 · 1:1 · 9:16)인데 폭은 셋 다 1080 이라, 정사각에서는
+ *   막대가 바닥글을 덮고 스토리에서는 아래 절반이 텅 비었습니다.
+ *
+ * 그래서 **조각마다 제 높이를 들고 있게** 했습니다. 다 더해서 남는 높이에
+ * 맞춰 자(U)를 줄이고, 남으면 가운데에 놓습니다. 자를 키우지는 않습니다 —
+ * 스토리에서 글자만 커지면 우스워지고, 스토리는 위아래를 앱 UI 가 가립니다.
+ * 조각을 하나 더 넣어도 높이 계산이 저절로 따라옵니다.
+ *
+ * 테두리·머리말·바닥글은 흐름에 안 넣습니다. 그건 종이의 일부라 늘 같은
+ * 자리(모서리)에 있어야 합니다.
+ *
+ * 색은 유형이 정합니다 — `F`(유명한 곳) 베이지, `H`(숨은 곳) 세이지.
+ * 일러스트 배경과 같은 색이라 카드와 그림이 한 덩어리로 보입니다
+ * (design_handoff 의 팔레트 그대로). */
+async function drawP16(s, W, H, F){
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const kind = s.code[0] === 'H' ? 'H' : 'F';
+  const pad = W * .07;
+  const cx  = W / 2;
+  const ink = (a = 1) => `rgba(17,20,26,${a})`;
+
+  g.fillStyle = P16_BG[kind]; g.fillRect(0, 0, W, H);
+  g.strokeStyle = ink(.16); g.lineWidth = Math.max(2, W * .0028);
+  g.strokeRect(pad * .6, pad * .6, W - pad * 1.2, H - pad * 1.2);
+
+  /* 일러스트를 먼저 받아둡니다 — 크기를 재는 데는 필요 없지만, 못 받았을
+     때 자리만 비워두려면 그릴 때 이미 알고 있어야 합니다. */
+  const art = await p16Image(s.code);
+
+  /* 줄 수는 자(U)와 무관합니다. 글자와 최대 너비가 같이 줄어들기 때문입니다 —
+     그래서 자를 정하기 전에 미리 재도 됩니다. */
+  g.font = F(500, W * .029);
+  const descLines = wrapText(g, s.desc, W * .88);
+  /* ⚠ 코드와 점수는 **머리에 따로** 답니다. 이유 문장 앞에 붙여 놓았더니
+     네 줄이 되어 뒷말이 잘렸습니다 — 잘리는 것이 하필 이유였습니다. */
+  const boxLines = [s.best, s.worst].map(m => {
+    g.font = F(500, W * .021);
+    return wrapText(g, m.line, W * .38).slice(0, 3);
+  });
+  const boxTextN = Math.max(...boxLines.map(l => l.length));
+
+  /* ── 조각들. `h` 는 자 1 을 기준으로 한 높이입니다. ── */
+  const BOXH = .085 + boxTextN * .027;
+  const blocks = [
+    { h:.170, draw:(y, U, L) => {              /* 코드 — 카드에서 제일 큰 것 */
+        g.font = F(800, U * .148); g.fillStyle = P16_INK; g.textAlign = 'left';
+        spaced(g, s.code, L + U / 2, y + U * .142, U * .020);
+      } },
+    { h:.052, draw:(y, U) => {                 /* 코드가 무슨 뜻인지 바로 밑에서 */
+        g.font = F(600, U * .029); g.fillStyle = ink(.62); g.textAlign = 'center';
+        g.fillText(s.axisWords, cx, y + U * .036);
+      } },
+    { h:.078, draw:(y, U) => {
+        g.font = F(800, U * .058); g.fillStyle = P16_INK; g.textAlign = 'center';
+        g.fillText(s.name, cx, y + U * .058);
+      } },
+    { h:descLines.length * .038 + .008, draw:(y, U) => {
+        g.font = F(500, U * .029); g.fillStyle = ink(.58); g.textAlign = 'center';
+        descLines.forEach((l, i) => g.fillText(l, cx, y + U * (.028 + i * .038)));
+      } },
+    { h:.070, draw:(y, U) => {                 /* 자랑거리는 큰 글자로 */
+        g.font = F(700, U * .038); g.fillStyle = P16_INK; g.textAlign = 'center';
+        g.fillText(`${s.countries}개국  ·  ${s.cities}도시`, cx, y + U * .046);
+      } },
+    { h:.255, draw:(y, U) => {
+        const a = U * .225, x = cx - a / 2, top = y + U * .015;
+        if (art) g.drawImage(art, x, top, a, a);
+        else {                                  /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
+          g.fillStyle = P16_TINT[kind];
+          g.beginPath(); g.roundRect(x, top, a, a, a * .10); g.fill();
+        }
+      } },
+    { h:.200, draw:(y, U, L, R) => {           /* 왜 그 유형인지가 여기서 보입니다 */
+        const lw = U * .115, vw = U * .075, th = U * .017;
+        s.bars.forEach(([name, v], i) => {
+          const by = y + U * (.026 + i * .046);
+          g.font = F(700, U * .027); g.fillStyle = ink(.72); g.textAlign = 'left';
+          g.fillText(name, L, by + U * .010);
+          const tx = L + lw, tw = (R - L) - lw - vw;
+          g.fillStyle = ink(.10);
+          g.beginPath(); g.roundRect(tx, by - th / 2, tw, th, th / 2); g.fill();
+          g.fillStyle = P16_ORANGE;
+          g.beginPath();
+          g.roundRect(tx, by - th / 2, Math.max(tw * v / 100, th), th, th / 2); g.fill();
+          g.font = F(800, U * .029); g.fillStyle = P16_INK; g.textAlign = 'right';
+          g.fillText(String(v), R, by + U * .010);
+        });
+      } },
+    { h:BOXH + .028, draw:(y, U, L, R) => {
+        const gap = U * .026, bw = ((R - L) - gap) / 2, bh = U * BOXH, top = y + U * .028;
+        [['환상의 메이트', s.best, boxLines[0], P16_ORANGE],
+         ['최악의 조합',   s.worst, boxLines[1], ink(.45)]].forEach(([cap, m, lines, col], i) => {
+          const bx = L + i * (bw + gap);
+          g.fillStyle = ink(.045);
+          g.beginPath(); g.roundRect(bx, top, bw, bh, U * .020); g.fill();
+          g.textAlign = 'left';
+          const px = bx + U * .026;
+          g.font = F(700, U * .022); g.fillStyle = col;
+          g.fillText(`${cap} · ${m.code} ${m.score}%`, px, top + U * .036);
+          g.font = F(800, U * .031); g.fillStyle = P16_INK;
+          g.fillText(m.name, px, top + U * .076);
+          g.font = F(500, U * .021); g.fillStyle = ink(.55);
+          lines.forEach((l, j) => g.fillText(l, px, top + U * (.108 + j * .027)));
+        });
+      } },
+    { h:.072, draw:(y, U, L, R) => {           /* **장식입니다.** 진짜 정보는 위에 다 있습니다 */
+        g.strokeStyle = ink(.14); g.lineWidth = Math.max(1, U * .0018);
+        g.setLineDash([U * .012, U * .010]);
+        g.beginPath(); g.moveTo(L, y + U * .014); g.lineTo(R, y + U * .014); g.stroke();
+        g.setLineDash([]);
+        g.font = F(600, U * .022); g.fillStyle = ink(.34); g.textAlign = 'center';
+        g.fillText(s.mrz, cx, y + U * .056);
+      } },
+  ];
+
+  /* ── 자 정하기 ── 머리말과 바닥글이 쓰는 만큼을 빼고 남는 높이에 맞춥니다. */
+  const 총높이 = blocks.reduce((a, b) => a + b.h, 0);
+  const 위 = pad * 1.55, 아래 = H - pad * 1.9;      /* 머리말 아래 ~ 바닥글 위 */
+  const U = Math.min(W, (아래 - 위) / 총높이);
+  const L = cx - U * .46, R = cx + U * .46;         /* 내용 기둥의 좌우 끝 */
+  let y = 위 + ((아래 - 위) - U * 총높이) / 2;      /* 남으면 가운데로 */
+  for (const b of blocks){ b.draw(y, U, L, R); y += U * b.h; }
+
+  /* ── 머리말 ── 왼쪽은 무슨 카드인지, 오른쪽은 상위 몇 % ── */
+  g.font = F(700, W * .025); g.fillStyle = ink(.5); g.textAlign = 'left';
+  g.fillText('PASSPORT · 여행 성향', pad, pad * 1.25);
+  g.textAlign = 'right'; g.fillStyle = P16_ORANGE;
+  g.fillText(s.rank, W - pad, pad * 1.25);
+
+  /* ── 바닥 ── 어디서 나온 카드인지. 크게 넣으면 광고로 보입니다. ── */
+  const by = H - pad * 1.05;
+  g.font = F(800, W * .027); g.fillStyle = P16_INK; g.textAlign = 'left';
+  g.fillText('기로', pad, by);
+  g.font = F(500, W * .023); g.fillStyle = ink(.45);
+  g.fillText('기록이 길이 되다', pad + W * .072, by);
+  g.font = F(700, W * .023); g.fillStyle = P16_ORANGE; g.textAlign = 'right';
+  g.fillText('NEXT TRIP?', W - pad, by);
+
+  /* 성향 카드는 사진이 없어 단색이 넓게 깔립니다 — PNG 로도 작고 글자가 더 삽니다. */
+  return new Promise(r => cv.toBlob(r, 'image/png'));
+}
+
+/* 자간을 벌려 쓰기. 캔버스에 letterSpacing 이 없는 기기가 있어 직접 놓습니다.
+   `mx` 는 놓을 자리의 **가운데**입니다. */
+function spaced(g, txt, mx, y, gap){
+  const chs = [...txt];
+  const w = chs.reduce((a, c) => a + g.measureText(c).width, 0) + gap * (chs.length - 1);
+  let x = mx - w / 2;
+  for (const c of chs){ g.fillText(c, x, y); x += g.measureText(c).width + gap; }
+}
+
 /* 카드 하나를 그림 파일로. 화면 카드와 같은 내용, 같은 색, 같은 아이콘입니다. */
 /* 내보내는 이유는 하나입니다 — **자가검사가 실제로 그려봐야 하기 때문입니다.**
    화면 없이 blob 이 나오는지, 그림이 깨져도 카드가 나오는지를 봅니다. */
@@ -256,6 +443,14 @@ export async function cardImage(spec, mode = 'square'){
   const fam = ok ? '"Pretendard", -apple-system, sans-serif'
                  : '-apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
   const F = (weight, px) => `${weight} ${px}px ${fam}`;
+
+  /* ⚠ **성향 16유형 카드는 딴 그림입니다**(b381). 여기서 갈라집니다.
+     아래 원래 그림(리포트·지도·성향 옛 카드가 같이 씁니다)은 손대지 않습니다 —
+     한 그림에 두 레이아웃을 욱여넣으면 둘 다 고치기 어려워집니다.
+     **갈래만 트면 저장·공유·크기 시트가 그대로 붙습니다** —
+     `saveCardImage` 도 `askImageSize` 도 이 함수의 결과만 봅니다. */
+  if (spec && spec.kind === 'p16')
+    return { blob: await drawP16(spec, W, H, F), fontOk: ok };
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -550,7 +745,10 @@ export async function cardImage(spec, mode = 'square'){
 async function saveCardImage(spec, mode, name){
   toast('이미지 만드는 중…');
   const { blob, fontOk } = await cardImage(spec, mode);
-  const file = new File([blob], name + '.jpg', { type:'image/jpeg' });
+  /* 확장자는 blob 이 정합니다 — 성향 카드는 글자와 단색 위주라 PNG 로 나옵니다.
+     .jpg 로 이름만 붙여 보내면 공유창에서 거부하는 앱이 있습니다. */
+  const ext = blob.type === 'image/png' ? '.png' : '.jpg';
+  const file = new File([blob], name + ext, { type: blob.type || 'image/jpeg' });
   if (navigator.canShare?.({ files:[file] })){
     /* **주소를 같이 넘깁니다.** 전에는 `{files, title}` 만 보내서, 카톡으로
        보내면 그림만 가고 링크가 없었습니다. 받은 사람이 궁금해도 갈 곳이
@@ -567,7 +765,7 @@ async function saveCardImage(spec, mode, name){
     catch (e){ if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name + '.jpg';
+  a.href = URL.createObjectURL(blob); a.download = name + ext;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   toast(fontOk ? '이미지를 저장했어요' : '저장했어요. (글꼴을 못 받아 기본 글꼴로 그렸어요)');
@@ -675,62 +873,181 @@ export function personaStats(rows, world = {}){
    이어야 합니다 — 인스타에 올라간 카드에서 사람들이 읽는 것은 그 한 줄뿐입니다.
    새로 쓸 때 지킬 것: 길어야 여덟 자, '사람' 으로 안 끝내기, 설명하지 말고
    말하기('남들이 안 가는 도시 매니아' → '아무도 안 가는 쪽'). */
-const PERSONA_RULES = [
-  /* 시작 단계 — 다른 판정이 무의미한 구간 */
-  { id:'start1', t:'이제 시작', g:'start', ic:'foot1', f:s => s.cities <= 3 },
-  { id:'start2', t:'감이 오는 중', g:'start', ic:'foot3', f:s => s.cities <= 7 },
+/* ══ 여행 성향 16유형 (b381) ═════════════════════════════════════════
+ * 도시 평가만으로 계산합니다. **AI 를 안 부릅니다** — 같은 자료면 언제나
+ * 같은 답이 나와야 하고(리포트·성향 카드와 같은 규칙), 공짜여야 합니다.
+ *
+ * 축 넷을 0~100 으로 재고, 50 을 기준으로 글자 하나씩 골라 코드를 만듭니다.
+ * **같은 값을 두 가지로 보여주는 것이 핵심입니다** — 코드는 방향(F/H),
+ * 능력치 막대는 점수. 막대를 보면 왜 그 유형이 나왔는지 바로 보입니다.
+ *
+ * 순서는 개척 → 단골 → 모험 → 만족. 코드 글자 자리와 같습니다.
+ *
+ * ⚠ 아래 `lo`·`hi` 는 **한국인 기준으로 맞춘 값**입니다. 목표는 각 능력치의
+ * 평균이 40~60 에 오는 것 — 한 항목이 대부분 90 이상이거나 10 이하로 나오면
+ * 범위가 잘못된 것이니 그때 이 숫자만 고치면 됩니다. */
 
-  /* 규모 (큰 쪽) — 가장 희소합니다 */
-  { id:'size1', t:'지구의 절반', g:'size', ic:'crown', f:s => s.countries >= 50 },
+/* 바닥을 5 로 둡니다 — 0 이면 막대가 텅 비어 보기 안 좋습니다. */
+const pScale = (v, lo, hi) =>
+  Math.round(Math.max(5, Math.min(100, (v - lo) / (hi - lo) * 100)));
 
-  /* 특이한 유형 */
-  { id:'rare1', t:'아무도 안 가는 쪽', g:'rare', ic:'compass',
-    f:s => s.avgFame >= 2.5 && s.cities >= 8 },
-  { id:'size2', t:'여권이 모자란다', g:'size', ic:'passport', f:s => s.countries >= 25 },
-  { id:'rare2', t:'지구 반대편', g:'rare', ic:'globe',
-    f:s => ['남아메리카','아프리카','오세아니아'].filter(k => s.byContinent[k]).length >= 2 },
-  { id:'rare3', t:'대륙을 건너다', g:'rare', ic:'route', f:s => s.continents >= 4 },
-  { id:'rare4', t:'국경은 그냥 선', g:'rare', ic:'stamp',
-    f:s => s.citiesPerCountry <= 1.2 && s.countries >= 8 },
+/* 모험력의 기준점. 한국에서 출발하니 서울입니다. */
+const SEOUL = [37.5665, 126.9780];
 
-  /* 한 곳에 파고드는 유형 — 나라·대륙 이름이 문구에 그대로 들어갑니다 */
-  { id:'deep1', g:'deep', ic:'pinheart', f:s => s.topCountryN >= 6,
-    t:s => `${s.topCountryName}에 진심` },
-  /* 문서의 기준은 "그 대륙 8곳"이었는데, 한국인에게 아시아 8곳은 흔합니다.
-     9도시 매긴 사람이 "아시아 정복 중"이 되면서 그 아래 규칙이 전부 막혔습니다
-     (꾸준한 여행자 · 가면 바로 가는 사람 · 별점 성향이 다 안 나왔습니다).
-     15곳으로 올리고 그 대륙이 전체의 70% 이상일 때만 씁니다 —
-     "정복"이라는 말이 맞아떨어지는 선입니다. */
-  { id:'deep2', g:'deep', ic:'flag',
-    f:s => s.topContinentN >= 15 && s.topContinentN >= s.cities * 0.7,
-    t:s => `${s.topContinent} 정복 중` },
-  { id:'deep3', t:'한 곳을 깊게', g:'deep', ic:'lens', f:s => s.citiesPerCountry >= 3 },
+export function personaAxes(rows, world = {}){
+  const cities = world.cities || [];
+  const info = id => cities.find(c => c.id === id);
+  const rated = (rows || []).filter(r => r.stars != null);
 
-  /* 규모 (작은 쪽) */
-  { id:'size3', t:'꾸준히, 멀리', g:'size', ic:'bag', f:s => s.countries >= 12 },
+  const fames = [], dists = [], stars = [], byCountry = {};
+  for (const r of rated){
+    stars.push(Number(r.stars));
+    const c = info(r.city_id);
+    if (!c) continue;
+    if (c.fame != null) fames.push(Number(c.fame));
+    if (c.center_lat != null && c.center_lng != null){
+      const d = distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng);
+      if (d != null) dists.push(d);
+    }
+    if (c.country) byCountry[c.country] = (byCountry[c.country] || 0) + 1;
+  }
+  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+  const cityN = rated.length, countryN = Object.keys(byCountry).length;
 
-  /* 별점 성향 */
-  { id:'taste1', t:'어디든 좋았다', g:'taste', ic:'starsmile',
-    f:s => s.avgRating >= 4.5 && s.cities >= 8 },
-  { id:'taste2', t:'쉽게 안 준다', g:'taste', ic:'starhalf',
-    f:s => s.avgRating <= 2.8 && s.cities >= 8 },
-  { id:'taste3', t:'좋거나, 아니거나', g:'taste', ic:'starsplit',
-    f:s => s.lowRatio >= 0.3 && s.highRatio >= 0.3 },
+  /* 개척력 — 유명도 평균(도시마다 1~3 등급이 매겨져 있습니다. 469곳 전부). */
+  const fAvg = mean(fames);
+  /* 단골력 — 제일 많이 간 나라가 전체의 몇 할인가. 일본만 스물이면 100. */
+  const topN = countryN ? Math.max(...Object.values(byCountry)) : 0;
+  /* 모험력 — 서울에서 평균 몇 km. **로그를 씁니다** — 선형이면 유럽·남미가
+     전부 100 에 몰립니다. 한국에서는 웬만한 데가 다 멀어서, 가까운 구간
+     (일본~동남아)에서 갈려야 뜻이 있습니다. */
+  const dAvg = mean(dists);
+  /* 만족력 — 별점 평균. **하한이 3.2 입니다** — 사람들은 대체로 후하게 줍니다.
+     1.0~5.0 으로 잡으면 거의 다 80점대라 변별이 안 됩니다. */
+  const sAvg = mean(stars);
 
-  /* 계획 성향 */
-  { id:'plan1', t:'갈 곳이 더 많다', g:'plan', ic:'shoot',
-    f:s => s.wishCount >= s.cities * 2 },
-  { id:'plan2', t:'마음먹으면 간다', g:'plan', ic:'bolt',
-    f:s => s.wishCount <= 2 && s.cities >= 10 },
+  const 개척 = fAvg == null ? 50 : pScale(fAvg, 1.10, 2.55);
+  const 단골 = cityN ? pScale(topN / cityN, 0.10, 0.70) : 50;
+  const 모험 = dAvg == null ? 50
+    : pScale(Math.log(Math.max(dAvg, 700) / 700), 0, Math.log(9500 / 700));
+  const 만족 = sAvg == null ? 50 : pScale(sAvg, 3.20, 4.85);
 
-  /* 어디에도 안 걸렸을 때 */
-  { id:'base', t:'길이 되는 중', g:'size', ic:'bag', f:() => true },
-];
+  const code = (개척 >= 50 ? 'H' : 'F') + (단골 >= 50 ? 'L' : 'M')
+             + (모험 >= 50 ? 'D' : 'N') + (만족 >= 50 ? 'G' : 'P');
 
-export function judgePersona(s){
-  const r = PERSONA_RULES.find(x => x.f(s));
-  return { ...r, title: typeof r.t === 'function' ? r.t(s) : r.t };
+  return { code, 개척, 단골, 모험, 만족,
+           cities: cityN, countries: countryN,
+           avgFame: fAvg, avgStar: sAvg, avgDist: dAvg };
 }
+
+/* 축이 뜻하는 말. 코드 밑에 한 줄로 깝니다. */
+export const AXIS_WORD = {
+  F:'유명한 곳', H:'숨은 곳', M:'여러 나라', L:'한 나라',
+  N:'가까이', D:'멀리', P:'까다로움', G:'후함',
+};
+export const AXIS_NAME = ['개척력', '단골력', '모험력', '만족력'];
+
+/* 2×2×2×2 = 16. **빈 칸도 겹침도 없습니다.** */
+export const PERSONA16 = {
+  FLNG:{ n:'동네 단골',            d:'가던 데 또 가는 게 제일 편한 타입' },
+  FLNP:{ n:'눈 높은 재방문러',      d:'같은 데 가면서도 매번 트집 잡는 타입' },
+  FLDG:{ n:'한 나라 순정파',        d:'멀리 날아가서도 그 나라만 찾는 타입' },
+  FLDP:{ n:'먼 길 마다않는 외골수',  d:'비행기 열 시간 타고 가서 또 그 동네 가는 타입' },
+  FMNG:{ n:'근거리 도장깨기',       d:'가까운 유명지는 다 밟아야 직성이 풀리는 타입' },
+  FMNP:{ n:'가성비 심사위원',       d:'가까운 데 다니면서 값어치를 따지는 타입' },
+  FMDG:{ n:'세계 명소 완주자',      d:'지구 반대편 유명지까지 다 보러 가는 타입' },
+  FMDP:{ n:'명소 검열관',          d:'유명하다는 곳마다 가서 실망하고 오는 타입' },
+  HLNG:{ n:'골목 탐험가',          d:'가까운 동네 뒷골목이 제일 재밌는 타입' },
+  HLNP:{ n:'숨은 맛집 사냥꾼',      d:'아는 사람만 아는 곳을 찾아내야 직성이 풀리는 타입' },
+  HLDG:{ n:'깊이 파는 사람',        d:'한 나라를 구석구석 다 훑는 타입' },
+  HLDP:{ n:'한 나라 전문가',        d:'그 나라는 현지인보다 잘 아는 타입' },
+  HMNG:{ n:'동네 오지 순례자',      d:'가까운 곳에서도 남들 안 가는 데만 찾는 타입' },
+  HMNP:{ n:'까칠한 개척자',         d:'새로운 곳을 찾아놓고 또 아쉬워하는 타입' },
+  HMDG:{ n:'지구 반대편 방랑자',    d:'멀고 낯선 곳일수록 신나는 타입' },
+  HMDP:{ n:'지도 밖 순례자',        d:'검색해도 안 나오는 곳만 골라 가는 타입' },
+};
+
+/* ── 상위 % ───────────────────────────────────────────────────────────
+ * **사람 수 기반 순위는 초기에 뜻이 없습니다.** 열 명 중 상위 4% 면 반올림해서
+ * 1등입니다. 그래서 국가 수 구간을 미리 못박아 둡니다.
+ * ⚠ 평생 방문 국가 수 분포는 공개 통계가 없어 **추정치**입니다.
+ * 자료가 쌓이면 이 표만 고치면 됩니다. */
+const PERSONA_RANK = [[45,'0.5%'], [30,'1%'], [20,'3%'], [15,'6%'],
+                      [10,'12%'], [6,'25%'], [3,'50%'], [0,'80%']];
+export const personaRank = countries =>
+  '상위 ' + (PERSONA_RANK.find(([n]) => Number(countries) >= n)?.[1] || '80%');
+
+/* ── 궁합 ─────────────────────────────────────────────────────────────
+ * 240쌍을 적어둘 필요가 없습니다. **코드 두 개를 자리별로 비교**하면 나옵니다.
+ * ⚠ **전부 "비슷하면 맞는다" 로 하면 뻔해집니다.** 달라야 좋은 축(단골·만족)을
+ * 넣은 것이 이 계산의 핵심입니다 — 파고드는 사람과 훑는 사람이 서로를 채우고,
+ * 한 명이 까다로우면 검증 역할을 합니다. */
+const MATCH_RULE = [
+  { same:true,  w:26, ax:'개척' },   /* 한 명은 오지, 한 명은 도쿄면 갈 곳이 안 정해짐 */
+  { same:false, w:12, ax:'단골' },
+  { same:true,  w:22, ax:'모험' },   /* 유럽 가자는 사람과 일본 가자는 사람 */
+  { same:false, w:16, ax:'만족' },
+];
+/* ⚠ **고를 때는 자르기 전 점수를 봅니다.** 10~99 로 자른 값으로 고르면
+   최고 후보 여럿이 똑같이 99 가 되어 **먼저 적힌 쪽이 뽑힙니다.** 실제로
+   FLNG 의 최고가 FMNP(원점수 126)여야 하는데 FLNP(102)가 뽑혔습니다 —
+   열여섯 개 전부 그랬습니다. 보여주는 값만 자릅니다. */
+const matchRaw = (a, b) => {
+  let s = 50;
+  MATCH_RULE.forEach((r, i) => { s += (r.same === (a[i] === b[i])) ? r.w : -r.w; });
+  return s;
+};
+export const personaMatch = (a, b) => Math.max(10, Math.min(99, matchRaw(a, b)));
+
+/* 어느 축이 어긋났는지를 짚어줘야 "맞네" 싶습니다. 점수만 있으면 재미가 없습니다. */
+const CLASH = {
+  개척: '한 명은 인증샷, 한 명은 골목. 둘 다 만족하는 코스가 없음',
+  모험: '비행기 표 끊는 순간부터 의견이 갈림',
+  단골L: '둘 다 같은 나라만 감. 새로운 데는 영영 못 갈 듯',
+  단골M: '둘 다 찍고 다녀서 아무것도 깊이 못 봄',
+  만족G: '둘 다 다 좋다고 함. 망한 식당도 별 다섯',
+  만족P: '둘 다 까다로워서 뭘 먹어도 불만',
+};
+export function personaMateLine(a, b){
+  const s = personaMatch(a, b);
+  /* ⚠ **극단에서도 코드를 읽어 말합니다.** 전에는 여기서 통짜 문장 하나를
+     돌려줬습니다. 그런데 카드에 실리는 최고·최악은 **정의상 늘 극단**이라,
+     열여섯 장이 전부 "실패가 없음 / 3일차에 따로 다니게 됨" 으로 똑같아졌습니다.
+     궁합이 카드마다 달라야 볼 이유가 생깁니다. */
+  if (s >= 90)
+    return `${AXIS_WORD[a[0]]}·${AXIS_WORD[a[2]]} 취향이 같음. 고르는 눈만 달라 실패가 없음`;
+  if (s <= 19)
+    return `${AXIS_WORD[a[0]]}↔${AXIS_WORD[b[0]]}, ` +
+           `${AXIS_WORD[a[2]]}↔${AXIS_WORD[b[2]]}. 갈 곳부터 안 맞음`;
+  /* 어긋난 축을 하나 골라 짚습니다. 가중치가 큰 것부터 봅니다. */
+  for (const r of [...MATCH_RULE].sort((x, y) => y.w - x.w)){
+    const i = MATCH_RULE.indexOf(r), eq = a[i] === b[i];
+    if (r.same === eq) continue;                    /* 이 축은 잘 맞습니다 */
+    if (r.same) return CLASH[r.ax];                 /* 같아야 하는데 다름 */
+    return CLASH[r.ax + a[i]];                      /* 달라야 하는데 같음 */
+  }
+  return s >= 70 ? '큰 다툼 없이 다닐 수 있음' : '무난하게 다닐 수 있음';
+}
+
+/* 열여섯을 다 재서 제일 잘 맞는 하나와 제일 안 맞는 하나를 고릅니다.
+   표를 따로 적어두지 않습니다 — 가중치를 고치면 표가 거짓말이 됩니다. */
+export function personaMates(code){
+  const others = Object.keys(PERSONA16).filter(c => c !== code);
+  let best = others[0], worst = others[0];
+  for (const c of others){
+    if (matchRaw(code, c) > matchRaw(code, best))  best  = c;
+    if (matchRaw(code, c) < matchRaw(code, worst)) worst = c;
+  }
+  return { best,  bestScore:  personaMatch(code, best),  bestLine:  personaMateLine(code, best),
+           worst, worstScore: personaMatch(code, worst), worstLine: personaMateLine(code, worst) };
+}
+
+/* 카드 아래 장식 줄. **여권 기계판독구역(MRZ) 흉내입니다** — 진짜 정보는
+   위에 따로 다 보여주고 있으니 여기서는 읽을 필요가 없습니다. */
+export const personaMrz = (code, countries, cities, rank, year) =>
+  `P<KEYRO<<${code}<<${countries}COUNTRIES<<${cities}CITIES<<` +
+  `TOP${String(rank).replace(/[^0-9.]/g, '')}PCT<<${year}<`;
+
 
 /* ── 자가검사 (개발용) ─────────────────────────────────────────────────
  * 콘솔에서 __cardCheck() 를 부르면 아래를 다 돌려 봅니다.
@@ -756,35 +1073,57 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     countryName: { JP:'일본', FR:'프랑스', KR:'대한민국' },
   };
 
-  /* 1. 표에 빠진 키 — 배경과 아이콘은 없으면 조용히 undefined 가 나갑니다. */
+  /* 1. 열여섯이 다 있는가. 하나라도 비면 그 사람은 이름 없는 카드를 받습니다. */
   {
-    const msgs = [], icons = { ...PERSONA_ICON, ...REPORT_ICON };
-    const seen = new Set();
-    for (const r of PERSONA_RULES){
-      if (seen.has(r.id)) msgs.push(`id 중복: ${r.id}`);
-      seen.add(r.id);
-      if (!PERSONA_BG[r.g]) msgs.push(`${r.id}: 배경 '${r.g}' 없음`);
-      if (!icons[r.ic])     msgs.push(`${r.id}: 아이콘 '${r.ic}' 없음`);
+    const msgs = [];
+    for (const a of 'FH') for (const b of 'ML') for (const c of 'ND') for (const d of 'GP'){
+      const k = a + b + c + d;
+      if (!PERSONA16[k]) msgs.push(`${k} 없음`);
+      else if (!PERSONA16[k].n || !PERSONA16[k].d) msgs.push(`${k} 이름·설명 빔`);
     }
-    bad(`규칙표 ${PERSONA_RULES.length}개 · 배경·아이콘이 다 있는가`, msgs);
+    const 이상한키 = Object.keys(PERSONA16).filter(k => !/^[FH][ML][ND][GP]$/.test(k));
+    if (이상한키.length) msgs.push(`코드가 아닌 키: ${이상한키.join(',')}`);
+    const names = Object.values(PERSONA16).map(v => v.n);
+    const dup = names.filter((n, i) => names.indexOf(n) !== i);
+    if (dup.length) msgs.push(`이름 겹침: ${[...new Set(dup)].join(',')}`);
+    /* 축 낱말 여덟도 다 있어야 코드 밑줄이 안 빕니다. */
+    for (const ch of 'FHMLNDGP') if (!AXIS_WORD[ch]) msgs.push(`축 낱말 ${ch} 없음`);
+    if (AXIS_NAME.length !== 4) msgs.push(`축 이름이 ${AXIS_NAME.length}개`);
+    bad('유형 16개 · 이름·설명·축 낱말이 다 있는가', msgs);
   }
 
-  /* 2. 어떤 자료가 와도 성향이 하나는 나와야 합니다. 하나도 안 걸리면
-        judgePersona 가 undefined 를 펼치다 화면이 통째로 죽습니다. */
+  /* 1-b. 배경·아이콘 표. **성향 카드는 이제 안 씁니다** — 그런데 홈 hero(home.js)와
+         지도 카드(map.js), 결산 카드(report.js)가 아직 이 키로 색과 아이콘을
+         꺼냅니다. 성향 쪽만 보고 지웠다가는 저 셋이 조용히 배경을 잃습니다. */
+  {
+    const msgs = [];
+    if (!PERSONA_ICON.globe) msgs.push("아이콘 'globe' 없음 (map.js 가 씁니다)");
+    if (!Object.keys(PERSONA_BG).length) msgs.push('배경표가 비었음');
+    for (const [k, v] of Object.entries(PERSONA_BG))
+      if (!v || String(v).length < 8) msgs.push(`배경 '${k}' 가 이상함`);
+    bad('배경·아이콘 표 (home·map·report 가 씁니다)', msgs);
+  }
+
+  /* 2. 어떤 자료가 와도 코드 네 글자가 나와야 합니다. 못 나오면 PERSONA16
+        조회가 undefined 가 되고 카드가 통째로 안 그려집니다. */
   {
     const msgs = [];
     for (const [name, rows, world] of [
-      ['아무것도 없음', [], WORLD],
-      ['가보고 싶은 곳만', [{ city_id:1, want:true }], WORLD],
-      ['도시 목록 없음', [{ city_id:1, stars:5 }], undefined],
-      ['모르는 도시', [{ city_id:999, stars:3 }], WORLD],
+      ['아무것도 없음', [], { cities: WORLD.cities }],
+      ['가보고 싶은 곳만', [{ city_id:1, want:true }], { cities: WORLD.cities }],
+      ['도시 목록 없음', [{ city_id:1, stars:5 }], {}],
+      ['모르는 도시', [{ city_id:999, stars:3 }], { cities: WORLD.cities }],
+      ['유명도·좌표 없음', [{ city_id:4, stars:3 }], { cities: WORLD.cities }],
     ]){
-      let p;
-      try { p = judgePersona(personaStats(rows, world)); }
+      let a;
+      try { a = personaAxes(rows, world); }
       catch (e){ msgs.push(`${name}: 터짐 (${e.message})`); continue; }
-      if (!p || !p.title) msgs.push(`${name}: 성향이 안 나옴`);
+      if (!/^[FH][ML][ND][GP]$/.test(a?.code || '')) msgs.push(`${name}: 코드가 '${a?.code}'`);
+      else if (!PERSONA16[a.code]) msgs.push(`${name}: ${a.code} 가 표에 없음`);
+      for (const k of ['개척', '단골', '모험', '만족'])
+        if (!(a?.[k] >= 5 && a?.[k] <= 100)) msgs.push(`${name}: ${k}=${a?.[k]} 가 5~100 밖`);
     }
-    bad('빈 자료·모르는 도시에서도 성향이 나오는가', msgs);
+    bad('빈 자료·모르는 도시에서도 코드가 나오는가', msgs);
   }
 
   /* 3. 세는 규칙. 별점을 매긴 도시만 세고, 유명도를 모르는 도시는 평균에서 뺍니다. */
@@ -819,92 +1158,113 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     bad('best · 4.5 이상만 · 높은 순 · 3개까지', msgs);
   }
 
-  /* 5. 앞 규칙에 가려 **영영** 안 나오는 규칙 찾기.
-        실제로 그런 일이 있었습니다 — 규모 문구가 12개국부터 87개국까지
-        76가지를 다 넣어봐도 0번이었습니다(대륙 수가 먼저 걸려서).
+  /* 5. 열여섯 유형이 **실제로 나오는가**. 옛 규칙표에서는 앞 규칙에 가려
+        영영 안 나오는 규칙이 있었습니다 — 실제로 규모 문구가 76가지를 다
+        넣어봐도 0번이었습니다. 이제는 네 부등호로만 갈리므로 **가려질 수가
+        없습니다.** 대신 볼 것이 바뀝니다: 문턱이 한쪽으로 쏠려 있으면
+        열여섯이 표에 다 있어도 실제 사람은 두세 개에만 몰립니다.
 
-        **무작위 표본으로는 이 질문에 답할 수 없습니다.** 한 번 그렇게 만들었다가
-        틀렸습니다. 표본이 안 만든 것과 규칙이 못 나오는 것을 가릴 수가 없어서,
-        멀쩡한 taste1('어딜 가도 좋은 사람')을 죽었다고 말했습니다. 손으로 따져보니
-        `10곳 · 5개국 · 2대륙 · 유명한 곳 · 평균 4.7점` 이면 그냥 나옵니다.
-
-        그래서 무작위를 걷어내고 **격자를 다 훑습니다.** 값마다 뜻이 갈리는 지점만
-        골라 넣으면(경계 앞뒤) 규칙이 부등호로만 되어 있으므로 이걸로 충분합니다.
-        분포를 짐작할 필요가 없어집니다 — 짐작이 틀려서 두 번 헛다리를 짚었습니다.
-
-        한 번이라도 나오면 **그 자료가 어떤 사람인지 같이 적어 둡니다.** 숫자만
-        "나옴"이라고 하면 그게 실제로 있을 법한 사람인지 알 수가 없습니다. */
+        ⚠ **못 나온 유형이 있다고 틀림으로 세지 않습니다.** 아래 가짜 도시는
+        좌표가 여섯 군데뿐이라 모험력이 다 잡히지 않습니다. 절반 넘게 비면
+        그때는 문턱 문제라 틀림으로 셉니다. */
   {
-    /* 경계 앞뒤로만 고릅니다. 규칙이 쓰는 문턱: cities 3·7·8·10, countries
-       8·12·25·50, continents 4, topCountryN 6, topContinentN 15,
-       citiesPerCountry 1.2·3, avgRating 2.8·4.5, avgFame 2.5, 비율 0.3 */
-    const G = {
-      cities:      [0, 3, 7, 8, 10, 14, 24, 40, 60],
-      countries:   [1, 4, 7, 8, 11, 12, 24, 25, 49, 50],
-      contSet:     [['아시아'], ['아시아','유럽'], ['아시아','유럽','북아메리카'],
-                    ['아시아','유럽','북아메리카','오세아니아'],
-                    ['아시아','오세아니아'],                    /* 반대편 1 */
-                    ['아시아','오세아니아','남아메리카']],       /* 반대편 2 → rare2 */
-      topCountryN: [1, 5, 6],
-      topContFrac: [0.4, 0.69, 0.71, 1],
-      avgRating:   [1.5, 2.8, 3.6, 4.5, 5],
-      avgFame:     [1, 2.4, 2.5, 3],
-      wishCount:   [0, 2, 3, 30],
-      ratios:      [[0, 0], [0.29, 0.5], [0.3, 0.3]],
-    };
-    const hit = {}, witness = {}, threw = [];
+    const fake = [];
+    let id = 0;
+    for (const fame of [1, 1.5, 2, 2.5, 3])
+      for (const [la, ln] of [[35.7, 139.7], [22.3, 114.2], [13.7, 100.5],
+                              [48.9, 2.35], [40.7, -74.0], [-33.9, 151.2]])
+        fake.push({ id: ++id, name: 'c' + id, country: 'C' + (id % 7), fame,
+                    center_lat: la, center_lng: ln });
+
+    const hit = {}, threw = [];
     let n = 0;
-    for (const cities of G.cities)
-    for (const countries of G.countries){
-      if (countries > Math.max(cities, 1)) continue;      /* 나라가 도시보다 많을 수 없습니다 */
-      for (const conts of G.contSet){
-        if (conts.length > countries) continue;
-        const byContinent = {};
-        for (const k of conts) byContinent[k] = 1;
-        for (const topCountryN of G.topCountryN){
-          if (topCountryN > cities) continue;
-          for (const tf of G.topContFrac)
-          for (const avgRating of G.avgRating)
-          for (const avgFame of G.avgFame)
-          for (const wishCount of G.wishCount)
-          for (const [lowRatio, highRatio] of G.ratios){
+    /* 몇 곳을 · 얼마나 흩어서 · 몇 점으로 · 한 나라에 몰았는가 — 넷을 다 훑습니다. */
+    for (const take of [1, 2, 3, 5, 8, 14, 22, 30])
+      for (const step of [1, 3, 5, 7, 11])
+        for (const star of [1, 2.5, 3.2, 3.8, 4.4, 4.9, 5])
+          for (const 몰기 of [0, 1]){
+            const rows = [];
+            for (let i = 0; i < take; i++)
+              rows.push({ city_id: 몰기 ? fake[i % 3].id : fake[(i * step) % fake.length].id,
+                          stars: star });
             n++;
-            const s = {
-              cities, countries, continents: conts.length, byContinent, byCountry:{},
-              topCountry:'JP', topCountryName:'일본', topCountryN,
-              topContinent: conts[0], topContinentN: Math.round(cities * tf),
-              avgRating, avgFame, wishCount, lowRatio, highRatio,
-              citiesPerCountry: countries ? cities / countries : 0,
-              best: [],
-            };
-            /* **예외를 삼키지 않습니다.** 삼키면 터진 규칙이 "안 걸린 규칙"으로
-               둔갑해 원인이 자기 자신을 감춥니다. 터진 것은 터진 것으로 셉니다. */
-            let r = null;
-            for (const x of PERSONA_RULES){
-              try { if (x.f(s)){ r = x; break; } }
-              catch (e){ threw.push(`${x.id}: ${e.message}`); }
-            }
-            const id = r ? r.id : '(안 걸림)';
-            hit[id] = (hit[id] || 0) + 1;
-            if (!witness[id]) witness[id] =
-              `${cities}곳 · ${countries}개국 · ${conts.length}대륙 · ` +
-              `별점 ${avgRating} · 유명도 ${avgFame} · 담아둔 곳 ${wishCount}`;
+            let a;
+            try { a = personaAxes(rows, { cities: fake }); }
+            catch (e){ threw.push(e.message); continue; }
+            hit[a.code] = (hit[a.code] || 0) + 1;
           }
-        }
-      }
-    }
-    bad('규칙이 자료를 보다 터지는가', threw.length ? [...new Set(threw)].slice(0, 3) : []);
-    /* 마지막 규칙은 "어디에도 안 걸렸을 때"입니다. 안 나오는 것이 정상이자
-       좋은 소식입니다 — 모두가 진짜 성향을 받았다는 뜻입니다. 목록에서 뺍니다. */
-    const fallback = PERSONA_RULES[PERSONA_RULES.length - 1].id;
-    const dead = PERSONA_RULES.filter(r => !hit[r.id] && r.id !== fallback).map(r => r.id);
-    /* 격자를 다 훑고도 안 나왔으면 **앞 규칙이 논리적으로 다 걷어간 것**입니다.
-       이건 분포 문제가 아니라 규칙표 문제이므로 틀림으로 셉니다. */
-    bad(`앞 규칙에 완전히 가려진 규칙 (${n.toLocaleString()}가지 다 훑음)`, dead);
-    console.log('규칙별 횟수:', Object.fromEntries(
+    bad('축 셈이 자료를 보다 터지는가', threw.length ? [...new Set(threw)].slice(0, 3) : []);
+    const 없음 = Object.keys(PERSONA16).filter(k => !hit[k]);
+    out.push({ 항목: `쏠림 — ${n.toLocaleString()}가지를 훑어 ${16 - 없음.length}/16 유형이 나옴`,
+               결과: 없음.length ? '⚠ 안 나옴: ' + 없음.join(',') : '✓' });
+    console.log('유형별 횟수:', Object.fromEntries(
       Object.entries(hit).sort((a, b) => b[1] - a[1])));
-    console.log('규칙마다 처음 걸린 사람:', witness);
-    if (hit['(안 걸림)']) bad('어디에도 안 걸린 자료', [`${hit['(안 걸림)']}가지`]);
+  }
+
+  /* 5-b. **열여섯에 다 닿을 수 있는가.** 위 격자로는 이 질문에 답이 안 됩니다 —
+        한 번 그렇게 세었다가 `H*N*` 넷이 "안 나온다"고 나왔는데, 성향 계산이
+        아니라 **가짜 도시 서른 곳이 유명도와 거리를 따로 못 고른 탓**이었습니다.
+        (숨은 곳이면서 가까운 도시가 그 서른 안에 거의 없었습니다. 진짜 목록
+        469곳에는 얼마든지 있습니다.)
+
+        그래서 훑는 대신 **겨냥합니다.** 열여섯 자리마다 그 자리에 떨어질
+        자료를 손으로 만들어 넣고, 정말 그 코드가 나오는지 봅니다. 하나라도
+        안 맞으면 문턱이 잘못 잡힌 것이라 **틀림**입니다.
+        이러면 못 나오는 유형이 있는지를 표본 운에 맡기지 않게 됩니다. */
+  {
+    const msgs = [];
+    /* 축마다 양 끝을 확실히 넘기는 값. 부등호 경계가 아니라 바깥을 씁니다 —
+       경계값을 넣으면 이 검사가 반올림 다툼이 되어 버립니다. */
+    const FAME  = { F:1.0,  H:3.0 };                       /* 1 이 이름난 쪽입니다 */
+    const COORD = { N:[35.7, 139.7], D:[-33.9, 151.2] };   /* 도쿄 ↔ 시드니 */
+    const STAR  = { P:3.0,  G:5.0 };
+    for (const a of 'FH') for (const b of 'ML') for (const c of 'ND') for (const d of 'GP'){
+      const want = a + b + c + d;
+      const rows = [], fake = [];
+      for (let i = 0; i < 10; i++){
+        fake.push({ id: i + 1, name: 'x' + i, fame: FAME[a],
+                    /* 한 나라(L)면 다 같은 나라, 여러 나라(M)면 다 다른 나라 */
+                    country: b === 'L' ? 'JP' : 'C' + i,
+                    center_lat: COORD[c][0], center_lng: COORD[c][1] });
+        rows.push({ city_id: i + 1, stars: STAR[d] });
+      }
+      let got;
+      try { got = personaAxes(rows, { cities: fake }).code; }
+      catch (e){ msgs.push(`${want}: 터짐 (${e.message})`); continue; }
+      if (got !== want) msgs.push(`${want} 를 겨냥했는데 ${got}`);
+    }
+    bad('열여섯 자리에 다 닿는가 (자리마다 겨냥해서 확인)', msgs);
+  }
+
+  /* 6. 궁합. **표를 안 적고 계산으로 뽑으므로 성질만 봅니다.**
+        자기 자신을 고르지 않을 것, 최고와 최악이 다를 것, 점수가 대칭일 것
+        (내가 본 너와 네가 본 나가 달라지면 아무도 안 믿습니다). */
+  {
+    const msgs = [];
+    for (const code of Object.keys(PERSONA16)){
+      const m = personaMates(code);
+      if (m.best === code || m.worst === code) msgs.push(`${code}: 자기 자신을 고름`);
+      if (m.best === m.worst) msgs.push(`${code}: 최고와 최악이 같음`);
+      if (m.bestScore <= m.worstScore) msgs.push(`${code}: 최고가 최악 이하`);
+      if (!m.bestLine || !m.worstLine) msgs.push(`${code}: 문구가 빔`);
+      if (!PERSONA16[m.best] || !PERSONA16[m.worst]) msgs.push(`${code}: 상대가 표에 없음`);
+      for (const other of Object.keys(PERSONA16))
+        if (personaMatch(code, other) !== personaMatch(other, code))
+          msgs.push(`${code}↔${other}: 점수가 서로 다름`);
+    }
+    bad('궁합 16개 · 자기 제외 · 대칭 · 최고>최악', [...new Set(msgs)].slice(0, 5));
+  }
+
+  /* 7. 상위% 와 MRZ. 카드 아래 장식이지만 undefined 가 박히면 흉합니다. */
+  {
+    const msgs = [];
+    for (const c of [0, 1, 3, 6, 10, 15, 20, 30, 45, 120]){
+      const r = personaRank(c);
+      if (!/^상위 [0-9.]+%$/.test(r)) msgs.push(`${c}개국 → '${r}'`);
+    }
+    const z = personaMrz('FLNG', 12, 40, personaRank(12), 2026);
+    if (/undefined|NaN/.test(z)) msgs.push(`MRZ: ${z}`);
+    bad('상위% 와 MRZ 문자열', msgs);
   }
 
   console.table(out);
