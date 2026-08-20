@@ -15,12 +15,12 @@
  * 하나입니다 — 일행 목록도, 정산 송금 줄도 같은 것을 씁니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b389';
-import { sb } from './db.js?v=b389';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b389';
-import { dateRange } from './calc.js?v=b389';
-import { trip, members, setMembers, nameOf } from './trip.js?v=b389';
-import { arm } from './ui.js?v=b389';
+import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b390';
+import { sb } from './db.js?v=b390';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b390';
+import { dateRange } from './calc.js?v=b390';
+import { trip, members, setMembers, nameOf } from './trip.js?v=b390';
+import { arm } from './ui.js?v=b390';
 
 /* app.js 만 아는 것 셋. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -44,7 +44,17 @@ export function setMemberCtx(o){ ctx = { ...ctx, ...o }; }
  *
  * **app.js 맨 위에 있던 것을 여기로 옮겼습니다(b337)** — 쓰는 곳이
  * 아래 한 줄뿐입니다. */
-const JOIN_URL = 'https://loyal-bat-8481.honeychelsea123.deno.net/';
+/* ⚠ **이름을 `loyal-bat-8481` 에서 바꿨습니다 (b390).** 그건 Deno Deploy 가
+ *   지어준 임의 이름이었고, 초대 링크는 **남에게 보내는 유일한 주소**입니다.
+ *   실사용 점검에서 받은 사람 입장으로 보니 앱 이름도 여행 이름도 없는
+ *   수상한 링크였습니다 — 눌러도 되는지 알 방법이 없습니다.
+ *   `keyro-join` 이면 최소한 어느 앱의 초대인지 읽힙니다.
+ *
+ * ⚠ **이 값을 바꾸면 이미 보낸 링크가 끊깁니다.** 옛 주소는 404 가 됩니다
+ *   (확인함). 바꿀 때는 Deno 쪽 이름과 여기를 **같이** 고쳐야 합니다.
+ *
+ * 더 나은 자리: 도메인을 사서 붙이는 것입니다. 그때는 여기만 고치면 됩니다. */
+const JOIN_URL = 'https://keyro-join.honeychelsea123.deno.net/';
 
 /* ── 일행 ───────────────────────────────────────────────────────── */
 /* 화면에는 한국어만 씁니다. 여행 목록 배지가 'OWNER' 로 떠 있었습니다. */
