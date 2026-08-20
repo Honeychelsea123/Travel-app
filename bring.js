@@ -16,13 +16,13 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
  *     이미 떼어낸 aiui.js · cards.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail } from './net.js?v=b387';
-import { trip } from './trip.js?v=b387';
-import { syncSheets } from './ui.js?v=b387';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b387';
-import { drawCards } from './cards.js?v=b387';
+import { $, esc, toast } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail } from './net.js?v=b388';
+import { trip } from './trip.js?v=b388';
+import { syncSheets } from './ui.js?v=b388';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b388';
+import { drawCards } from './cards.js?v=b388';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }

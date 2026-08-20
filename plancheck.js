@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail } from './net.js?v=b387';
-import { D1, asDate, ymd, hm, dayLabel, hop } from './calc.js?v=b387';
-import { trip } from './trip.js?v=b387';
-import { aiTripId } from './ai.js?v=b387';
-import { runReview } from './cards.js?v=b387';
+import { $, esc, josa } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail } from './net.js?v=b388';
+import { D1, asDate, ymd, hm, dayLabel, hop } from './calc.js?v=b388';
+import { trip } from './trip.js?v=b388';
+import { aiTripId } from './ai.js?v=b388';
+import { runReview } from './cards.js?v=b388';
 
 let ctx = { loadChats: async () => {} };
 
@@ -97,7 +97,11 @@ export function review(t, ps, lgs){
         const guessed = en === null;
         const end = en ?? st + (STAY_MIN[p.category] ?? 30);
         if (nst < end) out.push({ lv:'심각',
-          t:`${p.title} 과 ${nx.title} 이 겹칩니다`,
+          /* 받침에 따라 조사가 갈립니다 — dom.js 의 josa() 를 씁니다 (b388).
+             전에는 "쇼핑 과 오렌지 스트리트 이" 처럼 늘 받침 있는 쪽으로
+             붙었습니다. "심각"까지 붙는 화면이라 문장이 어설프면 판단도
+             못 미더워 보입니다. */
+          t:`${josa(p.title, '과', '와')} ${josa(nx.title, '이', '가')} 겹칩니다`,
           s:`${hm(p.start_time)}~${guessed ? '(어림 ' + fmtM(end) + ')' : hm(p.end_time)}` +
             ` 인데 다음이 ${hm(nx.start_time)}에 시작합니다.` });
         else {

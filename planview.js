@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b387';
-import { featOn, flags } from './flags.js?v=b387';
-import { fail, write } from './net.js?v=b387';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b387';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b387';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b387';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b387';
-import { STAY_MIN, mins } from './plancheck.js?v=b387';
+import { $, esc, emptyDo } from './dom.js?v=b388';
+import { featOn, flags } from './flags.js?v=b388';
+import { fail, write } from './net.js?v=b388';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b388';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b388';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b388';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b388';
+import { STAY_MIN, mins } from './plancheck.js?v=b388';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b387';
+import { fillOnePlan } from './cands.js?v=b388';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -124,7 +124,11 @@ $('plans').addEventListener('click', async e => {
   const ok = await fillOnePlan(b.dataset.geo, p?.title || '', p?.date);
   if (ok === true) return;                       /* loadPlans 가 다시 그립니다 */
   b.disabled = false;
-  b.textContent = ok === 'stop' ? '지도에 안 떠요' : '이름으로 못 찾았어요';
+  /* 못 찾았을 때 **되는 길**을 알려줍니다 (b388). 전에는 "이름으로 못 찾았어요"
+     로 끝나서, 이름을 몇 번 고쳐보다 포기하게 됐습니다(고쳐도 대개 안 됩니다).
+     지도 링크는 확실히 됩니다 — 실측 오차 0.00km. */
+  b.textContent = ok === 'stop' ? '지도에 안 떠요' : '수정 → 지도 링크 붙여넣기';
+  b.title = ok === 'stop' ? '' : '이름으로는 못 찾았어요. 「수정」의 메모 칸에 구글 지도 링크를 붙여넣으면 잡힙니다.';
   b.classList.toggle('miss', ok !== 'stop');
 }, false);
 
@@ -253,8 +257,12 @@ export function drawPlans(){
     $('plans').innerHTML = pickedDay
       ? emptyDo('이 날은 아직 비어 있어요.', null, null,
                 '위에서 모든 날을 누르면 전체가 보여요.')
+      /* ⚠ **길이 둘입니다 (b388).** 전에는 「첫 일정 넣기」(직접 적기)뿐이라
+         여행 안에서는 AI 로 짜러 갈 수가 없었습니다 — 홈 히어로에는 있는
+         길인데 여행을 열고 들어오면 사라졌습니다. */
       : emptyDo('아직 일정이 없어요.', '첫 일정 넣기', 'addplanbtn',
-                '첫 줄만 넣으면 나머지는 이어서 채우기 쉬워요.');
+                '첫 줄만 넣으면 나머지는 이어서 채우기 쉬워요.',
+                { label:'AI 로 하루씩 짜기', go:'draftbtn' });
     return;
   }
   let html = '', last = null, prev = null;

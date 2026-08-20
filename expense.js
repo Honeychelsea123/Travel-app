@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b387';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b387';
+import { $, esc, toast, emptyDo } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b388';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b388';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b387';
-import { arm } from './ui.js?v=b387';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b388';
+import { arm } from './ui.js?v=b388';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -179,7 +179,9 @@ function drawExpenses(){
           ? `<div class="memo">${
               esc(money(Number(e.amount_home), trip.home_currency))}</div>` : ''}</div>
       ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-xact="del" data-id="${esc(e.id)}"
+        `<button class="ghost" data-xact="edit" data-id="${esc(e.id)}"
+                 style="align-self:start; padding:2px 6px">수정</button>
+         <button class="ghost" data-xact="del" data-id="${esc(e.id)}"
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
   }
   $('expenses').innerHTML = html;
@@ -270,23 +272,68 @@ async function fillRates(){
       `(유럽중앙은행이 안 내는 통화입니다).`, 'exp');
 }
 
-$('addexpbtn').addEventListener('click', () => {
-  $('expcard').classList.toggle('hide');
-  if ($('expcard').classList.contains('hide')) return;
+/* ── 지출 날짜의 기본값 ───────────────────────────────────────────────
+ * ⚠ **오늘이 여행 밖이면 여행 첫날로 잡습니다 (b388).** 전에는 무조건
+ *   `todayYmd()` 였습니다. 11월 여행을 8월에 짜면 지출이 8월 날짜로 들어가서
+ *   일정과 연결이 안 되고("이 날은 일정이 없어요") 날짜별 집계도 틀어졌습니다.
+ *   여행 중에는 오늘이 맞습니다 — 그때 쓰는 것이니까요. */
+const 지출기본날 = () => {
+  if (pickedDay) return pickedDay;
+  const t = todayYmd();
+  if (!trip?.start_date) return t;
+  if (t < trip.start_date) return trip.start_date;
+  if (t > trip.end_date)   return trip.end_date;
+  return t;
+};
+
+/* ── 고치는 중인 지출 ─────────────────────────────────────────────────
+ * ⚠ **지출에는 수정이 아예 없었습니다 (b388).** 줄에 삭제(×)만 있어서,
+ *   금액이나 통화를 잘못 넣으면 지우고 처음부터 다시 넣어야 했습니다.
+ *   바로 위 통화 덮어쓰기와 겹치면 특히 아팠습니다 — 틀리게 저장되는 길은
+ *   있는데 고치는 길이 없었습니다. 일정에는 「수정」이 있는데 지출만 없어서
+ *   같은 앱 안에서 규칙도 달랐습니다. */
+let 고치는지출 = null;
+
+/* 폼을 채우고 엽니다. `e` 가 있으면 고치기, 없으면 새로 넣기입니다. */
+function openExpForm(e){
+  고치는지출 = e || null;
+  통화손댐 = !!e;          /* 고칠 때는 저장된 통화를 지키는 것이 맞습니다 */
+  $('expcard').classList.remove('hide');
   /* 통화는 그날 있는 곳이 기본입니다. 구간마다 나라가 다르면 통화도 다릅니다.
      집 통화도 함께 둡니다 — 한국에서 미리 결제한 것들 때문입니다. */
-  const curs = [...new Set([...legs.map(l => l.currency),
-                            trip.currency, trip.home_currency, 'USD', 'EUR'])];
+  const curs = [...new Set([...legs.map(l => l.currency), trip.currency,
+                            trip.home_currency, 'USD', 'EUR', e?.currency].filter(Boolean))];
   $('x_cur').innerHTML = curs.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   $('x_payer').innerHTML = members.map(m =>
-    `<option value="${esc(m.user_id)}"${m.user_id === ctx.me().id ? ' selected' : ''}>` +
+    `<option value="${esc(m.user_id)}">` +
     `${esc(nameOf(m.user_id))}${m.left_at ? ' (탈퇴함)' : ''}</option>`).join('') +
     `<option value="">공동 (결제자 없음)</option>`;
-  $('x_date').value = pickedDay || todayYmd();
+
+  $('x_title').value  = e?.title  || '';
+  $('x_amount').value = e ? String(e.amount) : '';
+  $('x_memo').value   = e?.memo   || '';
+  $('x_date').value   = e?.date   || 지출기본날();
+  $('x_cat').value    = e?.category || '';
+  $('x_payer').value  = e?.payer_id ?? ctx.me().id;
   drawExpPlans();
+  $('x_plan').value = e?.plan_id || '';
   drawShareChips();
   syncExpCur();
-  $('x_title').focus();
+  if (e) $('x_cur').value = e.currency;
+  /* 제목과 단추가 다른 말을 하면 새로 만드는 줄 알고 취소합니다. */
+  $('x_formtitle').textContent = e ? '지출 고치기' : '지출 추가';
+  $('x_create').textContent    = e ? '고치기' : '넣기';
+  $('expformerr').classList.add('hide');
+  if (!e) $('x_title').focus();
+  $('expcard').scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+
+$('addexpbtn').addEventListener('click', () => {
+  /* 고치던 중에 「추가」를 누르면 새로 넣기로 돌아갑니다. */
+  if (!$('expcard').classList.contains('hide') && !고치는지출){
+    $('expcard').classList.add('hide'); return;
+  }
+  openExpForm(null);
 });
 
 /* ── 지출을 일정에 붙이기 ───────────────────────────────────────────
@@ -339,14 +386,31 @@ $('x_shares').addEventListener('click', e => {
 });
 const pickedShares = () =>
   [...$('x_shares').querySelectorAll('[data-share].on')].map(b => b.dataset.share);
-/* 날짜를 바꾸면 그날 있는 곳의 통화로 맞춥니다. */
+/* ── 날짜를 바꾸면 그날 있는 곳의 통화로 맞춥니다 ─────────────────────
+ * ⚠ **사람이 통화를 손댔으면 건드리지 않습니다 (b388).** 전에는 무조건
+ *   덮어썼습니다. 그런데 폼에서 **통화 칸이 날짜 칸보다 위에 있어서**,
+ *   위에서 아래로 자연스럽게 채우면 통화를 고른 뒤에 날짜를 정하게 됩니다 —
+ *   즉 **고른 통화가 늘 지워졌습니다.**
+ *   실사용 점검에서 ₩10,000 이 ¥10,000(₩87,467)으로 저장됐고,
+ *   42만원짜리 숙소가 367만원으로 기록됐습니다. 화면에는 아무 표시도 없었습니다.
+ *   한국에서 미리 결제한 숙소·항공권을 원화로 적는 것은 아주 흔한 일입니다.
+ *
+ * 자동으로 맞추는 것 자체는 남깁니다 — 구간마다 통화가 다른 여행에서
+ * 매번 고르게 하면 그게 더 번거롭습니다. **손댄 적이 없을 때만** 맞춥니다. */
+let 통화손댐 = false;
+$('x_cur').addEventListener('change', () => { 통화손댐 = true; });
 function syncExpCur(){
+  if (통화손댐) return;
   const l = legNear(legs, $('x_date').value);
   if (l) $('x_cur').value = l.currency;
 }
 $('x_date').addEventListener('change', syncExpCur);
 $('x_cancel').addEventListener('click', () => {
   $('expcard').classList.add('hide'); $('expformerr').classList.add('hide');
+  /* 되돌려 두지 않으면 다음에 「추가」를 눌렀을 때 고치기 상태가 남습니다. */
+  고치는지출 = null; 통화손댐 = false;
+  $('x_formtitle').textContent = '지출 추가';
+  $('x_create').textContent = '넣기';
 });
 
 $('x_create').addEventListener('click', async () => {
@@ -368,15 +432,21 @@ $('x_create').addEventListener('click', async () => {
   const cur = $('x_cur').value;
   const rate = await rateOf(cur, trip.home_currency, date);
 
-  const r = await write({ table:'expenses', action:'insert', row:{
-    trip_id: trip.id, title, amount, date, currency: cur,
+  const row = {
+    title, amount, date, currency: cur,
     fx_rate: rate, amount_home: rate == null ? null : amount * rate,
     category: $('x_cat').value || null,
     plan_id: $('x_plan').value || null,
     payer_id: $('x_payer').value || null,
     memo: $('x_memo').value.trim() || null
-  }});
-  btn.disabled = false; btn.textContent = '넣기';
+  };
+  /* 고치는 중이면 같은 줄을 덮어씁니다. 지웠다 다시 넣으면 몫(share)과
+     붙여둔 일정이 끊기고, 정산 기록에 구멍이 납니다. */
+  const r = 고치는지출
+    ? await write({ table:'expenses', action:'update', id: 고치는지출.id, row })
+    : await write({ table:'expenses', action:'insert', row: { trip_id: trip.id, ...row } });
+  const 고치던중 = !!고치는지출;
+  btn.disabled = false; btn.textContent = 고치던중 ? '고치기' : '넣기';
 
   if (!r.ok) return fail(r.why, 'expform');
 
@@ -388,6 +458,11 @@ $('x_create').addEventListener('click', async () => {
 
   $('x_title').value = ''; $('x_amount').value = ''; $('x_memo').value = '';
   $('expcard').classList.add('hide');
+  고치는지출 = null; 통화손댐 = false;
+
+  /* 고칠 때는 몫을 손대지 않습니다 — 아래 갈래는 새로 넣을 때만 뜻이 있습니다.
+     고친 김에 몫까지 다시 쓰면 이미 있던 expense_shares 와 겹칩니다. */
+  if (고치던중){ await loadExpenses(); return toast('고쳤어요'); }
 
   if (r.queued){
     /* 큐에 쌓인 지출은 아직 id 가 없어서 몫을 붙일 수가 없습니다.
@@ -407,6 +482,12 @@ $('x_create').addEventListener('click', async () => {
 
 $('expenses').addEventListener('click', async e => {
   const b = e.target.closest('button[data-xact]'); if (!b) return;
+  /* 수정은 확인이 필요 없습니다 — 폼을 열 뿐이고 아직 아무것도 안 바뀝니다. */
+  if (b.dataset.xact === 'edit'){
+    const row = expenses.find(x => x.id === b.dataset.id);
+    if (row) openExpForm(row);
+    return;
+  }
   if (b.dataset.armed !== '1'){
     arm(b, '정말 지울까요?'); return;
   }

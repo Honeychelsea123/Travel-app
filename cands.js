@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b387';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b387';
-import { trip, plans, legs } from './trip.js?v=b387';
-import { search } from './cities.js?v=b387';
-import { picked } from './citysearch.js?v=b387';
-import { mapLinks } from './planmap.js?v=b387';
-import { openPlanForm } from './cards.js?v=b387';
-import { syncSheets } from './ui.js?v=b387';
+import { $, esc, emptyDo } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b388';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b388';
+import { trip, plans, legs } from './trip.js?v=b388';
+import { search } from './cities.js?v=b388';
+import { picked } from './citysearch.js?v=b388';
+import { mapLinks } from './planmap.js?v=b388';
+import { openPlanForm } from './cards.js?v=b388';
+import { syncSheets } from './ui.js?v=b388';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -172,16 +172,62 @@ function geoQueries(title){
   return out.slice(0, 3);
 }
 
-export async function osmLookup(q){
-  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=' +
-            encodeURIComponent(q);
+/* 이 여행의 기준점. 이미 좌표가 있는 일정들의 한가운데를 씁니다 — 구간 도시의
+   좌표를 못 가져오는 여행(직접 쳐서 만든 구간)에서도 이건 늘 있습니다.
+   하나도 없으면 `null` 을 주고, 그때는 거리 검사를 안 합니다 —
+   **기준이 없을 때 함부로 버리면 멀쩡한 것까지 못 찾게 됩니다.** */
+function 여행중심(){
+  const pts = (plans || []).filter(p => p.lat != null && p.lng != null);
+  if (!pts.length) return null;
+  return [pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+          pts.reduce((s, p) => s + p.lng, 0) / pts.length];
+}
+
+/* ── 이름으로 좌표 찾기 ───────────────────────────────────────────────
+ * ⚠ **첫 결과를 그냥 받으면 안 됩니다 (b388).** 전에는 `limit=1` 로 물어보고
+ *   나온 것을 그대로 썼습니다. 실사용 점검에서 「기온 거리」(교토)에
+ *   **오사카 북부 좌표**가 붙었습니다 — 실제와 41.2km 차이인데 화면에는
+ *   아무 표시도 없었습니다. 지도 핀도 이동 시간도 거짓말이 됐습니다.
+ *   **못 찾는 것보다 틀린 것이 나쁩니다.** 못 찾으면 사용자가 고칠 수 있지만,
+ *   틀린 좌표는 맞는 줄 알고 지나갑니다.
+ *
+ * 셋을 바꿉니다.
+ *   1. **나라로 묶습니다**(`countrycodes`). 도시는 틀릴 수 있어도(교토 당일치기)
+ *      나라는 늘 맞습니다.
+ *   2. **여러 개를 받아 `importance` 가 제일 높은 것**을 고릅니다. 이름난 곳이
+ *      동명의 골목보다 위로 올라옵니다 — 교토 기온 vs 오사카의 같은 이름.
+ *   3. **너무 멀면 버립니다**(`near` 에서 `maxKm`). 당일치기는 허용해야 하므로
+ *      넉넉히 잡되, 다른 나라급으로 튄 것은 못 찾은 것으로 칩니다.
+ *
+ * 돌려주는 값: `{lat,lng}` · `null`(못 찾음) · `'stop'`(그쪽에서 그만하라 함). */
+export async function osmLookup(q, opts = {}){
+  const { country, near, maxKm = 300 } = opts;
+  const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8'
+          + (country ? '&countrycodes=' + encodeURIComponent(String(country).toLowerCase()) : '')
+          + '&q=' + encodeURIComponent(q);
   try {
     const r = await fetch(u, { headers: { 'Accept-Language': 'ko,en' } });
     if (!r.ok) return r.status === 429 ? 'stop' : null;
     const a = await r.json();
-    if (!a?.length) return null;
-    const lat = Number(a[0].lat), lng = Number(a[0].lon);
-    return (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
+    if (!Array.isArray(a) || !a.length) return null;
+
+    const 성한것 = a.map(x => ({ lat:Number(x.lat), lng:Number(x.lon),
+                                 imp:Number(x.importance) || 0 }))
+                    .filter(x => Math.abs(x.lat) <= 90 && Math.abs(x.lng) <= 180);
+    if (!성한것.length) return null;
+
+    /* 기준점이 있으면 너무 먼 것을 먼저 걷어냅니다. 다 걷히면 못 찾은 것입니다 —
+       **남은 것 중 아무거나 주지 않습니다.** 그게 41km 짜리 사고의 원인이었습니다. */
+    const 쓸것 = near
+      ? 성한것.filter(x => distKm(near[0], near[1], x.lat, x.lng) <= maxKm)
+      : 성한것;
+    if (!쓸것.length) return null;
+
+    /* 중요도로 고릅니다. 같으면 가까운 쪽입니다. */
+    쓸것.sort((x, y) => (y.imp - x.imp)
+      || (near ? distKm(near[0], near[1], x.lat, x.lng) - distKm(near[0], near[1], y.lat, y.lng) : 0));
+    const { lat, lng } = 쓸것[0];
+    return { lat, lng };
   } catch { return null; }
 }
 
@@ -225,12 +271,27 @@ export function drawGeoBtn(){
  * 일괄 채우기와 같은 식을 써야 결과가 갈리지 않으므로 여기 한 곳에 둡니다.
  * 돌려주는 값: true = 채움, false = 못 찾음. */
 async function geoOne(it){
-  /* 도시 이름을 붙여야 같은 이름이 여러 나라에 있을 때 엉뚱한 데로 안 갑니다. */
-  const city = (legOf(it.date) || (legs || [])[0])?.destination || trip?.destination || '';
+  /* ⚠ **도시 이름을 글자로 붙이지 않습니다 (b388).** 전에는 `"기온 거리 오사카"`
+     처럼 도시를 검색어에 우겨넣었습니다. 같은 이름이 여러 나라에 있을 때
+     엉뚱한 데로 가는 것을 막으려던 것인데, **당일치기를 못 견뎠습니다** —
+     교토 기온을 오사카에서 찾으니 41km 떨어진 다른 곳이 잡혔습니다.
+     이제 나라(`countrycodes`)로 묶고 여행지를 기준점으로만 씁니다. */
+  const leg = legOf(it.date) || (legs || [])[0];
+  const country = leg?.country || trip?.country || '';
+  const 기준 = 여행중심();
+  const city = leg?.destination || trip?.destination || '';
+
   let hit = null;
   for (const q of geoQueries(it.title)){
-    hit = await osmLookup(city && !q.includes(city) ? `${q} ${city}` : q);
+    /* 이름만으로 먼저 찾고, 못 찾으면 도시를 덧붙여 한 번 더 봅니다.
+       「구로몬 시장」처럼 흔한 이름은 도시가 있어야 잡힙니다. */
+    hit = await osmLookup(q, { country, near: 기준 });
     if (hit === 'stop') return 'stop';
+    if (!hit && city && !q.includes(city)){
+      await new Promise(r => setTimeout(r, 1100));
+      hit = await osmLookup(`${q} ${city}`, { country, near: 기준 });
+      if (hit === 'stop') return 'stop';
+    }
     if (hit) break;
     await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
   }
@@ -269,8 +330,14 @@ async function fillCoords(){
   /* loadPlans 가 일정을 다시 그리면서 띠도 새로 셉니다. 그래도 여기서 한 번
      더 부릅니다 — 후보만 채워진 경우에는 일정 쪽이 안 다시 그려집니다. */
   drawGeoBtn();
-  if (miss) fail(`${done}곳을 채웠어요. ${miss}곳은 못 찾았어요 — ` +
-                 `이름을 장소 이름으로 고치면 찾을 수 있어요.`, 'cand');
+  /* ⚠ **막다른 안내였습니다 (b388).** 전에는 "이름을 장소 이름으로 고치면
+     찾을 수 있어요" 라고만 했는데, 시킨 대로 「기요미즈데라」를
+     「Kiyomizu-dera」(세계적 명소)로 고쳐도 여전히 못 찾았습니다.
+     **되는 길을 알려줘야 안내입니다.** 지도 링크는 확실히 됩니다 —
+     실측에서 오차 0.00km 였습니다. */
+  if (miss) fail(`${done}곳을 채웠어요. ${miss}곳은 이름으로 못 찾았어요. ` +
+                 `그 줄의 「수정」을 열고 메모 칸에 구글 지도 링크를 붙여넣으면 ` +
+                 `바로 잡힙니다 — 이름을 바꾸는 것보다 이 쪽이 확실해요.`, 'cand');
 }
 $('geobtn').addEventListener('click', fillCoords, false);
 

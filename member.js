@@ -15,12 +15,12 @@
  * 하나입니다 — 일행 목록도, 정산 송금 줄도 같은 것을 씁니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b387';
-import { dateRange } from './calc.js?v=b387';
-import { trip, members, setMembers, nameOf } from './trip.js?v=b387';
-import { arm } from './ui.js?v=b387';
+import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b388';
+import { dateRange } from './calc.js?v=b388';
+import { trip, members, setMembers, nameOf } from './trip.js?v=b388';
+import { arm } from './ui.js?v=b388';
 
 /* app.js 만 아는 것 셋. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -125,7 +125,14 @@ async function drawInvites(){
 
   $('i_list').innerHTML = live.length
     ? `<div class="daysep">살아 있는 링크</div>` + live.map(i => {
-        const days = Math.max(0, Math.ceil((new Date(i.expires_at) - now) / 86400000));
+        /* ⚠ **`ceil` 이 하루를 더 얹었습니다 (b388).** 만든 직후 위에서는
+           "14일 뒤 만료"라고 하는데 여기서는 "15일 남음"이 떴습니다 —
+           서버가 잡은 만료 시각과 화면의 `now` 사이에 몇 초가 벌어지면
+           14.0001 일이 되고 `ceil` 이 15 로 올립니다.
+           반올림하되 시간이 남아 있으면 최소 1일로 둡니다("0일 남음"은
+           살아 있는 링크에 붙을 말이 아닙니다). */
+        const 남은 = (new Date(i.expires_at) - now) / 86400000;
+        const days = 남은 <= 0 ? 0 : Math.max(1, Math.round(남은));
         return `<div class="row">
           <span class="label"><b style="font-family:ui-monospace,monospace">${esc(i.code)}</b>
             <div class="memo">${esc(ROLE_KO[i.role] || i.role)} ·

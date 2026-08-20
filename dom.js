@@ -117,11 +117,17 @@ export function avatarImg(url, seed, label, style, cls){
  *
  * 안내 줄은 새 스타일을 만들지 않고 `.memo` 를 그대로 씁니다 —
  * 계단(15px 제목 / 13px 안내)이 앱의 나머지와 같아야 합니다. */
-export function emptyDo(text, label, btnId, hint){
+/* `more` 는 **두 번째 길**입니다 — `{ label, go }`.
+   ⚠ 두 단추가 같은 무게로 서면 고르기가 일이 됩니다. 뒤엣것은 흐리게 답니다.
+   길이 정말 둘일 때만 쓰십시오(예: 빈 일정 — 직접 적기 / AI 로 짜기).
+   하나로 되는 곳에 굳이 둘을 두지 않습니다. */
+export function emptyDo(text, label, btnId, hint, more){
   return `<div class="empty emptydo">
     <div class="t">${esc(text)}</div>
     ${hint ? `<div class="memo h">${esc(hint)}</div>` : ''}
     ${btnId ? `<button class="primary" data-go="${esc(btnId)}">${esc(label)}</button>` : ''}
+    ${more?.go ? `<button class="ghost" data-go="${esc(more.go)}"
+        style="display:block; margin:8px auto 0">${esc(more.label)}</button>` : ''}
   </div>`;
 }
 

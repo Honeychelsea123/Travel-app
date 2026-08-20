@@ -15,14 +15,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     ai.js · aiui.js · cards.js · plancheck.js 를 씁니다. */
-import { $, esc, toast, md } from './dom.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, netTimeout, netIsDown } from './net.js?v=b387';
-import { trip } from './trip.js?v=b387';
-import { arm, disarm, syncSheets } from './ui.js?v=b387';
-import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b387';
-import { loadAi } from './plancheck.js?v=b387';
-import { clearLastTake } from './cards.js?v=b387';
+import { $, esc, toast, md } from './dom.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, netTimeout, netIsDown } from './net.js?v=b388';
+import { trip, plans } from './trip.js?v=b388';
+import { arm, disarm, syncSheets } from './ui.js?v=b388';
+import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b388';
+import { loadAi } from './plancheck.js?v=b388';
+import { clearLastTake } from './cards.js?v=b388';
 
 let ctx = { me: () => null };
 export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
@@ -91,7 +91,14 @@ function drawChats(rows){
        위에 있는데 예시가 일반적인 이야기면 둘이 따로 놉니다. */
     : `<div class="empty">${aiTripId ? '이 여행에 대해 물어보세요.' : '어디로 갈지, 뭘 챙길지 아무거나 물어보세요.'}</div>
        <div class="asks">${(aiTripId
-          ? ['비 오면 뭐 하지?', '이 일정 너무 빡빡한가?', '근처 맛집 알려줘', '뭘 챙겨야 해?']
+          /* ⚠ **일정이 있느냐로 갈립니다 (b388).** 전에는 여행만 고르면
+             "비 오면 뭐 하지?" "이 일정 너무 빡빡한가?" "근처 맛집 알려줘"가
+             떴는데, **셋 다 일정이 있어야 뜻이 있는 질문**입니다.
+             빈 여행에서 눌러도 AI 가 답할 거리가 없습니다.
+             그 상황의 첫 질문은 "일정 짜줘"입니다. */
+          ? (plans || []).length
+            ? ['비 오면 뭐 하지?', '이 일정 너무 빡빡한가?', '근처 맛집 알려줘', '뭘 챙겨야 해?']
+            : ['하루에 4~5개씩 일정 짜줘', '첫날 동선 짜줘', '꼭 가야 할 곳 알려줘', '뭘 챙겨야 해?']
           : ['3박 4일로 어디가 좋을까?', '지금 가기 좋은 곳은?', '혼자 가기 좋은 도시', '예산 100만원이면?']
         ).map(q => `<button type="button" class="ask" data-ask="${esc(q)}">${esc(q)}</button>`).join('')}</div>`;
   aiToBottom();

@@ -16,17 +16,17 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b387';
-import { featOn } from './flags.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, write } from './net.js?v=b387';
+import { $, toast } from './dom.js?v=b388';
+import { featOn } from './flags.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, write } from './net.js?v=b388';
 import { trip, plans, setPlans, editPlanId, setEditPlanId,
-         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b387';
-import { arm } from './ui.js?v=b387';
-import { drawCats } from './planline.js?v=b387';
-import { drawPlanMap } from './planmap.js?v=b387';
-import { drawPlans } from './planview.js?v=b387';
-import { osmLookup } from './cands.js?v=b387';
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b388';
+import { arm } from './ui.js?v=b388';
+import { drawCats } from './planline.js?v=b388';
+import { drawPlanMap } from './planmap.js?v=b388';
+import { drawPlans } from './planview.js?v=b388';
+import { osmLookup } from './cands.js?v=b388';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -63,8 +63,18 @@ async function sniffMapLink(){
 
   note.classList.remove('hide');
   note.textContent = '지도에서 위치를 찾는 중…';
+  /* ⚠ **찾는 동안 「넣기」를 잠급니다 (b388).** 서버가 링크를 펴는 데 몇 초
+     걸리는데 그 사이에도 단추가 눌렸습니다. 빨리 누르는 사람은 **좌표 없이**
+     저장되고 왜 없는지 모릅니다(실측: 0.5초 뒤 누름 → 좌표 없음).
+     기다리는 동안 무엇을 기다리는지도 단추에 적어둡니다 — 잠긴 단추만
+     보여주면 고장으로 읽힙니다. */
+  const 단추 = $('p_create'), 원래글 = 단추.textContent;
+  단추.disabled = true; 단추.textContent = '위치 찾는 중…';
+  const 풀기 = () => { 단추.disabled = false; 단추.textContent = 원래글; };
+
   const r = await sb.functions.invoke('chat', { body:{ mode:'map', message:url } });
   if (r.error || r.data?.error){
+    풀기();
     planGeo = null;
     note.textContent = '이 링크를 읽지 못했어요. 그냥 넣어도 괜찮아요.';
     return;
@@ -83,6 +93,8 @@ async function sniffMapLink(){
     if (hit && hit !== 'stop'){ lat = hit.lat; lng = hit.lng; }
   }
 
+  /* 주소로 한 번 더 찾는 갈래까지 끝난 뒤에 풉니다 — 여기가 진짜 끝입니다. */
+  풀기();
   if (lat == null){
     planGeo = null;
     /* **못 찾아도 넣기는 됩니다.** 위치가 없을 뿐입니다 — 막으면 안 됩니다. */
@@ -197,6 +209,9 @@ $('plans').addEventListener('click', async e => {
     $('p_memo').value  = p.memo || '';
     setEditPlanId(id);
     $('p_create').textContent = '고치기';
+    /* 제목도 같이 바꿉니다 (b388). 단추는 「고치기」인데 제목이 「일정 추가」라
+       서로 다른 말을 했습니다 — 새로 만드는 줄 알고 취소하게 됩니다. */
+    $('p_formtitle').textContent = '일정 고치기';
     return;
   }
 

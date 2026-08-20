@@ -12,12 +12,13 @@
  * 보내야 해서 저쪽을 부를 일이 생깁니다.
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b387';
-import { asDate, D1, ymd } from './calc.js?v=b387';
-import { setAiTripId, setSuggested, suggested } from './ai.js?v=b387';
-import { sb } from './db.js?v=b387';
-import { fail, netTimeout, NOROW } from './net.js?v=b387';
-import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b387';
+import { $, esc, toast } from './dom.js?v=b388';
+import { asDate, D1, ymd } from './calc.js?v=b388';
+import { setAiTripId, setSuggested, suggested } from './ai.js?v=b388';
+import { sb } from './db.js?v=b388';
+import { fail, netTimeout, NOROW } from './net.js?v=b388';
+import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b388';
+import { arm } from './ui.js?v=b388';
 
 /* 검토 결과의 등급 색. **app.js 에도 같은 표가 있었는데 여기서 내보냅니다** —
    두 곳에 적어두면 언젠가 한쪽만 고칩니다(D1·asDate 에서 겪은 것과 같은 일). */
@@ -267,7 +268,15 @@ $('cards').addEventListener('click', async e => {
   /* ── 다 담기 ── */
   const all = e.target.closest('button[data-takeall]');
   if (all){
-    all.dataset.orig = all.textContent;
+    /* ⚠ **한 번 묻습니다 (b388).** 카드 한 장의 「일정에 넣기」는 값이 채워진
+       폼을 열어 확인을 받는데, 여기는 여러 개를 확인 없이 바로 넣었습니다 —
+       **위험한 쪽만 확인이 없었습니다.** 되돌리기가 바로 아래 있긴 하지만,
+       그건 알아채야 쓸 수 있는 길입니다. */
+    if (all.dataset.armed !== '1'){
+      arm(all, `${$('takeday')?.value ? '고른 날로 ' : ''}정말 다 담을까요?`);
+      return;
+    }
+    all.dataset.orig = all.dataset.orig || '다 담기';
     all.disabled = true;
     lastTake = [];
     /* 날짜를 골라뒀으면 일정은 전부 그 날로 갑니다. 비워두면 예전처럼
