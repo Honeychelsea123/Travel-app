@@ -1403,47 +1403,59 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
         opacity:0; pointer-events:none; transition:opacity var(--t) var(--ease), transform var(--t) var(--ease); }
 #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
 
-/* ── 여행 리포트 ─────────────────────────────────────────────────────
- * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다.
- * 옆으로 넘겨 보는 카드로 냅니다 — 한 장에 숫자 하나만 크게. */
-.rpt1 .hd{ text-align:center; padding:4px 0 2px }
-.rpt1 .ti{ font-size:var(--f-3xl); font-weight:700;
-           letter-spacing:calc(-.6px * var(--ts)) }
-.rpt1 .dt{ font-size:var(--f-sm); color:var(--ink-48); margin-top:4px }
-
-.rstats{ display:flex; margin-top:18px; padding:14px 0;
-         border-top:1px solid var(--divider-soft);
-         border-bottom:1px solid var(--divider-soft) }
-.rstats .rs{ flex:1; text-align:center; min-width:0 }
-.rstats .rs + .rs{ border-left:1px solid var(--divider-soft) }
-.rstats .b{ font-size:min(var(--f-3xl), 6.2vw); font-weight:700;
-            letter-spacing:calc(-.5px * var(--ts)) }
-.rstats .s{ font-size:var(--f-xs); color:var(--ink-48); margin-top:3px }
-
-/* 한 줄 정의 — 공유하고 싶어지는 자리라 여기만 색을 씁니다. */
-.rdef{ margin-top:16px; padding:16px; border-radius:var(--r-sm); text-align:center;
-       color:#fff; background:linear-gradient(135deg,#4b6cff 0%,#a13cff 100%) }
-.rdef .q{ font-size:var(--f-2xl); font-weight:700; word-break:keep-all }
-.rdef .d{ font-size:var(--f-sm); opacity:.92; margin-top:6px;
-          word-break:keep-all }
-
-.rsec{ margin-top:16px }
-.rsec .h{ font-size:var(--f-xs); color:var(--ink-48); font-weight:600 }
-.rsec .v{ font-size:var(--f-lg); font-weight:600; margin-top:4px;
-          word-break:keep-all }
-.rsec .m{ font-size:var(--f-sm); color:var(--ink-48); margin-top:2px }
-.rtwo{ display:flex; gap:12px }
-.rtwo .rsec{ flex:1; min-width:0 }
-
-.rday{ display:flex; align-items:center; gap:8px; padding:5px 0;
-       font-size:var(--f-sm) }
-.rday .dd{ width:52px; flex:none; color:var(--ink-48) }
-.rday .dots{ flex:1; min-width:0; color:var(--primary); letter-spacing:1px;
-             overflow:hidden; white-space:nowrap; font-size:var(--f-2xs) }
-.rday .dn{ width:38px; flex:none; text-align:right; color:var(--ink-48) }
-.rday .ds{ width:40px; flex:none; text-align:right; font-weight:600 }
-.rday .dw{ flex:none; font-size:var(--f-2xs); color:#c1440e;
-           background:#fdf0e8; border-radius:var(--r-pill); padding:2px 7px }
+/* ── 여행 영수증 ─────────────────────────────────────────────────────
+ * 평가까지 마쳤으면 뭔가 남는 것이 있어야 합니다. **영수증**으로 냅니다.
+ *
+ * ⚠ **성향 카드와 결이 달라야 합니다.** 그쪽은 여권(크림톤 #FDFBF3 ·
+ *   일러스트 · 놀이)이고 이건 영수증(흰 종이 · 글자만 · 기록)입니다.
+ *   둘이 비슷해 보이면 앱 안에 같은 것이 둘 있는 셈이 됩니다.
+ *
+ * ⚠ **글자 크기는 두 개뿐입니다** — 본문 하나, 한 줄평 하나.
+ *   영수증은 모든 줄이 같은 크기라서 영수증으로 읽힙니다. 여기에 크기를
+ *   더 만들면 그냥 카드가 됩니다. 무엇을 강조하고 싶으면 크기가 아니라
+ *   **굵기와 선**으로 하십시오.
+ *
+ * ⚠ **등폭 글씨가 핵심입니다.** 숫자가 세로로 안 맞으면 영수증이 아닙니다.
+ *   `tabular-nums` 를 같이 걸어 폭이 좁은 글꼴에서도 자리가 맞게 합니다. */
+.receipt{
+  --rc-ink:#1a1a1a; --rc-dim:#6f6f6f; --rc-line:#1a1a1a; --rc-dash:#c9c9c9;
+  background:#fff; color:var(--rc-ink);
+  font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric:tabular-nums;
+  font-size:calc(13px * var(--ts)); line-height:1.9;
+  padding:26px 20px 20px;
+  border-radius:2px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 10px 30px -18px rgba(0,0,0,.5);
+}
+@media (prefers-color-scheme: dark){
+  /* ⚠ **어두운 판에서도 영수증은 흰 종이입니다.** 검게 뒤집으면 영수증이
+     아니라 터미널 화면이 됩니다. 종이는 어디서 봐도 종이입니다. */
+  .receipt{ background:#f7f6f2; color:#1a1a1a; }
+}
+.rchead{ text-align:center; font-size:calc(19px * var(--ts)); font-weight:700;
+         letter-spacing:calc(6px * var(--ts)); }
+.rcsub{ text-align:center; font-size:calc(12px * var(--ts)); color:var(--rc-dim);
+        letter-spacing:calc(3px * var(--ts)); margin-top:2px; }
+.rcline{ border-top:2px solid var(--rc-line); margin:12px 0; }
+.rcdash{ border-top:1px dashed var(--rc-dash); margin:10px 0; }
+.rcrow{ display:flex; justify-content:space-between; gap:12px; }
+.rcrow.b{ font-weight:700; }
+.rcrow span:last-child{ white-space:nowrap; }
+/* ★5 목록처럼 값 없이 이름만 늘어놓는 줄. 들여써서 위 줄에 딸린 것으로 읽힙니다. */
+.rcsub2{ padding-left:16px; color:var(--rc-dim); }
+/* 하루별 — 네 칸이 각자 자리를 지켜야 표로 읽힙니다. */
+.rcday{ display:flex; gap:8px; }
+.rcday span:first-child{ flex:1; }
+.rcday span:not(:first-child){ width:56px; text-align:right; flex:none; }
+/* **한 줄평만 큽니다.** 영수증에서 유일하게 크기가 다른 줄입니다. */
+.rcbig{ text-align:center; font-size:calc(20px * var(--ts)); font-weight:700;
+        padding:14px 0; word-break:keep-all; }
+.rcai{ color:var(--rc-dim); line-height:1.85; padding:2px 0 6px;
+       white-space:pre-wrap; word-break:keep-all; }
+.rcfoot{ text-align:center; color:var(--rc-dim); font-size:calc(12px * var(--ts)); }
+/* 바코드는 **장식**입니다(여권 카드의 MRZ 와 같은 역할). 읽을 것이 아닙니다. */
+.rcbar{ text-align:center; letter-spacing:-1px; font-size:calc(17px * var(--ts));
+        line-height:1.2; margin-top:8px; overflow:hidden; white-space:nowrap; }
 
 /* 평가 안 한 여행 알림 띠. 히어로 아래에 얇게 붙습니다 —
    앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */

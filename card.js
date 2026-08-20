@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b390';
+import { $, esc, toast } from './dom.js?v=b391';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm } from './calc.js?v=b390';
+import { distKm } from './calc.js?v=b391';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -290,8 +290,163 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b390`;
+    img.src = `./persona/${code}.png?v=b391`;
   });
+}
+
+/* ── 여행 영수증 그림 ─────────────────────────────────────────────────
+ * ⚠ **성향 카드와 일부러 다르게 그립니다.** 그쪽은 여권(크림톤·일러스트·
+ *   놀이)이고 이건 영수증(흰 종이·글자만·기록)입니다. 둘이 비슷해 보이면
+ *   앱 안에 같은 것이 둘 있는 셈입니다.
+ *
+ * ⚠ **화면 영수증과 내용이 다릅니다.** 하루별 흐름과 AI 문단은 뺍니다 —
+ *   "Day 3에 무리하셨다" 같은 것은 **내가 볼 것**이지 남에게 보일 것이
+ *   아닙니다. 성향 카드에서는 "보는 것이 곧 올리는 것"이 규칙이었는데
+ *   여기는 **일부러 가르는 것**이라 다릅니다. 그 이유를 모르면 언젠가
+ *   "왜 두 벌이지" 하고 합치게 됩니다.
+ *
+ * ⚠ **등폭 글씨가 없으면 영수증이 아닙니다.** 숫자가 세로로 안 맞으면
+ *   그냥 글자 목록입니다. 캔버스에서는 글꼴을 반드시 이름으로 지정해야
+ *   합니다 — 안 그러면 기기마다 다른 글꼴로 그려집니다.
+ *
+ * ⚠ **글자 크기는 둘뿐입니다** — 본문 하나, 한 줄평 하나. 영수증은 모든
+ *   줄이 같은 크기라서 영수증으로 읽힙니다. 강조는 크기가 아니라 굵기와
+ *   선으로 합니다. */
+const RC = { 바닥:'#EDECE8', 종이:'#FFFFFF', 잉크:'#1A1A1A', 흐림:'#6F6F6F', 점선:'#C9C9C9' };
+
+/* 찢은 가장자리. 영수증을 영수증으로 보이게 하는 것의 절반은 이 톱니입니다.
+   흰 종이를 흰 바탕에 그리면 경계가 없어 종이인 줄 모릅니다 — 바닥을 살짝
+   어둡게 깔고 위아래를 뜯어 놓아야 "뽑아 온 종이"가 됩니다. */
+function 톱니(g, x, w, y, 높이, 위로){
+  const 이 = w / 26;
+  g.beginPath();
+  g.moveTo(x, y);
+  for (let i = 0; i < 26; i++)
+    g.lineTo(x + 이 * (i + .5), y + (i % 2 ? 높이 : -높이) * (위로 ? -1 : 1)),
+    g.lineTo(x + 이 * (i + 1), y);
+  g.lineTo(x + w, y + (위로 ? -높이 * 2 : 높이 * 2));
+  g.lineTo(x, y + (위로 ? -높이 * 2 : 높이 * 2));
+  g.closePath();
+  g.fill();
+}
+
+/* 바코드는 **장식입니다**(여권 카드의 MRZ 와 같은 역할). 읽을 것이 아닙니다.
+   ⚠ 글자로 그렸더니 종이 밖으로 넘쳤습니다 — 글꼴마다 폭이 달라서 맞출 수가
+   없습니다. 막대로 직접 그리면 **주어진 폭에 반드시 들어갑니다.**
+   무늬는 여행마다 다르되 같은 여행이면 늘 같아야 하므로 씨앗에서 만듭니다. */
+function 바코드그리기(g, seed, x, w, y, h){
+  let n = 0; const s = String(seed || '');
+  for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0;
+  const 칸 = 60, 폭 = w / 칸;
+  g.fillStyle = RC.잉크;
+  for (let i = 0; i < 칸; i++){
+    n = (n * 1103515245 + 12345) >>> 0;
+    if (n % 3 === 0) continue;                  /* 빈 칸이 있어야 바코드로 보입니다 */
+    const 굵기 = 폭 * (n % 2 ? .85 : .45);
+    g.fillRect(x + i * 폭, y, 굵기, h);
+  }
+}
+
+async function drawReceipt(s, W, H, F){
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  /* 등폭. `F` 는 본문 글꼴이라 여기서는 안 씁니다 — 영수증은 등폭이 전부입니다. */
+  const M = (w, px) => `${w} ${px}px "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace`;
+  const L = W * .12, R = W * .88;
+
+  /* ── 조각들 ── 화면 쪽과 같은 순서입니다. 높이는 자(U) 기준입니다. */
+  const 줄들 = [];
+  const 줄 = (h, draw) => 줄들.push({ h, draw });
+  const 한줄 = (k, v, 굵게) => 줄(.042, (y, U) => {
+    g.font = M(굵게 ? 700 : 400, U * .030); g.fillStyle = RC.잉크;
+    g.textAlign = 'left';  g.fillText(k, L, y + U * .030);
+    g.textAlign = 'right'; g.fillText(v, R, y + U * .030);
+  });
+  const 굵은선 = () => 줄(.030, (y, U) => {
+    g.strokeStyle = RC.잉크; g.lineWidth = Math.max(2, U * .0035);
+    g.beginPath(); g.moveTo(L, y + U * .015); g.lineTo(R, y + U * .015); g.stroke();
+  });
+  const 점선 = () => 줄(.026, (y, U) => {
+    g.strokeStyle = RC.점선; g.lineWidth = Math.max(1, U * .002);
+    g.setLineDash([U * .012, U * .010]);
+    g.beginPath(); g.moveTo(L, y + U * .013); g.lineTo(R, y + U * .013); g.stroke();
+    g.setLineDash([]);
+  });
+
+  /* 머리 */
+  줄(.060, (y, U) => {
+    g.font = M(700, U * .042); g.fillStyle = RC.잉크; g.textAlign = 'center';
+    spaced(g, '기 로', W / 2, y + U * .042, U * .012);
+  });
+  줄(.040, (y, U) => {
+    g.font = M(400, U * .026); g.fillStyle = RC.흐림; g.textAlign = 'left';
+    spaced(g, 'TRIP RECEIPT', W / 2, y + U * .026, U * .008);
+  });
+  굵은선();
+
+  if (s.번호) 한줄(`TRIP #${String(s.번호).padStart(3, '0')}`, '');
+  한줄(s.dest, `${s.days - 1}박 ${s.days}일`);
+  한줄(`${String(s.from).replace(/-/g, '.')} – ${String(s.to).slice(5).replace(/-/g, '.')}`, '');
+  점선();
+  한줄('방문한 곳', `${s.곳} 곳`);
+  if (s.km) 한줄('이동 거리', `약 ${s.km} km`);
+  if (s.식비비중) 한줄('식비 비중', `${s.식비비중} %`);
+  if (s.합계){
+    굵은선();
+    한줄('합계', s.돈합계, true);
+    if (s.인원 > 1) 한줄('1인당', s.돈1인);
+  }
+  굵은선();
+  if (s.five?.length){
+    한줄('★5를 준 곳', '');
+    줄(.042, (y, U) => {
+      g.font = M(400, U * .028); g.fillStyle = RC.흐림; g.textAlign = 'left';
+      g.fillText(s.five.join(' · '), L + U * .020, y + U * .030);
+    });
+    점선();
+  }
+  /* **한 줄평만 큽니다.** 영수증에서 유일하게 크기가 다른 줄입니다. */
+  줄(.110, (y, U) => {
+    g.font = M(700, U * .046); g.fillStyle = RC.잉크; g.textAlign = 'center';
+    g.fillText(`"${s.label}"`, W / 2, y + U * .070);
+  });
+  점선();
+  줄(.042, (y, U) => {
+    g.font = M(400, U * .026); g.fillStyle = RC.흐림; g.textAlign = 'center';
+    g.fillText(`또 오세요 · KEYRO ${String(s.to || '').slice(0, 4)}`, W / 2, y + U * .028);
+  });
+  줄(.060, (y, U) => 바코드그리기(g, s.바 || s.dest, L, R - L, y + U * .012, U * .038));
+
+  /* ── 자 정하기 ── 성향 카드와 같은 방식입니다(card.js 의 drawP16).
+     조각마다 제 높이를 들고 있고, 남는 높이에 맞춰 자를 줄입니다.
+     **자를 키우지는 않습니다** — 스토리(1080×1920)에서 글자만 커지면
+     영수증이 아니라 포스터가 됩니다. 남으면 위아래 여백으로 둡니다. */
+  const 총 = 줄들.reduce((a, b) => a + b.h, 0);
+  const 여백 = W * .09;
+  const 위 = 여백, 아래 = H - 여백;
+  const U = Math.min(W, (아래 - 위) / 총);
+  const 글높이 = U * 총;
+  const 안여백 = U * .055;                       /* 종이 안쪽 위아래 여백 */
+  const 종이위 = (H - 글높이) / 2 - 안여백;
+  const 종이높이 = 글높이 + 안여백 * 2;
+  const 종이좌 = W * .06, 종이폭 = W * .88;
+
+  /* ⚠ **종이를 먼저 깔고 글을 얹습니다.** 순서가 바뀌면 종이가 글을 덮습니다.
+     바닥을 살짝 어둡게 두는 이유는 흰 종이의 경계를 보이게 하려는 것입니다 —
+     흰 위에 흰을 그리면 종이인 줄 모르고 그냥 여백으로 읽힙니다. */
+  g.fillStyle = RC.바닥; g.fillRect(0, 0, W, H);
+  g.fillStyle = RC.종이;
+  g.fillRect(종이좌, 종이위, 종이폭, 종이높이);
+  const 이높이 = W * .012;
+  톱니(g, 종이좌, 종이폭, 종이위, 이높이, true);
+  톱니(g, 종이좌, 종이폭, 종이위 + 종이높이, 이높이, false);
+
+  let y = (H - 글높이) / 2;
+  for (const b of 줄들){ b.draw(y, U); y += U * b.h; }
+
+  /* 종이라 PNG 입니다 — 흰 바탕에 검은 글자라 JPEG 로 하면 글자 가장자리가 지저분해집니다. */
+  return new Promise(r => cv.toBlob(r, 'image/png'));
 }
 
 /* 자간을 벌려 쓰기. 캔버스 letterSpacing 이 없는 기기가 있어 직접 놓습니다.
@@ -544,6 +699,9 @@ export async function cardImage(spec, mode = 'square'){
      `saveCardImage` 도 `askImageSize` 도 이 함수의 결과만 봅니다. */
   if (spec && spec.kind === 'p16')
     return { blob: await drawP16(spec, W, H, F), fontOk: ok };
+  /* 여행 영수증. 성향 카드와 **일부러 다른 그림**입니다(위 drawReceipt 머리말). */
+  if (spec && spec.kind === 'receipt')
+    return { blob: await drawReceipt(spec, W, H, F), fontOk: ok };
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;

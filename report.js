@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b390';
-import { sb } from './db.js?v=b390';
-import { fail, netTimeout } from './net.js?v=b390';
-import { money, distKm, D1, asDate } from './calc.js?v=b390';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b390';
+import { $, esc, toast, copyText, md } from './dom.js?v=b391';
+import { sb } from './db.js?v=b391';
+import { fail, netTimeout } from './net.js?v=b391';
+import { money, distKm, D1, asDate } from './calc.js?v=b391';
+import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b391';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
@@ -81,7 +81,7 @@ export async function drawReport(id){
   $('rv_report').innerHTML = '<div class="card"><div class="empty"><span class="load">만드는 중…</span></div></div>';
   window.scrollTo({ top:0 });
 
-  const [t, lg, pl, ex, cr, pr] = await Promise.all([
+  const [t, lg, pl, ex, cr, pr, mb, allT] = await Promise.all([
     /* budget 은 034 에서 붙였습니다. 아직 안 올렸으면 아래에서 한 번 더 물어봅니다. */
     sb.from('trips').select('title,destination,start_date,end_date,home_currency,budget')
       .eq('id', id).maybeSingle(),
@@ -94,6 +94,12 @@ export async function drawReport(id){
       .eq('trip_id', id).is('deleted_at', null),
     sb.from('city_ratings').select('city_id,stars').eq('user_id', ctx.me().id),
     sb.from('plan_ratings').select('plan_id,stars').eq('user_id', ctx.me().id),
+    /* 영수증에 「동행 N명」과 「1인당」을 적으려면 몇 명인지 알아야 합니다.
+       나간 사람도 셉니다 — 그 사람 몫도 이미 쓴 돈에 들어 있습니다. */
+    sb.from('trip_members').select('user_id').eq('trip_id', id),
+    /* 여행 번호(TRIP #007). **누적되는 느낌**을 만드는 것이 전부입니다 —
+       출발일 순으로 몇 번째 여행인지. 지운 여행은 안 셉니다. */
+    sb.from('trips').select('id,start_date').is('deleted_at', null).order('start_date'),
   ]);
   /* 034 를 아직 안 올렸으면 budget 이 없다고 질의가 통째로 실패합니다.
      리포트가 통째로 안 뜨는 것보다는 예산 문구만 빠지는 편이 낫습니다. */
@@ -108,13 +114,15 @@ export async function drawReport(id){
 
   /* 움직인 거리. 좌표가 있는 일정 사이만 더합니다 —
      모르는 구간을 지어내느니 빼는 편이 낫습니다. */
-  let km = 0; const byDay = {};
+  let km = 0; const byDay = {}, kmDay = {};
   plans_.forEach(p => (byDay[p.date] = byDay[p.date] || []).push(p));
-  Object.values(byDay).forEach(list => {
+  Object.entries(byDay).forEach(([d, list]) => {
+    let sum = 0;
     for (let i = 0; i < list.length - 1; i++){
-      const d = distKm(list[i].lat, list[i].lng, list[i+1].lat, list[i+1].lng);
-      if (d != null) km += d;
+      const v = distKm(list[i].lat, list[i].lng, list[i+1].lat, list[i+1].lng);
+      if (v != null) sum += v;
     }
+    kmDay[d] = sum; km += sum;
   });
 
   const PLACE = ['식사','카페','관광','쇼핑','기타'];
@@ -182,6 +190,30 @@ export async function drawReport(id){
   const rule = REPORT_RULES.find(r => r.f(R));
   const label = rule.t;
 
+  /* ── 영수증에 쓰는 값들 ───────────────────────────────────────────────
+   * 영수증은 **줄마다 숫자 하나**입니다. 그래서 화면보다 더 잘게 나눠야 합니다. */
+  const 인원 = (mb.data || []).length || 1;
+  /* 여행 번호. 출발일 순으로 몇 번째인가. 못 찾으면 안 적습니다 —
+     틀린 번호를 찍느니 없는 편이 낫습니다. */
+  const 번호 = ((allT.data || []).findIndex(x => x.id === id) + 1) || null;
+
+  /* 분류별 금액. 화면은 비중(%)만 보여줬는데 영수증은 **금액**이 주인공입니다.
+     앱의 분류(식사·카페·이동·쇼핑·관광·숙소·기타)를 영수증 말로 묶습니다. */
+  const 묶음 = { 식비:['식사','카페'], 교통:['이동'], 숙소:['숙소'],
+                 쇼핑:['쇼핑'], 관광:['관광'], 기타:['기타', null, ''] };
+  const 지출줄 = Object.entries(묶음).map(([이름, cats]) => {
+    const v = exps.filter(e => cats.includes(e.category || '')).reduce((s,e) => s+money(e), 0);
+    return { 이름, 값: v };
+  }).filter(x => x.값 > 0).sort((a,b) => b.값 - a.값);
+
+  /* 계획 대비. "갔다"를 따로 안 적으므로 **별점이 곧 다녀왔다는 표시**입니다.
+     계획이 하나도 없으면(전부 즉흥) 이 줄은 뜻이 없어 뺍니다. */
+  const 계획수 = planned.length;
+  const 다녀온계획 = planned.filter(p => psr[p.id] != null).length;
+
+  /* 하루별 줄 — 곳 수 · 그날 평균 별점 · 그날 이동 거리 */
+  const 날들 = Object.keys(byDay).sort();
+
   const defLine = [
     foodPct ? `식비 ${foodPct}%` : null,
     eatAvg != null ? `식당 평균 ★${eatAvg.toFixed(1)}` : null,
@@ -207,82 +239,86 @@ export async function drawReport(id){
   rpt = { title:T.title, dest:T.destination, from:T.start_date, to:T.end_date,
           days, spend, cur, spots:spots.length, km:Math.round(km), label, defLine };
 
-  const stat = (big, sub) =>
-    `<div class="rs"><div class="b">${esc(big)}</div><div class="s">${esc(sub)}</div></div>`;
+  /* ── 영수증 ───────────────────────────────────────────────────────────
+   * ⚠ **성향 카드와 결이 다릅니다.** 성향 카드는 여권(크림톤·일러스트·놀이)이고
+   *   이건 영수증(흰 종이·글자만·기록)입니다. 둘이 같아 보이면 안 됩니다 —
+   *   하나는 "나는 이런 사람"이고 하나는 "이 여행은 이랬다"입니다.
+   *
+   * 영수증은 원래 글자만 있는 형식이라 **그림이 없는 것이 오히려 진짜 같습니다.**
+   * 등폭 글씨와 점선이 형식을 만듭니다. 여기서 그림을 넣으면 영수증이 아니라
+   * 그냥 카드가 됩니다.
+   *
+   * ⚠ **글자 크기를 여러 개 쓰지 마십시오.** 한 줄평 하나만 크고 나머지는 다
+   *   같은 크기여야 영수증으로 읽힙니다. 크기를 늘리는 순간 형식이 무너집니다.
+   *
+   * ⚠ **앱에서 보는 것과 공유용은 내용이 다릅니다.** 성향 카드는 "보는 것이 곧
+   *   올리는 것"이었지만 여기는 일부러 가릅니다 — AI 문단("Day 3에 무리하셨다")과
+   *   하루별 흐름은 **내가 볼 것**이지 남에게 보일 것이 아닙니다. */
+  const 돈 = n => won(n) + (cur ? ' ' + cur : '');
+  const 굵은선 = '<div class="rcline"></div>';
+  const 점선  = '<div class="rcdash"></div>';
+  const 줄 = (k, v, 굵게) =>
+    `<div class="rcrow${굵게 ? ' b' : ''}"><span>${esc(k)}</span><span>${esc(v)}</span></div>`;
 
-  /* ── 공유용 카드 ──
-     리포트에는 하루별 흐름과 AI 문단이 있는데 그건 **내가 볼 것**이지
-     남에게 보여줄 것이 아닙니다. 개인적이고 길기도 합니다.
-     그래서 공유용은 따로 만듭니다 — 한 줄평 · 숫자 셋 · ★5 준 곳만.
-     성향 카드와 같은 부품(.pcard)을 씁니다. 둘이 한 벌로 보여야 합니다. */
-  const shareCard = `
-    <div class="pcard tcard" style="background:${REPORT_BG[rule.g]}">
-      <div class="tdest">${esc(T.destination || T.title || '여행')}
-        <span>· ${days - 1}박 ${days}일</span></div>
+  /* 바코드는 **장식입니다.** 진짜 자료를 담지 않습니다 — 여권 카드의 MRZ 와
+     같은 역할이고, 읽을 필요가 없다는 것을 알고 봐야 합니다.
+     같은 여행이면 늘 같은 무늬가 나오도록 여행 id 로 만듭니다. */
+  const 바코드 = (seed) => {
+    let h = 0; const s = String(seed || '');
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    let out = '';
+    for (let i = 0; i < 44; i++){ h = (h * 1103515245 + 12345) >>> 0;
+      out += ['▌','▎','▍','▏'][h % 4]; }
+    return out;
+  };
 
-      <svg class="pic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
-           stroke-linecap="round" stroke-linejoin="round">${
-             REPORT_ICON[rule.ic] || PERSONA_ICON[rule.ic] || ''}</svg>
-
-      <div class="ptitle">${esc(label)}</div>
-
-      <div class="pnums">${spend ? won(spend) + (cur ? cur : '') : '–'}
-        <i>·</i> ${spots.length}곳${km ? ` <i>·</i> 약 ${Math.round(km)}km` : ''}</div>
-      ${foodPct ? `<div class="pconts" style="margin-top:8px">식비 ${foodPct}%</div>` : ''}
-
-      ${five.length ? `<div class="pbest">
-        <div class="pl">★5를 준 곳</div>
-        ${five.slice(0, 3).map(n => `<div class="pb">${esc(n)}</div>`).join('')}
-      </div>` : ''}
-
-      <div class="pbrand">기로</div>
+  const 영수증 = `
+    <div class="receipt" id="rcpt">
+      <div class="rchead">기 로</div>
+      <div class="rcsub">TRIP RECEIPT</div>
+      ${굵은선}
+      ${번호 ? `<div class="rcrow"><span>TRIP #${String(번호).padStart(3,'0')}</span><span></span></div>` : ''}
+      ${줄(T.destination || T.title || '여행', (T.country || '').toUpperCase() || '')}
+      ${줄(`${(T.start_date||'').replace(/-/g,'.')} – ${(T.end_date||'').slice(5).replace(/-/g,'.')}`,
+           `${days - 1}박 ${days}일`)}
+      ${인원 > 1 ? 줄(`동행 ${인원}명`, '') : ''}
+      ${점선}
+      ${줄('방문한 곳', `${spots.length} 곳`)}
+      ${km ? 줄('이동 거리', `약 ${Math.round(km)} km`) : ''}
+      ${줄('하루 평균', `${(spots.length / days).toFixed(1)} 곳`)}
+      ${계획수 ? 줄('계획 대비',
+          `${다녀온계획} / ${계획수}  ${Math.round(다녀온계획 / 계획수 * 100)}%`) : ''}
+      ${adhoc.length ? 줄('즉흥 방문', `${adhoc.length} 곳`) : ''}
+      ${지출줄.length ? 점선 + 지출줄.map(x => 줄(x.이름, won(x.값))).join('') : ''}
+      ${spend ? 굵은선 + 줄('합계', 돈(spend), true) +
+        (인원 > 1 ? 줄('1인당', 돈(spend / 인원)) : '') +
+        줄('하루 평균', 돈(spend / days)) : ''}
+      ${굵은선}
+      ${ratedN ? 줄('평가', `${ratedN} / ${spots.length}${
+            ratedN === spots.length ? ' 완료' : ''}`) : ''}
+      ${ratedN ? 줄('평균 별점', (st(spots) ?? 0).toFixed(1)) : ''}
+      ${five.length ? 점선 + `<div class="rcrow"><span>★5를 준 곳</span><span></span></div>` +
+        five.slice(0, 5).map(n => `<div class="rcsub2">${esc(n)}</div>`).join('') : ''}
+      ${점선}
+      ${날들.map((d, i) => {
+        const list = byDay[d].filter(p => PLACE.includes(p.category));
+        const s = st(list);
+        return `<div class="rcday"><span>DAY ${i+1}</span>
+          <span>${list.length}곳</span>
+          <span>${s != null ? '★' + s.toFixed(1) : '–'}</span>
+          <span>${kmDay[d] ? kmDay[d].toFixed(1) + 'km' : '–'}</span></div>`;
+      }).join('')}
+      ${점선}
+      <div class="rcbig">"${esc(label)}"</div>
+      <div id="rv_ai" class="rcai hide"></div>
+      ${점선}
+      <div class="rcfoot">또 오세요 · KEYRO ${(T.end_date || '').slice(0,4)}</div>
+      <div class="rcbar">${바코드(id)}</div>
     </div>`;
 
-  $('rv_report').innerHTML = shareCard +
-    `<div class="card rpt1" id="rptcard">
-       <div class="hd">
-         <div class="ti">${esc(T.destination || T.title || '여행')}</div>
-         <div class="dt">${esc(T.from || T.start_date)} – ${esc(T.end_date)}
-           · ${days - 1}박 ${days}일</div>
-       </div>
-
-       <div class="rstats">
-         ${stat(spend ? won(spend) + (cur ? ' ' + cur : '') : '–', '쓴 돈')}
-         ${stat(spots.length + '곳', '다녀온 곳')}
-         ${stat(km ? Math.round(km) + 'km' : '–', '움직인 거리')}
-       </div>
-
-       <div class="rdef">
-         <div class="q">"${esc(label)}"</div>
-         ${defLine ? `<div class="d">${esc(defLine)}</div>` : ''}
-       </div>
-
-       ${five.length ? `<div class="rsec"><div class="h">★5를 준 곳</div>
-         <div class="v">${esc(five.slice(0,6).join(' · '))}</div></div>` : ''}
-
-       <div class="rtwo">
-         <div class="rsec"><div class="h">가장 비쌌던 곳</div>
-           <div class="v">${pricey ? esc(pricey.title) : '–'}</div>
-           <div class="m">${pricey ? esc(won(money(pricey)) + ' ' + cur) : ''}</div></div>
-         <div class="rsec"><div class="h">가장 만족한 곳</div>
-           <div class="v">${top ? esc(top.title) : '–'}</div>
-           <div class="m">${top ? '★' + psr[top.id] : ''}</div></div>
-       </div>
-
-       <div class="rsec"><div class="h">하루별 흐름</div>
-         ${dayRows.map(r => `<div class="rday">
-           <span class="dd">Day ${r.i}</span>
-           <span class="dots">${'●'.repeat(Math.min(r.n, 12))}</span>
-           <span class="dn">${r.n}곳</span>
-           <span class="ds">${r.s != null ? '★' + r.s.toFixed(1) : ''}</span>
-           ${hard === r.i ? '<span class="dw">무리했던 날</span>' : ''}
-         </div>`).join('')}
-       </div>
-
-       <div id="rv_ai" class="rsec hide"></div>
-       <button class="ghost" id="rv_askai" style="width:100%; margin-top:12px">
-         AI 한마디 듣기</button>
-
+  $('rv_report').innerHTML = 영수증 +
+    `<div class="card" style="margin-top:var(--s-sm)">
+       <button class="ghost" id="rv_askai" style="width:100%">AI 한마디 듣기</button>
        <div style="display:flex; gap:8px; margin-top:8px">
          <button class="ghost" id="rv_img" style="flex:1">이미지로 저장</button>
          <button class="ghost" id="rv_share" style="flex:1">공유</button>
@@ -292,22 +328,24 @@ export async function drawReport(id){
 
   $('rv_home').onclick  = () => ctx.closeReview();
   $('rv_share').onclick = () => shareReport();
-  /* 이미지는 위 공유 카드와 같은 내용으로 뽑습니다 —
-     하루별 흐름과 AI 문단은 빠집니다. 그건 내가 볼 것이지 남에게 보일 것이 아닙니다. */
+  /* ⚠ **이미지는 화면과 내용이 다릅니다.** 하루별 흐름과 AI 문단은 빼고
+     핵심만 남깁니다 — 그건 내가 볼 것이지 남에게 보일 것이 아닙니다.
+     성향 카드에서는 "보는 것이 곧 올리는 것"이 규칙이었지만, 여기는
+     **일부러 가르는 것**이라 다릅니다. 그 이유를 모르면 언젠가 "왜 두 벌이지"
+     하고 합치게 됩니다. */
   $('rv_img').onclick   = () => askImageSize({
-    g: rule.g, icon: REPORT_ICON[rule.ic] || PERSONA_ICON[rule.ic] || '',
-    title: label,
-    sub: `${T.destination || T.title || '여행'} · ${days - 1}박 ${days}일`,
-    nums: [spend ? won(spend) + cur : null, `${spots.length}곳`,
-           km ? `약 ${Math.round(km)}km` : null].filter(Boolean).join(' · '),
-    note: foodPct ? `식비 ${foodPct}%` : '',
-    listTitle: five.length ? '★5를 준 곳' : '',
-    list: five.slice(0, 3),
-  }, 'aitrip-리포트');
+    kind:'receipt',
+    번호, dest: T.destination || T.title || '여행',
+    from: T.start_date, to: T.end_date, days, 인원,
+    곳: spots.length, km: Math.round(km),
+    합계: spend, 돈합계: 돈(spend), 돈1인: 돈(spend / 인원),
+    식비비중: foodPct,
+    five: five.slice(0, 2), label,
+    바: 바코드(id),
+  }, '기로-영수증');
   $('rv_askai').onclick = () => askReportAi(id, { label, defLine, dayRows, hard,
                                                   spend, cur, days, top, pricey, psr });
 }
-
 function reportText(){
   if (!rpt) return '';
   return [
