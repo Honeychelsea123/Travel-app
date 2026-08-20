@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b381';
+import { $, esc, toast } from './dom.js?v=b382';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm } from './calc.js?v=b381';
+import { distKm } from './calc.js?v=b382';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -275,7 +275,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b381`;
+    img.src = `./persona/${code}.png?v=b382`;
   });
 }
 
@@ -1008,17 +1008,33 @@ const CLASH = {
   만족G: '둘 다 다 좋다고 함. 망한 식당도 별 다섯',
   만족P: '둘 다 까다로워서 뭘 먹어도 불만',
 };
+/* 최악의 짝은 **단골·만족이 서로 같습니다.** 같아서 좋을 것이 없는 축이라,
+   같다는 사실 자체가 흠입니다 — 그걸 짚어줍니다. */
+const SAME = {
+  L:'둘 다 한 나라만 팜', M:'둘 다 찍고만 다님',
+  G:'별점도 둘 다 후함',  P:'둘 다 까다로움',
+};
 export function personaMateLine(a, b){
   const s = personaMatch(a, b);
   /* ⚠ **극단에서도 코드를 읽어 말합니다.** 전에는 여기서 통짜 문장 하나를
      돌려줬습니다. 그런데 카드에 실리는 최고·최악은 **정의상 늘 극단**이라,
      열여섯 장이 전부 "실패가 없음 / 3일차에 따로 다니게 됨" 으로 똑같아졌습니다.
-     궁합이 카드마다 달라야 볼 이유가 생깁니다. */
+
+     ⚠ 한 번 고치고도 **네 축을 다 안 읽어서 서른두 칸이 여덟 가지**였습니다.
+     개척·모험만 읽었더니 나머지 두 자리가 다른 네 유형이 같은 말을 썼습니다.
+     극단 짝은 **어느 축이 같고 어느 축이 다른지가 정해져 있으므로**, 같은
+     축은 같다고, 다른 축은 다르다고 그대로 읽으면 열여섯이 다 갈립니다.
+       최고 — 개척·모험이 같고 단골·만족이 다름 (그래서 서로를 채웁니다)
+       최악 — 개척·모험이 다르고 단골·만족이 같음 (그래서 둘 다 같은 데서 막힙니다) */
   if (s >= 90)
-    return `${AXIS_WORD[a[0]]}·${AXIS_WORD[a[2]]} 취향이 같음. 고르는 눈만 달라 실패가 없음`;
+    return `${AXIS_WORD[a[0]]}·${AXIS_WORD[a[2]]} 취향이 같음. ` +
+           /* 조사를 안 붙이고 끊습니다. 낱말이 받침으로 끝나느냐에 따라
+              '라/이라' 가 갈리는데, 여기 낱말은 표에서 오므로 붙여 쓰면
+              언젠가 어긋납니다. 조사가 필요하면 dom.js 의 josa() 를 씁니다. */
+           `${AXIS_WORD[a[1]]}↔${AXIS_WORD[b[1]]}, ${AXIS_WORD[a[3]]}↔${AXIS_WORD[b[3]]}. 서로를 채움`;
   if (s <= 19)
     return `${AXIS_WORD[a[0]]}↔${AXIS_WORD[b[0]]}, ` +
-           `${AXIS_WORD[a[2]]}↔${AXIS_WORD[b[2]]}. 갈 곳부터 안 맞음`;
+           `${AXIS_WORD[a[2]]}↔${AXIS_WORD[b[2]]}. ${SAME[a[1]]}, ${SAME[a[3]]}`;
   /* 어긋난 축을 하나 골라 짚습니다. 가중치가 큰 것부터 봅니다. */
   for (const r of [...MATCH_RULE].sort((x, y) => y.w - x.w)){
     const i = MATCH_RULE.indexOf(r), eq = a[i] === b[i];
@@ -1253,6 +1269,35 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
           msgs.push(`${code}↔${other}: 점수가 서로 다름`);
     }
     bad('궁합 16개 · 자기 제외 · 대칭 · 최고>최악', [...new Set(msgs)].slice(0, 5));
+  }
+
+  /* 6-b. **문구가 카드마다 다른가.** 성질만 봐서는 이걸 못 잡습니다 —
+        한 번 고치고도 서른두 칸이 여덟 가지였습니다. 개척·모험만 읽고
+        단골·만족을 안 읽어서, 나머지 두 자리가 다른 네 유형이 같은 말을
+        썼습니다. 표를 눈으로 뽑아보고서야 알았습니다. 이제는 셉니다.
+
+        짝짓기도 같이 봅니다. 최고·최악이 **열여섯 유형에 한 번씩** 고르게
+        돌아가야 합니다. 한 유형이 여럿의 최고로 몰리면 그 유형만 인기가
+        되고 나머지는 카드에 이름조차 안 실립니다. */
+  {
+    const codes = Object.keys(PERSONA16), msgs = [];
+    const mates = codes.map(c => personaMates(c));
+    const 문구 = new Set(mates.flatMap(m => [m.bestLine, m.worstLine]));
+    if (문구.size !== codes.length * 2)
+      msgs.push(`문구가 ${codes.length * 2}칸에 ${문구.size}가지뿐`);
+    for (const [무엇, key] of [['최고', 'best'], ['최악', 'worst']]){
+      const 셈 = {};
+      for (const m of mates) 셈[m[key]] = (셈[m[key]] || 0) + 1;
+      const 안뽑힘 = codes.filter(c => !셈[c]);
+      if (안뽑힘.length) msgs.push(`${무엇}로 한 번도 안 뽑힌 유형: ${안뽑힘.join(',')}`);
+      /* 극단 짝은 짝짓기가 일대일이라 서로가 서로를 고릅니다. 안 그러면
+         가중치가 어긋난 것입니다. */
+      codes.forEach((c, i) => {
+        const 짝 = mates[i][key];
+        if (personaMates(짝)[key] !== c) msgs.push(`${c}의 ${무엇} ${짝} 가 ${c} 를 안 고름`);
+      });
+    }
+    bad('궁합 문구가 16장 다 다른가 · 짝이 서로를 고르는가', [...new Set(msgs)].slice(0, 5));
   }
 
   /* 7. 상위% 와 MRZ. 카드 아래 장식이지만 undefined 가 박히면 흉합니다. */
