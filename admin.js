@@ -9,9 +9,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b384';
-import { sb } from './db.js?v=b384';
-import { fail, netTimeout } from './net.js?v=b384';
+import { $, esc, toast, copyText } from './dom.js?v=b385';
+import { sb } from './db.js?v=b385';
+import { fail, netTimeout } from './net.js?v=b385';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -178,21 +178,49 @@ export async function loadAdmin(){
    * **오류만 7일로 자릅니다. 신고는 그대로 둡니다** — 2주 전에 온 신고도
    * 아직 안 읽었으면 여전히 할 일입니다. 시간이 지난다고 없어지지 않습니다.
    * 접은 개수는 적어 둡니다. 조용히 사라지면 "왜 안 보이지"가 됩니다. */
+  /* ⚠ **날짜로 자르는 것으로는 모자랐습니다 (b385).** 7일로 잘라도 목록이
+     화면을 가득 채웠습니다 — b326·b361·b362 에서 난 오류가 다 이레 안이라
+     그대로 남았기 때문입니다. **그것들은 이미 고친 것**입니다.
+     오류에서 중요한 것은 '언제 났나'가 아니라 **'지금 판에서도 나나'** 입니다.
+     그래서 판으로 가릅니다. 지난 판 것은 접어두고 개수만 보여줍니다.
+     날짜 자르기(7일)는 그대로 둡니다 — 판이 안 적힌 옛 기록이 있습니다. */
   const 이레전 = Date.now() - 7 * 864e5;
+  const 지금판 = ($('build')?.textContent || '').trim();
   const 옛오류 = (x) => x.kind === '오류' &&
                         new Date(x.at || 0).getTime() < 이레전;
   const rows = all.filter(x => !옛오류(x));
-  const 접힘 = all.length - rows.length;
+  const 날짜접힘 = all.length - rows.length;
 
-  $('adm_feedcard').classList.toggle('hide', !rows.length && !접힘);
-  $('adm_feed').innerHTML = rows.map(x => `<div class="arow">
+  /* 신고는 판과 무관합니다 — 2주 전 신고도 안 읽었으면 아직 할 일입니다. */
+  const 지난판오류 = (x) => x.kind === '오류' && 지금판 && x.build && x.build !== 지금판;
+  const 지금 = rows.filter(x => !지난판오류(x));
+  const 지난 = rows.filter(지난판오류);
+
+  const 줄 = x => `<div class="arow">
       <span class="k"><b>${esc(x.kind)}</b> ${esc(String(x.body).slice(0, 120))}
         <span class="m">${esc((x.at || '').slice(0, 16).replace('T', ' '))}${
           x.build ? ' · ' + esc(x.build) : ''}</span></span>
-      ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`).join('')
-    + (접힘 ? `<div class="anote">7일보다 오래된 오류 ${접힘}건은 접었습니다.
+      ${Number(x.n) > 1 ? `<span class="v">${x.n}회</span>` : ''}</div>`;
+
+  $('adm_feedcard').classList.toggle('hide', !rows.length && !날짜접힘);
+  $('adm_feed').innerHTML = 지금.map(줄).join('')
+    + (!지금.length && (지난.length || 날짜접힘)
+        ? `<div class="empty">지금 판(${esc(지금판)})에서 난 오류는 없어요.</div>` : '')
+    + (지난.length ? `<div class="anote">
+        <button class="small" id="adm_oldbtn" style="width:100%">
+          지난 판에서 난 오류 ${지난.length}건 보기</button>
+        <div id="adm_old" class="hide" style="margin-top:6px">${지난.map(줄).join('')}</div>
+      </div>` : '')
+    + (날짜접힘 ? `<div class="anote">7일보다 오래된 오류 ${날짜접힘}건은 접었습니다.
         전부 보려면 프로필 → <b>내 계정</b>의 '최근에 생긴 문제'.</div>` : '')
     + (!rows.length ? `<div class="empty">최근 7일에는 아무 일도 없었어요.</div>` : '');
+
+  $('adm_oldbtn')?.addEventListener('click', e => {
+    const box = $('adm_old'), 접힘 = box.classList.toggle('hide');
+    e.currentTarget.textContent = 접힘
+      ? `지난 판에서 난 오류 ${지난.length}건 보기`
+      : `지난 판 오류 접기`;
+  });
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
