@@ -17,25 +17,25 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b382';
-import { sb } from './db.js?v=b382';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b382';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b382';
+import { $, esc, toast } from './dom.js?v=b383';
+import { sb } from './db.js?v=b383';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b383';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b383';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b382';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b382';
-import { drawPlanMap } from './planmap.js?v=b382';
-import { drawPlans } from './planview.js?v=b382';
-import { legIn, fillCityList } from './legs.js?v=b382';
-import { inTrip } from './tabs.js?v=b382';
-import { closeAi } from './aiscreen.js?v=b382';
-import { closeDraft } from './draft.js?v=b382';
-import { closeReview } from './home.js?v=b382';
-import { closeCity, isCityOpen } from './city.js?v=b382';
-import { closeMap, closeCountries } from './map.js?v=b382';
-import { closePersona } from './persona.js?v=b382';
-import { closeShelf } from './shelf.js?v=b382';
-import { closeDocs } from './prep.js?v=b382';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b383';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b383';
+import { drawPlanMap } from './planmap.js?v=b383';
+import { drawPlans } from './planview.js?v=b383';
+import { legIn, fillCityList } from './legs.js?v=b383';
+import { inTrip } from './tabs.js?v=b383';
+import { closeAi } from './aiscreen.js?v=b383';
+import { closeDraft } from './draft.js?v=b383';
+import { closeReview } from './home.js?v=b383';
+import { closeCity, isCityOpen } from './city.js?v=b383';
+import { closeMap, closeCountries } from './map.js?v=b383';
+import { closePersona } from './persona.js?v=b383';
+import { closeShelf } from './shelf.js?v=b383';
+import { closeDocs } from './prep.js?v=b383';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
