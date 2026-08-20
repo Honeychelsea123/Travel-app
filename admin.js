@@ -11,9 +11,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b386';
-import { sb } from './db.js?v=b386';
-import { fail, netTimeout } from './net.js?v=b386';
+import { $, esc, toast, copyText } from './dom.js?v=b387';
+import { sb } from './db.js?v=b387';
+import { fail, netTimeout } from './net.js?v=b387';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -242,7 +242,7 @@ async function loadSettings(){
   $('s_web').checked     = w.on !== false;
   $('s_model').value     = m.name || 'gemini-3.6-flash';
   syncSetRow();
-  $('s_note').textContent = '바꾼 뒤 저장을 누르세요. 곧바로 모두에게 적용됩니다.';
+  $('s_note').textContent = '고르는 즉시 모두에게 적용됩니다.';
 
   /* 비상 스위치는 **저장을 안 거칩니다.** 급할 때 두 번 누르게 하면 안 됩니다.
      066 을 아직 안 올렸으면 값이 없습니다 — 그때는 켜진 것으로 봅니다.
@@ -261,25 +261,124 @@ async function loadSettings(){
   const f = data?.features || {};
   document.querySelectorAll('[data-feat]').forEach(el =>
     el.checked = f[el.dataset.feat] !== false);
+
+  /* 접어둔 카드의 요약과 맨 위 상태 줄은 이 값으로 만듭니다. 마지막에 한 번
+     셉니다 — 카드를 접어두므로 **요약이 유일한 창**입니다. */
+  syncSetState();
 }
+
+/* ── 정상값 ──────────────────────────────────────────────────────────
+ * **아무 일도 없을 때의 스위치 자리**입니다. 여기서 벗어나 있으면 누군가
+ * 껐다는 뜻이고, 껐다는 것은 대개 사고가 났다는 뜻입니다.
+ * loadSettings 의 기본값 읽기(`!== false`)와 같은 값이라야 합니다 —
+ * 한쪽만 고치면 "기본과 다름"이 거짓말을 합니다. */
+const 정상 = { ai_on:true, signup_on:true, push_on:true, readonly:false,
+               push:true, docs:true, reorder:true, maplink:true };
+const 스위치이름 = { ai_on:'AI', signup_on:'가입', push_on:'알림', readonly:'점검 모드',
+                     push:'잠금화면 알림', docs:'여행 서류',
+                     reorder:'끌어서 순서', maplink:'지도 링크' };
+
+/* ⚠ **위험한 셋만 묻습니다.** 알림 끄기까지 물으면 확인창이 흔해져서
+   정작 점검 모드에서도 그냥 누르게 됩니다. 값은 '이 자리로 갈 때 묻는다'. */
+const 물어볼것 = { ai_on:false, signup_on:false, readonly:true };
+const 물음말 = {
+  ai_on:     'AI 를 끕니다. 모든 AI 기능이 즉시 멈춰요.',
+  signup_on: '새 가입을 막습니다. 쓰던 사람은 그대로예요.',
+  readonly:  '점검 모드를 켭니다. 지금 쓰는 모든 사람이 읽기만 됩니다.',
+};
+
+/* 스위치 하나가 어디 있는지. 화면 값을 봅니다 — 서버 값을 또 들고 있으면
+   둘이 갈라집니다. */
+const 스위치값 = () => {
+  const v = {};
+  document.querySelectorAll('#setadmpane [data-now]').forEach(el => v[el.dataset.now] = el.checked);
+  document.querySelectorAll('#setadmpane [data-feat]').forEach(el => v[el.dataset.feat] = el.checked);
+  return v;
+};
+
+/* ── 요약과 상태 줄 ─────────────────────────────────────────────────
+ * 카드를 접어두므로 **제목 옆 한 줄이 유일한 창**입니다. 여기가 거짓말을
+ * 하면 접어둔 것이 위험해집니다. 그릴 때마다 다시 셉니다. */
+function syncSetState(){
+  const v = 스위치값();
+  const 다름 = k => v[k] !== undefined && v[k] !== 정상[k];
+
+  const 비상키 = ['ai_on', 'signup_on', 'push_on', 'readonly'];
+  const 기능키 = ['push', 'docs', 'reorder', 'maplink'];
+  const 비상다름 = 비상키.filter(다름), 기능다름 = 기능키.filter(다름);
+
+  const 줄 = (다름목록, 정상말) => 다름목록.length
+    ? `${다름목록.map(k => 스위치이름[k]).join(' · ')} — ${다름목록.length}개`
+    : 정상말;
+  $('s_emsum').textContent   = 줄(비상다름, '다 정상');
+  $('s_featsum').textContent = 줄(기능다름, '4개 다 켜짐');
+  /* 이상할 때만 색을 씁니다. 늘 색이 있으면 색이 아무 말도 안 합니다. */
+  $('s_emsum').style.color   = 비상다름.length ? 'var(--bad)' : '';
+  $('s_featsum').style.color = 기능다름.length ? 'var(--bad)' : '';
+
+  const 전부 = [...비상다름, ...기능다름];
+  $('s_statecard').classList.toggle('hide', !전부.length);
+  if (전부.length){
+    $('s_statetitle').textContent = `기본과 다른 것 ${전부.length}개`;
+    $('s_statelist').textContent =
+      전부.map(k => `${스위치이름[k]} ${정상[k] ? '꺼짐' : '켜짐'}`).join(' · ');
+  }
+}
+
+/* 접기. 이상하면 저절로 펴 둡니다 — 접힌 채로 두면 못 보고 지나갑니다. */
+$('setadmpane').addEventListener('click', e => {
+  const h = e.target.closest('.sfold'); if (!h) return;
+  const body = $(h.dataset.fold);
+  const 접힘 = body.classList.toggle('hide');
+  h.querySelector('.val:last-child').textContent = 접힘 ? '›' : '⌄';
+});
 
 /* 켬/끔 하나짜리들. **누르는 즉시 나갑니다.** 실패하면 화면을 되돌립니다 —
    껐다고 보이는데 안 꺼져 있으면 그게 제일 나쁩니다. */
-$('setadmpane').addEventListener('change', async e => {
-  const el = e.target.closest('[data-now]'); if (!el) return;
-  const key = el.dataset.now, want = el.checked;
+async function 스위치보내기(key, want){
   $('s_swnote').textContent = '보내는 중…';
   const r = await sb.rpc('admin_setting_set', { p_key:key, p_value:{ on:want } });
+  const el = document.querySelector(`#setadmpane [data-now="${key}"]`);
   if (r.error){
-    el.checked = !want;
+    if (el) el.checked = !want;
     $('s_swnote').textContent = '못 바꿨어요: ' + (r.error.message || '');
-    return;
+    syncSetState();
+    return false;
   }
+  if (el) el.checked = want;
   $('s_swnote').textContent = { ai_on: want ? 'AI 를 켰어요' : 'AI 를 껐어요',
     signup_on: want ? '가입을 다시 받아요' : '새 가입을 막았어요',
     push_on:   want ? '알림을 다시 보내요' : '알림을 멈췄어요',
     readonly:  want ? '점검 모드입니다 — 모두 읽기만 됩니다' : '점검 모드를 껐어요',
   }[key] || '바꿨어요';
+  syncSetState();
+  return true;
+}
+
+/* 확인을 기다리는 동안 무엇을 하려던 것인지. 확인 줄은 하나뿐이라 여기 둡니다. */
+let 기다리는것 = null;
+function 물어보기(key, want){
+  기다리는것 = { key, want };
+  $('s_confirmq').textContent = 물음말[key] || '정말 바꿀까요?';
+  $('s_confirmyes').textContent = want ? '켤게요' : '끌게요';
+  $('s_confirm').classList.remove('hide');
+  $('s_confirm').scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+const 확인닫기 = () => { 기다리는것 = null; $('s_confirm').classList.add('hide'); };
+$('s_confirmno').addEventListener('click', 확인닫기);
+$('s_confirmyes').addEventListener('click', async () => {
+  const j = 기다리는것; 확인닫기();
+  if (j) await 스위치보내기(j.key, j.want);
+});
+
+$('setadmpane').addEventListener('change', async e => {
+  const el = e.target.closest('[data-now]'); if (!el) return;
+  const key = el.dataset.now, want = el.checked;
+  /* ⚠ **묻는 동안에는 스위치를 원래 자리로 되돌려 둡니다.** 옮겨 놓고 물으면
+     아직 안 보냈는데 이미 바뀐 것처럼 보입니다 — 취소해도 찝찝합니다. */
+  if (물어볼것[key] === want){ el.checked = !want; return 물어보기(key, want); }
+  확인닫기();
+  await 스위치보내기(key, want);
 });
 
 /* 기능 스위치는 하나의 값(객체) 안에 같이 삽니다. 통째로 보냅니다. */
@@ -290,6 +389,28 @@ $('setadmpane').addEventListener('change', async e => {
   const r = await sb.rpc('admin_setting_set', { p_key:'features', p_value:row });
   if (r.error) toast('못 바꿨어요: ' + (r.error.message || ''));
   else toast('기능 스위치를 바꿨어요');
+  syncSetState();
+});
+
+/* ── 전부 되돌리기 ───────────────────────────────────────────────────
+ * **되돌리는 쪽은 안 묻습니다.** 켜는 것·점검을 끄는 것은 다 안전한 방향이고,
+ * 급할 때 두 번 누르게 하면 안 됩니다(비상 스위치와 같은 이유). */
+$('s_reset').addEventListener('click', async () => {
+  const b = $('s_reset');
+  b.disabled = true; b.innerHTML = '<span class="load">되돌리는 중…</span>';
+  확인닫기();
+  const jobs = [['ai_on', { on:true }], ['signup_on', { on:true }],
+                ['push_on', { on:true }], ['readonly', { on:false }],
+                ['features', { push:true, docs:true, reorder:true, maplink:true }]];
+  let 실패 = null;
+  for (const [key, value] of jobs){
+    const { error } = await sb.rpc('admin_setting_set', { p_key:key, p_value:value });
+    if (error){ 실패 = error; break; }
+  }
+  b.disabled = false; b.textContent = '전부 되돌리기';
+  if (실패) return toast('못 되돌렸어요: ' + (실패.message || ''));
+  await loadSettings();
+  toast('전부 기본값으로 되돌렸어요');
 });
 
 $('s_tone').addEventListener('click', e => {
@@ -314,32 +435,48 @@ function syncSetRow(){
   $('s_ailimit_nums').style.opacity = on ? '' : '.45';
   $('s_ai_day').disabled = $('s_ai_trip').disabled = !on;
 }
-$('s_ailimit').addEventListener('change', syncSetRow);
 
-$('adm_setsave').addEventListener('click', async () => {
-  const b = $('adm_setsave');
+/* ── 조절 세 가지도 즉시 나갑니다 (b387) ──────────────────────────────
+ * ⚠ 저장 단추가 있던 자리입니다. 한 화면에서 어떤 것은 즉시 나가고 어떤
+ *   것은 저장을 눌러야 했습니다 — 한도를 고치고 저장을 안 누르면 안 바뀌는데,
+ *   바로 옆 점검 모드는 손끝만 스쳐도 전원이 읽기 전용이 됐습니다.
+ *
+ * 숫자 칸은 `change` 로 받습니다. 한 글자마다 보내면 '5' 를 지우고 '50' 을
+ * 치는 사이에 **한도 5** 가 잠깐 살아 있게 됩니다. `change` 는 칸을 벗어날
+ * 때 한 번만 옵니다.
+ * 값이 비었거나 범위 밖이면 안 보냅니다 — 서버가 막아주긴 하지만, 막힌
+ * 것을 화면이 모르면 사용자는 바뀐 줄 압니다. */
+async function 조절보내기(key, value, 말){
   $('serr').classList.add('hide');
-  b.disabled = true; b.innerHTML = '<span class="load">저장 중…</span>';
-  /* 셋을 차례로 보냅니다. 하나가 막히면 거기서 멈추고 왜인지 보여줍니다 —
-     서버가 값의 모양을 검사하므로 그 말을 그대로 옮기는 것이 가장 정확합니다. */
-  const jobs = [
-    ['ai_limit',   { on: $('s_ailimit').checked,
-                     day:  Number($('s_ai_day').value),
-                     trip: Number($('s_ai_trip').value) }],
-    ['web_search', { on: $('s_web').checked }],
-    ['ai_model',   { name: $('s_model').value }],
-  ];
-  for (const [key, value] of jobs){
-    const { error } = await sb.rpc('admin_setting_set', { p_key: key, p_value: value });
-    if (error){
-      b.disabled = false; b.textContent = '저장';
-      return fail(error, 's');
-    }
-  }
-  b.disabled = false; b.textContent = '저장';
-  toast('저장했어요.');
-  await loadSettings();
+  $('s_note').textContent = '보내는 중…';
+  const { error } = await sb.rpc('admin_setting_set', { p_key:key, p_value:value });
+  if (error){ $('s_note').textContent = '못 바꿨어요.'; return fail(error, 's'); }
+  $('s_note').textContent = 말 + ' 곧바로 모두에게 적용됩니다.';
+}
+const 한도값 = () => ({ on: $('s_ailimit').checked,
+                        day: Number($('s_ai_day').value),
+                        trip: Number($('s_ai_trip').value) });
+const 한도성함 = () => {
+  const v = 한도값();
+  return Number.isFinite(v.day) && v.day >= 1 && v.day <= 10000
+      && Number.isFinite(v.trip) && v.trip >= 1 && v.trip <= 10000;
+};
+$('s_ailimit').addEventListener('change', async () => {
+  syncSetRow();
+  if (!한도성함()) return;
+  await 조절보내기('ai_limit', 한도값(),
+    $('s_ailimit').checked ? '하루 한도를 켰어요.' : '하루 한도를 껐어요.');
 });
+for (const id of ['s_ai_day', 's_ai_trip'])
+  $(id).addEventListener('change', async () => {
+    if (!한도성함()){ $('s_note').textContent = '한도는 1~10000 사이여야 해요.'; return; }
+    await 조절보내기('ai_limit', 한도값(), '한도를 바꿨어요.');
+  });
+$('s_web').addEventListener('change', async () =>
+  await 조절보내기('web_search', { on: $('s_web').checked },
+    $('s_web').checked ? '웹 검색을 켰어요.' : '웹 검색을 껐어요.'));
+$('s_model').addEventListener('change', async () =>
+  await 조절보내기('ai_model', { name: $('s_model').value }, '모델을 바꿨어요.'));
 
 /* 통계는 프로필 우상단 아이콘으로만 들어갑니다. 설정 안에도 문을 두었다가
    같은 문이 둘이 되어 없앴습니다. loadAdmin 이 로그인할 때 미리 다 받아두므로
