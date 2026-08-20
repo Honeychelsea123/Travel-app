@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b391';
+import { $, esc, toast } from './dom.js?v=b392';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm } from './calc.js?v=b391';
+import { distKm } from './calc.js?v=b392';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -290,7 +290,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b391`;
+    img.src = `./persona/${code}.png?v=b392`;
   });
 }
 
@@ -341,8 +341,10 @@ function 바코드그리기(g, seed, x, w, y, h){
   g.fillStyle = RC.잉크;
   for (let i = 0; i < 칸; i++){
     n = (n * 1103515245 + 12345) >>> 0;
-    if (n % 3 === 0) continue;                  /* 빈 칸이 있어야 바코드로 보입니다 */
-    const 굵기 = 폭 * (n % 2 ? .85 : .45);
+    /* ⚠ **하위 비트를 쓰면 무늬가 안 갈립니다** — 이 난수식은 아래쪽 비트의
+       주기가 아주 짧아서 막대가 전부 같아집니다. 위쪽 비트를 봅니다. */
+    if (((n >>> 16) % 3) === 0) continue;        /* 빈 칸이 있어야 바코드로 보입니다 */
+    const 굵기 = 폭 * ((n >>> 20) % 2 ? .85 : .45);
     g.fillRect(x + i * 폭, y, 굵기, h);
   }
 }

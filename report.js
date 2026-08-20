@@ -13,11 +13,11 @@
  * 억지로 줄이려고 저쪽 코드를 여기로 끌고 오면 다시 커집니다.
  *
  * 층: dom.js · db.js · calc.js · card.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast, copyText, md } from './dom.js?v=b391';
-import { sb } from './db.js?v=b391';
-import { fail, netTimeout } from './net.js?v=b391';
-import { money, distKm, D1, asDate } from './calc.js?v=b391';
-import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b391';
+import { $, esc, toast, copyText, md } from './dom.js?v=b392';
+import { sb } from './db.js?v=b392';
+import { fail, netTimeout } from './net.js?v=b392';
+import { money, distKm, D1, asDate } from './calc.js?v=b392';
+import { REPORT_ICON, REPORT_BG, askImageSize, PERSONA_ICON } from './card.js?v=b392';
 
 /* app.js 만 아는 것들. 로그인한 사람과, 이 화면 끝에서 이어지는 화면 넷.
    `me` 는 로그인할 때마다 바뀌므로 값이 아니라 **함수**로 받습니다. */
@@ -266,9 +266,12 @@ export async function drawReport(id){
   const 바코드 = (seed) => {
     let h = 0; const s = String(seed || '');
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    /* ⚠ **하위 비트를 쓰면 무늬가 안 갈립니다.** `h % 4` 로 했더니 막대가
+       전부 같은 것 하나로 나왔습니다 — 이 난수식(LCG)은 아래쪽 비트의 주기가
+       아주 짧습니다. 위쪽 비트를 봐야 섞입니다. */
     let out = '';
     for (let i = 0; i < 44; i++){ h = (h * 1103515245 + 12345) >>> 0;
-      out += ['▌','▎','▍','▏'][h % 4]; }
+      out += ['▌','▎','▍','▏'][(h >>> 16) % 4]; }
     return out;
   };
 
@@ -286,7 +289,11 @@ export async function drawReport(id){
       ${줄('방문한 곳', `${spots.length} 곳`)}
       ${km ? 줄('이동 거리', `약 ${Math.round(km)} km`) : ''}
       ${줄('하루 평균', `${(spots.length / days).toFixed(1)} 곳`)}
-      ${계획수 ? 줄('계획 대비',
+      ${/* ⚠ **계획이 몇 개 안 되면 안 적습니다.** 계획 1곳짜리 여행에서
+            "0 / 1  0%" 가 떴는데, 그건 계획을 안 지켰다는 뜻이 아니라
+            **잴 것이 없다**는 뜻입니다. 0% 라고 적으면 사실이 아닌 인상을
+            줍니다. 세 곳부터 말이 됩니다. */
+        계획수 >= 3 ? 줄('계획 대비',
           `${다녀온계획} / ${계획수}  ${Math.round(다녀온계획 / 계획수 * 100)}%`) : ''}
       ${adhoc.length ? 줄('즉흥 방문', `${adhoc.length} 곳`) : ''}
       ${지출줄.length ? 점선 + 지출줄.map(x => 줄(x.이름, won(x.값))).join('') : ''}
