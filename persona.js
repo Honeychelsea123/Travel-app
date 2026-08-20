@@ -19,17 +19,17 @@
  *     뒤의 셋은 b395 에서 늘었습니다 — 카드 밑에 「어울리는 곳 · 반대로
  *     가보면」을 붙이면서 추천 계산(rec)·다녀온 곳(rate)·도시 열기(city)가
  *     필요해졌습니다. 셋 다 persona.js 를 안 부르므로 고리는 안 생깁니다. */
-import { $, esc, toast, copyText, josa } from './dom.js?v=b395';
-import { sb } from './db.js?v=b395';
-import { cities, countryName, continentOf } from './cities.js?v=b395';
+import { $, esc, toast, copyText, josa } from './dom.js?v=b396';
+import { sb } from './db.js?v=b396';
+import { cities, countryName, continentOf } from './cities.js?v=b396';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b395';
-import { visited } from './rate.js?v=b395';
-import { openCity } from './city.js?v=b395';
+import { similarPicks } from './rec.js?v=b396';
+import { visited } from './rate.js?v=b396';
+import { openCity } from './city.js?v=b396';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b395';
+         shareCard, cardImage } from './card.js?v=b396';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -156,8 +156,10 @@ async function drawPersona(s, ax, rates){
       ? `<img class="thumb" src="${esc(x.city.image_url)}" alt="" loading="lazy">`
       : `<span class="thumb ph">${esc(x.city.name.slice(0, 1))}</span>`}
     <div class="t"><b>${esc(x.city.name)}</b>
+      <!-- ⚠ josa 는 조사만이 아니라 **낱말까지 붙여서** 돌려줍니다.
+           앞에 이름을 또 적었다가 "오사카오사카와 닮았어요"가 나왔습니다(b395). -->
       <span class="memo">${esc(countryName[x.city.country] || x.city.country)}${
-        x.seed ? ` · ${esc(x.seed.name)}${josa(x.seed.name, '과', '와')} 닮았어요` : ''}</span></div>
+        x.seed ? ` · ${esc(josa(x.seed.name, '과', '와'))} 닮았어요` : ''}</span></div>
   </div>`;
 
   const 고른칸 = (list, 제목, 메모, 이유붙임) => list.length ? `
