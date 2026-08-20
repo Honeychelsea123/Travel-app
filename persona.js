@@ -15,13 +15,21 @@
  *   `me` 는 로그인할 때마다 바뀌므로 **값이 아니라 함수**로 받습니다 —
  *   값으로 받으면 로그인 전의 null 을 영영 들고 있게 됩니다.
  *
- * 층: dom.js · db.js · cities.js · card.js 만 씁니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b394';
-import { sb } from './db.js?v=b394';
-import { cities, countryName, continentOf } from './cities.js?v=b394';
+ * 층: dom.js · db.js · cities.js · card.js · rec.js · rate.js · city.js.
+ *     뒤의 셋은 b395 에서 늘었습니다 — 카드 밑에 「어울리는 곳 · 반대로
+ *     가보면」을 붙이면서 추천 계산(rec)·다녀온 곳(rate)·도시 열기(city)가
+ *     필요해졌습니다. 셋 다 persona.js 를 안 부르므로 고리는 안 생깁니다. */
+import { $, esc, toast, copyText, josa } from './dom.js?v=b395';
+import { sb } from './db.js?v=b395';
+import { cities, countryName, continentOf } from './cities.js?v=b395';
+/* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
+   돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
+import { similarPicks } from './rec.js?v=b395';
+import { visited } from './rate.js?v=b395';
+import { openCity } from './city.js?v=b395';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b394';
+         shareCard, cardImage } from './card.js?v=b395';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -65,7 +73,7 @@ export async function openPersona(){
     }
   }
 
-  drawPersona(st, ax);
+  drawPersona(st, ax, data || []);
 }
 
 export function closePersona(fromPop){
@@ -80,7 +88,7 @@ $('personaback').addEventListener('click', () => closePersona());
  * `s` 는 날숫자(personaStats), `ax` 는 네 축과 코드(personaAxes)입니다.
  * 여기서는 **그림에 넣을 것만 고릅니다.** 어떤 유형인지, 누구와 맞는지는
  * card.js 가 정합니다 — 계산이 두 군데 있으면 언젠가 갈라집니다. */
-async function drawPersona(s, ax){
+async function drawPersona(s, ax, rates){
   /* ⚠ **문턱을 3곳에서 5곳으로 올렸습니다(b381).** 축이 넷이라 3곳으로는
      한 곳만 바뀌어도 코드가 통째로 뒤집힙니다 — "어제는 골목 탐험가였는데
      오늘은 명소 검열관" 이면 아무도 안 믿습니다. 5곳이면 나라도 대개
@@ -132,6 +140,32 @@ async function drawPersona(s, ax){
      라고 해 놓고 아무 말이 없으면, 맞는 줄 알거나 카드를 통째로 안 믿습니다.
      둘 다 나쁩니다. */
   const 덜셈 = ax.추정.length ? ' · 아직 모름' : '';
+
+  /* ── 다음에 갈 만한 곳 ────────────────────────────────────────────
+     ⚠ **두 칸의 성격이 다릅니다.** 「어울리는 곳」은 감추고-맞히기로 재서
+     정한 것이고(상위 17.9%, 아무렇게나 하면 50%), 「반대로 가보면」은
+     **정확도를 주장하지 않습니다** — 가 본 적 없는 결이라 애초에 맞히기로
+     잴 수가 없습니다. 그래서 아래 두 memo 의 말투가 다릅니다. 하나로
+     합치거나 같은 말로 맞추지 마십시오. 자세한 것은 rec.js 맨 위. */
+  const picks = similarPicks(cities, rates, { visited, n: 4 });
+
+  /* 이유를 같이 적습니다. **이유 없는 추천은 무작위와 구별되지 않습니다** —
+     "오사카와 닮았어요" 한 줄이 있어야 사용자가 맞는지 틀린지 판단합니다. */
+  const pickRow = x => `<div class="rrow" data-cityopen="${esc(x.city.id)}">
+    ${x.city.image_url
+      ? `<img class="thumb" src="${esc(x.city.image_url)}" alt="" loading="lazy">`
+      : `<span class="thumb ph">${esc(x.city.name.slice(0, 1))}</span>`}
+    <div class="t"><b>${esc(x.city.name)}</b>
+      <span class="memo">${esc(countryName[x.city.country] || x.city.country)}${
+        x.seed ? ` · ${esc(x.seed.name)}${josa(x.seed.name, '과', '와')} 닮았어요` : ''}</span></div>
+  </div>`;
+
+  const 고른칸 = (list, 제목, 메모, 이유붙임) => list.length ? `
+    <div class="card">
+      <h2>${제목}</h2>
+      <div class="memo" style="margin:-2px 0 8px">${메모}</div>
+      ${list.map(x => pickRow(이유붙임 ? x : { ...x, seed:null })).join('')}
+    </div>` : '';
 
   $('personabox').innerHTML = `
     <div class="pcardwrap" id="pcardwrap"></div>
@@ -189,7 +223,23 @@ async function drawPersona(s, ax){
         <b>단골력·모험력은 해외 도시만</b> 셉니다 — 부산에 간 것을 "한 나라만
         파는 성향"으로 읽으면 안 되니까요. 개척력·만족력은 국내도 다 셉니다.
       </div>
-    </div>`;
+    </div>
+    ${고른칸(picks.match, '어울리는 곳',
+             '좋아하신 도시와 닮은 곳이에요', true)}
+    ${고른칸(picks.opposite, '반대로 가보면',
+             '성향과 제일 먼 곳이에요 · 안 가보신 나라에서 골랐어요', false)}`;
+
+  /* 눌러서 도시를 엽니다. 다른 화면들도 각자 붙입니다(rating.js · shelf.js) —
+     문서에 한 번만 붙이면 이 화면이 닫힌 뒤에도 남습니다. innerHTML 을
+     다시 넣어도 personabox 자체는 그대로라 **여기 붙인 것은 안 지워집니다.**
+     그래서 들어올 때마다 겹쳐 붙지 않도록 아래 깃발로 한 번만 답니다. */
+  if (!$('personabox').dataset.opened){
+    $('personabox').dataset.opened = '1';
+    $('personabox').addEventListener('click', e => {
+      const row = e.target.closest('[data-cityopen]');
+      if (row) openCity(row.dataset.cityopen);
+    });
+  }
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지
      않고 `shareText` 로 옮겼습니다 — **그림을 못 받는 기기**(문자·메모)에서는

@@ -19,10 +19,11 @@
  * 점검을 왜 코드로 두나: 셋 다 **실제로 틀린 적이 있고 눈으로는 못 잡았습니다.**
  * 사연은 각 머리말에 그대로 남겨뒀습니다.
  *
- * 층: 아래층만 씁니다(rec.js · planmap.js · cities.js). */
-import { recommend, scoreCity, tasteOf } from './rec.js?v=b394';
-import { mapLinks, memoMapUrl } from './planmap.js?v=b394';
-import { search } from './cities.js?v=b394';
+ * 층: 아래층만 씁니다(rec.js · calc.js · planmap.js · cities.js). */
+import { recommend, scoreCity, tasteOf, similarPicks } from './rec.js?v=b395';
+import { cityFameP } from './calc.js?v=b395';
+import { mapLinks, memoMapUrl } from './planmap.js?v=b395';
+import { search } from './cities.js?v=b395';
 
 /* ── 디자인 규칙 검사 ────────────────────────────────────────────────
  * **같은 뒤집힘을 세 번 만났습니다** — 홈(b268) · 일정/지출(b270) ·
@@ -145,6 +146,114 @@ window.__recCheck = () => {
     t('왜 나왔는지가 붙는다', r.main.every(x => Array.isArray(x.why)),
       r.main[0] ? r.main[0].why.join('·') : '-');
   }
+  /* ── 닮은 도시(similarPicks) — 화면에 실제로 나가는 쪽입니다(b395) ──
+     위 ①~⑦ 은 이제 화면에 안 쓰는 옛 방식을 지킵니다. 아래가 진짜입니다.
+
+     좌표를 붙인 세계를 따로 만듭니다 — 거리 자(cityDistP)가 좌표를 보므로
+     좌표가 없으면 전부 50 점이 되어 **거리 항이 통째로 죽습니다.**
+     그러면 "거리가 닮은 곳을 고른다"를 검사한다고 해 놓고 실제로는
+     태그만 보게 됩니다. */
+  const geo = (id, tags, fame, la, ln, country) =>
+    ({ id, name:id, country, tags, fame, center_lat:la, center_lng:ln, image_url:'x' });
+  const W2 = [
+    /* 일본 — 가깝고 이름남 */
+    geo('jp1', ['도시','미식'], 1, 34.7, 135.5, 'JP'),
+    geo('jp2', ['도시','미식'], 1, 35.7, 139.7, 'JP'),
+    geo('jp3', ['도시','미식'], 1, 33.6, 130.4, 'JP'),
+    /* 스위스 — 멀고 자연 */
+    geo('ch1', ['자연','산'], 2, 46.6, 8.0, 'CH'),
+    geo('ch2', ['자연','산'], 2, 46.0, 7.7, 'CH'),
+    /* 남미 — 아주 멀고 결이 다름 */
+    geo('pe1', ['유적'], 3, -13.5, -71.9, 'PE'),
+    geo('cl1', ['유적'], 3, -33.4, -70.6, 'CL'),
+    /* 국내 — 추천에서 빠져야 합니다 */
+    geo('kr1', ['도시','미식'], 1, 37.5, 127.0, 'KR'),
+  ];
+  /* ⑧ 이유가 붙는가. **이유 없는 추천은 무작위와 구별되지 않습니다.** */
+  {
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }], {});
+    t('닮은 도시 — 어느 곳과 닮았는지가 붙는다',
+      r.match.length > 0 && r.match.every(x => x.seed && x.seed.id),
+      r.match.map(x => `${x.city.id}←${x.seed?.id}`).join(' '));
+  }
+  /* ⑨ 국내는 추천에 안 나오는가. 성향 축에서 뺀 것과 같은 이유입니다 —
+        "목포를 추천합니다"는 이 앱이 팔 것이 아닙니다. */
+  {
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }], {});
+    const ids = [...r.match, ...r.opposite].map(x => x.city.id);
+    t('국내(KR)는 추천에서 빠진다', !ids.includes('kr1'), ids.join(','));
+  }
+  /* ⑩ **반대 칸이 정말 반대인가.** 일본을 좋아한 사람에게 어울리는 곳은
+        일본 결이어야 하고, 반대 칸은 남미처럼 먼 결이어야 합니다.
+        이 검사가 없으면 두 칸이 슬그머니 같은 목록이 됩니다.
+
+        ⚠ **n:1 로 부릅니다.** 기본값 4 로 두면 어울리는 칸이 나라마다 한
+        곳씩 넷을 가져가 이 작은 세계(도시 여덟)를 다 먹고, 반대 칸에는
+        남는 것만 떨어집니다. 진짜 목록 469곳에서는 안 생기는 일이라
+        **검사 쪽을 맞춥니다.**
+
+        ⚠ 어울리는 곳을 `jp2` 로 못 박았다가 틀렸습니다(b395). 후쿠오카(jp3)가
+        도쿄(jp2)보다 오사카에서 가까워서 jp3 가 맞습니다. **나라만 봅니다** —
+        어느 일본 도시가 1등인지는 자를 조금만 손봐도 바뀌는데, 그때마다
+        검사가 빨개지면 아무도 안 봅니다. */
+  {
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }], { n:1 });
+    const 맞 = r.match[0]?.city, 반 = r.opposite[0]?.city;
+    t('어울리는 곳과 반대인 곳이 다른 쪽을 가리킨다',
+      맞?.country === 'JP' && ['PE','CL'].includes(반?.country),
+      `어울림 ${맞?.id}(${맞?.country}) · 반대 ${반?.id}(${반?.country})`);
+  }
+  /* ⑪ 반대 칸은 **안 가본 나라**에서만 고르는가. 다녀온 나라에서 고르면
+        모험이 아니라 그냥 "일본인데 결이 다른 곳"입니다. */
+  {
+    /* ⚠ 여기도 n:1 입니다. 기본값 4 로 두었더니 어울리는 칸이 남은 네 나라를
+       다 가져가서 **반대 칸이 빈 채로 통과**했습니다(b395). 빈 목록은
+       "JP 가 없다"를 언제나 만족시킵니다 — 아무것도 안 보고 OK 가 뜨는
+       검사는 검사가 아닙니다. 그래서 **비어 있으면 틀림**으로 셉니다. */
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }, { city_id:'ch1', stars:4 }], { n:1 });
+    const cs = r.opposite.map(x => x.city.country);
+    t('반대 칸은 안 가본 나라에서만 고른다',
+      cs.length > 0 && !cs.includes('JP') && !cs.includes('CH'), cs.join(',') || '(비었음)');
+  }
+  /* ⑫ 한 도시가 두 칸에 동시에 나오지 않는가 — 둘 중 하나는 거짓말입니다. */
+  {
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }], {});
+    const a = new Set(r.match.map(x => x.city.id));
+    t('같은 도시가 두 칸에 겹치지 않는다',
+      r.opposite.every(x => !a.has(x.city.id)),
+      r.opposite.map(x => x.city.id).join(','));
+  }
+  /* ⑬ 매긴 곳·가고 싶다 한 곳·다녀온 곳은 빠지는가 */
+  {
+    const r = similarPicks(W2, [{ city_id:'jp1', stars:5 }, { city_id:'jp2', want:true }],
+                           { visited:new Set(['jp3']) });
+    const ids = [...r.match, ...r.opposite].map(x => x.city.id);
+    t('이미 말한 곳·다녀온 곳은 빠진다',
+      !ids.some(id => ['jp1','jp2','jp3'].includes(id)), ids.join(','));
+  }
+  /* ⑭ 씨앗이 없어도 안 터지는가 (별점도 없고 가고 싶다도 없는 사람) */
+  {
+    const r = similarPicks(W2, [], {});
+    t('좋아한 곳이 하나도 없어도 안 터진다',
+      Array.isArray(r.match) && r.match.length === 0 && r.seeds === 0, `씨앗 ${r.seeds}`);
+  }
+  /* ⑮ 같은 나라가 두 번 나오지 않는가. 같은 나라 +25 때문에 안 걷어내면
+        일본이 목록을 통째로 먹습니다(실제로 상위 열 곳에 나하·후라노·
+        나라·사세보가 다 들어왔습니다). */
+  {
+    const many = [...Array(6)].map((_, i) => geo('jx' + i, ['도시','미식'], 1, 35 + i * .1, 139, 'JP'));
+    const r = similarPicks([...W2, ...many], [{ city_id:'jp1', stars:5 }], {});
+    const cs = r.match.map(x => x.city.country);
+    t('어울리는 곳에 같은 나라가 두 번 안 나온다',
+      cs.length === new Set(cs).size, cs.join(','));
+  }
+  /* ⑯ **자가 card.js 와 같은가.** calc.js 로 옮겨 한 벌만 두었는데, 누가
+        rec.js 안에 다시 베껴 넣으면 이 검사가 잡습니다. 유명도 1 과 3 은
+        자의 양 끝이라 붙어 있으면 안 됩니다. */
+  t('유명도 자가 살아 있다 (1 과 3 이 붙어 있지 않다)',
+    Math.abs(cityFameP({ fame:1 }) - cityFameP({ fame:3 })) > 60,
+    `${cityFameP({ fame:1 })} vs ${cityFameP({ fame:3 })}`);
+
   const bad = T.filter(x => x.결과 !== 'OK');
   console.table(T);
   bad.forEach(x => console.error('✗ ' + x.검사 + ' — ' + x.detail));

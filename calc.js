@@ -23,6 +23,43 @@ export function distKm(a, b, c, d){
   return 2*R*Math.asin(Math.sqrt(h));
 }
 
+/* ── 성향 자(尺) ──────────────────────────────────────────────────────
+ * 도시의 유명도와 거리를 **0~100 으로 옮기는 자**입니다. 두 곳이 씁니다:
+ *   · card.js  — 사람의 네 축(personaAxes). 여러 도시의 **평균**을 잽니다.
+ *   · rec.js   — 도시끼리 닮았는지(similarPicks). **한 곳씩** 잽니다.
+ *
+ * ⚠ **여기 한 벌만 둡니다.** 원래 card.js 안에 있었습니다. rec.js 가 같은
+ *   자를 쓰게 되면서 옮겼습니다 — 베껴 두면 한쪽 상수만 고쳐지고, 그러면
+ *   "성향은 D 라는데 추천은 가까운 데만 준다" 같은 일이 조용히 생깁니다.
+ *   상수를 고칠 일이 있으면 **여기만** 고치십시오.
+ *
+ * ⚠ **아래 숫자를 손대면 추천 정확도를 다시 재야 합니다.** 닮은-도시 추천은
+ *   이 자 위에서 재서 정한 것입니다(rec.js 맨 위의 숫자). 자가 바뀌면 그
+ *   숫자는 더 이상 그 자료를 가리키지 않습니다. */
+
+/* 모험력·거리의 기준점. 한국에서 출발하니 서울입니다. */
+export const SEOUL = [37.5665, 126.9780];
+
+/* 바닥을 5 로 둡니다 — 0 이면 막대가 텅 비어 보기 안 좋습니다. */
+export const pScale = (v, lo, hi) =>
+  Math.round(Math.max(5, Math.min(100, (v - lo) / (hi - lo) * 100)));
+
+/* 유명도. 도시마다 1~3 등급이 매겨져 있고 **1 이 이름난 쪽**입니다.
+   lo·hi 가 1.10~2.55 인 것은 한국인이 매기는 평균이 40~60 에 오도록
+   맞춘 값입니다(card.js 의 축 설명 참고). */
+export const cityFameP = c =>
+  c?.fame == null ? 50 : pScale(Number(c.fame), 1.10, 2.55);
+
+/* 서울에서의 거리. **로그를 씁니다** — 선형이면 유럽·남미가 전부 100 에
+   몰립니다. 한국에서는 웬만한 데가 다 멀어서, 가까운 구간(일본~동남아)에서
+   갈려야 뜻이 있습니다. 700km 아래는 다 같이 봅니다. */
+export const cityDistP = c => {
+  if (c?.center_lat == null || c?.center_lng == null) return 50;
+  const d = distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng);
+  if (d == null) return 50;
+  return pScale(Math.log(Math.max(d, 700) / 700), 0, Math.log(9500 / 700));
+};
+
 /* 도쿄에서 실제로 재서 쓰던 식입니다. 상수는 그날 있는 구간에서 옵니다 —
    로마는 대중교통, 오키나와는 차라서 같은 거리도 시간이 다릅니다. */
 export function travel(km, g){
