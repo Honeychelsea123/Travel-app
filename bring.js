@@ -16,13 +16,13 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
  *     이미 떼어낸 aiui.js · cards.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b388';
-import { sb } from './db.js?v=b388';
-import { fail } from './net.js?v=b388';
-import { trip } from './trip.js?v=b388';
-import { syncSheets } from './ui.js?v=b388';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b388';
-import { drawCards } from './cards.js?v=b388';
+import { $, esc, toast } from './dom.js?v=b389';
+import { sb } from './db.js?v=b389';
+import { fail } from './net.js?v=b389';
+import { trip } from './trip.js?v=b389';
+import { syncSheets } from './ui.js?v=b389';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b389';
+import { drawCards } from './cards.js?v=b389';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }
@@ -178,7 +178,12 @@ $('imp_go').addEventListener('click', async () => {
     [4000,  hasLink ? '링크 안을 읽는 중…' : '내용을 살펴보는 중…'],
     [9000,  '날짜와 장소를 골라내는 중…'],
     [16000, '거의 다 됐어요…'],
-    [26000, '조금만 더요. 글이 길면 오래 걸려요…'],
+    /* ⚠ **"글이 길면"은 사실이 아닐 때가 많습니다 (b389).** 실사용 점검에서
+       한 줄짜리 글도 28초가 걸렸습니다. 걸리는 시간의 대부분은 글 길이가
+       아니라 **모델이 답을 써 내려가는 시간**이고, 이건 짧은 글도 마찬가지입니다.
+       (가벼운 모델로 바꾸면 13초가 되지만 일정이 새서 되돌렸습니다 — 위 참고.)
+       사실이 아닌 이유를 대면 사용자가 엉뚱한 것을 고치려 듭니다. */
+    [26000, '조금만 더요. 빠뜨리지 않으려고 꼼꼼히 보는 중이에요…'],
   ];
   const timers = steps.map(([ms, msg]) => setTimeout(
     () => { b.innerHTML = `<span class="load">${esc(msg)}</span>`; }, ms));
