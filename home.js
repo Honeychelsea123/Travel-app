@@ -16,23 +16,23 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b383';
-import { sb } from './db.js?v=b383';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b383';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b383';
-import { starHtml, paintStars, markRated } from './stars.js?v=b383';
-import { cities, countryName } from './cities.js?v=b383';
-import { myRates, visited } from './rate.js?v=b383';
-import { plans } from './trip.js?v=b383';
-import { openCity } from './city.js?v=b383';
-import { loadCities, pick } from './citysearch.js?v=b383';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b383';
-import { openMap, UN_COUNTRIES } from './map.js?v=b383';
+import { $, esc } from './dom.js?v=b384';
+import { sb } from './db.js?v=b384';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b384';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b384';
+import { starHtml, paintStars, markRated } from './stars.js?v=b384';
+import { cities, countryName } from './cities.js?v=b384';
+import { myRates, visited } from './rate.js?v=b384';
+import { plans } from './trip.js?v=b384';
+import { openCity } from './city.js?v=b384';
+import { loadCities, pick } from './citysearch.js?v=b384';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b384';
+import { openMap, UN_COUNTRIES } from './map.js?v=b384';
 /* `aiPrompt` 는 무엇을 권할지만 정합니다 — 여행이 있을 때는 히어로 단추로,
    없을 때는 `renderAiCard` 가 카드로 그립니다(b377). */
-import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b383';
-import { PERSONA_BG } from './card.js?v=b383';
-import { openNew } from './newtrip.js?v=b383';
+import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b384';
+import { PERSONA_BG } from './card.js?v=b384';
+import { openNew } from './newtrip.js?v=b384';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -327,13 +327,23 @@ async function buildHome(){
      위가 무거웠습니다. 권유를 히어로의 단추로 넣습니다 — 무엇을 권할지
      정하는 곳은 그대로 report.js 한 곳입니다(`aiPrompt`). */
   const ai = aiPrompt(t, all.count || 0);
+  /* ── 단추는 **일정이 비었을 때만** 답니다 (b384) ──────────────────────
+     일정이 이미 있으면 `일정 추가` 가 떴는데, 히어로를 누르면 그 여행이
+     열리고 거기서 더할 수 있습니다. AI 로 가는 길도 상단 바 ✦ 로 이미
+     있습니다. **같은 화면에서 두 번 권하는 셈**이라 뺐습니다.
+     `일정 짜기`(일정 0개)는 성격이 다릅니다 — 빈 여행을 채우라는 알림이라
+     안 보이면 그냥 비어 있는 채로 남습니다. 그건 남깁니다.
+     ⚠ 여행이 아예 없을 때는 위쪽 갈래라 여기 안 옵니다. 거기는 히어로에
+       단추를 안 달고 AI 카드가 시작을 맡습니다. 새 여행으로 가는 길은
+       아래 `nt` 줄이 늘 그립니다 — 이 단추와 상관없습니다. */
+  const 빈일정 = (all.count || 0) === 0;
   $('home').innerHTML = heroHtml(photo, badge, t.title,
     tripSub(t, days) +
     (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''),
-    ai.heroGo, true);          /* true = AI 표시를 단추 앞에 붙입니다 */
+    빈일정 ? ai.heroGo : '', true);   /* true = AI 표시를 단추 앞에 붙입니다 */
   $('hero').onclick = () => ctx.openTrip(t.id);
   /* 히어로를 누르면 여행이 열리므로 단추는 번짐을 막아야 합니다. */
-  $('herobtn').onclick = e => { e.stopPropagation(); ai.go2(); };
+  if (빈일정) $('herobtn').onclick = e => { e.stopPropagation(); ai.go2(); };
 
   /* ── 히어로 밑에는 얇은 줄 둘 (b378) ─────────────────────────────────
      b377 에서 "권유는 하나만" 이라며 평가가 있으면 새 여행을 감췄는데
