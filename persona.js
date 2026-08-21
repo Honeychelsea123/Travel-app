@@ -188,9 +188,9 @@ async function drawPersona(s, ax, rates){
 
     <div class="card quiet">
       <div class="ptop" style="cursor:default">
-        <div class="pcode">${esc(code)}</div>
+        <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
-        <span class="prank">${esc(rank)}</span>
+        <span class="prank">${esc(rank)}</span></div>
         <div class="part"><img src="./persona/${esc(code)}.png?v=b451"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>

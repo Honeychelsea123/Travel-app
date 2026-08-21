@@ -82,9 +82,9 @@ export async function loadAnal(){
          안 됩니다"). */
     const 머리 = document.createElement('div');
     머리.className = 'ptop';
-    머리.innerHTML = `<div class="pcode">${esc(ax.code)}</div>
+    머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
-      <span class="prank">${esc(personaRank(나라수))}</span>
+      <span class="prank">${esc(personaRank(나라수))}</span></div>
       <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b451"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
@@ -135,7 +135,7 @@ export async function loadAnal(){
          뭐가 다른지 몰라서 안 누릅니다. */
     const 더 = document.createElement('button');
     더.className = 'matebtn';
-    더.textContent = '카드 만들고 공유하기 ›';
+    더.textContent = '자세히 보기 ›';
     더.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
     성향.appendChild(더);
   } else {
