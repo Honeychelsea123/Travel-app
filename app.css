@@ -2520,11 +2520,13 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * ⚠ 성향 화면(persona.js)의 머리도 같은 `.ptop` 을 씁니다 — 거기는 읽는
  *   리포트라 가운데가 어울리지만, 부품을 둘로 나누면 또 갈라집니다.
  *   한 벌로 두고 가로로 통일합니다. */
-/* ⚠ **왼쪽 정렬입니다(b453).** 가운데로 모아 봤더니(b452) 글 뭉치가
-   화면 한가운데에 떠서 아래 줄들과 **줄이 안 맞았습니다** — 이 카드
-   안의 다른 줄은 전부 왼쪽에서 시작합니다. 머리만 가운데면 그것만
-   따로 노는 것으로 보입니다. */
-.ptop{ position:relative; display:flex; align-items:center; gap:16px;
+/* ⚠ **가운데 정렬입니다(b454).** 왼쪽 정렬(b453)도 해봤는데, 글과 그림을
+   양끝으로 벌려 두면 가운데가 비어 **둘이 남남처럼** 보였습니다.
+   가운데에서 만나야 한 덩어리로 읽힙니다 — 아래 줄들과 줄이 안 맞는
+   것은 감수합니다. 머리는 「이게 나」를 보여주는 자리라 목록의 리듬을
+   따를 이유가 없습니다. */
+.ptop{ position:relative; display:flex; align-items:center;
+       justify-content:center; gap:16px;
        text-align:left; padding:4px 0 12px; cursor:pointer; }
 .ptop > .part{ order:2; }
 /* 글은 제 폭만 씁니다 — flex:1 로 늘리면 다시 좌우로 벌어집니다. */

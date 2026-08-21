@@ -16,30 +16,33 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b453';
-import { sb } from './db.js?v=b453';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b453';
-import { hm, todayYmd } from './calc.js?v=b453';
-import { starHtml, paintStars, markRated } from './stars.js?v=b453';
+import { $, esc } from './dom.js?v=b454';
+import { sb } from './db.js?v=b454';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b454';
+import { hm, todayYmd } from './calc.js?v=b454';
+import { starHtml, paintStars, markRated } from './stars.js?v=b454';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b453';
-import { cities, countryName } from './cities.js?v=b453';
-import { myRates, visited } from './rate.js?v=b453';
-import { plans } from './trip.js?v=b453';
-import { openCity } from './city.js?v=b453';
-import { loadCities, pick } from './citysearch.js?v=b453';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b453';
+import { rateHero, starValue } from './rateui.js?v=b454';
+import { cities, countryName } from './cities.js?v=b454';
+import { myRates, visited } from './rate.js?v=b454';
+import { plans } from './trip.js?v=b454';
+import { openCity } from './city.js?v=b454';
+import { loadCities, pick } from './citysearch.js?v=b454';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b454';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT } from './map.js?v=b453';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b454';
+/* personaBackTo 는 persona.js 것입니다. persona.js 는 home.js 를 import
+   하지 않으므로 고리가 안 생깁니다(확인함). */
+import { personaBackTo } from './persona.js?v=b454';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b453';
+import { drawReport } from './report.js?v=b454';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b453';
-import { openNew } from './newtrip.js?v=b453';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b454';
+import { openNew } from './newtrip.js?v=b454';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -48,6 +51,22 @@ export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
    것을 막습니다(rating.js 의 lastRateHtml 과 같은 수법).
    **app.js 의 상태 뭉치에 있던 것을 여기로 옮겼습니다(b344).**
    로그아웃할 때만 밖에서 되돌리므로 그 길만 내보냅니다. */
+/* ── 성향·지도를 여는 길(b454) ────────────────────────────────────────
+ * ⚠ 두 화면은 **프로필 위에 얹히는 판**이라 열려면 프로필 탭을 거칩니다.
+ *   그래서 홈에서 지도를 눌러도 **하단바가 프로필로 옮겨갔습니다.**
+ *   「홈에서 왔다」를 먼저 적어두면 닫을 때 홈으로 돌아옵니다
+ *   (map.js·persona.js 의 「나온 자리로」, anal.js 도 같은 수법).
+ * ⚠ 여는 자리가 셋이라 여기 둘로 모읍니다 — 흩어 두면 한 곳만 고쳐집니다. */
+function 지도열기(){
+  mapBackTo('home');
+  ctx.showApp('set');
+  openMap();
+}
+function 성향열기(){
+  personaBackTo('home');
+  ctx.showApp('set');
+  $('openpersona')?.click();
+}
 let lastHomeSig = '';
 export function resetHomeSig(){ lastHomeSig = ''; }
 
@@ -761,7 +780,7 @@ async function renderFoot(통){
     <div class="swdots">${장.map((_, i) =>
       `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
   box.appendChild(줄만들기('내 발자국', '', '지도',
-    () => { ctx.showApp('set'); openMap(); }));
+    지도열기));
   /* ⚠ **숫자 카드는 지도 아래입니다(b452).** 위에 두었더니 지도가 밀려
      내려가 홈에서 잘 안 보였습니다. 이 화면의 주인공은 **칠해진 지도**이고
      숫자는 그 밑에서 거드는 것입니다 — 넘겨 보는 것도 지도를 본 다음에
@@ -772,9 +791,34 @@ async function renderFoot(통){
   {
     const 줄기 = 넘김.querySelector('.swrow');
     const 점들 = [...넘김.querySelectorAll('.swdots i')];
+    /* ── 끝에서 더 넘기면 처음으로(b454) ────────────────────────────
+       ⚠ 카드가 일곱 장이라 마지막(오세아니아)에서 막히면 **되돌아오려고
+         여섯 번을 되쓸어야** 합니다. 끝에서 한 번 더 밀면 첫 장으로
+         감습니다 — 반대쪽도 마찬가지입니다.
+       ⚠ **손이 떨어진 뒤에** 감습니다. 미는 도중에 옮기면 손가락과 화면이
+         따로 놀아 튕기는 느낌이 납니다. 스크롤이 멎기를 기다렸다가(120ms)
+         **끝에 붙어 있을 때만** 옮깁니다.
+       ⚠ 감을 때는 `behavior:'auto'` 입니다 — 부드럽게 감으면 여섯 장이
+         주르륵 지나가서 「감겼다」가 아니라 「빨리 되감겼다」로 보입니다. */
+    let 멎음;
+    /* 맨 앞에서 **왼쪽으로 더 밀었을 때만** 뒤로 감습니다. 그냥 첫 장에
+       머무는 것과 구분해야 합니다 — 안 그러면 처음 열자마자 끝으로 갑니다.
+       ⚠ 아래 scroll 안에서 읽으므로 **여기서 먼저** 선언합니다(TDZ). */
+    let 되감기 = false;
+    줄기.addEventListener('touchstart', () => { 되감기 = 줄기.scrollLeft <= 2; },
+      { passive:true });
     줄기.addEventListener('scroll', () => {
-      const i = Math.round(줄기.scrollLeft / (줄기.clientWidth || 1));
+      const 폭 = 줄기.clientWidth || 1;
+      const i = Math.round(줄기.scrollLeft / 폭);
       점들.forEach((d, k) => d.classList.toggle('on', k === i));
+
+      clearTimeout(멎음);
+      멎음 = setTimeout(() => {
+        const 끝 = 줄기.scrollWidth - 폭;
+        if (줄기.scrollLeft >= 끝 - 2)      줄기.scrollTo({ left:0, behavior:'auto' });
+        else if (줄기.scrollLeft <= 2 && 되감기) 줄기.scrollTo({ left:끝, behavior:'auto' });
+        되감기 = false;
+      }, 120);
     }, { passive:true });
   }
 
@@ -815,7 +859,7 @@ async function renderFoot(통){
   const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
   mm.querySelectorAll('path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
-  mm.onclick = () => { ctx.showApp('set'); openMap(); };
+  mm.onclick = 지도열기;
   box.appendChild(mm);
   box.appendChild(넘김);
 
@@ -839,7 +883,7 @@ async function renderFoot(통){
       box.appendChild(줄만들기('내 성향',
         `${esc(ax.code)} ${esc(유형.n)}`,
         esc(personaRank(나라수)),
-        () => { ctx.showApp('set'); $('openpersona')?.click(); }));
+        성향열기));
     }
   }
 

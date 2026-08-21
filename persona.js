@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b453';
-import { sb } from './db.js?v=b453';
-import { cities, countryName, continentOf } from './cities.js?v=b453';
+import { $, esc, toast, copyText } from './dom.js?v=b454';
+import { sb } from './db.js?v=b454';
+import { cities, countryName, continentOf } from './cities.js?v=b454';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b453';
+import { similarPicks } from './rec.js?v=b454';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b453';
-import { visited } from './rate.js?v=b453';
+import { mateCode, mateLink, mateHtml } from './mate.js?v=b454';
+import { visited } from './rate.js?v=b454';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b453';
+         shareCard, cardImage } from './card.js?v=b454';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -196,7 +196,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b453"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b454"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -254,12 +254,12 @@ async function drawPersona(s, ax, rates){
         <span class="val">${ax.해외}곳</span></div>
       ${s.days ? `<div class="row"><span class="label">첫 기록으로부터</span>
         <span class="val">${s.days.toLocaleString()}일</span></div>` : ''}
-      <div class="empty" style="text-align:left; padding-top:10px">
-        AI 가 아니라 위 숫자로만 정합니다. 같은 기록이면 언제 봐도 같은 결과예요.
-        <b>50점을 넘느냐</b>로 글자가 갈립니다.
-        <b>단골력·모험력은 해외 도시만</b> 셉니다 — 부산에 간 것을 "한 나라만
-        파는 성향"으로 읽으면 안 되니까요. 개척력·만족력은 국내도 다 셉니다.
-      </div>
+      <!-- ⚠ **긴 설명 문단을 뺐습니다(b454).** 「AI 가 아니라 위 숫자로만
+           정합니다…」로 시작하던 네 줄입니다. 위 표에 축마다 근거(유명도
+           평균·나라당 곳수·평균 거리·별점 평균)가 이미 적혀 있어서,
+           같은 말을 문단으로 한 번 더 하는 셈이었습니다. 읽는 사람이
+           제일 먼저 건너뛰는 자리이기도 합니다.
+           ⚠ 「해외만 센다」는 위 '그중 해외' 줄이 이미 말합니다. -->
     </div>
 
     <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
@@ -276,9 +276,13 @@ async function drawPersona(s, ax, rates){
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
           <span class="mc">${esc(mate.worst)}</span></div>
       </div>
-      <div class="empty" style="text-align:left; padding-top:10px">
-        ${esc(mate.bestLine || '')}
-      </div>
+      <!-- ⚠ **궁합 밑 설명 줄도 뺐습니다(b454).** 「유명한 곳·멀리 같고
+           여러 나라·까다로움 달라」처럼 **왜 맞는지 풀어 쓰던 줄**입니다.
+           숫자(99%)와 유형 이름이 이미 말하고 있고, 이 앱은 **알아서
+           분석해서 내주는** 자리입니다 — 계산 과정을 변명처럼 붙일 이유가
+           없습니다(사용자 판단). 축별 근거는 위 「왜 인가요」에 있습니다.
+           ⚠ mate.bestLine 은 카드 그림(card.js)에서는 그대로 씁니다 —
+             거기는 한 장으로 끝나는 물건이라 근거가 붙어야 뜻이 통합니다. -->
     </div>
 
     <!-- ── 다음에 갈 만한 곳 ── 두 줄의 성격이 다릅니다(rec.js 맨 위).
