@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b450';
-import { sb } from './db.js?v=b450';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b450';
-import { todayYmd } from './calc.js?v=b450';
-import { cities } from './cities.js?v=b450';
-import { trip } from './trip.js?v=b450';
-import { tripSub } from './rating.js?v=b450';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b450';
-import { ROLE_KO } from './member.js?v=b450';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b451';
+import { sb } from './db.js?v=b451';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b451';
+import { todayYmd } from './calc.js?v=b451';
+import { cities } from './cities.js?v=b451';
+import { trip } from './trip.js?v=b451';
+import { tripSub } from './rating.js?v=b451';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b451';
+import { ROLE_KO } from './member.js?v=b451';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }

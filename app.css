@@ -2564,3 +2564,22 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .bnrow span{ font-size:calc(19px * var(--ts)); font-weight:700;
              color:var(--ink-48); }
 .bnsub{ margin-top:5px; font-size:calc(12px * var(--ts)); color:var(--ink-48); }
+
+/* ── 좌우로 넘기는 통계 카드(b451) ────────────────────────────────────
+ * been 의 「In Total / 대륙별」 자리. **scroll-snap 만으로** 만듭니다 —
+ * 자바스크립트 캐러셀을 넣으면 이 앱의 오프라인 규칙(바깥 것을 안 씁니다)이
+ * 깨지고, 손가락·트랙패드·키보드가 다 그냥 되는 것을 잃습니다.
+ * ⚠ 카드 폭은 100%. 한 장씩 딱 떨어져야 「몇 번째」가 분명합니다.
+ * ⚠ 스크롤바는 감춥니다 — 점(・・・)이 그 일을 합니다. */
+.swipe{ margin-top:4px; }
+.swrow{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+        scrollbar-width:none; -ms-overflow-style:none; }
+.swrow::-webkit-scrollbar{ display:none; }
+.swcard{ flex:0 0 100%; scroll-snap-align:center; text-align:center;
+         padding:8px 0 4px; }
+.swtitle{ font-size:calc(13px * var(--ts)); font-weight:600; color:var(--dim);
+          margin-bottom:6px; }
+.swdots{ display:flex; justify-content:center; gap:5px; margin-top:8px; }
+.swdots i{ width:5px; height:5px; border-radius:50%; background:var(--line);
+           transition:background var(--t-fast) var(--ease); }
+.swdots i.on{ background:var(--primary); }

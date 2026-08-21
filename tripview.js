@@ -17,27 +17,27 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b450';
-import { sb } from './db.js?v=b450';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b450';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b450';
+import { $, esc, toast } from './dom.js?v=b451';
+import { sb } from './db.js?v=b451';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b451';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b451';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b450';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b450';
-import { drawPlanMap } from './planmap.js?v=b450';
-import { drawPlans } from './planview.js?v=b450';
-import { legIn, fillCityList } from './legs.js?v=b450';
-import { inTrip } from './tabs.js?v=b450';
-import { closeAi } from './aiscreen.js?v=b450';
-import { closeDraft } from './draft.js?v=b450';
-import { closeReview } from './home.js?v=b450';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b451';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b451';
+import { drawPlanMap } from './planmap.js?v=b451';
+import { drawPlans } from './planview.js?v=b451';
+import { legIn, fillCityList } from './legs.js?v=b451';
+import { inTrip } from './tabs.js?v=b451';
+import { closeAi } from './aiscreen.js?v=b451';
+import { closeDraft } from './draft.js?v=b451';
+import { closeReview } from './home.js?v=b451';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b450';
-import { closeCity, isCityOpen } from './city.js?v=b450';
-import { closeMap, closeCountries } from './map.js?v=b450';
-import { closePersona } from './persona.js?v=b450';
-import { closeShelf } from './shelf.js?v=b450';
-import { closeDocs } from './prep.js?v=b450';
+import { closeSpree } from './spree.js?v=b451';
+import { closeCity, isCityOpen } from './city.js?v=b451';
+import { closeMap, closeCountries } from './map.js?v=b451';
+import { closePersona } from './persona.js?v=b451';
+import { closeShelf } from './shelf.js?v=b451';
+import { closeDocs } from './prep.js?v=b451';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };

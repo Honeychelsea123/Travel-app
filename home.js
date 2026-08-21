@@ -16,28 +16,30 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b450';
-import { sb } from './db.js?v=b450';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b450';
-import { hm, todayYmd } from './calc.js?v=b450';
-import { starHtml, paintStars, markRated } from './stars.js?v=b450';
+import { $, esc } from './dom.js?v=b451';
+import { sb } from './db.js?v=b451';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b451';
+import { hm, todayYmd } from './calc.js?v=b451';
+import { starHtml, paintStars, markRated } from './stars.js?v=b451';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b450';
-import { cities, countryName } from './cities.js?v=b450';
-import { myRates, visited } from './rate.js?v=b450';
-import { plans } from './trip.js?v=b450';
-import { openCity } from './city.js?v=b450';
-import { loadCities, pick } from './citysearch.js?v=b450';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b450';
-import { openMap, UN_COUNTRIES } from './map.js?v=b450';
+import { rateHero, starValue } from './rateui.js?v=b451';
+import { cities, countryName } from './cities.js?v=b451';
+import { myRates, visited } from './rate.js?v=b451';
+import { plans } from './trip.js?v=b451';
+import { openCity } from './city.js?v=b451';
+import { loadCities, pick } from './citysearch.js?v=b451';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b451';
+/* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
+   여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
+import { openMap, UN_COUNTRIES, CONT } from './map.js?v=b451';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b450';
+import { drawReport } from './report.js?v=b451';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b450';
-import { openNew } from './newtrip.js?v=b450';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b451';
+import { openNew } from './newtrip.js?v=b451';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -733,24 +735,45 @@ async function renderFoot(통){
     el.onclick = e => { e.stopPropagation(); 눌렀을때(); };
     return el;
   };
-  /* ── been 처럼 **큰 숫자**로(b450) ──────────────────────────────────
-     「195개국 중 27개국 · 13.8%」를 작은 회색 글로만 두면 **읽히지도 않고
-     재미도 없습니다.** been 은 「0 / 14」를 화면 한가운데에 크게 박아
-     둡니다 — 숫자가 커야 「채우고 싶다」가 생깁니다.
-     ⚠ 분모(195)는 작게 둡니다. 주인공은 **내가 채운 수**입니다.
-     ⚠ 퍼센트는 그 아래 한 줄로 작게 — 지우지는 않습니다. 27이라는 수가
-       많은 건지 적은 건지는 퍼센트라야 압니다. */
-  const 큰수 = document.createElement('div');
-  큰수.className = 'bignum';
-  큰수.style.cursor = 'pointer';
-  큰수.innerHTML = f.countries
-    ? `<div class="bnrow"><b>${f.countries}</b><span>/ ${UN_COUNTRIES}</span></div>
-       <div class="bnsub">다녀온 나라 · 세계의 ${pct.toFixed(1)}%</div>`
-    : `<div class="bnsub">별점을 매기면 여기에 쌓여요</div>`;
-  큰수.onclick = () => { ctx.showApp('set'); openMap(); };
+  /* ── been 처럼 **좌우로 넘기는 카드**(b451) ─────────────────────────
+   * 첫 장은 「전체」, 그 뒤로 대륙 여섯 장. 숫자 하나만 크게 박아 두면
+   * 「채우고 싶다」가 생기고, 넘길 수 있으면 **어디가 비었는지** 눈으로
+   * 훑게 됩니다 — 그게 다음 여행을 만듭니다.
+   *
+   * ⚠ **CSS 만으로 만듭니다.** scroll-snap 이면 자바스크립트가 필요 없고,
+   *   손가락·트랙패드·키보드가 다 그냥 됩니다. 캐러셀 라이브러리를 넣으면
+   *   이 앱의 오프라인 규칙(바깥 것을 안 씁니다)이 깨집니다.
+   * ⚠ 대륙 수는 `by_continent`(다녀온 수)와 map.js 의 `CONT`(전체 수)를
+   *   맞춰 셉니다. 분모를 여기서 새로 적으면 지도 화면과 갈라집니다.
+   * ⚠ 점(・・・)은 **보여주기만** 합니다 — 눌러서 넘기는 것까지 만들면
+   *   자바스크립트가 붙습니다. 손가락으로 넘기는 것이 이미 됩니다. */
+  const by = f.by_continent || {};
+  const 장 = [['전체', f.countries || 0, UN_COUNTRIES],
+              ...CONT.map(([이름, 전체]) => [이름, by[이름] || 0, 전체])];
+  const 넘김 = document.createElement('div');
+  넘김.className = 'swipe';
+  넘김.innerHTML = `<div class="swrow">${장.map(([이름, n, 전체]) => `
+      <div class="swcard">
+        <div class="swtitle">${esc(이름)}</div>
+        <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
+        <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
+      </div>`).join('')}</div>
+    <div class="swdots">${장.map((_, i) =>
+      `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
   box.appendChild(줄만들기('내 발자국', '', '지도',
     () => { ctx.showApp('set'); openMap(); }));
-  box.appendChild(큰수);
+  box.appendChild(넘김);
+
+  /* 넘길 때 점을 따라가게 합니다. 스크롤 위치를 카드 폭으로 나누면 몇 번째인지
+     나옵니다 — 관찰자를 붙일 만큼 무거운 일이 아닙니다. */
+  {
+    const 줄기 = 넘김.querySelector('.swrow');
+    const 점들 = [...넘김.querySelectorAll('.swdots i')];
+    줄기.addEventListener('scroll', () => {
+      const i = Math.round(줄기.scrollLeft / (줄기.clientWidth || 1));
+      점들.forEach((d, k) => d.classList.toggle('on', k === i));
+    }, { passive:true });
+  }
 
   /* ── 지도는 **발자국 바로 아래**입니다(b423) ─────────────────────────
    * 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니
