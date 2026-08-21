@@ -14,11 +14,11 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b441';
-import { sb } from './db.js?v=b441';
-import { cities } from './cities.js?v=b441';
-import { personaAxes, personaRank, PERSONA16 } from './card.js?v=b441';
-import { UN_COUNTRIES } from './map.js?v=b441';
+import { $, esc } from './dom.js?v=b442';
+import { sb } from './db.js?v=b442';
+import { cities } from './cities.js?v=b442';
+import { personaAxes, personaRank, PERSONA16 } from './card.js?v=b442';
+import { UN_COUNTRIES } from './map.js?v=b442';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
