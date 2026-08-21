@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b403';
-import { sb } from './db.js?v=b403';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b403';
-import { hm, todayYmd } from './calc.js?v=b403';
-import { starHtml, paintStars, markRated } from './stars.js?v=b403';
-import { cities, countryName } from './cities.js?v=b403';
-import { myRates, visited } from './rate.js?v=b403';
-import { plans } from './trip.js?v=b403';
-import { openCity } from './city.js?v=b403';
-import { loadCities, pick } from './citysearch.js?v=b403';
-import { saveRate, refreshVisited } from './rating.js?v=b403';
-import { openMap, UN_COUNTRIES } from './map.js?v=b403';
+import { $, esc } from './dom.js?v=b404';
+import { sb } from './db.js?v=b404';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b404';
+import { hm, todayYmd } from './calc.js?v=b404';
+import { starHtml, paintStars, markRated } from './stars.js?v=b404';
+import { cities, countryName } from './cities.js?v=b404';
+import { myRates, visited } from './rate.js?v=b404';
+import { plans } from './trip.js?v=b404';
+import { openCity } from './city.js?v=b404';
+import { loadCities, pick } from './citysearch.js?v=b404';
+import { saveRate, refreshVisited } from './rating.js?v=b404';
+import { openMap, UN_COUNTRIES } from './map.js?v=b404';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b403';
+import { drawReport } from './report.js?v=b404';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b403';
-import { openNew } from './newtrip.js?v=b403';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b404';
+import { openNew } from './newtrip.js?v=b404';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -693,21 +693,17 @@ $('home').addEventListener('click', async e => {
       paintStars(wrap, null, true);
       await saveRate(cityId, { stars: null }, true);
       if (heroCity && !quizPool.some(c => c.id === cityId)) quizPool.unshift(heroCity);
-      const ask = hero.querySelector('.hask');
-      if (ask) ask.textContent = '다녀오셨다면 별점을 남겨주세요';
       lastHomeSig = '';
       hero.dataset.done = '';
       return;
     }
 
+    /* ⚠ 여기서 안내 줄을 「다시 누르면 취소돼요」로 바꿨었습니다(b403).
+       **뺐습니다(b404, 사용자 결정).** 별을 누른 뒤 글자가 바뀌면 눈이
+       거기로 끌려가는데, 정작 그 순간 볼 것은 채워진 별입니다. 취소는
+       **알면 되는 것이지 매번 알릴 것이 아닙니다.** */
     wrap.dataset.v = String(v);
     paintStars(wrap, v, true);
-    /* 되돌릴 수 있다는 것을 **그 자리에서** 알려줍니다. 안 적으면 아무도
-       다시 눌러볼 생각을 안 합니다(위 지적이 그 증거입니다). */
-    {
-      const ask = hero.querySelector('.hask');
-      if (ask) ask.textContent = '다시 누르면 취소돼요';
-    }
     await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
     lastHomeSig = '';
