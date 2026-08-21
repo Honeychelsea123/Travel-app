@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b445';
-import { sb } from './db.js?v=b445';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b445';
-import { todayYmd } from './calc.js?v=b445';
-import { cities } from './cities.js?v=b445';
-import { trip } from './trip.js?v=b445';
-import { tripSub } from './rating.js?v=b445';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b445';
-import { ROLE_KO } from './member.js?v=b445';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b446';
+import { sb } from './db.js?v=b446';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b446';
+import { todayYmd } from './calc.js?v=b446';
+import { cities } from './cities.js?v=b446';
+import { trip } from './trip.js?v=b446';
+import { tripSub } from './rating.js?v=b446';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b446';
+import { ROLE_KO } from './member.js?v=b446';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -127,38 +127,21 @@ export async function loadTrips(){
      **홈에 있던 띠를 여기로 옮겼습니다.** 홈은 도시 평가가 주인공이 됐고
      (home.js 의 buildHome 머리말), 이 띠는 **특정 여행에 묶인 것**이라 여행
      탭이 제 자리입니다. 띠를 만드는 것은 home.js 가 합니다(`reviewBar`) —
-     평가 화면이 거기 있어서 입구만 가져옵니다.
-
-     ⚠ **목록보다 위, `#trips` 밖에 답니다.** 안에 넣으면 `putHtml` 이 목록을
-       갈아끼울 때 같이 지워집니다. 밖에 두면 목록이 비어 있을 때도 남습니다 —
-       앞으로 갈 여행이 없는 사람이야말로 평가할 것이 밀려 있습니다.
-     ⚠ **먼저 있던 띠를 지우고 답니다.** 안 지우면 탭을 오갈 때마다 쌓입니다.
-     ⚠ 아래 빈 목록 갈래가 일찍 돌아가므로 **그 앞에** 둡니다.
-
-     ⚠⚠ **지우는 것은 받아온 뒤입니다(b435).** ⚠⚠
-       전에는 `remove()` 를 먼저 하고 `await reviewBar()` 를 기다렸습니다.
-       그러면 탭에 들어올 때마다 띠가 **사라졌다가 질의 시간만큼 지나 다시
-       나타납니다** — 그 사이 아래 내용이 위로 올라왔다 내려가서 화면이
-       깜빡입니다. 사용자가 "삼척 여행 어땠어요 그거 불러오면서 깜빡인다"
-       고 짚어준 것이 이것입니다.
-       **먼저 받아오고, 그 다음에 갈아끼웁니다** — 같은 틱에 끝나므로
-       비어 있는 순간이 없습니다. 순서를 되돌리지 마십시오. */
-  if (tripFilter !== 'past'){
+     평가 화면이 거기 있어서 입구만 가져옵니다.  */
+  /* ⚠⚠ **「다녀온」 갈래에서만, 그리고 맨 위입니다(b446).** ⚠⚠
+     b398 부터 「다가오는」에 달려 있었는데 자리가 틀렸습니다 —
+     **다녀온 여행을 평가해달라는 말**을 앞으로 갈 여행 목록에 두고
+     있었습니다. b435 에서 목록 아래로 내려 맥락 충돌은 줄였지만,
+     애초에 **다른 갈래에 있어야 할 것**이었습니다.
+     「다녀온」을 열면 평가할 것이 제일 먼저 보입니다.
+     ⚠ 여전히 `#trips` **밖**입니다 — 안에 넣으면 putHtml 이 목록을
+       갈아끼울 때 같이 지워집니다.
+     ⚠ **받아온 뒤에 지웁니다**(b435). 순서를 되돌리면 탭을 옮길 때마다
+       띠가 사라졌다 나타나며 화면이 깜빡입니다. */
+  if (tripFilter === 'past'){
     const bar = await reviewBar();
     $('tripsrv')?.remove();
-    /* ⚠ **목록 **아래**입니다(b435).** 전에는 히어로 바로 밑이었는데,
-       「D-21 도쿄」 다음에 갑자기 「삼척 여행 어땠어요?」가 끼어들어
-       **맥락이 끊겼습니다** — 다가오는 여행을 보러 온 자리에 지난 여행
-       평가가 먼저 나옵니다. 목록을 다 보고 난 뒤가 맞습니다.
-       ⚠ 여전히  **밖**입니다 — 안에 넣으면 putHtml 이 목록을
-         갈아끼울 때 같이 지워집니다. */
-    /* ⚠ **목록 아래입니다(b435).** 전에는 히어로 바로 밑이었는데,
-       「D-21 도쿄」 다음에 갑자기 「삼척 여행 어땠어요?」가 끼어들어
-       **맥락이 끊겼습니다** — 다가오는 여행을 보러 온 자리에 지난 여행
-       평가가 먼저 나옵니다. 목록을 다 보고 난 뒤가 맞습니다.
-       ⚠ 여전히 `#trips` **밖**입니다 — 안에 넣으면 putHtml 이 목록을
-         갈아끼울 때 같이 지워집니다. */
-    if (bar){ bar.id = 'tripsrv'; $('trips').after(bar); }
+    if (bar){ bar.id = 'tripsrv'; $('trips').before(bar); }
   } else {
     $('tripsrv')?.remove();
   }
