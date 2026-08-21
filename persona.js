@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b411';
-import { sb } from './db.js?v=b411';
-import { cities, countryName, continentOf } from './cities.js?v=b411';
+import { $, esc, toast, copyText } from './dom.js?v=b412';
+import { sb } from './db.js?v=b412';
+import { cities, countryName, continentOf } from './cities.js?v=b412';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b411';
+import { similarPicks } from './rec.js?v=b412';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b411';
-import { visited } from './rate.js?v=b411';
+import { mateCode, mateLink, mateHtml } from './mate.js?v=b412';
+import { visited } from './rate.js?v=b412';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b411';
+         shareCard, cardImage } from './card.js?v=b412';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -199,10 +199,16 @@ async function drawPersona(s, ax, rates){
            카드 한 장은 한 번 퍼지고 끝인데, 궁합은 링크를 받은 사람이
            자기 카드를 만들어야 결과가 나오고 그 결과가 또 공유거리가
            됩니다. 자세한 것은 mate.js 머리말. -->
-      <!-- ⚠ **`.ghost` 로 두었더니 단추로 안 보였습니다(b410).** 재보니 높이
-           31px, 테두리·배경 투명, 회색 11.7px — `.ghost` 는 글자 링크용
-           스타일입니다. **이 앱에서 유입이 유입을 만드는 유일한 단추**인데
-           안 보이면 아무도 안 누릅니다. 테두리 있는 보조 단추로 세웁니다. -->
+      <!-- ⚠⚠ **이 주석에 백틱을 쓰지 마십시오. 두 번째입니다(b412).** ⚠⚠
+           여기는 템플릿 문자열 안이라 백틱 하나로 문자열이 끊깁니다.
+           b394 에서 겪고 아래 단골력 줄에 경고까지 박아뒀는데, b410 에서
+           **다른 자리에** 또 썼습니다. 그래서 성향 화면이 통째로 안 떴습니다
+           ("…".ghost is not a function). 클래스 이름을 적을 때는 그냥 씁니다.
+
+           ⚠ ghost 로 두었더니 단추로 안 보였습니다(b410). 재보니 높이 31px,
+           테두리·배경 투명, 회색 11.7px — ghost 는 글자 링크용 스타일입니다.
+           **이 앱에서 유입이 유입을 만드는 유일한 단추**인데 안 보이면
+           아무도 안 누릅니다. 테두리 있는 보조 단추로 세웁니다. -->
       <button class="matebtn" id="p_mate">친구와 궁합 보기</button>
     </div>`}
     <!-- ?mate=CODE 로 들어왔으면 궁합을 맨 위에 놓습니다 — 그것 때문에 온
