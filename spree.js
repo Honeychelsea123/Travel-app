@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b409';
-import { sb } from './db.js?v=b409';
-import { cities } from './cities.js?v=b409';
-import { loadCities } from './citysearch.js?v=b409';
-import { paintStars } from './stars.js?v=b409';
-import { rateHero, starValue } from './rateui.js?v=b409';
-import { saveRate } from './rating.js?v=b409';
-import { resetHomeSig } from './home.js?v=b409';
+import { $, esc } from './dom.js?v=b410';
+import { sb } from './db.js?v=b410';
+import { cities } from './cities.js?v=b410';
+import { loadCities } from './citysearch.js?v=b410';
+import { paintStars } from './stars.js?v=b410';
+import { rateHero, starValue } from './rateui.js?v=b410';
+import { saveRate } from './rating.js?v=b410';
+import { resetHomeSig } from './home.js?v=b410';
 
 let ctx = { me: () => null };
 export function setSpreeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -83,6 +83,12 @@ export async function openSpree(){
   도는중 = true;
   $('rateview').classList.add('hide');
   $('spreeview').classList.remove('hide');
+  /* ⚠ **탭 바를 진짜로 숨겨야 합니다(b410).** `hastab` 은 본문 아래 **여백**만
+     없앱니다 — 탭 바는 `position:fixed` 라 그대로 떠 있고, 여백만 없애면
+     내용이 그 밑으로 깔립니다. 재보고 알았습니다(#appbar 가 화면에 남아
+     있었습니다). 이 화면은 나가는 길이 「그만」 하나뿐이라 숨겨도 갇히지
+     않습니다. 닫을 때 반드시 되돌립니다 — 안 되돌리면 앱을 못 씁니다. */
+  $('appbar').classList.add('hide');
   document.body.classList.remove('hastab');    /* 화면에 이것 하나만 둡니다 */
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'spree') history.pushState({ t2:'spree' }, '');
@@ -98,6 +104,8 @@ export function closeSpree(fromPop){
   도는중 = false;
   $('spreeview').classList.add('hide');
   $('rateview').classList.remove('hide');
+  /* 숨긴 것을 반드시 되돌립니다 — 여기서 빠뜨리면 앱에 탭 바가 영영 없습니다. */
+  $('appbar').classList.remove('hide');
   document.body.classList.add('hastab');
   /* 매긴 것이 있으면 홈과 기록을 다시 그리게 합니다 — **지문만 비웁니다.**
      여기서 직접 부르면 안 보이는 화면을 그리느라 나가는 길이 느려집니다. */

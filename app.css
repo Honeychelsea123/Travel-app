@@ -1205,10 +1205,47 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
            font-size:calc(13px * var(--ts)); color:var(--ink); word-break:keep-all; }
 
 .trybar{ display:flex; gap:8px; margin-top:8px; }
-.trybar button{ flex:1; padding:11px 8px; font-size:calc(14px * var(--ts));
+/* ⚠ **44px 을 지킵니다(b410).** 처음에 `padding:11px` 로 두었더니 43px 이
+   나와 `__designCheck` 의 ③ 에 걸렸습니다. 1px 차이지만 **여기는 홈에서
+   손가락이 제일 자주 가는 자리**입니다 — 머리줄의 작은 아이콘들과 달리
+   봐줄 이유가 없습니다. 글자 크기가 바뀌어도 지켜지도록 `min-height` 로
+   못박습니다(padding 만으로는 --ts 에 따라 다시 미달합니다). */
+.trybar button{ flex:1; min-height:44px; padding:11px 8px;
+                font-size:calc(14px * var(--ts));
                 border:1px solid var(--line); border-radius:var(--r-md);
                 background:var(--card); color:var(--ink); cursor:pointer; }
 .trybar button:active{ background:var(--line); }
+/* ── 「친구와 궁합 보기」(b410) ────────────────────────────────────────
+ * 파란 「공유하기」 밑에 오는 **보조 단추**입니다. 파란 것이 둘이면 무엇을
+ * 먼저 눌러야 할지 모르고, `.ghost` 로 두면 단추로 안 보입니다(그래서 한 번
+ * 그렇게 나왔습니다 — 높이 31px 에 회색 11.7px 글자였습니다).
+ * 테두리로 세우고 강조색 글자만 씁니다 — 있다는 것은 보이되 파란 단추를
+ * 이기지는 않습니다. 높이는 위 단추와 같은 44px. */
+.matebtn{ width:100%; margin-top:8px; min-height:44px;
+          font-size:calc(15px * var(--ts)); font-weight:600;
+          color:var(--primary); background:var(--card);
+          border:1px solid var(--primary); border-radius:var(--r-pill);
+          cursor:pointer; }
+.matebtn:active{ background:var(--pearl); }
+
+/* ── 쭉 매기기 화면(b410) ─────────────────────────────────────────────
+ * ⚠ **화면 아래가 텅 비어 있었습니다.** 재보니 내용 315px 밑으로 786px 이
+ *   비었습니다 — 화면의 63% 입니다. 「화면에 이것 하나만 둔다」고 해 놓고
+ *   위쪽에 몰아둔 셈이었습니다.
+ *   세로 가운데로 옮깁니다. 별이 화면 한가운데로 오면 **엄지가 닿는 자리**
+ *   이기도 합니다 — 위쪽 구석보다 훨씬 낫습니다.
+ * ⚠ `dvh` 를 씁니다 — 폰에서 주소창이 접혔다 펴질 때 `vh` 는 안 따라옵니다. */
+#spreeview{ min-height:100dvh; display:flex; flex-direction:column; }
+#spreebox{ flex:1; display:flex; flex-direction:column; justify-content:center;
+           padding-bottom:6vh; }
+/* 다 매겼을 때의 빈 화면은 가운데 정렬이 오히려 허전합니다 — 카드가 스스로
+   높이를 가지므로 그대로 둡니다. */
+
+/* ⚠ **`.newtripbar` 는 위로 4px 당겨져 있습니다**(히어로 바로 밑에 붙던
+   시절의 값). 그 사이에 단추 줄이 생기면서 **단추 줄을 4px 덮었습니다** —
+   재보니 다른 틈은 다 12px 인데 여기만 −4 였고, 그래서 위쪽 셋이 한
+   덩어리로 뭉쳐 보였습니다(b410). 이 자리에서만 되돌립니다. */
+.trybar + .newtripbar{ margin-top:12px; }
 
 /* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
    둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).

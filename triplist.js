@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b409';
-import { sb } from './db.js?v=b409';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b409';
-import { todayYmd } from './calc.js?v=b409';
-import { cities } from './cities.js?v=b409';
-import { trip } from './trip.js?v=b409';
-import { tripSub } from './rating.js?v=b409';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b409';
-import { ROLE_KO } from './member.js?v=b409';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b410';
+import { sb } from './db.js?v=b410';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b410';
+import { todayYmd } from './calc.js?v=b410';
+import { cities } from './cities.js?v=b410';
+import { trip } from './trip.js?v=b410';
+import { tripSub } from './rating.js?v=b410';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b410';
+import { ROLE_KO } from './member.js?v=b410';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -146,15 +146,21 @@ export async function loadTrips(){
      입니다. 그리는 것은 home.js 의 `heroHtml` 을 그대로 씁니다 — 두 벌로
      만들면 한쪽만 고쳐집니다.
 
-     ⚠ **목록에도 같은 여행이 나옵니다.** 중복처럼 보이지만 말하는 것이
-       다릅니다 — 히어로는 「D-22, 곧 갑니다」이고 목록은 「내 여행 전부」
-       입니다. 목록 카드에는 D-day 가 없습니다.
+     ⚠ **히어로에 건 여행은 목록에서 뺍니다**(아래 `목록`). 처음에는 "말하는
+       것이 다르니 둘 다 둬도 된다"고 했는데 눈으로 보니 중복만 보였습니다.
      ⚠ **'다녀온' 목록에서는 안 답니다.** 지난 여행에 D-day 는 뜻이 없습니다.
      ⚠ **`#trips` 밖, 평가 재촉 띠보다 위에 답니다.** 안에 넣으면 `putHtml`
        이 목록을 갈아끼울 때 같이 지워집니다.
      ⚠ 사진은 `fillTripPhotos` 가 이미 채워둔 `_photo` 를 씁니다 — 여기서
        또 받아오면 목록을 그릴 때마다 질의가 늡니다. */
   $('triphero')?.remove();
+  /* ⚠ **히어로에 건 여행은 아래 목록에서 뺍니다(b410).** 처음에는 "히어로는
+     『D-22, 곧 갑니다』이고 목록은 『내 여행 전부』라 말하는 것이 다르다"고
+     그냥 뒀는데, **눈으로 보니 바로 위아래로 같은 도쿄가 두 번** 나왔습니다.
+     띠 하나를 사이에 두고 붙어 있어서 뜻의 차이가 안 읽히고 중복만 보입니다.
+     히어로를 누르면 그 여행이 열리므로 목록에서 빠져도 갈 길은 그대로입니다. */
+  let 목록 = data;
+  if (tripFilter !== 'past' && data.length) 목록 = data.slice(1);
   if (tripFilter !== 'past' && data.length){
     const t = data[0];
     const dd = Math.round((new Date(t.start_date) - new Date(today)) / 864e5);
@@ -185,7 +191,17 @@ export async function loadTrips(){
                   '날짜와 도시만 정하면 나머지는 채워가면 돼요.');
     return;
   }
-  const tripsHtml = data.map(t => {
+  /* ⚠ **여행이 하나뿐이면 목록이 빕니다**(히어로가 그 하나를 가져갔으므로).
+     그대로 두면 제목만 있는 빈 카드가 남습니다 — 고장으로 보입니다.
+     그럴 때는 위 히어로가 이미 다 말했으니 한 줄만 조용히 답니다(b410). */
+  if (!목록.length){
+    putHtml('trips', `<div class="empty" style="padding:18px 12px">
+      위가 다음 여행이에요.<br>
+      <span class="memo">새 여행은 위 ＋새 여행 으로 만들 수 있어요</span></div>`);
+    return;
+  }
+  /* 히어로에 건 여행은 빠진 목록입니다(위 b410 주석). */
+  const tripsHtml = 목록.map(t => {
     const role = (t.trip_members || []).find(m => m.user_id === ctx.me().id)?.role || '';
     const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
     const a = `data-id="${esc(t.id)}" data-title="${esc(t.title)}"`;
