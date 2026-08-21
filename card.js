@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b410';
+import { $, esc, toast } from './dom.js?v=b411';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b410';
+import { distKm, pScale, SEOUL } from './calc.js?v=b411';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -229,20 +229,22 @@ export const appUrlText = () =>
 
 /* 긴 문구를 폭에 맞춰 접습니다. 한국어는 단어 사이를 띄우지 않는 경우가 많아
    띄어쓰기로만 접으면 한 줄이 넘칩니다. 넘치면 글자 단위로 한 번 더 접습니다. */
-/* ── 넘치면 뒤에서부터 덜어냅니다 ────────────────────────────────────
- * 이름 넷을 `가 · 나 · 다 · 라` 로 한 줄에 넣는데, 긴 이름이 섞이면
- * (「로스앤젤레스」·「울란바토르」) 카드 밖으로 나갑니다. **캔버스는
- * 잘라주지 않습니다** — 그냥 삐져나가 그려집니다.
+/* ── 넘치면 끝을 줄입니다 ────────────────────────────────────────────
+ * 상자 한 칸에 이름을 세로로 쌓는데, 긴 이름(「로스앤젤레스」·「울란바토르」)
+ * 은 칸을 넘습니다. **캔버스는 잘라주지 않습니다** — 그냥 삐져나가 그려집니다.
  *
- * 글자를 줄이는 대신 **개수를 줄입니다.** 카드 안에서 글자 크기가 자꾸
- * 달라지면 조판이 무너지는데, 넷이 셋이 되는 것은 아무도 모릅니다.
- * 하나도 안 들어가면 첫 이름만 내놓습니다 — 빈 줄보다 낫습니다.
+ * ⚠ **글자 크기를 줄이지 않습니다.** 카드 안에서 같은 자리 글자가 줄마다
+ *   다른 크기면 조판이 무너집니다. 끝을 `…` 로 줄이는 쪽이 낫습니다.
+ * ⚠ b399 에는 `맞춰자르기`(개수를 줄이는 것)가 있었습니다. 그때는 넷을
+ *   **한 줄**에 이어 붙였기 때문입니다. b411 에서 상자 둘로 바꾸면서
+ *   이름마다 제 줄을 가지게 됐고, 그래서 규칙도 바뀌었습니다.
  * **부르기 전에 `g.font` 를 먼저 정해야 합니다**(재는 것이 그 글꼴 기준). */
-function 맞춰자르기(g, names, max){
-  const 붙이기 = a => a.join('  ·  ');
-  let a = [...names];
-  while (a.length > 1 && g.measureText(붙이기(a)).width > max) a.pop();
-  return 붙이기(a);
+function 줄여쓰기(g, text, max){
+  const s = String(text ?? '');
+  if (g.measureText(s).width <= max) return s;
+  let a = [...s];
+  while (a.length > 1 && g.measureText(a.join('') + '…').width > max) a.pop();
+  return a.join('') + '…';
 }
 
 function wrapText(g, text, max){
@@ -288,7 +290,8 @@ const P16 = {
   흐림:    '#8A8578',
   아주흐림:'#B0A89A',
   주황:    '#F25E26',
-  배지:    '#FDEBE2',   /* 상위 % 알약 */
+  배지:    '#FDEBE2',   /* 상위 % 알약 · 「어울리는 곳」 상자 바탕 */
+  주황선:  '#F7CDB8',   /* 그 상자 테두리. 주황을 옅게 — 배지와 한 식구로 보이게 */
   홈:      '#F0EAE0',   /* 능력치 막대 바탕 */
   띠:      '#F7F2E9',   /* MRZ 칸 */
   점선:    '#DCD5C8',
@@ -306,7 +309,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b410`;
+    img.src = `./persona/${code}.png?v=b411`;
   });
 }
 
@@ -613,6 +616,10 @@ async function drawP16(s, W, H, F){
   const 추천줄 = [['어울리는 곳',   s.picks?.match    || [], true],
                   ['반대로 가보면', s.picks?.opposite || [], false]]
                  .filter(([, names]) => names.length);
+  /* 상자 높이 — 제목(.046) 아래로 이름 넷이 .042 씩. 마지막 이름이 .226 이고
+     바닥 여백을 .030 둡니다. **이름이 넷보다 적어도 높이는 같습니다** —
+     나란한 두 칸의 키가 다르면 표가 아니라 사고로 보입니다. */
+  const PICKH = .100 + 3 * .042 + .030;
 
   const blocks = [
     { h:.082, draw:(y, U) => {                 /* 코드 — 작은 표식 */
@@ -702,15 +709,34 @@ async function drawP16(s, W, H, F){
        ⚠ **두 제목의 색이 다릅니다.** 「어울리는 곳」은 재서 정한 것이라
        주황(카드의 강조색), 「반대로 가보면」은 정확도를 주장하지 않는
        것이라 회색입니다. 같은 색으로 맞추면 둘 다 같은 무게로 읽힙니다. */
-    ...(추천줄.length ? [{ h:추천줄.length * .082 + .028, draw:(y, U) => {
+    /* ⚠ **글줄 둘에서 상자 둘로 바꿨습니다(b411, 사용자 결정).** 위 궁합과
+       같은 생김새입니다 — 나란한 두 칸. 같은 카드 안에서 "둘을 견주는 것"이
+       두 번 나오는데 하나는 상자고 하나는 맨 글줄이면 결이 안 맞습니다.
+
+       ⚠ **색은 궁합과 달라야 합니다.** 궁합은 초록·분홍(좋고 나쁨)인데
+       여기에 같은 색을 쓰면 「반대로 가보면」이 **나쁜 곳**으로 읽힙니다.
+       그건 뜻이 아닙니다 — 재서 정한 것(주황)과 정확도를 주장하지 않는
+       것(수수한 색)으로 가릅니다.
+
+       ⚠ **이름을 세로로 쌓습니다.** 한 줄에 넷을 넣으면 좁은 칸에서 두 개도
+       안 들어갑니다. 그래도 넘치는 긴 이름은 끝을 …로 줄입니다. */
+    ...(추천줄.length ? [{ h:PICKH + .052, draw:(y, U) => {
+        const gap = W * .022, bw = ((R - L) - gap) / 2;
+        const bh = U * PICKH, top = y + U * .030;
         추천줄.forEach(([cap, names, 진하게], i) => {
-          const ry = y + U * (.022 + i * .082);
+          const bx = L + i * (bw + gap), px = bx + W * .034;
+          g.fillStyle = 진하게 ? P16.배지 : P16.띠;
+          rrect(g, bx, top, bw, bh, U * .030); g.fill();
+          g.strokeStyle = 진하게 ? P16.주황선 : P16.점선;
+          g.lineWidth = Math.max(1.5, W * .0018); g.stroke();
+
           g.textAlign = 'left';
-          g.font = F(700, U * .025); g.fillStyle = 진하게 ? P16.주황 : P16.흐림;
-          g.fillText(cap, L, ry + U * .022);
+          g.font = F(700, U * .027); g.fillStyle = 진하게 ? P16.주황 : P16.흐림;
+          g.fillText(cap, px, top + U * .046);
           /* **자르기 전에 글꼴을 먼저 정합니다** — 재는 것이 그 글꼴 기준입니다. */
-          g.font = F(600, U * .031); g.fillStyle = P16.잉크;
-          g.fillText(맞춰자르기(g, names, R - L), L, ry + U * .062);
+          g.font = F(600, U * .034); g.fillStyle = P16.잉크;
+          names.slice(0, 4).forEach((n, j) =>
+            g.fillText(줄여쓰기(g, n, bw - W * .068), px, top + U * (.100 + j * .042)));
         });
       } }] : []),
     ...(s.mrz ? [{ h:.088, draw:(y, U) => {    /* **장식입니다.** 진짜 정보는 위에 다 있습니다 */
@@ -775,7 +801,9 @@ async function drawP16(s, W, H, F){
 export async function cardImage(spec, mode = 'square'){
   const { w:W, h:H } = IMG_SIZES[mode] || IMG_SIZES.square;
   const ok = await ensureFont();
-  const fam = ok ? '"Pretendard", -apple-system, sans-serif'
+  /* 화면(app.css 의 --sf)과 **같은 이름을 같은 순서로** 씁니다(b411) —
+     둘이 어긋나면 한 폰 안에서 화면과 카드의 글씨체가 갈립니다. */
+  const fam = ok ? `"Pretendard Variable", Pretendard, -apple-system, sans-serif`
                  : '-apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif';
   const F = (weight, px) => `${weight} ${px}px ${fam}`;
 
@@ -1758,19 +1786,17 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
      `measureText` 를 흉내 낸 자로 봅니다 — 진짜 글꼴이 없어도 규칙은 같습니다. */
   {
     const g = { measureText: t => ({ width: [...t].length * 10 }) };
-    const 넷 = ['로스앤젤레스', '울란바토르', '체르마트', '트라브존'];
     const msgs = [];
-    const 넉넉 = 맞춰자르기(g, 넷, 100000);
-    if (!넷.every(n => 넉넉.includes(n))) msgs.push(`넉넉한데 잘렸음: ${넉넉}`);
-    /* 좁게 주면 줄어야 합니다. 안 줄면 카드 밖으로 나갑니다. */
-    const 좁게 = 맞춰자르기(g, 넷, 200);
-    if (g.measureText(좁게).width > 200) msgs.push(`안 줄었음: ${좁게}`);
-    if (!좁게) msgs.push('빈 줄이 나왔음');
-    /* **하나도 안 들어가도 빈 줄을 내지 않습니다.** 제목만 있고 밑이 비면
-       고장으로 보입니다 — 첫 이름은 남깁니다. */
-    const 극단 = 맞춰자르기(g, 넷, 0);
-    if (극단 !== 넷[0]) msgs.push(`0폭에서 '${극단}' (첫 이름만 기대)`);
-    bad('카드 안 추천 줄이 넘치면 덜어내는가', msgs);
+    if (줄여쓰기(g, '나하', 1000) !== '나하') msgs.push('넉넉한데 줄였음');
+    /* 좁게 주면 줄어야 합니다. 안 줄면 상자 밖으로 나갑니다. */
+    const 좁게 = 줄여쓰기(g, '로스앤젤레스', 45);
+    if (g.measureText(좁게).width > 45) msgs.push(`안 줄었음: ${좁게}`);
+    if (!좁게.endsWith('…')) msgs.push(`줄였는데 … 가 없음: ${좁게}`);
+    /* **하나도 안 들어가도 빈 줄을 내지 않습니다.** 상자 안이 비면 고장으로
+       보입니다 — 한 글자와 … 는 남깁니다. */
+    const 극단 = 줄여쓰기(g, '로스앤젤레스', 0);
+    if (극단 !== '로…') msgs.push(`0폭에서 '${극단}' ('로…' 기대)`);
+    bad('카드 안 추천 이름이 넘치면 끝을 줄이는가', msgs);
   }
 
   console.table(out);

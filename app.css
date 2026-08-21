@@ -54,8 +54,24 @@
   /* 사이 간격: 종류가 다르면 sm(12), 같은 것끼리 이어지면 xs(8). */
   --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px;
 
-  --sf:-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-       "Apple SD Gothic Neo", "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  /* ── 앱 글꼴 — Pretendard 를 **맨 앞에** 둡니다(b411) ─────────────────
+     전에는 `-apple-system` 이 먼저였고 Pretendard 가 여섯째였습니다.
+     그래서 **아이폰·맥에서는 Apple SD Gothic Neo 로 그려졌습니다** — 안드로이드
+     ·윈도우에서만 Pretendard 였습니다. 그런데 **성향 카드(캔버스)는 늘
+     Pretendard 를 먼저 씁니다**(card.js 의 `fam`). 같은 폰 안에서 화면과
+     카드의 글씨체가 갈렸습니다.
+
+     ⚠ **이 함정은 이미 한 번 겪고 스플래시에서만 고쳤습니다.** index.html
+       의 그 자리 주석에 그대로 적혀 있습니다 — "화면 쪽이 -apple-system 을
+       먼저 쓰면 아이폰에서 글자 모양이 달라져 크로스페이드 때 문구가 이중으로
+       겹쳐 보입니다(실기기에서 확인)". 거기만 고치고 앱 전체는 그대로
+       뒀던 것입니다. **글꼴을 정하는 자리는 여기 하나여야 합니다.**
+
+     `Pretendard Variable` 이 실제로 내려오는 이름이고(index.html 이 variable
+     판을 링크합니다), `Pretendard` 는 그 CSS 가 같이 정의하는 이름입니다.
+     둘 다 적어 두고, 못 받았을 때를 위해 기기 글꼴을 뒤에 남깁니다. */
+  --sf:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+       "Apple SD Gothic Neo", system-ui, sans-serif;
 
   --ts:1;                       /* 글자 배율. 나중에 user_prefs 에서 온다 */
 
