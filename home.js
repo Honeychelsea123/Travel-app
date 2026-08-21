@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b447';
-import { sb } from './db.js?v=b447';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b447';
-import { hm, todayYmd } from './calc.js?v=b447';
-import { starHtml, paintStars, markRated } from './stars.js?v=b447';
+import { $, esc } from './dom.js?v=b448';
+import { sb } from './db.js?v=b448';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b448';
+import { hm, todayYmd } from './calc.js?v=b448';
+import { starHtml, paintStars, markRated } from './stars.js?v=b448';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b447';
-import { cities, countryName } from './cities.js?v=b447';
-import { myRates, visited } from './rate.js?v=b447';
-import { plans } from './trip.js?v=b447';
-import { openCity } from './city.js?v=b447';
-import { loadCities, pick } from './citysearch.js?v=b447';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b447';
-import { openMap, UN_COUNTRIES } from './map.js?v=b447';
+import { rateHero, starValue } from './rateui.js?v=b448';
+import { cities, countryName } from './cities.js?v=b448';
+import { myRates, visited } from './rate.js?v=b448';
+import { plans } from './trip.js?v=b448';
+import { openCity } from './city.js?v=b448';
+import { loadCities, pick } from './citysearch.js?v=b448';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b448';
+import { openMap, UN_COUNTRIES } from './map.js?v=b448';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b447';
+import { drawReport } from './report.js?v=b448';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b447';
-import { openNew } from './newtrip.js?v=b447';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b448';
+import { openNew } from './newtrip.js?v=b448';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -1060,11 +1060,12 @@ export async function loadFootprint(){
        <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
     : '다녀온 곳을 표시하면 여기에 쌓여요.';
 
-  const by = f.by_continent || {};
-  $('s_cont').innerHTML = Object.entries(by)
-    .sort((a, b) => b[1] - a[1])
-    .map(([k, n]) => `<span class="day" style="cursor:default">${esc(k)}
-       <span class="n">${n}</span></span>`).join('');
+  /* ⚠ **대륙 칩을 뺐습니다(b448).** 「유럽 19 · 아시아 7 · 북아메리카 1」이
+     여기 있었는데, **분석 탭에 대륙별 진행도**가 생기면서 같은 것을 두 번
+     말하게 됐습니다. 게다가 거기는 분모까지 있어(19/44) 얼마나 남았는지도
+     보입니다 — 이쪽은 이길 수가 없습니다.
+     ⚠ `#s_cont` 자체는 index.html 에 남아 있습니다(빈 채로). 지우려거든
+       프로필 머리를 손볼 때 같이 하십시오. */
 }
 
 

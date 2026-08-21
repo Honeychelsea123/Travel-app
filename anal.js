@@ -14,11 +14,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b447';
-import { sb } from './db.js?v=b447';
-import { cities, continentOf } from './cities.js?v=b447';
-import { personaAxes, personaRank, PERSONA16, AXIS_NAME } from './card.js?v=b447';
-import { UN_COUNTRIES, CONT } from './map.js?v=b447';
+import { $, esc } from './dom.js?v=b448';
+import { sb } from './db.js?v=b448';
+import { cities, continentOf } from './cities.js?v=b448';
+import { personaAxes, personaRank, personaMates, PERSONA16,
+         AXIS_NAME } from './card.js?v=b448';
+import { UN_COUNTRIES, CONT } from './map.js?v=b448';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -63,25 +64,55 @@ export async function loadAnal(){
   성향.className = 'card quiet';
   if (매긴것.length >= 문턱){
     const ax = personaAxes(매긴것, { cities });
-    const 유형 = PERSONA16[ax.code];
+    const 유형 = PERSONA16[ax.code] || { n:'여행자', d:'' };
     const 나라수 = new Set(매긴것
       .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
       .filter(Boolean)).size;
-    성향.appendChild(줄('내 성향',
-      유형 ? `${ax.code} ${유형.n}` : ax.code,
-      personaRank(나라수),
-      () => { ctx.showApp('set'); $('openpersona')?.click(); }));
 
+    /* ── 유형을 **크게** ────────────────────────────────────────────
+       한 줄짜리 「FMDP ›」로는 무엇을 보러 온 탭인지 안 읽힙니다.
+       들어오자마자 내가 누구인지 보여야 합니다. 코드를 제일 크게,
+       이름을 그 아래, 등수를 알약으로. */
+    const 머리 = document.createElement('div');
+    머리.className = 'ptop';
+    머리.innerHTML = `<div class="pcode">${esc(ax.code)}</div>
+      <div class="pname">${esc(유형.n)}</div>
+      <span class="prank">${esc(personaRank(나라수))}</span>`;
+    머리.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
+    성향.appendChild(머리);
+
+    /* ── 네 축 ── **축마다 색이 다릅니다** ──────────────────────────
+       ⚠ 넷을 다 같은 파랑으로 두면 **하나의 긴 표**로 읽힙니다. 축은
+         서로 다른 것을 재는데 색이 같으면 그 차이가 안 보입니다.
+       ⚠ 색은 앱이 이미 쓰는 분류색(--k-*)에서 가져옵니다. 새 색을
+         만들면 앱 안에 색 체계가 둘이 됩니다. */
     const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
+    const 색 = ['var(--k-food)', 'var(--k-see)', 'var(--k-move)', 'var(--k-stay)'];
     const 막대 = document.createElement('div');
     막대.className = 'axbars';
     막대.innerHTML = AXIS_NAME.map((n, i) => `
       <div class="axrow"><span class="axn">${esc(n)}</span>
-        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%"></i></span>
+        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%;
+          background:${색[i]}"></i></span>
         <span class="axv">${값[i]}</span></div>`).join('');
-    /* ⚠ 막대는 **보기만** 합니다. 누르는 것은 위 줄 하나로 충분합니다 —
-       같은 곳으로 가는 입구가 둘이면 어느 쪽이 무엇인지 헷갈립니다. */
     성향.appendChild(막대);
+
+    /* ── 궁합 두 칸 ────────────────────────────────────────────────
+       ⚠ **이미 성향 카드 그림 안에 있던 것**입니다(card.js 의 drawP16).
+         그런데 그림 안에 있으면 **카드를 열어야 보이고 누를 수도 없습니다.**
+         여기 꺼내 두면 들어오자마자 보입니다.
+       ⚠ 계산은 card.js 의 personaMates 하나만 씁니다 — 여기서 또 세면
+         카드와 다른 답이 나옵니다. */
+    const m = personaMates(ax.code);
+    const 짝 = document.createElement('div');
+    짝.className = 'mates';
+    짝.innerHTML = [[m.best, m.bestScore, '환상의 메이트', 'good'],
+                    [m.worst, m.worstScore, '최악의 조합', 'bad']]
+      .map(([c, s, 라벨, 갈래]) => `<div class="mate ${갈래}">
+        <span class="ml">${esc(라벨)} · ${s}%</span>
+        <b>${esc(PERSONA16[c]?.n || c)}</b>
+        <span class="mc">${esc(c)}</span></div>`).join('');
+    성향.appendChild(짝);
   } else {
     성향.appendChild(줄('내 성향',
       `${문턱 - 매긴것.length}곳만 더 매기면 유형이 나와요`, '매기러 가기',

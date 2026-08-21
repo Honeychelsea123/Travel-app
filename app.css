@@ -2503,3 +2503,35 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
             background:var(--primary); }
 .axv{ flex:none; width:46px; text-align:right; font-variant-numeric:tabular-nums;
       font-size:calc(12px * var(--ts)); color:var(--ink-48); font-weight:600; }
+
+/* ── 분석 탭 머리 — 내가 누구인지 먼저(b448) ─────────────────────────
+ * 코드를 제일 크게, 이름을 그 아래, 등수를 알약으로. 한 줄짜리
+ * 「FMDP ›」로는 무엇을 보러 온 탭인지 안 읽힙니다. */
+.ptop{ position:relative; text-align:center; padding:6px 0 14px; cursor:pointer; }
+.pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:var(--primary);
+        letter-spacing:calc(1px * var(--ts)); line-height:1.1; }
+.pname{ font-size:calc(17px * var(--ts)); font-weight:700; margin-top:3px; }
+.prank{ display:inline-block; margin-top:8px; padding:3px 10px;
+        border-radius:var(--r-pill); background:var(--line);
+        font-size:calc(12px * var(--ts)); font-weight:600; color:var(--ink-48); }
+
+/* ── 궁합 두 칸 ───────────────────────────────────────────────────────
+ * 성향 카드 그림 안에만 있던 것을 꺼냈습니다 — 그림 안에 있으면 카드를
+ * 열어야 보이고 누를 수도 없습니다.
+ * ⚠ 색이 좋고 나쁨을 말합니다. 카드 그림(card.js 의 P16)과 **같은 계열**로
+ *   맞춥니다 — 두 곳의 색이 다르면 같은 뜻인지 알 수 없습니다. */
+.mates{ display:flex; gap:8px; margin-top:14px; }
+.mate{ flex:1; min-width:0; padding:10px 12px; border-radius:var(--r-sm);
+       border:1px solid; }
+.mate.good{ background:#F1F7EE; border-color:#CBE0C0; }
+.mate.bad { background:#FCEFF0; border-color:#F5D3D3; }
+.mate .ml{ display:block; font-size:calc(11px * var(--ts)); font-weight:600; }
+.mate.good .ml{ color:#5C8A4A; } .mate.bad .ml{ color:#C4626B; }
+.mate b{ display:block; font-size:calc(14px * var(--ts)); font-weight:700;
+         margin-top:3px; word-break:keep-all; }
+.mate .mc{ display:block; font-size:calc(11px * var(--ts)); color:var(--ink-48);
+           margin-top:1px; letter-spacing:.5px; }
+
+/* 빈 대륙 칩 자리가 여백을 남기지 않게(b448) — 채우는 쪽을 걷어냈습니다
+   (home.js 의 loadFootprint). 요소는 남겨 두었습니다. */
+#s_cont:empty{ display:none; }
