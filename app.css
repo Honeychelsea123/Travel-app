@@ -1136,6 +1136,35 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    진해져 색이 지저분해집니다. 높이에 안 휘둘리는 한 겹이면 짧아져도 같습니다. */
 .hero.noimg::after{ background:rgba(0,0,0,.34); }
 
+/* ── 평가 히어로(b398) ────────────────────────────────────────────────
+ * 홈 맨 위에서 **바로 별을 누르는** 자리입니다. 이 앱의 메인이 평가라
+ * 첫 화면이 그 일을 합니다(home.js 의 rateHeroHtml).
+ *
+ * ⚠ **별은 사진 위에 얹힙니다.** `.st` 는 `1.1em` 이라 부모 글자 크기를
+ *   그대로 따라가므로, 여기서 통의 `font-size` 만 키우면 별이 커집니다.
+ *   `.st` 를 직접 건드리면 목록 쪽 별까지 같이 커집니다.
+ * ⚠ **손가락 자리를 벌려 둡니다.** 목록의 별은 1px 간격인데 여기는 사진
+ *   위에서 반 칸(0.5점)까지 골라야 해서, 좁으면 계속 빗나갑니다.
+ * ⚠ 빈 별이 흰 사진 위에서 안 보입니다. 그림자를 깔아 어디서든 읽히게 합니다. */
+.hero .herostars{ font-size:calc(26px * var(--ts)); gap:4px;
+                  color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.55); }
+/* 매긴 만큼 차는 부분은 별색 그대로 둡니다 — 흰 별과 갈려야 몇 점인지 보입니다. */
+.hero .herostars .st i{ color:var(--star, #ffc93c); }
+/* 도시 이름이 주인공이라 나라는 한 줄 아래에서 조용히. 별에 자리를 내줍니다. */
+.hero.rateh .hrow{ margin-top:6px; }
+.hero.rateh .hm{ opacity:.8; }
+
+/* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
+   둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).
+   위아래를 선으로 갈라 **발자국 숫자와 섞여 읽히지 않게** 합니다. */
+.fprow{ display:flex; align-items:center; gap:10px; cursor:pointer;
+        margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+.fprow .t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.fprow .t b{ font-size:calc(15px * var(--ts)); font-weight:600; }
+.fprow .t span{ font-size:calc(13px * var(--ts)); color:var(--dim); }
+.fprow .go{ flex:none; font-size:calc(13px * var(--ts)); color:var(--primary);
+            font-weight:600; }
+
 /* AI 카드 — **채도 높은 그러데이션 두 장을 걷어냈습니다.**
  * 보라·청록 카드가 홈 위쪽을 나란히 먹고 있었는데, 그게 화면에서 제일
  * "템플릿 같아" 보이는 부분이었습니다. 상용 앱은 이런 것을 두 개

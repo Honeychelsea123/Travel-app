@@ -16,23 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b397';
-import { sb } from './db.js?v=b397';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b397';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b397';
-import { starHtml, paintStars, markRated } from './stars.js?v=b397';
-import { cities, countryName } from './cities.js?v=b397';
-import { myRates, visited } from './rate.js?v=b397';
-import { plans } from './trip.js?v=b397';
-import { openCity } from './city.js?v=b397';
-import { loadCities, pick } from './citysearch.js?v=b397';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b397';
-import { openMap, UN_COUNTRIES } from './map.js?v=b397';
-/* `aiPrompt` 는 무엇을 권할지만 정합니다 — 여행이 있을 때는 히어로 단추로,
-   없을 때는 `renderAiCard` 가 카드로 그립니다(b377). */
-import { drawReport, renderAiCard, aiPrompt } from './report.js?v=b397';
-import { PERSONA_BG } from './card.js?v=b397';
-import { openNew } from './newtrip.js?v=b397';
+import { $, esc } from './dom.js?v=b398';
+import { sb } from './db.js?v=b398';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b398';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b398';
+import { starHtml, paintStars, markRated } from './stars.js?v=b398';
+import { cities, countryName } from './cities.js?v=b398';
+import { myRates, visited } from './rate.js?v=b398';
+import { plans } from './trip.js?v=b398';
+import { openCity } from './city.js?v=b398';
+import { loadCities, pick } from './citysearch.js?v=b398';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b398';
+import { openMap, UN_COUNTRIES } from './map.js?v=b398';
+/* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
+   권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
+   그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
+import { drawReport } from './report.js?v=b398';
+/* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
+   홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b398';
+import { openNew } from './newtrip.js?v=b398';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -45,13 +48,18 @@ let lastHomeSig = '';
 export function resetHomeSig(){ lastHomeSig = ''; }
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
- * 세 덩어리입니다.
- *   ① 히어로   — 다음 여행을 도시 사진 위에. 여행이 없으면 가고 싶은 곳.
- *   ② 가봤어요 — 안 매긴 도시 한 곳에 별을 매깁니다.
- *   ③ 발자국   — 195개국 중 몇 곳인지.
+ * **메인은 평가·성향, 일정은 서브입니다**(사용자 결정, b398). 위에서부터:
+ *   ① 히어로   — **평가할 도시.** 사진 위에서 별을 바로 누릅니다.
+ *   ② 다음 여행 — 얇은 줄 하나 (있을 때만)
+ *   ③ 새 여행   — 얇은 줄 하나
+ *   ④ 가봤어요 — 안 매긴 도시 다섯 곳
+ *   ⑤ 발자국   — 195개국 중 몇 곳인지 + **내 성향 한 줄**
  *
- * ①은 1년에 두세 번만 의미가 있습니다. 나머지 360일을 ②③이 채웁니다.
- * 일정과 검토는 홈에서 뺐습니다 — 여행 탭과 AI 탭에 이미 있습니다. */
+ * ②는 1년에 두세 번만 의미가 있습니다. 나머지 360일을 ①④⑤가 채웁니다.
+ * 그래서 ②를 히어로에서 끌어내려 줄로 만들었습니다.
+ *
+ * ⚠ 홈에서 **뺀 것 둘**: 다녀온 여행 평가 재촉(→ 여행 탭, `reviewBar`)과
+ *   AI 일정 카드(→ 없앰). 왜 그랬는지는 `buildHome` 머리말에 있습니다. */
 
 /* 사진은 구간에 붙은 도시에서 가져옵니다.
    예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
@@ -151,6 +159,31 @@ function heroHtml(photo, dd, title, memo, btn, ai){
   </div>`;
 }
 
+/* ── 평가 히어로 ─────────────────────────────────────────────────────
+ * 홈 맨 위에서 **바로 별을 누릅니다**(b398). 이 앱의 메인은 평가라, 첫
+ * 화면이 "평가하러 가세요" 라고 시키는 대신 **그 자리에서 되게** 합니다.
+ * 한 번 더 누르게 만들 때마다 사람이 줄어듭니다.
+ *
+ * ⚠ **별은 `.stars` 통에 담아야 합니다.** 아래 클릭 처리기가 `.stars` 의
+ *   `data-city` 로 어느 도시인지 알아냅니다(퀴즈 줄과 같은 방식). 통을
+ *   바꾸면 눌러도 아무 일이 안 일어나는데, 화면은 멀쩡해 보입니다.
+ *
+ * ⚠ **사진이 없는 도시는 여기 오면 안 됩니다.** 히어로는 사진이 주인공이라
+ *   빈 색 덩어리만 남습니다. 고르는 쪽(buildHome)에서 걸러 옵니다. */
+function rateHeroHtml(c){
+  return `<div class="hero rateh" id="hero">
+    <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
+    <div class="ht">${esc(c.name)}, 가보셨어요?</div>
+    <div class="hrow">
+      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+      <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
+    </div>
+  </div>`;
+}
+/* 지금 히어로에 걸린 도시. **퀴즈가 이걸 빼고 그려야** 같은 도시가 위아래에
+   두 번 안 나옵니다(renderQuiz · 다음 줄 채우기 둘 다). */
+let heroCity = null;
+
 /* 홈은 받아올 것이 여럿입니다(도시·다음 여행·평가·발자국).
    하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
    중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
@@ -204,160 +237,97 @@ export async function loadHome(){
   }
 }
 
+/* ── 홈을 그립니다 ────────────────────────────────────────────────────
+ * ⚠ **b398 에서 순서를 통째로 뒤집었습니다.** 그 전에는 히어로가 다음 여행
+ *   (사진 260px 에 D-22)이었고, 여행이 없으면 맨 위가 `AI 로 일정 만들기`
+ *   카드였습니다. 재보니 홈의 **높이는 이미 평가가 72%**(571+284)인데
+ *   **제일 큰 목소리는 일정**이었습니다 — 히어로가 유일한 사진이고 유일한
+ *   큰 숫자였고, 평가 쪽 큰 카드는 `card quiet`(일부러 흐린 것)였습니다.
+ *
+ *   그리고 b397 에서 앱 얼굴을 「나는 어떤 여행자일까」로 바꿔 놓고 첫 화면은
+ *   그대로 뒀습니다. **성향 카드를 보고 온 사람은 여행이 없는 사람**인데,
+ *   그 사람이 열면 `AI 로 일정 만들기` 가 맨 위에 떴습니다. 온 이유와 첫
+ *   화면의 할 일이 달랐습니다.
+ *
+ *   이 앱은 **평가·성향이 메인, 일정이 서브**입니다(사용자 결정). 그래서:
+ *     · 히어로 = **평가할 도시.** 사진 위에서 별을 바로 누릅니다.
+ *     · 다음 여행 = 얇은 줄 하나
+ *     · 새 여행   = 얇은 줄 하나
+ *     · 다녀온 여행 평가 재촉(rvbar) · AI 일정 카드 → **여행 탭으로 옮겼습니다**
+ *
+ * ⚠ **왜 성향 카드를 히어로에 안 걸었나.** 후보였습니다. 안 건 이유는
+ *   목표가 "성향을 자랑하기" 가 아니라 **"평가를 남기게 하기"** 라서입니다.
+ *   첫 화면에서 별을 바로 누를 수 있는 쪽이, 성향을 보여주고 "평가하러
+ *   가세요" 라고 한 번 더 시키는 쪽보다 셉니다. 성향은 그 다음 보상이라
+ *   발자국 카드에 얹었습니다(renderFoot).
+ *
+ * ⚠ **잃은 것도 적어둡니다.** 여행이 끝났는데 평가를 안 한 사람에게 홈에서
+ *   재촉하던 장치가 여행 탭으로 갔습니다. 다녀온 뒤에는 앱을 잘 안 여는데
+ *   그때 붙잡는 것이 그 띠였습니다. 대신 히어로가 늘 평가를 권하므로
+ *   "평가 자체" 는 오히려 앞으로 나왔습니다. 재촉이 약해졌다고 느껴지면
+ *   여행 탭 쪽(triplist.js 의 rvBar)을 다시 보십시오. */
 async function buildHome(){
   const today = todayYmd();
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
 
-  /* 다녀왔는데 아직 별점을 안 매긴 여행. 앞으로 갈 여행이 먼저이므로
-     그때는 히어로 아래 얇은 띠로만 붙입니다 — 위가 두 덩어리가 되면 무겁습니다. */
-  const pend = await pendingTrip();
-  const rvBar = () => {
-    if (!pend) return;
-    const b = document.createElement('div');
-    b.className = 'rvbar';
-    b.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
-        <span>다녀오신 곳을 평가해주세요${
-          pend.places.length ? ` · ${pend.places.length}곳` : ''}</span></span>
-      <span class="go">평가 ›</span>`;
-    b.onclick = () => openReviewTrip(pend.trip.id);
-    $('home').appendChild(b);
-  };
-
+  /* 다음 여행. **이제 사진을 안 받습니다** — 한 줄로만 쓰므로 tripPhoto 를
+     부를 이유가 없습니다. 홈이 기다리는 것이 하나 줄었습니다. */
   let { data, error } = await netTimeout(sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone')
     .gte('end_date', today)
     .order('start_date').limit(1));
-  /* 다음 여행은 여행 중에 제일 보고 싶은 것입니다. 캐시로라도 보여줍니다. */
   if (error){
     data = cacheGet('nexttrip');
     if (!data) throw error;
     drawOffbar();
   } else cacheSet('nexttrip', data);
+  const t = data[0] || null;
 
-  /* 앞으로 갈 여행이 없고 평가만 남았으면, 그때는 평가를 크게 겁니다. */
-  if (!data.length && pend){
-    const photo = await tripPhoto(pend.trip);
-    $('home').innerHTML = heroHtml(photo, '',
-      `${pend.trip.title} 어땠어요?`,
-      '다녀오신 곳을 평가해주세요' +
-      (pend.places.length ? ` · ${pend.places.length}곳` : ''), '평가하기');
-    $('hero').onclick = () => openReviewTrip(pend.trip.id);
-    $('herobtn').onclick = e => { e.stopPropagation(); openReviewTrip(pend.trip.id); };
-    renderAiCard(null, 0);
-  await renderQuiz(); await renderFoot();
-    return;
-  }
-
-  if (!data.length){
-    /* 여행이 없으면 가고 싶다고 표시한 곳을 겁니다. 그것도 없으면 아무 곳이나 —
-       빈 화면보다는 사진 한 장이 훨씬 낫습니다. */
-    const w = await netTimeout(sb.from('city_ratings').select('cities(id,name,country,image_url)')
-      .eq('user_id', ctx.me().id).eq('want', true).limit(20));
-    const pool = (w.data || []).map(r => r.cities).filter(c => c?.image_url);
-    let pick = pool[Math.floor(Math.random() * pool.length)] || null;
-    const wanted = !!pick;
-    if (!pick){
-      const any = await netTimeout(sb.from('cities').select('id,name,country,image_url')
-        .not('image_url', 'is', null).limit(60));
-      const l = any.data || [];
-      pick = l[Math.floor(Math.random() * l.length)] || null;
-    }
-    /* **히어로에는 단추를 안 답니다.** 예전에는 여기에도 '새 여행'이 있어서
-       바로 아래 AI 카드의 '시작'과 같은 일을 하는 단추가 둘이었습니다.
-       홈에서 여행을 만드는 길은 4단계 카드 하나입니다.
-       이 사진은 "여기 어때요?" 하는 자리고, 누르면 그 도시를 보여줍니다. */
-    $('home').innerHTML = heroHtml(
-      pick?.image_url, '',
-      pick ? `${pick.name}, 어때요?` : '아직 잡아둔 여행이 없어요',
-      !pick   ? '아래에서 첫 여행을 만들어보세요'
-      : wanted ? '가보고 싶다고 표시해둔 곳이에요'
-               : (countryName[pick.country] || pick.country),
-      '');
-    if (pick?.id) $('hero').onclick = () => openCity(pick.id);
-    /* 여행이 없으면 AI 로 시작하는 것이 첫 걸음입니다. 맨 위에 둡니다. */
-    renderAiCard(null, 0);
-  await renderQuiz(); await renderFoot();
-    return;
-  }
-
-  const t = data[0];
-  const dday = Math.round((asDate(t.start_date) - asDate(today)) / D1);
-  const days = Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1;
-  /* 여행 중이면 남은 날이 아니라 며칠째인지가 궁금합니다.
-     사진 위에 크게 올라가는 자리라 짧아야 합니다. */
-  const badge = dday > 0 ? `D-${dday}`
-              : dday === 0 ? 'D-DAY'
-              : `Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
-
-  /* 여행 중이면 오늘 몇 개인지만 한 줄로 얹습니다.
-     일정 목록 자체는 여행 탭에 있으니 홈에서 또 늘어놓지 않습니다. */
-  const [photo, cnt, all] = await Promise.all([
-    tripPhoto(t),
-    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null).eq('date', today)),
-    /* 이 여행에 일정이 하나라도 있나. 아래 AI 카드가 무슨 말을 할지 정합니다 —
-       일정이 비어 있으면 그게 지금 제일 급한 일입니다. */
-    netTimeout(sb.from('plans').select('id', { count:'exact', head:true })
-      .eq('trip_id', t.id).is('deleted_at', null)),
-  ]);
-
-  const n = cnt.count || 0;
+  /* 히어로에 걸 도시. 퀴즈와 **같은 우물**을 씁니다(fillQuiz) — 두 벌로
+     만들면 같은 도시가 위아래에 두 번 나옵니다. 여기서 한 곳을 집어가고
+     renderQuiz 가 그것을 빼고 그립니다. 사진이 없는 곳은 히어로가 될 수
+     없습니다(사진이 주인공인 자리라 빈 색만 남습니다). */
+  await fillQuiz();
+  heroCity = quizPool.find(c => c.image_url) || null;
 
   /* ── 자료가 그대로면 홈을 아예 다시 그리지 않습니다 ──────────────────
-     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 평가·새여행·퀴즈·발자국을
-     **덧붙이는** 구조라, 목록 하나만 지키는 방식(putHtml)으로는 안 됩니다.
-     히어로를 지우는 순간 뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
-     그래서 **그릴 내용이 같은지를 먼저 보고** 같으면 통째로 건너뜁니다.
-     사용자가 "홈의 평가·지도가 아직 깜빡인다"고 한 것이 이것입니다.
-
-     지문에 넣을 것은 **화면에 실제로 나오는 값**입니다. 퀴즈에 뜬 도시와
-     별점·다녀온 곳 수까지 넣어야 합니다 — 기록 탭에서 별을 매기고 홈으로
-     오면 발자국 숫자와 퀴즈 줄이 달라져야 하니까요. */
-  const sig = [photo, badge, t.id, t.title, days, n, all.count,
-               pend?.trip?.id || '', quizPool.slice(0, QUIZ_ROWS).map(c => c.id).join(),
+     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 줄과 카드를 **덧붙이는**
+     구조라, 목록 하나만 지키는 방식(putHtml)으로는 안 됩니다. 히어로를
+     지우는 순간 뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
+     그래서 **그릴 내용이 같은지를 먼저 보고** 같으면 통째로 건너뜁니다. */
+  const dday = t ? Math.round((asDate(t.start_date) - asDate(today)) / D1) : 0;
+  const days = t ? Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1 : 0;
+  const sig = [t?.id || '', t?.title || '', dday, days, heroCity?.id || '',
+               quizPool.slice(0, QUIZ_ROWS + 1).map(c => c.id).join(),
                visited.size, Object.keys(myRates || {}).length,
-               /* '가보고 싶어요' 를 누르면 아래 '확실한 것' 카드가 달라져야 합니다. */
                Object.values(myRates || {}).filter(r => r.want).length].join('|');
   if (sig === lastHomeSig && $('home').querySelector('.hero')) return;
   lastHomeSig = sig;
 
-  /* ── 히어로 하나가 그 여행을 통째로 말합니다 (b377, C) ────────────────
-     전에는 히어로(`도쿄`) 바로 밑에 AI 카드가 따로 서서 `도쿄, 뭐 더
-     넣을까요?` 라고 했습니다. **같은 여행 이야기를 하는 덩어리가 둘**이라
-     위가 무거웠습니다. 권유를 히어로의 단추로 넣습니다 — 무엇을 권할지
-     정하는 곳은 그대로 report.js 한 곳입니다(`aiPrompt`). */
-  const ai = aiPrompt(t, all.count || 0);
-  /* ── 단추는 **일정이 비었을 때만** 답니다 (b384) ──────────────────────
-     일정이 이미 있으면 `일정 추가` 가 떴는데, 히어로를 누르면 그 여행이
-     열리고 거기서 더할 수 있습니다. AI 로 가는 길도 상단 바 ✦ 로 이미
-     있습니다. **같은 화면에서 두 번 권하는 셈**이라 뺐습니다.
-     `일정 짜기`(일정 0개)는 성격이 다릅니다 — 빈 여행을 채우라는 알림이라
-     안 보이면 그냥 비어 있는 채로 남습니다. 그건 남깁니다.
-     ⚠ 여행이 아예 없을 때는 위쪽 갈래라 여기 안 옵니다. 거기는 히어로에
-       단추를 안 달고 AI 카드가 시작을 맡습니다. 새 여행으로 가는 길은
-       아래 `nt` 줄이 늘 그립니다 — 이 단추와 상관없습니다. */
-  const 빈일정 = (all.count || 0) === 0;
-  $('home').innerHTML = heroHtml(photo, badge, t.title,
-    tripSub(t, days) +
-    (dday <= 0 ? (n ? ` · 오늘 ${n}개` : ' · 오늘은 비어 있어요') : ''),
-    빈일정 ? ai.heroGo : '', true);   /* true = AI 표시를 단추 앞에 붙입니다 */
-  $('hero').onclick = () => ctx.openTrip(t.id);
-  /* 히어로를 누르면 여행이 열리므로 단추는 번짐을 막아야 합니다. */
-  if (빈일정) $('herobtn').onclick = e => { e.stopPropagation(); ai.go2(); };
+  /* 히어로. 매길 도시가 하나도 없으면(다 매겼거나 오프라인) 여행을 겁니다 —
+     빈 화면보다 낫고, 그 사람은 이미 평가를 다 한 사람이라 권할 것이 없습니다. */
+  $('home').innerHTML = heroCity ? rateHeroHtml(heroCity)
+    : heroHtml('', '', t ? t.title : '기로', t ? tripSub(t, days)
+        : '다녀온 도시를 매기면 여행 성향이 나와요', '');
+  if (!heroCity && t) $('hero').onclick = () => ctx.openTrip(t.id);
 
-  /* ── 히어로 밑에는 얇은 줄 둘 (b378) ─────────────────────────────────
-     b377 에서 "권유는 하나만" 이라며 평가가 있으면 새 여행을 감췄는데
-     **틀렸습니다.** 홈에서 다음 여행에 일정을 더하는 것도, 새 여행을 짜는
-     것도 다 돼야 합니다 — 그리고 이건 **이미 한 번 고쳤던 버그**입니다.
-     바로 아래 CSS 주석에 "새 여행으로 가는 길을 홈에 남겨둡니다. AI 카드가
-     '다음 여행' 이야기를 하게 되면서 여행이 이미 있는 사람은 홈에서 새
-     여행을 못 만들게 됐습니다" 라고 적혀 있습니다. 제가 그걸 되살렸습니다.
-
-     지저분했던 것은 **개수가 아니라 생김새가 셋**이었던 것입니다. AI 가
-     히어로로 갔으니 둘만 남고, 둘을 같은 얇은 줄로 맞추면 한 식구로 읽힙니다.
-     색만 갈라 둡니다 — 평가는 답을 기다리는 일(호박색), 새 여행은 언제나
-     열려 있는 길(수수한 색). */
-  if (pend) rvBar();
+  /* ── 히어로 밑에는 얇은 줄 둘 ────────────────────────────────────────
+     둘 다 일정 쪽이라 **같은 생김새**로 맞춥니다 — 한 식구로 읽혀야
+     "여기는 서브" 라는 것이 보입니다. 색을 가르면 둘 다 눈에 띄어서
+     위에서 정한 위계가 도로 무너집니다. */
+  if (t){
+    const badge = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY'
+                : `Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
+    const tb = document.createElement('div');
+    tb.className = 'newtripbar';
+    tb.innerHTML = `<span class="t"><b>${esc(t.title)} · ${esc(badge)}</b>
+        <span>${esc(tripSub(t, days))}</span></span>
+      <span class="go">열기 ›</span>`;
+    tb.onclick = () => ctx.openTrip(t.id);
+    $('home').appendChild(tb);
+  }
+  /* ⚠ **새 여행 줄은 늘 그립니다.** 여행이 있든 없든 홈에서 새 여행을 만들
+     수 있어야 합니다 — 이미 한 번 없앴다가 되살린 적이 있습니다(b378). */
   const nt = document.createElement('div');
   nt.className = 'newtripbar';
   nt.innerHTML = `<span class="t"><b>다음에 어디 갈까요?</b>
@@ -368,6 +338,29 @@ async function buildHome(){
 
   await renderQuiz();
   await renderFoot();
+}
+
+/* ── 다녀온 여행 평가 재촉 띠 ────────────────────────────────────────
+ * **홈에 있다가 여행 탭으로 옮겼습니다(b398).** 홈은 도시 평가가 주인공이고,
+ * 이 띠는 **특정 여행에 묶인 것**이라 여행 탭이 제 자리입니다.
+ *
+ * ⚠ **띠만 옮기고 화면은 안 옮겼습니다.** 평가 화면(`openReviewTrip`)과 그
+ *   화면의 단추들(rvback · rv_rate · rv_done)은 이 파일에 그대로 있습니다.
+ *   화면까지 옮기면 딸린 것이 줄줄이 따라가는데, 옮겨야 할 이유는 **입구가
+ *   어디 있느냐** 하나뿐이었습니다. 그래서 입구만 내보냅니다.
+ *
+ * 부르는 쪽(triplist.js)이 `null` 을 받으면 붙일 것이 없다는 뜻입니다. */
+export async function reviewBar(){
+  const pend = await pendingTrip();
+  if (!pend) return null;
+  const b = document.createElement('div');
+  b.className = 'rvbar';
+  b.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
+      <span>다녀오신 곳을 평가해주세요${
+        pend.places.length ? ` · ${pend.places.length}곳` : ''}</span></span>
+    <span class="go">평가 ›</span>`;
+  b.onclick = () => openReviewTrip(pend.trip.id);
+  return b;
 }
 
 /* ── 여행 끝난 뒤 ────────────────────────────────────────────────────
@@ -582,7 +575,8 @@ const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
 
 async function renderQuiz(){
   await fillQuiz();
-  const list = quizPool.slice(0, QUIZ_ROWS);
+  /* ⚠ 히어로에 걸린 도시는 뺍니다(b398) — 안 그러면 같은 도시가 위아래에 둘. */
+  const list = quizPool.filter(c => c.id !== heroCity?.id).slice(0, QUIZ_ROWS);
   const box = document.createElement('div');
   /* quiet — 위 두 색카드(이번 여행 · 다음 여행)는 지금 할 일이고,
      이건 훑어보는 자료입니다. 같은 흰 카드로 두면 위계가 안 갈립니다. */
@@ -623,12 +617,84 @@ async function renderFoot(){
   box.querySelectorAll('.minimap path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
   box.onclick = () => { ctx.showApp('set'); openMap(); };
+
+  /* ── 성향 한 줄(b398) ────────────────────────────────────────────────
+     앱 얼굴을 「나는 어떤 여행자일까」로 바꿔 놓고(b397) **정작 홈에는 내
+     유형이 어디에도 없었습니다.** 성향 화면은 프로필 → 스크롤 → 「여행 성향
+     보기」로 두 번 들어가야 나옵니다. 카드를 보고 온 사람이 그걸 찾을 리가
+     없습니다.
+
+     ⚠ **카드를 새로 만들지 않고 발자국에 얹습니다.** 둘 다 "내가 쌓은 것"
+       이라 같은 카드에 있는 것이 맞고, 카드를 늘리면 홈이 또 길어집니다.
+
+     ⚠ **문턱은 성향 화면과 같은 5곳입니다.** 여기만 낮추면 홈에서는 유형이
+       보이는데 눌러 들어가면 "아직 카드를 만들 수 없어요" 가 나옵니다.
+     ⚠ `myRates` 가 아직 안 왔으면(0곳) 그냥 안 그립니다. 틀린 유형을 보여주는
+       것보다 낫고, 자료가 오면 홈 지문이 바뀌어 다시 그려집니다. */
+  const 매긴것 = Object.entries(myRates || {})
+    .filter(([, r]) => r?.stars != null)
+    .map(([city_id, r]) => ({ city_id, stars: r.stars, want: r.want }));
+  if (매긴것.length >= 5){
+    const ax = personaAxes(매긴것, { cities });
+    const 유형 = PERSONA16[ax.code];
+    if (유형){
+      const 나라수 = new Set(매긴것
+        .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
+        .filter(Boolean)).size;
+      const line = document.createElement('div');
+      line.className = 'fprow';
+      line.innerHTML =
+        `<span class="t"><b>${esc(ax.code)} ${esc(유형.n)}</b>
+           <span>${매긴것.length}개 도시 · ${나라수}개국</span></span>
+         <span class="go">${esc(personaRank(나라수))} ›</span>`;
+      /* 카드 전체가 지도로 가므로 이 줄은 **번짐을 막고** 성향으로 보냅니다. */
+      line.onclick = e => { e.stopPropagation(); ctx.showApp('set'); $('openpersona')?.click(); };
+      /* **지도 위에 끼웁니다.** 뒤에 붙이면 홈의 맨 마지막 줄이 되는데,
+         지도가 커서 거기까지 안 내려갑니다. */
+      box.insertBefore(line, box.querySelector('.minimap'));
+    }
+  }
   $('home').appendChild(box);
 }
 
 /* 별을 매긴 줄은 빠지고 그 자리에 다음 도시가 들어옵니다.
    화면을 통째로 다시 그리지 않아야 매기던 흐름이 안 끊깁니다. */
 $('home').addEventListener('click', async e => {
+  /* ── 히어로에서 바로 매기기(b398) ──────────────────────────────────
+     퀴즈 줄과 **셈은 같고 뒤처리만 다릅니다.** 줄은 밀려나고 다음 줄이
+     들어오지만, 히어로는 자리가 하나뿐이라 **다음 도시로 갈아 끼웁니다.**
+
+     ⚠ **`loadHome()` 을 부르면 안 됩니다.** 홈을 통째로 다시 그리면 화면이
+       맨 위로 튀고 사진이 깜빡입니다. 여기만 갈아 끼웁니다.
+     ⚠ 매긴 뒤에는 `lastHomeSig` 를 비웁니다 — 안 그러면 다른 화면에 갔다
+       오면서 홈을 다시 그릴 때 "그릴 내용이 같다" 며 건너뛰어, 방금 매긴
+       도시가 히어로에 그대로 남습니다. */
+  const hs = e.target.closest('#hero .st');
+  if (hs){
+    const wrap = hs.closest('.stars'), hero = hs.closest('.hero');
+    const cityId = wrap.dataset.city;
+    if (hero.dataset.done) return;
+    hero.dataset.done = '1';
+    const box = hs.getBoundingClientRect();
+    const v = +hs.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    paintStars(wrap, v, true);
+    await saveRate(cityId, { stars: v }, true);
+    quizPool = quizPool.filter(c => c.id !== cityId);
+    lastHomeSig = '';
+    /* 별이 찬 것을 보여주고 나서 넘깁니다. 바로 갈아 끼우면 "눌렸나?" 싶습니다. */
+    clearTimeout(hero._go);
+    hero.dataset.done = '';
+    hero._go = setTimeout(async () => {
+      await fillQuiz();
+      const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+        .map(r => r.dataset.cityopen));
+      const nx = quizPool.find(c => c.image_url && !shown.has(c.id));
+      if (!nx) return;                       /* 더 물어볼 곳이 없으면 그냥 둡니다 */
+      heroCity = nx;
+      hero.outerHTML = rateHeroHtml(nx);
+    }, 1500);
+    return;
+  }
   const st = e.target.closest('#quizlist .st');
   if (st){
     const wrap = st.closest('.stars'), row = st.closest('.rrow');
@@ -657,7 +723,7 @@ $('home').addEventListener('click', async e => {
         await fillQuiz();
         const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
           .map(r => r.dataset.cityopen));
-        const nx = quizPool.find(c => !shown.has(c.id));
+        const nx = quizPool.find(c => !shown.has(c.id) && c.id !== heroCity?.id);
         if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
       }, 280);
     }, 1500);
@@ -682,7 +748,7 @@ $('home').addEventListener('click', async e => {
       .map(r => r.dataset.cityopen));
     quizPool = quizPool.filter(c => !seen.has(c.id));
     await fillQuiz();
-    const list = quizPool.slice(0, QUIZ_ROWS);
+    const list = quizPool.filter(c => c.id !== heroCity?.id).slice(0, QUIZ_ROWS);
     $('quizlist').innerHTML = list.length
       ? list.map(quizRow).join('')
       : '<div class="empty">물어볼 도시를 다 봤어요.</div>';

@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b397';
-import { sb } from './db.js?v=b397';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b397';
-import { todayYmd } from './calc.js?v=b397';
-import { cities } from './cities.js?v=b397';
-import { trip } from './trip.js?v=b397';
-import { tripSub } from './rating.js?v=b397';
-import { heroTint, openTripReport } from './home.js?v=b397';
-import { ROLE_KO } from './member.js?v=b397';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b398';
+import { sb } from './db.js?v=b398';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b398';
+import { todayYmd } from './calc.js?v=b398';
+import { cities } from './cities.js?v=b398';
+import { trip } from './trip.js?v=b398';
+import { tripSub } from './rating.js?v=b398';
+import { heroTint, openTripReport, reviewBar } from './home.js?v=b398';
+import { ROLE_KO } from './member.js?v=b398';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -121,6 +121,23 @@ export async function loadTrips(){
       const k = 'trip:' + t.id;
       if (!cacheGet(k)) cacheSet(k, { ...t, home_currency: t.currency || 'KRW' });
     }
+  }
+
+  /* ── 다녀온 여행 평가 재촉(b398) ─────────────────────────────────────
+     **홈에 있던 띠를 여기로 옮겼습니다.** 홈은 도시 평가가 주인공이 됐고
+     (home.js 의 buildHome 머리말), 이 띠는 **특정 여행에 묶인 것**이라 여행
+     탭이 제 자리입니다. 띠를 만드는 것은 home.js 가 합니다(`reviewBar`) —
+     평가 화면이 거기 있어서 입구만 가져옵니다.
+
+     ⚠ **목록보다 위, `#trips` 밖에 답니다.** 안에 넣으면 `putHtml` 이 목록을
+       갈아끼울 때 같이 지워집니다. 밖에 두면 목록이 비어 있을 때도 남습니다 —
+       앞으로 갈 여행이 없는 사람이야말로 평가할 것이 밀려 있습니다.
+     ⚠ **먼저 있던 띠를 지우고 답니다.** 안 지우면 탭을 오갈 때마다 쌓입니다.
+     ⚠ 아래 빈 목록 갈래가 일찍 돌아가므로 **그 앞에** 둡니다. */
+  $('tripsrv')?.remove();
+  if (tripFilter !== 'past'){
+    const bar = await reviewBar();
+    if (bar){ bar.id = 'tripsrv'; $('trips').before(bar); }
   }
 
   if (!data.length){

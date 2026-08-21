@@ -19,17 +19,17 @@
  *     뒤의 셋은 b395 에서 늘었습니다 — 카드 밑에 「어울리는 곳 · 반대로
  *     가보면」을 붙이면서 추천 계산(rec)·다녀온 곳(rate)·도시 열기(city)가
  *     필요해졌습니다. 셋 다 persona.js 를 안 부르므로 고리는 안 생깁니다. */
-import { $, esc, toast, copyText, josa } from './dom.js?v=b397';
-import { sb } from './db.js?v=b397';
-import { cities, countryName, continentOf } from './cities.js?v=b397';
+import { $, esc, toast, copyText, josa } from './dom.js?v=b398';
+import { sb } from './db.js?v=b398';
+import { cities, countryName, continentOf } from './cities.js?v=b398';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b397';
-import { visited } from './rate.js?v=b397';
-import { openCity } from './city.js?v=b397';
+import { similarPicks } from './rec.js?v=b398';
+import { visited } from './rate.js?v=b398';
+import { openCity } from './city.js?v=b398';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b397';
+         shareCard, cardImage } from './card.js?v=b398';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
