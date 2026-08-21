@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b418';
-import { sb } from './db.js?v=b418';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b418';
-import { hm, todayYmd } from './calc.js?v=b418';
-import { starHtml, paintStars, markRated } from './stars.js?v=b418';
+import { $, esc } from './dom.js?v=b419';
+import { sb } from './db.js?v=b419';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b419';
+import { hm, todayYmd } from './calc.js?v=b419';
+import { starHtml, paintStars, markRated } from './stars.js?v=b419';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b418';
-import { cities, countryName } from './cities.js?v=b418';
-import { myRates, visited } from './rate.js?v=b418';
-import { plans } from './trip.js?v=b418';
-import { openCity } from './city.js?v=b418';
-import { loadCities, pick } from './citysearch.js?v=b418';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b418';
-import { openMap, UN_COUNTRIES } from './map.js?v=b418';
+import { rateHero, starValue } from './rateui.js?v=b419';
+import { cities, countryName } from './cities.js?v=b419';
+import { myRates, visited } from './rate.js?v=b419';
+import { plans } from './trip.js?v=b419';
+import { openCity } from './city.js?v=b419';
+import { loadCities, pick } from './citysearch.js?v=b419';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b419';
+import { openMap, UN_COUNTRIES } from './map.js?v=b419';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b418';
+import { drawReport } from './report.js?v=b419';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b418';
-import { openNew } from './newtrip.js?v=b418';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b419';
+import { openNew } from './newtrip.js?v=b419';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -304,6 +304,31 @@ async function buildHome(){
   $('home').innerHTML = heroCity ? rateHeroHtml(heroCity)
     : heroHtml('', '', '기로', '다녀온 도시를 매기면 여행 성향이 나와요', '');
 
+  /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
+   * **① 평가하는 자리** — 사진 · 별점 · 두 단추가 한 카드(.ratecard).
+   *    같은 물음의 답 셋이 흩어져 보이지 않게 묶었습니다(rateui.js).
+   * **② 나머지 전부** — 쭉 매기기 · 새 여행 · 발자국 · 성향 · 지도가
+   *    **한 카드 안의 줄들**입니다.
+   *
+   * ⚠ **전에는 덩어리가 다섯이었습니다.** 히어로 · 단추 · 띠 · 띠 · 카드.
+   *   모서리가 26 → 12 → 26 으로 오르내리고 배경이 사진 → 투명 → 회색 →
+   *   회색 → 흰색이라, 위에서 아래로 훑으면 옷이 다섯 번 바뀌었습니다.
+   *   게다가 세로 간격이 **전부 12px 로 균일**해서(마진 겹침 탓입니다 —
+   *   .trybar 의 margin-top:8px 이 히어로의 margin-bottom:12px 에 먹혔습니다)
+   *   무엇이 한 덩어리인지 알려주는 것이 없었습니다.
+   *
+   * ⚠ **줄은 전부 같은 부품(.fprow)입니다.** 「제목 + 설명 + 오른쪽 값 + ›」.
+   *   새로 줄을 더할 때도 이 부품을 쓰십시오 — 띠를 따로 만들면 b416
+   *   이전으로 돌아갑니다. */
+  const 통 = document.createElement('div');
+  통.className = 'card quiet';
+  통.id = 'homefp';
+  $('home').appendChild(통);
+
+  /* ⚠ **쭉 매기기가 먼저입니다(b416).** 이 앱은 평가가 주인공이고
+     일정은 서브입니다 — 순서가 그 말을 해야 합니다. */
+  await renderQuiz(통);
+
   /* ── 새 여행으로 가는 길 ─────────────────────────────────────────────
      ⚠⚠ **이 줄을 홈에서 빼지 마십시오. 세 번째입니다.** ⚠⚠
      b377 에서 "권유는 하나만" 이라며 뺐다가 b378 에서 되살렸고, b402 에서
@@ -318,20 +343,15 @@ async function buildHome(){
      ⚠ 문구가 「다음에 어디 갈까요?」 였습니다(b402 에서 고침). **처음 온
        사람에게는 '다음' 이 없습니다** — 아직 한 번도 안 간 사람에게
        "다음에" 라고 하면 자기 얘기가 아닙니다. */
-  /* ⚠ **쭉 매기기가 먼저입니다(b416).** 이 앱은 평가가 주인공이고
-     일정은 서브입니다 — 순서가 그 말을 해야 합니다. 전에는 새 여행 줄을
-     먼저 붙이고 renderQuiz 를 뒤에 불러서 **반대로 나왔습니다.** */
-  await renderQuiz();
-
   const nt = document.createElement('div');
-  nt.className = 'newtripbar';
+  nt.className = 'fprow';
   nt.innerHTML = `<span class="t"><b>어디로 떠나볼까요?</b>
       <span>어디로 언제 가는지만 정하면 돼요</span></span>
     <span class="go">새 여행 ›</span>`;
   nt.onclick = () => openNew();
-  $('home').appendChild(nt);
+  통.appendChild(nt);
 
-  await renderFoot();
+  await renderFoot(통);
 }
 
 /* ── 다녀온 여행 평가 재촉 띠 ────────────────────────────────────────
@@ -605,7 +625,7 @@ const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
  * ⚠ 매긴 수는 **제 질의로** 셉니다. myRates 는 홈에서 비어 있습니다 —
  *   renderFoot 머리말과 같은 이유입니다. head:true 라 개수만 오고
  *   자료는 안 받으므로 홈이 느려지지 않습니다. */
-async function renderQuiz(){
+async function renderQuiz(통){
   const [, 센것] = await Promise.all([
     fillQuiz(),
     netTimeout(sb.from('city_ratings').select('city_id', { count:'exact', head:true })
@@ -613,7 +633,9 @@ async function renderQuiz(){
   ]);
   const 매긴 = 센것?.count ?? 0, 전체 = (cities || []).length;
   const bar = document.createElement('div');
-  bar.className = 'newtripbar';
+  /* 새 여행 줄과 **같은 부품**입니다. 띠로 따로 만들면 카드 안에
+     상자가 하나 더 생깁니다(위 buildHome 머리말). */
+  bar.className = 'fprow';
   bar.innerHTML = `<span class="t"><b>쭉 매기기</b>
       <span>사진 보고 훅훅 눌러요${
         매긴 && 전체 ? ` · ${전체}곳 중 ${매긴}곳` : ''}</span></span>
@@ -621,7 +643,7 @@ async function renderQuiz(){
   /* 기록 탭으로 옮긴 뒤 거기 있는 시작 단추를 누릅니다. openSpree 를 직접
      부르면 rateview 가 안 보이는 채로 열려서 나올 때 빈 화면이 됩니다. */
   bar.onclick = () => { ctx.showApp('rate'); $('spreego')?.click(); };
-  $('home').appendChild(bar);
+  통.appendChild(bar);
 }
 
 /* ── 내가 쌓은 것 ────────────────────────────────────────────────────
@@ -639,7 +661,7 @@ async function renderQuiz(){
  *
  * ⚠ 지도는 남깁니다. been 도 홈에 지도를 크게 둡니다 — 칠해진 면적이
  *   늘어나는 것이 이 화면의 재미입니다. */
-async function renderFoot(){
+async function renderFoot(통){
   const [{ data: f }, , 별점] = await Promise.all([
     netTimeout(sb.rpc('my_footprint')),
     refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
@@ -654,8 +676,9 @@ async function renderFoot(){
   ]);
   if (!f) return;
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
-  const box = document.createElement('div');
-  box.className = 'card quiet'; box.id = 'homefp';
+  /* ⚠ **제 카드를 안 만듭니다(b419).** 위 buildHome 이 만든 통에 줄만
+     보탭니다 — 쭉 매기기·새 여행과 **한 덩이**여야 합니다. */
+  const box = 통;
 
   /* 줄 하나를 만드는 틀. 넷이 아니라 둘뿐이라도 **틀을 통해 만듭니다** —
      손으로 두 번 쓰면 다음에 하나만 고치게 됩니다. */
@@ -710,7 +733,7 @@ async function renderFoot(){
   mm.onclick = () => { ctx.showApp('set'); openMap(); };
   box.appendChild(mm);
 
-  $('home').appendChild(box);
+  /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }
 
 /* 별을 매긴 줄은 빠지고 그 자리에 다음 도시가 들어옵니다.

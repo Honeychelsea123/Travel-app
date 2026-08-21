@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b418';
-import { countryName } from './cities.js?v=b418';
-import { starHtml } from './stars.js?v=b418';
+import { esc } from './dom.js?v=b419';
+import { countryName } from './cities.js?v=b419';
+import { starHtml } from './stars.js?v=b419';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -75,13 +75,23 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
       ${별}
     </div>${단추}`;
 
-  return `<div class="hero rateh" id="${esc(id)}">
-    <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
-    <div class="ht">${esc(c.name)}, 가보셨어요?</div>
-    <div class="hm">${esc(countryName[c.country] || c.country)}</div>
-    ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
-    ${별}
-  </div>${단추}`;
+  /* ── 히어로와 단추는 **한 카드**입니다(b419) ────────────────────────
+     ⚠ 물음은 하나("나폴리, 가보셨어요?")인데 **답이 셋**입니다 —
+       별점 · 안 가봤어요 · 가보고 싶어요. 그런데 별점만 사진 카드 안에
+       있고 나머지 둘은 밖에 떠 있었습니다. 같은 물음의 답이 두 덩어리로
+       갈라져 보였습니다.
+     ⚠ 단추는 테두리를 벗기고 **카드 바닥에 붙인 두 칸**으로 둡니다.
+       흰 바닥 위에 흰 테두리 단추를 얹으면 상자 안에 상자가 됩니다.
+       가운데 선 하나면 둘이라는 것은 충분히 보입니다. */
+  return `<div class="ratecard">
+    <div class="hero rateh" id="${esc(id)}">
+      <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
+      <div class="ht">${esc(c.name)}, 가보셨어요?</div>
+      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+      ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
+      ${별}
+    </div>${단추}
+  </div>`;
 }
 
 /* 눌린 자리에서 별점을 읽습니다. **반 칸(0.5점)은 왼쪽 절반**입니다 —

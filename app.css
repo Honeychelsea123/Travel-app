@@ -782,7 +782,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 #mapwrap{ position:relative; }
 .maptoggle{ width:100%; justify-content:center; margin-bottom:var(--s-sm);
             background:var(--parchment); color:var(--dim); border-color:transparent;
-            font-size:var(--f-md); padding:7px 12px; border-radius:var(--r-md); }
+            font-size:var(--f-md); padding:7px 12px; border-radius:var(--r-sm); }
 /* 펴진 상태 — 지도 위에 겹칩니다. Leaflet 의 판은 200~700, 조작 단추가
    800 대라 그 위(900)에 둡니다. 지도가 비쳐야 하니 반투명 흰 바탕입니다. */
 .maptoggle.on{ position:absolute; z-index:900; top:8px; right:8px;
@@ -1228,8 +1228,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    못박습니다(padding 만으로는 --ts 에 따라 다시 미달합니다). */
 .trybar button{ flex:1; min-height:44px; padding:11px 8px;
                 font-size:calc(14px * var(--ts));
-                border:1px solid var(--line); border-radius:var(--r-md);
-                background:var(--card); color:var(--ink); cursor:pointer; }
+                border:1px solid var(--line); border-radius:var(--r-sm);
+                background:var(--canvas); color:var(--ink); cursor:pointer; }
 .trybar button:active{ background:var(--line); }
 /* ── 정방형 평가 카드(b418) ───────────────────────────────────────────
  * 쭉 매기기 전용. 사진을 정방형으로 키우고 글자·별을 **사진 밖**에 둡니다.
@@ -1274,7 +1274,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 이기지는 않습니다. 높이는 위 단추와 같은 44px. */
 .matebtn{ width:100%; margin-top:8px; min-height:44px;
           font-size:calc(15px * var(--ts)); font-weight:600;
-          color:var(--primary); background:var(--card);
+          color:var(--primary); background:var(--canvas);
           border:1px solid var(--primary); border-radius:var(--r-pill);
           cursor:pointer; }
 .matebtn:active{ background:var(--pearl); }
@@ -1303,6 +1303,32 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    재보니 다른 틈은 다 12px 인데 여기만 −4 였고, 그래서 위쪽 셋이 한
    덩어리로 뭉쳐 보였습니다(b410). 이 자리에서만 되돌립니다. */
 .trybar + .newtripbar{ margin-top:12px; }
+/* ── 평가 카드 — 사진과 단추가 한 덩이(b419) ──────────────────────────
+ * 물음은 하나인데 답이 셋입니다(별점 · 안 가봤어요 · 가보고 싶어요).
+ * 전에는 별점만 사진 안에, 나머지 둘은 밖에 떠 있었습니다.
+ * 왜 묶는지는 rateui.js 의 `.ratecard` 주석. */
+.ratecard{ background:var(--canvas); border-radius:var(--r-lg);
+           overflow:hidden; box-shadow:var(--lift-1); }
+/* 모서리는 **카드가 맡습니다.** 안쪽 사진까지 둥글면 선이 두 겹으로 보입니다. */
+.ratecard .hero{ border-radius:0; margin:0; }
+/* 카드 바닥에 붙은 두 칸. ⚠ **테두리를 벗깁니다** — 흰 바닥 위에 흰 테두리
+   단추를 얹으면 상자 안에 상자가 됩니다. 가운데 선 하나면 충분합니다.
+   44px 은 그대로 지킵니다(.trybar button 주석 참고). */
+.ratecard .trybar{ margin:0; gap:0; border-top:1px solid var(--divider-soft); }
+.ratecard .trybar button{ border:0; border-radius:0; background:none;
+                          min-height:48px; }
+.ratecard .trybar button + button{ border-left:1px solid var(--divider-soft); }
+
+/* ── 홈의 세로 리듬 ───────────────────────────────────────────────────
+ * ⚠ **마진 겹침에 당했습니다(b419).** `.trybar` 에 `margin-top:8px` 을 주어
+ *   히어로에 딸린 것처럼 보이게 했는데, 히어로의 `margin-bottom:12px` 과
+ *   겹쳐서 **결과는 12px** 이었습니다. 다른 틈도 전부 12px 이라 홈의 다섯
+ *   덩어리가 **똑같은 간격으로 나란히** 떠 있었습니다 — 무엇이 한 덩어리인지
+ *   알려주는 것이 없었습니다.
+ * flex 로 바꾸면 겹침이 없어져 적은 값이 그대로 먹습니다. */
+#home{ display:flex; flex-direction:column; gap:16px; }
+#home > *{ margin-top:0; margin-bottom:0; }
+
 
 /* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
    둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).
