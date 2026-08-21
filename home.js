@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b404';
-import { sb } from './db.js?v=b404';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b404';
-import { hm, todayYmd } from './calc.js?v=b404';
-import { starHtml, paintStars, markRated } from './stars.js?v=b404';
-import { cities, countryName } from './cities.js?v=b404';
-import { myRates, visited } from './rate.js?v=b404';
-import { plans } from './trip.js?v=b404';
-import { openCity } from './city.js?v=b404';
-import { loadCities, pick } from './citysearch.js?v=b404';
-import { saveRate, refreshVisited } from './rating.js?v=b404';
-import { openMap, UN_COUNTRIES } from './map.js?v=b404';
+import { $, esc } from './dom.js?v=b405';
+import { sb } from './db.js?v=b405';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b405';
+import { hm, todayYmd } from './calc.js?v=b405';
+import { starHtml, paintStars, markRated } from './stars.js?v=b405';
+import { cities, countryName } from './cities.js?v=b405';
+import { myRates, visited } from './rate.js?v=b405';
+import { plans } from './trip.js?v=b405';
+import { openCity } from './city.js?v=b405';
+import { loadCities, pick } from './citysearch.js?v=b405';
+import { saveRate, refreshVisited } from './rating.js?v=b405';
+import { openMap, UN_COUNTRIES } from './map.js?v=b405';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b404';
+import { drawReport } from './report.js?v=b405';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b404';
-import { openNew } from './newtrip.js?v=b404';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b405';
+import { openNew } from './newtrip.js?v=b405';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -706,7 +706,13 @@ $('home').addEventListener('click', async e => {
     paintStars(wrap, v, true);
     await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
-    lastHomeSig = '';
+    /* ⚠ **여기서 `lastHomeSig` 를 비우면 안 됩니다(b405 에서 겪음).**
+       비우는 순간 다른 무엇이든 홈을 다시 그리면(saveRate 안쪽에서 다녀온
+       곳을 다시 받는 것만으로도) `buildHome` 이 **새 히어로를 뽑아 갈아
+       끼웁니다.** 그러면 되돌릴 1.5초가 통째로 사라져, 취소하려고 다시
+       누른 손가락이 **다음 도시에 별을 매깁니다.** 실제로 그렇게 됐고
+       재보고서야 알았습니다(dublin 을 취소하려다 losangeles 에 매김).
+       비우는 것은 **갈아끼우기 직전**으로 미룹니다 — 아래 타이머 안. */
     /* 별이 찬 것을 보여주고 나서 넘깁니다. 바로 갈아 끼우면 "눌렸나?" 싶습니다. */
     clearTimeout(hero._go);
     hero.dataset.done = '';
@@ -718,6 +724,9 @@ $('home').addEventListener('click', async e => {
       if (!nx) return;                       /* 더 물어볼 곳이 없으면 그냥 둡니다 */
       heroCity = nx;
       hero.outerHTML = rateHeroHtml(nx);
+      /* **되돌릴 창이 닫힌 지금** 비웁니다. 이제 홈을 다시 그려도
+         잃을 것이 없습니다(위 ⚠ 참고). */
+      lastHomeSig = '';
     }, 1500);
     return;
   }
