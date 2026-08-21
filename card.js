@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b405';
+import { $, esc, toast } from './dom.js?v=b406';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b405';
+import { distKm, pScale, SEOUL } from './calc.js?v=b406';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -306,7 +306,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b405`;
+    img.src = `./persona/${code}.png?v=b406`;
   });
 }
 
@@ -590,11 +590,17 @@ async function drawP16(s, W, H, F){
   /* 줄 수는 자(U)와 무관합니다 — 글자와 최대 너비가 같이 줄기 때문입니다. */
   g.font = F(500, W * .030);
   const descLines = wrapText(g, s.desc, W * .84);
-  const boxLines = [s.best, s.worst].map(m => {
+  /* ⚠ **궁합과 MRZ 는 없을 수도 있습니다(b406).** 로그인 전 맛보기 카드
+     (try.js)는 **내 유형 하나만** 보여줍니다 — 아직 계정이 없어 몇 개국을
+     다녀왔는지도 모르고, 궁합은 상대가 있어야 뜻이 있습니다.
+     없으면 그 칸을 통째로 비웁니다(카드가 그만큼 짧아집니다).
+     ⚠ 예전에는 `s.best.line` 을 그냥 읽어서 **없으면 그리다 터졌습니다.** */
+  const 궁합있음 = !!(s.best && s.worst);
+  const boxLines = 궁합있음 ? [s.best, s.worst].map(m => {
     g.font = F(500, W * .026);
-    return wrapText(g, m.line, (R - L) / 2 - W * .080).slice(0, 2);
-  });
-  const boxN = Math.max(...boxLines.map(l => l.length));
+    return wrapText(g, m.line || '', (R - L) / 2 - W * .080).slice(0, 2);
+  }) : [];
+  const boxN = boxLines.length ? Math.max(...boxLines.map(l => l.length)) : 0;
   /* ⚠ 글줄이 **어디서 시작하는지**까지 세야 합니다. .100 만 잡았더니
      셋째 줄이 상자 밖으로 나갔습니다 — 글줄은 .140 부터 시작합니다. */
   const 글줄시작 = .140, 글간 = .034;
@@ -655,7 +661,7 @@ async function drawP16(s, W, H, F){
           g.fillText(String(v), R, by + U * .013);
         });
       } },
-    { h:BOXH + .052, draw:(y, U) => {          /* 테두리 색이 좋고 나쁨을 말합니다 */
+    ...(궁합있음 ? [{ h:BOXH + .052, draw:(y, U) => {   /* 테두리 색이 좋고 나쁨을 말합니다 */
         const gap = W * .022, bw = ((R - L) - gap) / 2, bh = U * BOXH, top = y + U * .030;
         [[s.best,  '환상의 메이트', P16.좋음배경, P16.좋음선, P16.좋음글],
          [s.worst, '최악의 조합',   P16.나쁨배경, P16.나쁨선, P16.나쁨글]]
@@ -671,7 +677,7 @@ async function drawP16(s, W, H, F){
           g.font = F(500, U * .026); g.fillStyle = P16.흐림;
           boxLines[i].forEach((l, j) => g.fillText(l, px, top + U * (글줄시작 + j * 글간)));
         });
-      } },
+      } }] : []),
     /* ── 다음에 갈 곳(b399) ──────────────────────────────────────────
        ⚠ **화면에 따로 카드로 붙였다가 카드 안으로 들여왔습니다.** 이유는
          하나입니다 — **이것도 같이 공유돼야 하기 때문입니다.** 밖에 두면
@@ -707,12 +713,12 @@ async function drawP16(s, W, H, F){
           g.fillText(맞춰자르기(g, names, R - L), L, ry + U * .062);
         });
       } }] : []),
-    { h:.088, draw:(y, U) => {                 /* **장식입니다.** 진짜 정보는 위에 다 있습니다 */
+    ...(s.mrz ? [{ h:.088, draw:(y, U) => {    /* **장식입니다.** 진짜 정보는 위에 다 있습니다 */
         const bh = U * .062;
         g.fillStyle = P16.띠; rrect(g, L, y + U * .012, R - L, bh, U * .020); g.fill();
         g.font = F(600, U * .027); g.fillStyle = P16.아주흐림; g.textAlign = 'center';
         g.fillText(s.mrz, cx, y + U * .012 + bh * .66);
-      } },
+      } }] : []),
   ];
 
   /* ── 자 정하기 ── 머리말과 바닥글이 쓰는 만큼을 빼고 남는 높이에 맞춥니다. */

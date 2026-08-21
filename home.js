@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b405';
-import { sb } from './db.js?v=b405';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b405';
-import { hm, todayYmd } from './calc.js?v=b405';
-import { starHtml, paintStars, markRated } from './stars.js?v=b405';
-import { cities, countryName } from './cities.js?v=b405';
-import { myRates, visited } from './rate.js?v=b405';
-import { plans } from './trip.js?v=b405';
-import { openCity } from './city.js?v=b405';
-import { loadCities, pick } from './citysearch.js?v=b405';
-import { saveRate, refreshVisited } from './rating.js?v=b405';
-import { openMap, UN_COUNTRIES } from './map.js?v=b405';
+import { $, esc } from './dom.js?v=b406';
+import { sb } from './db.js?v=b406';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b406';
+import { hm, todayYmd } from './calc.js?v=b406';
+import { starHtml, paintStars, markRated } from './stars.js?v=b406';
+import { cities, countryName } from './cities.js?v=b406';
+import { myRates, visited } from './rate.js?v=b406';
+import { plans } from './trip.js?v=b406';
+import { openCity } from './city.js?v=b406';
+import { loadCities, pick } from './citysearch.js?v=b406';
+import { saveRate, refreshVisited } from './rating.js?v=b406';
+import { openMap, UN_COUNTRIES } from './map.js?v=b406';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b405';
+import { drawReport } from './report.js?v=b406';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b405';
-import { openNew } from './newtrip.js?v=b405';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b406';
+import { openNew } from './newtrip.js?v=b406';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }

@@ -1169,6 +1169,16 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    고르기가 어려웠고, 무엇보다 누를 수 있는 것으로 안 읽혔습니다. */
 .hero.rateh .hrow{ margin-top:8px; }
 
+/* ── 맛보기 평가의 두 단추(b406) ──────────────────────────────────────
+ * 「안 가봤어요」와 「♡ 가보고 싶어요」. **넘길 길이 없으면 흐름이 끊깁니다** —
+ * 469곳 중 대부분은 안 가본 곳이라 별만 있으면 대답할 수가 없습니다.
+ * 히어로 바로 밑에 붙여 한 덩어리로 읽히게 합니다(위가 둥근 모서리를 잇습니다). */
+.trybar{ display:flex; gap:8px; margin-top:8px; }
+.trybar button{ flex:1; padding:11px 8px; font-size:calc(14px * var(--ts));
+                border:1px solid var(--line); border-radius:var(--r-md);
+                background:var(--card); color:var(--ink); cursor:pointer; }
+.trybar button:active{ background:var(--line); }
+
 /* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
    둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).
    위아래를 선으로 갈라 **발자국 숫자와 섞여 읽히지 않게** 합니다. */
