@@ -103,6 +103,9 @@
   --f-mega:calc(56px * var(--ts));
   --kb:0px;                     /* 키보드 높이. 아래 스크립트가 재서 넣는다 */
   --sab:env(safe-area-inset-bottom, 0px);
+  /* 위쪽 안전영역(노치·시계). `black-translucent` 로 두면 앱이 여기까지
+     넓어지므로, 글자가 시계에 안 걸리게 이 값만큼 밀어야 합니다(b432). */
+  --sat:env(safe-area-inset-top, 0px);
 
   /* ── 움직임 ──
      곡선을 곳마다 다르게(ease / ease-out / 기본) 쓰고 있었습니다. 그러면
@@ -127,7 +130,10 @@ body{
   font-size:var(--f-xl); line-height:1.47;
   letter-spacing:calc(-0.374px * var(--ts));
   -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
-  padding:0 var(--s-sm) calc(48px + var(--kb) + var(--sab));
+  /* ⚠ 위쪽 안전영역만큼 밀어 둡니다(b432) — `black-translucent` 로 앱이
+     시계 뒤까지 넓어졌기 때문입니다. 상단바만 아래에서 음수 마진으로
+     다시 그 위로 올라가 시계 뒤를 덮습니다. */
+  padding:var(--sat) var(--s-sm) calc(48px + var(--kb) + var(--sab));
   overflow-x:hidden;              /* 어디 하나 삐져나와도 화면이 옆으로 밀리지 않게 */
   /* 유리가 굴절할 대상. 색조 없이 밝기 차이만 줍니다. */
   background:
@@ -155,8 +161,12 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
  *   세기가 다르면 한쪽이 흉내처럼 보입니다. */
 .topbar{
   position:sticky; top:0; z-index:20;
-  margin:0 calc(-1 * var(--s-sm)) var(--s-md);
-  padding:12px calc(var(--s-md) + var(--s-sm));
+  /* ⚠ **위로도 넓힙니다(b432).** body 가 안전영역만큼 밀려 있으므로,
+     음수 마진으로 그만큼 되올라가 **시계 뒤까지 덮습니다.** 그래야
+     상태바와 상단바가 한 덩어리로 이어져 보입니다(been 처럼).
+     안쪽 여백은 그만큼 더 줘서 로고가 시계에 안 걸립니다. */
+  margin:calc(-1 * var(--sat)) calc(-1 * var(--s-sm)) var(--s-md);
+  padding:calc(12px + var(--sat)) calc(var(--s-md) + var(--s-sm)) 12px;
   border-radius:0;
   display:flex; align-items:center; gap:10px;
   background:rgba(255,255,255,.55);
@@ -1389,13 +1399,6 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
          margin:18px 4px 8px; }
 /* 첫 섹션은 머리 바로 밑이라 위 여백을 줄입니다. */
 .profhead + .secttl{ margin-top:14px; }
-/* 프로필 미니 헤더 — 로고 자리에 들어앉습니다(b430). profile.js 참고. */
-.profmini{ display:flex; align-items:center; gap:9px; min-width:0; flex:1; }
-.profmini img{ width:30px; height:30px; border-radius:50%; flex:none;
-               object-fit:cover; background:var(--parchment); }
-.profmini span{ font-size:calc(17px * var(--ts)); font-weight:700;
-                overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-
 
 /* `.fprow` 를 button 으로도 씁니다(프로필의 세계지도·여행 성향).
    button 기본 스타일을 지워야 div 로 만든 줄과 같아 보입니다. */
@@ -2130,7 +2133,13 @@ body.noreorder .ev .grip{ display:none; }
    상단바보다 한 단계 더 투명해서 아래로 지나가는 내용이 비칩니다. */
 .tabbar{
   position:fixed; bottom:calc(12px + var(--sab)); z-index:1150;
-  left:50%; transform:translateX(-50%);
+  left:50%;
+  /* ⚠ **translate3d 입니다(b432).** 탭을 옮길 때마다 탭바가 **깜빡였습니다** —
+     backdrop-filter 가 붙은 요소는 뒤 내용이 바뀔 때 유리를 다시 계산하는데,
+     합성 레이어가 확실하지 않으면 그 한 프레임이 그대로 보입니다.
+     3d 변환은 레이어를 못박아 다시 그리는 일을 GPU 안에서 끝냅니다. */
+  transform:translate3d(-50%, 0, 0);
+  will-change:backdrop-filter;
   /* 화면 끝까지 늘어나 있으면 바닥에 붙은 판처럼 보입니다. 폭을 줄여
      떠 있는 알약으로 둡니다 — 아래 내용이 옆으로 비쳐 보입니다. */
   width:min(calc(100% - 80px), 330px);
