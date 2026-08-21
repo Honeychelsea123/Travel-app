@@ -17,19 +17,26 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b412';
-import { sb } from './db.js?v=b412';
-import { cities } from './cities.js?v=b412';
-import { loadCities } from './citysearch.js?v=b412';
-import { paintStars } from './stars.js?v=b412';
-import { rateHero, starValue } from './rateui.js?v=b412';
-import { saveRate } from './rating.js?v=b412';
-import { resetHomeSig } from './home.js?v=b412';
+import { $, esc } from './dom.js?v=b413';
+import { sb } from './db.js?v=b413';
+import { cities } from './cities.js?v=b413';
+import { loadCities } from './citysearch.js?v=b413';
+import { paintStars } from './stars.js?v=b413';
+import { rateHero, starValue } from './rateui.js?v=b413';
+import { saveRate } from './rating.js?v=b413';
+import { resetHomeSig } from './home.js?v=b413';
 
 let ctx = { me: () => null };
 export function setSpreeCtx(o){ ctx = { ...ctx, ...o }; }
 
 let 주머니 = [], 지금 = null, 센것 = 0, 도는중 = false;
+/* ⚠ **센것과 건드림은 다릅니다(b413).** 센것은 **별을 준 곳**만 셉니다 —
+   화면에 보여줄 숫자라 「안 가봤어요」를 스무 번 누른 것을 「20곳 매김」
+   이라고 쓸 수는 없습니다. 건드림은 **자료가 바뀌었는가**입니다.
+   skip·want 도 city_ratings 에 줄을 남깁니다(아래 누르기 참고).
+   나갈 때 이걸로 갈라야 합니다 — 센것으로 가드를 걸었더니 「안 가봤어요」
+   만 누르고 나온 사람의 홈이 **옛것 그대로**였습니다. */
+let 건드림 = false;
 
 /* ── 물어볼 도시 ─────────────────────────────────────────────────────
  * ⚠ **이미 답한 곳은 서버에 물어서 뺍니다.** 별점이든 ♡ 든 「안 가봤어요」든
@@ -56,8 +63,10 @@ function 그리기(){
   지금 = 주머니[0] || null;
   if (!지금){
     box.innerHTML = `<div class="card"><div class="empty" style="padding:28px 12px">
-      물어볼 도시를 다 봤어요.<br>
-      <span class="memo">${센것}곳을 매기셨어요</span></div></div>`;
+      물어볼 도시를 다 봤어요.${센것 ? `<br>
+      <span class="memo">${센것}곳을 매기셨어요</span>` : ``}</div></div>`;
+    /* ⚠ 0 일 때는 그 줄을 안 씁니다 — 「안 가봤어요」만 누르고 끝낸 사람에게
+       「0곳을 매기셨어요」는 잘했다는 말도 아니고 뭘 하라는 말도 아닙니다. */
     return;
   }
   /* 홈·맛보기와 **같은 히어로**입니다(rateui.js). 안 그러면 같은 일을 하는
@@ -92,7 +101,7 @@ export async function openSpree(){
   document.body.classList.remove('hastab');    /* 화면에 이것 하나만 둡니다 */
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'spree') history.pushState({ t2:'spree' }, '');
-  센것 = 0; 세기();
+  센것 = 0; 건드림 = false; 세기();
   $('spreebox').innerHTML =
     `<div class="empty"><span class="load">불러오는 중…</span></div>`;
   await 채우기();
@@ -109,7 +118,7 @@ export function closeSpree(fromPop){
   document.body.classList.add('hastab');
   /* 매긴 것이 있으면 홈과 기록을 다시 그리게 합니다 — **지문만 비웁니다.**
      여기서 직접 부르면 안 보이는 화면을 그리느라 나가는 길이 느려집니다. */
-  if (센것) { resetHomeSig(); ctx.afterSpree?.(); }
+  if (건드림) { resetHomeSig(); ctx.afterSpree?.(); }
 }
 
 $('spreeclose')?.addEventListener('click', () => closeSpree());
@@ -122,7 +131,7 @@ $('spreebox')?.addEventListener('click', async e => {
     const wrap = st.closest('.stars');
     const v = starValue(st, e.clientX);
     paintStars(wrap, v, true);
-    센것++; 세기();
+    센것++; 건드림 = true; 세기();
     /* ⚠ **기다렸다 넘기지 않습니다.** 홈은 1.5초를 두고 되돌릴 틈을 줍니다만,
        여기는 **쭉 매기는 것이 목적**이라 그 1.5초가 다섯 번이면 7초입니다.
        잘못 눌렀으면 기록 탭에서 고칠 수 있습니다. */
@@ -135,5 +144,6 @@ $('spreebox')?.addEventListener('click', async e => {
   /* 「안 가봤어요」는 **별점 없는 줄**을 남깁니다 — 다시 안 묻기 위한 것입니다.
      홈과 같은 규칙입니다(home.js 의 herobar 주석). */
   saveRate(지금.id, b.dataset.rate === 'want' ? { want: true } : { stars: null }, true);
+  건드림 = true;
   다음();
 });
