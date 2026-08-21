@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b451';
-import { openCity } from './city.js?v=b451';
-import { distKm } from './calc.js?v=b451';
-import { sb } from './db.js?v=b451';
-import { cities, countryName, continentOf } from './cities.js?v=b451';
-import { PERSONA_ICON, shareCard } from './card.js?v=b451';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b452';
+import { openCity } from './city.js?v=b452';
+import { distKm } from './calc.js?v=b452';
+import { sb } from './db.js?v=b452';
+import { cities, countryName, continentOf } from './cities.js?v=b452';
+import { PERSONA_ICON, shareCard } from './card.js?v=b452';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -415,9 +415,16 @@ export async function openMap(){
   const conts = new Set(mapCities.map(c => continentOf[c.country]).filter(Boolean));
   const pct = gone.size / UN_COUNTRIES * 100;
   $('m_total').innerHTML =
+    /* ⚠ **누를 수 있어야 합니다(b452).** 여기 숫자 셋이 `cursor:default` 에
+       핸들러도 없어서 **눌러도 아무 일이 없었습니다.** 프로필에는 같은
+       숫자가 보관함으로 이어져 있는데, 지도 화면에서만 죽어 있었습니다.
+       프로필과 **같은 이름**(data-shelf · data-openmap)을 답니다 — 여는
+       절차는 app.js 가 한 곳에서 맡습니다.
+       ⚠ 「대륙」은 누를 곳이 없습니다(대륙별 목록이 이 화면 아래에 이미
+         있습니다). 그것만 `cursor:default` 로 남깁니다. */
     `<div class="stats" style="margin:0">
-       <button style="cursor:default"><b>${gone.size}</b><span>국가</span></button>
-       <button style="cursor:default"><b>${mapCities.length}</b><span>도시</span></button>
+       <button data-shelf="mine"><b>${gone.size}</b><span>국가</span></button>
+       <button data-shelf="mine"><b>${mapCities.length}</b><span>도시</span></button>
        <button style="cursor:default"><b>${conts.size}/6</b><span>대륙</span></button>
      </div>
      <div class="memo" style="text-align:center; margin-top:10px">
