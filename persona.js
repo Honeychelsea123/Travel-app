@@ -15,21 +15,20 @@
  *   `me` 는 로그인할 때마다 바뀌므로 **값이 아니라 함수**로 받습니다 —
  *   값으로 받으면 로그인 전의 null 을 영영 들고 있게 됩니다.
  *
- * 층: dom.js · db.js · cities.js · card.js · rec.js · rate.js · city.js.
- *     뒤의 셋은 b395 에서 늘었습니다 — 카드 밑에 「어울리는 곳 · 반대로
- *     가보면」을 붙이면서 추천 계산(rec)·다녀온 곳(rate)·도시 열기(city)가
- *     필요해졌습니다. 셋 다 persona.js 를 안 부르므로 고리는 안 생깁니다. */
-import { $, esc, toast, copyText, josa } from './dom.js?v=b398';
-import { sb } from './db.js?v=b398';
-import { cities, countryName, continentOf } from './cities.js?v=b398';
+ * 층: dom.js · db.js · cities.js · card.js · rec.js · rate.js.
+ *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
+ *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
+ *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
+import { $, esc, toast, copyText } from './dom.js?v=b399';
+import { sb } from './db.js?v=b399';
+import { cities, countryName, continentOf } from './cities.js?v=b399';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b398';
-import { visited } from './rate.js?v=b398';
-import { openCity } from './city.js?v=b398';
+import { similarPicks } from './rec.js?v=b399';
+import { visited } from './rate.js?v=b399';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b398';
+         shareCard, cardImage } from './card.js?v=b399';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -142,32 +141,26 @@ async function drawPersona(s, ax, rates){
   const 덜셈 = ax.추정.length ? ' · 아직 모름' : '';
 
   /* ── 다음에 갈 만한 곳 ────────────────────────────────────────────
-     ⚠ **두 칸의 성격이 다릅니다.** 「어울리는 곳」은 감추고-맞히기로 재서
+     ⚠ **두 줄의 성격이 다릅니다.** 「어울리는 곳」은 감추고-맞히기로 재서
      정한 것이고(상위 17.9%, 아무렇게나 하면 50%), 「반대로 가보면」은
      **정확도를 주장하지 않습니다** — 가 본 적 없는 결이라 애초에 맞히기로
-     잴 수가 없습니다. 그래서 아래 두 memo 의 말투가 다릅니다. 하나로
-     합치거나 같은 말로 맞추지 마십시오. 자세한 것은 rec.js 맨 위. */
+     잴 수가 없습니다. 카드에서 둘을 **한 덩어리로 합치지 마십시오** —
+     "다음에 갈 곳 여덟" 이 되면 뒤의 넷까지 맞다고 말하는 셈입니다.
+     자세한 것은 rec.js 맨 위. */
   const picks = similarPicks(cities, rates, { visited, n: 4 });
 
-  /* 이유를 같이 적습니다. **이유 없는 추천은 무작위와 구별되지 않습니다** —
-     "오사카와 닮았어요" 한 줄이 있어야 사용자가 맞는지 틀린지 판단합니다. */
-  const pickRow = x => `<div class="rrow" data-cityopen="${esc(x.city.id)}">
-    ${x.city.image_url
-      ? `<img class="thumb" src="${esc(x.city.image_url)}" alt="" loading="lazy">`
-      : `<span class="thumb ph">${esc(x.city.name.slice(0, 1))}</span>`}
-    <div class="t"><b>${esc(x.city.name)}</b>
-      <!-- ⚠ josa 는 조사만이 아니라 **낱말까지 붙여서** 돌려줍니다.
-           앞에 이름을 또 적었다가 "오사카오사카와 닮았어요"가 나왔습니다(b395). -->
-      <span class="memo">${esc(countryName[x.city.country] || x.city.country)}${
-        x.seed ? ` · ${esc(josa(x.seed.name, '과', '와'))} 닮았어요` : ''}</span></div>
-  </div>`;
-
-  const 고른칸 = (list, 제목, 메모, 이유붙임) => list.length ? `
-    <div class="card">
-      <h2>${제목}</h2>
-      <div class="memo" style="margin:-2px 0 8px">${메모}</div>
-      ${list.map(x => pickRow(이유붙임 ? x : { ...x, seed:null })).join('')}
-    </div>` : '';
+  /* ⚠ **카드 그림 안으로 넣습니다(b399).** 전에는 카드 밑에 HTML 카드 둘을
+     따로 붙였습니다(사진 · "오사카와 닮았어요" 이유까지). 걷어낸 이유는
+     하나입니다 — **그건 공유가 안 됩니다.** 밖에 있으면 보는 사람만 보고
+     올리는 그림에는 안 들어갑니다. 이 화면의 오래된 규칙이 "보는 것이 곧
+     올리는 것" 인데, 그 규칙을 어기고 있었습니다.
+     사진과 이유는 안 넣습니다(사용자 결정) — 이름만.
+     ⚠ 카드가 세로로 길어지는 것은 받아들입니다. card.js 의 자(U)가 남는
+       높이에 맞춰 알아서 줄입니다. */
+  spec.picks = {
+    match:    picks.match.map(x => x.city.name),
+    opposite: picks.opposite.map(x => x.city.name),
+  };
 
   $('personabox').innerHTML = `
     <div class="pcardwrap" id="pcardwrap"></div>
@@ -225,30 +218,18 @@ async function drawPersona(s, ax, rates){
         <b>단골력·모험력은 해외 도시만</b> 셉니다 — 부산에 간 것을 "한 나라만
         파는 성향"으로 읽으면 안 되니까요. 개척력·만족력은 국내도 다 셉니다.
       </div>
-    </div>
-    ${고른칸(picks.match, '어울리는 곳',
-             '좋아하신 도시와 닮은 곳이에요', true)}
-    ${고른칸(picks.opposite, '반대로 가보면',
-             '성향과 제일 먼 곳이에요 · 안 가보신 나라에서 골랐어요', false)}`;
-
-  /* 눌러서 도시를 엽니다. 다른 화면들도 각자 붙입니다(rating.js · shelf.js) —
-     문서에 한 번만 붙이면 이 화면이 닫힌 뒤에도 남습니다. innerHTML 을
-     다시 넣어도 personabox 자체는 그대로라 **여기 붙인 것은 안 지워집니다.**
-     그래서 들어올 때마다 겹쳐 붙지 않도록 아래 깃발로 한 번만 답니다. */
-  if (!$('personabox').dataset.opened){
-    $('personabox').dataset.opened = '1';
-    $('personabox').addEventListener('click', e => {
-      const row = e.target.closest('[data-cityopen]');
-      if (row) openCity(row.dataset.cityopen);
-    });
-  }
+    </div>`;
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지
      않고 `shareText` 로 옮겼습니다 — **그림을 못 받는 기기**(문자·메모)에서는
      card.js 가 이 글로 떨어뜨립니다. 카드에 그림으로만 있는 것도 여기서는
      말로 적혀 있어야 그때 뜻이 통합니다. */
   spec.shareText = `내 여행 성향: ${code} ${type.n}\n` +
-    `${spec.axisWords}\n${s.countries}개국 · ${s.cities}개 도시 · ${rank}`;
+    `${spec.axisWords}\n${s.countries}개국 · ${s.cities}개 도시 · ${rank}` +
+    /* 카드 그림에 들어간 것은 여기에도 있어야 합니다 — 그림을 못 받는
+       기기에서는 이 글만 갑니다(b399 에서 추천을 카드 안으로 옮기면서 추가). */
+    (spec.picks.match.length    ? `\n어울리는 곳: ${spec.picks.match.join(' · ')}` : '') +
+    (spec.picks.opposite.length ? `\n반대로: ${spec.picks.opposite.join(' · ')}` : '');
   $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
 
   /* 4:5 로 만듭니다. 인스타 피드에서 세로가 정사각보다 화면을 훨씬 많이

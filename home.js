@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b398';
-import { sb } from './db.js?v=b398';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b398';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b398';
-import { starHtml, paintStars, markRated } from './stars.js?v=b398';
-import { cities, countryName } from './cities.js?v=b398';
-import { myRates, visited } from './rate.js?v=b398';
-import { plans } from './trip.js?v=b398';
-import { openCity } from './city.js?v=b398';
-import { loadCities, pick } from './citysearch.js?v=b398';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b398';
-import { openMap, UN_COUNTRIES } from './map.js?v=b398';
+import { $, esc } from './dom.js?v=b399';
+import { sb } from './db.js?v=b399';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b399';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b399';
+import { starHtml, paintStars, markRated } from './stars.js?v=b399';
+import { cities, countryName } from './cities.js?v=b399';
+import { myRates, visited } from './rate.js?v=b399';
+import { plans } from './trip.js?v=b399';
+import { openCity } from './city.js?v=b399';
+import { loadCities, pick } from './citysearch.js?v=b399';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b399';
+import { openMap, UN_COUNTRIES } from './map.js?v=b399';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b398';
+import { drawReport } from './report.js?v=b399';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b398';
-import { openNew } from './newtrip.js?v=b398';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b399';
+import { openNew } from './newtrip.js?v=b399';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -591,9 +591,17 @@ async function renderQuiz(){
 }
 
 async function renderFoot(){
-  const [{ data: f }] = await Promise.all([
+  const [{ data: f }, , 별점] = await Promise.all([
     netTimeout(sb.rpc('my_footprint')),
     refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
+    /* ⚠ **성향은 `myRates` 로 세면 안 됩니다(b399에서 겪음).** 홈을 처음 열면
+       `myRates` 가 **비어 있습니다** — 기록 탭을 열어야 채워집니다(rating.js 의
+       loadRateData). 그래서 b398 에서 붙인 성향 줄이 새로고침 직후에는 통째로
+       안 나왔습니다. 재보고 알았습니다(myRates 키 0개).
+       퀴즈(fillQuiz)도 같은 이유로 **제 질의를 따로 합니다.** 여기도 그렇게
+       합니다 — 불러온 순서에 안 휘둘리는 쪽이 맞습니다. */
+    netTimeout(sb.from('city_ratings').select('city_id,stars')
+      .eq('user_id', ctx.me().id).not('stars', 'is', null)),
   ]);
   if (!f) return;
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
@@ -629,11 +637,8 @@ async function renderFoot(){
 
      ⚠ **문턱은 성향 화면과 같은 5곳입니다.** 여기만 낮추면 홈에서는 유형이
        보이는데 눌러 들어가면 "아직 카드를 만들 수 없어요" 가 나옵니다.
-     ⚠ `myRates` 가 아직 안 왔으면(0곳) 그냥 안 그립니다. 틀린 유형을 보여주는
-       것보다 낫고, 자료가 오면 홈 지문이 바뀌어 다시 그려집니다. */
-  const 매긴것 = Object.entries(myRates || {})
-    .filter(([, r]) => r?.stars != null)
-    .map(([city_id, r]) => ({ city_id, stars: r.stars, want: r.want }));
+     ⚠ 못 받아왔으면 그냥 안 그립니다. 틀린 유형을 보여주는 것보다 낫습니다. */
+  const 매긴것 = 별점?.data || [];
   if (매긴것.length >= 5){
     const ax = personaAxes(매긴것, { cities });
     const 유형 = PERSONA16[ax.code];
