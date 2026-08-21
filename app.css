@@ -139,26 +139,31 @@ body{
 main{ max-width:480px; margin:0 auto; min-width:0; }
 .hide{ display:none !important; }
 
-/* ── 유리 알약 상단바 ── 도쿄 앱의 표식입니다. 스크롤해도 따라옵니다. */
+/* ── 상단바 ── 화면 폭을 꽉 채우는 직각 바(b420 → b427 → b429) ────────
+ * 처음엔 `--r-pill` 알약이었습니다. **떠 있는 알약**처럼 보인다는 지적을
+ * 받고 b427 에서 16px 로 낮췄는데 그것도 아니었습니다.
+ * been 의 상단바는 **화면 끝까지 닿는 직각 바**입니다 — 좌우 여백도
+ * 모서리도 없고, 아래로 지나가는 내용이 그 뒤로 흐릿하게 비칩니다.
+ *
+ * ⚠ **body 의 좌우 여백(--s-sm)을 음수 마진으로 상쇄합니다.** 그래야 화면
+ *   끝까지 갑니다. 안쪽 padding 은 그만큼 더 줘서 글자 자리는 그대로입니다.
+ * ⚠ **top 은 0 입니다.** 여백을 두면 스크롤할 때 바 **위로** 내용이 비집고
+ *   올라와 보입니다 — 붙어 있어야 "고정된 바" 로 읽힙니다.
+ * ⚠ 테두리는 **아래 한 줄만**. 사방 테두리와 넓은 그림자는 **떠 있는 카드**의
+ *   문법입니다. 화면에 붙은 바에 그걸 쓰면 다시 알약처럼 보입니다.
+ * ⚠ 유리 세기는 **탭바와 같습니다**(.55 / 22px). 앱 위아래에 유리가 둘인데
+ *   세기가 다르면 한쪽이 흉내처럼 보입니다. */
 .topbar{
-  position:sticky; top:var(--s-sm); z-index:20;
-  margin:var(--s-sm) 0 var(--s-md);
-  padding:10px var(--s-md);
-  /* ⚠ **알약이 아닙니다(b427).** `--r-pill` 이라 양끝이 완전히 둥글었는데,
-     가로로 긴 바에 그 모서리를 쓰면 **떠 있는 알약**처럼 보입니다.
-     been 은 상단이 훨씬 직선적입니다. 카드(26px)보다 한 단계 각지게 둬서
-     "고정된 바" 로 읽히게 합니다 — 아래로 지나가는 카드와도 갈립니다. */
-  border-radius:16px;
+  position:sticky; top:0; z-index:20;
+  margin:0 calc(-1 * var(--s-sm)) var(--s-md);
+  padding:12px calc(var(--s-md) + var(--s-sm));
+  border-radius:0;
   display:flex; align-items:center; gap:10px;
-  background:linear-gradient(158deg, rgba(255,255,255,.62) 0%,
-             rgba(255,255,255,.46) 55%, rgba(255,255,255,.58) 100%);
-  backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
-  -webkit-backdrop-filter:blur(26px) saturate(185%) brightness(1.10);
-  border:1px solid rgba(255,255,255,.5);
-  box-shadow:inset 0 1.2px 0 rgba(255,255,255,.92),
-             inset 0 -1px 0 rgba(255,255,255,.34),
-             0 0 0 .5px rgba(16,20,35,.07),
-             0 10px 30px rgba(16,20,35,.10);
+  background:rgba(255,255,255,.55);
+  backdrop-filter:blur(22px) saturate(180%);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);
+  border:0;
+  border-bottom:1px solid rgba(16,20,35,.07);
 }
 h1{ font-size:var(--f-2xl); margin:0; font-weight:700;
     letter-spacing:calc(-0.5px * var(--ts)); }
