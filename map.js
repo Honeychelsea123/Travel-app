@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b396';
-import { openCity } from './city.js?v=b396';
-import { distKm } from './calc.js?v=b396';
-import { sb } from './db.js?v=b396';
-import { cities, countryName, continentOf } from './cities.js?v=b396';
-import { PERSONA_ICON, shareCard } from './card.js?v=b396';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b397';
+import { openCity } from './city.js?v=b397';
+import { distKm } from './calc.js?v=b397';
+import { sb } from './db.js?v=b397';
+import { cities, countryName, continentOf } from './cities.js?v=b397';
+import { PERSONA_ICON, shareCard } from './card.js?v=b397';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -531,7 +531,13 @@ $('openmap').addEventListener('click', openMap);
 
 $('shareapp').addEventListener('click', async () => {
   const url  = location.origin + location.pathname;
-  const text = 'AI가 여행 일정을 짜주고, 다녀온 곳은 지도에 남는 앱이에요.';
+  /* ⚠ **앞뒤가 뒤집혀 있었습니다(b397).** 'AI가 여행 일정을 짜주고…' 였습니다.
+     그런데 이 단추가 있는 자리가 **발자국 지도**입니다 — 평가로 만들어진
+     것을 보다가 앱을 권하는데 일정 이야기가 먼저 나갔습니다.
+     밖으로 퍼지는 것(성향 카드·발자국·영수증)은 전부 평가에서 나옵니다.
+     index.html 의 og 와 **같은 말을 해야 합니다** — 한쪽만 고치면 같은 앱이
+     두 가지로 소개됩니다. */
+  const text = '다녀온 도시를 매기면 16가지 중 내 여행 성향이 나와요. 일정도 여기서 짜요.';
   const msg  = `${text}\n${url}`;
 
   /* 휴대폰은 기본 공유창을 씁니다. */
