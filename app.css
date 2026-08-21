@@ -1386,9 +1386,22 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 왼쪽에 붙고 이름이 그 옆이라 **목록의 한 줄**처럼 보였습니다.
  * ⚠ 카드가 아닙니다 — 배경 위에 바로 올립니다. 아래 섹션 카드들과 갈려야
  *   "이게 나" 로 읽힙니다. */
-.profhead{ position:relative; padding:10px 0 6px; }
+/* ⚠ **위쪽에 아이콘 자리를 비웁니다(b434).** 아바타를 96px 로 키우자
+   우상단 아이콘 셋(대시보드·공유·톱니)이 **아바타와 같은 높이**에 와서
+   옆에 붙어 보였습니다(재보니 아이콘 y 88 · 아바타 y 86).
+   아이콘을 맨 위(top:0)로 올리고 그만큼 아바타를 내립니다 — been 도
+   「Edit Profile」이 위, 아바타가 그 아래입니다. */
+.profhead{ position:relative; padding:42px 0 6px; }
 .profid{ display:flex; flex-direction:column; align-items:center; gap:8px; }
 .profid #avatarbtn{ flex:none; }
+/* ⚠ **머리가 카드 밖으로 나오면서 안 보이게 된 것들(b434).**
+   `.bar` 의 트랙이 `--parchment`(#f5f5f7)인데 **페이지 배경과 같은 색**입니다.
+   흰 카드 안에 있을 때는 보였지만 배경 위로 나오자 트랙이 사라지고 파란
+   막대만 덩그러니 떴습니다. 대륙 칩도 같은 이유로 밋밋해집니다.
+   여기서만 한 단계 진한 선색으로 바꿉니다. */
+.profhead .bar{ background:var(--line); }
+.profhead .days > *{ background:var(--canvas); }
+
 /* 우상단 아이콘 셋(대시보드·공유·톱니)은 그대로 떠 있습니다. 이름이 가운데로
    왔으니 겹치지 않습니다 — 전에는 오른쪽에 34px 을 비워 두고 있었습니다. */
 
@@ -2139,7 +2152,12 @@ body.noreorder .ev .grip{ display:none; }
      합성 레이어가 확실하지 않으면 그 한 프레임이 그대로 보입니다.
      3d 변환은 레이어를 못박아 다시 그리는 일을 GPU 안에서 끝냅니다. */
   transform:translate3d(-50%, 0, 0);
-  will-change:backdrop-filter;
+  /* ⚠ **`will-change:backdrop-filter` 를 뺐습니다(b434).** b432 에서 깜빡임을
+     막으려고 넣었는데 **오히려 넓어졌습니다** — 하단바만 깜빡이던 것이
+     여행 탭 아래쪽 전체로 번졌습니다. iOS 에서 will-change 와
+     backdrop-filter 를 같이 걸면 레이어를 미리 잡아 두느라 뒤 내용이
+     바뀔 때마다 더 크게 다시 그립니다. **레이어 고정은 위 translate3d
+     하나로 충분합니다.** 다시 넣지 마십시오. */
   /* 화면 끝까지 늘어나 있으면 바닥에 붙은 판처럼 보입니다. 폭을 줄여
      떠 있는 알약으로 둡니다 — 아래 내용이 옆으로 비쳐 보입니다. */
   width:min(calc(100% - 80px), 330px);
