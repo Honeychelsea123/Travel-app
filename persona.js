@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b449';
-import { sb } from './db.js?v=b449';
-import { cities, countryName, continentOf } from './cities.js?v=b449';
+import { $, esc, toast, copyText } from './dom.js?v=b450';
+import { sb } from './db.js?v=b450';
+import { cities, countryName, continentOf } from './cities.js?v=b450';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b449';
+import { similarPicks } from './rec.js?v=b450';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b449';
-import { visited } from './rate.js?v=b449';
+import { mateCode, mateLink, mateHtml } from './mate.js?v=b450';
+import { visited } from './rate.js?v=b450';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b449';
+         shareCard, cardImage } from './card.js?v=b450';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -171,19 +171,37 @@ async function drawPersona(s, ax, rates){
     opposite: picks.opposite.map(x => x.city.name),
   };
 
+  /* ── 화면은 **리포트**, 카드는 **공유 결과물**입니다(b450) ───────────
+   * ⚠ 전에는 카드 그림이 맨 위에 있고 근거가 그 아래였습니다. 그런데
+   *   카드는 **한 장에 다 눌러 담은 것**이라, 화면에서 읽기에는 글씨가
+   *   작고 순서도 공유용입니다. 읽는 자리와 공유하는 물건은 다릅니다.
+   * ⚠ 그래서 **위에서부터 쭉 읽고, 맨 아래에서 공유**합니다.
+   *   머리 → 왜 이 유형인가 → 궁합 → 다음에 갈 곳 → 친구 궁합 →
+   *   「공유하면 이렇게 나가요」 + 카드 + 공유 단추.
+   * ⚠ **카드를 안 보여주면 안 됩니다.** 무엇이 나가는지 모르고 누르게
+   *   됩니다 — 이 화면의 오래된 규칙이 「보는 것이 곧 올리는 것」입니다
+   *   (card.js 머리말). 자리만 맨 아래로 옮기고 설명을 붙입니다. */
   $('personabox').innerHTML = `
-    <div class="pcardwrap" id="pcardwrap"></div>
+    <!-- ?mate=CODE 로 들어왔으면 궁합을 맨 위에 놓습니다 — 그것 때문에 온
+         사람이니 무엇보다 먼저 봐야 합니다(아래 innerHTML 뒤에서 끼웁니다). -->
+    <div id="matehere"></div>
 
-    <!-- ⚠ **단추가 둘이었습니다 — 「이미지로 저장」과 「공유」(b393).**
-         그런데 공유 쪽은 글만 보냈고, 저장 쪽은 **그림·글·주소를 다** 보냈습니다.
-         즉 앞엣것이 뒤엣것을 통째로 포함합니다. 카톡으로 보내보면 차이가
-         분명합니다 — 하나는 글 세 줄, 하나는 카드 그림.
-         **더 나은 쪽만 남깁니다.** 그림을 못 받는 기기에서는 card.js 가
-         알아서 글로 떨어뜨립니다(saveCardImage). -->
-    <!-- ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 카드는 보여주되
-         밖으로는 못 나가게 합니다 — 흔들리는 코드가 남에게 가면 안 됩니다.
-         대신 **몇 곳이 남았는지**를 그 자리에 적습니다. 단추가 있던 자리라
-         눈이 거기로 가고, 그게 다음 한 번을 누르게 만듭니다. -->
+    <div class="card quiet">
+      <div class="ptop" style="cursor:default">
+        <div class="pcode">${esc(code)}</div>
+        <div class="pname">${esc(type.n)}</div>
+        <span class="prank">${esc(rank)}</span>
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b450"
+          alt="" onerror="this.closest('.part').remove()"></div>
+      </div>
+      <div class="empty" style="text-align:center; padding:2px 6px 0">
+        ${esc(type.d || '')}
+        <div class="memo" style="margin-top:6px">
+          ${s.countries}개국 · ${s.cities}도시${s.days ? ` · ${s.days.toLocaleString()}일째` : ''}
+        </div>
+      </div>
+    </div>
+
     ${임시 ? `<div class="card" style="margin-bottom:var(--s-sm)">
       <div class="empty" style="padding:14px 10px">
         <b>도시 ${남은곳}곳</b>만 더 매기면 성향이 확정돼요.
@@ -192,28 +210,7 @@ async function drawPersona(s, ax, rates){
         </div>
         <div style="margin-top:12px">
           <button class="primary" id="pgo">평가하러 가기</button></div>
-      </div></div>`
-    : `<div style="margin-bottom:var(--s-sm)">
-      <button class="primary" id="p_img" style="width:100%">공유하기</button>
-      <!-- ⚠ **이게 유입이 유입을 만드는 유일한 고리입니다(b408).**
-           카드 한 장은 한 번 퍼지고 끝인데, 궁합은 링크를 받은 사람이
-           자기 카드를 만들어야 결과가 나오고 그 결과가 또 공유거리가
-           됩니다. 자세한 것은 mate.js 머리말. -->
-      <!-- ⚠⚠ **이 주석에 백틱을 쓰지 마십시오. 두 번째입니다(b412).** ⚠⚠
-           여기는 템플릿 문자열 안이라 백틱 하나로 문자열이 끊깁니다.
-           b394 에서 겪고 아래 단골력 줄에 경고까지 박아뒀는데, b410 에서
-           **다른 자리에** 또 썼습니다. 그래서 성향 화면이 통째로 안 떴습니다
-           ("…".ghost is not a function). 클래스 이름을 적을 때는 그냥 씁니다.
-
-           ⚠ ghost 로 두었더니 단추로 안 보였습니다(b410). 재보니 높이 31px,
-           테두리·배경 투명, 회색 11.7px — ghost 는 글자 링크용 스타일입니다.
-           **이 앱에서 유입이 유입을 만드는 유일한 단추**인데 안 보이면
-           아무도 안 누릅니다. 테두리 있는 보조 단추로 세웁니다. -->
-      <button class="matebtn" id="p_mate">친구와 궁합 보기</button>
-    </div>`}
-    <!-- ?mate=CODE 로 들어왔으면 궁합을 맨 위에 놓습니다 — 그것 때문에 온
-         사람이니 카드보다 먼저 봐야 합니다(아래 innerHTML 뒤에서 끼웁니다). -->
-    <div id="matehere"></div>
+      </div></div>` : ''}
 
     <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
@@ -258,6 +255,59 @@ async function drawPersona(s, ax, rates){
         <b>단골력·모험력은 해외 도시만</b> 셉니다 — 부산에 간 것을 "한 나라만
         파는 성향"으로 읽으면 안 되니까요. 개척력·만족력은 국내도 다 셉니다.
       </div>
+    </div>
+
+    <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
+         그림 안에 있으면 작게 눌러 담겨 읽기 어렵습니다. -->
+    <div class="card">
+      <h2>나와 맞는 사람</h2>
+      <div class="mates">
+        <div class="mate good">
+          <span class="ml">환상의 메이트 · ${mate.bestScore}%</span>
+          <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
+          <span class="mc">${esc(mate.best)}</span></div>
+        <div class="mate bad">
+          <span class="ml">최악의 조합 · ${mate.worstScore}%</span>
+          <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
+          <span class="mc">${esc(mate.worst)}</span></div>
+      </div>
+      <div class="empty" style="text-align:left; padding-top:10px">
+        ${esc(mate.bestLine || '')}
+      </div>
+    </div>
+
+    <!-- ── 다음에 갈 만한 곳 ── 두 줄의 성격이 다릅니다(rec.js 맨 위).
+         「어울리는 곳」은 감추고-맞히기로 재서 정한 것이고, 「반대로
+         가보면」은 **정확도를 주장하지 않습니다**. 한 덩어리로 합치지
+         마십시오 — 뒤의 넷까지 맞다고 말하는 셈이 됩니다. -->
+    ${(spec.picks.match.length || spec.picks.opposite.length) ? `<div class="card">
+      <h2>다음에 가볼 만한 곳</h2>
+      ${spec.picks.match.length ? `<div class="row"><span class="label">어울리는 곳
+        <div class="memo">${esc(spec.picks.match.join(' · '))}</div></span></div>` : ''}
+      ${spec.picks.opposite.length ? `<div class="row"><span class="label">반대로 가보면
+        <div class="memo">${esc(spec.picks.opposite.join(' · '))}</div></span></div>` : ''}
+    </div>` : ''}
+
+    ${임시 ? '' : `<div class="card">
+      <!-- ⚠ **이게 유입이 유입을 만드는 유일한 고리입니다(b408).**
+           카드 한 장은 한 번 퍼지고 끝인데, 궁합은 링크를 받은 사람이
+           자기 카드를 만들어야 결과가 나오고 그 결과가 또 공유거리가
+           됩니다. 자세한 것은 mate.js 머리말. -->
+      <button class="matebtn" id="p_mate" style="margin-top:0">친구와 궁합 보기</button>
+    </div>`}
+
+    <!-- ── 공유 ── 여기가 **결과물**입니다(b450) ──────────────────────
+         ⚠ 카드를 계속 보여줍니다. 안 보여주면 무엇이 나가는지 모르고
+           누르게 됩니다 — 「보는 것이 곧 올리는 것」(card.js 머리말).
+           자리를 맨 아래로 옮기고 무엇인지 적어 둘 뿐입니다.
+         ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
+           남에게 가면 안 됩니다. 카드는 보여주되 밖으로는 못 나가게. -->
+    <div class="card">
+      <h2>공유하면 이렇게 나가요</h2>
+      <div class="pcardwrap" id="pcardwrap"></div>
+      ${임시 ? `<div class="empty" style="padding:2px 0 0">
+          도시 ${남은곳}곳만 더 매기면 공유할 수 있어요</div>`
+        : `<button class="primary" id="p_img" style="width:100%">공유하기</button>`}
     </div>`;
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지

@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b449';
-import { sb } from './db.js?v=b449';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b449';
-import { hm, todayYmd } from './calc.js?v=b449';
-import { starHtml, paintStars, markRated } from './stars.js?v=b449';
+import { $, esc } from './dom.js?v=b450';
+import { sb } from './db.js?v=b450';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b450';
+import { hm, todayYmd } from './calc.js?v=b450';
+import { starHtml, paintStars, markRated } from './stars.js?v=b450';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b449';
-import { cities, countryName } from './cities.js?v=b449';
-import { myRates, visited } from './rate.js?v=b449';
-import { plans } from './trip.js?v=b449';
-import { openCity } from './city.js?v=b449';
-import { loadCities, pick } from './citysearch.js?v=b449';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b449';
-import { openMap, UN_COUNTRIES } from './map.js?v=b449';
+import { rateHero, starValue } from './rateui.js?v=b450';
+import { cities, countryName } from './cities.js?v=b450';
+import { myRates, visited } from './rate.js?v=b450';
+import { plans } from './trip.js?v=b450';
+import { openCity } from './city.js?v=b450';
+import { loadCities, pick } from './citysearch.js?v=b450';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b450';
+import { openMap, UN_COUNTRIES } from './map.js?v=b450';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b449';
+import { drawReport } from './report.js?v=b450';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b449';
-import { openNew } from './newtrip.js?v=b449';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b450';
+import { openNew } from './newtrip.js?v=b450';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -733,11 +733,24 @@ async function renderFoot(통){
     el.onclick = e => { e.stopPropagation(); 눌렀을때(); };
     return el;
   };
-
-  box.appendChild(줄만들기('내 발자국',
-    f.countries ? `${UN_COUNTRIES}개국 중 ${f.countries}개국 · ${pct.toFixed(1)}%`
-                : '별점을 매기면 여기에 쌓여요',
-    '지도', () => { ctx.showApp('set'); openMap(); }));
+  /* ── been 처럼 **큰 숫자**로(b450) ──────────────────────────────────
+     「195개국 중 27개국 · 13.8%」를 작은 회색 글로만 두면 **읽히지도 않고
+     재미도 없습니다.** been 은 「0 / 14」를 화면 한가운데에 크게 박아
+     둡니다 — 숫자가 커야 「채우고 싶다」가 생깁니다.
+     ⚠ 분모(195)는 작게 둡니다. 주인공은 **내가 채운 수**입니다.
+     ⚠ 퍼센트는 그 아래 한 줄로 작게 — 지우지는 않습니다. 27이라는 수가
+       많은 건지 적은 건지는 퍼센트라야 압니다. */
+  const 큰수 = document.createElement('div');
+  큰수.className = 'bignum';
+  큰수.style.cursor = 'pointer';
+  큰수.innerHTML = f.countries
+    ? `<div class="bnrow"><b>${f.countries}</b><span>/ ${UN_COUNTRIES}</span></div>
+       <div class="bnsub">다녀온 나라 · 세계의 ${pct.toFixed(1)}%</div>`
+    : `<div class="bnsub">별점을 매기면 여기에 쌓여요</div>`;
+  큰수.onclick = () => { ctx.showApp('set'); openMap(); };
+  box.appendChild(줄만들기('내 발자국', '', '지도',
+    () => { ctx.showApp('set'); openMap(); }));
+  box.appendChild(큰수);
 
   /* ── 지도는 **발자국 바로 아래**입니다(b423) ─────────────────────────
    * 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니

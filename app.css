@@ -127,6 +127,11 @@
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body{
   margin:0; min-height:100dvh; color:var(--ink);
+  /* ⚠ **스크롤 바운스를 막습니다(b450).** 끝까지 내렸을 때 iOS 가 문서를
+     고무줄처럼 당기는데, 그때 `position:fixed` 인 탭바가 **같이 딸려
+     내려가 바닥에 붙었습니다.** 당겨서 새로고침은 안 쓰므로 잃는 것이
+     없습니다. */
+  overscroll-behavior-y:none;
   font-family:var(--sf);
   font-size:var(--f-xl); line-height:1.47;
   letter-spacing:calc(-0.374px * var(--ts));
@@ -2512,7 +2517,10 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
    (persona/{코드}.png) — 두 벌로 두면 카드와 화면의 그림이 갈라집니다.
    ⚠ 세로 자리를 미리 잡습니다(aspect-ratio). 그림이 늦게 와도 아래 막대가
      밀리지 않습니다 — .pcardwrap 과 같은 수법입니다. */
-.part{ width:min(58%, 200px); margin:10px auto 0; aspect-ratio:1;
+/* ⚠ **58%%는 너무 컸습니다(b450).** 폰에서 200px 정사각형이 화면 4분의 1을
+   먹어서 **아래 지도가 안 보였습니다.** 유형 그림은 「누구인지」를 거드는
+   것이지 주인공이 아닙니다 — 숫자와 지도가 주인공입니다. */
+.part{ width:min(38%, 132px); margin:8px auto 0; aspect-ratio:1;
        border-radius:var(--r-lg); overflow:hidden; }
 .part img{ width:100%; height:100%; object-fit:contain; display:block; }
 .pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:var(--primary);
@@ -2542,3 +2550,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* 빈 대륙 칩 자리가 여백을 남기지 않게(b448) — 채우는 쪽을 걷어냈습니다
    (home.js 의 loadFootprint). 요소는 남겨 두었습니다. */
 #s_cont:empty{ display:none; }
+
+/* ── 큰 숫자(b450) ── been 의 「0 / 14」 자리 ─────────────────────────
+ * 작은 회색 글로만 두면 읽히지도 않고 재미도 없습니다. 숫자가 커야
+ * 「채우고 싶다」가 생깁니다.
+ * ⚠ 분모는 작고 흐리게 — 주인공은 **내가 채운 수**입니다.
+ * ⚠ 자릿수가 늘어도(27 → 100) 가운데가 안 흔들리게 tabular-nums. */
+.bignum{ text-align:center; padding:6px 0 2px; }
+.bnrow{ display:flex; align-items:baseline; justify-content:center; gap:6px;
+        font-variant-numeric:tabular-nums; }
+.bnrow b{ font-size:calc(46px * var(--ts)); font-weight:800; line-height:1;
+          color:var(--primary); letter-spacing:calc(-1px * var(--ts)); }
+.bnrow span{ font-size:calc(19px * var(--ts)); font-weight:700;
+             color:var(--ink-48); }
+.bnsub{ margin-top:5px; font-size:calc(12px * var(--ts)); color:var(--ink-48); }
