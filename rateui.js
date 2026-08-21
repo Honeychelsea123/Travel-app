@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b421';
-import { countryName } from './cities.js?v=b421';
-import { starHtml } from './stars.js?v=b421';
+import { esc } from './dom.js?v=b422';
+import { countryName } from './cities.js?v=b422';
+import { starHtml } from './stars.js?v=b422';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -83,8 +83,7 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
     return `<div class="rateq" id="${esc(id)}">
       <div class="rqimg"><img src="${esc(c.image_url)}" alt=""
         onerror="this.closest('.rqimg').classList.add('ph')"></div>
-      <div class="ht">${esc(c.name)}, 가보셨어요?</div>
-      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+      <div class="ht">${esc(c.name)} <i>(${esc(countryName[c.country] || c.country)})</i></div>
       ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
       ${별}
     </div>${단추}`;
@@ -100,8 +99,7 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
   return `<div class="ratecard">
     <div class="hero rateh" id="${esc(id)}">
       <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
-      <div class="ht">${esc(c.name)}, 가보셨어요?</div>
-      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+      <div class="ht">${esc(c.name)} <i>(${esc(countryName[c.country] || c.country)})</i></div>
       ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
       ${별}
     </div>${단추}
