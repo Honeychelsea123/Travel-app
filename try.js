@@ -23,15 +23,18 @@
  *   날아가 있으면, 안 하느니만 못합니다(화를 냅니다). 브라우저에 담아뒀다가
  *   로그인하는 순간 계정으로 옮기고 담아둔 것을 지웁니다 — `claimTryRates`.
  *
- * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · card.js. */
-import { $, esc } from './dom.js?v=b408';
-import { sb } from './db.js?v=b408';
-import { cities, countryName } from './cities.js?v=b408';
-import { loadCities } from './citysearch.js?v=b408';
-import { starHtml, paintStars } from './stars.js?v=b408';
-import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b408';
+ * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
+ *     card.js · mate.js. */
+import { $, esc } from './dom.js?v=b409';
+import { sb } from './db.js?v=b409';
+import { cities } from './cities.js?v=b409';
+import { loadCities } from './citysearch.js?v=b409';
+import { paintStars } from './stars.js?v=b409';
+/* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
+import { rateHero, starValue } from './rateui.js?v=b409';
+import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b409';
 /* 친구가 보낸 궁합 링크. 링크를 받은 사람이 실제로 도착하는 자리가 여기입니다. */
-import { mateCode, mateHtml } from './mate.js?v=b408';
+import { mateCode, mateHtml } from './mate.js?v=b409';
 
 /* 담아두는 자리. **`localStorage` 입니다** — 탭을 닫았다 와도 남아야 합니다.
    로그인하러 구글로 나갔다 돌아오는 사이에 `sessionStorage` 는 살아남지만,
@@ -125,21 +128,11 @@ function 친구줄(){
     </div></div>`;
 }
 
-function 판(c, 남){
-  return `${친구줄()}<div class="hero rateh" id="tryhero">
-    <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
-    <div class="ht">${esc(c.name)}, 가보셨어요?</div>
-    <div class="hm">${esc(countryName[c.country] || c.country)}</div>
-    <div class="hask">${남}곳만 더 매기면 내 여행 성향이 나와요</div>
-    <div class="hrow">
-      <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
-    </div>
-  </div>
-  <div class="trybar">
-    <button class="ghost" data-try="skip">안 가봤어요</button>
-    <button class="ghost" data-try="want">♡ 가보고 싶어요</button>
-  </div>`;
-}
+/* ⚠ **그리는 것은 rateui.js 한 곳에서 합니다(b409).** 로그인 뒤에 만날
+   화면(home.js)과 **같은 함수**를 씁니다 — 같아야 "아까 그것" 으로 이어지고,
+   따로 적으면 한쪽만 고쳐집니다. */
+const 판 = (c, 남) =>
+  친구줄() + rateHero(c, { id:'tryhero', ask:`${남}곳만 더 매기면 내 여행 성향이 나와요` });
 
 let 지금도시 = null;
 
@@ -218,20 +211,19 @@ $('trybox')?.addEventListener('click', async e => {
   const st = e.target.closest('.st');
   if (st){
     const wrap = st.closest('.stars');
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(st, e.clientX);
     paintStars(wrap, v, true);
     const o = 읽기(); o[wrap.dataset.city] = { stars: v }; 쓰기(o);
     /* 별이 찬 것을 보여주고 넘깁니다. 홈과 같은 1.5초입니다. */
     setTimeout(drawTry, 900);
     return;
   }
-  const b = e.target.closest('[data-try]');
+  const b = e.target.closest('[data-rate]');
   if (!b || !지금도시) return;
   const o = 읽기();
   /* **「안 가봤어요」도 기록합니다.** 안 그러면 다음에 또 같은 도시를 묻습니다.
      별점이 없으므로 성향에는 안 들어갑니다(위 `카드보이기` 의 filter). */
-  o[지금도시.id] = b.dataset.try === 'want' ? { want: true } : { skip: true };
+  o[지금도시.id] = b.dataset.rate === 'want' ? { want: true } : { skip: true };
   쓰기(o);
   drawTry();
 });

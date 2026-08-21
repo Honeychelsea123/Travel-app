@@ -16,26 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b408';
-import { sb } from './db.js?v=b408';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b408';
-import { hm, todayYmd } from './calc.js?v=b408';
-import { starHtml, paintStars, markRated } from './stars.js?v=b408';
-import { cities, countryName } from './cities.js?v=b408';
-import { myRates, visited } from './rate.js?v=b408';
-import { plans } from './trip.js?v=b408';
-import { openCity } from './city.js?v=b408';
-import { loadCities, pick } from './citysearch.js?v=b408';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b408';
-import { openMap, UN_COUNTRIES } from './map.js?v=b408';
+import { $, esc } from './dom.js?v=b409';
+import { sb } from './db.js?v=b409';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b409';
+import { hm, todayYmd } from './calc.js?v=b409';
+import { starHtml, paintStars, markRated } from './stars.js?v=b409';
+/* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
+import { rateHero, starValue } from './rateui.js?v=b409';
+import { cities, countryName } from './cities.js?v=b409';
+import { myRates, visited } from './rate.js?v=b409';
+import { plans } from './trip.js?v=b409';
+import { openCity } from './city.js?v=b409';
+import { loadCities, pick } from './citysearch.js?v=b409';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b409';
+import { openMap, UN_COUNTRIES } from './map.js?v=b409';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b408';
+import { drawReport } from './report.js?v=b409';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b408';
-import { openNew } from './newtrip.js?v=b408';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b409';
+import { openNew } from './newtrip.js?v=b409';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -181,30 +183,14 @@ export function heroHtml(photo, dd, title, memo, btn, ai){
  *
  * ⚠ **사진이 없는 도시는 여기 오면 안 됩니다.** 히어로는 사진이 주인공이라
  *   빈 색 덩어리만 남습니다. 고르는 쪽(buildHome)에서 걸러 옵니다. */
-function rateHeroHtml(c){
-  /* ⚠ **묻기만 하고 무엇을 하라는 말이 없었습니다(b400).** 「텔아비브,
-     가보셨어요?」 밑에 나라만 있고 별은 오른쪽 구석에 작게 붙어 있어서,
-     **별이 장식으로 보이고 누를 수 있는 줄 몰랐습니다.** 처음 온 사람에게는
-     이 화면이 이 앱의 첫 할 일인데 그 할 일이 안 적혀 있었습니다.
-     그래서 한 줄 넣고, 별을 **제 줄로 내려** 손가락 자리를 넓혔습니다. */
-  return `<div class="hero rateh" id="hero">
-    <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
-    <div class="ht">${esc(c.name)}, 가보셨어요?</div>
-    <div class="hm">${esc(countryName[c.country] || c.country)}</div>
-    <div class="hask">다녀오셨다면 별점을 남겨주세요</div>
-    <div class="hrow">
-      <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
-    </div>
-  </div>
-  <!-- ⚠ **넘길 길이 없으면 흐름이 거기서 끊깁니다(b407).** 469곳 중 대부분은
-       안 가본 곳인데 별밖에 없으면 대답할 방법이 하나뿐이었습니다.
-       로그인 전 맛보기(try.js)에는 이 둘이 있었는데 **로그인하면 사라졌습니다** —
-       같은 화면이 로그인 전후로 다르게 굴면 안 됩니다. -->
-  <div class="trybar" id="herobar" data-city="${esc(c.id)}">
-    <button class="ghost" data-hero="skip">안 가봤어요</button>
-    <button class="ghost" data-hero="want">♡ 가보고 싶어요</button>
-  </div>`;
-}
+/* ⚠ **그리는 것은 rateui.js 한 곳에서 합니다(b409).** 홈·맛보기·연속 평가
+   셋이 같은 히어로를 씁니다. 여기서 또 적으면 세 벌이 되고, 그러면 고칠 때
+   한 벌만 고쳐집니다 — 별 크기 때문에 이미 한 번 겪었습니다(b401).
+
+   ⚠ **묻기만 하고 무엇을 하라는 말이 없었습니다(b400).** 별이 장식으로
+   보이고 누를 수 있는 줄 몰랐습니다. `ask` 한 줄이 그것입니다. */
+const rateHeroHtml = c =>
+  rateHero(c, { id:'hero', ask:'다녀오셨다면 별점을 남겨주세요' });
 /* 지금 히어로에 걸린 도시. **퀴즈가 이걸 빼고 그려야** 같은 도시가 위아래에
    두 번 안 나옵니다(renderQuiz · 다음 줄 채우기 둘 다). */
 let heroCity = null;
@@ -684,8 +670,7 @@ $('home').addEventListener('click', async e => {
     const cityId = wrap.dataset.city;
     if (hero.dataset.done) return;
     hero.dataset.done = '1';
-    const box = hs.getBoundingClientRect();
-    const v = +hs.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(hs, e.clientX);
 
     /* ── 같은 자리를 다시 누르면 **취소**(b403) ────────────────────────
        사용자 지적: "별 3개 누르고 다시 눌러서 취소하고 싶어도 안 된다".
@@ -740,7 +725,7 @@ $('home').addEventListener('click', async e => {
          `hero.outerHTML` 만 갈아끼우면 **옛 단추 줄이 그대로 남아** 화면에
          줄이 둘이 됩니다. 새것이 들어오면서 id 가 겹치므로 **바꾸기 전에**
          옛것을 잡아둬야 합니다 — 나중에 찾으면 새것이 잡힙니다. */
-      const 옛단추 = $('herobar');
+      const 옛단추 = $('hero')?.nextElementSibling;
       hero.outerHTML = rateHeroHtml(nx);
       옛단추?.remove();
       /* **되돌릴 창이 닫힌 지금** 비웁니다. 이제 홈을 다시 그려도
@@ -756,13 +741,13 @@ $('home').addEventListener('click', async e => {
        · ♡        → `want` 를 켭니다. 보관함에 쌓이고 역시 다시 안 묻습니다.
      ⚠ 기다렸다 넘기지 않습니다 — 별점과 달리 **되돌려 볼 것이 없습니다.**
        바로 다음 도시를 올립니다. */
-  const hb = e.target.closest('#herobar [data-hero]');
+  const hb = e.target.closest('#home .trybar [data-rate]');
   if (hb){
-    const bar = hb.closest('#herobar');
+    const bar = hb.closest('.trybar');
     const cityId = bar.dataset.city;
     if (bar.dataset.done) return;
     bar.dataset.done = '1';
-    await saveRate(cityId, hb.dataset.hero === 'want' ? { want: true }
+    await saveRate(cityId, hb.dataset.rate === 'want' ? { want: true }
                                                       : { stars: null }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
     await fillQuiz();
@@ -772,7 +757,7 @@ $('home').addEventListener('click', async e => {
     const hero = $('hero');
     if (nx && hero){
       heroCity = nx;
-      const 옛단추 = $('herobar');
+      const 옛단추 = $('hero')?.nextElementSibling;
       hero.outerHTML = rateHeroHtml(nx);
       옛단추?.remove();
     } else bar.dataset.done = '';
@@ -783,8 +768,7 @@ $('home').addEventListener('click', async e => {
   if (st){
     const wrap = st.closest('.stars'), row = st.closest('.rrow');
     const cityId = wrap.dataset.city;
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(st, e.clientX);
     if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
     row.dataset.done = '1';
 
