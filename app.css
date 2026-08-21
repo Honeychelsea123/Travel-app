@@ -2195,10 +2195,12 @@ body.noreorder .ev .grip{ display:none; }
      애플 탭바를 다시 보면 뒤 글자가 **읽힐 만큼 형태가 남아** 있습니다 —
      번지되 무엇인지는 보이는 상태, 그게 「굴절」로 읽히는 지점입니다.
      b437 에서 "애플은 흐림이 세다" 고 판단한 것이 **거꾸로였습니다.**
-     10px 로 낮춥니다. 더 올리지 마십시오. */
+     10px 로도 뿌옇다 하여 **6px** 까지 내렸습니다(b445). 이 값이 마지막
+     시도입니다 — 여기서도 안 되면 유리를 포기하고 애플식 불투명으로
+     가기로 했습니다(사용자 판단). 더 올리지 마십시오. */
   background:rgba(255,255,255,.22);
-  backdrop-filter:blur(10px) saturate(180%);
-  -webkit-backdrop-filter:blur(10px) saturate(180%);
+  backdrop-filter:blur(6px) saturate(180%);
+  -webkit-backdrop-filter:blur(6px) saturate(180%);
   border:1px solid rgba(255,255,255,.42);
   box-shadow:0 8px 32px rgba(16,20,35,.12),
              0 2px 8px rgba(16,20,35,.06);
