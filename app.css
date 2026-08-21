@@ -2190,9 +2190,15 @@ body.noreorder .ev .grip{ display:none; }
      ⚠ b420 이전(.28~.12)에도 투명했는데 얼룩으로 읽혔던 이유가 이것입니다 —
        그때도 테두리가 없었고, 게다가 transform 이 굴절을 죽이고 있었습니다
        (b441). 셋이 다 갖춰져야 유리가 됩니다. */
-  background:rgba(255,255,255,.28);
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  /* ⚠⚠ **흐림을 세게 주면 유리가 아니라 「뿌연 판」이 됩니다(b444).** ⚠⚠
+     20px 은 뒤 글자를 **형체까지 뭉개서** 그냥 흐린 흰색이 됐습니다.
+     애플 탭바를 다시 보면 뒤 글자가 **읽힐 만큼 형태가 남아** 있습니다 —
+     번지되 무엇인지는 보이는 상태, 그게 「굴절」로 읽히는 지점입니다.
+     b437 에서 "애플은 흐림이 세다" 고 판단한 것이 **거꾸로였습니다.**
+     10px 로 낮춥니다. 더 올리지 마십시오. */
+  background:rgba(255,255,255,.22);
+  backdrop-filter:blur(10px) saturate(180%);
+  -webkit-backdrop-filter:blur(10px) saturate(180%);
   border:1px solid rgba(255,255,255,.42);
   box-shadow:0 8px 32px rgba(16,20,35,.12),
              0 2px 8px rgba(16,20,35,.06);
