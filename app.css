@@ -2463,3 +2463,23 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .trip{ position:relative; }
 .trip > .badge{ position:absolute; right:0; top:2px; }
 .trip .t > b{ display:block; padding-right:64px; }
+
+/* ── 「어디로 떠나볼까요?」 띠(b438) ──────────────────────────────────
+ * 홈 맨 위. 아래 카드들은 전부 **평가로 쌓인 나**인데(별점 → 발자국 →
+ * 성향) 이 줄만 **여행을 만드는 다른 기능**입니다. 흰 카드 안의 한 줄로
+ * 두면 그 차이가 안 읽혀서, 강조색을 옅게 깐 띠로 세웁니다.
+ * ⚠ **작게 둡니다.** 평가가 주인공이고 일정은 서브입니다 — 맨 위라도
+ *   큰 사진 카드가 주인공으로 남게 띠 하나 높이만 씁니다(home.js 주석). */
+.tripbar{ display:flex; align-items:center; gap:11px; cursor:pointer;
+          padding:12px 14px; border-radius:16px;
+          background:rgba(0,102,204,.055);
+          border:1px solid rgba(0,102,204,.13); }
+.tripbar:active{ background:rgba(0,102,204,.10); }
+.tripbar .ic{ flex:none; display:flex; color:var(--primary); }
+.tripbar .t{ flex:1; min-width:0; }
+.tripbar .t b{ display:block; font-size:var(--f-md); font-weight:600;
+               color:var(--ink); word-break:keep-all; }
+.tripbar .t span{ display:block; font-size:var(--f-xs); color:var(--ink-48);
+                  margin-top:1px; word-break:keep-all; }
+.tripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
+              color:var(--primary); }

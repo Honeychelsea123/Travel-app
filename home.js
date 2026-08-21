@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b437';
-import { sb } from './db.js?v=b437';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b437';
-import { hm, todayYmd } from './calc.js?v=b437';
-import { starHtml, paintStars, markRated } from './stars.js?v=b437';
+import { $, esc } from './dom.js?v=b438';
+import { sb } from './db.js?v=b438';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b438';
+import { hm, todayYmd } from './calc.js?v=b438';
+import { starHtml, paintStars, markRated } from './stars.js?v=b438';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b437';
-import { cities, countryName } from './cities.js?v=b437';
-import { myRates, visited } from './rate.js?v=b437';
-import { plans } from './trip.js?v=b437';
-import { openCity } from './city.js?v=b437';
-import { loadCities, pick } from './citysearch.js?v=b437';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b437';
-import { openMap, UN_COUNTRIES } from './map.js?v=b437';
+import { rateHero, starValue } from './rateui.js?v=b438';
+import { cities, countryName } from './cities.js?v=b438';
+import { myRates, visited } from './rate.js?v=b438';
+import { plans } from './trip.js?v=b438';
+import { openCity } from './city.js?v=b438';
+import { loadCities, pick } from './citysearch.js?v=b438';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b438';
+import { openMap, UN_COUNTRIES } from './map.js?v=b438';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b437';
+import { drawReport } from './report.js?v=b438';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b437';
-import { openNew } from './newtrip.js?v=b437';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b438';
+import { openNew } from './newtrip.js?v=b438';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -355,13 +355,27 @@ async function buildHome(){
      ⚠ 문구가 「다음에 어디 갈까요?」 였습니다(b402 에서 고침). **처음 온
        사람에게는 '다음' 이 없습니다** — 아직 한 번도 안 간 사람에게
        "다음에" 라고 하면 자기 얘기가 아닙니다. */
+  /* ⚠ **홈 맨 위 · 생김새도 다릅니다(b438).** 아래 카드들은 전부 「평가로
+     쌓인 나」인데(별점 → 발자국 → 성향), 이 줄만 **여행을 만드는 다른
+     기능**입니다. 카드 안의 한 줄로 두면 그 차이가 안 읽혀서, 흰 카드가
+     아니라 **강조색 띠**로 세우고 맨 위로 올립니다.
+     ⚠ 그래도 **작게** 둡니다. 이 앱은 평가가 주인공이고 일정은 서브입니다
+       (b416·b423) — 맨 위라도 큰 사진 카드(평가)가 주인공으로 남게
+       띠 하나 높이만 씁니다. 여기를 키우지 마십시오. */
   const nt = document.createElement('div');
-  nt.className = 'fprow';
-  nt.innerHTML = `<span class="t"><b>어디로 떠나볼까요?</b>
+  nt.className = 'tripbar';
+  nt.innerHTML = `<span class="ic" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+           stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/>
+        <circle cx="12" cy="10" r="2.6"/>
+      </svg></span>
+    <span class="t"><b>어디로 떠나볼까요?</b>
       <span>어디로 언제 가는지만 정하면 돼요</span></span>
-    <span class="go">새 여행 ›</span>`;
+    <span class="go">여행 만들기 ›</span>`;
   nt.onclick = () => openNew();
-  통.appendChild(nt);
+  $('home').prepend(nt);
 }
 /* ── 다녀온 여행 평가 재촉 띠 ────────────────────────────────────────
  * **홈에 있다가 여행 탭으로 옮겼습니다(b398).** 홈은 도시 평가가 주인공이고,
