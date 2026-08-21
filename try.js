@@ -24,12 +24,14 @@
  *   로그인하는 순간 계정으로 옮기고 담아둔 것을 지웁니다 — `claimTryRates`.
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · card.js. */
-import { $, esc } from './dom.js?v=b407';
-import { sb } from './db.js?v=b407';
-import { cities, countryName } from './cities.js?v=b407';
-import { loadCities } from './citysearch.js?v=b407';
-import { starHtml, paintStars } from './stars.js?v=b407';
-import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b407';
+import { $, esc } from './dom.js?v=b408';
+import { sb } from './db.js?v=b408';
+import { cities, countryName } from './cities.js?v=b408';
+import { loadCities } from './citysearch.js?v=b408';
+import { starHtml, paintStars } from './stars.js?v=b408';
+import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b408';
+/* 친구가 보낸 궁합 링크. 링크를 받은 사람이 실제로 도착하는 자리가 여기입니다. */
+import { mateCode, mateHtml } from './mate.js?v=b408';
 
 /* 담아두는 자리. **`localStorage` 입니다** — 탭을 닫았다 와도 남아야 합니다.
    로그인하러 구글로 나갔다 돌아오는 사이에 `sessionStorage` 는 살아남지만,
@@ -105,8 +107,26 @@ function 채우기(){
 /* ── 화면 ────────────────────────────────────────────────────────────
  * 히어로와 **같은 생김새**를 씁니다(`.hero.rateh`) — 로그인 뒤에 만날 화면과
  * 같아야 "아까 그것"으로 이어집니다. 새 모양을 만들면 두 벌이 됩니다. */
+/* ── 친구가 보낸 궁합 링크로 왔다면(b408) ────────────────────────────
+ * **이 사람이 지금 제일 궁금한 것은 자기 유형이 아니라 궁합입니다.**
+ * 그래서 매기는 동안에도 왜 매기는지를 위에 걸어둡니다 — 「다섯 곳만
+ * 채우면 친구와 궁합이 나와요」. 목표가 보이면 다섯 번을 누릅니다. */
+function 친구줄(){
+  const 상대 = mateCode();
+  if (!상대) return '';
+  const 유형 = PERSONA16[상대];
+  if (!유형) return '';
+  return `<div class="card" style="margin-bottom:var(--s-sm)">
+    <div class="empty" style="text-align:left; padding:6px 0 2px">
+      친구는 <b>${esc(상대)} ${esc(유형.n)}</b>
+      <div class="memo" style="margin-top:4px">
+        다섯 곳만 매기면 <b>둘의 궁합</b>이 나와요
+      </div>
+    </div></div>`;
+}
+
 function 판(c, 남){
-  return `<div class="hero rateh" id="tryhero">
+  return `${친구줄()}<div class="hero rateh" id="tryhero">
     <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
     <div class="ht">${esc(c.name)}, 가보셨어요?</div>
     <div class="hm">${esc(countryName[c.country] || c.country)}</div>
@@ -153,7 +173,12 @@ async function 카드보이기(){
                         .filter(Boolean)).size;
   const rank = personaRank(나라);
 
-  box.innerHTML = `<div class="pcardwrap" id="trycard"></div>
+  /* ⚠ **궁합이 카드보다 위입니다(b408).** 링크를 받고 온 사람은 그것 때문에
+     다섯 곳을 매긴 것입니다. 자기 카드를 먼저 보여주고 궁합을 밑에 숨기면
+     약속을 늦게 지키는 셈입니다. */
+  const 궁합 = mateHtml(ax.code, mateCode());
+
+  box.innerHTML = `${궁합}<div class="pcardwrap" id="trycard"></div>
     <div class="card" style="margin-top:var(--s-sm)">
       <!-- ⚠ **조사를 뒤에 붙이지 않습니다.** 「명소 검열관 가 나왔어요」가
            나왔었습니다 — 유형 이름 열여섯 개의 받침이 제각각이라 하나로 못
