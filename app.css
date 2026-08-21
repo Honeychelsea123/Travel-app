@@ -1371,6 +1371,37 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .fprow .t span{ font-size:calc(13px * var(--ts)); color:var(--dim); }
 .fprow .go{ flex:none; font-size:calc(13px * var(--ts)); color:var(--primary);
             font-weight:600; }
+/* ── 프로필 머리 ── been 식으로(b430) ─────────────────────────────────
+ * 아바타를 **크게 가운데**, 그 아래 이름, 그 아래 숫자. 전에는 72px 사진이
+ * 왼쪽에 붙고 이름이 그 옆이라 **목록의 한 줄**처럼 보였습니다.
+ * ⚠ 카드가 아닙니다 — 배경 위에 바로 올립니다. 아래 섹션 카드들과 갈려야
+ *   "이게 나" 로 읽힙니다. */
+.profhead{ position:relative; padding:10px 0 6px; }
+.profid{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+.profid #avatarbtn{ flex:none; }
+/* 우상단 아이콘 셋(대시보드·공유·톱니)은 그대로 떠 있습니다. 이름이 가운데로
+   왔으니 겹치지 않습니다 — 전에는 오른쪽에 34px 을 비워 두고 있었습니다. */
+
+/* ── 섹션 제목 ── been 의 회색 소제목 ────────────────────────────────
+ * 카드 **밖**에 둡니다. 카드 안 h2 로 두면 카드마다 제목이 들어가서
+ * 무리 짓는 힘이 약해집니다 — been 은 제목이 카드 사이에 떠 있습니다. */
+.secttl{ font-size:calc(13px * var(--ts)); font-weight:600; color:var(--dim);
+         margin:18px 4px 8px; }
+/* 첫 섹션은 머리 바로 밑이라 위 여백을 줄입니다. */
+.profhead + .secttl{ margin-top:14px; }
+/* 프로필 미니 헤더 — 로고 자리에 들어앉습니다(b430). profile.js 참고. */
+.profmini{ display:flex; align-items:center; gap:9px; min-width:0; flex:1; }
+.profmini img{ width:30px; height:30px; border-radius:50%; flex:none;
+               object-fit:cover; background:var(--parchment); }
+.profmini span{ font-size:calc(17px * var(--ts)); font-weight:700;
+                overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+
+/* `.fprow` 를 button 으로도 씁니다(프로필의 세계지도·여행 성향).
+   button 기본 스타일을 지워야 div 로 만든 줄과 같아 보입니다. */
+button.fprow{ border:0; background:none; width:100%; font:inherit;
+              color:inherit; text-align:left; }
+
 
 /* AI 카드 — **채도 높은 그러데이션 두 장을 걷어냈습니다.**
  * 보라·청록 카드가 홈 위쪽을 나란히 먹고 있었는데, 그게 화면에서 제일

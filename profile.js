@@ -15,9 +15,9 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf } from './dom.js?v=b429';
-import { sb } from './db.js?v=b429';
-import { fail, NOROW } from './net.js?v=b429';
+import { $, esc, avatarOf } from './dom.js?v=b430';
+import { sb } from './db.js?v=b430';
+import { fail, NOROW } from './net.js?v=b430';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
@@ -129,3 +129,32 @@ $('tsbtns').addEventListener('click', async e => {
   if (r.error) fail(r.error, 'trip');
 });
 
+
+/* ── 프로필 미니 헤더(b430) ───────────────────────────────────────────
+ * been 은 프로필에서 스크롤하면 큰 아바타가 올라가고 그 자리에 **작은
+ * 아바타 + 이름**이 헤더로 나타납니다. 우리는 상단바가 늘 떠 있으므로
+ * 헤더를 새로 만들지 않고 **로고 자리를 잠깐 내줍니다.**
+ *
+ * ⚠ **프로필 탭에서만**입니다. 다른 탭에서 켜지면 앱 이름이 사라집니다.
+ *   `#profpane` 이 보이는지 먼저 봅니다 — 숨은 요소는 화면 밖으로 친
+ *   것과 구분이 안 되므로 이 검사가 없으면 다른 탭에서도 켜집니다.
+ * ⚠ **IntersectionObserver 를 안 씁니다.** 숨은 요소를 "안 보임" 으로
+ *   주기 때문에, 탭을 옮기는 순간 켜졌습니다. 스크롤 위치를 직접 잽니다.
+ * ⚠ 탭을 옮길 때도 다시 재야 합니다. app.js 를 건드리지 않으려고
+ *   탭 바 클릭에 얹었습니다 — 화면이 바뀐 뒤에 재도록 조금 늦춥니다. */
+function 미니헤더(){
+  const pane = $('profpane');
+  const 프로필 = pane && !pane.classList.contains('hide') && pane.offsetParent;
+  const 머리 = document.querySelector('.profid');
+  /* 상단바 높이(약 48px)만큼 올라갔으면 이름이 가려진 것입니다. */
+  const 켤까 = !!(프로필 && 머리 && 머리.getBoundingClientRect().bottom < 48);
+  $('profmini')?.classList.toggle('hide', !켤까);
+  document.querySelector('.topbar h1.brand')?.classList.toggle('hide', 켤까);
+  if (켤까){
+    const av = $('avatar'), nm = $('name');
+    if (av && $('pm_av') && $('pm_av').src !== av.src) $('pm_av').src = av.src;
+    if (nm && $('pm_nm')) $('pm_nm').textContent = nm.textContent;
+  }
+}
+addEventListener('scroll', 미니헤더, { passive:true });
+$('appbar')?.addEventListener('click', () => setTimeout(미니헤더, 80));
