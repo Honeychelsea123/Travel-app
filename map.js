@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b446';
-import { openCity } from './city.js?v=b446';
-import { distKm } from './calc.js?v=b446';
-import { sb } from './db.js?v=b446';
-import { cities, countryName, continentOf } from './cities.js?v=b446';
-import { PERSONA_ICON, shareCard } from './card.js?v=b446';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b447';
+import { openCity } from './city.js?v=b447';
+import { distKm } from './calc.js?v=b447';
+import { sb } from './db.js?v=b447';
+import { cities, countryName, continentOf } from './cities.js?v=b447';
+import { PERSONA_ICON, shareCard } from './card.js?v=b447';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -33,7 +33,9 @@ export function setMapCtx(o){ ctx = { ...ctx, ...o }; }
  * 퍼센트는 국가로만 셉니다. 도시는 우리가 가진 313곳이 분모라
  * "전 세계 도시의 몇 퍼센트"라고 말할 수가 없습니다.
  * 분모는 UN 기준 195개국(회원 193 + 옵서버 2)을 대륙별로 나눈 수입니다. */
-const CONT = [['아시아', 48], ['유럽', 44], ['아프리카', 54],
+/* 분석 탭도 이 표를 씁니다(b447) — 대륙별 진행도의 분모. 두 벌로 두면
+   한쪽만 고쳐집니다. */
+export const CONT = [['아시아', 48], ['유럽', 44], ['아프리카', 54],
               ['북아메리카', 23], ['남아메리카', 12], ['오세아니아', 14]];
 /* 대륙별로 당겨 보는 자리. 가운데와 폭만 정하고 높이는 화면 비율에서 냅니다 —
    그래야 viewBox 비율이 화면과 같아져서 여백 없이 딱 맞고, 손가락 좌표를

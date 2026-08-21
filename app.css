@@ -2487,3 +2487,19 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
                   margin-top:1px; word-break:keep-all; }
 .tripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
               color:var(--primary); }
+
+/* ── 분석 탭의 막대들(b447) ───────────────────────────────────────────
+ * 성향 네 축과 대륙별 진행도가 **같은 모양**을 씁니다 — 둘 다 「이름 ·
+ * 막대 · 숫자」 세 칸이라 따로 만들 이유가 없습니다.
+ * ⚠ 숫자 칸은 폭을 못박습니다. 안 그러면 `7/48` 과 `19/44` 의 자릿수가
+ *   달라 막대 끝이 들쭉날쭉합니다. */
+.axbars, .contbars{ margin-top:12px; display:flex; flex-direction:column; gap:7px; }
+.contbars{ margin-top:14px; }
+.axrow{ display:flex; align-items:center; gap:9px; }
+.axn{ flex:none; width:56px; font-size:calc(13px * var(--ts)); color:var(--dim); }
+.axbar{ flex:1; height:7px; border-radius:var(--r-pill);
+        background:var(--line); overflow:hidden; }
+.axbar > i{ display:block; height:100%; border-radius:var(--r-pill);
+            background:var(--primary); }
+.axv{ flex:none; width:46px; text-align:right; font-variant-numeric:tabular-nums;
+      font-size:calc(12px * var(--ts)); color:var(--ink-48); font-weight:600; }
