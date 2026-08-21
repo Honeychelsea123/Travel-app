@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText } from './dom.js?v=b454';
-import { sb } from './db.js?v=b454';
-import { cities, countryName, continentOf } from './cities.js?v=b454';
+import { $, esc, toast, copyText } from './dom.js?v=b456';
+import { sb } from './db.js?v=b456';
+import { cities, countryName, continentOf } from './cities.js?v=b456';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b454';
+import { similarPicks } from './rec.js?v=b456';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b454';
-import { visited } from './rate.js?v=b454';
+import { mateCode, mateLink, mateHtml } from './mate.js?v=b456';
+import { visited } from './rate.js?v=b456';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b454';
+         shareCard, cardImage } from './card.js?v=b456';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -64,22 +64,22 @@ export async function openPersona(){
      같이 두는 이유는, 점수만 있으면 왜 그렇게 나왔는지 따질 수가 없어서입니다. */
   const ax = personaAxes(data || [], { cities });
 
-  /* 첫 기록으로부터 며칠. 하루 미만이면 안 씁니다 — '0일' 은 아무 말도
-     안 하는 것보다 나쁩니다. */
-  {
-    const t = (data || []).map(r => Date.parse(r.created_at)).filter(n => n > 0);
-    if (t.length){
-      const d = Math.floor((Date.now() - Math.min(...t)) / 86400000);
-      if (d >= 1) st.days = d;
-    }
-  }
+  /* ⚠ **「첫 기록으로부터 N일째」를 뺐습니다(b455).** 머리말 꼬리표와
+     아래 표, 두 자리에 같은 숫자가 있었습니다. 둘 다 뺍니다 — 성향은
+     무엇을 좋아하는가인데, 가입한 지 며칠 됐는지는 성향이 아닙니다.
+     쓰는 데가 없어져서 st.days 계산도 같이 지웁니다. */
 
   drawPersona(st, ax, data || []);
 }
 
 /* ── 나온 자리로(b453) ── map.js 와 같은 수법입니다(거기 주석 참고). */
 let 왔던탭 = null;
-export function personaBackTo(tab){ 왔던탭 = tab; }
+export function personaBackTo(tab){
+  왔던탭 = tab;
+  /* 뒤로 단추 글자도 같이 맞춥니다 — map.js 의 backLabel 하나를 씁니다. */
+  const b = $('personaback');
+  if (b) b.textContent = backLabel(tab);
+}
 export function closePersona(fromPop){
   if (!fromPop && history.state?.t2 === 'persona'){ history.back(); return; }
   $('personapane').classList.add('hide');
@@ -196,13 +196,13 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b454"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b456"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
         ${esc(type.d || '')}
         <div class="memo" style="margin-top:6px">
-          ${s.countries}개국 · ${s.cities}도시${s.days ? ` · ${s.days.toLocaleString()}일째` : ''}
+          ${s.countries}개국 · ${s.cities}도시
         </div>
       </div>
     </div>
@@ -252,8 +252,6 @@ async function drawPersona(s, ax, rates){
       <div class="row"><span class="label">그중 해외
         <div class="memo">단골력·모험력은 이 ${ax.해외}곳으로만 셉니다</div></span>
         <span class="val">${ax.해외}곳</span></div>
-      ${s.days ? `<div class="row"><span class="label">첫 기록으로부터</span>
-        <span class="val">${s.days.toLocaleString()}일</span></div>` : ''}
       <!-- ⚠ **긴 설명 문단을 뺐습니다(b454).** 「AI 가 아니라 위 숫자로만
            정합니다…」로 시작하던 네 줄입니다. 위 표에 축마다 근거(유명도
            평균·나라당 곳수·평균 거리·별점 평균)가 이미 적혀 있어서,

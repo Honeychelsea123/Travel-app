@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b454';
-import { openCity } from './city.js?v=b454';
-import { distKm } from './calc.js?v=b454';
-import { sb } from './db.js?v=b454';
-import { cities, countryName, continentOf } from './cities.js?v=b454';
-import { PERSONA_ICON, shareCard } from './card.js?v=b454';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b456';
+import { openCity } from './city.js?v=b456';
+import { distKm } from './calc.js?v=b456';
+import { sb } from './db.js?v=b456';
+import { cities, countryName, continentOf } from './cities.js?v=b456';
+import { PERSONA_ICON, shareCard } from './card.js?v=b456';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -373,8 +373,23 @@ export async function openCountries(){
  * ⚠ 여는 쪽이 어디서 왔는지 적어두고 닫는 쪽이 그리로 돌려보냅니다.
  *   spree.js · home.js 의 reviewBackTo 와 **같은 수법**입니다.
  * ⚠ 한 번 쓰고 바로 비웁니다 — 남기면 프로필에서 연 사람도 튕깁니다. */
+/* ── 뒤로 단추 글자(b455) ─────────────────────────────────────────────
+ * ⚠ 「← 프로필」로 **못 박혀** 있었습니다. 지도·성향이 프로필 위에만
+ *   얹히던 시절의 글입니다. 이제 홈·분석에서도 오므로 어디서 왔든
+ *   「프로필」이라고 적혀 있어서 **틀린 말**이 됩니다.
+ * ⚠ 여는 쪽이 적어둔 자리(왔던탭)를 그대로 씁니다 — 한 곳에서 정합니다. */
+const 탭이름 = { home:'홈', rate:'평가', anal:'분석', trips:'일정', set:'프로필' };
+export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }
 let 왔던탭 = null;
-export function mapBackTo(tab){ 왔던탭 = tab; }
+export function mapBackTo(tab){
+  왔던탭 = tab;
+  /* 여는 순간 글자도 맞춥니다 — 화면이 열린 뒤에 바꾸면 한 프레임 동안
+     옛 글자가 보입니다. */
+  const L = backLabel(tab);
+  const a = $('mapback'), b = $('ctryback');
+  if (a) a.textContent = L;
+  if (b) b.textContent = L;
+}
 function 돌아가기(){
   const t = 왔던탭; 왔던탭 = null;
   if (t && ctx.showApp){ ctx.showApp(t); return true; }

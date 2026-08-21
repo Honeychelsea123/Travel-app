@@ -16,33 +16,33 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b454';
-import { sb } from './db.js?v=b454';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b454';
-import { hm, todayYmd } from './calc.js?v=b454';
-import { starHtml, paintStars, markRated } from './stars.js?v=b454';
+import { $, esc } from './dom.js?v=b456';
+import { sb } from './db.js?v=b456';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b456';
+import { hm, todayYmd } from './calc.js?v=b456';
+import { starHtml, paintStars, markRated } from './stars.js?v=b456';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b454';
-import { cities, countryName } from './cities.js?v=b454';
-import { myRates, visited } from './rate.js?v=b454';
-import { plans } from './trip.js?v=b454';
-import { openCity } from './city.js?v=b454';
-import { loadCities, pick } from './citysearch.js?v=b454';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b454';
+import { rateHero, starValue } from './rateui.js?v=b456';
+import { cities, countryName } from './cities.js?v=b456';
+import { myRates, visited } from './rate.js?v=b456';
+import { plans } from './trip.js?v=b456';
+import { openCity } from './city.js?v=b456';
+import { loadCities, pick } from './citysearch.js?v=b456';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b456';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b454';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b456';
 /* personaBackTo 는 persona.js 것입니다. persona.js 는 home.js 를 import
    하지 않으므로 고리가 안 생깁니다(확인함). */
-import { personaBackTo } from './persona.js?v=b454';
+import { personaBackTo } from './persona.js?v=b456';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b454';
+import { drawReport } from './report.js?v=b456';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b454';
-import { openNew } from './newtrip.js?v=b454';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b456';
+import { openNew } from './newtrip.js?v=b456';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -769,16 +769,22 @@ async function renderFoot(통){
   const by = f.by_continent || {};
   const 장 = [['전체', f.countries || 0, UN_COUNTRIES],
               ...CONT.map(([이름, 전체]) => [이름, by[이름] || 0, 전체])];
-  const 넘김 = document.createElement('div');
-  넘김.className = 'swipe';
-  넘김.innerHTML = `<div class="swrow">${장.map(([이름, n, 전체]) => `
+  /* ⚠ **양끝에 복제를 답니다(b455).** [마지막] 실제일곱장 [첫장].
+     끝에서 되감는 방식은 옮기는 순간이 눈에 보여 **툭 끊겨** 보였습니다.
+     복제가 있으면 왼쪽 끝까지 밀었을 때 **마지막 장과 똑같은 그림**이
+     이미 보이고, 그 뒤에 진짜 자리로 옮기므로 옮긴 것이 안 보입니다. */
+  const 칸 = ([이름, n, 전체]) => `
       <div class="swcard">
         <div class="swtitle">${esc(이름)}</div>
         <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
         <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
-      </div>`).join('')}</div>
-    <div class="swdots">${장.map((_, i) =>
-      `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
+      </div>`;
+  const 넘김 = document.createElement('div');
+  넘김.className = 'swipe';
+  넘김.innerHTML =
+    `<div class="swrow">${칸(장[장.length - 1])}${장.map(칸).join('')}${칸(장[0])}</div>
+     <div class="swdots">${장.map((_, i) =>
+       `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
   box.appendChild(줄만들기('내 발자국', '', '지도',
     지도열기));
   /* ⚠ **숫자 카드는 지도 아래입니다(b452).** 위에 두었더니 지도가 밀려
@@ -786,39 +792,36 @@ async function renderFoot(통){
      숫자는 그 밑에서 거드는 것입니다 — 넘겨 보는 것도 지도를 본 다음에
      하는 일입니다. 아래 `box.appendChild(넘김)` 이 지도 뒤에 있습니다. */
 
-  /* 넘길 때 점을 따라가게 합니다. 스크롤 위치를 카드 폭으로 나누면 몇 번째인지
-     나옵니다 — 관찰자를 붙일 만큼 무거운 일이 아닙니다. */
+  /* ── 무한 순환 ── 복제 두 장으로 이음매를 감춥니다(b455) ───────────
+     ⚠ 시작 위치는 **실제 첫 장**입니다(복제 한 장만큼 오른쪽).
+       그냥 0 에서 시작하면 「마지막 장」이 먼저 보입니다.
+     ⚠ 복제 자리에 닿으면 **같은 그림의 진짜 자리**로 옮깁니다. 그림이
+       같으니 옮긴 것이 눈에 안 보입니다.
+     ⚠ 옮길 때 스냅을 끕니다 — 켠 채로 scrollLeft 를 바꾸면 스냅이
+       목적지를 다시 계산해 되튑니다. */
   {
     const 줄기 = 넘김.querySelector('.swrow');
     const 점들 = [...넘김.querySelectorAll('.swdots i')];
-    /* ── 끝에서 더 넘기면 처음으로(b454) ────────────────────────────
-       ⚠ 카드가 일곱 장이라 마지막(오세아니아)에서 막히면 **되돌아오려고
-         여섯 번을 되쓸어야** 합니다. 끝에서 한 번 더 밀면 첫 장으로
-         감습니다 — 반대쪽도 마찬가지입니다.
-       ⚠ **손이 떨어진 뒤에** 감습니다. 미는 도중에 옮기면 손가락과 화면이
-         따로 놀아 튕기는 느낌이 납니다. 스크롤이 멎기를 기다렸다가(120ms)
-         **끝에 붙어 있을 때만** 옮깁니다.
-       ⚠ 감을 때는 `behavior:'auto'` 입니다 — 부드럽게 감으면 여섯 장이
-         주르륵 지나가서 「감겼다」가 아니라 「빨리 되감겼다」로 보입니다. */
-    let 멎음;
-    /* 맨 앞에서 **왼쪽으로 더 밀었을 때만** 뒤로 감습니다. 그냥 첫 장에
-       머무는 것과 구분해야 합니다 — 안 그러면 처음 열자마자 끝으로 갑니다.
-       ⚠ 아래 scroll 안에서 읽으므로 **여기서 먼저** 선언합니다(TDZ). */
-    let 되감기 = false;
-    줄기.addEventListener('touchstart', () => { 되감기 = 줄기.scrollLeft <= 2; },
-      { passive:true });
-    줄기.addEventListener('scroll', () => {
-      const 폭 = 줄기.clientWidth || 1;
-      const i = Math.round(줄기.scrollLeft / 폭);
-      점들.forEach((d, k) => d.classList.toggle('on', k === i));
+    const 수 = 장.length;
 
-      clearTimeout(멎음);
-      멎음 = setTimeout(() => {
-        const 끝 = 줄기.scrollWidth - 폭;
-        if (줄기.scrollLeft >= 끝 - 2)      줄기.scrollTo({ left:0, behavior:'auto' });
-        else if (줄기.scrollLeft <= 2 && 되감기) 줄기.scrollTo({ left:끝, behavior:'auto' });
-        되감기 = false;
-      }, 120);
+    const 폭 = () => 줄기.clientWidth || 1;
+    const 옮기기 = 자리 => {
+      줄기.style.scrollSnapType = 'none';
+      줄기.scrollLeft = 자리;
+      requestAnimationFrame(() => { 줄기.style.scrollSnapType = ''; });
+    };
+    /* 카드가 폭을 가지려면 화면에 붙은 뒤여야 합니다 — 다음 프레임에 놓습니다. */
+    requestAnimationFrame(() => 옮기기(폭()));
+
+    줄기.addEventListener('scroll', () => {
+      const w = 폭();
+      const i = Math.round(줄기.scrollLeft / w);      /* 복제 포함 자리 */
+      /* 복제 자리에 닿았으면 같은 그림의 진짜 자리로. 스크롤이 멎은 뒤에
+         하면 티가 나므로 **닿는 즉시** 합니다. */
+      if (i === 0)            옮기기(수 * w);          /* 앞 복제 → 진짜 마지막 */
+      else if (i === 수 + 1)  옮기기(w);               /* 뒤 복제 → 진짜 첫 장 */
+      const 실제 = ((i - 1) % 수 + 수) % 수;
+      점들.forEach((d, k) => d.classList.toggle('on', k === 실제));
     }, { passive:true });
   }
 
