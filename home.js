@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b439';
-import { sb } from './db.js?v=b439';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b439';
-import { hm, todayYmd } from './calc.js?v=b439';
-import { starHtml, paintStars, markRated } from './stars.js?v=b439';
+import { $, esc } from './dom.js?v=b440';
+import { sb } from './db.js?v=b440';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b440';
+import { hm, todayYmd } from './calc.js?v=b440';
+import { starHtml, paintStars, markRated } from './stars.js?v=b440';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b439';
-import { cities, countryName } from './cities.js?v=b439';
-import { myRates, visited } from './rate.js?v=b439';
-import { plans } from './trip.js?v=b439';
-import { openCity } from './city.js?v=b439';
-import { loadCities, pick } from './citysearch.js?v=b439';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b439';
-import { openMap, UN_COUNTRIES } from './map.js?v=b439';
+import { rateHero, starValue } from './rateui.js?v=b440';
+import { cities, countryName } from './cities.js?v=b440';
+import { myRates, visited } from './rate.js?v=b440';
+import { plans } from './trip.js?v=b440';
+import { openCity } from './city.js?v=b440';
+import { loadCities, pick } from './citysearch.js?v=b440';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b440';
+import { openMap, UN_COUNTRIES } from './map.js?v=b440';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b439';
+import { drawReport } from './report.js?v=b440';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b439';
-import { openNew } from './newtrip.js?v=b439';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b440';
+import { openNew } from './newtrip.js?v=b440';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -368,8 +368,12 @@ async function buildHome(){
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
            stroke="currentColor" stroke-width="1.8"
            stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11z"/>
-        <circle cx="12" cy="10" r="2.6"/>
+        <!-- ⚠ 좌표(지도핀)였는데 **비행기**로 바꿨습니다(b440). 핀은 하단바의
+             「여행」 탭 아이콘과 같은 모양이라, 나란히 놓이면 같은 곳으로
+             가는 줄 읽힙니다. 여기는 **일정을 만드는** 자리입니다. -->
+        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8
+                 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1
+                 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
       </svg></span>
     <span class="t"><b>어디로 떠나볼까요?</b>
       <span>어디로 언제 가는지만 정하면 돼요</span></span>
