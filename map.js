@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b440';
-import { openCity } from './city.js?v=b440';
-import { distKm } from './calc.js?v=b440';
-import { sb } from './db.js?v=b440';
-import { cities, countryName, continentOf } from './cities.js?v=b440';
-import { PERSONA_ICON, shareCard } from './card.js?v=b440';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b441';
+import { openCity } from './city.js?v=b441';
+import { distKm } from './calc.js?v=b441';
+import { sb } from './db.js?v=b441';
+import { cities, countryName, continentOf } from './cities.js?v=b441';
+import { PERSONA_ICON, shareCard } from './card.js?v=b441';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
