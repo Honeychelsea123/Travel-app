@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b401';
-import { sb } from './db.js?v=b401';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b401';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b401';
-import { starHtml, paintStars, markRated } from './stars.js?v=b401';
-import { cities, countryName } from './cities.js?v=b401';
-import { myRates, visited } from './rate.js?v=b401';
-import { plans } from './trip.js?v=b401';
-import { openCity } from './city.js?v=b401';
-import { loadCities, pick } from './citysearch.js?v=b401';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b401';
-import { openMap, UN_COUNTRIES } from './map.js?v=b401';
+import { $, esc } from './dom.js?v=b403';
+import { sb } from './db.js?v=b403';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b403';
+import { hm, todayYmd } from './calc.js?v=b403';
+import { starHtml, paintStars, markRated } from './stars.js?v=b403';
+import { cities, countryName } from './cities.js?v=b403';
+import { myRates, visited } from './rate.js?v=b403';
+import { plans } from './trip.js?v=b403';
+import { openCity } from './city.js?v=b403';
+import { loadCities, pick } from './citysearch.js?v=b403';
+import { saveRate, refreshVisited } from './rating.js?v=b403';
+import { openMap, UN_COUNTRIES } from './map.js?v=b403';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b401';
+import { drawReport } from './report.js?v=b403';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b401';
-import { openNew } from './newtrip.js?v=b401';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b403';
+import { openNew } from './newtrip.js?v=b403';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -50,16 +50,23 @@ export function resetHomeSig(){ lastHomeSig = ''; }
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * **메인은 평가·성향, 일정은 서브입니다**(사용자 결정, b398). 위에서부터:
  *   ① 히어로   — **평가할 도시.** 사진 위에서 별을 바로 누릅니다.
- *   ② 다음 여행 — 얇은 줄 하나 (있을 때만)
- *   ③ 새 여행   — 얇은 줄 하나
- *   ④ 가봤어요 — 안 매긴 도시 다섯 곳
- *   ⑤ 발자국   — 195개국 중 몇 곳인지 + **내 성향 한 줄**
+ *   ② 새 여행   — 얇은 줄 하나 (**늘 그립니다** — 아래 ⚠⚠)
+ *   ③ 가봤어요 — 안 매긴 도시 다섯 곳
+ *   ④ 발자국   — 195개국 중 몇 곳인지 + **내 성향 한 줄**
  *
- * ②는 1년에 두세 번만 의미가 있습니다. 나머지 360일을 ①④⑤가 채웁니다.
- * 그래서 ②를 히어로에서 끌어내려 줄로 만들었습니다.
+ * 여행은 1년에 두세 번인데 홈은 360일을 버텨야 합니다. 그래서 ①③④ 가
+ * 평가고, 일정으로 가는 길은 ② 한 줄만 남겼습니다.
  *
- * ⚠ 홈에서 **뺀 것 둘**: 다녀온 여행 평가 재촉(→ 여행 탭, `reviewBar`)과
- *   AI 일정 카드(→ 없앰). 왜 그랬는지는 `buildHome` 머리말에 있습니다. */
+ * ⚠⚠ **② 를 빼지 마십시오. 이미 세 번 뺐다가 세 번 되살렸습니다**
+ *     (b377 → b378, b402 → 같은 날 되돌림). "여행 탭에 ＋새 여행이 있으니
+ *     중복" 이라는 논리로 매번 지워지는데, 여행 탭 단추는 **거기까지 간
+ *     사람만** 봅니다. 홈은 앱을 여는 사람이 다 보는 자리입니다.
+ *
+ * ⚠ 홈에서 뺀 것과 간 곳:
+ *     다녀온 여행 평가 재촉  → 여행 탭 (home.js 의 `reviewBar`, b398)
+ *     AI 일정 카드           → 없앰 (b398)
+ *     다음 여행 히어로       → 여행 탭 맨 위 (triplist.js, b402)
+ *   왜 그랬는지는 `buildHome` 머리말에 있습니다. */
 
 /* 사진은 구간에 붙은 도시에서 가져옵니다.
    예전에 만든 여행은 trips.city_id 가 비어 있어서 구간을 먼저 봅니다. */
@@ -132,7 +139,11 @@ const AI_MARK =
      <path d="M18 14.4l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z" opacity=".7"/>
    </svg>`;
 
-function heroHtml(photo, dd, title, memo, btn, ai){
+/* ⚠ **triplist.js 도 이걸 씁니다(b402).** 다음 여행 히어로가 홈에서 여행 탭
+   맨 위로 갔습니다 — 홈은 평가만 남기기로 했고(사용자 결정), 여행 히어로는
+   여행 탭이 제 자리입니다. 그래서 내보냅니다. 여기 인자를 바꿀 때는
+   triplist.js 도 같이 보십시오. */
+export function heroHtml(photo, dd, title, memo, btn, ai){
   /* 사진이 없으면 색을 깝니다. `.hero::after` 가 위에 어둡게 덮으므로
      글자는 사진이 있을 때와 똑같이 읽힙니다.
      **`noimg` 를 같이 답니다** — 사진이 없으면 236px 을 채울 것이 없어서
@@ -273,21 +284,7 @@ export async function loadHome(){
  *   "평가 자체" 는 오히려 앞으로 나왔습니다. 재촉이 약해졌다고 느껴지면
  *   여행 탭 쪽(triplist.js 의 rvBar)을 다시 보십시오. */
 async function buildHome(){
-  const today = todayYmd();
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
-
-  /* 다음 여행. **이제 사진을 안 받습니다** — 한 줄로만 쓰므로 tripPhoto 를
-     부를 이유가 없습니다. 홈이 기다리는 것이 하나 줄었습니다. */
-  let { data, error } = await netTimeout(sb.from('trips')
-    .select('id,title,destination,start_date,end_date,currency,timezone')
-    .gte('end_date', today)
-    .order('start_date').limit(1));
-  if (error){
-    data = cacheGet('nexttrip');
-    if (!data) throw error;
-    drawOffbar();
-  } else cacheSet('nexttrip', data);
-  const t = data[0] || null;
 
   /* 히어로에 걸 도시. 퀴즈와 **같은 우물**을 씁니다(fillQuiz) — 두 벌로
      만들면 같은 도시가 위아래에 두 번 나옵니다. 여기서 한 곳을 집어가고
@@ -297,46 +294,39 @@ async function buildHome(){
   heroCity = quizPool.find(c => c.image_url) || null;
 
   /* ── 자료가 그대로면 홈을 아예 다시 그리지 않습니다 ──────────────────
-     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 줄과 카드를 **덧붙이는**
-     구조라, 목록 하나만 지키는 방식(putHtml)으로는 안 됩니다. 히어로를
-     지우는 순간 뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
+     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 카드를 **덧붙이는** 구조라,
+     목록 하나만 지키는 방식(putHtml)으로는 안 됩니다. 히어로를 지우는 순간
+     뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
      그래서 **그릴 내용이 같은지를 먼저 보고** 같으면 통째로 건너뜁니다. */
-  const dday = t ? Math.round((asDate(t.start_date) - asDate(today)) / D1) : 0;
-  const days = t ? Math.round((asDate(t.end_date) - asDate(t.start_date)) / D1) + 1 : 0;
-  const sig = [t?.id || '', t?.title || '', dday, days, heroCity?.id || '',
+  const sig = [heroCity?.id || '',
                quizPool.slice(0, QUIZ_ROWS + 1).map(c => c.id).join(),
                visited.size, Object.keys(myRates || {}).length,
                Object.values(myRates || {}).filter(r => r.want).length].join('|');
   if (sig === lastHomeSig && $('home').querySelector('.hero')) return;
   lastHomeSig = sig;
 
-  /* 히어로. 매길 도시가 하나도 없으면(다 매겼거나 오프라인) 여행을 겁니다 —
-     빈 화면보다 낫고, 그 사람은 이미 평가를 다 한 사람이라 권할 것이 없습니다. */
+  /* 히어로. 매길 도시가 하나도 없으면(다 매겼거나 오프라인) 앱이 무슨 앱인지
+     말합니다 — 빈 화면보다 낫고, 그 사람은 이미 평가를 다 한 사람입니다. */
   $('home').innerHTML = heroCity ? rateHeroHtml(heroCity)
-    : heroHtml('', '', t ? t.title : '기로', t ? tripSub(t, days)
-        : '다녀온 도시를 매기면 여행 성향이 나와요', '');
-  if (!heroCity && t) $('hero').onclick = () => ctx.openTrip(t.id);
+    : heroHtml('', '', '기로', '다녀온 도시를 매기면 여행 성향이 나와요', '');
 
-  /* ── 히어로 밑에는 얇은 줄 둘 ────────────────────────────────────────
-     둘 다 일정 쪽이라 **같은 생김새**로 맞춥니다 — 한 식구로 읽혀야
-     "여기는 서브" 라는 것이 보입니다. 색을 가르면 둘 다 눈에 띄어서
-     위에서 정한 위계가 도로 무너집니다. */
-  if (t){
-    const badge = dday > 0 ? `D-${dday}` : dday === 0 ? 'D-DAY'
-                : `Day ${Math.round((asDate(today) - asDate(t.start_date)) / D1) + 1}`;
-    const tb = document.createElement('div');
-    tb.className = 'newtripbar';
-    tb.innerHTML = `<span class="t"><b>${esc(t.title)} · ${esc(badge)}</b>
-        <span>${esc(tripSub(t, days))}</span></span>
-      <span class="go">열기 ›</span>`;
-    tb.onclick = () => ctx.openTrip(t.id);
-    $('home').appendChild(tb);
-  }
-  /* ⚠ **새 여행 줄은 늘 그립니다.** 여행이 있든 없든 홈에서 새 여행을 만들
-     수 있어야 합니다 — 이미 한 번 없앴다가 되살린 적이 있습니다(b378). */
+  /* ── 새 여행으로 가는 길 ─────────────────────────────────────────────
+     ⚠⚠ **이 줄을 홈에서 빼지 마십시오. 세 번째입니다.** ⚠⚠
+     b377 에서 "권유는 하나만" 이라며 뺐다가 b378 에서 되살렸고, b402 에서
+     "여행 탭 머리줄에 ＋새 여행이 이미 있으니 중복" 이라며 또 뺐다가
+     같은 날 사용자에게 지적받고 되살렸습니다.
+
+     **홈에서도 여행을 만들 수 있어야 합니다.** 여행 탭의 ＋새 여행 은
+     거기까지 간 사람만 봅니다. 홈은 앱을 여는 사람이 다 보는 자리이고,
+     이 앱이 일정도 짠다는 것을 아는 유일한 자리입니다. 중복처럼 보이는
+     것이 값입니다.
+
+     ⚠ 문구가 「다음에 어디 갈까요?」 였습니다(b402 에서 고침). **처음 온
+       사람에게는 '다음' 이 없습니다** — 아직 한 번도 안 간 사람에게
+       "다음에" 라고 하면 자기 얘기가 아닙니다. */
   const nt = document.createElement('div');
   nt.className = 'newtripbar';
-  nt.innerHTML = `<span class="t"><b>다음에 어디 갈까요?</b>
+  nt.innerHTML = `<span class="t"><b>어디로 떠나볼까요?</b>
       <span>어디로 언제 가는지만 정하면 돼요</span></span>
     <span class="go">새 여행 ›</span>`;
   nt.onclick = () => openNew();
@@ -688,7 +678,36 @@ $('home').addEventListener('click', async e => {
     hero.dataset.done = '1';
     const box = hs.getBoundingClientRect();
     const v = +hs.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+
+    /* ── 같은 자리를 다시 누르면 **취소**(b403) ────────────────────────
+       사용자 지적: "별 3개 누르고 다시 눌러서 취소하고 싶어도 안 된다".
+       그 전에는 다시 눌러도 같은 점수로 덮어써서 아무 일도 안 일어난
+       것처럼 보였습니다. 별점 UI 에서 같은 별을 또 누르는 것은 **끄겠다는
+       뜻**입니다 — 잘못 눌렀을 때 되돌릴 길이 이것밖에 없습니다.
+       ⚠ 지운 도시는 **주머니에 돌려놓습니다.** 안 그러면 취소해 놓고도
+         다시는 안 물어봅니다. */
+    const 지금 = wrap.dataset.v ? +wrap.dataset.v : null;
+    if (지금 != null && Math.abs(지금 - v) < 1e-9){
+      clearTimeout(hero._go);
+      wrap.dataset.v = '';
+      paintStars(wrap, null, true);
+      await saveRate(cityId, { stars: null }, true);
+      if (heroCity && !quizPool.some(c => c.id === cityId)) quizPool.unshift(heroCity);
+      const ask = hero.querySelector('.hask');
+      if (ask) ask.textContent = '다녀오셨다면 별점을 남겨주세요';
+      lastHomeSig = '';
+      hero.dataset.done = '';
+      return;
+    }
+
+    wrap.dataset.v = String(v);
     paintStars(wrap, v, true);
+    /* 되돌릴 수 있다는 것을 **그 자리에서** 알려줍니다. 안 적으면 아무도
+       다시 눌러볼 생각을 안 합니다(위 지적이 그 증거입니다). */
+    {
+      const ask = hero.querySelector('.hask');
+      if (ask) ask.textContent = '다시 누르면 취소돼요';
+    }
     await saveRate(cityId, { stars: v }, true);
     quizPool = quizPool.filter(c => c.id !== cityId);
     lastHomeSig = '';
@@ -715,9 +734,31 @@ $('home').addEventListener('click', async e => {
     if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
     row.dataset.done = '1';
 
+    /* ── 같은 자리를 다시 누르면 **취소**(b403) ────────────────────────
+       히어로와 **같은 규칙**입니다. 한 화면 안에 별이 두 벌인데 한쪽만
+       취소가 되면 그게 더 나쁩니다. 자세한 이유는 위 히어로 쪽 주석. */
+    const 지금 = wrap.dataset.v ? +wrap.dataset.v : null;
+    if (지금 != null && Math.abs(지금 - v) < 1e-9){
+      clearTimeout(row._go);
+      wrap.dataset.v = '';
+      paintStars(wrap, null, true);
+      row.classList.remove('rated');
+      markRated(row, null);
+      await saveRate(cityId, { stars: null }, true);
+      /* 주머니에서 뺐던 것을 돌려놓습니다 — 취소했는데 다시는 안 물어보면
+         안 됩니다. 줄은 그대로 두므로 목록에서 사라지지 않습니다. */
+      const c = (cities || []).find(x => x.id === cityId);
+      if (c && !quizPool.some(x => x.id === cityId)) quizPool.unshift(c);
+      lastHomeSig = '';
+      row.dataset.done = '';
+      return;
+    }
+
     /* 별이 차는 것을 보여주고 밀어냅니다.
        0.62초는 너무 짧았습니다 — 손이 미끄러져도 고칠 새가 없었습니다.
-       1.5초 두었다가 밀어냅니다. 그동안 다시 누르면 점수가 바뀝니다. */
+       1.5초 두었다가 밀어냅니다. 그동안 다시 누르면 점수가 바뀌고,
+       **같은 자리를 누르면 취소됩니다**(위). */
+    wrap.dataset.v = String(v);
     paintStars(wrap, v, true);
     markRated(row, v);
     row.classList.add('rated');

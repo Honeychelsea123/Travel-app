@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b401';
-import { sb } from './db.js?v=b401';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b401';
-import { todayYmd } from './calc.js?v=b401';
-import { cities } from './cities.js?v=b401';
-import { trip } from './trip.js?v=b401';
-import { tripSub } from './rating.js?v=b401';
-import { heroTint, openTripReport, reviewBar } from './home.js?v=b401';
-import { ROLE_KO } from './member.js?v=b401';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b403';
+import { sb } from './db.js?v=b403';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b403';
+import { todayYmd } from './calc.js?v=b403';
+import { cities } from './cities.js?v=b403';
+import { trip } from './trip.js?v=b403';
+import { tripSub } from './rating.js?v=b403';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b403';
+import { ROLE_KO } from './member.js?v=b403';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -140,6 +140,39 @@ export async function loadTrips(){
     if (bar){ bar.id = 'tripsrv'; $('trips').before(bar); }
   }
 
+  /* ── 다음 여행 히어로(b402) ──────────────────────────────────────────
+     **홈 맨 위에 있던 사진 히어로를 여기로 옮겼습니다.** 홈은 평가가
+     주인공이 됐고(home.js 머리말), 여행 사진 히어로는 여행 탭이 제 자리
+     입니다. 그리는 것은 home.js 의 `heroHtml` 을 그대로 씁니다 — 두 벌로
+     만들면 한쪽만 고쳐집니다.
+
+     ⚠ **목록에도 같은 여행이 나옵니다.** 중복처럼 보이지만 말하는 것이
+       다릅니다 — 히어로는 「D-22, 곧 갑니다」이고 목록은 「내 여행 전부」
+       입니다. 목록 카드에는 D-day 가 없습니다.
+     ⚠ **'다녀온' 목록에서는 안 답니다.** 지난 여행에 D-day 는 뜻이 없습니다.
+     ⚠ **`#trips` 밖, 평가 재촉 띠보다 위에 답니다.** 안에 넣으면 `putHtml`
+       이 목록을 갈아끼울 때 같이 지워집니다.
+     ⚠ 사진은 `fillTripPhotos` 가 이미 채워둔 `_photo` 를 씁니다 — 여기서
+       또 받아오면 목록을 그릴 때마다 질의가 늡니다. */
+  $('triphero')?.remove();
+  if (tripFilter !== 'past' && data.length){
+    const t = data[0];
+    const dd = Math.round((new Date(t.start_date) - new Date(today)) / 864e5);
+    const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
+    const badge = dd > 0 ? `D-${dd}` : dd === 0 ? 'D-DAY'
+                : `Day ${Math.round((new Date(today) - new Date(t.start_date)) / 864e5) + 1}`;
+    const wrap = document.createElement('div');
+    wrap.id = 'triphero';
+    wrap.innerHTML = heroHtml(t.cities?.image_url || t._photo || '',
+                              badge, t.title, tripSub(t, days), '');
+    /* heroHtml 이 안쪽에 `id="hero"` 를 답니다. **홈의 히어로와 같은 id 라
+       한 화면에 둘이 뜨면 안 됩니다** — 탭이 갈려 있어 지금은 괜찮지만,
+       여기서 id 로 찾지 말고 이 상자를 통해 찾습니다. */
+    wrap.firstElementChild?.removeAttribute('id');
+    wrap.onclick = () => ctx.openTrip(t.id);
+    ($('tripsrv') || $('trips')).before(wrap);
+  }
+
   if (!data.length){
     dropHtml('trips'); $('trips').innerHTML =
       /* 지난 여행은 만들 수 있는 것이 아니라 단추가 없습니다. 앞으로 갈
@@ -148,7 +181,7 @@ export async function loadTrips(){
       tripFilter === 'past'
         ? emptyDo('아직 다녀온 여행이 없어요.', null, null,
                   '여행이 끝나면 여기로 옮겨져요.')
-        : emptyDo('앞으로 갈 여행이 없어요.', '새 여행 만들기', 'newtripbtn',
+        : emptyDo('어디로 떠나볼까요?', '새 여행 만들기', 'newtripbtn',
                   '날짜와 도시만 정하면 나머지는 채워가면 돼요.');
     return;
   }
