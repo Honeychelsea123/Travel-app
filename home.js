@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b416';
-import { sb } from './db.js?v=b416';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b416';
-import { hm, todayYmd } from './calc.js?v=b416';
-import { starHtml, paintStars, markRated } from './stars.js?v=b416';
+import { $, esc } from './dom.js?v=b417';
+import { sb } from './db.js?v=b417';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b417';
+import { hm, todayYmd } from './calc.js?v=b417';
+import { starHtml, paintStars, markRated } from './stars.js?v=b417';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b416';
-import { cities, countryName } from './cities.js?v=b416';
-import { myRates, visited } from './rate.js?v=b416';
-import { plans } from './trip.js?v=b416';
-import { openCity } from './city.js?v=b416';
-import { loadCities, pick } from './citysearch.js?v=b416';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b416';
-import { openMap, UN_COUNTRIES } from './map.js?v=b416';
+import { rateHero, starValue } from './rateui.js?v=b417';
+import { cities, countryName } from './cities.js?v=b417';
+import { myRates, visited } from './rate.js?v=b417';
+import { plans } from './trip.js?v=b417';
+import { openCity } from './city.js?v=b417';
+import { loadCities, pick } from './citysearch.js?v=b417';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b417';
+import { openMap, UN_COUNTRIES } from './map.js?v=b417';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b416';
+import { drawReport } from './report.js?v=b417';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b416';
-import { openNew } from './newtrip.js?v=b416';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b417';
+import { openNew } from './newtrip.js?v=b417';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -318,6 +318,11 @@ async function buildHome(){
      ⚠ 문구가 「다음에 어디 갈까요?」 였습니다(b402 에서 고침). **처음 온
        사람에게는 '다음' 이 없습니다** — 아직 한 번도 안 간 사람에게
        "다음에" 라고 하면 자기 얘기가 아닙니다. */
+  /* ⚠ **쭉 매기기가 먼저입니다(b416).** 이 앱은 평가가 주인공이고
+     일정은 서브입니다 — 순서가 그 말을 해야 합니다. 전에는 새 여행 줄을
+     먼저 붙이고 renderQuiz 를 뒤에 불러서 **반대로 나왔습니다.** */
+  await renderQuiz();
+
   const nt = document.createElement('div');
   nt.className = 'newtripbar';
   nt.innerHTML = `<span class="t"><b>어디로 떠나볼까요?</b>
@@ -326,7 +331,6 @@ async function buildHome(){
   nt.onclick = () => openNew();
   $('home').appendChild(nt);
 
-  await renderQuiz();
   await renderFoot();
 }
 

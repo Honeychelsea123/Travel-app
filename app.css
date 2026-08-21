@@ -1638,6 +1638,11 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
                      margin-top:1px; word-break:keep-all }
 .newtripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
                  color:var(--ink-48) }
+/* ⚠ **줄이 둘 연달아 옵니다(b416)** — 「쭉 매기기」 다음에 「어디로
+   떠나볼까요?」. 위 margin 이 -4px 라 그대로 두면 두 줄이 붙어서 한
+   덩어리로 보입니다. 붙는 자리만 되돌립니다.
+   (같은 함정을 b410 에서 .trybar 로 이미 한 번 겪었습니다.) */
+.newtripbar + .newtripbar{ margin-top:8px }
 
 /* 지출 분류 막대 — 숫자만 늘어놓으면 어디에 많이 쓴 건지 안 보입니다.
    일정 목록에서 쓰는 분류 색을 그대로 씁니다. */
