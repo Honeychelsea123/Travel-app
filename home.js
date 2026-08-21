@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b419';
-import { sb } from './db.js?v=b419';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b419';
-import { hm, todayYmd } from './calc.js?v=b419';
-import { starHtml, paintStars, markRated } from './stars.js?v=b419';
+import { $, esc } from './dom.js?v=b420';
+import { sb } from './db.js?v=b420';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b420';
+import { hm, todayYmd } from './calc.js?v=b420';
+import { starHtml, paintStars, markRated } from './stars.js?v=b420';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b419';
-import { cities, countryName } from './cities.js?v=b419';
-import { myRates, visited } from './rate.js?v=b419';
-import { plans } from './trip.js?v=b419';
-import { openCity } from './city.js?v=b419';
-import { loadCities, pick } from './citysearch.js?v=b419';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b419';
-import { openMap, UN_COUNTRIES } from './map.js?v=b419';
+import { rateHero, starValue } from './rateui.js?v=b420';
+import { cities, countryName } from './cities.js?v=b420';
+import { myRates, visited } from './rate.js?v=b420';
+import { plans } from './trip.js?v=b420';
+import { openCity } from './city.js?v=b420';
+import { loadCities, pick } from './citysearch.js?v=b420';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b420';
+import { openMap, UN_COUNTRIES } from './map.js?v=b420';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b419';
+import { drawReport } from './report.js?v=b420';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b419';
-import { openNew } from './newtrip.js?v=b419';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b420';
+import { openNew } from './newtrip.js?v=b420';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -307,7 +307,10 @@ async function buildHome(){
   /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
    * **① 평가하는 자리** — 사진 · 별점 · 두 단추가 한 카드(.ratecard).
    *    같은 물음의 답 셋이 흩어져 보이지 않게 묶었습니다(rateui.js).
-   * **② 나머지 전부** — 쭉 매기기 · 새 여행 · 발자국 · 성향 · 지도가
+   *    **「쭉 매기기」도 이 카드 안**입니다(b420) — 「이 도시 말고 더
+   *    매기고 싶으면」이라 **평가 자리에 속합니다.** 밖에 두었더니
+   *    떨어져 보였습니다.
+   * **② 나머지 전부** — 새 여행 · 발자국 · 성향 · 지도가
    *    **한 카드 안의 줄들**입니다.
    *
    * ⚠ **전에는 덩어리가 다섯이었습니다.** 히어로 · 단추 · 띠 · 띠 · 카드.
@@ -325,9 +328,12 @@ async function buildHome(){
   통.id = 'homefp';
   $('home').appendChild(통);
 
-  /* ⚠ **쭉 매기기가 먼저입니다(b416).** 이 앱은 평가가 주인공이고
-     일정은 서브입니다 — 순서가 그 말을 해야 합니다. */
-  await renderQuiz(통);
+  /* 쭉 매기기 줄은 **평가 카드 바닥**에 붙입니다(b420) — 「이 도시 말고
+     더 매기고 싶으면」이라 평가 자리에 속합니다.
+     ⚠ 매길 도시가 하나도 없으면 `.ratecard` 가 아예 없습니다(위 히어로가
+       heroHtml 로 떨어집니다). 그때는 아래 통에 붙입니다 — 없는 곳에
+       붙이려다 터지면 홈이 통째로 안 그려집니다. */
+  await renderQuiz($('home').querySelector('.ratecard') || 통);
 
   /* ── 새 여행으로 가는 길 ─────────────────────────────────────────────
      ⚠⚠ **이 줄을 홈에서 빼지 마십시오. 세 번째입니다.** ⚠⚠

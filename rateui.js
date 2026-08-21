@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b419';
-import { countryName } from './cities.js?v=b419';
-import { starHtml } from './stars.js?v=b419';
+import { esc } from './dom.js?v=b420';
+import { countryName } from './cities.js?v=b420';
+import { starHtml } from './stars.js?v=b420';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -61,7 +61,7 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
      이 단추는 **다시 안 묻겠다는 답**이고(줄을 남깁니다), 건너뛰기는
      보류입니다. spree.js 의 누르기 참고. */
   const 단추 = bar ? `<div class="trybar" data-city="${esc(c.id)}">
-    <button class="ghost" data-rate="skip">안 가봤어요 <i>›</i></button>
+    <button class="ghost" data-rate="skip">안 가봤어요 <i>(다음 여행지)</i></button>
     <button class="ghost" data-rate="want">♡ 가보고 싶어요</button>
   </div>` : '';
 

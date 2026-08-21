@@ -1287,12 +1287,12 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *   이기도 합니다 — 위쪽 구석보다 훨씬 낫습니다.
  * ⚠ `dvh` 를 씁니다 — 폰에서 주소창이 접혔다 펴질 때 `vh` 는 안 따라옵니다. */
 #spreeview{ min-height:100dvh; display:flex; flex-direction:column; }
+/* ⚠ **가운데 정렬을 걷어냈습니다(b420).** 사진을 정방형으로 키운 뒤
+   실기기에서 보니 **위가 통째로 비고 내용이 아래에 몰렸습니다** —
+   가운데에 놓으니 남는 세로가 전부 위로 갔기 때문입니다.
+   위에서부터 놓습니다. 눈은 위에서 아래로 읽습니다. */
 #spreebox{ flex:1; display:flex; flex-direction:column; align-items:center;
-           justify-content:center;
-           /* ⚠ 그래도 넘치면 **위를 자르지 말고** 위에서부터 놓습니다.
-              위 .rqimg 주석의 함정을 두 겹으로 막습니다. */
-           justify-content:safe center;
-           padding-bottom:4vh; }
+           justify-content:flex-start; padding-bottom:4vh; }
 /* 정방형 카드는 스스로 폭을 정하므로(min(100%,52vh)) 통은 꽉 채웁니다. */
 #spreebox > *{ width:100% }
 /* 다 매겼을 때의 빈 화면은 가운데 정렬이 오히려 허전합니다 — 카드가 스스로
@@ -1318,6 +1318,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .ratecard .trybar button{ border:0; border-radius:0; background:none;
                           min-height:48px; }
 .ratecard .trybar button + button{ border-left:1px solid var(--divider-soft); }
+/* 카드 바닥에 붙는 줄(쭉 매기기). 카드는 padding 이 0이라 여기서 냅니다. */
+.ratecard .fprow{ margin:0; padding:13px 16px;
+                  border-top:1px solid var(--divider-soft); }
 
 /* ── 홈의 세로 리듬 ───────────────────────────────────────────────────
  * ⚠ **마진 겹침에 당했습니다(b419).** `.trybar` 에 `margin-top:8px` 을 주어
@@ -1599,8 +1602,20 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
                   transform:rotate(-45deg); }
 
 /* 홈 발자국 카드 안의 작은 지도. 보기만 하는 것이라 손가락은 안 받습니다. */
-.minimap{ margin-top:12px; background:var(--parchment); border-radius:var(--r-sm);
+/* ── been 처럼 꽉 채웁니다(b420) ──────────────────────────────────────
+   been 홈 지도와 우리 것을 나란히 놓고 재보니 **비율은 거의 같았습니다**
+   (2.58:1 vs 2.36:1). 다른 것은 둘이었습니다 —
+   ① been 은 지도 뒤에 **상자가 없습니다.** 우리는 회색(--parchment)
+      상자 안에 들어 있어서 "카드 안의 카드" 로 보였습니다.
+   ② been 은 **좌우 끝까지** 갑니다. 우리는 카드 padding 만큼 들어와
+      있었습니다.
+   상자를 없애고 카드 padding 을 음수 마진으로 상쇄합니다.
+   ⚠ 카드 모서리가 26px 이라 그냥 넓히면 지도가 모서리를 넘칩니다 —
+     #homefp 에 overflow:hidden 을 같이 겁니다(아래). */
+.minimap{ margin:14px calc(-1 * var(--s-md)) calc(-1 * var(--s-md));
+          background:none; border-radius:0;
           overflow:hidden; pointer-events:none; }
+#homefp{ overflow:hidden; }
 .minimap svg{ width:100%; height:auto; display:block; }
 .minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
 .minimap path.been{ fill:var(--primary); opacity:.85; }
@@ -2061,15 +2076,23 @@ body.noreorder .ev .grip{ display:none; }
      떠 있는 알약으로 둡니다 — 아래 내용이 옆으로 비쳐 보입니다. */
   width:min(calc(100% - 80px), 330px);
   display:flex; gap:2px; padding:6px; border-radius:var(--r-pill);
-  background:linear-gradient(158deg, rgba(255,255,255,.28) 0%,
-             rgba(255,255,255,.12) 50%, rgba(255,255,255,.24) 100%);
-  backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
-  -webkit-backdrop-filter:blur(28px) saturate(150%) brightness(1.10);
-  box-shadow:inset 0 1.4px 0 rgba(255,255,255,.95),
-             inset 0 -1.4px 0 rgba(255,255,255,.42),
-             0 0 0 .5px rgba(16,20,35,.10),
-             0 14px 38px rgba(16,20,35,.20),
-             0 3px 8px rgba(16,20,35,.08);
+  /* ── 유리는 "투명"이 아니라 "뿌옇게 밝음"입니다(b420) ───────────────
+     전에는 흰색 .28 ~ .12 로 **너무 투명**했습니다. 뒤 내용이 그대로
+     비쳐 보여서 유리가 아니라 **얼룩**처럼 읽혔습니다 — 특히 사진이나
+     세계지도 위를 지날 때 탭바 안이 알록달록해졌습니다.
+     밝기를 올리고 불투명도를 키웁니다. 흐림은 뒤가 **뭉개져야** 유리
+     같으므로 더 세게. 이러면 뒤 형체는 어렴풋이 남고 색만 죽습니다. */
+  background:linear-gradient(158deg, rgba(255,255,255,.78) 0%,
+             rgba(255,255,255,.62) 52%, rgba(255,255,255,.74) 100%);
+  backdrop-filter:blur(40px) saturate(180%) brightness(1.06);
+  -webkit-backdrop-filter:blur(40px) saturate(180%) brightness(1.06);
+  /* 위쪽 밝은 선 = 유리 모서리에 걸린 빛. 아래쪽 옅은 선 = 반대편 반사.
+     바깥 그림자는 **넓고 옅게** — 좁고 진하면 스티커처럼 붙어 보입니다. */
+  box-shadow:inset 0 1px 0 rgba(255,255,255,1),
+             inset 0 -1px 0 rgba(255,255,255,.55),
+             0 0 0 .5px rgba(16,20,35,.06),
+             0 18px 46px rgba(16,20,35,.16),
+             0 4px 12px rgba(16,20,35,.07);
 }
 .tabbar button{
   flex:1; display:flex; flex-direction:column; align-items:center; gap:1px;
@@ -2092,8 +2115,10 @@ body.noreorder .ev .grip{ display:none; }
 .tabbar span{ font-size:max(11px, calc(11px * var(--ts))); letter-spacing:0; }
 .tabbar button.is-on{
   color:var(--primary); font-weight:600;
-  background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,1), 0 3px 10px rgba(16,20,35,.12);
+  /* 고른 칸은 **유리 위에 얹힌 더 밝은 유리**입니다. 바탕이 밝아졌으니
+     이것도 같이 올려야 갈립니다(b420). */
+  background:linear-gradient(160deg, rgba(255,255,255,1), rgba(255,255,255,.86));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,1), 0 2px 8px rgba(16,20,35,.10);
 }
 /* 탭바가 마지막 카드를 가리지 않게 자리를 비웁니다 */
 body.hastab{ padding-bottom:calc(84px + var(--kb) + var(--sab)); }
