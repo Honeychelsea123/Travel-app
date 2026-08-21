@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b420';
-import { countryName } from './cities.js?v=b420';
-import { starHtml } from './stars.js?v=b420';
+import { esc } from './dom.js?v=b421';
+import { countryName } from './cities.js?v=b421';
+import { starHtml } from './stars.js?v=b421';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -54,14 +54,28 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
   const 별 = `<div class="hrow">
       <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
     </div>`;
-  /* ⚠ 「안 가봤어요」가 **넘어가는 단추**라는 것이 안 읽혔습니다(b418).
-     「♡ 가보고 싶어요」와 나란히 똑같이 생겨서 **둘 중 고르는 것**처럼
-     보였습니다. 화살표를 붙여 "누르면 다음" 을 보이게 합니다.
-     문구는 그대로 둡니다 — 「건너뛰기」로 바꾸면 뜻이 달라집니다.
-     이 단추는 **다시 안 묻겠다는 답**이고(줄을 남깁니다), 건너뛰기는
-     보류입니다. spree.js 의 누르기 참고. */
+  /* ── 「다른 여행지」 문구가 정해지기까지(b418 → b421) ───────────────
+     처음엔 「안 가봤어요」였습니다. 그런데 **넘어가는 단추라는 것이 전혀
+     안 읽혔습니다** — 「♡ 가보고 싶어요」와 나란히 똑같이 생겨서 둘 중
+     고르는 것처럼 보였습니다.
+       b418  「안 가봤어요 ›」        화살표만으로는 **무엇으로** 넘어가는지
+                                     안 보였습니다.
+       b420  「안 가봤어요 (다음 여행지)」  길고, 「다음」이 내 여행 일정처럼
+                                     들렸습니다.
+       b421  「다른 여행지 ›」        ← 지금.
+
+     ⚠ **「안 가봤어요」를 지운 이유.** 물음이 이미 「○○, 가보셨어요?」라
+       답에 또 "안 가봤어요" 를 쓰면 동어반복입니다. 셋의 역할은 이렇게
+       갈립니다 — 별점=가봤음 · 가보고 싶어요=안 가봤지만 관심 · 다른
+       여행지=그 외.
+
+     ⚠ **문구가 무를 뜻하는 것보다 하는 일이 셉니다.** 이 단추는 눌리면
+       `stars:null` 줄을 남겨 **다시 안 묻습니다**(spree.js 의 누르기).
+       「다른 여행지」는 "보류" 로 읽힐 수 있지만, 되돌릴 길이 기록 탭에
+       있어서 그대로 둡니다. 문구를 또 바꿀 일이 있으면 **이 동작부터**
+       보십시오. */
   const 단추 = bar ? `<div class="trybar" data-city="${esc(c.id)}">
-    <button class="ghost" data-rate="skip">안 가봤어요 <i>(다음 여행지)</i></button>
+    <button class="ghost" data-rate="skip">다른 여행지 <i>›</i></button>
     <button class="ghost" data-rate="want">♡ 가보고 싶어요</button>
   </div>` : '';
 
