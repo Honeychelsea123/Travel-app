@@ -144,7 +144,11 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
   position:sticky; top:var(--s-sm); z-index:20;
   margin:var(--s-sm) 0 var(--s-md);
   padding:10px var(--s-md);
-  border-radius:var(--r-pill);
+  /* ⚠ **알약이 아닙니다(b427).** `--r-pill` 이라 양끝이 완전히 둥글었는데,
+     가로로 긴 바에 그 모서리를 쓰면 **떠 있는 알약**처럼 보입니다.
+     been 은 상단이 훨씬 직선적입니다. 카드(26px)보다 한 단계 각지게 둬서
+     "고정된 바" 로 읽히게 합니다 — 아래로 지나가는 카드와도 갈립니다. */
+  border-radius:16px;
   display:flex; align-items:center; gap:10px;
   background:linear-gradient(158deg, rgba(255,255,255,.62) 0%,
              rgba(255,255,255,.46) 55%, rgba(255,255,255,.58) 100%);
@@ -1340,7 +1344,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *   덩어리가 **똑같은 간격으로 나란히** 떠 있었습니다 — 무엇이 한 덩어리인지
  *   알려주는 것이 없었습니다.
  * flex 로 바꾸면 겹침이 없어져 적은 값이 그대로 먹습니다. */
-#home{ display:flex; flex-direction:column; gap:16px; }
+/* ⚠ 틈이 16px 이었는데 **넓어 보인다는 지적**을 받았습니다(b427).
+   덩어리가 둘뿐이라 굳이 멀리 떼어놓을 이유가 없습니다. 12px 로 좁힙니다. */
+#home{ display:flex; flex-direction:column; gap:12px; }
 #home > *{ margin-top:0; margin-bottom:0; }
 
 
