@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b434';
-import { sb } from './db.js?v=b434';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b434';
-import { todayYmd } from './calc.js?v=b434';
-import { cities } from './cities.js?v=b434';
-import { trip } from './trip.js?v=b434';
-import { tripSub } from './rating.js?v=b434';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b434';
-import { ROLE_KO } from './member.js?v=b434';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b435';
+import { sb } from './db.js?v=b435';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b435';
+import { todayYmd } from './calc.js?v=b435';
+import { cities } from './cities.js?v=b435';
+import { trip } from './trip.js?v=b435';
+import { tripSub } from './rating.js?v=b435';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b435';
+import { ROLE_KO } from './member.js?v=b435';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -133,11 +133,34 @@ export async function loadTrips(){
        갈아끼울 때 같이 지워집니다. 밖에 두면 목록이 비어 있을 때도 남습니다 —
        앞으로 갈 여행이 없는 사람이야말로 평가할 것이 밀려 있습니다.
      ⚠ **먼저 있던 띠를 지우고 답니다.** 안 지우면 탭을 오갈 때마다 쌓입니다.
-     ⚠ 아래 빈 목록 갈래가 일찍 돌아가므로 **그 앞에** 둡니다. */
-  $('tripsrv')?.remove();
+     ⚠ 아래 빈 목록 갈래가 일찍 돌아가므로 **그 앞에** 둡니다.
+
+     ⚠⚠ **지우는 것은 받아온 뒤입니다(b435).** ⚠⚠
+       전에는 `remove()` 를 먼저 하고 `await reviewBar()` 를 기다렸습니다.
+       그러면 탭에 들어올 때마다 띠가 **사라졌다가 질의 시간만큼 지나 다시
+       나타납니다** — 그 사이 아래 내용이 위로 올라왔다 내려가서 화면이
+       깜빡입니다. 사용자가 "삼척 여행 어땠어요 그거 불러오면서 깜빡인다"
+       고 짚어준 것이 이것입니다.
+       **먼저 받아오고, 그 다음에 갈아끼웁니다** — 같은 틱에 끝나므로
+       비어 있는 순간이 없습니다. 순서를 되돌리지 마십시오. */
   if (tripFilter !== 'past'){
     const bar = await reviewBar();
-    if (bar){ bar.id = 'tripsrv'; $('trips').before(bar); }
+    $('tripsrv')?.remove();
+    /* ⚠ **목록 **아래**입니다(b435).** 전에는 히어로 바로 밑이었는데,
+       「D-21 도쿄」 다음에 갑자기 「삼척 여행 어땠어요?」가 끼어들어
+       **맥락이 끊겼습니다** — 다가오는 여행을 보러 온 자리에 지난 여행
+       평가가 먼저 나옵니다. 목록을 다 보고 난 뒤가 맞습니다.
+       ⚠ 여전히  **밖**입니다 — 안에 넣으면 putHtml 이 목록을
+         갈아끼울 때 같이 지워집니다. */
+    /* ⚠ **목록 아래입니다(b435).** 전에는 히어로 바로 밑이었는데,
+       「D-21 도쿄」 다음에 갑자기 「삼척 여행 어땠어요?」가 끼어들어
+       **맥락이 끊겼습니다** — 다가오는 여행을 보러 온 자리에 지난 여행
+       평가가 먼저 나옵니다. 목록을 다 보고 난 뒤가 맞습니다.
+       ⚠ 여전히 `#trips` **밖**입니다 — 안에 넣으면 putHtml 이 목록을
+         갈아끼울 때 같이 지워집니다. */
+    if (bar){ bar.id = 'tripsrv'; $('trips').after(bar); }
+  } else {
+    $('tripsrv')?.remove();
   }
 
   /* ── 다음 여행 히어로(b402) ──────────────────────────────────────────
@@ -176,7 +199,9 @@ export async function loadTrips(){
        여기서 id 로 찾지 말고 이 상자를 통해 찾습니다. */
     wrap.firstElementChild?.removeAttribute('id');
     wrap.onclick = () => ctx.openTrip(t.id);
-    ($('tripsrv') || $('trips')).before(wrap);
+    /* ⚠ **`#trips` 앞입니다(b435).** 전에는 「띠가 있으면 띠 앞」이었는데
+       띠가 목록 **아래**로 내려갔으므로 이제 기준이 목록입니다. */
+    $('trips').before(wrap);
   }
 
   if (!data.length){
