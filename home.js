@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b423';
-import { sb } from './db.js?v=b423';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b423';
-import { hm, todayYmd } from './calc.js?v=b423';
-import { starHtml, paintStars, markRated } from './stars.js?v=b423';
+import { $, esc } from './dom.js?v=b424';
+import { sb } from './db.js?v=b424';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b424';
+import { hm, todayYmd } from './calc.js?v=b424';
+import { starHtml, paintStars, markRated } from './stars.js?v=b424';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b423';
-import { cities, countryName } from './cities.js?v=b423';
-import { myRates, visited } from './rate.js?v=b423';
-import { plans } from './trip.js?v=b423';
-import { openCity } from './city.js?v=b423';
-import { loadCities, pick } from './citysearch.js?v=b423';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b423';
-import { openMap, UN_COUNTRIES } from './map.js?v=b423';
+import { rateHero, starValue } from './rateui.js?v=b424';
+import { cities, countryName } from './cities.js?v=b424';
+import { myRates, visited } from './rate.js?v=b424';
+import { plans } from './trip.js?v=b424';
+import { openCity } from './city.js?v=b424';
+import { loadCities, pick } from './citysearch.js?v=b424';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b424';
+import { openMap, UN_COUNTRIES } from './map.js?v=b424';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b423';
+import { drawReport } from './report.js?v=b424';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b423';
-import { openNew } from './newtrip.js?v=b423';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b424';
+import { openNew } from './newtrip.js?v=b424';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -721,7 +721,25 @@ async function renderFoot(통){
   const mm = document.createElement('div');
   mm.className = 'minimap';
   mm.style.cursor = 'pointer';
-  mm.innerHTML = `<svg viewBox="0 19 1000 387"
+  /* ── 왜 이 viewBox 인가(b424) ────────────────────────────────────────
+     전에는 `0 19 1000 387` — 세계 전체였고 비율이 **2.58:1** 이라 가로로
+     찌그러져 보였습니다. been 은 **1.88:1** 입니다.
+
+     ⚠ **등장방형 지도로 been 비율은 못 만듭니다.** 지구 전체가 1000×500
+       이고 남극을 빼면 세로가 400 남짓입니다 — 세로를 늘리려면 남극을
+       넣어야 하는데 아래에 회색 덩어리만 붙습니다. 세로 여백을 늘려도
+       **지도가 커지는 게 아니라 빈 자리만 늘어납니다**(재봤습니다).
+
+     ⚠ **been 이 그래 보이는 이유는 태평양을 잘랐기 때문입니다.**
+       우리도 왼쪽 태평양을 자릅니다 — x 0~150 은 경도 -180~-126 으로
+       **빈 바다뿐**입니다. 그래서 `150 22 850 380`, **2.24:1**.
+
+     ⚠ **어느 나라도 안 잘립니다.** 재봤습니다(잘리는 나라 0).
+       하와이와 알래스카 서부는 화면 밖으로 나가지만 둘 다 미국이라
+       본토가 칠해져 보입니다. 오른쪽은 1000 까지 그대로 둡니다 —
+       **뉴질랜드가 x 985** 라 조금만 잘라도 사라집니다.
+     ⚠ 값을 바꾸려거든 `path.getBBox()` 로 잘리는 나라를 먼저 세십시오. */
+  mm.innerHTML = `<svg viewBox="150 22 850 380"
     preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
   const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
   mm.querySelectorAll('path').forEach(p =>
