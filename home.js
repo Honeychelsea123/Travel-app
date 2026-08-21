@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b415';
-import { sb } from './db.js?v=b415';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b415';
-import { hm, todayYmd } from './calc.js?v=b415';
-import { starHtml, paintStars, markRated } from './stars.js?v=b415';
+import { $, esc } from './dom.js?v=b416';
+import { sb } from './db.js?v=b416';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b416';
+import { hm, todayYmd } from './calc.js?v=b416';
+import { starHtml, paintStars, markRated } from './stars.js?v=b416';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b415';
-import { cities, countryName } from './cities.js?v=b415';
-import { myRates, visited } from './rate.js?v=b415';
-import { plans } from './trip.js?v=b415';
-import { openCity } from './city.js?v=b415';
-import { loadCities, pick } from './citysearch.js?v=b415';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b415';
-import { openMap, UN_COUNTRIES } from './map.js?v=b415';
+import { rateHero, starValue } from './rateui.js?v=b416';
+import { cities, countryName } from './cities.js?v=b416';
+import { myRates, visited } from './rate.js?v=b416';
+import { plans } from './trip.js?v=b416';
+import { openCity } from './city.js?v=b416';
+import { loadCities, pick } from './citysearch.js?v=b416';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b416';
+import { openMap, UN_COUNTRIES } from './map.js?v=b416';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b415';
+import { drawReport } from './report.js?v=b416';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b415';
-import { openNew } from './newtrip.js?v=b415';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b416';
+import { openNew } from './newtrip.js?v=b416';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -562,6 +562,16 @@ async function fillQuiz(){
   } finally { quizFilling = false; }
 }
 
+/* ⚠ **아래 quizRow 와 `#quizlist` 를 보는 핸들러들은 지금 안 돕니다(b416).**
+   홈의 「여기 가보셨어요?」 목록을 「쭉 매기기」 줄로 바꾸면서 `#quizlist`
+   자체가 화면에서 사라졌습니다. `closest` 가 null 을 주니 **오류는 안 나고
+   그냥 아무 일도 안 합니다.**
+
+   ⚠ **일부러 안 지웠습니다.** 히어로에서 매긴 뒤 다음 도시를 고르는 길
+     (아래 `shown`)이 이 코드와 얽혀 있어서, 한 판에 같이 걷어내면 홈에서
+     별을 매기는 것 자체가 깨질 위험이 있습니다. 목록을 되살릴 일이 없다면
+     **다음 판에서 따로** 걷어내십시오 — 그때는 히어로 매기기를 먼저
+     떼어내고 나서 지우는 순서가 맞습니다. */
 const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
   ${c.image_url
     ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
@@ -574,23 +584,57 @@ const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
   <button class="ghost want" data-want="${esc(c.id)}" title="가보고 싶어요">♡</button>
 </div>`;
 
+/* ── 쭉 매기기로 가는 줄 ─────────────────────────────────────────────
+ * ⚠ **전에는 여기가 「여기 가보셨어요?」 목록이었습니다(b416 에서 바꿈).**
+ *   도시 다섯 줄에 별을 각각 달아 뒀는데 **위 히어로에도 별이 있어서
+ *   같은 동작이 홈에 두 자리** 있었습니다. 재보니 한 화면에 별 30개 ·
+ *   사진 6장 · 하트 5개. 어디서 매겨야 하는지가 안 정해져 있었습니다.
+ *
+ * ⚠ **그리고 그 목록은 「쭉 매기기」의 열등한 사본이었습니다.**
+ *   쭉 매기기는 탭바까지 숨기고 그것만 하게 만듭니다(spree.js).
+ *   같은 일을 두 벌로 두면 둘 다 어중간해집니다. 줄 하나로 보냅니다.
+ *
+ * ⚠ **fillQuiz 는 그대로 부릅니다.** 목록은 없어졌지만 **히어로가 같은
+ *   주머니(quizPool)를 씁니다** — 여기서 안 채우면 히어로가 빕니다.
+ *   지우지 마십시오.
+ *
+ * ⚠ 매긴 수는 **제 질의로** 셉니다. myRates 는 홈에서 비어 있습니다 —
+ *   renderFoot 머리말과 같은 이유입니다. head:true 라 개수만 오고
+ *   자료는 안 받으므로 홈이 느려지지 않습니다. */
 async function renderQuiz(){
-  await fillQuiz();
-  /* ⚠ 히어로에 걸린 도시는 뺍니다(b398) — 안 그러면 같은 도시가 위아래에 둘. */
-  const list = quizPool.filter(c => c.id !== heroCity?.id).slice(0, QUIZ_ROWS);
-  const box = document.createElement('div');
-  /* quiet — 위 두 색카드(이번 여행 · 다음 여행)는 지금 할 일이고,
-     이건 훑어보는 자료입니다. 같은 흰 카드로 두면 위계가 안 갈립니다. */
-  box.className = 'card quiet';
-  box.innerHTML = `<h2>여기 가보셨어요?</h2>
-    <div id="quizlist">${
-      list.length ? list.map(quizRow).join('')
-                  : '<div class="empty">물어볼 도시를 다 봤어요.</div>'}</div>
-    ${list.length ? `<button class="ghost" id="quizmore" style="width:100%; margin-top:6px">
-        다른 도시 보기</button>` : ''}`;
-  $('home').appendChild(box);
+  const [, 센것] = await Promise.all([
+    fillQuiz(),
+    netTimeout(sb.from('city_ratings').select('city_id', { count:'exact', head:true })
+      .eq('user_id', ctx.me().id).not('stars', 'is', null)),
+  ]);
+  const 매긴 = 센것?.count ?? 0, 전체 = (cities || []).length;
+  const bar = document.createElement('div');
+  bar.className = 'newtripbar';
+  bar.innerHTML = `<span class="t"><b>쭉 매기기</b>
+      <span>사진 보고 훅훅 눌러요${
+        매긴 && 전체 ? ` · ${전체}곳 중 ${매긴}곳` : ''}</span></span>
+    <span class="go">시작 ›</span>`;
+  /* 기록 탭으로 옮긴 뒤 거기 있는 시작 단추를 누릅니다. openSpree 를 직접
+     부르면 rateview 가 안 보이는 채로 열려서 나올 때 빈 화면이 됩니다. */
+  bar.onclick = () => { ctx.showApp('rate'); $('spreego')?.click(); };
+  $('home').appendChild(bar);
 }
 
+/* ── 내가 쌓은 것 ────────────────────────────────────────────────────
+ * ⚠ **been 처럼 같은 리듬의 줄로 맞췄습니다(b416).** 전에는 발자국이
+ *   「제목 + 문장 + 진행바」였고 성향만 줄(.fprow)이라 **한 카드 안에서
+ *   생김새가 둘**이었습니다. 둘 다 "내가 쌓은 것"이니 같은 모양이어야
+ *   눈이 덜 피곤합니다.
+ *
+ * ⚠ **진행바를 뺐습니다.** 「195개국 중 27개국 · 13.8%」가 같은 말을 하고,
+ *   아래 지도가 그 일을 더 잘합니다. 같은 말을 세 번 하고 있었습니다.
+ *
+ * ⚠ **「내가 매긴 곳」·「가보고 싶은 곳」 줄은 여기 안 답니다.** 매긴 수는
+ *   위 「쭉 매기기」 줄에 있고, 둘 다 **프로필 보관함에 이미 있습니다.**
+ *   홈에 넣으면 같은 숫자가 앱 안에 세 번 나옵니다.
+ *
+ * ⚠ 지도는 남깁니다. been 도 홈에 지도를 크게 둡니다 — 칠해진 면적이
+ *   늘어나는 것이 이 화면의 재미입니다. */
 async function renderFoot(){
   const [{ data: f }, , 별점] = await Promise.all([
     netTimeout(sb.rpc('my_footprint')),
@@ -607,25 +651,23 @@ async function renderFoot(){
   if (!f) return;
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   const box = document.createElement('div');
-  box.className = 'card quiet'; box.id = 'homefp'; box.style.cursor = 'pointer';
-  box.innerHTML =
-    `<div class="row" style="border:0; padding:0; margin:0">
-       <span class="label" style="font-weight:600">내 발자국</span>
-       <span class="val">더보기 ›</span></div>
-     <div style="margin-top:8px; font-size:calc(15px * var(--ts))">${
-       f.countries
-         ? `${UN_COUNTRIES}개국 중 <b>${f.countries}개국</b> · ${pct.toFixed(1)}%`
-         : '별점을 매기면 여기에 쌓여요.'}</div>
-     ${f.countries ? `<div class="fp"><i style="width:${Math.max(pct, 1.5)}%"></i></div>` : ''}
-     <!-- 막대 아래에 지도도 같이. 숫자보다 칠해진 면적이 더 와닿습니다.
-          지도 좌표는 이미 문서에 있으니 그대로 빌려 씁니다. -->
-     <div class="minimap"><svg viewBox="0 19 1000 387"
-       preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg></div>`;
-  /* 다녀온 나라를 칠합니다. 누르면 큰 지도로 갑니다. */
-  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
-  box.querySelectorAll('.minimap path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  box.onclick = () => { ctx.showApp('set'); openMap(); };
+  box.className = 'card quiet'; box.id = 'homefp';
+
+  /* 줄 하나를 만드는 틀. 넷이 아니라 둘뿐이라도 **틀을 통해 만듭니다** —
+     손으로 두 번 쓰면 다음에 하나만 고치게 됩니다. */
+  const 줄만들기 = (제목, 밑, 오른쪽, 눌렀을때) => {
+    const el = document.createElement('div');
+    el.className = 'fprow';
+    el.innerHTML = `<span class="t"><b>${제목}</b><span>${밑}</span></span>
+      <span class="go">${오른쪽} ›</span>`;
+    el.onclick = e => { e.stopPropagation(); 눌렀을때(); };
+    return el;
+  };
+
+  box.appendChild(줄만들기('내 발자국',
+    f.countries ? `${UN_COUNTRIES}개국 중 ${f.countries}개국 · ${pct.toFixed(1)}%`
+                : '별점을 매기면 여기에 쌓여요',
+    '지도', () => { ctx.showApp('set'); openMap(); }));
 
   /* ── 성향 한 줄(b398) ────────────────────────────────────────────────
      앱 얼굴을 「나는 어떤 여행자일까」로 바꿔 놓고(b397) **정작 홈에는 내
@@ -633,11 +675,8 @@ async function renderFoot(){
      보기」로 두 번 들어가야 나옵니다. 카드를 보고 온 사람이 그걸 찾을 리가
      없습니다.
 
-     ⚠ **카드를 새로 만들지 않고 발자국에 얹습니다.** 둘 다 "내가 쌓은 것"
-       이라 같은 카드에 있는 것이 맞고, 카드를 늘리면 홈이 또 길어집니다.
-
      ⚠ **문턱은 성향 화면과 같은 5곳입니다.** 여기만 낮추면 홈에서는 유형이
-       보이는데 눌러 들어가면 "아직 카드를 만들 수 없어요" 가 나옵니다.
+       보이는데 눌러 들어가면 "아직" 이 나옵니다.
      ⚠ 못 받아왔으면 그냥 안 그립니다. 틀린 유형을 보여주는 것보다 낫습니다. */
   const 매긴것 = 별점?.data || [];
   if (매긴것.length >= 5){
@@ -647,19 +686,26 @@ async function renderFoot(){
       const 나라수 = new Set(매긴것
         .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
         .filter(Boolean)).size;
-      const line = document.createElement('div');
-      line.className = 'fprow';
-      line.innerHTML =
-        `<span class="t"><b>${esc(ax.code)} ${esc(유형.n)}</b>
-           <span>${매긴것.length}개 도시 · ${나라수}개국</span></span>
-         <span class="go">${esc(personaRank(나라수))} ›</span>`;
-      /* 카드 전체가 지도로 가므로 이 줄은 **번짐을 막고** 성향으로 보냅니다. */
-      line.onclick = e => { e.stopPropagation(); ctx.showApp('set'); $('openpersona')?.click(); };
-      /* **지도 위에 끼웁니다.** 뒤에 붙이면 홈의 맨 마지막 줄이 되는데,
-         지도가 커서 거기까지 안 내려갑니다. */
-      box.insertBefore(line, box.querySelector('.minimap'));
+      box.appendChild(줄만들기('내 성향',
+        `${esc(ax.code)} ${esc(유형.n)}`,
+        esc(personaRank(나라수)),
+        () => { ctx.showApp('set'); $('openpersona')?.click(); }));
     }
   }
+
+  /* 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니
+     그대로 빌려 씁니다. 누르면 큰 지도로 갑니다. */
+  const mm = document.createElement('div');
+  mm.className = 'minimap';
+  mm.style.cursor = 'pointer';
+  mm.innerHTML = `<svg viewBox="0 19 1000 387"
+    preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
+  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
+  mm.querySelectorAll('path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
+  mm.onclick = () => { ctx.showApp('set'); openMap(); };
+  box.appendChild(mm);
+
   $('home').appendChild(box);
 }
 

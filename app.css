@@ -1266,8 +1266,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
    둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).
    위아래를 선으로 갈라 **발자국 숫자와 섞여 읽히지 않게** 합니다. */
+/* 「내가 쌓은 것」 줄. been 의 My Countries / My Continents 처럼 같은 리듬을
+   씁니다 — 제목 + 밑줄 설명 + 오른쪽 값 + 화살표(home.js 의 renderFoot).
+   ⚠ **첫 줄에는 위 테두리를 안 씁니다(b416).** 전에는 성향 줄 하나뿐이라
+     늘 위에 무언가가 있었는데, 이제 발자국 줄이 카드 맨 위에 옵니다.
+     그대로 두면 카드 테두리 바로 아래에 선이 하나 더 그어집니다. */
 .fprow{ display:flex; align-items:center; gap:10px; cursor:pointer;
         margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+.fprow:first-child{ margin-top:0; padding-top:0; border-top:0; }
 .fprow .t{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
 .fprow .t b{ font-size:calc(15px * var(--ts)); font-weight:600; }
 .fprow .t span{ font-size:calc(13px * var(--ts)); color:var(--dim); }
