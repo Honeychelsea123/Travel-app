@@ -18,10 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b417';
-import { countryName } from './cities.js?v=b417';
-import { starHtml } from './stars.js?v=b417';
-
+import { esc } from './dom.js?v=b418';
+import { countryName } from './cities.js?v=b418';
+import { starHtml } from './stars.js?v=b418';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -30,22 +29,59 @@ import { starHtml } from './stars.js?v=b417';
  * @param id    히어로 상자의 id. 화면마다 달라야 합니다 — 한 문서에 둘이
  *              동시에 뜰 수 있습니다(로그인 화면과 앱은 아니지만, 나중에).
  * @param bar   단추 줄을 달까. 안 다는 자리가 생기면 false 로.
+ * @param 모양  'wide'(기본) 또는 'square'.
+ *
+ * ── 모양이 둘인 이유(b418) ──────────────────────────────────────────
+ * **wide** — 홈·맛보기. 위아래로 다른 것들이 붙는 자리라 납작해야 합니다.
+ *   글자를 사진 위에 얹고 아래를 어둡게 덮습니다.
+ *
+ * **square** — 쭉 매기기. 그 화면은 **이것 하나뿐**이라 세로가 통째로
+ *   남습니다. 실기기에서 재보니 위 542px · 아래 447px 이 비어 있는데
+ *   사진은 480×260 으로 납작했습니다.
+ *   ⚠ 더 큰 문제는 **덮개였습니다.** 글자를 얹으려면 사진 아래 절반을
+ *     검게 덮어야 하는데, 이 화면에서 사진은 장식이 아니라 **판단
+ *     근거**입니다 — "가보셨어요?" 는 사진을 보고 기억을 떠올리는
+ *     물음입니다. 가려 놓고 물으면 안 됩니다.
+ *   그래서 사진은 정방형으로 키우고 **글자와 별을 사진 밖으로** 뺍니다.
+ *
+ * ⚠ **찾는 이름은 두 모양이 똑같습니다**(`.stars[data-city]`,
+ *   `[data-rate]`). 위 머리말의 약속이고, 다르게 두면 쭉 매기기만
+ *   조용히 멈춥니다.
  */
-export function rateHero(city, { ask = '', id = 'ratehero', bar = true } = {}){
+export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
+                                 모양 = 'wide' } = {}){
   const c = city;
+  const 별 = `<div class="hrow">
+      <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
+    </div>`;
+  /* ⚠ 「안 가봤어요」가 **넘어가는 단추**라는 것이 안 읽혔습니다(b418).
+     「♡ 가보고 싶어요」와 나란히 똑같이 생겨서 **둘 중 고르는 것**처럼
+     보였습니다. 화살표를 붙여 "누르면 다음" 을 보이게 합니다.
+     문구는 그대로 둡니다 — 「건너뛰기」로 바꾸면 뜻이 달라집니다.
+     이 단추는 **다시 안 묻겠다는 답**이고(줄을 남깁니다), 건너뛰기는
+     보류입니다. spree.js 의 누르기 참고. */
+  const 단추 = bar ? `<div class="trybar" data-city="${esc(c.id)}">
+    <button class="ghost" data-rate="skip">안 가봤어요 <i>›</i></button>
+    <button class="ghost" data-rate="want">♡ 가보고 싶어요</button>
+  </div>` : '';
+
+  if (모양 === 'square')
+    return `<div class="rateq" id="${esc(id)}">
+      <div class="rqimg"><img src="${esc(c.image_url)}" alt=""
+        onerror="this.closest('.rqimg').classList.add('ph')"></div>
+      <div class="ht">${esc(c.name)}, 가보셨어요?</div>
+      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+      ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
+      ${별}
+    </div>${단추}`;
+
   return `<div class="hero rateh" id="${esc(id)}">
     <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
     <div class="ht">${esc(c.name)}, 가보셨어요?</div>
     <div class="hm">${esc(countryName[c.country] || c.country)}</div>
     ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
-    <div class="hrow">
-      <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
-    </div>
-  </div>
-  ${bar ? `<div class="trybar" data-city="${esc(c.id)}">
-    <button class="ghost" data-rate="skip">안 가봤어요</button>
-    <button class="ghost" data-rate="want">♡ 가보고 싶어요</button>
-  </div>` : ''}`;
+    ${별}
+  </div>${단추}`;
 }
 
 /* 눌린 자리에서 별점을 읽습니다. **반 칸(0.5점)은 왼쪽 절반**입니다 —

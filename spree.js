@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b417';
-import { sb } from './db.js?v=b417';
-import { cities } from './cities.js?v=b417';
-import { loadCities } from './citysearch.js?v=b417';
-import { paintStars } from './stars.js?v=b417';
-import { rateHero, starValue } from './rateui.js?v=b417';
-import { saveRate } from './rating.js?v=b417';
-import { resetHomeSig } from './home.js?v=b417';
+import { $, esc } from './dom.js?v=b418';
+import { sb } from './db.js?v=b418';
+import { cities } from './cities.js?v=b418';
+import { loadCities } from './citysearch.js?v=b418';
+import { paintStars } from './stars.js?v=b418';
+import { rateHero, starValue } from './rateui.js?v=b418';
+import { saveRate } from './rating.js?v=b418';
+import { resetHomeSig } from './home.js?v=b418';
 
 let ctx = { me: () => null };
 export function setSpreeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -71,7 +71,11 @@ function 그리기(){
   }
   /* 홈·맛보기와 **같은 히어로**입니다(rateui.js). 안 그러면 같은 일을 하는
      화면이 앱 안에서 셋으로 갈립니다. */
-  box.innerHTML = rateHero(지금, { id:'spreehero', ask:'다녀오셨다면 별점을 남겨주세요' });
+  box.innerHTML = rateHero(지금, { id:'spreehero', ask:'다녀오셨다면 별점을 남겨주세요',
+    /* ⚠ 이 화면은 이것 하나뿐이라 세로가 통째로 남습니다. 사진을 정방형으로
+       키우고 글자·별을 사진 밖으로 뺍니다 — 여기서 사진은 장식이 아니라
+       **판단 근거**입니다(rateui.js 의 모양 주석). */
+    모양:'square' });
 }
 
 /* 몇 곳 매겼는지. **이게 없으면 언제 그만둘지 모릅니다** — 끝이 없는 화면은

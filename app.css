@@ -1231,6 +1231,41 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
                 border:1px solid var(--line); border-radius:var(--r-md);
                 background:var(--card); color:var(--ink); cursor:pointer; }
 .trybar button:active{ background:var(--line); }
+/* ── 정방형 평가 카드(b418) ───────────────────────────────────────────
+ * 쭉 매기기 전용. 사진을 정방형으로 키우고 글자·별을 **사진 밖**에 둡니다.
+ * 왜 이 화면만 다른 모양인지는 rateui.js 의 「모양이 둘인 이유」 참고.
+ *
+ * ⚠ **덮개(.hero::after)가 없습니다.** 글자가 사진 위에 없으니 어둡게 덮을
+ *   이유가 없습니다. 사진이 밝은 그대로 보이는 것이 이 모양의 요점입니다.
+ * ⚠ 그래서 글자색도 흰색이 아니라 **본문색**입니다. .hero 쪽 규칙을
+ *   물려받지 않도록 아래에서 다시 정합니다. */
+.rateq{ display:flex; flex-direction:column; align-items:center;
+        text-align:center; color:var(--ink); }
+/* ⚠ **세로로도 묶습니다.** `width:100%` 에 `aspect-ratio:1` 만 두면 좁고
+   긴 화면(SE)이나 글자 크게(--ts 1.3)에서 카드가 화면을 넘깁니다.
+   그런데 `#spreebox` 가 `justify-content:center` 라 **넘치면 위가 잘리고
+   스크롤로도 못 갑니다** — flex 가운데 정렬의 오래된 함정입니다.
+   폭을 화면 높이로도 막아 넘침 자체를 안 만듭니다. */
+.rateq .rqimg{ width:min(100%, 52vh); aspect-ratio:1; border-radius:var(--r-lg);
+               overflow:hidden; background:var(--line); }
+.rateq .rqimg img{ width:100%; height:100%; object-fit:cover; display:block; }
+.rateq .ht{ font-size:var(--f-2xl); font-weight:700; margin-top:16px;
+            word-break:keep-all; }
+.rateq .hm{ font-size:var(--f-md); color:var(--dim); margin-top:2px; }
+.rateq .hask{ font-size:calc(13px * var(--ts)); color:var(--dim); margin-top:6px; }
+.rateq .hrow{ display:flex; justify-content:center; margin-top:12px; }
+/* ⚠ **별 크기 선택자를 여기에도 씁니다.** `.hero .herostars .st` 는 이
+   모양에 안 먹습니다 — 빠뜨리면 주인공 별이 목록 별보다 작아집니다.
+   b400 에서 정확히 그렇게 나왔습니다(app.css 의 herostars 주석). */
+.rateq .herostars{ font-size:calc(26px * var(--ts)); gap:8px;
+                   color:var(--hairline); }
+.rateq .herostars .st{ font-size:min(calc(34px * var(--ts)), 10vw); }
+.rateq .herostars .st i{ color:var(--star, #ffc93c); }
+
+/* 「안 가봤어요 ›」의 화살표. 문구보다 흐리게 — **넘어간다는 것만** 알리면
+   되고, 화살표가 문구만큼 진하면 그게 주인공처럼 보입니다. */
+.trybar button i{ font-style:normal; opacity:.45; margin-left:1px; }
+
 /* ── 「친구와 궁합 보기」(b410) ────────────────────────────────────────
  * 파란 「공유하기」 밑에 오는 **보조 단추**입니다. 파란 것이 둘이면 무엇을
  * 먼저 눌러야 할지 모르고, `.ghost` 로 두면 단추로 안 보입니다(그래서 한 번
@@ -1252,8 +1287,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *   이기도 합니다 — 위쪽 구석보다 훨씬 낫습니다.
  * ⚠ `dvh` 를 씁니다 — 폰에서 주소창이 접혔다 펴질 때 `vh` 는 안 따라옵니다. */
 #spreeview{ min-height:100dvh; display:flex; flex-direction:column; }
-#spreebox{ flex:1; display:flex; flex-direction:column; justify-content:center;
-           padding-bottom:6vh; }
+#spreebox{ flex:1; display:flex; flex-direction:column; align-items:center;
+           justify-content:center;
+           /* ⚠ 그래도 넘치면 **위를 자르지 말고** 위에서부터 놓습니다.
+              위 .rqimg 주석의 함정을 두 겹으로 막습니다. */
+           justify-content:safe center;
+           padding-bottom:4vh; }
+/* 정방형 카드는 스스로 폭을 정하므로(min(100%,52vh)) 통은 꽉 채웁니다. */
+#spreebox > *{ width:100% }
 /* 다 매겼을 때의 빈 화면은 가운데 정렬이 오히려 허전합니다 — 카드가 스스로
    높이를 가지므로 그대로 둡니다. */
 
