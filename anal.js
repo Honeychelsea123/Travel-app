@@ -14,17 +14,38 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b452';
-import { sb } from './db.js?v=b452';
-import { cities, continentOf } from './cities.js?v=b452';
+import { $, esc } from './dom.js?v=b453';
+import { sb } from './db.js?v=b453';
+import { cities, continentOf } from './cities.js?v=b453';
+/* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
+   닫을 때 분석 탭으로 돌아옵니다(b453). */
+import { personaBackTo } from './persona.js?v=b453';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b452';
-import { UN_COUNTRIES, CONT } from './map.js?v=b452';
+         AXIS_NAME } from './card.js?v=b453';
+import { UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b453';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
+/* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
+ * ⚠ 두 화면은 **프로필 위에 얹히는 판**으로 만들어져서, 열려면 프로필
+ *   탭을 거쳐야 합니다. 그래서 분석 탭에서 열면 **하단바가 프로필로
+ *   옮겨가고**, 뒤로 가면 프로필에 떨어졌습니다.
+ * ⚠ **「분석에서 왔다」를 먼저 적어둡니다.** 닫을 때 그 값을 보고 분석
+ *   탭으로 돌려보냅니다(map.js·persona.js 의 「나온 자리로」).
+ * ⚠ 여는 절차를 다섯 군데에 흩어 두면 한 곳만 고쳐집니다 — 여기 둘로
+ *   모읍니다. */
+function 성향열기(){
+  personaBackTo('anal');
+  ctx.showApp('set');
+  $('openpersona')?.click();
+}
+function 지도열기(){
+  mapBackTo('anal');
+  ctx.showApp('set');
+  $('openmap')?.click();
+}
 
 /* 줄 하나. 홈·프로필과 **같은 부품**(.fprow)입니다 — 새로 만들면 리듬이
    또 갈립니다(app.css 의 「내가 쌓은 것」 주석). */
@@ -85,11 +106,11 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b452"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b453"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
-    머리.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
+    머리.onclick = 성향열기;
     성향.appendChild(머리);
 
     /* ── 네 축 ── **축마다 색이 다릅니다** ──────────────────────────
@@ -136,7 +157,7 @@ export async function loadAnal(){
     const 더 = document.createElement('button');
     더.className = 'matebtn';
     더.textContent = '자세히 보기 ›';
-    더.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
+    더.onclick = 성향열기;
     성향.appendChild(더);
   } else {
     성향.appendChild(줄('내 성향',
@@ -153,7 +174,7 @@ export async function loadAnal(){
   발.appendChild(줄('내 발자국',
     나라 ? `${UN_COUNTRIES}개국 중 ${나라}개국 · ${pct.toFixed(1)}%`
          : '별점을 매기면 여기에 쌓여요',
-    '지도', () => { ctx.showApp('set'); $('openmap')?.click(); }));
+    '지도', 지도열기));
 
   const mm = document.createElement('div');
   mm.className = 'minimap';
@@ -166,7 +187,7 @@ export async function loadAnal(){
     .filter(c => 매긴것.some(r => r.city_id === c.id)).map(c => c.country));
   mm.querySelectorAll('path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
-  mm.onclick = () => { ctx.showApp('set'); openMapSafe(); };
+  mm.onclick = 지도열기;
   발.appendChild(mm);
 
   /* 대륙별 진행도. 지도만 있으면 "얼마나 남았나" 가 안 보입니다 —
@@ -193,7 +214,7 @@ export async function loadAnal(){
   const 지도더 = document.createElement('button');
   지도더.className = 'matebtn';
   지도더.textContent = '나라별로 자세히 보기 ›';
-  지도더.onclick = () => { ctx.showApp('set'); $('openmap')?.click(); };
+  지도더.onclick = 지도열기;
   발.appendChild(지도더);
   box.appendChild(발);
 }

@@ -12,19 +12,19 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b452';
-import { openCity } from './city.js?v=b452';
-import { distKm } from './calc.js?v=b452';
-import { sb } from './db.js?v=b452';
-import { cities, countryName, continentOf } from './cities.js?v=b452';
-import { PERSONA_ICON, shareCard } from './card.js?v=b452';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b453';
+import { openCity } from './city.js?v=b453';
+import { distKm } from './calc.js?v=b453';
+import { sb } from './db.js?v=b453';
+import { cities, countryName, continentOf } from './cities.js?v=b453';
+import { PERSONA_ICON, shareCard } from './card.js?v=b453';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
    여기서 내보내고 app.js 가 가져다 씁니다. */
 export const UN_COUNTRIES = 195;
 
-let ctx = { me: () => null, loadCities: async () => {} };
+let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setMapCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 세계지도와 통계 ─────────────────────────────────────────────────
@@ -366,9 +366,24 @@ export async function openCountries(){
     }, 'aitrip-다녀온나라');
   };
 }
+/* ── 나온 자리로 되돌리기(b453) ───────────────────────────────────────
+ * ⚠ 지도·국가목록은 **프로필 위에 얹히는 판**으로 만들어져서, 닫을 때
+ *   무조건 `profpane` 을 되살렸습니다. 그런데 이제 **분석 탭**에서도 옵니다 —
+ *   거기서 열고 뒤로 가면 **프로필로 떨어졌습니다.**
+ * ⚠ 여는 쪽이 어디서 왔는지 적어두고 닫는 쪽이 그리로 돌려보냅니다.
+ *   spree.js · home.js 의 reviewBackTo 와 **같은 수법**입니다.
+ * ⚠ 한 번 쓰고 바로 비웁니다 — 남기면 프로필에서 연 사람도 튕깁니다. */
+let 왔던탭 = null;
+export function mapBackTo(tab){ 왔던탭 = tab; }
+function 돌아가기(){
+  const t = 왔던탭; 왔던탭 = null;
+  if (t && ctx.showApp){ ctx.showApp(t); return true; }
+  return false;
+}
 export function closeCountries(fromPop){
   if (!fromPop && history.state?.t2 === 'ctry'){ history.back(); return; }
   $('ctrypane').classList.add('hide');
+  if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
 $('ctryback').addEventListener('click', () => closeCountries());
@@ -526,6 +541,7 @@ export function closeMap(fromPop){
   if (!fromPop && history.state?.t2 === 'map'){ history.back(); return; }
   shutBigMap();
   $('mappane').classList.add('hide');
+  if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
 $('openmap').addEventListener('click', openMap);
