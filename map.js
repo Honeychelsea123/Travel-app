@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b414';
-import { openCity } from './city.js?v=b414';
-import { distKm } from './calc.js?v=b414';
-import { sb } from './db.js?v=b414';
-import { cities, countryName, continentOf } from './cities.js?v=b414';
-import { PERSONA_ICON, shareCard } from './card.js?v=b414';
+import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b415';
+import { openCity } from './city.js?v=b415';
+import { distKm } from './calc.js?v=b415';
+import { sb } from './db.js?v=b415';
+import { cities, countryName, continentOf } from './cities.js?v=b415';
+import { PERSONA_ICON, shareCard } from './card.js?v=b415';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -51,24 +51,22 @@ const px = v => (Number(v) + 180) * (1000 / 360);   /* 경도 → x */
 const py = v => (90 - Number(v)) * (500 / 180);     /* 위도 → y */
 let mapCities = [];
 
-/* 확대하면 깃발이 같이 커집니다. 화면에서 늘 같은 크기로 보이게 다시 그립니다.
-   깃발 원본은 9칸 높이라, 화면에서 원하는 픽셀 크기를 그걸로 나눠 배율을 냅니다. */
-function drawPins(){
-  const wpx = $('worldsvg').getBoundingClientRect().width || 360;
-  const k = 16 / 11 * vb.w / wpx;      /* 깃발 원본이 11칸이라 화면에서 16픽셀쯤 */
-  /* 깃대는 아래가 뾰족한 막대, 깃발은 끝이 제비꼬리인 사각형입니다.
-     둘 다 모서리를 둥글게 이어 붙여 작게 그려도 뭉개지지 않습니다. */
-  const POLE = 'M-.62 .6L0 1.5.62 .6V-10.4H-.62Z';
-  const FLAG = 'M.3 -10.5H5.9L4.7 -8.7 5.9 -6.9H.3Z';
-  $('pins').innerHTML = mapCities
-    .filter(c => c.center_lat != null && c.center_lng != null)
-    .map(c => `<g data-pin="${esc(c.id)}" transform="translate(${
-        px(c.center_lng).toFixed(1)} ${py(c.center_lat).toFixed(1)}) scale(${k.toFixed(3)})">
-        <title>${esc(c.name)}</title>
-        <path class="mkpole" d="${POLE}"/>
-        <path class="mkflag" d="${FLAG}"/>
-      </g>`).join('');
-}
+/* ── 도시 깃발은 안 그립니다(b415) ─────────────────────────────────────
+ * 전에는 다녀온 도시마다 작은 깃발을 꽂았습니다. 실제로 세어보니
+ * **74개 도시에 깃발 148조각**(깃대 74 + 깃발천 74)이었는데 나라 색칠은
+ * 26개뿐이라, 유럽처럼 몰린 곳은 깃발이 덩어리로 뭉개져서 **색칠을
+ * 오히려 가렸습니다.** 지도는 「어디까지 가봤나」를 한눈에 보여주는
+ * 자리인데 그게 안 됐습니다.
+ *
+ * ⚠ **잃는 것이 없습니다.** 깃발은 누르면 도시가 열렸는데(data-pin),
+ *   아래 「국가별 다녀온 도시」 칩에 **같은 data-pin 단추**가 있습니다.
+ *   도시를 여는 길은 그대로입니다.
+ *
+ * ⚠ 되살릴 수 있게 `#pins` 그룹은 index.html 에 그대로 뒀습니다.
+ *   되살린다면 **전체 보기 말고 확대했을 때만** 그리십시오 —
+ *   지저분했던 것은 전체 보기입니다.
+ *
+ * 깃발 모양이 필요하면 git 에서 b414 의 drawPins 를 보십시오. */
 
 /* 보이는 창. 가운데와 폭만 들고 있고 높이는 화면 비율에서 냅니다. */
 let vb = { ...CONT_VIEW['전체'] };
@@ -89,7 +87,6 @@ function applyView(){
   el.setAttribute('viewBox',
     `${(vb.cx - vb.w / 2).toFixed(1)} ${(vb.cy - h / 2).toFixed(1)} ` +
     `${vb.w.toFixed(1)} ${h.toFixed(1)}`);
-  drawPins();
 }
 
 function setMapView(name){

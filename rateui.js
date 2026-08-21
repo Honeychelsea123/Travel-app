@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b414';
-import { countryName } from './cities.js?v=b414';
-import { starHtml } from './stars.js?v=b414';
+import { esc } from './dom.js?v=b415';
+import { countryName } from './cities.js?v=b415';
+import { starHtml } from './stars.js?v=b415';
 
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —

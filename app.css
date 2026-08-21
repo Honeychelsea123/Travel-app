@@ -1753,16 +1753,11 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 #worldsvg.drag{ cursor:grabbing }
 #worldsvg path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5;
                 transition:fill var(--t) var(--ease); }
-/* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다. */
+/* 다녀온 나라는 칠합니다. 칠해진 면적이 늘어나는 게 이 화면의 재미입니다.
+   **이 화면에 남은 것은 이 칠 하나입니다(b415)** — 도시 깃발을 걷어냈습니다.
+   깃발이 74개나 꽂혀서 유럽처럼 몰린 곳은 칠을 오히려 가렸습니다.
+   자세한 것은 map.js 의 「도시 깃발은 안 그립니다」. */
 #worldsvg path.been{ fill:var(--primary); opacity:.85; }
-/* 다녀온 곳은 깃발로 꽂습니다. 동그라미보다 "찍었다" 는 느낌이 납니다.
-   테두리를 따로 그리면 선이 겹쳐 뭉개집니다. paint-order 로 흰 테두리를
-   칠 뒤쪽에 깔면 한 덩어리 스티커처럼 깔끔하게 떨어집니다. */
-#pins g{ cursor:pointer; }
-#pins path{ paint-order:stroke; stroke:#fff; stroke-width:2;
-            stroke-linejoin:round; stroke-linecap:round; }
-#pins .mkpole{ fill:#3b4453; }
-#pins .mkflag{ fill:#ff4d5e; }
 
 /* 대륙 줄 — 이름 · 진행바 · 숫자 */
 .crow{ display:flex; align-items:center; gap:10px; padding:9px 0;
