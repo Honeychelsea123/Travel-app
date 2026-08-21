@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b435';
-import { sb } from './db.js?v=b435';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b435';
-import { todayYmd } from './calc.js?v=b435';
-import { cities } from './cities.js?v=b435';
-import { trip } from './trip.js?v=b435';
-import { tripSub } from './rating.js?v=b435';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b435';
-import { ROLE_KO } from './member.js?v=b435';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b436';
+import { sb } from './db.js?v=b436';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b436';
+import { todayYmd } from './calc.js?v=b436';
+import { cities } from './cities.js?v=b436';
+import { trip } from './trip.js?v=b436';
+import { tripSub } from './rating.js?v=b436';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b436';
+import { ROLE_KO } from './member.js?v=b436';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -177,13 +177,17 @@ export async function loadTrips(){
      ⚠ 사진은 `fillTripPhotos` 가 이미 채워둔 `_photo` 를 씁니다 — 여기서
        또 받아오면 목록을 그릴 때마다 질의가 늡니다. */
   $('triphero')?.remove();
-  /* ⚠ **히어로에 건 여행은 아래 목록에서 뺍니다(b410).** 처음에는 "히어로는
-     『D-22, 곧 갑니다』이고 목록은 『내 여행 전부』라 말하는 것이 다르다"고
-     그냥 뒀는데, **눈으로 보니 바로 위아래로 같은 도쿄가 두 번** 나왔습니다.
-     띠 하나를 사이에 두고 붙어 있어서 뜻의 차이가 안 읽히고 중복만 보입니다.
-     히어로를 누르면 그 여행이 열리므로 목록에서 빠져도 갈 길은 그대로입니다. */
-  let 목록 = data;
-  if (tripFilter !== 'past' && data.length) 목록 = data.slice(1);
+  /* ── 히어로에 건 여행도 **목록에 그대로 둡니다**(b436) ────────────────
+     b410 에서 뺐다가 b436 에서 되돌렸습니다. 그 사이의 판단을 남겨 둡니다 —
+       · b410: "바로 위아래로 같은 도쿄가 두 번" 이라 중복만 보인다며 뺌.
+       · b436: **뺐더니 그 여행은 목록에서 할 수 있는 일을 다 잃었습니다.**
+         수정·삭제·「만든 사람」이 전부 목록 줄에만 있는데, 제일 가까운
+         여행이 거기 없으니 고치려면 열고 들어가야 했습니다.
+     그래서 **히어로의 일을 줄이는 쪽**으로 정리했습니다 — 히어로는
+     「다음은 도쿄, 며칠 남았다」만 알리는 **꾸밈**이고, 할 일은 목록이
+     맡습니다. 중복은 알고 두는 것입니다(사용자 결정).
+     ⚠ 되돌리려거든 위 두 줄을 먼저 읽으십시오. 한 번 갔다 온 길입니다. */
+  const 목록 = data;
   if (tripFilter !== 'past' && data.length){
     const t = data[0];
     const dd = Math.round((new Date(t.start_date) - new Date(today)) / 864e5);

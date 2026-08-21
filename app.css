@@ -2438,4 +2438,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * 여행 히어로에 얹히는 것은 「D-21 · 도쿄 · 날짜」 셋뿐인데 같은 260px 을
  * 쓰고 있었습니다 — 폰에서 보면 화면 3분의 1을 사진이 먹습니다.
  * 얹히는 글에 맞춰 낮춥니다. */
-#triphero .hero{ min-height:200px; }
+#triphero .hero{ min-height:164px; }
+
+/* ── 여행 줄의 「만든 사람」 칩(b436) ─────────────────────────────────
+ * `.trip` 은 [썸네일][글][칩] 세 칸짜리 flex 인데, **칩이 글의 폭을
+ * 잡아먹었습니다.** 폰(카드 안쪽 332px)에서 글에 남는 폭이 166px 뿐이라
+ * 「로마 외 3곳 · 9월 29일 – 10월 9일 · 11일」이 **세 줄로 밀렸습니다.**
+ * 데스크톱(446px)에서는 안 밀려서 한참 못 봤습니다.
+ *
+ * 칩을 흐름에서 빼내 오른쪽 위에 띄웁니다. 그러면 날짜·「더보기」는
+ * **전체 폭**을 쓰고, 칩 자리를 비우는 것은 **제목 한 줄뿐**입니다.
+ * ⚠ `.badge` 는 다른 화면에서도 씁니다 — `.trip` 안에서만 바꿉니다. */
+.trip{ position:relative; }
+.trip > .badge{ position:absolute; right:0; top:2px; }
+.trip .t > b{ display:block; padding-right:64px; }
