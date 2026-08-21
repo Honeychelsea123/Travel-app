@@ -14,12 +14,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b448';
-import { sb } from './db.js?v=b448';
-import { cities, continentOf } from './cities.js?v=b448';
+import { $, esc } from './dom.js?v=b449';
+import { sb } from './db.js?v=b449';
+import { cities, continentOf } from './cities.js?v=b449';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b448';
-import { UN_COUNTRIES, CONT } from './map.js?v=b448';
+         AXIS_NAME } from './card.js?v=b449';
+import { UN_COUNTRIES, CONT } from './map.js?v=b449';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -68,16 +68,27 @@ export async function loadAnal(){
     const 나라수 = new Set(매긴것
       .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
       .filter(Boolean)).size;
-
-    /* ── 유형을 **크게** ────────────────────────────────────────────
+    /* ── 유형을 **크게 · 그림과 함께** ──────────────────────────────
        한 줄짜리 「FMDP ›」로는 무엇을 보러 온 탭인지 안 읽힙니다.
-       들어오자마자 내가 누구인지 보여야 합니다. 코드를 제일 크게,
-       이름을 그 아래, 등수를 알약으로. */
+       들어오자마자 내가 누구인지 보여야 합니다.
+       ⚠ **일러스트를 새로 만들지 않습니다.** 열여섯 장이 이미 있습니다
+         (`persona/{코드}.png`, card.js 의 p16Image 가 카드에 쓰는 것과
+         **같은 파일**). 두 벌로 두면 카드와 화면의 그림이 갈라집니다.
+       ⚠ 판 꼬리표(`?v=`)를 붙입니다 — 서비스워커가 **본 것만** 담고 옛
+         판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없고,
+         한 사람은 자기 유형 하나만 봅니다.
+       ⚠ 그림이 안 와도 화면은 멀쩡해야 합니다 — onerror 로 지웁니다.
+         카드에서도 같은 규칙입니다("그림 하나 때문에 카드를 못 만들면
+         안 됩니다"). */
     const 머리 = document.createElement('div');
     머리.className = 'ptop';
     머리.innerHTML = `<div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
-      <span class="prank">${esc(personaRank(나라수))}</span>`;
+      <span class="prank">${esc(personaRank(나라수))}</span>
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b449"
+        alt="" onerror="this.closest('.part').remove()"></div>`;
+    /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
+       「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
     머리.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
     성향.appendChild(머리);
 
@@ -113,6 +124,20 @@ export async function loadAnal(){
         <b>${esc(PERSONA16[c]?.n || c)}</b>
         <span class="mc">${esc(c)}</span></div>`).join('');
     성향.appendChild(짝);
+
+    /* ── 자세히 보기 ────────────────────────────────────────────────
+       ⚠ **카드 전체가 눌리지만 그게 안 보였습니다(b449).** 머리(.ptop)에
+         onclick 이 달려 있어 누르면 성향 화면으로 가는데, **눌린다는
+         표시가 없어서** 아무도 누를 생각을 안 합니다.
+         명시적인 단추를 답니다 — 이 앱에서 성향 화면은 공유할 카드가
+         나오는 곳이라 반드시 가 봐야 하는 자리입니다.
+       ⚠ 문구에 **무엇이 더 있는지** 적습니다. 「보기」만 있으면 지금 화면과
+         뭐가 다른지 몰라서 안 누릅니다. */
+    const 더 = document.createElement('button');
+    더.className = 'matebtn';
+    더.textContent = '카드 만들고 공유하기 ›';
+    더.onclick = () => { ctx.showApp('set'); $('openpersona')?.click(); };
+    성향.appendChild(더);
   } else {
     성향.appendChild(줄('내 성향',
       `${문턱 - 매긴것.length}곳만 더 매기면 유형이 나와요`, '매기러 가기',
@@ -161,6 +186,15 @@ export async function loadAnal(){
       <span class="axv">${n}/${전체}</span></div>`;
   }).join('');
   발.appendChild(대륙);
+
+  /* 지도 카드에도 같은 이유로 단추를 답니다(b449) — 지도를 눌러야 큰
+     지도로 가는데 그게 안 보입니다. 큰 지도에는 대륙별·국가별 다녀온
+     도시가 다 있습니다. */
+  const 지도더 = document.createElement('button');
+  지도더.className = 'matebtn';
+  지도더.textContent = '나라별로 자세히 보기 ›';
+  지도더.onclick = () => { ctx.showApp('set'); $('openmap')?.click(); };
+  발.appendChild(지도더);
   box.appendChild(발);
 }
 
