@@ -17,16 +17,18 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b425';
-import { sb } from './db.js?v=b425';
-import { cities } from './cities.js?v=b425';
-import { loadCities } from './citysearch.js?v=b425';
-import { paintStars } from './stars.js?v=b425';
-import { rateHero, starValue } from './rateui.js?v=b425';
-import { saveRate } from './rating.js?v=b425';
-import { resetHomeSig } from './home.js?v=b425';
+import { $, esc } from './dom.js?v=b426';
+import { sb } from './db.js?v=b426';
+import { cities } from './cities.js?v=b426';
+import { loadCities } from './citysearch.js?v=b426';
+import { paintStars } from './stars.js?v=b426';
+import { rateHero, starValue } from './rateui.js?v=b426';
+import { saveRate } from './rating.js?v=b426';
+import { resetHomeSig } from './home.js?v=b426';
 
-let ctx = { me: () => null };
+/* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
+   아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
+let ctx = { me: () => null, showApp: () => {} };
 export function setSpreeCtx(o){ ctx = { ...ctx, ...o }; }
 
 let 주머니 = [], 지금 = null, 센것 = 0, 도는중 = false;
