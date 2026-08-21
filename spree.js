@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b422';
-import { sb } from './db.js?v=b422';
-import { cities } from './cities.js?v=b422';
-import { loadCities } from './citysearch.js?v=b422';
-import { paintStars } from './stars.js?v=b422';
-import { rateHero, starValue } from './rateui.js?v=b422';
-import { saveRate } from './rating.js?v=b422';
-import { resetHomeSig } from './home.js?v=b422';
+import { $, esc } from './dom.js?v=b423';
+import { sb } from './db.js?v=b423';
+import { cities } from './cities.js?v=b423';
+import { loadCities } from './citysearch.js?v=b423';
+import { paintStars } from './stars.js?v=b423';
+import { rateHero, starValue } from './rateui.js?v=b423';
+import { saveRate } from './rating.js?v=b423';
+import { resetHomeSig } from './home.js?v=b423';
 
 let ctx = { me: () => null };
 export function setSpreeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -112,6 +112,24 @@ export async function openSpree(){
   그리기();
 }
 
+/* ── 나가면 **들어온 자리**로 돌아갑니다(b423) ────────────────────────
+ * 홈의 「쭉 매기기」 줄로 들어와서 「그만」 을 누르면 **기록 탭에 떨어졌습니다.**
+ * 홈에서 여는 길이 `ctx.showApp('rate')` 로 기록 탭에 간 뒤 거기 있는 시작
+ * 단추를 누르는 방식이라, 닫을 때는 이미 기록 탭이 제자리였기 때문입니다.
+ * 들어온 사람 입장에서는 **엉뚱한 화면으로 떨어진** 것입니다.
+ *
+ * ⚠ **home.js 가 이걸 직접 부르지 않습니다.** 그러면 spree → home
+ *   (resetHomeSig) → spree 로 **고리**가 생깁니다. app.js 가 둘 다 알고
+ *   있으므로 거기서 home 의 ctx 에 넣어 줍니다(setHomeCtx).
+ * ⚠ 한 번 쓰고 **바로 비웁니다.** 남겨두면 다음에 기록 탭에서 연 사람도
+ *   홈으로 튕깁니다. */
+let 돌아갈곳 = null;
+export function spreeBackTo(tab){ 돌아갈곳 = tab; }
+function 돌아가기(){
+  const t = 돌아갈곳; 돌아갈곳 = null;
+  if (t) ctx.showApp?.(t);
+}
+
 export function closeSpree(fromPop){
   if (!fromPop && history.state?.t2 === 'spree'){ history.back(); return; }
   도는중 = false;
@@ -123,6 +141,9 @@ export function closeSpree(fromPop){
   /* 매긴 것이 있으면 홈과 기록을 다시 그리게 합니다 — **지문만 비웁니다.**
      여기서 직접 부르면 안 보이는 화면을 그리느라 나가는 길이 느려집니다. */
   if (건드림) { resetHomeSig(); ctx.afterSpree?.(); }
+  /* ⚠ **지문을 비운 뒤에 옮깁니다.** 순서가 반대면 홈으로 가서 옛 화면을
+     한 번 보여준 다음 다시 그립니다 — 숫자가 눈앞에서 바뀝니다. */
+  돌아가기();
 }
 
 $('spreeclose')?.addEventListener('click', () => closeSpree());

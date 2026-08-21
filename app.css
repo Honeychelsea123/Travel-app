@@ -1623,9 +1623,15 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
    상자를 없애고 카드 padding 을 음수 마진으로 상쇄합니다.
    ⚠ 카드 모서리가 26px 이라 그냥 넓히면 지도가 모서리를 넘칩니다 —
      #homefp 에 overflow:hidden 을 같이 겁니다(아래). */
-.minimap{ margin:14px calc(-1 * var(--s-md)) calc(-1 * var(--s-md));
-          background:none; border-radius:0;
-          overflow:hidden; pointer-events:none; }
+/* ⚠ **아래 마진은 음수가 아닙니다(b423).** 지도가 카드 맨 아래에서
+     **발자국 줄 바로 아래**로 올라왔습니다 — 음수로 두면 다음 줄(내 성향)을
+     덮습니다. 좌우만 넓혀 been 처럼 끝까지 갑니다. */
+.minimap{ margin:12px calc(-1 * var(--s-md)) 14px;
+          background:none; border-radius:0; overflow:hidden; }
+/* ⚠ **`pointer-events:none` 을 걷어냈습니다(b423).** 옛 주석이 "보기만 하는
+   것이라 손가락은 안 받습니다" 였는데, b419 에서 지도에 직접 onclick 을
+   걸었습니다(누르면 큰 지도). CSS 가 그걸 **조용히 막고 있었습니다** —
+   커서만 손가락 모양이고 눌러도 아무 일이 없었습니다. */
 #homefp{ overflow:hidden; }
 .minimap svg{ width:100%; height:auto; display:block; }
 .minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }

@@ -16,28 +16,28 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b422';
-import { sb } from './db.js?v=b422';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b422';
-import { hm, todayYmd } from './calc.js?v=b422';
-import { starHtml, paintStars, markRated } from './stars.js?v=b422';
+import { $, esc } from './dom.js?v=b423';
+import { sb } from './db.js?v=b423';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b423';
+import { hm, todayYmd } from './calc.js?v=b423';
+import { starHtml, paintStars, markRated } from './stars.js?v=b423';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b422';
-import { cities, countryName } from './cities.js?v=b422';
-import { myRates, visited } from './rate.js?v=b422';
-import { plans } from './trip.js?v=b422';
-import { openCity } from './city.js?v=b422';
-import { loadCities, pick } from './citysearch.js?v=b422';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b422';
-import { openMap, UN_COUNTRIES } from './map.js?v=b422';
+import { rateHero, starValue } from './rateui.js?v=b423';
+import { cities, countryName } from './cities.js?v=b423';
+import { myRates, visited } from './rate.js?v=b423';
+import { plans } from './trip.js?v=b423';
+import { openCity } from './city.js?v=b423';
+import { loadCities, pick } from './citysearch.js?v=b423';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b423';
+import { openMap, UN_COUNTRIES } from './map.js?v=b423';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b422';
+import { drawReport } from './report.js?v=b423';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b422';
-import { openNew } from './newtrip.js?v=b422';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b423';
+import { openNew } from './newtrip.js?v=b423';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -335,6 +335,12 @@ async function buildHome(){
        붙이려다 터지면 홈이 통째로 안 그려집니다. */
   await renderQuiz($('home').querySelector('.ratecard') || 통);
 
+  /* ⚠ **발자국·성향·지도가 먼저입니다(b423).** 지도를 홈 열자마자 보이게
+     하려면 위로 올려야 하는데, 새 여행 줄이 앞에 있으면 그만큼 밀립니다.
+     그리고 이 앱은 평가가 주인공이고 일정은 서브입니다 — 순서가 그 말을
+     해야 합니다. */
+  await renderFoot(통);
+
   /* ── 새 여행으로 가는 길 ─────────────────────────────────────────────
      ⚠⚠ **이 줄을 홈에서 빼지 마십시오. 세 번째입니다.** ⚠⚠
      b377 에서 "권유는 하나만" 이라며 뺐다가 b378 에서 되살렸고, b402 에서
@@ -356,10 +362,7 @@ async function buildHome(){
     <span class="go">새 여행 ›</span>`;
   nt.onclick = () => openNew();
   통.appendChild(nt);
-
-  await renderFoot(통);
 }
-
 /* ── 다녀온 여행 평가 재촉 띠 ────────────────────────────────────────
  * **홈에 있다가 여행 탭으로 옮겼습니다(b398).** 홈은 도시 평가가 주인공이고,
  * 이 띠는 **특정 여행에 묶인 것**이라 여행 탭이 제 자리입니다.
@@ -648,7 +651,10 @@ async function renderQuiz(통){
     <span class="go">시작 ›</span>`;
   /* 기록 탭으로 옮긴 뒤 거기 있는 시작 단추를 누릅니다. openSpree 를 직접
      부르면 rateview 가 안 보이는 채로 열려서 나올 때 빈 화면이 됩니다. */
-  bar.onclick = () => { ctx.showApp('rate'); $('spreego')?.click(); };
+  /* ⚠ **들어온 자리를 먼저 남깁니다(b423).** 안 그러면 「그만」 을 눌렀을 때
+     홈이 아니라 기록 탭에 떨어집니다 — 아래 showApp('rate') 때문에 닫을
+     때는 이미 기록 탭이 제자리이기 때문입니다. */
+  bar.onclick = () => { ctx.spreeBackTo?.('home'); ctx.showApp('rate'); $('spreego')?.click(); };
   통.appendChild(bar);
 }
 
@@ -702,6 +708,27 @@ async function renderFoot(통){
                 : '별점을 매기면 여기에 쌓여요',
     '지도', () => { ctx.showApp('set'); openMap(); }));
 
+  /* ── 지도는 **발자국 바로 아래**입니다(b423) ─────────────────────────
+   * 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니
+   * 그대로 빌려 씁니다. 누르면 큰 지도로 갑니다.
+   *
+   * ⚠ **전에는 카드 맨 아래였습니다.** 그러면 홈을 열었을 때 지도가 접힌
+   *   자리 아래에 있어서 **스크롤해야 보였습니다.** 이 앱에서 지도는
+   *   "내가 얼마나 다녔나" 를 한눈에 보여주는 자리라 열자마자 보여야
+   *   합니다. 발자국 줄에 딸린 것이기도 하니 바로 아래가 제자리입니다.
+   * ⚠ 중간에 오므로 **아래 음수 마진을 쓰면 안 됩니다** — 다음 줄을
+   *   덮습니다. 좌우만 넓힙니다(app.css 의 .minimap). */
+  const mm = document.createElement('div');
+  mm.className = 'minimap';
+  mm.style.cursor = 'pointer';
+  mm.innerHTML = `<svg viewBox="0 19 1000 387"
+    preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
+  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
+  mm.querySelectorAll('path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
+  mm.onclick = () => { ctx.showApp('set'); openMap(); };
+  box.appendChild(mm);
+
   /* ── 성향 한 줄(b398) ────────────────────────────────────────────────
      앱 얼굴을 「나는 어떤 여행자일까」로 바꿔 놓고(b397) **정작 홈에는 내
      유형이 어디에도 없었습니다.** 성향 화면은 프로필 → 스크롤 → 「여행 성향
@@ -725,19 +752,6 @@ async function renderFoot(통){
         () => { ctx.showApp('set'); $('openpersona')?.click(); }));
     }
   }
-
-  /* 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니
-     그대로 빌려 씁니다. 누르면 큰 지도로 갑니다. */
-  const mm = document.createElement('div');
-  mm.className = 'minimap';
-  mm.style.cursor = 'pointer';
-  mm.innerHTML = `<svg viewBox="0 19 1000 387"
-    preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
-  const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
-  mm.querySelectorAll('path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  mm.onclick = () => { ctx.showApp('set'); openMap(); };
-  box.appendChild(mm);
 
   /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }
