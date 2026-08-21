@@ -1151,8 +1151,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 매긴 만큼 차는 부분은 별색 그대로 둡니다 — 흰 별과 갈려야 몇 점인지 보입니다. */
 .hero .herostars .st i{ color:var(--star, #ffc93c); }
 /* 도시 이름이 주인공이라 나라는 한 줄 아래에서 조용히. 별에 자리를 내줍니다. */
-.hero.rateh .hrow{ margin-top:6px; }
 .hero.rateh .hm{ opacity:.8; }
+/* ⚠ **무엇을 하라는 줄입니다(b400).** 없을 때는 별이 장식으로 보였습니다.
+   나라보다 한 단계 더 작게 두어 층이 네 개가 되어도 안 무겁게 합니다. */
+.hero .hask{ font-size:calc(13px * var(--ts)); opacity:.72; margin-top:2px; }
+/* 별을 **제 줄로 내립니다.** 오른쪽 구석에 있을 때는 손가락으로 반 칸(0.5점)을
+   고르기가 어려웠고, 무엇보다 누를 수 있는 것으로 안 읽혔습니다. */
+.hero.rateh .hrow{ margin-top:8px; }
 
 /* 발자국 카드 안의 성향 줄(b398). 카드를 새로 만들지 않고 얹었습니다 —
    둘 다 "내가 쌓은 것"이라 한 카드에 있는 것이 맞습니다(home.js 의 renderFoot).

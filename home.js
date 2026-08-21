@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b399';
-import { sb } from './db.js?v=b399';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b399';
-import { D1, asDate, hm, todayYmd } from './calc.js?v=b399';
-import { starHtml, paintStars, markRated } from './stars.js?v=b399';
-import { cities, countryName } from './cities.js?v=b399';
-import { myRates, visited } from './rate.js?v=b399';
-import { plans } from './trip.js?v=b399';
-import { openCity } from './city.js?v=b399';
-import { loadCities, pick } from './citysearch.js?v=b399';
-import { saveRate, refreshVisited, tripSub } from './rating.js?v=b399';
-import { openMap, UN_COUNTRIES } from './map.js?v=b399';
+import { $, esc } from './dom.js?v=b400';
+import { sb } from './db.js?v=b400';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b400';
+import { D1, asDate, hm, todayYmd } from './calc.js?v=b400';
+import { starHtml, paintStars, markRated } from './stars.js?v=b400';
+import { cities, countryName } from './cities.js?v=b400';
+import { myRates, visited } from './rate.js?v=b400';
+import { plans } from './trip.js?v=b400';
+import { openCity } from './city.js?v=b400';
+import { loadCities, pick } from './citysearch.js?v=b400';
+import { saveRate, refreshVisited, tripSub } from './rating.js?v=b400';
+import { openMap, UN_COUNTRIES } from './map.js?v=b400';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b399';
+import { drawReport } from './report.js?v=b400';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b399';
-import { openNew } from './newtrip.js?v=b399';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b400';
+import { openNew } from './newtrip.js?v=b400';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -171,11 +171,17 @@ function heroHtml(photo, dd, title, memo, btn, ai){
  * ⚠ **사진이 없는 도시는 여기 오면 안 됩니다.** 히어로는 사진이 주인공이라
  *   빈 색 덩어리만 남습니다. 고르는 쪽(buildHome)에서 걸러 옵니다. */
 function rateHeroHtml(c){
+  /* ⚠ **묻기만 하고 무엇을 하라는 말이 없었습니다(b400).** 「텔아비브,
+     가보셨어요?」 밑에 나라만 있고 별은 오른쪽 구석에 작게 붙어 있어서,
+     **별이 장식으로 보이고 누를 수 있는 줄 몰랐습니다.** 처음 온 사람에게는
+     이 화면이 이 앱의 첫 할 일인데 그 할 일이 안 적혀 있었습니다.
+     그래서 한 줄 넣고, 별을 **제 줄로 내려** 손가락 자리를 넓혔습니다. */
   return `<div class="hero rateh" id="hero">
     <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
     <div class="ht">${esc(c.name)}, 가보셨어요?</div>
+    <div class="hm">${esc(countryName[c.country] || c.country)}</div>
+    <div class="hask">다녀오셨다면 별점을 남겨주세요</div>
     <div class="hrow">
-      <div class="hm">${esc(countryName[c.country] || c.country)}</div>
       <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
     </div>
   </div>`;
