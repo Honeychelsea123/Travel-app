@@ -76,6 +76,25 @@ export function applyRate(cityId, row, patch){
   return { recount: true };      /* 별을 지웠다 — 다녀온 곳을 서버에 다시 물어야 합니다 */
 }
 
+/* ── 한 도시를 통째로 잊습니다(b407) ─────────────────────────────────
+ * **별점을 지우는 것과 다릅니다.** 지우는 것(`stars: null`)은 줄을 남기고,
+ * 남은 줄은 "이미 물어본 곳"이라 **다시는 안 물어봅니다**(citysearch 의
+ * fillQuiz 가 줄이 있는 도시를 통째로 뺍니다).
+ *
+ * 그래서 둘을 갈라야 합니다:
+ *   · **「안 가봤어요」** → 줄을 남깁니다. 다시 묻지 않는 것이 맞습니다.
+ *   · **별점 취소**(잘못 눌렀다) → 줄을 지웁니다. **다시 물어야 합니다.**
+ *
+ * 안 가르면 잘못 눌러 취소한 도시가 영영 안 나옵니다. 화면 안에서는
+ * 주머니에 돌려놨는데 새로고침하면 사라지는, 눈에 잘 안 띄는 종류입니다. */
+export function removeRate(cityId){
+  delete myRates[cityId];
+  justRated.delete(cityId);
+  /* `visited` 는 지난 여행에서도 옵니다 — 여기서 지워도 부르는 쪽이
+     `refreshVisited()` 로 서버에 다시 물어 맞춥니다. */
+  visited.delete(cityId);
+}
+
 /* 도시 하나의 평균. 없으면 지웁니다 — 남겨두면 옛 평균이 계속 보입니다. */
 export function putCityStat(cityId, row){
   if (row) cityStat[cityId] = row; else delete cityStat[cityId];

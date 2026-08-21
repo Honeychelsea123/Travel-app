@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b406';
-import { sb } from './db.js?v=b406';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b406';
-import { dateRange } from './calc.js?v=b406';
-import { starHtml, paintStars, markRated } from './stars.js?v=b406';
-import { cities, countryName, addCity } from './cities.js?v=b406';
+import { $, esc } from './dom.js?v=b407';
+import { sb } from './db.js?v=b407';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b407';
+import { dateRange } from './calc.js?v=b407';
+import { starHtml, paintStars, markRated } from './stars.js?v=b407';
+import { cities, countryName, addCity } from './cities.js?v=b407';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter } from './rate.js?v=b406';
-import { openCity } from './city.js?v=b406';
-import { loadCities } from './citysearch.js?v=b406';
+         putRateFilter, removeRate } from './rate.js?v=b407';
+import { openCity } from './city.js?v=b407';
+import { loadCities } from './citysearch.js?v=b407';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -301,6 +301,29 @@ $('ratelist').addEventListener('click', async e => {
   const row = e.target.closest('[data-cityopen]');
   if (row) await openCity(row.dataset.cityopen);
 });
+
+/* ── 별점 취소 — 줄을 통째로 지웁니다(b407) ──────────────────────────
+ * ⚠ **`saveRate(id, { stars: null })` 과 다릅니다.** 그건 줄을 남기고,
+ *   남은 줄은 "이미 물어본 곳"이라 **다시는 안 물어봅니다**(fillQuiz).
+ *   잘못 눌러서 취소한 도시가 영영 안 나오면 안 됩니다.
+ *   가르는 이유는 rate.js 의 `removeRate` 머리말에 적어뒀습니다.
+ *
+ * ⚠ **♡ 나 메모가 있으면 안 지웁니다.** 그건 사용자가 따로 남긴 것이라
+ *   별점을 무른다고 같이 없어지면 안 됩니다. 그때는 별점만 비웁니다. */
+export async function dropRate(cityId){
+  const cur = myRates[cityId] || {};
+  if (cur.want || (cur.comment || '').trim())
+    return saveRate(cityId, { stars: null }, true);
+
+  const r = await sb.from('city_ratings').delete()
+    .eq('user_id', ctx.me().id).eq('city_id', cityId).select('city_id');
+  if (r.error) return fail(r.error, 'rate');
+  removeRate(cityId);
+  /* 다녀온 곳은 지난 여행에서도 오므로 서버에 다시 물어야 맞습니다. */
+  await refreshVisited();
+  const s = await sb.rpc('city_stats', { p_city: cityId });
+  putCityStat(cityId, s.data?.[0]);
+}
 
 export async function saveRate(cityId, patch, quiet){
   const r = await sb.from('city_ratings')

@@ -24,12 +24,12 @@
  *   로그인하는 순간 계정으로 옮기고 담아둔 것을 지웁니다 — `claimTryRates`.
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · card.js. */
-import { $, esc } from './dom.js?v=b406';
-import { sb } from './db.js?v=b406';
-import { cities, countryName } from './cities.js?v=b406';
-import { loadCities } from './citysearch.js?v=b406';
-import { starHtml, paintStars } from './stars.js?v=b406';
-import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b406';
+import { $, esc } from './dom.js?v=b407';
+import { sb } from './db.js?v=b407';
+import { cities, countryName } from './cities.js?v=b407';
+import { loadCities } from './citysearch.js?v=b407';
+import { starHtml, paintStars } from './stars.js?v=b407';
+import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b407';
 
 /* 담아두는 자리. **`localStorage` 입니다** — 탭을 닫았다 와도 남아야 합니다.
    로그인하러 구글로 나갔다 돌아오는 사이에 `sessionStorage` 는 살아남지만,
@@ -57,8 +57,12 @@ export const tryCount = () => Object.values(읽기()).filter(v => v?.stars != nu
  *   옮기다 실패하면 **안 지웁니다** — 다음 기회에 다시 시도합니다. */
 export async function claimTryRates(userId){
   const 담긴것 = 읽기();
+  /* ⚠ **「안 가봤어요」(skip)도 같이 옮깁니다(b407).** 안 옮기면 로그인하는
+     순간 방금 넘긴 도시들이 도로 나옵니다 — 사용자 눈에는 "아까 안 가봤다고
+     했는데" 입니다. 별점 없는 줄로 남기면 로그인 뒤 홈에서도 안 묻습니다
+     (fillQuiz 가 줄이 있는 도시를 뺍니다). 로그인 전후가 같아야 합니다. */
   const 줄 = Object.entries(담긴것)
-    .filter(([, v]) => v?.stars != null || v?.want)
+    .filter(([, v]) => v?.stars != null || v?.want || v?.skip)
     .map(([city_id, v]) => ({ user_id: userId, city_id,
                               ...(v.stars != null ? { stars: v.stars } : {}),
                               ...(v.want ? { want: true } : {}) }));

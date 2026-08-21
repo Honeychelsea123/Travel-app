@@ -16,26 +16,26 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b406';
-import { sb } from './db.js?v=b406';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b406';
-import { hm, todayYmd } from './calc.js?v=b406';
-import { starHtml, paintStars, markRated } from './stars.js?v=b406';
-import { cities, countryName } from './cities.js?v=b406';
-import { myRates, visited } from './rate.js?v=b406';
-import { plans } from './trip.js?v=b406';
-import { openCity } from './city.js?v=b406';
-import { loadCities, pick } from './citysearch.js?v=b406';
-import { saveRate, refreshVisited } from './rating.js?v=b406';
-import { openMap, UN_COUNTRIES } from './map.js?v=b406';
+import { $, esc } from './dom.js?v=b407';
+import { sb } from './db.js?v=b407';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b407';
+import { hm, todayYmd } from './calc.js?v=b407';
+import { starHtml, paintStars, markRated } from './stars.js?v=b407';
+import { cities, countryName } from './cities.js?v=b407';
+import { myRates, visited } from './rate.js?v=b407';
+import { plans } from './trip.js?v=b407';
+import { openCity } from './city.js?v=b407';
+import { loadCities, pick } from './citysearch.js?v=b407';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b407';
+import { openMap, UN_COUNTRIES } from './map.js?v=b407';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b406';
+import { drawReport } from './report.js?v=b407';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b406';
-import { openNew } from './newtrip.js?v=b406';
+import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b407';
+import { openNew } from './newtrip.js?v=b407';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -195,6 +195,14 @@ function rateHeroHtml(c){
     <div class="hrow">
       <span class="stars herostars" data-city="${esc(c.id)}">${starHtml(null)}</span>
     </div>
+  </div>
+  <!-- ⚠ **넘길 길이 없으면 흐름이 거기서 끊깁니다(b407).** 469곳 중 대부분은
+       안 가본 곳인데 별밖에 없으면 대답할 방법이 하나뿐이었습니다.
+       로그인 전 맛보기(try.js)에는 이 둘이 있었는데 **로그인하면 사라졌습니다** —
+       같은 화면이 로그인 전후로 다르게 굴면 안 됩니다. -->
+  <div class="trybar" id="herobar" data-city="${esc(c.id)}">
+    <button class="ghost" data-hero="skip">안 가봤어요</button>
+    <button class="ghost" data-hero="want">♡ 가보고 싶어요</button>
   </div>`;
 }
 /* 지금 히어로에 걸린 도시. **퀴즈가 이걸 빼고 그려야** 같은 도시가 위아래에
@@ -691,7 +699,12 @@ $('home').addEventListener('click', async e => {
       clearTimeout(hero._go);
       wrap.dataset.v = '';
       paintStars(wrap, null, true);
-      await saveRate(cityId, { stars: null }, true);
+      /* ⚠ **`saveRate(id, {stars:null})` 이 아니라 `dropRate` 입니다(b407).**
+         전자는 줄을 남기는데, 남은 줄은 "이미 물어본 곳"이라 새로고침하면
+         **다시는 안 물어봅니다.** 잘못 눌러 취소한 도시가 영영 사라집니다 —
+         화면 안에서는 아래 unshift 로 돌아오는데 새로고침하면 없어지는,
+         눈에 잘 안 띄는 종류였습니다. 자세한 것은 rate.js 의 removeRate. */
+      await dropRate(cityId);
       if (heroCity && !quizPool.some(c => c.id === cityId)) quizPool.unshift(heroCity);
       lastHomeSig = '';
       hero.dataset.done = '';
@@ -723,11 +736,47 @@ $('home').addEventListener('click', async e => {
       const nx = quizPool.find(c => c.image_url && !shown.has(c.id));
       if (!nx) return;                       /* 더 물어볼 곳이 없으면 그냥 둡니다 */
       heroCity = nx;
+      /* ⚠ **`rateHeroHtml` 은 뿌리가 둘입니다**(히어로 + 단추 줄, b407).
+         `hero.outerHTML` 만 갈아끼우면 **옛 단추 줄이 그대로 남아** 화면에
+         줄이 둘이 됩니다. 새것이 들어오면서 id 가 겹치므로 **바꾸기 전에**
+         옛것을 잡아둬야 합니다 — 나중에 찾으면 새것이 잡힙니다. */
+      const 옛단추 = $('herobar');
       hero.outerHTML = rateHeroHtml(nx);
+      옛단추?.remove();
       /* **되돌릴 창이 닫힌 지금** 비웁니다. 이제 홈을 다시 그려도
          잃을 것이 없습니다(위 ⚠ 참고). */
       lastHomeSig = '';
     }, 1500);
+    return;
+  }
+  /* ── 히어로의 「안 가봤어요」·♡ (b407) ─────────────────────────────
+     ⚠ **둘이 남기는 흔적이 다릅니다.**
+       · 안 가봤어요 → 별점 없는 **줄을 남깁니다.** 남은 줄은 "이미 물어본
+         곳"이라 다시 안 묻습니다(fillQuiz). 그게 이 단추의 뜻입니다.
+       · ♡        → `want` 를 켭니다. 보관함에 쌓이고 역시 다시 안 묻습니다.
+     ⚠ 기다렸다 넘기지 않습니다 — 별점과 달리 **되돌려 볼 것이 없습니다.**
+       바로 다음 도시를 올립니다. */
+  const hb = e.target.closest('#herobar [data-hero]');
+  if (hb){
+    const bar = hb.closest('#herobar');
+    const cityId = bar.dataset.city;
+    if (bar.dataset.done) return;
+    bar.dataset.done = '1';
+    await saveRate(cityId, hb.dataset.hero === 'want' ? { want: true }
+                                                      : { stars: null }, true);
+    quizPool = quizPool.filter(c => c.id !== cityId);
+    await fillQuiz();
+    const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
+      .map(r => r.dataset.cityopen));
+    const nx = quizPool.find(c => c.image_url && !shown.has(c.id));
+    const hero = $('hero');
+    if (nx && hero){
+      heroCity = nx;
+      const 옛단추 = $('herobar');
+      hero.outerHTML = rateHeroHtml(nx);
+      옛단추?.remove();
+    } else bar.dataset.done = '';
+    lastHomeSig = '';
     return;
   }
   const st = e.target.closest('#quizlist .st');
@@ -749,7 +798,8 @@ $('home').addEventListener('click', async e => {
       paintStars(wrap, null, true);
       row.classList.remove('rated');
       markRated(row, null);
-      await saveRate(cityId, { stars: null }, true);
+      /* 히어로와 같은 이유로 **줄을 지웁니다**(b407) — 위 히어로 주석 참고. */
+      await dropRate(cityId);
       /* 주머니에서 뺐던 것을 돌려놓습니다 — 취소했는데 다시는 안 물어보면
          안 됩니다. 줄은 그대로 두므로 목록에서 사라지지 않습니다. */
       const c = (cities || []).find(x => x.id === cityId);
