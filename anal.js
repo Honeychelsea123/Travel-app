@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b464';
-import { sb } from './db.js?v=b464';
-import { cities, continentOf } from './cities.js?v=b464';
+import { $, esc } from './dom.js?v=b465';
+import { sb } from './db.js?v=b465';
+import { cities, continentOf } from './cities.js?v=b465';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b464';
+import { personaBackTo } from './persona.js?v=b465';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b464';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b464';
+         AXIS_NAME } from './card.js?v=b465';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b465';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b464';
+import { similarPicks } from './rec.js?v=b465';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b464';
-import { pickCity } from './citysearch.js?v=b464';
-import { shareMate } from './mate.js?v=b464';
+import { openNew } from './newtrip.js?v=b465';
+import { pickCity } from './citysearch.js?v=b465';
+import { shareMate } from './mate.js?v=b465';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -81,54 +81,6 @@ function 줄(제목, 밑, 오른쪽, 눌렀을때){
   return el;
 }
 
-/* ── 레이더 ── 축 넷을 한 그림으로(b464) ─────────────────────────────
- * ⚠ **막대 네 줄이었습니다.** 그런데 이 탭에는 같은 모양 막대가 축 4 ·
- *   대륙 6 · 별점 5 로 **열아홉 줄** 있었습니다. 제목만 다르고 그림이
- *   똑같으니 실제 길이보다 훨씬 길게 느껴졌습니다.
- *   축은 **서로 견주는 값 넷**이라 사각형 하나로 묶는 편이 맞습니다 —
- *   어느 쪽으로 치우친 사람인지가 모양으로 한눈에 보입니다.
- * ⚠ 값이 0 이어도 점은 중심에서 살짝 띄웁니다(최소 6). 넷 다 0 이면
- *   다각형이 점으로 뭉개져 아무것도 안 보입니다.
- * ⚠ 라벨은 SVG 안에 둡니다. 밖에 HTML 로 얹으면 글자 크기 배율(--ts)이
- *   바뀔 때 자리가 어긋납니다. */
-function 레이더(값들, 이름들){
-  const C = 100, R = 58;
-  /* 위 · 오른 · 아래 · 왼 */
-  const 각 = [-90, 0, 90, 180].map(d => d * Math.PI / 180);
-  const 점 = (v, i) => {
-    const r = R * Math.max(v, 6) / 100;
-    return [C + r * Math.cos(각[i]), 96 + r * Math.sin(각[i])];
-  };
-  const 다각형 = vs => vs.map((v, i) => 점(v, i).join(',')).join(' ');
-  /* 격자 넉 겹 — 25 · 50 · 75 · 100. 눈금이 없으면 36 과 85 가 얼마나
-     차이 나는지 못 읽습니다. */
-  const 격자 = [25, 50, 75, 100].map(t =>
-    `<polygon points="${다각형([t, t, t, t])}" fill="none"
-       stroke="var(--line)" stroke-width="1"/>`).join('');
-  const 라벨자리 = [[C, 96 - R - 12, 'middle'], [C + R + 10, 100, 'start'],
-                    [C, 96 + R + 20, 'middle'], [C - R - 10, 100, 'end']];
-  const 라벨 = 이름들.map((n, i) => {
-    const [x, y, a] = 라벨자리[i];
-    return `<text x="${x}" y="${y}" text-anchor="${a}"
-       font-size="11" fill="var(--dim)">${esc(n)}</text>
-      <text x="${x}" y="${y + 13}" text-anchor="${a}"
-       font-size="12" font-weight="700" fill="var(--ink)">${값들[i]}</text>`;
-  }).join('');
-  return `<div class="radar"><svg viewBox="0 0 200 180" role="img"
-      aria-label="${esc(이름들.map((n, i) => n + ' ' + 값들[i]).join(', '))}">
-      ${격자}
-      <line x1="${C}" y1="${96 - R}" x2="${C}" y2="${96 + R}"
-            stroke="var(--line)" stroke-width="1"/>
-      <line x1="${C - R}" y1="96" x2="${C + R}" y2="96"
-            stroke="var(--line)" stroke-width="1"/>
-      <polygon points="${다각형(값들)}" fill="var(--primary)" fill-opacity=".18"
-               stroke="var(--primary)" stroke-width="2" stroke-linejoin="round"/>
-      ${값들.map((v, i) => { const [x, y] = 점(v, i);
-        return `<circle cx="${x}" cy="${y}" r="3" fill="var(--primary)"/>`; }).join('')}
-      ${라벨}
-    </svg></div>`;
-}
-
 export async function loadAnal(){
   const box = $('analbox');
   if (!box || !ctx.me()) return;
@@ -176,7 +128,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b464"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b465"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -197,18 +149,41 @@ export async function loadAnal(){
         .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
       const 배지 = document.createElement('div');
       배지.className = 'pbadge';
+      /* ⚠ **「FMDP → HMDP · 개척력 +50」 만 있으니 무슨 말인지 몰랐습니다
+           (b465).** 카드였을 때는 「처음 매긴 20곳과 최근 20곳을 견줬어요」
+           라는 줄이 같이 있었는데, 배지로 줄이면서 그 맥락을 빼먹었습니다.
+           「처음 · 지금」 두 낱말만 넣으면 무엇과 무엇을 견줬는지 바로
+           읽힙니다. 몇 곳씩인지는 안 적습니다 — 그건 자세히 보기 몫입니다.
+         ⚠ 축 변화는 **오르내림을 낱말로** 적습니다. 「+50」 은 무엇이
+           50 인지 모호합니다(점수인지 곳수인지). */
+      const 움직임 = 큰변화.값
+        ? ` · ${esc(큰변화.이름)} ${Math.abs(큰변화.값)} ${큰변화.값 > 0 ? '올랐어요' : '내렸어요'}`
+        : '';
       배지.innerHTML = 처음.code === 지금.code
-        ? `<b>${esc(처음.code)}</b> 그대로${큰변화.값
-            ? ` · ${esc(큰변화.이름)} ${큰변화.값 > 0 ? '+' : ''}${큰변화.값}` : ''}`
-        : `<b>${esc(처음.code)}</b> <i>→</i> <b class="on">${esc(지금.code)}</b>${
-            큰변화.값 ? ` · ${esc(큰변화.이름)} ${큰변화.값 > 0 ? '+' : ''}${큰변화.값}` : ''}`;
+        ? `처음부터 <b class="on">${esc(처음.code)}</b>${움직임}`
+        : `처음 <b>${esc(처음.code)}</b> <i>→</i> 지금 <b class="on">${esc(지금.code)}</b>${움직임}`;
       성향.appendChild(배지);
     }
 
-    /* 축 넷은 레이더 하나로(위 함수 머리말 참고). */
+    /* ── 네 축 ── 가로 막대(b465) ─────────────────────────────────────
+       ⚠ **b464 에 레이더로 바꿨다가 되돌립니다.** 실기기에서 보니
+         다이아몬드는 값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이
+         꼭짓점 길이로 거의 같아 보이고, 이름과 숫자가 사방에 흩어져
+         위에서 아래로 훑을 수가 없습니다.
+       ⚠ 대신 **축마다 색을 다르게** 둡니다. 넷을 같은 파랑으로 두면
+         하나의 긴 표로 읽혀 서로 다른 것을 잰다는 게 안 보입니다.
+       ⚠ 색은 앱이 이미 쓰는 분류색(--k-*)에서 가져옵니다 — 새로
+         만들면 앱 안에 색 체계가 둘이 됩니다. */
+    const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
+    const 축색 = ['var(--k-food)', 'var(--k-see)', 'var(--k-move)', 'var(--k-stay)'];
     const 판 = document.createElement('div');
-    판.innerHTML = 레이더([ax.개척, ax.단골, ax.모험, ax.만족], AXIS_NAME);
-    성향.appendChild(판.firstElementChild);
+    판.className = 'axbars';
+    판.innerHTML = AXIS_NAME.map((n, i) => `
+      <div class="axrow"><span class="axn">${esc(n)}</span>
+        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%;
+          background:${축색[i]}"></i></span>
+        <span class="axv">${값[i]}</span></div>`).join('');
+    성향.appendChild(판);
 
     /* ── 궁합 두 칸 ── 카드 그림 안에만 있던 것을 꺼내둡니다(b448). */
     const m = personaMates(ax.code);
@@ -321,16 +296,29 @@ export async function loadAnal(){
     });
     const 합 = 통.reduce((a, b) => a + b, 0) || 1;
     const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+    /* ⚠ **범례가 「★5 3 · ★4 32」 라 3 과 32 가 무엇인지 몰랐습니다
+         (b465).** 점수인지 곳수인지 가릴 단서가 없었습니다.
+       ① 넓은 칸에는 **띠 안에 직접** 「★3 34곳」 을 적습니다. 색과
+          숫자가 붙어 있으면 범례를 왔다 갔다 안 해도 됩니다.
+       ② 좁아서 글자가 안 들어가는 칸(12% 미만)만 아래 범례로 남깁니다 —
+          다 적으면 넘쳐서 오히려 못 읽습니다.
+       ③ 범례에도 **곳** 을 붙입니다. 한 글자로 모호함이 사라집니다.
+       ⚠ 12% 는 눈으로 정한 값이 아닙니다 — 폰 폭에서 「★3 34곳」(6글자)이
+         들어가는 최소 폭입니다. 더 줄이면 글자가 잘립니다. */
+    const 좁음 = n => 통[n - 1] / 합 < 0.12;
     const 띠 = document.createElement('div');
     띠.className = 'stackwrap';
+    const 안보이는것 = [5, 4, 3, 2, 1].filter(n => 통[n - 1] && 좁음(n));
     띠.innerHTML = '<div class="stack">' +
       [5, 4, 3, 2, 1].map(n => 통[n - 1]
         ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
-             background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('') +
-      '</div><div class="stackleg">' +
-      [5, 4, 3, 2, 1].map(n =>
-        `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${색[n - 1]}"></b>★${n} ${통[n - 1]}</span>`)
-        .join('') + '</div>';
+             background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳">${
+             좁음(n) ? '' : `★${n} ${통[n - 1]}곳`}</i>` : '').join('') +
+      '</div>' + (안보이는것.length
+        ? '<div class="stackleg">' + 안보이는것.map(n =>
+            `<span><b style="background:${색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`)
+            .join('') + '</div>'
+        : '');
     기록.appendChild(띠);
 
     const 줄들 = document.createElement('div');
