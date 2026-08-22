@@ -14,29 +14,44 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b466';
-import { sb } from './db.js?v=b466';
-import { cities, continentOf } from './cities.js?v=b466';
+import { $, esc } from './dom.js?v=b467';
+import { sb } from './db.js?v=b467';
+import { cities, continentOf } from './cities.js?v=b467';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b466';
-import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b466';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b466';
+import { personaBackTo } from './persona.js?v=b467';
+import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
+         AXIS_NAME } from './card.js?v=b467';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b467';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b466';
+import { similarPicks } from './rec.js?v=b467';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b466';
-import { pickCity } from './citysearch.js?v=b466';
-import { shareMate } from './mate.js?v=b466';
+import { openNew } from './newtrip.js?v=b467';
+import { pickCity } from './citysearch.js?v=b467';
+import { shareMate } from './mate.js?v=b467';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
+
+/* ── 축이 움직였을 때 할 말(b467) ────────────────────────────────────
+ * [오른 쪽, 내린 쪽]. 축 순서는 AXIS_NAME 과 같습니다.
+ * ⚠ **축 이름을 안 씁니다.** 「개척력이 올랐어요」는 개척력이 무엇인지
+ *   아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 **그대로** 적어야
+ *   처음 보는 사람도 읽습니다.
+ * ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
+ *   단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
+ *   한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
+const 변화말 = [
+  ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
+  ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
+  ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
+  ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
+];
 /* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
  * ⚠ 두 화면은 **프로필 위에 얹히는 판**으로 만들어져서, 열려면 프로필
  *   탭을 거쳐야 합니다. 그래서 분석 탭에서 열면 **하단바가 프로필로
@@ -128,7 +143,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b466"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b467"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -144,24 +159,29 @@ export async function loadAnal(){
     if (시간순.length >= 40){
       const 처음 = personaAxes(시간순.slice(0, 20), { cities });
       const 지금 = personaAxes(시간순.slice(-20), { cities });
+      /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다. */
       const 큰변화 = ['개척', '단골', '모험', '만족']
-        .map((k, i) => ({ 이름: AXIS_NAME[i], 값: 지금[k] - 처음[k] }))
+        .map((k, i) => ({ 값: 지금[k] - 처음[k], 말: 변화말[i] }))
         .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
       const 배지 = document.createElement('div');
       배지.className = 'pbadge';
-      /* ⚠ **「FMDP → HMDP · 개척력 +50」 만 있으니 무슨 말인지 몰랐습니다
-           (b465).** 카드였을 때는 「처음 매긴 20곳과 최근 20곳을 견줬어요」
-           라는 줄이 같이 있었는데, 배지로 줄이면서 그 맥락을 빼먹었습니다.
-           「처음 · 지금」 두 낱말만 넣으면 무엇과 무엇을 견줬는지 바로
-           읽힙니다. 몇 곳씩인지는 안 적습니다 — 그건 자세히 보기 몫입니다.
-         ⚠ 축 변화는 **오르내림을 낱말로** 적습니다. 「+50」 은 무엇이
-           50 인지 모호합니다(점수인지 곳수인지). */
-      const 움직임 = 큰변화.값
-        ? ` · ${esc(큰변화.이름)} ${Math.abs(큰변화.값)} ${큰변화.값 > 0 ? '올랐어요' : '내렸어요'}`
-        : '';
-      배지.innerHTML = 처음.code === 지금.code
-        ? `처음부터 <b class="on">${esc(처음.code)}</b>${움직임}`
-        : `처음 <b>${esc(처음.code)}</b> <i>→</i> 지금 <b class="on">${esc(지금.code)}</b>${움직임}`;
+      /* ⚠ **「개척력 50 올랐어요」 를 아무도 못 읽었습니다(b467).**
+           만든 사람도 왜 올랐는지 몰랐습니다 — 「개척력」 이 무엇을 재는
+           말인지 화면 어디에도 없고, 50 이 크다는 것도 알 수가 없습니다.
+           숫자와 축 이름을 빼고 **무엇이 달라졌는지 그 자체**를 적습니다:
+           「숨은 곳을 더 찾게 됐어요」. 축 이름은 바로 아래 막대가 맡습니다.
+         ⚠ 10점 미만은 말로 부풀리지 않습니다 — 3점 움직인 것을 「더
+           찾게 됐어요」라고 하면 거짓말이 됩니다. 그때는 코드만 적습니다.
+         ⚠ 두 줄입니다. **뜻이 먼저, 근거가 아래.** 코드 네 글자를 먼저
+           보여주면 읽는 사람이 그것부터 해석해야 합니다. */
+      const 문장 = Math.abs(큰변화.값) >= 10
+        ? 큰변화.말[큰변화.값 > 0 ? 0 : 1] : '';
+      const 아래 = 처음.code === 지금.code
+        ? `처음부터 <b class="on">${esc(처음.code)}</b> 그대로`
+        : `처음 <b>${esc(처음.code)}</b> <i>→</i> 지금 <b class="on">${esc(지금.code)}</b>`;
+      배지.innerHTML = 문장
+        ? `<span class="why">${esc(문장)}</span><span class="pcd">${아래}</span>`
+        : `<span class="pcd">${아래}</span>`;
       성향.appendChild(배지);
     }
 
@@ -178,8 +198,19 @@ export async function loadAnal(){
     const 축색 = ['var(--k-food)', 'var(--k-see)', 'var(--k-move)', 'var(--k-stay)'];
     const 판 = document.createElement('div');
     판.className = 'axbars';
+    /* ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
+         무엇이 36 인지 알 길이 없습니다 — 처음 보는 말이고, 높은 게
+         좋은 건지도 안 적혀 있습니다.
+         지금 값이 **어느 쪽인지**를 이름 밑에 한 마디로 답니다
+         (36 이면 「유명한 곳」, 85 면 「멀리」). 숫자를 몰라도 읽힙니다.
+       ⚠ 그 말은 card.js 의 AXIS_WORD 하나입니다 — 코드 네 글자(FMDP)가
+         쓰는 것과 **같은 표**라, 글자와 막대가 늘 같은 말을 합니다. */
+    const 극 = i => AXIS_WORD[
+      [값[0] >= 50 ? 'H' : 'F', 값[1] >= 50 ? 'L' : 'M',
+       값[2] >= 50 ? 'D' : 'N', 값[3] >= 50 ? 'G' : 'P'][i]];
     판.innerHTML = AXIS_NAME.map((n, i) => `
-      <div class="axrow"><span class="axn">${esc(n)}</span>
+      <div class="axrow"><span class="axn"><b>${esc(n)}</b>
+        <span>${esc(극(i))}</span></span>
         <span class="axbar"><i style="width:${Math.max(값[i], 2)}%;
           background:${축색[i]}"></i></span>
         <span class="axv">${값[i]}</span></div>`).join('');

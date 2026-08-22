@@ -2638,7 +2638,12 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * ⚠ 숫자 칸은 폭을 못박습니다 — 자릿수가 달라도 막대 끝이 맞습니다. */
 .axbars{ margin:10px 0 4px; display:flex; flex-direction:column; gap:8px; }
 .axrow{ display:flex; align-items:center; gap:9px; }
-.axn{ flex:none; width:56px; font-size:var(--f-md); color:var(--dim); }
+/* ⚠ 이름 밑에 **지금 어느 쪽인지**를 한 마디 답니다(b467). 「개척력 36」
+   만으로는 36 이 무엇인지 알 길이 없습니다 — 「유명한 곳」이 붙으면
+   숫자를 몰라도 읽힙니다. 그래서 폭이 조금 넓어집니다(56 → 66). */
+.axn{ flex:none; width:66px; display:flex; flex-direction:column; gap:1px; }
+.axn b{ font-size:var(--f-md); font-weight:600; color:var(--ink); }
+.axn span{ font-size:var(--f-xs); color:var(--ink-48); word-break:keep-all; }
 .axbar{ flex:1; height:8px; border-radius:var(--r-pill);
         background:var(--line); overflow:hidden; }
 .axbar > i{ display:block; height:100%; border-radius:var(--r-pill);
@@ -2657,10 +2662,22 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .subsec{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
 .subsec > .secttl{ margin:0 0 10px; }
 
-.pbadge{ display:flex; align-items:center; justify-content:center; gap:5px;
-         margin:2px 0 10px; padding:6px 10px; border-radius:var(--r-pill);
-         background:var(--pearl); border:1px solid var(--line);
-         font-size:var(--f-sm); color:var(--dim); }
+/* ⚠ **두 줄입니다(b467).** 「개척력 50 올랐어요」 한 줄로는 아무도 못
+   읽었습니다. **뜻이 먼저, 근거가 아래** — 코드 네 글자를 먼저 보여주면
+   읽는 사람이 그것부터 해석해야 합니다.
+   ⚠ 알약(pill)에서 사각 모서리로 바꿉니다. 두 줄이 되면 알약은 위아래가
+     뚱뚱해 보입니다. */
+.pbadge{ display:flex; flex-direction:column; align-items:center; gap:2px;
+         margin:2px 0 12px; padding:9px 12px; border-radius:var(--r-sm);
+         background:var(--pearl); border:1px solid var(--line); }
+.pbadge .why{ font-size:var(--f-md); font-weight:600; color:var(--ink);
+              text-align:center; word-break:keep-all; }
+/* ⚠ 이름을 `.pcd` 로 짓습니다 — `.cd` 는 **달력이 이미 쓰는 이름**이라
+     `.cd i{ display:grid; width:34px }` 가 그대로 먹어서 화살표가
+     34px 짜리 격자가 되고 배지가 세 줄로 터졌습니다.
+   ⚠ nowrap 이 필요합니다. 배지가 flex column + align-items:center 라
+     자식이 제 글자만큼만 넓어지고, 그 안에서 다시 줄바꿈됩니다. */
+.pbadge .pcd{ font-size:var(--f-sm); color:var(--dim); white-space:nowrap; }
 .pbadge b{ font-weight:800; letter-spacing:.4px; color:var(--ink-48); }
 .pbadge b.on{ color:var(--primary); }
 .pbadge i{ font-style:normal; color:var(--ink-48); }
