@@ -213,3 +213,17 @@ export function putHtml(id, html){
   return true;
 }
 export const dropHtml = id => { delete lastHtml[id]; };
+
+/* ── 뒤로 단추 글자 ───────────────────────────────────────────────────
+ * 지도·성향·보관함은 **프로필 위에 얹히는 판**이라 뒤로 단추가
+ * 「← 프로필」로 못 박혀 있었습니다. 이제 홈·분석에서도 열리므로,
+ * 어디서 왔든 「프로필」이라 적혀 있으면 틀린 말이 됩니다.
+ *
+ * ⚠ **map.js 에 있던 것을 여기로 내렸습니다(b457).** map.js 안에 두었더니
+ *   persona.js 가 이 함수를 쓰면서 **import 를 안 했습니다.** 같은 파일에
+ *   있는 map.js 는 멀쩡했고 persona.js 만 조용히 ReferenceError 로 죽어서,
+ *   분석 탭의 「자세히 보기」가 **눌러도 아무 일이 없었습니다.**
+ *   최하위(dom.js)에 두면 누구든 이미 import 하고 있어 그런 일이 없습니다.
+ *   — [[ctx-injection-trap]] 과 같은 종류의 함정입니다. */
+const 탭이름 = { home:'홈', rate:'평가', anal:'분석', trips:'일정', set:'프로필' };
+export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }

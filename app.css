@@ -1911,12 +1911,28 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 /* 세로를 vh 로 잡았더니 지도보다 길어져서, 맞추느라 저절로 확대됐습니다.
    지도와 같은 비율(1000:387)로 두면 세계 전체가 여백 없이 딱 들어갑니다.
    비율은 CSS 가 정하므로 viewBox 와 물리지 않습니다. */
-.mapwrap{ background:var(--parchment); border-radius:var(--r-sm); overflow:hidden;
+/* ⚠ position:relative 가 있어야 안쪽 아이콘이 지도를 기준으로 앉습니다. */
+.mapwrap{ position:relative; background:var(--parchment); border-radius:var(--r-sm); overflow:hidden;
           aspect-ratio:1000 / 387; }
 /* 크게 보기 — 카드 안에 넣었더니 지도가 가로로 긴 비율이라 위아래가 텅 비었습니다.
    화면을 다 채우고, 열 때 여백이 안 생기는 배율에서 시작합니다. */
 .mapwrap.big{ position:fixed; inset:0; z-index:1220; border-radius:0;
               aspect-ratio:auto; background:var(--parchment); }
+/* ── 지도 안 아이콘 둘(b457) ──────────────────────────────────────────
+ * 「공유하기」·「크게 보기」가 폭 100% 단추로 지도 밑에 쌓여 있었습니다.
+ * 둘 다 가끔 쓰는 것인데 지도보다 자리를 많이 차지했습니다.
+ * ⚠ 지도 **위에** 얹으므로 배경이 반투명하면 나라 칠과 겹쳐 안 읽힙니다 —
+ *   불투명한 카드색에 테두리를 줍니다.
+ * ⚠ 손가락 과녁은 최소 36px 로 둡니다(아이콘 19px + 여백). */
+.mapicons{ position:absolute; right:8px; bottom:8px; display:flex; gap:6px; }
+.mapicon{ width:36px; height:36px; display:grid; place-items:center;
+          color:var(--ink-80); background:var(--canvas);
+          border:1px solid var(--hairline); border-radius:var(--r-sm);
+          box-shadow:var(--lift-1); cursor:pointer; }
+.mapicon:active{ background:var(--pearl); }
+/* 크게 보기로 들어가면 이 둘은 볼 일이 없습니다 — 닫기 단추가 따로 있습니다. */
+.mapwrap.big .mapicons{ display:none; }
+
 #mapclose{ position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px;
            z-index:1230; background:var(--canvas); border:1px solid var(--hairline);
            border-radius:var(--r-pill); padding:9px 16px; font-weight:600;

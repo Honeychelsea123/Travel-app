@@ -16,33 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b456';
-import { sb } from './db.js?v=b456';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b456';
-import { hm, todayYmd } from './calc.js?v=b456';
-import { starHtml, paintStars, markRated } from './stars.js?v=b456';
+import { $, esc } from './dom.js?v=b457';
+import { sb } from './db.js?v=b457';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b457';
+import { hm, todayYmd } from './calc.js?v=b457';
+import { starHtml, paintStars, markRated } from './stars.js?v=b457';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b456';
-import { cities, countryName } from './cities.js?v=b456';
-import { myRates, visited } from './rate.js?v=b456';
-import { plans } from './trip.js?v=b456';
-import { openCity } from './city.js?v=b456';
-import { loadCities, pick } from './citysearch.js?v=b456';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b456';
+import { rateHero, starValue } from './rateui.js?v=b457';
+import { cities, countryName } from './cities.js?v=b457';
+import { myRates, visited } from './rate.js?v=b457';
+import { plans } from './trip.js?v=b457';
+import { openCity } from './city.js?v=b457';
+import { loadCities, pick } from './citysearch.js?v=b457';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b457';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b456';
-/* personaBackTo 는 persona.js 것입니다. persona.js 는 home.js 를 import
-   하지 않으므로 고리가 안 생깁니다(확인함). */
-import { personaBackTo } from './persona.js?v=b456';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b457';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b456';
+import { drawReport } from './report.js?v=b457';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
-import { PERSONA_BG, personaAxes, personaRank, PERSONA16 } from './card.js?v=b456';
-import { openNew } from './newtrip.js?v=b456';
+/* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
+   b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
+import { PERSONA_BG } from './card.js?v=b457';
+import { openNew } from './newtrip.js?v=b457';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -61,11 +60,6 @@ function 지도열기(){
   mapBackTo('home');
   ctx.showApp('set');
   openMap();
-}
-function 성향열기(){
-  personaBackTo('home');
-  ctx.showApp('set');
-  $('openpersona')?.click();
 }
 let lastHomeSig = '';
 export function resetHomeSig(){ lastHomeSig = ''; }
@@ -866,29 +860,11 @@ async function renderFoot(통){
   box.appendChild(mm);
   box.appendChild(넘김);
 
-  /* ── 성향 한 줄(b398) ────────────────────────────────────────────────
-     앱 얼굴을 「나는 어떤 여행자일까」로 바꿔 놓고(b397) **정작 홈에는 내
-     유형이 어디에도 없었습니다.** 성향 화면은 프로필 → 스크롤 → 「여행 성향
-     보기」로 두 번 들어가야 나옵니다. 카드를 보고 온 사람이 그걸 찾을 리가
-     없습니다.
-
-     ⚠ **문턱은 성향 화면과 같은 5곳입니다.** 여기만 낮추면 홈에서는 유형이
-       보이는데 눌러 들어가면 "아직" 이 나옵니다.
-     ⚠ 못 받아왔으면 그냥 안 그립니다. 틀린 유형을 보여주는 것보다 낫습니다. */
-  const 매긴것 = 별점?.data || [];
-  if (매긴것.length >= 5){
-    const ax = personaAxes(매긴것, { cities });
-    const 유형 = PERSONA16[ax.code];
-    if (유형){
-      const 나라수 = new Set(매긴것
-        .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
-        .filter(Boolean)).size;
-      box.appendChild(줄만들기('내 성향',
-        `${esc(ax.code)} ${esc(유형.n)}`,
-        esc(personaRank(나라수)),
-        성향열기));
-    }
-  }
+  /* ⚠ **「내 성향」 한 줄을 뺐습니다(b457).** b398 에 넣었던 것입니다 —
+     그때는 성향이 프로필 깊숙이 있어서 홈에 길을 내야 했습니다.
+     이제 하단바에 **분석 탭**이 있고 그 첫 카드가 성향입니다. 홈에
+     한 줄로 또 두면 같은 것이 두 곳에 있고, 홈은 아래로 길어집니다.
+     홈은 「지금 무엇을 할까」, 분석은 「나는 어떤 사람인가」입니다. */
 
   /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }

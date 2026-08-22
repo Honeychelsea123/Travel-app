@@ -14,15 +14,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b456';
-import { sb } from './db.js?v=b456';
-import { cities, continentOf } from './cities.js?v=b456';
+import { $, esc } from './dom.js?v=b457';
+import { sb } from './db.js?v=b457';
+import { cities, continentOf } from './cities.js?v=b457';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b456';
+import { personaBackTo } from './persona.js?v=b457';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b456';
-import { UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b456';
+         AXIS_NAME } from './card.js?v=b457';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b457';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -110,7 +110,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b456"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b457"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -221,6 +221,27 @@ export async function loadAnal(){
   지도더.onclick = 지도열기;
   발.appendChild(지도더);
   box.appendChild(발);
+
+  /* ── ③ 기록 ── 지도 화면에서 옮겨왔습니다(b457) ───────────────────
+     ⚠ 지도 맨 아래에 있어서 대륙별·국가별을 다 지나야 나왔습니다.
+       「가장 먼 두 도시」·「별 다섯을 준 곳」은 지도의 부록이 아니라
+       **분석**입니다 — 이 탭의 성격에 맞습니다.
+     ⚠ 계산은 map.js 의 funRows 하나입니다. 여기서 다시 세면 지도와
+       분석이 다른 답을 내놓습니다.
+     ⚠ 매긴 것이 없으면 카드를 아예 안 답니다 — 「–」 여섯 줄은
+       빈 화면보다 나쁩니다(emptyDo 규칙과 같은 태도). */
+  const 별점표 = {};
+  매긴것.forEach(r => { 별점표[r.city_id] = r.stars; });
+  const 내도시 = (cities || []).filter(c => 별점표[c.id] != null);
+  if (내도시.length){
+    const 기록 = document.createElement('div');
+    기록.className = 'card quiet';
+    기록.innerHTML = '<h2>기록</h2>' + funRows(내도시, 별점표).map(([k, v]) =>
+      `<div class="row"><span class="label">${esc(k)}</span>
+         <span class="val" style="color:var(--ink); font-weight:600">${esc(v)}</span></div>`)
+      .join('');
+    box.appendChild(기록);
+  }
 }
 
 /* 지도를 여는 길. `openMap` 을 직접 import 하면 map.js ↔ anal.js 고리가

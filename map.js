@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo } from './dom.js?v=b456';
-import { openCity } from './city.js?v=b456';
-import { distKm } from './calc.js?v=b456';
-import { sb } from './db.js?v=b456';
-import { cities, countryName, continentOf } from './cities.js?v=b456';
-import { PERSONA_ICON, shareCard } from './card.js?v=b456';
+import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel } from './dom.js?v=b457';
+import { openCity } from './city.js?v=b457';
+import { distKm } from './calc.js?v=b457';
+import { sb } from './db.js?v=b457';
+import { cities, countryName, continentOf } from './cities.js?v=b457';
+import { PERSONA_ICON, shareCard } from './card.js?v=b457';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -373,13 +373,8 @@ export async function openCountries(){
  * ⚠ 여는 쪽이 어디서 왔는지 적어두고 닫는 쪽이 그리로 돌려보냅니다.
  *   spree.js · home.js 의 reviewBackTo 와 **같은 수법**입니다.
  * ⚠ 한 번 쓰고 바로 비웁니다 — 남기면 프로필에서 연 사람도 튕깁니다. */
-/* ── 뒤로 단추 글자(b455) ─────────────────────────────────────────────
- * ⚠ 「← 프로필」로 **못 박혀** 있었습니다. 지도·성향이 프로필 위에만
- *   얹히던 시절의 글입니다. 이제 홈·분석에서도 오므로 어디서 왔든
- *   「프로필」이라고 적혀 있어서 **틀린 말**이 됩니다.
- * ⚠ 여는 쪽이 적어둔 자리(왔던탭)를 그대로 씁니다 — 한 곳에서 정합니다. */
-const 탭이름 = { home:'홈', rate:'평가', anal:'분석', trips:'일정', set:'프로필' };
-export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }
+/* 뒤로 단추 글자는 dom.js 의 backLabel 하나입니다(b457) — 여기 있었는데
+   persona.js 가 import 없이 쓰다가 죽었습니다. 최하위로 내렸습니다. */
 let 왔던탭 = null;
 export function mapBackTo(tab){
   왔던탭 = tab;
@@ -459,9 +454,7 @@ export async function openMap(){
      </div>
      <div class="memo" style="text-align:center; margin-top:10px">
        ${UN_COUNTRIES}개국 중 <b>${gone.size}개국</b> · ${pct.toFixed(1)}%</div>
-     <div class="fp"><i style="width:${Math.max(pct, 1.2).toFixed(1)}%"></i></div>
-     <button class="ghost" id="fp_img" style="width:100%; margin-top:12px">
-       공유하기</button>`;
+     <div class="fp"><i style="width:${Math.max(pct, 1.2).toFixed(1)}%"></i></div>`;
 
   /* ── 발자국을 카드로 ──────────────────────────────────────────────
      **여기가 이 앱에서 제일 내보이고 싶은 그림입니다.** 성향 카드보다
@@ -522,8 +515,19 @@ export async function openMap(){
     : emptyDo('아직 다녀온 곳이 없어요.', null, null,
               '도시에 별점을 매기면 그 나라가 칠해져요.');
 
-  /* ── 기록 ── 숫자를 곱씹게 만드는 자리 ── */
-  const withPos = mapCities.filter(c => c.center_lat != null);
+  /* 「기록」은 분석 탭으로 옮겼습니다(b457) — 계산은 아래 funRows 하나입니다. */
+}
+
+/* ── 기록 ── 숫자를 곱씹게 만드는 자리 ────────────────────────────────
+ * ⚠ **분석 탭이 씁니다(b457).** 지도 화면 맨 아래에 있었습니다 — 지도를
+ *   열고 대륙별·국가별을 다 지나야 나와서 사실상 아무도 못 봤습니다.
+ *   「가장 먼 두 도시」 같은 것은 지도의 부록이 아니라 **분석**입니다.
+ * ⚠ **계산만 합니다.** 그리는 것은 부르는 쪽 몫입니다 — 여기서 DOM 까지
+ *   건드리면 지도와 분석이 같은 자리를 두고 다툽니다.
+ * ⚠ 도시 목록과 별점을 **받아서** 씁니다. 여기서 다시 받아오면 부르는
+ *   쪽이 이미 가진 것을 한 번 더 묻는 셈입니다. */
+export function funRows(도시들, 별점표){
+  const withPos = 도시들.filter(c => c.center_lat != null);
   const north = withPos.reduce((a, c) => !a || c.center_lat > a.center_lat ? c : a, null);
   const south = withPos.reduce((a, c) => !a || c.center_lat < a.center_lat ? c : a, null);
   /* 다녀온 도시 가운데 가장 멀리 떨어진 두 곳. 313곳이라 다 재도 금방입니다. */
@@ -534,9 +538,12 @@ export async function openMap(){
                        withPos[j].center_lat, withPos[j].center_lng);
       if (!far || d > far.d) far = { d, a: withPos[i], b: withPos[j] };
     }
-  const sv = Object.entries(stars).filter(([id]) => ids.has(id)).map(([, v]) => v);
+  const byC = {};
+  도시들.forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  const order = Object.entries(byC).sort((a, b) => b[1].length - a[1].length);
+  const sv = 도시들.map(c => 별점표[c.id]).filter(v => v != null);
   const avg = sv.length ? sv.reduce((a, b) => a + b, 0) / sv.length : null;
-  const rows = [
+  return [
     ['가장 많이 간 국가', order.length
       ? `${countryName[order[0][0]] || order[0][0]} · ${order[0][1].length}곳` : '–'],
     ['가장 북쪽', north ? north.name : '–'],
@@ -546,10 +553,6 @@ export async function openMap(){
     ['내 별점 평균', avg != null ? `★ ${avg.toFixed(2)}` : '–'],
     ['별 다섯을 준 곳', String(sv.filter(v => v === 5).length) + '곳'],
   ];
-  $('m_fun').innerHTML = rows.map(([k, v]) =>
-    `<div class="row"><span class="label">${esc(k)}</span>
-       <span class="val" style="color:var(--ink); font-weight:600">${esc(v)}</span></div>`)
-    .join('');
 }
 
 export function closeMap(fromPop){
