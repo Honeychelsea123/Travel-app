@@ -14,20 +14,20 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b461';
-import { sb } from './db.js?v=b461';
-import { cities, continentOf } from './cities.js?v=b461';
+import { $, esc } from './dom.js?v=b462';
+import { sb } from './db.js?v=b462';
+import { cities, continentOf } from './cities.js?v=b462';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b461';
+import { personaBackTo } from './persona.js?v=b462';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b461';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b461';
+         AXIS_NAME } from './card.js?v=b462';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b462';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b461';
-import { shareMate } from './mate.js?v=b461';
+import { similarPicks } from './rec.js?v=b462';
+import { shareMate } from './mate.js?v=b462';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -73,10 +73,12 @@ export async function loadAnal(){
   /* ⚠ **한 번에 다 받습니다(b461).** 「다음에 가볼 만한 곳」이 씨앗으로
      `want`(가보고 싶어요)도 씁니다 — 별점만 쓰면 아직 안 가본 결이
      통째로 빠집니다(rec.js). 그래서 `stars` 로 거르지 않고 전부 받아
-     여기서 나눕니다. 질의를 하나 더 붙이는 것보다 낫습니다. */
+     여기서 나눕니다. 질의를 하나 더 붙이는 것보다 낫습니다.
+     created_at 은 「성향이 변했어요」가 씁니다 — 시간순으로 갈라야
+     처음과 지금을 비교할 수 있습니다. */
   const [{ data: f }, 평가] = await Promise.all([
     sb.rpc('my_footprint'),
-    sb.from('city_ratings').select('city_id,stars,want')
+    sb.from('city_ratings').select('city_id,stars,want,created_at')
       .eq('user_id', ctx.me().id),
   ]);
 
@@ -125,7 +127,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b461"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b462"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -185,6 +187,55 @@ export async function loadAnal(){
   }
   box.appendChild(성향);
 
+  /* ── ② 성향이 변했어요 ── **이 앱만 할 수 있는 카드(b462)** ──────────
+     다른 앱은 「몇 개국」밖에 못 셉니다. 우리는 **축이 있어서** 처음과
+     지금을 같은 자로 잴 수 있습니다.
+     ⚠ 처음 20곳과 최근 20곳을 **같은 함수**(personaAxes)로 두 번 잽니다.
+       여기서 따로 세면 위 ① 카드의 축과 갈라집니다.
+     ⚠ 40곳부터 답니다. 20+20 이 겹치면 「처음」과 「지금」이 같은 자료가
+       되어 늘 「그대로예요」가 나옵니다 — 아무 말도 안 하는 카드입니다.
+     ⚠ 코드가 안 바뀌었어도 **축은 대개 움직입니다.** 그때는 코드 대신
+       제일 많이 변한 축 하나를 말합니다 — 「그대로예요」로 끝내면
+       40곳을 매긴 사람에게 할 말이 없어집니다. */
+  {
+    const 시간순 = 매긴것
+      .filter(r => r.created_at)
+      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    const N = 20;
+    if (시간순.length >= N * 2){
+      const 처음 = personaAxes(시간순.slice(0, N), { cities });
+      const 지금 = personaAxes(시간순.slice(-N), { cities });
+      const 차 = ['개척', '단골', '모험', '만족']
+        .map((k, i) => ({ 이름: AXIS_NAME[i], 값: 지금[k] - 처음[k] }))
+        .sort((a, b) => Math.abs(b.값) - Math.abs(a.값));
+
+      const 변화 = document.createElement('div');
+      변화.className = 'card quiet';
+      const 같음 = 처음.code === 지금.code;
+      변화.innerHTML =
+        '<h2>' + (같음 ? '성향은 그대로예요' : '성향이 변했어요') + '</h2>' +
+        `<div class="shift">
+           <span class="sc old">${esc(처음.code)}</span>
+           <span class="sarrow">→</span>
+           <span class="sc new">${esc(지금.code)}</span>
+         </div>
+         <div class="memo" style="text-align:center; margin-top:6px">
+           처음 매긴 ${N}곳과 최근 ${N}곳을 견줬어요</div>` +
+        '<div class="axbars">' + 차.map(d => {
+          const 부호 = d.값 > 0 ? '+' : '';
+          const 색 = d.값 === 0 ? 'var(--line)'
+                   : d.값 > 0 ? 'var(--k-see)' : 'var(--k-food)';
+          /* 막대는 **변화의 크기**입니다. 0~100 점 자체가 아니라 그 차이라,
+             절댓값을 그대로 폭으로 씁니다(최대 100). */
+          return `<div class="axrow"><span class="axn">${esc(d.이름)}</span>
+            <span class="axbar"><i style="width:${Math.min(Math.abs(d.값), 100)}%;
+              background:${색}"></i></span>
+            <span class="axv">${부호}${d.값}</span></div>`;
+        }).join('') + '</div>';
+      box.appendChild(변화);
+    }
+  }
+
   /* ── ② 발자국 ── 지도를 바로 보여줍니다 ──────────────────────────
      ⚠ 홈에도 지도가 있습니다(사용자 결정 — 중복을 알고 둡니다).
        been 도 홈에 지도가 있고 Visualize 탭에 더 많은 시각화가 있습니다. */
@@ -243,6 +294,34 @@ export async function loadAnal(){
   발.appendChild(지도더);
   box.appendChild(발);
 
+  /* ── ④ 별점 분포 ── 평균 하나로는 아무 말도 안 됩니다(b462) ──────────
+     「내 별점 평균 4.2」는 후한 사람인지 까다로운 사람인지를 못 가립니다.
+     ★5 를 몰아준 사람과 ★4 만 고르게 준 사람의 평균이 같을 수 있습니다.
+     ⚠ **칸은 내림입니다.** 별점이 0.5 단위라(rateui.js 의 starValue),
+       4.5 는 ★4 칸에 들어갑니다. 반올림으로 하면 4.5 가 ★5 로 올라가
+       아래 「기록」 카드의 「별 다섯을 준 곳」(정확히 5.0)과 어긋납니다.
+       한 화면에 두 숫자가 다르면 둘 다 못 믿게 됩니다.
+     ⚠ 0 곳인 칸도 그립니다 — 빼면 분포의 **모양**이 왜곡됩니다. */
+  if (매긴것.length){
+    const 통 = [0, 0, 0, 0, 0];
+    매긴것.forEach(r => {
+      const n = Math.floor(r.stars);
+      if (n >= 1 && n <= 5) 통[n - 1]++;
+    });
+    const 최대 = Math.max(...통, 1);
+    const 분포 = document.createElement('div');
+    분포.className = 'card quiet';
+    분포.innerHTML = '<h2>별점 분포</h2><div class="axbars">' +
+      [5, 4, 3, 2, 1].map(n => {
+        const c = 통[n - 1];
+        return `<div class="axrow"><span class="axn">★ ${n}</span>
+          <span class="axbar"><i style="width:${(c / 최대 * 100).toFixed(1)}%;
+            background:var(--k-stay)"></i></span>
+          <span class="axv">${c}곳</span></div>`;
+      }).join('') + '</div>';
+    box.appendChild(분포);
+  }
+
   /* ── ③ 기록 ── 지도 화면에서 옮겨왔습니다(b457) ───────────────────
      ⚠ 지도 맨 아래에 있어서 대륙별·국가별을 다 지나야 나왔습니다.
        「가장 먼 두 도시」·「별 다섯을 준 곳」은 지도의 부록이 아니라
@@ -285,6 +364,40 @@ export async function loadAnal(){
         ? `<div class="row"><span class="label">반대로 가보면
              <div class="memo">${esc(골라.opposite.join(' · '))}</div></span></div>` : '');
     box.appendChild(갈곳);
+
+  /* ── ⑦ 가보고 싶어요 ── 분석 탭에 **미래**가 없었습니다(b462) ─────────
+     성향·발자국·기록·별점은 전부 「해온 것」입니다. `want` 는 자료가
+     이미 있는데 이 앱 어디에서도 모아서 보여주지 않았습니다.
+     ⚠ **갔다 온 것과 나눕니다.** want 를 켠 뒤 별점을 매겼으면 그건
+       「이룬 것」입니다 — 아직 안 간 곳과 같이 세면 목록이 안 줄어들어
+       영영 못 지우는 숙제처럼 보입니다.
+     ⚠ 이름은 여덟 곳까지. 스물이 넘어가면 카드가 목록이 되고, 목록이
+       필요하면 평가 탭에 이미 있습니다. */
+  {
+    const 위시 = 전부.filter(r => r.want);
+    const 아직 = 위시.filter(r => r.stars == null);
+    if (위시.length){
+      const 이름 = 아직
+        .map(r => (cities || []).find(c => c.id === r.city_id))
+        .filter(Boolean).map(c => c.name);
+      const 이룸 = 위시.length - 아직.length;
+
+      const 위 = document.createElement('div');
+      위.className = 'card quiet';
+      위.innerHTML = '<h2>가보고 싶어요</h2>' +
+        `<div class="bignum">
+           <div class="bnrow"><b>${아직.length}</b><span>곳</span></div>
+           <div class="bnsub">더 가면 다 채워요${
+             이룸 ? ` · 이미 ${이룸}곳은 다녀왔어요` : ''}</div>
+         </div>` +
+        (이름.length
+          ? `<div class="memo" style="margin-top:8px">${
+              esc(이름.slice(0, 8).join(' · '))}${
+              이름.length > 8 ? ` 외 ${이름.length - 8}곳` : ''}</div>`
+          : '<div class="memo" style="margin-top:8px">적어둔 곳을 다 다녀왔어요.</div>');
+      box.appendChild(위);
+    }
+  }
   }
 
   /* ── ⑤ 친구와 궁합 ── 유입이 유입을 만드는 유일한 고리(b408) ──────

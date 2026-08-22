@@ -2633,6 +2633,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * 「채우고 싶다」가 생깁니다.
  * ⚠ 분모는 작고 흐리게 — 주인공은 **내가 채운 수**입니다.
  * ⚠ 자릿수가 늘어도(27 → 100) 가운데가 안 흔들리게 tabular-nums. */
+/* ── 성향이 변했어요(b462) ────────────────────────────────────────────
+ * 처음 코드 → 지금 코드. **화살표가 주인공**입니다 — 두 코드만 나란히
+ * 두면 무엇이 먼저인지 안 읽힙니다.
+ * ⚠ 옛 코드는 흐리게, 지금 코드는 진하게. 같은 무게로 두면 어느 쪽이
+ *   지금인지 매번 생각해야 합니다. */
+.shift{ display:flex; align-items:center; justify-content:center; gap:12px;
+        padding:8px 0 2px; }
+.sc{ font-size:calc(26px * var(--ts)); font-weight:800; letter-spacing:.5px; }
+.sc.old{ color:var(--ink-48); }
+.sc.new{ color:var(--primary); }
+.sarrow{ font-size:calc(20px * var(--ts)); color:var(--ink-48); }
+
 .bignum{ text-align:center; padding:6px 0 2px; }
 .bnrow{ display:flex; align-items:baseline; justify-content:center; gap:6px;
         font-variant-numeric:tabular-nums; }
