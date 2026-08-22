@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b465';
-import { sb } from './db.js?v=b465';
-import { cities, continentOf } from './cities.js?v=b465';
+import { $, esc } from './dom.js?v=b466';
+import { sb } from './db.js?v=b466';
+import { cities, continentOf } from './cities.js?v=b466';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b465';
+import { personaBackTo } from './persona.js?v=b466';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b465';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b465';
+         AXIS_NAME } from './card.js?v=b466';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b466';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b465';
+import { similarPicks } from './rec.js?v=b466';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b465';
-import { pickCity } from './citysearch.js?v=b465';
-import { shareMate } from './mate.js?v=b465';
+import { openNew } from './newtrip.js?v=b466';
+import { pickCity } from './citysearch.js?v=b466';
+import { shareMate } from './mate.js?v=b466';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -128,7 +128,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b465"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b466"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -296,29 +296,26 @@ export async function loadAnal(){
     });
     const 합 = 통.reduce((a, b) => a + b, 0) || 1;
     const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
-    /* ⚠ **범례가 「★5 3 · ★4 32」 라 3 과 32 가 무엇인지 몰랐습니다
-         (b465).** 점수인지 곳수인지 가릴 단서가 없었습니다.
-       ① 넓은 칸에는 **띠 안에 직접** 「★3 34곳」 을 적습니다. 색과
-          숫자가 붙어 있으면 범례를 왔다 갔다 안 해도 됩니다.
-       ② 좁아서 글자가 안 들어가는 칸(12% 미만)만 아래 범례로 남깁니다 —
-          다 적으면 넘쳐서 오히려 못 읽습니다.
-       ③ 범례에도 **곳** 을 붙입니다. 한 글자로 모호함이 사라집니다.
-       ⚠ 12% 는 눈으로 정한 값이 아닙니다 — 폰 폭에서 「★3 34곳」(6글자)이
-         들어가는 최소 폭입니다. 더 줄이면 글자가 잘립니다. */
-    const 좁음 = n => 통[n - 1] / 합 < 0.12;
+    /* ⚠ **띠 안에는 글자를 안 넣습니다(b466).** b465 에 넓은 칸만 안에
+         적고 좁은 칸은 아래로 뺐더니, 같은 것이 **두 자리에 나뉘어**
+         있어서 오히려 훑기가 어려웠습니다 — 어떤 것은 띠에서 읽고
+         어떤 것은 밑에서 찾아야 합니다. 다섯을 **한 줄에 모아** 둡니다.
+       ⚠ 띠는 색으로 **비율**만 말하고, 숫자는 전부 아래 범례가 맡습니다.
+         띠가 얇아도 되므로(26 → 14px) 자리도 덜 먹습니다.
+       ⚠ 범례에는 **곳** 을 붙입니다. 「★5 3」 은 3 이 점수인지 곳수인지
+         모호했습니다. 한 글자로 사라집니다.
+       ⚠ 0 곳인 칸도 흐리게 적습니다 — 「★1 을 준 적이 없다」도 분포의
+         일부입니다. 빼면 다섯 칸 중 몇 칸을 썼는지가 안 보입니다. */
     const 띠 = document.createElement('div');
     띠.className = 'stackwrap';
-    const 안보이는것 = [5, 4, 3, 2, 1].filter(n => 통[n - 1] && 좁음(n));
     띠.innerHTML = '<div class="stack">' +
       [5, 4, 3, 2, 1].map(n => 통[n - 1]
         ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
-             background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳">${
-             좁음(n) ? '' : `★${n} ${통[n - 1]}곳`}</i>` : '').join('') +
-      '</div>' + (안보이는것.length
-        ? '<div class="stackleg">' + 안보이는것.map(n =>
-            `<span><b style="background:${색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`)
-            .join('') + '</div>'
-        : '');
+             background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('') +
+      '</div><div class="stackleg">' +
+      [5, 4, 3, 2, 1].map(n =>
+        `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${색[n - 1]}"></b>` +
+        `★${n} ${통[n - 1]}곳</span>`).join('') + '</div>';
     기록.appendChild(띠);
 
     const 줄들 = document.createElement('div');
