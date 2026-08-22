@@ -14,15 +14,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b459';
-import { sb } from './db.js?v=b459';
-import { cities, continentOf } from './cities.js?v=b459';
+import { $, esc } from './dom.js?v=b460';
+import { sb } from './db.js?v=b460';
+import { cities, continentOf } from './cities.js?v=b460';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b459';
+import { personaBackTo } from './persona.js?v=b460';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b459';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b459';
+         AXIS_NAME } from './card.js?v=b460';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b460';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -110,7 +110,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b459"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b460"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -244,7 +244,7 @@ export async function loadAnal(){
     기록.className = 'card quiet';
     기록.innerHTML = '<h2>기록</h2>' + funRows(내도시, 별점표).map(([k, v]) =>
       `<div class="row"><span class="label">${esc(k)}</span>
-         <span class="val" style="color:var(--ink); font-weight:600">${esc(v)}</span></div>`)
+         <span class="val">${esc(v)}</span></div>`)
       .join('');
     box.appendChild(기록);
   }
