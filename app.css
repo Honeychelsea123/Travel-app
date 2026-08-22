@@ -1924,13 +1924,15 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
  * ⚠ 지도 **위에** 얹으므로 배경이 반투명하면 나라 칠과 겹쳐 안 읽힙니다 —
  *   불투명한 카드색에 테두리를 줍니다.
  * ⚠ 손가락 과녁은 최소 36px 로 둡니다(아이콘 19px + 여백). */
-/* ⚠ **오른쪽 아래에 있었는데 칠해진 나라를 덮었습니다(b458).** 27개국
-   가운데 일본·필리핀·인도네시아가 거기 있어서, 다녀온 표시 위에
-   단추가 얹혔습니다. 왼쪽 아래는 남태평양이라 어느 나라도 안 가립니다.
-   ⚠ 여백을 10px 로 넓힙니다 — 8px 이면 모서리 둥근 곳에 딱 붙어
-     밖으로 밀려난 것처럼 보입니다. */
-.mapicons{ position:absolute; left:10px; bottom:10px; display:flex; gap:6px; z-index:2; }
-.mapicon{ width:36px; height:36px; display:grid; place-items:center;
+/* ⚠ **왼쪽 아래로 옮겼다가 되돌립니다(b459).** 오른쪽 아래가 맞습니다 —
+   지도 컨트롤은 오른쪽 아래가 몸에 익은 자리입니다.
+   ⚠ **아이콘이 상자 밖으로 삐져나와 있었습니다.** 앱 전역 button 규칙에서
+     padding:10px 17px 를 물려받는데 상자는 36×36 고정이라, 안쪽이 2px 밖에
+     안 남아 가운데 정렬이 오른쪽 아래로 밀렸습니다. 재보니 왼쪽 18px ·
+     위 11px 어긋나 있었습니다. padding 을 0 으로 못 박습니다 —
+     크기를 고정한 아이콘 단추는 늘 이래야 합니다. */
+.mapicons{ position:absolute; right:10px; bottom:10px; display:flex; gap:6px; z-index:2; }
+.mapicon{ width:36px; height:36px; padding:0; display:grid; place-items:center;
           color:var(--ink-80); background:var(--canvas);
           border:1px solid var(--hairline); border-radius:var(--r-sm);
           box-shadow:var(--lift-1); cursor:pointer; }
@@ -2282,12 +2284,19 @@ body.noreorder .ev .grip{ display:none; }
      하단바가 통째로 이상해졌습니다. **블록을 교체할 때는 잘라낼 범위의
      첫 줄과 끝 줄을 눈으로 확인하십시오.** */
 .tabbar span{ font-size:max(11px, calc(11px * var(--ts))); letter-spacing:0; }
+/* ── 고른 칸을 애플처럼(b459) ─────────────────────────────────────────
+ * b443 에서 **흰색** 반투명(.34)을 깔았습니다. 그런데 바탕 유리도 흰색
+ * 반투명(.22)이라, 흰 위에 흰을 얹은 셈이라 거의 안 보였습니다.
+ * 애플 App Store 를 다시 보면 고른 칸이 **회색으로 눌려 들어가** 있고
+ * 아이콘·글자만 파랑입니다 — 바탕과 **다른 색**이라야 눌린 것이 보입니다.
+ * 회색은 iOS 의 fill 계열(120,120,128)에서 가져옵니다. 흰 배경에서는
+ * 옅은 회색으로, 사진 위에서는 살짝 어두운 판으로 읽혀 양쪽 다 삽니다. */
 .tabbar button.is-on{
   color:var(--primary); font-weight:600;
-  /* 바탕이 투명해졌으니(b443) 고른 칸도 **더 옅게** 둡니다. 진하면 유리
-     위에 딱지처럼 보입니다 — 애플도 살짝 눌러 넣은 정도입니다. */
-  background:rgba(255,255,255,.34);
+  background:rgba(120,120,128,.20);
 }
+/* 고른 칸의 그림도 굵게 — 색만 바꾸면 옆 칸과 무게가 같아 덜 갈립니다. */
+.tabbar button.is-on svg{ stroke-width:2.2; }
 /* 안 고른 칸 글자. 유리가 투명해진 만큼 **더 진해야** 사진 위에서도
    읽힙니다(b443). iOS 의 label 계열에 가깝게. */
 .tabbar button{ color:#33333a; }

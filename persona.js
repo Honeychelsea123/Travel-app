@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText, backLabel } from './dom.js?v=b458';
-import { sb } from './db.js?v=b458';
-import { cities, countryName, continentOf } from './cities.js?v=b458';
+import { $, esc, toast, copyText, backLabel } from './dom.js?v=b459';
+import { sb } from './db.js?v=b459';
+import { cities, countryName, continentOf } from './cities.js?v=b459';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b458';
+import { similarPicks } from './rec.js?v=b459';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b458';
-import { visited } from './rate.js?v=b458';
+import { mateCode, mateLink, mateHtml } from './mate.js?v=b459';
+import { visited } from './rate.js?v=b459';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b458';
+         shareCard, cardImage } from './card.js?v=b459';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -196,7 +196,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b458"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b459"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -247,11 +247,12 @@ async function drawPersona(s, ax, rates){
         <span class="val">${esc(code[3])}</span></div>
       <div class="row"><span class="label">매긴 도시</span>
         <span class="val">${s.cities}곳 · ${s.countries}개국 · ${s.continents}대륙</span></div>
-      <!-- 위 네 줄이 서로 다른 표본을 쓰므로 **그 표본을 밝힙니다.** 안 밝히면
-           "74곳이라며 왜 한 나라당 3.8곳이지" 하고 계산이 틀린 줄 압니다. -->
-      <div class="row"><span class="label">그중 해외
-        <div class="memo">단골력·모험력은 이 ${ax.해외}곳으로만 셉니다</div></span>
-        <span class="val">${ax.해외}곳</span></div>
+      <!-- ⚠ **「그중 해외」 줄을 뺐습니다(b459).** 74곳 중 50곳이 해외라는
+           것은 **우리가 계산하려고 쓰는 표본**이지, 읽는 사람에게 자랑도
+           재미도 아닙니다. 「단골력·모험력은 이 50곳으로만 셉니다」는
+           계산 방식을 변명하는 말이라 리포트를 방어적으로 만듭니다.
+           ⚠ ax.해외 자체는 그대로 씁니다 — 위 문턱 안내와 card.js 의
+             자가검사가 읽습니다. 화면에서만 뺍니다. -->
       <!-- ⚠ **긴 설명 문단을 뺐습니다(b454).** 「AI 가 아니라 위 숫자로만
            정합니다…」로 시작하던 네 줄입니다. 위 표에 축마다 근거(유명도
            평균·나라당 곳수·평균 거리·별점 평균)가 이미 적혀 있어서,
