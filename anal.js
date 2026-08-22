@@ -14,15 +14,20 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b460';
-import { sb } from './db.js?v=b460';
-import { cities, continentOf } from './cities.js?v=b460';
+import { $, esc } from './dom.js?v=b461';
+import { sb } from './db.js?v=b461';
+import { cities, continentOf } from './cities.js?v=b461';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b460';
+import { personaBackTo } from './persona.js?v=b461';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b460';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b460';
+         AXIS_NAME } from './card.js?v=b461';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b461';
+/* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
+   있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
+   다른 답을 내놓습니다. */
+import { similarPicks } from './rec.js?v=b461';
+import { shareMate } from './mate.js?v=b461';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -65,13 +70,18 @@ export async function loadAnal(){
   /* ⚠ **제 질의를 합니다.** `myRates` 는 평가 탭을 열어야 채워집니다 —
      분석 탭만 열고 온 사람에게는 비어 있습니다(home.js 의 renderFoot 에서
      겪은 것과 같은 함정). */
-  const [{ data: f }, 별점] = await Promise.all([
+  /* ⚠ **한 번에 다 받습니다(b461).** 「다음에 가볼 만한 곳」이 씨앗으로
+     `want`(가보고 싶어요)도 씁니다 — 별점만 쓰면 아직 안 가본 결이
+     통째로 빠집니다(rec.js). 그래서 `stars` 로 거르지 않고 전부 받아
+     여기서 나눕니다. 질의를 하나 더 붙이는 것보다 낫습니다. */
+  const [{ data: f }, 평가] = await Promise.all([
     sb.rpc('my_footprint'),
-    sb.from('city_ratings').select('city_id,stars')
-      .eq('user_id', ctx.me().id).not('stars', 'is', null),
+    sb.from('city_ratings').select('city_id,stars,want')
+      .eq('user_id', ctx.me().id),
   ]);
 
-  const 매긴것 = 별점?.data || [];
+  const 전부 = 평가?.data || [];
+  const 매긴것 = 전부.filter(r => r.stars != null);
   const 나라 = f?.countries ?? 0;
   const pct = Math.min(100, 나라 / UN_COUNTRIES * 100);
   box.innerHTML = '';
@@ -87,9 +97,14 @@ export async function loadAnal(){
      **무엇을 재서 나온 것인지** 안 읽힙니다. 아래 「내 발자국」 카드와도
      짝이 맞아야 합니다 — 카드마다 좌상단에 이름이 있어야 훑을 때 걸립니다. */
   성향.innerHTML = '<h2>내 여행 성향</h2>';
+  /* 아래 ⑤ 궁합 카드도 코드를 씁니다 — 여기서 한 번만 정하고 밖에서도
+     보이게 둡니다. 문턱을 못 넘었으면 null 이고, 그러면 궁합 카드도
+     안 답니다(보낼 것이 없습니다). */
+  let 내코드 = null, 내이름 = null;
   if (매긴것.length >= 문턱){
     const ax = personaAxes(매긴것, { cities });
     const 유형 = PERSONA16[ax.code] || { n:'여행자', d:'' };
+    내코드 = ax.code; 내이름 = 유형.n;
     const 나라수 = new Set(매긴것
       .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
       .filter(Boolean)).size;
@@ -110,7 +125,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b460"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b461"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -247,6 +262,48 @@ export async function loadAnal(){
          <span class="val">${esc(v)}</span></div>`)
       .join('');
     box.appendChild(기록);
+  }
+
+  /* ── ④ 다음에 가볼 만한 곳 ── 성향 리포트에서 꺼내옵니다(b461) ────
+     ⚠ 리포트 안에만 있으면 **성향 → 자세히 보기 → 스크롤** 세 번을
+       거쳐야 보입니다. 분석 탭은 「나는 어떤 사람인가」를 말하는 자리인데,
+       그 답이 **다음 행동**으로 이어지지 않으면 읽고 끝납니다.
+     ⚠ 두 줄을 **한 덩어리로 합치지 마십시오.** 「어울리는 곳」은
+       감추고-맞히기로 재서 정한 것이고 「반대로 가보면」은 정확도를
+       주장하지 않습니다. 합치면 뒤의 넷까지 맞다고 말하는 셈입니다
+       (rec.js 머리말).
+     ⚠ 씨앗이 없으면(아무것도 안 매겼으면) 카드를 아예 안 답니다. */
+  const 골라 = similarPicks(cities, 전부, { n: 4 });
+  if (골라.match.length || 골라.opposite.length){
+    const 갈곳 = document.createElement('div');
+    갈곳.className = 'card quiet';
+    갈곳.innerHTML = '<h2>다음에 가볼 만한 곳</h2>' +
+      (골라.match.length
+        ? `<div class="row"><span class="label">어울리는 곳
+             <div class="memo">${esc(골라.match.join(' · '))}</div></span></div>` : '') +
+      (골라.opposite.length
+        ? `<div class="row"><span class="label">반대로 가보면
+             <div class="memo">${esc(골라.opposite.join(' · '))}</div></span></div>` : '');
+    box.appendChild(갈곳);
+  }
+
+  /* ── ⑤ 친구와 궁합 ── 유입이 유입을 만드는 유일한 고리(b408) ──────
+     카드 한 장은 한 번 퍼지고 끝인데, 궁합은 링크를 받은 사람이 자기
+     카드를 만들어야 결과가 나오고 그 결과가 또 공유거리가 됩니다.
+     ⚠ 성향이 정해진 사람에게만 답니다 — 코드가 없으면 보낼 것이 없습니다.
+     ⚠ 보내는 절차는 mate.js 의 shareMate 하나입니다(성향 화면과 공용). */
+  if (내코드){
+    const 궁합 = document.createElement('div');
+    궁합.className = 'card quiet';
+    궁합.innerHTML = '<h2>친구와 궁합</h2>' +
+      '<div class="memo" style="margin:-4px 0 10px">링크를 보내면 친구도 자기 유형이 나오고, ' +
+      '둘이 얼마나 맞는지 같이 보여줍니다.</div>';
+    const 보내기 = document.createElement('button');
+    보내기.className = 'matebtn';
+    보내기.textContent = '궁합 링크 보내기';
+    보내기.onclick = () => shareMate(내코드, 내이름);
+    궁합.appendChild(보내기);
+    box.appendChild(궁합);
   }
 }
 

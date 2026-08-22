@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, toast, copyText, backLabel } from './dom.js?v=b460';
-import { sb } from './db.js?v=b460';
-import { cities, countryName, continentOf } from './cities.js?v=b460';
+import { $, esc, backLabel } from './dom.js?v=b461';
+import { sb } from './db.js?v=b461';
+import { cities, countryName, continentOf } from './cities.js?v=b461';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b460';
+import { similarPicks } from './rec.js?v=b461';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateLink, mateHtml } from './mate.js?v=b460';
-import { visited } from './rate.js?v=b460';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b461';
+import { visited } from './rate.js?v=b461';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b460';
+         shareCard, cardImage } from './card.js?v=b461';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -196,7 +196,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b460"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b461"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -334,16 +334,9 @@ async function drawPersona(s, ax, rates){
   if (임시) $('pgo').onclick = () => { closePersona(); ctx.showApp('rate'); };
   else {
     $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
-    /* 링크 하나를 보냅니다. **그림이 아니라 글입니다** — 받는 사람이
-       눌러서 자기 것을 만들어야 하므로 주소가 주인공입니다. */
-    $('p_mate').onclick = () => {
-      const url = mateLink(code);
-      const text = `내 여행 성향은 ${code} ${type.n}.\n너랑 잘 맞나 볼래?`;
-      if (navigator.share)
-        navigator.share({ title:'기로 · 여행 성향 궁합', text, url })
-          .catch(e => { if (e?.name !== 'AbortError') copyText(`${text}\n${url}`); });
-      else copyText(`${text}\n${url}`);
-    };
+    /* 링크 보내기는 mate.js 의 shareMate 하나입니다(b461) — 분석 탭도
+       같은 것을 씁니다. 여기 인라인으로 적어 두면 두 벌이 됩니다. */
+    $('p_mate').onclick = () => shareMate(code, type.n);
   }
 
   /* ── 친구가 보낸 궁합(b408) ────────────────────────────────────────

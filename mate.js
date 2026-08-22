@@ -18,8 +18,8 @@
  *   이미 압니다 — 카톡으로 받았으니까요.
  *
  * 층: dom.js · card.js 만 씁니다(계산도 화면도 순수). */
-import { esc } from './dom.js?v=b460';
-import { personaMatch, personaMateLine, PERSONA16 } from './card.js?v=b460';
+import { esc, copyText } from './dom.js?v=b461';
+import { personaMatch, personaMateLine, PERSONA16 } from './card.js?v=b461';
 
 const KEY = 't2:mate';
 const 코드꼴 = /^[FH][ML][ND][GP]$/;
@@ -69,4 +69,22 @@ export function mateHtml(mine, theirs){
     </div>
     <div class="mateline">${esc(personaMateLine(mine, theirs))}</div>
   </div>`;
+}
+
+/* ── 궁합 링크 보내기 ─────────────────────────────────────────────────
+ * **성향 화면과 분석 탭이 같이 씁니다(b461).** persona.js 안에 인라인으로
+ * 있던 것을 여기로 옮겼습니다 — 분석 탭에도 같은 단추가 생기면서 두 벌이
+ * 될 판이었습니다. 문구가 갈리면 같은 앱이 두 가지로 소개됩니다.
+ *
+ * ⚠ **그림이 아니라 글입니다.** 받는 사람이 눌러서 자기 것을 만들어야
+ *   결과가 나오므로 주소가 주인공입니다. 카드 그림을 보내면 거기서 끝납니다.
+ * ⚠ 공유창을 닫은 것은 실패가 아닙니다(AbortError) — 그때는 아무것도 안
+ *   합니다. 진짜 실패일 때만 주소를 복사해 둡니다. */
+export function shareMate(code, 이름){
+  const url  = mateLink(code);
+  const text = `내 여행 성향은 ${code} ${이름}.\n너랑 잘 맞나 볼래?`;
+  if (navigator.share)
+    navigator.share({ title:'기로 · 여행 성향 궁합', text, url })
+      .catch(e => { if (e?.name !== 'AbortError') copyText(`${text}\n${url}`); });
+  else copyText(`${text}\n${url}`);
 }
