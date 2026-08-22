@@ -14,20 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b462';
-import { sb } from './db.js?v=b462';
-import { cities, continentOf } from './cities.js?v=b462';
+import { $, esc } from './dom.js?v=b463';
+import { sb } from './db.js?v=b463';
+import { cities, continentOf } from './cities.js?v=b463';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b462';
+import { personaBackTo } from './persona.js?v=b463';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b462';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b462';
+         AXIS_NAME } from './card.js?v=b463';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b463';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b462';
-import { shareMate } from './mate.js?v=b462';
+import { similarPicks } from './rec.js?v=b463';
+/* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
+   고리가 안 생깁니다(확인함). */
+import { openNew } from './newtrip.js?v=b463';
+import { pickCity } from './citysearch.js?v=b463';
+import { shareMate } from './mate.js?v=b463';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -50,6 +54,20 @@ function 지도열기(){
   mapBackTo('anal');
   ctx.showApp('set', 'anal');
   $('openmap')?.click();
+}
+
+/* ── 추천 도시로 바로 여행 만들기(b463) ──────────────────────────────
+ * ⚠ **`#newcard` 는 탭 안에 있지 않습니다.** 화면 위에 얹히는 한 장이라
+ *   분석 탭에서 열어도 그대로 뜹니다(app.js 의 showApp 이 탭을 옮길 때
+ *   닫아 줍니다). 그래서 탭을 옮기지 않습니다 — 옮기면 하단바가 튀고
+ *   뒤로 갈 자리도 애매해집니다.
+ * ⚠ `openNew()` 가 도시 목록을 받아온 뒤라야 고를 수 있습니다. 그래서
+ *   **await 합니다** — 안 기다리면 pickCity 가 빈 화면을 채웁니다.
+ * ⚠ 고르는 절차는 citysearch.js 의 pickCity 하나입니다. 검색으로 고른
+ *   것과 여기서 고른 것이 **같은 상태**여야 다음 단계가 같이 돕니다. */
+async function 여행짜기(city){
+  await openNew();
+  pickCity(city);
 }
 
 /* 줄 하나. 홈·프로필과 **같은 부품**(.fprow)입니다 — 새로 만들면 리듬이
@@ -127,7 +145,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b462"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b463"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -351,19 +369,40 @@ export async function loadAnal(){
        감추고-맞히기로 재서 정한 것이고 「반대로 가보면」은 정확도를
        주장하지 않습니다. 합치면 뒤의 넷까지 맞다고 말하는 셈입니다
        (rec.js 머리말).
-     ⚠ 씨앗이 없으면(아무것도 안 매겼으면) 카드를 아예 안 답니다. */
+     ⚠ 씨앗이 없으면(아무것도 안 매겼으면) 카드를 아예 안 답니다.
+     ⚠⚠ **similarPicks 는 이름이 아니라 { city, seed, score } 를 줍니다.**
+       b461 에 `.join()` 을 바로 걸어서 화면에 `[object Object]` 가
+       넉 줄 찍혔습니다(b463 에서 잡음). persona.js 는 `.map(x => x.city.name)`
+       을 하고 있었는데 옮겨오면서 그 한 줄을 빠뜨렸습니다.
+     ⚠ 이름을 **누를 수 있게** 합니다(b463). 추천을 읽고 끝내면 분석 탭이
+       읽을거리로 남습니다 — 누르면 그 도시가 골라진 채로 여행 만들기가
+       열려서, 「분석 → 다음 행동」이 한 번에 이어집니다. */
   const 골라 = similarPicks(cities, 전부, { n: 4 });
   if (골라.match.length || 골라.opposite.length){
     const 갈곳 = document.createElement('div');
     갈곳.className = 'card quiet';
-    갈곳.innerHTML = '<h2>다음에 가볼 만한 곳</h2>' +
-      (골라.match.length
-        ? `<div class="row"><span class="label">어울리는 곳
-             <div class="memo">${esc(골라.match.join(' · '))}</div></span></div>` : '') +
-      (골라.opposite.length
-        ? `<div class="row"><span class="label">반대로 가보면
-             <div class="memo">${esc(골라.opposite.join(' · '))}</div></span></div>` : '');
+    갈곳.innerHTML = '<h2>다음에 가볼 만한 곳</h2>';
+
+    const 줄내기 = (제목, 목록) => {
+      if (!목록.length) return;
+      const 줄 = document.createElement('div');
+      줄.className = 'picks';
+      줄.innerHTML = `<span class="label">${esc(제목)}</span>`;
+      const 칩들 = document.createElement('div');
+      칩들.className = 'cchips';
+      목록.forEach(x => {
+        const b = document.createElement('button');
+        b.textContent = x.city.name;
+        b.onclick = () => 여행짜기(x.city);
+        칩들.appendChild(b);
+      });
+      줄.appendChild(칩들);
+      갈곳.appendChild(줄);
+    };
+    줄내기('어울리는 곳', 골라.match);
+    줄내기('반대로 가보면', 골라.opposite);
     box.appendChild(갈곳);
+  }
 
   /* ── ⑦ 가보고 싶어요 ── 분석 탭에 **미래**가 없었습니다(b462) ─────────
      성향·발자국·기록·별점은 전부 「해온 것」입니다. `want` 는 자료가
@@ -397,7 +436,6 @@ export async function loadAnal(){
           : '<div class="memo" style="margin-top:8px">적어둔 곳을 다 다녀왔어요.</div>');
       box.appendChild(위);
     }
-  }
   }
 
   /* ── ⑤ 친구와 궁합 ── 유입이 유입을 만드는 유일한 고리(b408) ──────

@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b462';
-import { sb } from './db.js?v=b462';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b463';
+import { sb } from './db.js?v=b463';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b462';
-import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b462';
+         cacheGet, cacheSet } from './net.js?v=b463';
+import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b463';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던
@@ -221,14 +221,14 @@ function useFree(){
   drawCountryNote();
 }
 
-export function pick(i){
-  if (i >= hitList.length){                    /* 친 그대로 쓰기 */
-    $('hits').classList.add('hide');
-    useFree();
-    $('f_country').focus();
-    return;
-  }
-  picked = hitList[i];
+/* ── 도시 하나를 고른 상태로 만들기 ─────────────────────────────────
+ * `pick(i)` 안에 있던 뒷부분입니다. **밖에서도 부릅니다(b463)** —
+ * 분석 탭의 추천 칩을 누르면 검색을 거치지 않고 바로 그 도시가
+ * 골라진 채로 여행 만들기가 열려야 합니다.
+ * ⚠ 화면 채우는 절차를 두 벌로 두면 한쪽만 고칩니다. */
+export function pickCity(c){
+  if (!c) return;
+  picked = c;
   $('freewrap').classList.add('hide');
   $('hits').classList.add('hide');
   $('f_q').classList.add('hide');
@@ -237,12 +237,22 @@ export function pick(i){
   /* 사진이 없는 도시가 아직 많습니다. 그때는 첫 글자를 큼직하게 둡니다 —
      빈 회색 네모만 있으면 안 불러온 것인지 없는 것인지 모릅니다. */
   const im = $('pc_img');
-  im.style.backgroundImage = picked.image_url ? `url("${picked.image_url}")` : '';
-  im.textContent = picked.image_url ? '' : picked.name.slice(0, 1);
-  $('p_name').textContent = picked.name;
+  im.style.backgroundImage = c.image_url ? `url("${c.image_url}")` : '';
+  im.textContent = c.image_url ? '' : c.name.slice(0, 1);
+  $('p_name').textContent = c.name;
   $('p_country').textContent =
-    `${flagOf(picked.country)} ${countryName[picked.country] || picked.country}`.trim();
-  $('p_note').textContent = picked.currency || '';
+    `${flagOf(c.country)} ${countryName[c.country] || c.country}`.trim();
+  $('p_note').textContent = c.currency || '';
+}
+
+export function pick(i){
+  if (i >= hitList.length){                    /* 친 그대로 쓰기 */
+    $('hits').classList.add('hide');
+    useFree();
+    $('f_country').focus();
+    return;
+  }
+  pickCity(hitList[i]);
 }
 
 $('f_q').addEventListener('input', () => {
