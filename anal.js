@@ -14,15 +14,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b457';
-import { sb } from './db.js?v=b457';
-import { cities, continentOf } from './cities.js?v=b457';
+import { $, esc } from './dom.js?v=b458';
+import { sb } from './db.js?v=b458';
+import { cities, continentOf } from './cities.js?v=b458';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b457';
+import { personaBackTo } from './persona.js?v=b458';
 import { personaAxes, personaRank, personaMates, PERSONA16,
-         AXIS_NAME } from './card.js?v=b457';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b457';
+         AXIS_NAME } from './card.js?v=b458';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b458';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -38,12 +38,12 @@ const 문턱 = 5;
  *   모읍니다. */
 function 성향열기(){
   personaBackTo('anal');
-  ctx.showApp('set');
+  ctx.showApp('set', 'anal');   /* 하단바는 분석에 남깁니다 */
   $('openpersona')?.click();
 }
 function 지도열기(){
   mapBackTo('anal');
-  ctx.showApp('set');
+  ctx.showApp('set', 'anal');
   $('openmap')?.click();
 }
 
@@ -110,7 +110,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b457"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b458"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     /* 머리를 눌러도 갑니다 — 아래 단추와 **같은 곳**입니다. 단추는
        「눌러도 된다」를 보이게 하는 것이고, 머리는 큰 과녁입니다. */
@@ -175,10 +175,16 @@ export async function loadAnal(){
        been 도 홈에 지도가 있고 Visualize 탭에 더 많은 시각화가 있습니다. */
   const 발 = document.createElement('div');
   발.className = 'card quiet';
-  발.appendChild(줄('내 발자국',
-    나라 ? `${UN_COUNTRIES}개국 중 ${나라}개국 · ${pct.toFixed(1)}%`
-         : '별점을 매기면 여기에 쌓여요',
-    '지도', 지도열기));
+  /* ⚠ **우상단 「지도 ›」를 없앴습니다(b458).** 그 줄과 미니맵과 카드
+     아래 「나라별로 자세히 보기 ›」가 **전부 같은 곳으로 갔습니다.**
+     한 카드에서 같은 데로 가는 길이 셋이면 무엇이 다른가 헷갈립니다.
+     성향 카드와 **같은 모양**으로 맞춥니다 — 제목은 h2, 가는 길은
+     카드 아래 단추 하나. 미니맵을 눌러도 가는 것은 남깁니다(성향의
+     머리와 같은 이유 — 보이는 단추 옆의 큰 과녁). */
+  발.innerHTML = `<h2>내 발자국</h2>
+    <div class="memo" style="margin:-4px 0 10px">${esc(나라
+      ? `${UN_COUNTRIES}개국 중 ${나라}개국 · ${pct.toFixed(1)}%`
+      : '별점을 매기면 여기에 쌓여요')}</div>`;
 
   const mm = document.createElement('div');
   mm.className = 'minimap';

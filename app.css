@@ -1924,7 +1924,12 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
  * ⚠ 지도 **위에** 얹으므로 배경이 반투명하면 나라 칠과 겹쳐 안 읽힙니다 —
  *   불투명한 카드색에 테두리를 줍니다.
  * ⚠ 손가락 과녁은 최소 36px 로 둡니다(아이콘 19px + 여백). */
-.mapicons{ position:absolute; right:8px; bottom:8px; display:flex; gap:6px; }
+/* ⚠ **오른쪽 아래에 있었는데 칠해진 나라를 덮었습니다(b458).** 27개국
+   가운데 일본·필리핀·인도네시아가 거기 있어서, 다녀온 표시 위에
+   단추가 얹혔습니다. 왼쪽 아래는 남태평양이라 어느 나라도 안 가립니다.
+   ⚠ 여백을 10px 로 넓힙니다 — 8px 이면 모서리 둥근 곳에 딱 붙어
+     밖으로 밀려난 것처럼 보입니다. */
+.mapicons{ position:absolute; left:10px; bottom:10px; display:flex; gap:6px; z-index:2; }
 .mapicon{ width:36px; height:36px; display:grid; place-items:center;
           color:var(--ink-80); background:var(--canvas);
           border:1px solid var(--hairline); border-radius:var(--r-sm);
@@ -2216,13 +2221,13 @@ body.noreorder .ev .grip{ display:none; }
      애플 탭바를 다시 보면 뒤 글자가 **읽힐 만큼 형태가 남아** 있습니다 —
      번지되 무엇인지는 보이는 상태, 그게 「굴절」로 읽히는 지점입니다.
      b437 에서 "애플은 흐림이 세다" 고 판단한 것이 **거꾸로였습니다.**
-     20 → 10(b444) → 6(b445) → **3px**(b446) 로 내려왔습니다.
-     3px 이면 뒤 글자가 거의 그대로 읽히고 **가장자리만 살짝 번집니다** —
-     유리라기보다 「아주 얇은 유리」에 가깝습니다. 여기가 이 방향의 끝입니다.
-     더 내리면 굴절이 아예 없어져 그냥 반투명 판이 됩니다. */
+     20 → 10(b444) → 6(b445) → 3(b446) → **2px**(b458) 로 내려왔습니다.
+     2px 이면 뒤 글자가 거의 그대로 읽히고 **가장자리만 아주 살짝 번집니다**.
+     여기가 이 방향의 사실상 끝입니다 — 더 내리면 굴절이 아예 없어져
+     그냥 반투명 판이 됩니다. */
   background:rgba(255,255,255,.22);
-  backdrop-filter:blur(3px) saturate(180%);
-  -webkit-backdrop-filter:blur(3px) saturate(180%);
+  backdrop-filter:blur(2px) saturate(180%);
+  -webkit-backdrop-filter:blur(2px) saturate(180%);
   border:1px solid rgba(255,255,255,.42);
   box-shadow:0 8px 32px rgba(16,20,35,.12),
              0 2px 8px rgba(16,20,35,.06);
