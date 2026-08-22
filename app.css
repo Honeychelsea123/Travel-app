@@ -2533,24 +2533,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .tripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
               color:var(--primary); }
 
-/* ── 분석 탭의 막대들(b447) ───────────────────────────────────────────
- * 성향 네 축과 대륙별 진행도가 **같은 모양**을 씁니다 — 둘 다 「이름 ·
- * 막대 · 숫자」 세 칸이라 따로 만들 이유가 없습니다.
- * ⚠ 숫자 칸은 폭을 못박습니다. 안 그러면 `7/48` 과 `19/44` 의 자릿수가
- *   달라 막대 끝이 들쭉날쭉합니다. */
-.axbars, .contbars{ margin-top:12px; display:flex; flex-direction:column; gap:7px; }
-.contbars{ margin-top:14px; }
-.axrow{ display:flex; align-items:center; gap:9px; }
-.axn{ flex:none; width:56px; font-size:calc(13px * var(--ts)); color:var(--dim); }
-.axbar{ flex:1; height:7px; border-radius:var(--r-pill);
-        background:var(--line); overflow:hidden; }
-.axbar > i{ display:block; height:100%; border-radius:var(--r-pill);
-            background:var(--primary); }
-.axv{ flex:none; width:46px; text-align:right; font-variant-numeric:tabular-nums;
-      font-size:calc(12px * var(--ts)); color:var(--ink-48); font-weight:600; }
-
-/* ── 분석 탭의 글자 크기를 한 벌로(b460) ─────────────────────────────
- * 한 탭 안에 「이름 + 값」 줄이 세 벌 있는데 크기가 다 달랐습니다:
+/* ── 분석 탭의 「이름 + 값」 줄 크기를 한 벌로(b460) ──────────────────
+ * 한 탭 안에 같은 꼴의 줄이 세 벌 있었는데 크기가 다 달랐습니다:
  *
  *   축 막대(개척력…)      이름 13 · 값 12
  *   대륙 막대(아시아…)     이름 13 · 값 12
@@ -2567,8 +2551,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   흐리기까지 하면 숫자가 안 읽힙니다. */
 #analbox .row .label{ font-size:var(--f-md); }
 #analbox .row .val{ font-size:var(--f-md); font-weight:600; color:var(--ink); }
-/* 축·대륙 값도 이름과 같은 13 으로. 12 로 둘 이유가 없었습니다. */
-.axv{ font-size:var(--f-md); }
 
 
 /* ── 분석 탭 머리 — 내가 누구인지 먼저(b448) ─────────────────────────
@@ -2639,23 +2621,78 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * 정확도를 주장하지 않는 것이라 그렇게 읽히면 안 됩니다(rec.js).
  * ⚠ 칩은 앱이 이미 쓰는 .cchips 를 그대로 씁니다(지도의 국가별 목록과
  *   같은 모양). 여기만 새로 만들면 같은 것이 두 모양이 됩니다. */
+/* ══ 분석 탭 · 카드 넷으로 합치면서 생긴 것들(b464) ═══════════════════
+ * 여덟 장에 2,324px(폰 3.2화면)이었습니다. 길이보다 **반복**이 문제였습니다 —
+ * 축 4 · 대륙 6 · 별점 5, 같은 모양 막대가 열아홉 줄이었고 제목만 달랐습니다.
+ * 카드를 넷으로 합치고, 막대는 **재는 것마다 다른 그림**으로 바꿉니다. */
+
+/* ── 성향 변화 배지 ── 카드 한 장(262px)이던 것 */
+/* ── 카드 안 소단락(b464) ─────────────────────────────────────────────
+ * 사용자 결정: **성향은 성향끼리, 발자국은 발자국끼리, 나머지 한 섹션.**
+ * 그래서 「기록」이 발자국 카드 안으로 들어왔는데, 그러면 카드 하나가
+ * 600px 가까이 됩니다. 선 하나와 소제목으로 **눈을 쉬게** 합니다 —
+ * 위는 「어디를 갔나」(지도·대륙), 아래는 「어떻게 갔나」(기록).
+ * ⚠ 소제목은 `.secttl`(13px 회색)을 그대로 씁니다. 카드 제목(h2 21px)과
+ *   확실히 갈려야 **한 카드 안의 아랫단**으로 읽힙니다. 여기만 새 크기를
+ *   만들면 앱 안에 제목 체계가 셋이 됩니다. */
+.subsec{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+.subsec > .secttl{ margin:0 0 10px; }
+
+.pbadge{ display:flex; align-items:center; justify-content:center; gap:5px;
+         margin:2px 0 10px; padding:6px 10px; border-radius:var(--r-pill);
+         background:var(--pearl); border:1px solid var(--line);
+         font-size:var(--f-sm); color:var(--dim); }
+.pbadge b{ font-weight:800; letter-spacing:.4px; color:var(--ink-48); }
+.pbadge b.on{ color:var(--primary); }
+.pbadge i{ font-style:normal; color:var(--ink-48); }
+
+/* ── 레이더 ── 축 넷. 서로 견주는 값이라 한 그림이 맞습니다 */
+.radar{ margin:2px 0 4px; }
+.radar svg{ display:block; width:100%; max-width:280px; margin-inline:auto;
+            height:auto; overflow:visible; }
+
+/* ── 단추 둘 나란히 ── 「자세히 보기」와 「궁합 보내기」 */
+.pbtns{ display:flex; gap:8px; }
+.pbtns .matebtn{ flex:1; }
+/* 두 단추가 같은 무게면 어느 쪽이 주인지 안 읽힙니다. 궁합은 곁들임입니다. */
+.matebtn.ghostbtn{ color:var(--dim); border-color:var(--line); }
+
+/* ── 대륙 칩 ── 막대 여섯 줄이던 것. 바로 위 지도가 이미 「어디」를
+     말하므로 여기 남는 것은 숫자뿐입니다. */
+.contchips > span{ display:inline-flex; align-items:baseline; gap:3px;
+                   border:1px solid var(--line); background:var(--canvas);
+                   border-radius:var(--r-pill); padding:4px 10px;
+                   font-size:var(--f-sm); color:var(--dim); }
+.contchips > span b{ font-weight:700; color:var(--primary); }
+.contchips > span i{ font-style:normal; font-size:var(--f-xs); color:var(--ink-48); }
+/* 한 곳도 안 간 대륙 — 빼지 않고 흐리게 둡니다. 「여기가 비었다」가
+   다음 여행을 만듭니다. */
+.contchips > span.off{ opacity:.5; }
+.contchips > span.off b{ color:var(--ink-48); }
+
+/* ── 별점 띠 ── 막대 다섯 줄이던 것. 여기서 궁금한 것은 **비율**입니다 */
+.stackwrap{ margin:2px 0 12px; }
+.stack{ display:flex; height:12px; border-radius:var(--r-pill); overflow:hidden;
+        background:var(--line); }
+.stack > i{ display:block; height:100%; }
+.stackleg{ display:flex; flex-wrap:wrap; gap:4px 12px; margin-top:8px; }
+.stackleg span{ display:inline-flex; align-items:center; gap:5px;
+                font-size:var(--f-sm); color:var(--dim);
+                font-variant-numeric:tabular-nums; }
+.stackleg span.off{ opacity:.45; }
+.stackleg b{ width:9px; height:9px; border-radius:3px; flex:none; }
+
+/* ── 추천 줄 꼬리표 ── 「9곳 중 6곳」처럼 몇 개만 보이는지 밝힙니다.
+     안 밝히면 적어둔 것이 사라진 줄 압니다. */
+.picks > .label i{ font-style:normal; margin-left:6px;
+                   font-size:var(--f-xs); color:var(--ink-48); }
 .picks + .picks{ margin-top:10px; padding-top:10px;
                  border-top:1px solid var(--divider-soft); }
 .picks > .label{ font-size:var(--f-md); color:var(--dim); }
 
-/* ── 성향이 변했어요(b462) ────────────────────────────────────────────
- * 처음 코드 → 지금 코드. **화살표가 주인공**입니다 — 두 코드만 나란히
- * 두면 무엇이 먼저인지 안 읽힙니다.
- * ⚠ 옛 코드는 흐리게, 지금 코드는 진하게. 같은 무게로 두면 어느 쪽이
- *   지금인지 매번 생각해야 합니다. */
-.shift{ display:flex; align-items:center; justify-content:center; gap:12px;
-        padding:8px 0 2px; }
-.sc{ font-size:calc(26px * var(--ts)); font-weight:800; letter-spacing:.5px; }
-.sc.old{ color:var(--ink-48); }
-.sc.new{ color:var(--primary); }
-.sarrow{ font-size:calc(20px * var(--ts)); color:var(--ink-48); }
-
-.bignum{ text-align:center; padding:6px 0 2px; }
+/* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
+   으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이
+   여전히 쓰므로 남깁니다 — 여기만 지웁니다. */
 .bnrow{ display:flex; align-items:baseline; justify-content:center; gap:6px;
         font-variant-numeric:tabular-nums; }
 .bnrow b{ font-size:calc(46px * var(--ts)); font-weight:800; line-height:1;

@@ -15,9 +15,9 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf } from './dom.js?v=b463';
-import { sb } from './db.js?v=b463';
-import { fail, NOROW } from './net.js?v=b463';
+import { $, esc, avatarOf } from './dom.js?v=b464';
+import { sb } from './db.js?v=b464';
+import { fail, NOROW } from './net.js?v=b464';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
