@@ -2760,3 +2760,24 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .swdots i{ width:5px; height:5px; border-radius:50%; background:var(--line);
            transition:background var(--t-fast) var(--ease); }
 .swdots i.on{ background:var(--primary); }
+
+/* ── 탭이 바뀔 때 새 화면이 밀려 들어옵니다(b470) ─────────────────────
+ * ⚠ **b469 에 「손가락을 따라 끌리게」를 만들었다가 되돌렸습니다.** 두 화면을
+ *   position:fixed 로 겹쳐 매 프레임 옮겼더니 실기기에서 두 화면이 동시에
+ *   보이고 심하게 버벅였습니다. 프로필의 여행 목록처럼 무거운 화면을 매
+ *   프레임 옮길 일이 아니었습니다.
+ * ⚠ 여기서는 **끝난 뒤 한 번만** 돕니다. 손가락을 따라오지는 않지만
+ *   「뚝 끊김」은 사라지고, 두 화면이 겹칠 상태가 아예 없습니다.
+ * ⚠ 거리는 화면 폭이 아니라 **7%** 입니다. 끝에서 끝까지 밀면 그만큼 오래
+ *   걸리고, 탭은 하루에도 수십 번 누르는 곳이라 길면 곧 거슬립니다.
+ *   살짝 밀리면서 흐려지는 것만으로 「옆에서 왔다」가 읽힙니다.
+ * ⚠ `will-change` 를 안 답니다 — 0.18초짜리라 미리 층을 만드는 비용이
+ *   이득보다 큽니다. */
+@keyframes slideinR{ from{ opacity:0; transform:translateX(7%);  } to{ opacity:1; transform:none; } }
+@keyframes slideinL{ from{ opacity:0; transform:translateX(-7%); } to{ opacity:1; transform:none; } }
+.slidein-r{ animation:slideinR .18s cubic-bezier(.22,.61,.36,1); }
+.slidein-l{ animation:slideinL .18s cubic-bezier(.22,.61,.36,1); }
+/* 움직임을 줄이라고 한 사람에게는 안 돕니다(자바스크립트에서도 한 번 더 막습니다). */
+@media (prefers-reduced-motion: reduce){
+  .slidein-r, .slidein-l{ animation:none; }
+}

@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b469';
+import { $ } from './dom.js?v=b470';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -56,7 +56,7 @@ function ownedByOthers(el, root){
    없어 아무 일도 안 일어납니다. 보는 사람에게는 다 같은 화면인데 위쪽 절반만
    되는 셈이라 "될 때도 있고 안 될 때도 있다"로 느껴집니다. 실제로 그랬습니다. */
 export function onSwipeX(el, { onLeft, onRight, active = () => true,
-                               skip = () => false, onMove, onEnd }){
+                               skip = () => false }){
   let x0 = 0, y0 = 0, t0 = 0, id = null, live = false, dead = false;
 
   el.addEventListener('pointerdown', e => {
@@ -73,12 +73,6 @@ export function onSwipeX(el, { onLeft, onRight, active = () => true,
     live = false; dead = false;
   });
 
-  /* ── 끌려오게 하려면 「지금 얼마나 갔는지」를 알려줘야 합니다(b469) ──
-     `onMove(dx)` 를 안 넘기면 예전 그대로 — 끝날 때 한 번만 부릅니다.
-     ⚠ 세로로 흘러 포기(dead)한 순간에도 **한 번은 알려야** 합니다. 안 그러면
-       화면이 끌린 자리에 그대로 굳습니다. */
-  const 그만 = () => { if (live) onEnd?.(false, 0); };
-
   el.addEventListener('pointermove', e => {
     if (e.pointerId !== id || dead) return;
     const dx = e.clientX - x0, dy = e.clientY - y0;
@@ -92,8 +86,7 @@ export function onSwipeX(el, { onLeft, onRight, active = () => true,
       live = true;
     }
     /* 세로로 많이 흘렀으면 쓸기가 아니라 비스듬한 스크롤입니다. */
-    if (Math.abs(dy) > 60){ dead = true; 그만(); return; }
-    onMove?.(dx);
+    if (Math.abs(dy) > 60) dead = true;
   });
 
   const end = e => {
@@ -105,16 +98,11 @@ export function onSwipeX(el, { onLeft, onRight, active = () => true,
        거리만 보면 급하게 넘기는 사람이 매번 실패합니다. */
     const far  = Math.abs(dx) >= 64;
     const fast = Math.abs(dx) >= 28 && dt > 0 && Math.abs(dx) / dt > 0.45;
-    const 넘김 = far || fast;
-    onEnd?.(넘김, dx);
-    if (!넘김) return;
+    if (!far && !fast) return;
     (dx < 0 ? onLeft : onRight)?.();
   };
   el.addEventListener('pointerup', end);
-  el.addEventListener('pointercancel', e => {
-    if (e.pointerId !== id) return;
-    id = null; 그만();
-  });
+  el.addEventListener('pointercancel', e => { if (e.pointerId === id) id = null; });
 }
 
 /* ── 두 번 눌러 지우기 ───────────────────────────────────────────────

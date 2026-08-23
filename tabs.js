@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b469';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b469';
-import { onSwipeX } from './ui.js?v=b469';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b469';
+import { $ } from './dom.js?v=b470';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b470';
+import { onSwipeX } from './ui.js?v=b470';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b470';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -139,96 +139,12 @@ $('tstrip').addEventListener('click', e => {
      좁은 띠를 정확히 짚어야 한다면 그건 같은 앱이 두 규칙으로 도는 것입니다.
      **여행 밖이면 화면 전체가 앱 탭 차례입니다.**
      (여행 안에서는 위쪽 쓸기가 구역을 넘기고, 하단바에서만 앱 탭이 넘어갑니다.) */
-  /* ── 손가락을 따라 끌려오게(b469) ────────────────────────────────────
-   * 전에는 손을 뗀 **뒤에** 화면이 뚝 바뀌었습니다. 넘어가는 동안 아무것도
-   * 안 움직이니 "밀었더니 바뀌더라"이지 "밀어서 옮겼다"가 아닙니다.
-   *
-   * 두 화면을 같이 끕니다:
-   *   · 지금 화면 — 흐름에 그대로 둔 채 `transform` 만. 세로 스크롤 위치가
-   *     안 날아갑니다.
-   *   · 이웃 화면 — `position:fixed` 로 옆에 세웁니다. 흐름에 넣으면 문서가
-   *     두 배로 길어져 세로 스크롤이 튑니다.
-   *
-   * ⚠ **아직 안 그려진 이웃은 안 끕니다.** 한 번도 연 적 없는 탭은 비어
-   *   있어서, 끌면 빈 화면이 따라 들어옵니다. 그때는 예전처럼 뚝 바꿉니다 —
-   *   showApp 이 내용을 채우고 나서 보이는 편이 낫습니다.
-   * ⚠ 「덜 움직이기」를 켠 사람에게는 안 끕니다(prefers-reduced-motion).
-   * ⚠ 끝 탭에서 더 밀면 이웃이 없습니다. 그때는 아무것도 안 끕니다 —
-   *   빈 자리가 따라 들어오면 "넘어갈 것이 있다"고 거짓말하는 셈입니다. */
-  const 화면id = { home:'homeview', rate:'rateview', anal:'analview',
-                   trips:'listview', set:'setview' };
-  const 덜움직 = matchMedia('(prefers-reduced-motion: reduce)');
-  let 끌기 = null;
-
-  const 준비 = 방향 => {
-    if (덜움직.matches) return null;
-    const o = order(), i = o.indexOf(ctx.appTab());
-    if (i < 0) return null;
-    const 다음 = o[i + 방향];
-    if (!다음) return null;
-    const 지금el = $(화면id[o[i]]), 이웃el = $(화면id[다음]);
-    if (!지금el || !이웃el) return null;
-    /* 비어 있으면(한 번도 안 연 탭) 끌지 않습니다. */
-    if (!이웃el.querySelector('*')) return null;
-    이웃el.classList.remove('hide');
-    이웃el.style.cssText =
-      'position:fixed; inset:0; z-index:5; overflow:hidden;' +
-      'background:var(--parchment); padding:var(--sat) var(--s-sm) 0;' +
-      'will-change:transform; contain:paint;';
-    지금el.style.willChange = 'transform';
-    document.body.style.overflowX = 'hidden';
-    return { 지금el, 이웃el, 방향, 다음 };
-  };
-
-  const 놓기 = (el, x) => { el.style.transform = x ? `translateX(${x}px)` : ''; };
-
-  const 마무리 = (넘길까) => {
-    if (!끌기) return;
-    const { 지금el, 이웃el, 방향, 다음 } = 끌기;
-    끌기 = null;
-    const w = innerWidth;
-    const 끝 = 넘길까 ? (방향 > 0 ? -w : w) : 0;
-    /* 남은 거리를 스스로 굴러가게 합니다 — 손을 뗀 자리에서 뚝 끊기지 않게. */
-    [지금el, 이웃el].forEach(el =>
-      el.style.transition = 'transform .22s cubic-bezier(.22,.61,.36,1)');
-    놓기(지금el, 끝);
-    놓기(이웃el, 방향 > 0 ? w + 끝 : -w + 끝);
-    const 치우기 = () => {
-      [지금el, 이웃el].forEach(el => {
-        el.style.transition = ''; el.style.transform = ''; el.style.willChange = '';
-      });
-      이웃el.style.cssText = '';
-      document.body.style.overflowX = '';
-      /* ⚠ 화면을 바꾸는 것은 **맨 마지막**입니다. 먼저 바꾸면 이웃이 제자리로
-         튀었다가 showApp 이 다시 그리는 것이 한 프레임 보입니다. */
-      if (넘길까) ctx.showApp(다음);
-    };
-    /* transitionend 를 못 받는 경우(탭 전환·백그라운드)를 대비해 시간도 겁니다. */
-    let 끝났나 = false;
-    const 한번 = () => { if (끝났나) return; 끝났나 = true; 치우기(); };
-    지금el.addEventListener('transitionend', 한번, { once:true });
-    setTimeout(한번, 280);
-  };
-
   onSwipeX(document, {
     active: () => !$('appbar').classList.contains('hide') &&
                   !document.body.classList.contains('sheeton') &&
                   !document.body.classList.contains('intrip'),
-    onMove: dx => {
-      if (!끌기) 끌기 = 준비(dx < 0 ? 1 : -1);
-      if (!끌기) return;
-      const w = innerWidth;
-      /* 끝에서 더 밀리지 않게 가둡니다 — 화면이 화면 밖으로 나가면 뒤에
-         아무것도 없는 회색만 보입니다. */
-      const d = Math.max(-w, Math.min(w, dx));
-      놓기(끌기.지금el, d);
-      놓기(끌기.이웃el, 끌기.방향 > 0 ? w + d : -w + d);
-    },
-    onEnd: 넘길까 => 마무리(넘길까),
-    /* 끌기가 붙어 있으면 화면 바꾸는 것은 마무리가 맡습니다. 여기서 또
-       부르면 두 번 넘어갑니다. */
-    onLeft:  () => { if (!끌기) step(1); },
-    onRight: () => { if (!끌기) step(-1); },
+    onLeft:  () => step(1),
+    onRight: () => step(-1),
   });
   /* 여행 안에서는 위가 구역 차례라 화면 전체로는 못 겁니다. 바만 따로 듣습니다. */
   onSwipeX($('appbar'), {
