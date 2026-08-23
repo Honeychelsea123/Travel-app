@@ -18,10 +18,10 @@
  * 누르는 손잡이는 app.js 의 날짜 줄에 있어 `setCatsOpen` 으로 넣습니다.
  *
  * 층: dom.js · calc.js · trip.js 와 이미 떼어낸 planmap.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b477';
-import { hop } from './calc.js?v=b477';
-import { plans, legs, transitLines, catFilter, setCatFilter } from './trip.js?v=b477';
-import { drawPlanMap, splitParts } from './planmap.js?v=b477';
+import { $, esc } from './dom.js?v=b478';
+import { hop } from './calc.js?v=b478';
+import { plans, legs, transitLines, catFilter, setCatFilter } from './trip.js?v=b478';
+import { drawPlanMap, splitParts } from './planmap.js?v=b478';
 
 let ctx = { drawDays: () => {}, drawPlans: () => {} };
 export function setPlanLineCtx(o){ ctx = { ...ctx, ...o }; }

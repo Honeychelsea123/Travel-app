@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b477';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b477';
-import { onSwipeX } from './ui.js?v=b477';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b477';
+import { $ } from './dom.js?v=b478';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b478';
+import { onSwipeX } from './ui.js?v=b478';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b478';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -59,6 +59,30 @@ export function showTab(t){
 
   for (const ids of Object.values(TABS))
     for (const id of ids) $(id).classList.toggle('hide', !on.has(id));
+
+  /* ── 구역이 바뀔 때 밀려 들어옵니다(b478) ──────────────────────────
+     ⚠ **여기는 덱을 못 씁니다.** 앱 탭 다섯은 화면 하나씩이라 가로로
+       나란히 놓을 수 있었는데, 여행 구역은 **카드 묶음**입니다. 게다가
+       `card-trash` 는 일정·지출·준비 **세 구역이 같이 씁니다** — 같은
+       DOM 을 세 칸에 둘 수는 없습니다. 덱으로 만들려면 구역별 컨테이너를
+       만들고 공유 카드를 어떻게 할지부터 정해야 합니다(따로 볼 일).
+     ⚠ 그래서 **끝난 뒤 한 번** 밀려 들어오게만 합니다. 손가락을 따라오지는
+       않지만 뚝 끊기지는 않습니다. 방향은 위에서 이미 잰 `back` 을 씁니다.
+     ⚠ 폼(plancard 등)은 뺍니다 — 열려 있던 폼이 다시 미끄러져 들어오면
+       방금 쓰던 칸이 움직여서 거슬립니다. */
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const 결 = back ? 'slidein-l' : 'slidein-r';
+    for (const id of on){
+      if (FORMS.includes(id)) continue;
+      const el = $(id); if (!el) continue;
+      el.classList.remove('slidein-l', 'slidein-r');
+      void el.offsetWidth;                 /* 연속으로 눌러도 다시 돌게 */
+      el.classList.add(결);
+      const 떼기 = () => el.classList.remove('slidein-l', 'slidein-r');
+      el.addEventListener('animationend', 떼기, { once:true });
+      setTimeout(떼기, 260);               /* animationend 가 안 올 때를 위해 */
+    }
+  }
 
   $('editcard').classList.add('hide');
   document.querySelectorAll('#tstrip button').forEach(b =>
