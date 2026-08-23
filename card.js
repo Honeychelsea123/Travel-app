@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b484';
+import { $, esc, toast } from './dom.js?v=b485';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b484';
+import { distKm, pScale, SEOUL } from './calc.js?v=b485';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -309,7 +309,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b484`;
+    img.src = `./persona/${code}.png?v=b485`;
   });
 }
 
@@ -533,6 +533,147 @@ const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r);
  *
  * 테두리·머리말·바닥글은 흐름에 안 넣습니다. 종이의 일부라 늘 같은 자리에
  * 있어야 합니다. */
+
+/* ══ 대륙 체크 카드(b485) ══════════════════════════════════════════════
+ * 인스타에 도는 「EUROPE places to visit — check off the cities you've been to」
+ * 템플릿을 보고 만듭니다. 한 장에 10.6만 개 스토리가 붙었습니다.
+ *
+ * **그 힘은 고정된 목록에서 나옵니다.** 모두가 같은 24곳을 보기 때문에
+ * 「너 몇 개?」가 성립합니다. 우리 발자국 지도는 사람마다 그림이 달라서
+ * 나란히 놓아도 견줄 수가 없었습니다 — 27개국이라는 숫자 하나로는 너무
+ * 납작합니다.
+ *
+ * ⚠ **우리 쪽 강점은 자동입니다.** 저 템플릿은 비행기 이모지를 손으로
+ *   얹어야 해서 삐뚤빼뚤합니다. 우리는 매긴 것으로 채웁니다.
+ * ⚠ **안 간 칸을 지우지 않습니다.** 빈 칸이 있어야 「가야지」가 되고,
+ *   받은 사람도 자기 것을 세어 보고 싶어집니다. 채운 것만 보이면
+ *   그냥 자랑이고, 자랑은 한 번 보고 끝입니다.
+ * ⚠ 사진은 안 씁니다. 24장을 한 장에 욱여넣으면 어수선하고, 못 받은
+ *   도시가 섞이면 칸마다 다른 얼굴이 됩니다. 이름과 표시만으로 충분합니다 —
+ *   원본 템플릿도 그림은 거들 뿐 읽는 것은 이름입니다. */
+async function drawCheck(s, W, H, F){
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const 여백 = W * .018, 둥금 = W * .046;
+
+  g.fillStyle = P16.판; g.fillRect(0, 0, W, H);
+  g.fillStyle = P16.카드;
+  rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.fill();
+  g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
+
+  const cx = W / 2;
+  let y = H * .085;
+
+  /* ── 머리 ── 하트·제목·안내. 원본의 리듬을 따릅니다. */
+  g.textAlign = 'center';
+  g.fillStyle = P16.주황; g.font = F(400, W * .050);
+  g.fillText('♥', cx, y); y += H * .048;
+
+  g.fillStyle = P16.잉크; g.font = F(800, W * .086);
+  /* 글자 사이를 벌립니다 — 원본이 그렇고, 벌려야 제목이 표지처럼 읽힙니다. */
+  {
+    const 자간 = W * .012, 글 = s.title.toUpperCase();
+    const 폭 = [...글].reduce((a, ch) => a + g.measureText(ch).width + 자간, -자간);
+    let x = cx - 폭 / 2;
+    g.textAlign = 'left';
+    for (const ch of 글){ g.fillText(ch, x, y); x += g.measureText(ch).width + 자간; }
+    g.textAlign = 'center';
+  }
+  y += H * .030;
+
+  /* 가는 선 두 개 사이에 부제 — 원본의 「places to visit」 자리입니다. */
+  g.font = F(400, W * .032); g.fillStyle = P16.흐림;
+  {
+    const 부 = s.sub, 폭 = g.measureText(부).width, 선 = W * .140;
+    g.fillText(부, cx, y);
+    g.strokeStyle = P16.점선; g.lineWidth = Math.max(1, W * .0012);
+    g.beginPath();
+    g.moveTo(cx - 폭 / 2 - W * .030 - 선, y - W * .010);
+    g.lineTo(cx - 폭 / 2 - W * .030, y - W * .010);
+    g.moveTo(cx + 폭 / 2 + W * .030, y - W * .010);
+    g.lineTo(cx + 폭 / 2 + W * .030 + 선, y - W * .010);
+    g.stroke();
+  }
+  y += H * .034;
+
+  g.font = F(600, W * .024); g.fillStyle = P16.아주흐림;
+  {
+    const 글 = '다녀온 곳에 표시했어요', 자간 = W * .004;
+    const 폭 = [...글].reduce((a, ch) => a + g.measureText(ch).width + 자간, -자간);
+    let x = cx - 폭 / 2; g.textAlign = 'left';
+    for (const ch of 글){ g.fillText(ch, x, y); x += g.measureText(ch).width + 자간; }
+    g.textAlign = 'center';
+  }
+  y += H * .036;
+
+  /* ── 칸 ── 두 줄 × 열둘. 원본은 네 열인데 한글 도시 이름은 네 열에
+       안 들어갑니다(「이스탄불」이 잘립니다). 세 열이 한글에 맞습니다. */
+  const 열 = 3;
+  const 줄 = Math.ceil(s.items.length / 열);
+  const 좌 = W * .085, 우 = W - 좌;
+  const 칸폭 = (우 - 좌) / 열;
+  const 칸높 = (H * .880 - y) / 줄;
+  const 박스 = W * .030;
+
+  s.items.forEach((it, i) => {
+    const c = i % 열, r = Math.floor(i / 열);
+    const x = 좌 + c * 칸폭;
+    const cy = y + r * 칸높;
+    const 간 = it.on;
+
+    /* 표시. 간 곳은 채운 네모에 흰 체크, 안 간 곳은 빈 네모 */
+    g.lineWidth = Math.max(1.5, W * .0022);
+    if (간){
+      g.fillStyle = P16.주황;
+      rrect(g, x, cy - 박스 * .78, 박스, 박스, W * .006); g.fill();
+      g.strokeStyle = '#FFFFFF'; g.lineWidth = Math.max(2, W * .0032);
+      g.beginPath();
+      g.moveTo(x + 박스 * .24, cy - 박스 * .30);
+      g.lineTo(x + 박스 * .43, cy - 박스 * .13);
+      g.lineTo(x + 박스 * .78, cy - 박스 * .56);
+      g.stroke();
+    } else {
+      g.strokeStyle = P16.점선;
+      rrect(g, x, cy - 박스 * .78, 박스, 박스, W * .006); g.stroke();
+    }
+
+    /* 이름. **안 간 곳도 읽힐 만큼은 진하게** 둡니다 — 너무 흐리면 무엇이
+       남았는지 안 보이고, 그러면 「가야지」가 안 생깁니다. */
+    g.textAlign = 'left';
+    g.fillStyle = 간 ? P16.잉크 : P16.흐림;
+    g.font = F(간 ? 700 : 500, W * .029);
+    let 이름 = it.name;
+    const 여유 = 칸폭 - 박스 - W * .028;
+    while (g.measureText(이름).width > 여유 && 이름.length > 2)
+      이름 = 이름.slice(0, -1);
+    if (이름 !== it.name) 이름 += '…';
+    g.fillText(이름, x + 박스 + W * .014, cy);
+  });
+  g.textAlign = 'center';
+
+  /* ── 셈 ── 맨 아래 한 줄. 이것이 곧 「너 몇 개?」의 답입니다. */
+  {
+    const 간수 = s.items.filter(x => x.on).length;
+    const by = H * .932;
+    g.font = F(800, W * .058); g.fillStyle = P16.주황;
+    const a = `${간수}`, b = ` / ${s.items.length}`;
+    g.font = F(800, W * .058); const aw = g.measureText(a).width;
+    g.font = F(700, W * .034); const bw = g.measureText(b).width;
+    const 시작 = cx - (aw + bw) / 2;
+    g.textAlign = 'left';
+    g.font = F(800, W * .058); g.fillStyle = P16.주황; g.fillText(a, 시작, by);
+    g.font = F(700, W * .034); g.fillStyle = P16.흐림; g.fillText(b, 시작 + aw, by);
+    g.textAlign = 'center';
+  }
+  /* 주소는 **그림 안에도** 적습니다 — 받는 앱이 글을 버려도 남습니다
+     (saveCardImage 머리말과 같은 이유). */
+  g.font = F(600, W * .022); g.fillStyle = P16.아주흐림;
+  g.fillText(appUrl().replace(/^https?:\/\//, ''), cx, H * .966);
+
+  return await new Promise(res => cv.toBlob(res, 'image/png'));
+}
+
 async function drawP16(s, W, H, F){
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -817,6 +958,9 @@ export async function cardImage(spec, mode = 'square'){
   /* 여행 영수증. 성향 카드와 **일부러 다른 그림**입니다(위 drawReceipt 머리말). */
   if (spec && spec.kind === 'receipt')
     return { blob: await drawReceipt(spec, W, H, F), fontOk: ok };
+  /* 대륙 체크 카드도 딴 그림입니다(b485) — 위 drawCheck 머리말 참고. */
+  if (spec && spec.kind === "check")
+    return { blob: await drawCheck(spec, W, H, F), fontOk: ok };
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -1901,3 +2045,44 @@ if (typeof window !== 'undefined') window.__drawCheck = async () => {
   console.log(ng.length ? `✗ ${ng.length}건 틀림` : `✓ ${out.length}건 모두 통과`);
   return out;
 };
+
+/* ── 대륙별 「꼭 가보는 곳」 목록(b485) ────────────────────────────────
+ * `fame` 이 낮을수록 유명합니다(1~3 등급, 469곳 전부에 매겨져 있습니다).
+ * 유명한 순으로 24곳을 자릅니다.
+ *
+ * ⚠ **뻔한 목록이 맞습니다.** 모두가 아는 곳이라야 「너 몇 개?」가
+ *   성립합니다. 숨은 곳을 섞으면 받은 사람이 셀 수가 없습니다.
+ * ⚠ 한 나라가 목록을 먹지 않게 **나라당 셋까지**만 넣습니다. 안 그러면
+ *   유럽 24곳이 이탈리아·프랑스로 절반이 차서 「유럽」이 아니게 됩니다.
+ * ⚠ 대륙 이름은 cities.js 의 `continentOf` 하나를 씁니다 — 여기서 새로
+ *   정하면 발자국 지도와 갈라집니다. */
+export function checkList(cities, 대륙, world = {}, n = 24){
+  /* ⚠ **국내는 뺍니다.** 「아시아 24곳」에 강릉·경주가 들어가면 체크가
+     저절로 차서 견줄 것이 없어지고, 받은 사람에게도 여행지 목록으로
+     안 읽힙니다. 성향에서 단골력·모험력이 해외만 세는 것과 같은 이유입니다
+     (card.js 의 국내 규칙). */
+  const 집 = world.home || 'KR';
+  const { continentOf = {} } = world;
+  const 후보 = (cities || [])
+    .filter(c => c.fame != null && c.country !== 집 && continentOf[c.country] === 대륙)
+    .sort((a, b) => a.fame - b.fame ||
+                    (a.pop_rank ?? 9e9) - (b.pop_rank ?? 9e9));
+  const 나라수 = {}, 뽑기 = [];
+  for (const c of 후보){
+    if (뽑기.length >= n) break;
+    const k = 나라수[c.country] || 0;
+    if (k >= 3) continue;
+    나라수[c.country] = k + 1;
+    뽑기.push(c);
+  }
+  /* 스물넷이 안 차면 나라 제한을 풀고 채웁니다 — 칸이 비면 카드가
+     초라해집니다. 대륙이 작을 때 이 길로 옵니다. */
+  if (뽑기.length < n){
+    const 든것 = new Set(뽑기.map(c => c.id));
+    for (const c of 후보){
+      if (뽑기.length >= n) break;
+      if (!든것.has(c.id)) 뽑기.push(c);
+    }
+  }
+  return 뽑기;
+}

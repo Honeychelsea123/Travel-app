@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b484';
-import { sb } from './db.js?v=b484';
-import { cities, continentOf } from './cities.js?v=b484';
+import { $, esc } from './dom.js?v=b485';
+import { sb } from './db.js?v=b485';
+import { cities, continentOf } from './cities.js?v=b485';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b484';
+import { personaBackTo } from './persona.js?v=b485';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME } from './card.js?v=b484';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b484';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b485';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b485';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b484';
+import { similarPicks } from './rec.js?v=b485';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b484';
-import { pickCity } from './citysearch.js?v=b484';
-import { shareMate } from './mate.js?v=b484';
+import { openNew } from './newtrip.js?v=b485';
+import { pickCity } from './citysearch.js?v=b485';
+import { shareMate } from './mate.js?v=b485';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -143,7 +143,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b484"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b485"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -354,6 +354,41 @@ export async function loadAnal(){
          <span class="val">${esc(v)}</span></div>`).join('');
     기록.appendChild(줄들);
     발.appendChild(기록);
+  }
+
+  /* ── 대륙 체크 카드(b485) ────────────────────────────────────────────
+     인스타에 도는 「유럽 24곳 체크」 템플릿과 같은 것을, 매긴 것으로
+     **자동으로** 채워 만듭니다(card.js 의 drawCheck 머리말).
+     ⚠ **유럽·아시아만 답니다.** 나머지 대륙은 대부분 한두 곳이라 칸이
+       텅 빈 카드가 나옵니다 — 빈 칸은 「가야지」가 되라고 두는 것이지
+       스물세 칸이 비면 그냥 초라합니다.
+     ⚠ 한 대륙이라도 목록을 못 뽑으면(도시 자료가 아직 안 왔을 때)
+       단추를 아예 안 답니다. */
+  {
+    const 낼것 = ['유럽', '아시아']
+      .map(이름 => ({ 이름, 곳: checkList(cities, 이름, { continentOf }) }))
+      .filter(x => x.곳.length >= 12);
+    if (낼것.length){
+      const 체크 = document.createElement('div');
+      체크.className = 'subsec';
+      체크.innerHTML = '<h3 class="secttl">체크 카드</h3>' +
+        '<div class="memo" style="margin:-4px 0 10px">' +
+        '유명한 곳 24군데 중 몇 곳을 다녀왔는지 한 장으로 만들어요.</div>';
+      const 줄 = document.createElement('div');
+      줄.className = 'cchips';
+      낼것.forEach(({ 이름, 곳 }) => {
+        const 간수 = 곳.filter(c => 별점표[c.id] != null).length;
+        const b = document.createElement('button');
+        b.textContent = `${이름} ${간수}/${곳.length}`;
+        b.onclick = () => shareCard({
+          kind:'check', title:이름, sub:'가볼 만한 곳',
+          items: 곳.map(c => ({ name:c.name, on: 별점표[c.id] != null })),
+        }, `기로-${이름}`);
+        줄.appendChild(b);
+      });
+      체크.appendChild(줄);
+      발.appendChild(체크);
+    }
   }
 
   /* 단추는 카드 **맨 아래**입니다 — 기록까지 다 읽고 나서 더 볼
