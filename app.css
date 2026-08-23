@@ -1645,39 +1645,27 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
    흰 글자를 얹습니다. 사진이 없으면(첫 방문 + 연결 없음) 짙은 색 하나로
    물러섭니다. 그때도 글자가 읽히는 것이 이 순서의 요점입니다. */
 .hello{ position:relative; overflow:hidden; border-radius:var(--r-lg);
-        min-height:clamp(212px, 34vh, 300px);
+        /* ⚠ 사진이 없으니 높이를 글에 맞춥니다(b475). 212~300px 은 사진을
+           보여주려고 잡았던 자리라, 글만 남으면 아래가 휑합니다. */
+        min-height:0; 
         display:flex; flex-direction:column; justify-content:flex-end;
         padding:26px 22px 24px; margin-bottom:var(--s-sm); color:#fff;
         background:#2b2f36; box-shadow:var(--lift-1); }
-/* 층 순서는 `.hero` 와 같은 이유로 셋 다 적습니다 — 사진 0 · 덮개 1 · 글자 2. */
-.hello img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-            z-index:0; }
-/* 히어로와 같은 덮개입니다. 밝은 사진에서도 흰 글자가 읽혀야 합니다.
-   **히어로 것을 그대로 가져왔더니 글자가 묻혔습니다.** 재보니 여기 제목은
-   카드의 50~74% 자리에 앉는데(히어로는 훨씬 아래) 거기 덮개가 .34~.54 라
-   바쿠처럼 밝은 사진에서는 흰 글자가 안 읽혔습니다.
-   글줄이 앉는 45% 아래를 확실히 어둡게 내립니다. */
-.hello::after{ content:''; position:absolute; inset:0; background:
-  linear-gradient(180deg, rgba(0,0,0,.10) 0%, rgba(0,0,0,.30) 38%,
-                          rgba(0,0,0,.62) 62%, rgba(0,0,0,.88) 100%);
-  z-index:1; }
-.hello > *{ position:relative; z-index:2 }
-/* 어디 사진인지 적습니다. 안 적으면 그냥 배경 그림으로 보이는데,
-   이 앱이 도시 사진을 가지고 있다는 것 자체가 첫 화면에서 할 말입니다. */
-.hello .hiwhere{ position:absolute; top:14px; right:16px; z-index:2;   /* 덮개(1) 위 */
-                 font-size:var(--f-xs); opacity:.72; letter-spacing:.2px;
-                 text-shadow:0 1px 6px rgba(0,0,0,.5); }
+/* ⚠ **사진·덮개·「어디 사진」 표시를 걷었습니다(b475).** 첫 화면에서 큰
+   사진을 없앴으니 그 위에 얹던 것들도 함께 지웁니다.
+   짙은 바탕(위 background:#2b2f36) 하나로 충분합니다 — 사진이 없으면
+   흰 글자가 묻힐 일도 없어서 덮개 그라데이션이 할 일이 없습니다. */
 .hello .hi{ font-size:min(var(--f-3xl), 6.8vw); font-weight:700;
             line-height:1.34; letter-spacing:calc(-.5px * var(--ts));
-            word-break:keep-all; text-shadow:0 2px 14px rgba(0,0,0,.55); }
+            word-break:keep-all; }   /* 사진이 없어져 그림자도 뺍니다(b475) */
 /* 이름의 세 겹. 표어 바로 아래에 붙여 **한 덩어리**로 읽히게 합니다 —
    떨어뜨리면 그냥 한자 장식으로 보입니다. 글자 사이를 벌려 표식처럼 둡니다. */
 .hello .hiname{ font-size:min(var(--f-sm), 3.4vw); font-weight:600;
                 letter-spacing:.14em; opacity:.82; margin-top:8px;
-                text-shadow:0 1px 8px rgba(0,0,0,.5); }
+                }
 .hello .hisub{ font-size:min(var(--f-md), 3.8vw); line-height:1.6;
                opacity:.94; margin-top:10px; word-break:keep-all;
-               text-shadow:0 1px 10px rgba(0,0,0,.5); }
+               }
 
 /* 무엇을 받고 무엇을 안 받는지. 불안한 자리라 눈에 들어와야 합니다. */
 .safe{ list-style:none; margin:14px 0 0; padding:12px 14px;
