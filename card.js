@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b485';
+import { $, esc, toast } from './dom.js?v=b486';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b485';
+import { distKm, pScale, SEOUL } from './calc.js?v=b486';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -309,7 +309,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b485`;
+    img.src = `./persona/${code}.png?v=b486`;
   });
 }
 
@@ -563,115 +563,151 @@ async function drawCheck(s, W, H, F){
   g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
 
   const cx = W / 2;
-  let y = H * .085;
+  let y = H * .062;
 
   /* ── 머리 ── 하트·제목·안내. 원본의 리듬을 따릅니다. */
-  g.textAlign = 'center';
-  g.fillStyle = P16.주황; g.font = F(400, W * .050);
-  g.fillText('♥', cx, y); y += H * .048;
-
-  g.fillStyle = P16.잉크; g.font = F(800, W * .086);
-  /* 글자 사이를 벌립니다 — 원본이 그렇고, 벌려야 제목이 표지처럼 읽힙니다. */
-  {
-    const 자간 = W * .012, 글 = s.title.toUpperCase();
+  const 자간쓰기 = (글, 자간) => {
     const 폭 = [...글].reduce((a, ch) => a + g.measureText(ch).width + 자간, -자간);
     let x = cx - 폭 / 2;
     g.textAlign = 'left';
     for (const ch of 글){ g.fillText(ch, x, y); x += g.measureText(ch).width + 자간; }
     g.textAlign = 'center';
-  }
-  y += H * .030;
+  };
 
-  /* 가는 선 두 개 사이에 부제 — 원본의 「places to visit」 자리입니다. */
-  g.font = F(400, W * .032); g.fillStyle = P16.흐림;
+  g.textAlign = 'center';
+  g.fillStyle = P16.주황; g.font = F(400, W * .042);
+  g.fillText('♥', cx, y); y += H * .040;
+
+  g.fillStyle = P16.잉크; g.font = F(800, W * .078);
+  자간쓰기(s.title, W * .014); y += H * .026;
+
+  g.font = F(400, W * .030); g.fillStyle = P16.흐림;
   {
-    const 부 = s.sub, 폭 = g.measureText(부).width, 선 = W * .140;
+    const 부 = s.sub, 폭 = g.measureText(부).width, 선 = W * .130;
     g.fillText(부, cx, y);
     g.strokeStyle = P16.점선; g.lineWidth = Math.max(1, W * .0012);
     g.beginPath();
-    g.moveTo(cx - 폭 / 2 - W * .030 - 선, y - W * .010);
-    g.lineTo(cx - 폭 / 2 - W * .030, y - W * .010);
-    g.moveTo(cx + 폭 / 2 + W * .030, y - W * .010);
-    g.lineTo(cx + 폭 / 2 + W * .030 + 선, y - W * .010);
+    g.moveTo(cx - 폭 / 2 - W * .028 - 선, y - W * .009);
+    g.lineTo(cx - 폭 / 2 - W * .028, y - W * .009);
+    g.moveTo(cx + 폭 / 2 + W * .028, y - W * .009);
+    g.lineTo(cx + 폭 / 2 + W * .028 + 선, y - W * .009);
     g.stroke();
   }
   y += H * .034;
 
-  g.font = F(600, W * .024); g.fillStyle = P16.아주흐림;
-  {
-    const 글 = '다녀온 곳에 표시했어요', 자간 = W * .004;
-    const 폭 = [...글].reduce((a, ch) => a + g.measureText(ch).width + 자간, -자간);
-    let x = cx - 폭 / 2; g.textAlign = 'left';
-    for (const ch of 글){ g.fillText(ch, x, y); x += g.measureText(ch).width + 자간; }
-    g.textAlign = 'center';
-  }
-  y += H * .036;
-
-  /* ── 칸 ── 두 줄 × 열둘. 원본은 네 열인데 한글 도시 이름은 네 열에
-       안 들어갑니다(「이스탄불」이 잘립니다). 세 열이 한글에 맞습니다. */
+  /* ── 그림 ── **사진을 한 색조로 물들입니다(b486)** ────────────────────
+   * 처음에는 이름과 체크만 두었더니 엑셀 표가 됐습니다. 원본 템플릿의
+   * 매력은 스물네 개의 작은 수채화이고, 그림을 빼면 볼 것이 없습니다.
+   *
+   * ⚠ 그렇다고 **실사를 그대로 넣으면 안 됩니다.** 스물넷의 색이 제각각이라
+   *   한 장에 모으면 어수선합니다. 원본이 통일돼 보이는 것은 한 화가가
+   *   그렸기 때문입니다.
+   *   → 흑백으로 바꾼 뒤 종이색 계열 한 색을 곱합니다. 스물넷이 한 붓으로
+   *     그린 것처럼 보이면서, **실사라서** 저 템플릿이 못 하는 것이 됩니다.
+   * ⚠ 안 간 곳은 **지우지 않고 아주 옅게** 둡니다. 빈 칸이 있어야 「가야지」가
+   *   되고, 받은 사람도 자기 것을 세어 보고 싶어집니다.
+   * ⚠ 사진을 못 받아온 칸은 종이색 네모로 둡니다 — 한 칸이 비어도 격자는
+   *   그대로라 티가 안 납니다. */
   const 열 = 3;
   const 줄 = Math.ceil(s.items.length / 열);
-  const 좌 = W * .085, 우 = W - 좌;
+  const 좌 = W * .072, 우 = W - 좌;
   const 칸폭 = (우 - 좌) / 열;
-  const 칸높 = (H * .880 - y) / 줄;
-  const 박스 = W * .030;
+  const 아래 = H * .902;                       /* 셈이 앉을 자리 위 */
+  const 칸높 = (아래 - y) / 줄;
+  const 그림 = Math.min(칸폭 * .84, 칸높 * .70);
+  const 그림둥 = 그림 * .22;
+
+  /* 스물넷을 한꺼번에 받습니다 — 하나씩 기다리면 스물네 번 왕복입니다. */
+  const 사진들 = await Promise.all(
+    s.items.map(it => it.img ? photoImage(it.img) : Promise.resolve(null)));
 
   s.items.forEach((it, i) => {
     const c = i % 열, r = Math.floor(i / 열);
-    const x = 좌 + c * 칸폭;
-    const cy = y + r * 칸높;
+    const x0 = 좌 + c * 칸폭 + (칸폭 - 그림) / 2;
+    const y0 = y + r * 칸높;
     const 간 = it.on;
+    const im = 사진들[i];
 
-    /* 표시. 간 곳은 채운 네모에 흰 체크, 안 간 곳은 빈 네모 */
-    g.lineWidth = Math.max(1.5, W * .0022);
-    if (간){
-      g.fillStyle = P16.주황;
-      rrect(g, x, cy - 박스 * .78, 박스, 박스, W * .006); g.fill();
-      g.strokeStyle = '#FFFFFF'; g.lineWidth = Math.max(2, W * .0032);
-      g.beginPath();
-      g.moveTo(x + 박스 * .24, cy - 박스 * .30);
-      g.lineTo(x + 박스 * .43, cy - 박스 * .13);
-      g.lineTo(x + 박스 * .78, cy - 박스 * .56);
-      g.stroke();
+    g.save();
+    rrect(g, x0, y0, 그림, 그림, 그림둥); g.clip();
+    if (im){
+      /* 짧은 쪽에 맞춰 잘라 넣습니다 — 늘이면 건물이 휩니다. */
+      const s2 = Math.max(그림 / im.width, 그림 / im.height);
+      const dw = im.width * s2, dh = im.height * s2;
+      g.drawImage(im, x0 + (그림 - dw) / 2, y0 + (그림 - dh) / 2, dw, dh);
+      /* ① 채도를 지웁니다 → 흑백 */
+      g.globalCompositeOperation = 'saturation';
+      g.fillStyle = '#808080'; g.fillRect(x0, y0, 그림, 그림);
+      /* ② 한 색을 곱합니다 → 스물넷이 한 톤 */
+      g.globalCompositeOperation = 'multiply';
+      g.fillStyle = 간 ? '#F2A57A' : '#E8E2D6';
+      g.fillRect(x0, y0, 그림, 그림);
+      /* ③ 안 간 곳은 종이를 더 덮어 물러나게 */
+      if (!간){
+        g.globalCompositeOperation = 'source-over';
+        g.fillStyle = 'rgba(253,251,243,.55)';
+        g.fillRect(x0, y0, 그림, 그림);
+      }
+      g.globalCompositeOperation = 'source-over';
     } else {
-      g.strokeStyle = P16.점선;
-      rrect(g, x, cy - 박스 * .78, 박스, 박스, W * .006); g.stroke();
+      g.fillStyle = 간 ? '#FBE3D4' : '#F4F0E6';
+      g.fillRect(x0, y0, 그림, 그림);
+    }
+    g.restore();
+    /* 테두리 — 사진이 종이 위에 놓인 것처럼 */
+    g.strokeStyle = 간 ? P16.주황선 : P16.테두리;
+    g.lineWidth = Math.max(1, W * .0018);
+    rrect(g, x0, y0, 그림, 그림, 그림둥); g.stroke();
+
+    /* 간 곳 표시 — 오른쪽 위 모서리에 걸친 동그란 체크 */
+    if (간){
+      const rr = 그림 * .17, bx = x0 + 그림 - rr * .62, by = y0 + rr * .62;
+      g.fillStyle = P16.주황;
+      g.beginPath(); g.arc(bx, by, rr, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#FFFFFF'; g.lineWidth = Math.max(2, 그림 * .034);
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath();
+      g.moveTo(bx - rr * .40, by + rr * .02);
+      g.lineTo(bx - rr * .10, by + rr * .32);
+      g.lineTo(bx + rr * .44, by - rr * .34);
+      g.stroke();
+      g.lineCap = 'butt';
     }
 
-    /* 이름. **안 간 곳도 읽힐 만큼은 진하게** 둡니다 — 너무 흐리면 무엇이
-       남았는지 안 보이고, 그러면 「가야지」가 안 생깁니다. */
-    g.textAlign = 'left';
-    g.fillStyle = 간 ? P16.잉크 : P16.흐림;
-    g.font = F(간 ? 700 : 500, W * .029);
+    /* 이름 — 그림 바로 아래 가운데 */
+    g.textAlign = 'center';
+    g.fillStyle = 간 ? P16.잉크 : P16.아주흐림;
+    g.font = F(간 ? 700 : 500, W * .026);
     let 이름 = it.name;
-    const 여유 = 칸폭 - 박스 - W * .028;
-    while (g.measureText(이름).width > 여유 && 이름.length > 2)
+    while (g.measureText(이름).width > 칸폭 * .96 && 이름.length > 2)
       이름 = 이름.slice(0, -1);
     if (이름 !== it.name) 이름 += '…';
-    g.fillText(이름, x + 박스 + W * .014, cy);
+    g.fillText(이름, 좌 + c * 칸폭 + 칸폭 / 2, y0 + 그림 + W * .034);
   });
-  g.textAlign = 'center';
 
   /* ── 셈 ── 맨 아래 한 줄. 이것이 곧 「너 몇 개?」의 답입니다. */
   {
     const 간수 = s.items.filter(x => x.on).length;
-    const by = H * .932;
-    g.font = F(800, W * .058); g.fillStyle = P16.주황;
+    const by = H * .944;
     const a = `${간수}`, b = ` / ${s.items.length}`;
-    g.font = F(800, W * .058); const aw = g.measureText(a).width;
-    g.font = F(700, W * .034); const bw = g.measureText(b).width;
+    g.font = F(800, W * .056); const aw = g.measureText(a).width;
+    g.font = F(700, W * .032); const bw = g.measureText(b).width;
     const 시작 = cx - (aw + bw) / 2;
     g.textAlign = 'left';
-    g.font = F(800, W * .058); g.fillStyle = P16.주황; g.fillText(a, 시작, by);
-    g.font = F(700, W * .034); g.fillStyle = P16.흐림; g.fillText(b, 시작 + aw, by);
+    g.font = F(800, W * .056); g.fillStyle = P16.주황; g.fillText(a, 시작, by);
+    g.font = F(700, W * .032); g.fillStyle = P16.흐림; g.fillText(b, 시작 + aw, by);
     g.textAlign = 'center';
   }
   /* 주소는 **그림 안에도** 적습니다 — 받는 앱이 글을 버려도 남습니다
      (saveCardImage 머리말과 같은 이유). */
-  g.font = F(600, W * .022); g.fillStyle = P16.아주흐림;
-  g.fillText(appUrl().replace(/^https?:\/\//, ''), cx, H * .966);
+  g.font = F(600, W * .020); g.fillStyle = P16.아주흐림;
+  g.fillText(appUrl().replace(/^https?:\/\//, ''), cx, H * .973);
 
-  return await new Promise(res => cv.toBlob(res, 'image/png'));
+  /* ⚠ **JPEG 입니다.** 사진 스물넷이 들어가 PNG 로는 800KB 가 넘습니다
+     — 공유창에서 거부하는 앱이 있고 올리는 데도 오래 걸립니다.
+     확장자는 `saveCardImage` 가 blob.type 을 보고 정하므로 여기만
+     바꾸면 됩니다(b486). */
+  return await new Promise(res => cv.toBlob(res, 'image/jpeg', .92));
 }
 
 async function drawP16(s, W, H, F){
@@ -2064,7 +2100,11 @@ export function checkList(cities, 대륙, world = {}, n = 24){
   const 집 = world.home || 'KR';
   const { continentOf = {} } = world;
   const 후보 = (cities || [])
-    .filter(c => c.fame != null && c.country !== 집 && continentOf[c.country] === 대륙)
+    /* ⚠ **사진이 있는 곳만.** 카드가 사진 격자라 빈 칸이 섞이면 그 자리만
+       종이색으로 떠서 격자가 성겨 보입니다. 469곳 사진은 다 채워져 있어
+       거르는 비용이 거의 없습니다(b486). */
+    .filter(c => c.fame != null && c.image_url && c.country !== 집 &&
+                 continentOf[c.country] === 대륙)
     .sort((a, b) => a.fame - b.fame ||
                     (a.pop_rank ?? 9e9) - (b.pop_rank ?? 9e9));
   const 나라수 = {}, 뽑기 = [];

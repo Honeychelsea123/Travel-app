@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b485';
-import { sb } from './db.js?v=b485';
-import { cities, continentOf } from './cities.js?v=b485';
+import { $, esc } from './dom.js?v=b486';
+import { sb } from './db.js?v=b486';
+import { cities, continentOf } from './cities.js?v=b486';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b485';
+import { personaBackTo } from './persona.js?v=b486';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b485';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b485';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b486';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b486';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b485';
+import { similarPicks } from './rec.js?v=b486';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b485';
-import { pickCity } from './citysearch.js?v=b485';
-import { shareMate } from './mate.js?v=b485';
+import { openNew } from './newtrip.js?v=b486';
+import { pickCity } from './citysearch.js?v=b486';
+import { shareMate } from './mate.js?v=b486';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -143,7 +143,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b485"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b486"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -382,7 +382,8 @@ export async function loadAnal(){
         b.textContent = `${이름} ${간수}/${곳.length}`;
         b.onclick = () => shareCard({
           kind:'check', title:이름, sub:'가볼 만한 곳',
-          items: 곳.map(c => ({ name:c.name, on: 별점표[c.id] != null })),
+          items: 곳.map(c => ({ name:c.name, img:c.image_url,
+                                on: 별점표[c.id] != null })),
         }, `기로-${이름}`);
         줄.appendChild(b);
       });
