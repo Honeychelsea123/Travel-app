@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b482';
-import { openCity } from './city.js?v=b482';
-import { distKm } from './calc.js?v=b482';
-import { sb } from './db.js?v=b482';
-import { cities, countryName, continentOf } from './cities.js?v=b482';
-import { PERSONA_ICON, shareCard } from './card.js?v=b482';
+         coverDeck } from './dom.js?v=b483';
+import { openCity } from './city.js?v=b483';
+import { distKm } from './calc.js?v=b483';
+import { sb } from './db.js?v=b483';
+import { cities, countryName, continentOf } from './cities.js?v=b483';
+import { PERSONA_ICON, shareCard } from './card.js?v=b483';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -548,6 +548,27 @@ export function funRows(도시들, 별점표){
   const order = Object.entries(byC).sort((a, b) => b[1].length - a[1].length);
   const sv = 도시들.map(c => 별점표[c.id]).filter(v => v != null);
   const avg = sv.length ? sv.reduce((a, b) => a + b, 0) / sv.length : null;
+  /* ── 후한 나라 · 박한 나라(b483) ────────────────────────────────────
+     ⚠ **세 곳 이상 매긴 나라만 셉니다.** 한 곳만 매긴 나라가 ★5 면
+       「가장 후한 나라」로 올라오는데, 그건 그 나라 이야기가 아니라
+       그 도시 하나 이야기입니다. 표본이 적으면 아무 말도 안 하는 편이
+       낫습니다.
+     ⚠ 그런 나라가 **둘 미만이면 두 줄 다 뺍니다.** 후한 곳과 박한 곳이
+       같은 나라면 비교가 아니라 그냥 한 나라 별점입니다. */
+  const 나라평균 = order
+    .map(([코드, cs]) => {
+      const vs = cs.map(c => 별점표[c.id]).filter(v => v != null);
+      return { 코드, 수: vs.length,
+               평균: vs.length ? vs.reduce((a, b) => a + b, 0) / vs.length : null };
+    })
+    .filter(x => x.수 >= 3 && x.평균 != null)
+    .sort((a, b) => b.평균 - a.평균);
+  const 이름 = x => `${countryName[x.코드] || x.코드} ★${x.평균.toFixed(1)}`;
+  const 후박 = 나라평균.length >= 2
+    ? [['후한 나라', 이름(나라평균[0])],
+       ['박한 나라', 이름(나라평균[나라평균.length - 1])]]
+    : [];
+
   return [
     ['가장 많이 간 국가', order.length
       ? `${countryName[order[0][0]] || order[0][0]} · ${order[0][1].length}곳` : '–'],
@@ -557,6 +578,7 @@ export function funRows(도시들, 별점표){
       ? `${far.a.name} ~ ${far.b.name} · ${Math.round(far.d).toLocaleString()}km` : '–'],
     ['내 별점 평균', avg != null ? `★ ${avg.toFixed(2)}` : '–'],
     ['별 다섯을 준 곳', String(sv.filter(v => v === 5).length) + '곳'],
+    ...후박,
   ];
 }
 

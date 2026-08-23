@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b482';
-import { sb } from './db.js?v=b482';
-import { cities, continentOf } from './cities.js?v=b482';
+import { $, esc } from './dom.js?v=b483';
+import { sb } from './db.js?v=b483';
+import { cities, continentOf } from './cities.js?v=b483';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b482';
+import { personaBackTo } from './persona.js?v=b483';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME } from './card.js?v=b482';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b482';
+         AXIS_NAME } from './card.js?v=b483';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b483';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b482';
+import { similarPicks } from './rec.js?v=b483';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b482';
-import { pickCity } from './citysearch.js?v=b482';
-import { shareMate } from './mate.js?v=b482';
+import { openNew } from './newtrip.js?v=b483';
+import { pickCity } from './citysearch.js?v=b483';
+import { shareMate } from './mate.js?v=b483';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -143,7 +143,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b482"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b483"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -294,6 +294,41 @@ export async function loadAnal(){
       <b>${n}</b><i>/${전체}</i></span>`;
   }).join('');
   발.appendChild(대륙);
+
+  /* ── 해마다 늘어난 나라(b483) ────────────────────────────────────────
+     ⚠ **「그 해에 다녀왔다」가 아니라 「그 해에 처음 기록했다」입니다.**
+       우리가 가진 날짜는 `created_at`, 곧 **별점을 매긴 때**입니다. 언제
+       다녀왔는지는 여행을 만든 사람만 알고 대부분은 비어 있습니다.
+       그래서 제목도 「해마다 기록한 나라」로 정직하게 적습니다 — 「해마다
+       간 나라」라고 하면 틀린 말이 됩니다.
+     ⚠ 나라마다 **가장 이른 해 한 번만** 셉니다. 안 그러면 일본을 해마다
+       매길 때 해마다 +1 이 되어 「27개국」과 합이 안 맞습니다.
+     ⚠ 해가 하나뿐이면 안 그립니다 — 막대 한 줄은 견줄 것이 없습니다. */
+  {
+    const 첫해 = {};
+    매긴것.forEach(r => {
+      if (!r.created_at) return;
+      const c = (cities || []).find(x => x.id === r.city_id);
+      if (!c?.country) return;
+      const y = new Date(r.created_at).getFullYear();
+      if (!첫해[c.country] || y < 첫해[c.country]) 첫해[c.country] = y;
+    });
+    const 해별 = {};
+    Object.values(첫해).forEach(y => { 해별[y] = (해별[y] || 0) + 1; });
+    const 해들 = Object.keys(해별).map(Number).sort((a, b) => a - b);
+    if (해들.length >= 2){
+      const 최대 = Math.max(...해들.map(y => 해별[y]));
+      const 해칸 = document.createElement('div');
+      해칸.className = 'subsec';
+      해칸.innerHTML = '<h3 class="secttl">해마다 기록한 나라</h3>' +
+        '<div class="axbars">' + 해들.map(y => `
+          <div class="axrow"><span class="axn"><b>${y}</b></span>
+            <span class="axbar"><i style="width:${(해별[y] / 최대 * 100).toFixed(1)}%;
+              background:var(--k-move)"></i></span>
+            <span class="axv">${해별[y]}</span></div>`).join('') + '</div>';
+      발.appendChild(해칸);
+    }
+  }
 
 
   /* ── 기록 ── 같은 카드 안, 소제목으로 나눕니다(b464) ────────────────
