@@ -2895,3 +2895,11 @@ body.kbup .trippane{ padding-bottom:0; }
 @media (prefers-reduced-motion: reduce){
   #tripdeck, .trippane{ scroll-behavior:auto; }
 }
+
+/* ⚠ **화면 스크롤바를 숨깁니다(b480).** 화면이 탭바 뒤까지 내려가면서(b477)
+   막대도 바닥까지 뻗어, 유리 탭바를 가로지르는 회색 줄이 하나 생겼습니다.
+   덱과 홈 캐러셀은 이미 숨기고 있어 **같은 규칙으로 맞춥니다.**
+   ⚠ iOS 는 어차피 겹쳐 그리는 막대라 자리를 안 먹습니다 — 숨겨도 폭이
+     안 바뀝니다. 어디쯤인지는 하단바와 카드가 알려줍니다. */
+.tabpane, .trippane{ scrollbar-width:none; -ms-overflow-style:none; }
+.tabpane::-webkit-scrollbar, .trippane::-webkit-scrollbar{ display:none; }
