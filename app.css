@@ -171,7 +171,15 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
      음수 마진으로 그만큼 되올라가 **시계 뒤까지 덮습니다.** 그래야
      상태바와 상단바가 한 덩어리로 이어져 보입니다(been 처럼).
      안쪽 여백은 그만큼 더 줘서 로고가 시계에 안 걸립니다. */
-  margin:calc(-1 * var(--sat)) calc(-1 * var(--s-sm)) var(--s-md);
+  /* ⚠ **아래 여백을 0 으로(b472).** 탭 화면이 각자 스크롤러가 된 뒤로는
+     이 여백이 상단바와 내용 사이에 **고정된 띠**로 남습니다 — 전에는 문서가
+     구르면서 같이 올라갔습니다. 그 자리에 body 배경(흰색)이 비쳐서 스크롤할
+     때마다 흰 줄이 하나 더 생긴 것처럼 보였습니다.
+     여백은 화면 **안쪽**(.tabpane 의 padding-top)으로 옮겼습니다. 안쪽에
+     있으면 내용과 함께 위로 사라집니다.
+     ⚠ 로그인 화면(#signedout)은 탭 화면이 아니라 이 여백을 못 물려받습니다 —
+       거기는 따로 줍니다(아래). */
+  margin:calc(-1 * var(--sat)) calc(-1 * var(--s-sm)) 0;
   padding:calc(12px + var(--sat)) calc(var(--s-md) + var(--s-sm)) 12px;
   border-radius:0;
   display:flex; align-items:center; gap:10px;
@@ -2802,6 +2810,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
   /* 「맨 위로」가 부드럽게 구르는 것은 여기서 맡습니다 — dom.js 의 toTop 은
      값만 넣습니다(거기 주석 참고). */
   scroll-behavior:smooth;
+  /* 상단바에서 옮겨온 여백(b472). 안쪽이라 내용과 함께 위로 사라집니다. */
+  padding-top:var(--s-md);
   height:calc(100dvh - var(--deck-top, 64px) - 84px - var(--kb) - var(--sab));
   overflow-y:auto;
   overscroll-behavior-y:contain;
@@ -2810,3 +2820,6 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 @media (prefers-reduced-motion: reduce){
   .tabpane{ scroll-behavior:auto; }
 }
+
+/* 로그인 화면은 탭 화면이 아니라 상단바 여백을 못 물려받습니다(b472). */
+#signedout{ padding-top:var(--s-md); }
