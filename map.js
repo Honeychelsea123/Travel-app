@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b481';
-import { openCity } from './city.js?v=b481';
-import { distKm } from './calc.js?v=b481';
-import { sb } from './db.js?v=b481';
-import { cities, countryName, continentOf } from './cities.js?v=b481';
-import { PERSONA_ICON, shareCard } from './card.js?v=b481';
+         coverDeck } from './dom.js?v=b482';
+import { openCity } from './city.js?v=b482';
+import { distKm } from './calc.js?v=b482';
+import { sb } from './db.js?v=b482';
+import { cities, countryName, continentOf } from './cities.js?v=b482';
+import { PERSONA_ICON, shareCard } from './card.js?v=b482';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -108,13 +108,14 @@ $('worldsvg').addEventListener('dblclick', () => setMapView('전체'));
 export function shutBigMap(){
   document.querySelector('.mapwrap')?.classList.remove('big');
   ['mapclose','mapzoombtns'].forEach(id => $(id)?.remove());
-  document.body.classList.remove('sheeton');
+  document.body.classList.remove('sheeton', 'bigmap');
 }
 
 $('mapbig').addEventListener('click', () => {
   const w = document.querySelector('.mapwrap');
   if (w.classList.contains('big')) return;
   w.classList.add('big');
+  document.body.classList.add('bigmap');         /* 큰 지도 동안 하단바를 숨깁니다(b482) */
   document.body.classList.add('sheeton');        /* 뒤가 밀리지 않게 */
 
   const add = (id, html, css) => {
