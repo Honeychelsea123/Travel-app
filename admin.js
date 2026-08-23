@@ -11,9 +11,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText } from './dom.js?v=b470';
-import { sb } from './db.js?v=b470';
-import { fail, netTimeout } from './net.js?v=b470';
+import { $, esc, toast, copyText, toTop } from './dom.js?v=b471';
+import { sb } from './db.js?v=b471';
+import { fail, netTimeout } from './net.js?v=b471';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -484,7 +484,7 @@ $('s_model').addEventListener('change', async () =>
 $('dashbtn').addEventListener('click', () => {
   $('profpane').classList.add('hide');
   $('admpane').classList.remove('hide');
-  window.scrollTo({ top:0, behavior:'smooth' });
+  toTop($('admpane'));
 });
 /* 조절은 한 겹 안입니다. 관리자 화면을 열 때마다 스위치 다섯이 맨 위를
    먹었는데, 실제로 바꾸는 일은 몇 달에 한 번입니다.
@@ -497,7 +497,7 @@ const setPane = on => {
      조절이 사이에 끼어 있어 묶음이 둘입니다. */
   $('adm_main').classList.toggle('hide', on);
   $('adm_dash').classList.toggle('hide', on);
-  window.scrollTo({ top:0 });
+  toTop($('admpane'));
 };
 $('adm_setopen').addEventListener('click', () => setPane(true));
 $('adm_setback').addEventListener('click', () => setPane(false));
@@ -508,7 +508,7 @@ $('admback').addEventListener('click', () => {
      대시보드로 되돌려 놓습니다 — 들어올 때는 늘 같은 화면이어야 합니다. */
   setPane(false);
   $('profpane').classList.remove('hide');
-  window.scrollTo({ top:0, behavior:'smooth' });
+  toTop($('admpane'));
 });
 
 /* 도시 사진을 Pexels 핫링크에서 우리 Storage 로 옮기는 일회용 카드가 여기

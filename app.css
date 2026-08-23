@@ -2781,3 +2781,32 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 @media (prefers-reduced-motion: reduce){
   .slidein-r, .slidein-l{ animation:none; }
 }
+
+/* ══ 탭 화면이 각자 스크롤합니다(b471) ═══════════════════════════════════
+ * **가로 스크롤 덱으로 가기 위한 1단계입니다.** 다섯을 한 줄에 나란히 놓으려면
+ * 각자 높이가 정해져 있어야 합니다 — 지금처럼 body 하나가 스크롤하면 제일 긴
+ * 화면 높이에 다섯이 다 늘어납니다.
+ *
+ * 덤으로 이 단계만으로 **탭마다 보던 자리가 남습니다.** 전에는 탭을 옮길 때마다
+ * 맨 위로 튀었습니다(사용자 결정: 보던 자리로).
+ *
+ * ⚠ `--deck-top` 은 **자바스크립트가 잽니다.** 상단바는 안전영역만큼 위로
+ *   확장돼 있고(음수 마진) 오프라인 띠가 뜨면 그만큼 더 내려오므로, CSS 로는
+ *   정확한 값을 쓸 수가 없습니다. app.js 의 `덱높이맞추기` 참고.
+ * ⚠ 아래는 탭바 자리(84px)와 키보드·홈바를 뺍니다 — `body.hastab` 이 문서에
+ *   주던 여백과 **같은 값**입니다. 두 곳에 다른 값을 적으면 탭바가 마지막
+ *   카드를 가립니다.
+ * ⚠ `overscroll-behavior-y:contain` — 화면 끝에서 더 당겨도 문서가 안 딸려
+ *   갑니다. 안 막으면 탭바가 같이 내려옵니다(b450 에서 겪은 것). */
+.tabpane{
+  /* 「맨 위로」가 부드럽게 구르는 것은 여기서 맡습니다 — dom.js 의 toTop 은
+     값만 넣습니다(거기 주석 참고). */
+  scroll-behavior:smooth;
+  height:calc(100dvh - var(--deck-top, 64px) - 84px - var(--kb) - var(--sab));
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+}
+@media (prefers-reduced-motion: reduce){
+  .tabpane{ scroll-behavior:auto; }
+}

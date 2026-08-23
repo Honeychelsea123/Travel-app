@@ -227,3 +227,24 @@ export const dropHtml = id => { delete lastHtml[id]; };
  *   — [[ctx-injection-trap]] 과 같은 종류의 함정입니다. */
 const 탭이름 = { home:'홈', rate:'평가', anal:'분석', trips:'일정', set:'프로필' };
 export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }
+
+/* ── 「맨 위로」는 **어느 스크롤러**의 맨 위인가(b471) ────────────────────
+ * 전에는 세로 스크롤을 `body` 하나가 맡아서 어디서든 `window.scrollTo` 면
+ * 됐습니다. 이제 탭 화면 다섯이 **각자 스크롤러**입니다(`.tabpane`).
+ * 프로필 안에서 지도를 열고 `window.scrollTo` 를 부르면 아무 일도 안
+ * 일어납니다 — 문서는 원래 안 굴러가 있고, 굴러가 있는 것은 프로필입니다.
+ *
+ * 그래서 **기준 요소를 받아** 그것이 속한 스크롤러를 찾습니다.
+ * 탭 밖 화면(여행·도시·초안…)은 `.tabpane` 이 없으니 window 로 떨어집니다 —
+ * 부르는 쪽이 안팎을 몰라도 됩니다.
+ *
+ * ⚠ `el` 을 안 주면 window 입니다. 옛 코드와 같은 뜻이라 헷갈릴 일이 없습니다. */
+export function toTop(el){
+  const 통 = el?.closest?.(".tabpane");
+  /* ⚠ **`scrollTo({behavior:"smooth"})` 를 안 씁니다.** 스크롤 칸에서는 그것이
+     아예 안 도는 환경이 있습니다 — 재보니 값이 그대로 남았습니다. 부드럽게
+     구르는 것은 CSS 의 `scroll-behavior` 에 맡기고, 여기서는 값만 넣습니다.
+     그러면 애니메이션이 돌든 안 돌든 **끝 값은 반드시 0** 입니다. */
+  if (통) 통.scrollTop = 0;
+  else window.scrollTo({ top:0 });
+}

@@ -12,12 +12,12 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel } from './dom.js?v=b470';
-import { openCity } from './city.js?v=b470';
-import { distKm } from './calc.js?v=b470';
-import { sb } from './db.js?v=b470';
-import { cities, countryName, continentOf } from './cities.js?v=b470';
-import { PERSONA_ICON, shareCard } from './card.js?v=b470';
+import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop } from './dom.js?v=b471';
+import { openCity } from './city.js?v=b471';
+import { distKm } from './calc.js?v=b471';
+import { sb } from './db.js?v=b471';
+import { cities, countryName, continentOf } from './cities.js?v=b471';
+import { PERSONA_ICON, shareCard } from './card.js?v=b471';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -244,7 +244,7 @@ $('mapbig').addEventListener('click', () => {
 export async function openCountries(){
   $('profpane').classList.add('hide');
   $('ctrypane').classList.remove('hide');
-  window.scrollTo({ top:0 });
+  toTop($('ctrypane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
   if (history.state?.t2 !== 'ctry') history.pushState({ t2:'ctry' }, '');
 
   $('ctrylist').innerHTML = '<div class="card"><div class="empty">' +
@@ -416,7 +416,7 @@ $('ctrypane').addEventListener('click', e => {
 export async function openMap(){
   $('profpane').classList.add('hide');
   $('mappane').classList.remove('hide');
-  window.scrollTo({ top:0 });
+  toTop($('mappane'));
   if (history.state?.t2 !== 'map') history.pushState({ t2:'map' }, '');
 
   await ctx.loadCities();

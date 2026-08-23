@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa } from './dom.js?v=b470';
-import { openCity } from './city.js?v=b470';
-import { sb } from './db.js?v=b470';
-import { cities, countryName } from './cities.js?v=b470';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b470';
-import { starHtml, paintStars, markRated } from './stars.js?v=b470';
-import { fail } from './net.js?v=b470';
-import { arm } from './ui.js?v=b470';
-import { todayYmd } from './calc.js?v=b470';
-import { loadCities } from './citysearch.js?v=b470';
-import { loadRateData, saveRate } from './rating.js?v=b470';
+import { $, esc, toast, emptyDo, josa, toTop } from './dom.js?v=b471';
+import { openCity } from './city.js?v=b471';
+import { sb } from './db.js?v=b471';
+import { cities, countryName } from './cities.js?v=b471';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b471';
+import { starHtml, paintStars, markRated } from './stars.js?v=b471';
+import { fail } from './net.js?v=b471';
+import { arm } from './ui.js?v=b471';
+import { todayYmd } from './calc.js?v=b471';
+import { loadCities } from './citysearch.js?v=b471';
+import { loadRateData, saveRate } from './rating.js?v=b471';
 
 let ctx = {
   me: () => null,
@@ -243,7 +243,7 @@ export async function openShelf(kind){
   $('profpane').classList.add('hide');
   $('mappane').classList.add('hide');
   $('shelfpane').classList.remove('hide');
-  window.scrollTo({ top:0 });
+  toTop($('shelfpane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
   /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.
