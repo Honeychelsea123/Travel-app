@@ -2812,7 +2812,19 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
   scroll-behavior:smooth;
   /* 상단바에서 옮겨온 여백(b472). 안쪽이라 내용과 함께 위로 사라집니다. */
   padding-top:var(--s-md);
-  height:calc(100dvh - var(--deck-top, 64px) - 84px - var(--kb) - var(--sab));
+  /* ⚠⚠ **키보드가 올라오면 셈이 달라집니다(b473).** ⚠⚠
+     처음에 `100dvh - 위 - 탭바 - --kb` 로 뺐더니, 자판이 뜨는 순간 화면이
+     자판 높이만큼 **한 번 더** 짧아져 아래가 텅 비었습니다(실기기 사진).
+     이유는 둘입니다:
+       ① `100dvh` 는 자판을 반영하지 않습니다. 대신 `--vvh`(지금 보이는 창의
+          높이)가 이미 있고, 그것은 **자판을 뺀 값**입니다(ui.js). 그걸 쓰면
+          `--kb` 를 또 뺄 이유가 없습니다.
+       ② 자판이 뜨면 탭바는 그 **뒤에 가려집니다**(탭바는 bottom 고정).
+          가려진 것의 자리를 비워둘 이유가 없습니다.
+     그래서 자판이 떠 있을 때는 탭바 자리도 안 뺍니다.
+     ⚠ 판정은 `body.kbup` 입니다. `--kb` 로는 못 합니다 — 사파리·홈화면앱
+       **둘 다 0** 이 나옵니다(ui.js 의 실측 주석 참고). */
+  height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px) - 84px - var(--sab));
   overflow-y:auto;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
@@ -2823,3 +2835,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 
 /* 로그인 화면은 탭 화면이 아니라 상단바 여백을 못 물려받습니다(b472). */
 #signedout{ padding-top:var(--s-md); }
+
+/* 자판이 떠 있으면 탭바 자리를 안 뺍니다 — 어차피 자판 뒤입니다(b473). */
+body.kbup .tabpane{
+  height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px));
+}
