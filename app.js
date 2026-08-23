@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b480';
+import { sb } from './db.js?v=b481';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml, toTop } from './dom.js?v=b480';
-import { starHtml, paintStars, markRated } from './stars.js?v=b480';
+         putHtml, dropHtml, toTop, coverDeck } from './dom.js?v=b481';
+import { starHtml, paintStars, markRated } from './stars.js?v=b481';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b480';
-import { loadAdmin } from './admin.js?v=b480';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b481';
+import { loadAdmin } from './admin.js?v=b481';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b480';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b480';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b480';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b481';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b481';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,87 +34,87 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b480';
+         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b481';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b480';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b481';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b480';
+         useCities, addCity, search } from './cities.js?v=b481';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b480';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b481';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b480';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b481';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b480';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b481';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b480';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b481';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b480';
+         isCityOpen, clearCityOpen } from './city.js?v=b481';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b480';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b481';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b480';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b481';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b480';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b480';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b480';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b480';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b480';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b480';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b480';
-import { loadReview, setReviewCtx } from './review.js?v=b480';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b481';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b481';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b481';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b481';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b481';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b481';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b481';
+import { loadReview, setReviewCtx } from './review.js?v=b481';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b480';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b480';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b480';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b481';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b481';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b481';
 /* 로그인 전 맛보기 평가(b406). 로그인 화면 안에서만 돕니다 — 앱 전체를
    익명에 열지 않습니다. 자세한 것은 try.js 머리말. */
-import { drawTry, claimTryRates } from './try.js?v=b480';
+import { drawTry, claimTryRates } from './try.js?v=b481';
 /* 궁합 링크(?mate=CODE)를 주소에서 받아 담아둡니다 — mate.js 머리말 참고. */
-import { catchMate } from './mate.js?v=b480';
+import { catchMate } from './mate.js?v=b481';
 /* 연속 평가 — 쭉 매기기(b409). 기록 탭에서 들어갑니다. spree.js 머리말 참고. */
-import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b480';
+import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b481';
 /* 분석 탭(b439) — 성향·지도로 가는 입구. 화면은 anal.js 가 그립니다. */
-import { loadAnal, setAnalCtx } from './anal.js?v=b480';
+import { loadAnal, setAnalCtx } from './anal.js?v=b481';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b480';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b480';
-import './selfcheck.js?v=b480';
-import { guessCat, setBringCtx } from './bring.js?v=b480';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b480';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b480';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b480';
-import { setAccountCtx } from './account.js?v=b480';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b480';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b480';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b480';
-import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b480';
-import { resetGeo, setGeocodeCtx } from './geocode.js?v=b480';
-import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b480';
-import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b480';
-import { drawToday } from './today.js?v=b480';
-import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b480';
-import { flags, featOn, loadFlags } from './flags.js?v=b480';
-import { setSwRegCtx } from './swreg.js?v=b480';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b481';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b481';
+import './selfcheck.js?v=b481';
+import { guessCat, setBringCtx } from './bring.js?v=b481';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b481';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b481';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b481';
+import { setAccountCtx } from './account.js?v=b481';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b481';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b481';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b481';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b481';
+import { resetGeo, setGeocodeCtx } from './geocode.js?v=b481';
+import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b481';
+import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b481';
+import { drawToday } from './today.js?v=b481';
+import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b481';
+import { flags, featOn, loadFlags } from './flags.js?v=b481';
+import { setSwRegCtx } from './swreg.js?v=b481';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b480';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b481';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b480';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b481';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -476,6 +476,23 @@ const 덱 = document.createElement('div');
   });
 }
 
+/* ── 덮는 판을 덱 밖으로(b481) ───────────────────────────────────────
+ * 지도·성향·보관함·설정·대시보드는 `#setview` **안**에 있었습니다. 그러면
+ * 프로필 칸이 통째로 무거워지고, 지도를 보다가 옆으로 밀리면 탭이
+ * 넘어가 버립니다 — 지도는 손가락으로 끌어 옮기는 화면이라 그런 일이
+ * 자주 납니다.
+ * 덱 밖 형제로 꺼내고 `.tabpane` 을 붙입니다 — 높이·스크롤·아래 여백을
+ * 탭 화면과 **같은 규칙**으로 받습니다. `#tabdeck > .tabpane` 만 가로
+ * 칸이 되므로 밖에서는 그냥 한 화면입니다.
+ * ⚠ 여는 쪽에서 `coverDeck(true)` 로 덱을 숨깁니다(dom.js). */
+for (const id of ['personapane', 'shelfpane', 'mappane', 'ctrypane',
+                  'setpane', 'admpane']){
+  const el = $(id);
+  if (!el) continue;
+  el.classList.add('tabpane');
+  $('signedin').appendChild(el);
+}
+
 /* 덱에서 지금 몇 번째 칸인가. 폭이 0 일 때(화면이 숨어 있을 때) 나눗셈이
    NaN 이 되지 않게 1 로 막습니다. */
 const 칸폭 = () => 덱.clientWidth || 1;
@@ -669,9 +686,13 @@ function showProfile(setting){
   $('admpane').classList.add('hide');
   $('profpane').classList.toggle('hide', setting);
   $('setpane').classList.toggle('hide', !setting);
+  /* ⚠ **설정도 이제 덮는 판입니다(b481).** 열면 덱을 숨기고 닫으면 되살립니다.
+     위에서 다른 판들을 다 닫았으므로, 여기 한 줄이 그 전부를 정리합니다 —
+     어느 판에서 왔든 프로필로 나가면 덱이 돌아옵니다. */
+  coverDeck(setting);
   /* 프로필 안에서 판을 갈아탈 때는 맨 위부터 보는 것이 맞습니다 —
      지도를 보다가 보관함을 열었는데 중간부터 보이면 이상합니다. */
-  toTop($("setview"));
+  toTop(setting ? $("setpane") : $("setview"));
 }
 /* loadAdmin 을 여기서 불러야 합니다. 안 그러면 **영영 안 열립니다** —
    프로필 아이콘(#dashbtn)을 켤지 말지가 여기 결과로 정해집니다.

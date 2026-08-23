@@ -11,9 +11,9 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop } from './dom.js?v=b480';
-import { sb } from './db.js?v=b480';
-import { fail, netTimeout } from './net.js?v=b480';
+import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b481';
+import { sb } from './db.js?v=b481';
+import { fail, netTimeout } from './net.js?v=b481';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -484,6 +484,7 @@ $('s_model').addEventListener('change', async () =>
 $('dashbtn').addEventListener('click', () => {
   $('profpane').classList.add('hide');
   $('admpane').classList.remove('hide');
+  coverDeck(true);
   toTop($('admpane'));
 });
 /* 조절은 한 겹 안입니다. 관리자 화면을 열 때마다 스위치 다섯이 맨 위를
@@ -503,6 +504,7 @@ $('adm_setopen').addEventListener('click', () => setPane(true));
 $('adm_setback').addEventListener('click', () => setPane(false));
 
 $('admback').addEventListener('click', () => {
+  coverDeck(false);
   $('admpane').classList.add('hide');
   /* 조절을 열어둔 채로 나갔다 들어오면 그 화면이 그대로 남습니다.
      대시보드로 되돌려 놓습니다 — 들어올 때는 늘 같은 화면이어야 합니다. */

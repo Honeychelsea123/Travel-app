@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop } from './dom.js?v=b480';
-import { openCity } from './city.js?v=b480';
-import { sb } from './db.js?v=b480';
-import { cities, countryName } from './cities.js?v=b480';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b480';
-import { starHtml, paintStars, markRated } from './stars.js?v=b480';
-import { fail } from './net.js?v=b480';
-import { arm } from './ui.js?v=b480';
-import { todayYmd } from './calc.js?v=b480';
-import { loadCities } from './citysearch.js?v=b480';
-import { loadRateData, saveRate } from './rating.js?v=b480';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b481';
+import { openCity } from './city.js?v=b481';
+import { sb } from './db.js?v=b481';
+import { cities, countryName } from './cities.js?v=b481';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b481';
+import { starHtml, paintStars, markRated } from './stars.js?v=b481';
+import { fail } from './net.js?v=b481';
+import { arm } from './ui.js?v=b481';
+import { todayYmd } from './calc.js?v=b481';
+import { loadCities } from './citysearch.js?v=b481';
+import { loadRateData, saveRate } from './rating.js?v=b481';
 
 let ctx = {
   me: () => null,
@@ -243,6 +243,7 @@ export async function openShelf(kind){
   $('profpane').classList.add('hide');
   $('mappane').classList.add('hide');
   $('shelfpane').classList.remove('hide');
+  coverDeck(true);
   toTop($('shelfpane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
@@ -327,6 +328,7 @@ export function closeShelf(fromPop){
   if (!fromPop && history.state?.t2 === 'shelf'){ history.back(); return; }
   $('shelfpane').classList.add('hide');
   $('profpane').classList.remove('hide');
+  coverDeck(false);
   ctx.loadFootprint();                  /* 여기서 매긴 것이 숫자에 바로 반영되게 */
 }
 $('shelfback').addEventListener('click', () => closeShelf());

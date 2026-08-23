@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop } from './dom.js?v=b480';
-import { sb } from './db.js?v=b480';
-import { cities, countryName, continentOf } from './cities.js?v=b480';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b481';
+import { sb } from './db.js?v=b481';
+import { cities, countryName, continentOf } from './cities.js?v=b481';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b480';
+import { similarPicks } from './rec.js?v=b481';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b480';
-import { visited } from './rate.js?v=b480';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b481';
+import { visited } from './rate.js?v=b481';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b480';
+         shareCard, cardImage } from './card.js?v=b481';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -44,6 +44,7 @@ export async function openPersona(){
   $('mappane').classList.add('hide');
   $('shelfpane').classList.add('hide');
   $('personapane').classList.remove('hide');
+  coverDeck(true);    /* 판이 열린 동안 탭 덱을 숨깁니다(b481) */
   /* ⚠ 프로필 안이라 **문서가 아니라 setview** 를 올려야 합니다(b471). */
   toTop($('personapane'));
   if (history.state?.t2 !== 'persona') history.pushState({ t2:'persona' }, '');
@@ -84,6 +85,7 @@ export function personaBackTo(tab){
 export function closePersona(fromPop){
   if (!fromPop && history.state?.t2 === 'persona'){ history.back(); return; }
   $('personapane').classList.add('hide');
+  coverDeck(false);
   const t = 왔던탭; 왔던탭 = null;
   if (t){ ctx.showApp(t); return; }
   $('profpane').classList.remove('hide');
@@ -197,7 +199,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b480"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b481"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">

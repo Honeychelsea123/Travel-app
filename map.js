@@ -12,12 +12,13 @@
  * 넣으면 화면과 카드가 어긋납니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
-import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop } from './dom.js?v=b480';
-import { openCity } from './city.js?v=b480';
-import { distKm } from './calc.js?v=b480';
-import { sb } from './db.js?v=b480';
-import { cities, countryName, continentOf } from './cities.js?v=b480';
-import { PERSONA_ICON, shareCard } from './card.js?v=b480';
+import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
+         coverDeck } from './dom.js?v=b481';
+import { openCity } from './city.js?v=b481';
+import { distKm } from './calc.js?v=b481';
+import { sb } from './db.js?v=b481';
+import { cities, countryName, continentOf } from './cities.js?v=b481';
+import { PERSONA_ICON, shareCard } from './card.js?v=b481';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -244,6 +245,7 @@ $('mapbig').addEventListener('click', () => {
 export async function openCountries(){
   $('profpane').classList.add('hide');
   $('ctrypane').classList.remove('hide');
+  coverDeck(true);    /* 판이 열린 동안 탭 덱을 숨깁니다(b481) */
   toTop($('ctrypane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
   if (history.state?.t2 !== 'ctry') history.pushState({ t2:'ctry' }, '');
 
@@ -393,6 +395,7 @@ function 돌아가기(){
 export function closeCountries(fromPop){
   if (!fromPop && history.state?.t2 === 'ctry'){ history.back(); return; }
   $('ctrypane').classList.add('hide');
+  coverDeck(false);
   if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
@@ -416,6 +419,7 @@ $('ctrypane').addEventListener('click', e => {
 export async function openMap(){
   $('profpane').classList.add('hide');
   $('mappane').classList.remove('hide');
+  coverDeck(true);
   toTop($('mappane'));
   if (history.state?.t2 !== 'map') history.pushState({ t2:'map' }, '');
 
@@ -559,6 +563,7 @@ export function closeMap(fromPop){
   if (!fromPop && history.state?.t2 === 'map'){ history.back(); return; }
   shutBigMap();
   $('mappane').classList.add('hide');
+  coverDeck(false);
   if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
