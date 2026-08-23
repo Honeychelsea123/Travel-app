@@ -2812,7 +2812,15 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      그래서 자판이 떠 있을 때는 탭바 자리도 안 뺍니다.
      ⚠ 판정은 `body.kbup` 입니다. `--kb` 로는 못 합니다 — 사파리·홈화면앱
        **둘 다 0** 이 나옵니다(ui.js 의 실측 주석 참고). */
-  height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px) - 84px - var(--sab));
+  /* ⚠⚠ **탭바 자리를 높이에서 빼면 유리가 죽습니다(b477).** ⚠⚠
+     b471 에서 `- 84px` 로 빼 두었더니 화면이 탭바 **위에서** 끝났습니다.
+     그러면 탭바 뒤로 지나가는 것이 없어서 굴절할 대상이 사라지고, 유리로
+     만들어 둔 탭바가 그냥 **흰 판**으로 보입니다(실기기 사진).
+     화면은 바닥까지 채우고, 탭바 자리는 **안쪽 여백**으로 비웁니다 —
+     그러면 마지막 카드도 안 가리면서 내용이 탭바 뒤로 지나갑니다.
+     (`body.hastab` 이 문서에 주던 여백과 같은 뜻입니다.) */
+  height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px));
+  padding-bottom:calc(84px + var(--sab));
   overflow-y:auto;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
@@ -2825,9 +2833,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 #signedout{ padding-top:var(--s-md); }
 
 /* 자판이 떠 있으면 탭바 자리를 안 뺍니다 — 어차피 자판 뒤입니다(b473). */
-body.kbup .tabpane{
-  height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px));
-}
+body.kbup .tabpane{ padding-bottom:0; }
 
 /* ══ 탭 덱 ══════════════════════════════════════════════════════════════
  * 탭 다섯을 가로로 나란히 놓고 **브라우저에게 넘기기를 맡깁니다**(b474).
