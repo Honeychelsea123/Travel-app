@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b478';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b478';
-import { onSwipeX } from './ui.js?v=b478';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b478';
+import { $ } from './dom.js?v=b479';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b479';
+import { onSwipeX } from './ui.js?v=b479';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b479';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -38,13 +38,65 @@ const TABS = {
   mem:   ['card-mem'],
 };
 /* 탭을 옮기면 열려 있던 폼은 닫습니다 */
+
+/* ══ 여행 구역 덱(b479) ══════════════════════════════════════════════════
+ * 앱 탭 다섯을 가로 덱으로 만든 뒤(b474), 여행 안 구역 넷도 같은 방식을
+ * 씁니다. 손가락으로 밀면 브라우저가 넘깁니다.
+ *
+ * ⚠ **여기는 「구역 = 화면」이 아니라 「구역 = 카드 묶음」이었습니다.**
+ *   그래서 먼저 카드들을 구역 칸으로 **옮겨** 담습니다. DOM 순서가 바뀌지만
+ *   CSS 는 거의 id 로 걸려 있어 탈이 없습니다(직계 자식 선택자였던
+ *   `#tripview > .card` 는 아래에서 같이 걷습니다).
+ * ⚠ **`card-trash` 는 세 구역이 같이 씁니다.** 내용은 구역마다 다른데
+ *   (trash.js 의 TAB_TRASH) 카드는 하나입니다. 복제하면 안쪽 id 가 겹치므로,
+ *   구역을 옮길 때마다 **그 칸으로 데려옵니다.** DOM 하나를 옮기는 것이라
+ *   내용도 저절로 따라옵니다.
+ * ⚠ 머리(제목·후기·수정)는 구역 밖입니다 — 넷이 같이 쓰는 것이라 어느 한
+ *   칸에 넣을 수가 없습니다. 덱 위에 고정으로 둡니다. */
+const 구역카드 = {
+  plans: ['card-today', 'card-plans', 'card-cand', 'plancard', 'importcard'],
+  exp:   ['card-exp', 'expcard', 'settlecard'],
+  prep:  ['card-book', 'bookcard', 'card-pack', 'card-link'],
+  mem:   ['card-mem'],
+};
+const 구역순서 = () =>
+  [...document.querySelectorAll('#tstrip button[data-t]')].map(b => b.dataset.t);
+
+const 여행덱 = document.createElement('div');
+여행덱.id = 'tripdeck';
+{
+  const 첫 = $('card-today');
+  if (첫){
+    첫.parentNode.insertBefore(여행덱, 첫);
+    for (const t of 구역순서()){
+      const 칸 = document.createElement('div');
+      칸.className = 'trippane';
+      칸.dataset.t = t;
+      (구역카드[t] || []).forEach(id => { const e = $(id); if (e) 칸.appendChild(e); });
+      여행덱.appendChild(칸);
+    }
+  }
+}
+const 구역칸 = t => 여행덱.querySelector(`.trippane[data-t="${t}"]`);
+const 여행칸폭 = () => 여행덱.clientWidth || 1;
+const 여행지금칸 = () => Math.round(여행덱.scrollLeft / 여행칸폭());
+
+/* 옮기는 동안에는 판정을 잠급니다 — 앱 덱과 같은 이유입니다(b476).
+   지나가는 칸에 반응하면 알약이 두 번 깜빡입니다. */
+let 여행잠금 = false, 여행잠금타이머 = 0;
+function 여행덱으로(t, 부드럽게){
+  const i = 구역순서().indexOf(t);
+  if (i < 0) return;
+  여행잠금 = true;
+  clearTimeout(여행잠금타이머);
+  if (!부드럽게) 여행덱.style.scrollBehavior = 'auto';
+  여행덱.scrollLeft = i * 여행칸폭();
+  if (!부드럽게) 여행덱.style.scrollBehavior = '';
+  여행잠금타이머 = setTimeout(() => { 여행잠금 = false; }, 부드럽게 ? 520 : 0);
+}
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
 
-export function showTab(t){
-  /* 어느 쪽에서 들어오는지. 알약에 적힌 순서를 그대로 읽습니다 —
-     여기 따로 적어두면 index.html 에서 순서를 바꿀 때 어긋납니다. */
-  const seq = [...document.querySelectorAll('#tstrip button[data-t]')].map(b => b.dataset.t);
-  const back = seq.indexOf(t) < seq.indexOf(tab);
+export function showTab(t, 이미덱에){
   setTab(t);
   /* 한 id 가 여러 탭에 걸리게 되면서, 예전처럼 탭마다 따로 끄면 뒤 탭 차례에
      방금 켠 것이 다시 꺼집니다. 켤 것을 먼저 모아두고 한 번에 정합니다. */
@@ -60,85 +112,63 @@ export function showTab(t){
   for (const ids of Object.values(TABS))
     for (const id of ids) $(id).classList.toggle('hide', !on.has(id));
 
-  /* ── 구역이 바뀔 때 밀려 들어옵니다(b478) ──────────────────────────
-     ⚠ **여기는 덱을 못 씁니다.** 앱 탭 다섯은 화면 하나씩이라 가로로
-       나란히 놓을 수 있었는데, 여행 구역은 **카드 묶음**입니다. 게다가
-       `card-trash` 는 일정·지출·준비 **세 구역이 같이 씁니다** — 같은
-       DOM 을 세 칸에 둘 수는 없습니다. 덱으로 만들려면 구역별 컨테이너를
-       만들고 공유 카드를 어떻게 할지부터 정해야 합니다(따로 볼 일).
-     ⚠ 그래서 **끝난 뒤 한 번** 밀려 들어오게만 합니다. 손가락을 따라오지는
-       않지만 뚝 끊기지는 않습니다. 방향은 위에서 이미 잰 `back` 을 씁니다.
-     ⚠ 폼(plancard 등)은 뺍니다 — 열려 있던 폼이 다시 미끄러져 들어오면
-       방금 쓰던 칸이 움직여서 거슬립니다. */
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches){
-    const 결 = back ? 'slidein-l' : 'slidein-r';
-    for (const id of on){
-      if (FORMS.includes(id)) continue;
-      const el = $(id); if (!el) continue;
-      el.classList.remove('slidein-l', 'slidein-r');
-      void el.offsetWidth;                 /* 연속으로 눌러도 다시 돌게 */
-      el.classList.add(결);
-      const 떼기 = () => el.classList.remove('slidein-l', 'slidein-r');
-      el.addEventListener('animationend', 떼기, { once:true });
-      setTimeout(떼기, 260);               /* animationend 가 안 올 때를 위해 */
-    }
-  }
+  /* ⚠ **지운 것 카드를 이 구역으로 데려옵니다(b479).** 세 구역이 같이 쓰는데
+     내용은 구역마다 다릅니다. 복제하면 안쪽 id 가 겹치므로 DOM 하나를
+     옮깁니다 — 내용도 저절로 따라옵니다. */
+  const 칸 = 구역칸(t);
+  const 휴지 = $('card-trash');
+  if (칸 && 휴지 && 휴지.parentNode !== 칸) 칸.appendChild(휴지);
 
   $('editcard').classList.add('hide');
   document.querySelectorAll('#tstrip button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.t === t));
   /* 지운 것은 열 때만 받아옵니다. 대부분은 볼 일이 없어서 미리 받으면 낭비입니다. */
   if (TAB_TRASH[t]) loadTrash();
-  window.scrollTo({ top:0, behavior:'smooth' });
 
-  /* 옆에서 들어오는 모양. **두 클래스를 먼저 걷고 한 박자 쉬어야** 같은 방향으로
-     연달아 넘길 때 애니메이션이 다시 시작됩니다 — 안 걷으면 두 번째부터
-     아무 일도 안 일어난 것처럼 보입니다. */
-  const v = $('tripview');
-  v.classList.remove('tabin', 'tabin-r');
-  void v.offsetWidth;
-  v.classList.add(back ? 'tabin-r' : 'tabin');
+  /* ⚠ **손가락으로 밀어서 온 경우에는 덱을 다시 옮기지 않습니다.** 이미 그
+     칸에 서 있는데 또 옮기면 방금 멎은 스크롤을 건드려 튑니다(b474 와 같음). */
+  if (!이미덱에) 여행덱으로(t, true);
+  /* 구역을 옮기면 그 칸의 맨 위부터 봅니다 — 지출을 보다가 일행으로 갔는데
+     중간부터 보이면 어디인지 모릅니다. 각 칸이 제 스크롤을 가지므로
+     `window` 가 아니라 그 칸을 올립니다. */
+  if (칸) 칸.scrollTop = 0;
 }
-$('tstrip').addEventListener('click', e => {
-  const b = e.target.closest('button[data-t]');
+
+/* ── 어느 구역에 서 있나 — 앱 덱과 같은 방식입니다(b474 주석 참고) ────── */
+function 여행닿았다(el){
+  if (여행잠금) return;
+  const t = el?.dataset?.t;
+  if (!t || t === tab) return;
+  showTab(t, true);
+}
+{
+  const 눈 = new IntersectionObserver(목록 => {
+    const 온전한 = 목록
+      .filter(e => e.isIntersecting && e.intersectionRatio >= 0.6)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (온전한) 여행닿았다(온전한.target);
+  }, { root: 여행덱, threshold: [0.6, 0.9] });
+  [...여행덱.children].forEach(el => 눈.observe(el));
+
+  let 타이머 = 0;
+  const 나중에 = () => {
+    clearTimeout(타이머);
+    타이머 = setTimeout(() => 여행닿았다(여행덱.children[여행지금칸()]), 130);
+  };
+  여행덱.addEventListener('scroll', 나중에, { passive:true });
+  여행덱.addEventListener('scrollend', 나중에, { passive:true });
+  여행덱.addEventListener('pointerdown', () => {
+    여행잠금 = false; clearTimeout(여행잠금타이머);
+  }, { passive:true });
+}
+$("tstrip").addEventListener("click", e => {
+  const b = e.target.closest("button[data-t]");
   if (b) showTab(b.dataset.t);
 });
-
-/* ── 좌우로 쓸어 구역 넘기기 ──────────────────────────────────────────
- * 구역 알약이 화면 **왼쪽 위**에 있어서 한 손으로 들면 엄지가 안 닿습니다.
- * 손가락이 이미 있는 자리에서 넘길 수 있게 합니다. 알약은 그대로 둡니다 —
- * 쓸기는 알려주지 않으면 아무도 모르므로, 보이는 길이 사라지면 안 됩니다.
- *
- * **순서는 알약에 적힌 순서를 그대로 읽어옵니다.** 여기 따로 적어두면
- * index.html 에서 순서를 바꿀 때 쓸기만 옛 순서로 남습니다.
- * 끝에서 더 밀면 안 넘어갑니다 — 돌아 나오면 지금 어디인지 감이 사라집니다. */
-{
-  const order = () => [...document.querySelectorAll('#tstrip button[data-t]')]
-    .map(b => b.dataset.t);
-  const step = d => {
-    const o = order(), i = o.indexOf(tab);
-    if (i < 0) return;
-    const next = o[i + d];
-    if (next && next !== tab) showTab(next);
-  };
-  /* **`#tripview` 가 아니라 화면 전체에 겁니다.** 처음에 tripview 에 걸었더니
-     카드가 끝나는 데서 tripview 도 끝나서, **그 아래 회색 빈 자리에서는
-     아무 일도 안 일어났습니다**(지출이 비면 화면의 3분의 2가 그 자리입니다).
-     사용자가 보기에 그 회색도 여행 화면이므로 거기서도 넘어가야 합니다.
-     화면 전체에 걸어도 되는 이유는 `body.intrip` 이 있기 때문입니다 —
-     showApp 이 다른 탭으로 갈 때 여행을 닫으면서 늘 끕니다. */
-  onSwipeX(document, {
-    /* 시트가 위에 열려 있으면 화면이 보여도 넘기면 안 됩니다.
-       **하단바 위에서 시작한 것은 넘깁니다** — 거기는 앱 탭(홈·여행·기록·프로필)
-       차례입니다. 아래에서 따로 듣습니다. */
-    active: () => document.body.classList.contains('intrip') &&
-                  !$('tripview').classList.contains('hide') &&
-                  !document.body.classList.contains('sheeton'),
-    skip:    e => !!e.target.closest?.('#appbar'),
-    onLeft:  () => step(1),      /* 왼쪽으로 쓸면 다음 구역이 따라 들어옵니다 */
-    onRight: () => step(-1),
-  });
-}
+/* ⚠ **여행 안 좌우 쓸기를 걷었습니다(b479).** 구역 넷이 이제 가로 스크롤
+   덱이라, 손가락으로 미는 것은 **브라우저가** 받습니다. 여기서 또 받으면
+   한 번 민 것이 두 칸을 넘어갑니다(앱 탭에서 b474 에 겪은 것과 같음).
+   구역 알약은 그대로 둡니다 — 쓸기는 알려주지 않으면 아무도 모릅니다. */
 
 /* ── 하단바도 좌우로 쓸어 넘기기 ──────────────────────────────────────
  * 사용자 요청. 탭이 넷이라 끝에서 끝으로 갈 때 손가락이 화면을 가로지릅니다.
