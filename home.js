@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b467';
-import { sb } from './db.js?v=b467';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b467';
-import { hm, todayYmd } from './calc.js?v=b467';
-import { starHtml, paintStars, markRated } from './stars.js?v=b467';
+import { $, esc } from './dom.js?v=b468';
+import { sb } from './db.js?v=b468';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b468';
+import { hm, todayYmd } from './calc.js?v=b468';
+import { starHtml, paintStars, markRated } from './stars.js?v=b468';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b467';
-import { cities, countryName } from './cities.js?v=b467';
-import { myRates, visited } from './rate.js?v=b467';
-import { plans } from './trip.js?v=b467';
-import { openCity } from './city.js?v=b467';
-import { loadCities, pick } from './citysearch.js?v=b467';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b467';
+import { rateHero, starValue } from './rateui.js?v=b468';
+import { cities, countryName } from './cities.js?v=b468';
+import { myRates, visited } from './rate.js?v=b468';
+import { plans } from './trip.js?v=b468';
+import { openCity } from './city.js?v=b468';
+import { loadCities, pick } from './citysearch.js?v=b468';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b468';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b467';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b468';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b467';
+import { drawReport } from './report.js?v=b468';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b467';
-import { openNew } from './newtrip.js?v=b467';
+import { PERSONA_BG } from './card.js?v=b468';
+import { openNew } from './newtrip.js?v=b468';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -791,32 +791,65 @@ async function renderFoot(통){
        그냥 0 에서 시작하면 「마지막 장」이 먼저 보입니다.
      ⚠ 복제 자리에 닿으면 **같은 그림의 진짜 자리**로 옮깁니다. 그림이
        같으니 옮긴 것이 눈에 안 보입니다.
-     ⚠ 옮길 때 스냅을 끕니다 — 켠 채로 scrollLeft 를 바꾸면 스냅이
-       목적지를 다시 계산해 되튑니다. */
+     ⚠ 옮기는 때가 중요합니다 — 아래 「관성이 멎기 전에」 참고. */
   {
     const 줄기 = 넘김.querySelector('.swrow');
     const 점들 = [...넘김.querySelectorAll('.swdots i')];
     const 수 = 장.length;
 
     const 폭 = () => 줄기.clientWidth || 1;
+
+    /* ⚠⚠ **관성이 멎기 전에 옮기면 안 됩니다(b468).** ⚠⚠
+       b455 는 복제 자리에 **닿는 즉시** 옮겼습니다. 아이폰에서는 손을 뗀
+       뒤에도 관성 스크롤이 한동안 굴러가는데, 그 도중에 scrollLeft 를
+       대입하면 **그 값 위에 남은 관성이 얹힙니다.** 결과가 카드 폭의
+       배수에서 벗어나 카드가 반쯤 걸친 채 멈추고, 가운데 정렬한 숫자가
+       왼쪽으로 밀려 보였습니다.
+       복제가 있으니 **급할 이유가 없습니다** — 복제 칸에는 진짜와 똑같은
+       그림이 이미 그려져 있어서, 멎은 뒤에 조용히 옮겨도 티가 안 납니다.
+       그게 애초에 복제를 둔 이유입니다. */
+    let 옮기는중 = false;
     const 옮기기 = 자리 => {
+      옮기는중 = true;
       줄기.style.scrollSnapType = 'none';
       줄기.scrollLeft = 자리;
-      requestAnimationFrame(() => { 줄기.style.scrollSnapType = ''; });
+      /* ⚠ 리플로우를 **한 번 강제한 뒤** 스냅을 되돌립니다. rAF 로 미루면
+         그 한 프레임 동안 스냅이 꺼진 채라 손가락이 닿아 있으면 또 밀립니다. */
+      void 줄기.offsetWidth;
+      줄기.style.scrollSnapType = '';
+      옮기는중 = false;
     };
+
     /* 카드가 폭을 가지려면 화면에 붙은 뒤여야 합니다 — 다음 프레임에 놓습니다. */
     requestAnimationFrame(() => 옮기기(폭()));
 
-    줄기.addEventListener('scroll', () => {
+    /* 스크롤이 멎었을 때만 자리를 고칩니다. `scrollend` 가 있으면 그것이
+       제일 정확하고, 없는 기기에서는 마지막 scroll 로부터 140ms 로 봅니다. */
+    const 멎으면 = () => {
+      if (옮기는중) return;
       const w = 폭();
-      const i = Math.round(줄기.scrollLeft / w);      /* 복제 포함 자리 */
-      /* 복제 자리에 닿았으면 같은 그림의 진짜 자리로. 스크롤이 멎은 뒤에
-         하면 티가 나므로 **닿는 즉시** 합니다. */
-      if (i === 0)            옮기기(수 * w);          /* 앞 복제 → 진짜 마지막 */
-      else if (i === 수 + 1)  옮기기(w);               /* 뒤 복제 → 진짜 첫 장 */
+      const i = Math.round(줄기.scrollLeft / w);
+      if (i === 0)            옮기기(수 * w);   /* 앞 복제 → 진짜 마지막 */
+      else if (i === 수 + 1)  옮기기(w);        /* 뒤 복제 → 진짜 첫 장 */
+      /* ⚠ 복제가 아니어도 어긋나 있으면 맞춰 둡니다 — 관성이 스냅을
+         못 잡고 멎는 경우가 드물게 있습니다. */
+      else if (줄기.scrollLeft % w) 옮기기(i * w);
+    };
+    const 있음 = 'onscrollend' in 줄기;
+    let 타이머 = 0;
+
+    줄기.addEventListener('scroll', () => {
+      /* 점은 **즉시** 갱신합니다 — 이건 자리를 안 건드리므로 안전하고,
+         손가락을 따라 움직여야 넘기는 느낌이 납니다. */
+      const i = Math.round(줄기.scrollLeft / 폭());
       const 실제 = ((i - 1) % 수 + 수) % 수;
       점들.forEach((d, k) => d.classList.toggle('on', k === 실제));
+      if (있음) return;
+      clearTimeout(타이머);
+      타이머 = setTimeout(멎으면, 140);
     }, { passive:true });
+
+    if (있음) 줄기.addEventListener('scrollend', 멎으면, { passive:true });
   }
 
   /* ── 지도는 **발자국 바로 아래**입니다(b423) ─────────────────────────

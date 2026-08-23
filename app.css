@@ -2749,7 +2749,10 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .swrow{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
         scrollbar-width:none; -ms-overflow-style:none; }
 .swrow::-webkit-scrollbar{ display:none; }
-.swcard{ flex:0 0 100%; scroll-snap-align:center; text-align:center;
+/* ⚠ `center` 가 아니라 `start` 입니다(b468). 자바스크립트가 자리를 `i × 폭`
+     으로 계산하는데 그건 **start 기준**입니다. 카드 폭이 100% 라 둘이 같은
+     결과를 내지만, 다르게 적어 두면 언젠가 한쪽만 고칩니다. */
+.swcard{ flex:0 0 100%; scroll-snap-align:start; text-align:center;
          padding:8px 0 4px; }
 .swtitle{ font-size:calc(13px * var(--ts)); font-weight:600; color:var(--dim);
           margin-bottom:6px; }
