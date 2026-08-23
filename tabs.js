@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b473';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b473';
-import { onSwipeX } from './ui.js?v=b473';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b473';
+import { $ } from './dom.js?v=b474';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b474';
+import { onSwipeX } from './ui.js?v=b474';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b474';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -133,19 +133,11 @@ $('tstrip').addEventListener('click', e => {
     /* 끝에서 더 밀어도 안 돌아 나옵니다 — 돌면 지금 어디인지 감이 사라집니다. */
     if (next && next !== ctx.appTab()) ctx.showApp(next);
   };
-  /* **하단바만이 아니라 화면 전체입니다.** 처음에 바 위에서만 되게 했더니
-     사용자가 바로 "홈화면 슬라이드 안된다"고 했습니다 — 당연합니다.
-     여행 안에서는 화면 아무 데나 쓸면 구역이 넘어가는데, 여행 밖에서만
-     좁은 띠를 정확히 짚어야 한다면 그건 같은 앱이 두 규칙으로 도는 것입니다.
-     **여행 밖이면 화면 전체가 앱 탭 차례입니다.**
-     (여행 안에서는 위쪽 쓸기가 구역을 넘기고, 하단바에서만 앱 탭이 넘어갑니다.) */
-  onSwipeX(document, {
-    active: () => !$('appbar').classList.contains('hide') &&
-                  !document.body.classList.contains('sheeton') &&
-                  !document.body.classList.contains('intrip'),
-    onLeft:  () => step(1),
-    onRight: () => step(-1),
-  });
+  /* ⚠ **화면 전체 쓸기를 걷었습니다(b474).** 이제 탭 다섯이 가로 스크롤
+     덱이라, 손가락으로 미는 것은 **브라우저가** 받습니다. 여기서 또 받으면
+     한 번 민 것이 두 칸을 넘어갑니다.
+     여행 안에서 쓰는 하단바 쓸기는 남깁니다 — 여행 화면은 덱 밖이라
+     브라우저가 넘겨줄 것이 없습니다. */
   /* 여행 안에서는 위가 구역 차례라 화면 전체로는 못 겁니다. 바만 따로 듣습니다. */
   onSwipeX($('appbar'), {
     active: () => !$('appbar').classList.contains('hide') &&

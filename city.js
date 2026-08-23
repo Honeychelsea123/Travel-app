@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo } from './dom.js?v=b473';
-import { sb } from './db.js?v=b473';
-import { cities, countryName, continentOf } from './cities.js?v=b473';
-import { myRates, cityStat, visited } from './rate.js?v=b473';
-import { starHtml } from './stars.js?v=b473';
-import { localTime, dateRange, hm } from './calc.js?v=b473';
-import { fail } from './net.js?v=b473';
+import { $, esc, avatarImg, emptyDo } from './dom.js?v=b474';
+import { sb } from './db.js?v=b474';
+import { cities, countryName, continentOf } from './cities.js?v=b474';
+import { myRates, cityStat, visited } from './rate.js?v=b474';
+import { starHtml } from './stars.js?v=b474';
+import { localTime, dateRange, hm } from './calc.js?v=b474';
+import { fail } from './net.js?v=b474';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -45,9 +45,9 @@ export async function openCity(id){
 
   /* 홈에서도 지도에서도 도시를 열 수 있습니다 — 열린 탭이 뭐든 다 덮어야 합니다.
      setview 안쪽(프로필/지도/설정) 상태는 건드리지 않아서 닫으면 그대로 돌아옵니다. */
-  $('rateview').classList.add('hide');
-  $('homeview').classList.add('hide');
-  $('setview').classList.add('hide');
+  /* 탭 화면 다섯은 덱 한 덩어리입니다(b474) — 낱개로 숨기면 덱 안에서
+     가로 위치가 밀립니다. */
+  $('tabdeck').classList.add('hide');
   $('cityview').classList.remove('hide');
   window.scrollTo({ top:0 });
 
@@ -141,10 +141,11 @@ export function closeCity(fromPop){
   if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
   cityOpen = null;
   $('cityview').classList.add('hide');
-  /* 열었던 탭으로 돌아갑니다. 홈에서 열고 기록 탭에 떨어지면 이상합니다. */
-  if (ctx.appTab() === 'home'){ $('homeview').classList.remove('hide'); ctx.loadHome(); }
-  else if (ctx.appTab() === 'set') $('setview').classList.remove('hide');
-  else { $('rateview').classList.remove('hide'); ctx.drawRatings(); }
+  /* 열었던 탭으로 돌아갑니다 — 덱은 그 칸에 그대로 서 있으므로 되살리기만
+     하면 됩니다(b474). 내용 갱신은 탭마다 다르니 그것만 나눕니다. */
+  $('tabdeck').classList.remove('hide');
+  if (ctx.appTab() === 'home') ctx.loadHome();
+  else if (ctx.appTab() === 'rate') ctx.drawRatings();
 }
 
 $('cityview').addEventListener('click', async e => {

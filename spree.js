@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b473';
-import { sb } from './db.js?v=b473';
-import { cities } from './cities.js?v=b473';
-import { loadCities } from './citysearch.js?v=b473';
-import { paintStars } from './stars.js?v=b473';
-import { rateHero, starValue } from './rateui.js?v=b473';
-import { saveRate } from './rating.js?v=b473';
-import { resetHomeSig } from './home.js?v=b473';
+import { $, esc } from './dom.js?v=b474';
+import { sb } from './db.js?v=b474';
+import { cities } from './cities.js?v=b474';
+import { loadCities } from './citysearch.js?v=b474';
+import { paintStars } from './stars.js?v=b474';
+import { rateHero, starValue } from './rateui.js?v=b474';
+import { saveRate } from './rating.js?v=b474';
+import { resetHomeSig } from './home.js?v=b474';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -96,7 +96,7 @@ function 다음(){
 export async function openSpree(){
   if (도는중) return;
   도는중 = true;
-  $('rateview').classList.add('hide');
+  $('tabdeck').classList.add('hide');   /* 덱 한 덩어리로(b474) */
   $('spreeview').classList.remove('hide');
   /* ⚠ **탭 바를 진짜로 숨겨야 합니다(b410).** `hastab` 은 본문 아래 **여백**만
      없앱니다 — 탭 바는 `position:fixed` 라 그대로 떠 있고, 여백만 없애면
@@ -136,7 +136,7 @@ export function closeSpree(fromPop){
   if (!fromPop && history.state?.t2 === 'spree'){ history.back(); return; }
   도는중 = false;
   $('spreeview').classList.add('hide');
-  $('rateview').classList.remove('hide');
+  $('tabdeck').classList.remove('hide');
   /* 숨긴 것을 반드시 되돌립니다 — 여기서 빠뜨리면 앱에 탭 바가 영영 없습니다. */
   $('appbar').classList.remove('hide');
   document.body.classList.add('hastab');

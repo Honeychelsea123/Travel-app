@@ -2840,3 +2840,38 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 body.kbup .tabpane{
   height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px));
 }
+
+/* ══ 탭 덱 ══════════════════════════════════════════════════════════════
+ * 탭 다섯을 가로로 나란히 놓고 **브라우저에게 넘기기를 맡깁니다**(b474).
+ * 관성도 스냅도 브라우저 몫이라, 자바스크립트로 흉내내다 겪은 것들
+ * (관성이 남은 채 자리를 옮겨 반쯤 걸치기, 뒷정리가 엇갈려 두 화면이
+ * 겹치기, 매 프레임 transform 으로 버벅이기)이 아예 생길 수가 없습니다.
+ *
+ * ⚠ `touch-action:pan-x pan-y` — 손가락이 가로로 가면 덱이, 세로로 가면
+ *   안쪽 화면이 받습니다. 브라우저가 알아서 가릅니다.
+ * ⚠ `overscroll-behavior-x:contain` — 끝 칸에서 더 밀어도 뒤로가기 제스처가
+ *   안 걸립니다. iOS 사파리에서 이게 없으면 오른쪽 끝에서 페이지가 나갑니다.
+ * ⚠ 스크롤 막대는 숨깁니다. 다섯 칸짜리라 자리를 알려줄 것이 하단바로 충분하고,
+ *   막대가 보이면 칸 높이가 기기마다 흔들립니다. */
+#tabdeck{
+  /* 하단바를 눌러 옮길 때 부드럽게 구릅니다. **손가락으로 미는 것은 영향을
+     안 받습니다** — 사용자 스크롤은 scroll-behavior 를 따르지 않습니다. */
+  scroll-behavior:smooth;
+  display:flex;
+  overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;
+  scrollbar-width:none; -ms-overflow-style:none;
+}
+#tabdeck::-webkit-scrollbar{ display:none; }
+/* ⚠ 덱 안에서는 **낱개로 숨기지 않습니다.** 한 칸이 사라지면 그 뒤 칸들의
+     가로 위치가 통째로 밀립니다. 탭 밖 화면을 열 때는 덱을 통째로 숨깁니다. */
+#tabdeck > .tabpane{
+  flex:0 0 100%; min-width:0;
+  scroll-snap-align:start;
+  /* 세로로 굴리다 끝에 닿아도 옆 칸으로 새지 않게 */
+  overscroll-behavior:contain;
+}
+@media (prefers-reduced-motion: reduce){
+  #tabdeck{ scroll-behavior:auto; }
+}

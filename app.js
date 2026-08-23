@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b473';
+import { sb } from './db.js?v=b474';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml, toTop } from './dom.js?v=b473';
-import { starHtml, paintStars, markRated } from './stars.js?v=b473';
+         putHtml, dropHtml, toTop } from './dom.js?v=b474';
+import { starHtml, paintStars, markRated } from './stars.js?v=b474';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW } from './net.js?v=b473';
-import { loadAdmin } from './admin.js?v=b473';
+         setErrLogger, setReadOnly, NOROW } from './net.js?v=b474';
+import { loadAdmin } from './admin.js?v=b474';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b473';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b473';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b473';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b474';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b474';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,87 +34,87 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b473';
+         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b474';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b473';
+         clearJustRated, putRateFilter, clearRates } from './rate.js?v=b474';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, addCity, search } from './cities.js?v=b473';
+         useCities, addCity, search } from './cities.js?v=b474';
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b473';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b474';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
-import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b473';
+import { openPersona, closePersona, setPersonaCtx } from './persona.js?v=b474';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b473';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b474';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b473';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b474';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b473';
+         isCityOpen, clearCityOpen } from './city.js?v=b474';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b473';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b474';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b473';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b474';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b473';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b473';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b473';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b473';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b473';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b473';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b473';
-import { loadReview, setReviewCtx } from './review.js?v=b473';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b474';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b474';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b474';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b474';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b474';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b474';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b474';
+import { loadReview, setReviewCtx } from './review.js?v=b474';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b473';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b473';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b473';
+         setRateFilter, tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b474';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b474';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b474';
 /* 로그인 전 맛보기 평가(b406). 로그인 화면 안에서만 돕니다 — 앱 전체를
    익명에 열지 않습니다. 자세한 것은 try.js 머리말. */
-import { drawTry, claimTryRates } from './try.js?v=b473';
+import { drawTry, claimTryRates } from './try.js?v=b474';
 /* 궁합 링크(?mate=CODE)를 주소에서 받아 담아둡니다 — mate.js 머리말 참고. */
-import { catchMate } from './mate.js?v=b473';
+import { catchMate } from './mate.js?v=b474';
 /* 연속 평가 — 쭉 매기기(b409). 기록 탭에서 들어갑니다. spree.js 머리말 참고. */
-import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b473';
+import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b474';
 /* 분석 탭(b439) — 성향·지도로 가는 입구. 화면은 anal.js 가 그립니다. */
-import { loadAnal, setAnalCtx } from './anal.js?v=b473';
+import { loadAnal, setAnalCtx } from './anal.js?v=b474';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b473';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b473';
-import './selfcheck.js?v=b473';
-import { guessCat, setBringCtx } from './bring.js?v=b473';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b473';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b473';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b473';
-import { setAccountCtx } from './account.js?v=b473';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b473';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b473';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b473';
-import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b473';
-import { resetGeo, setGeocodeCtx } from './geocode.js?v=b473';
-import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b473';
-import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b473';
-import { drawToday } from './today.js?v=b473';
-import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b473';
-import { flags, featOn, loadFlags } from './flags.js?v=b473';
-import { setSwRegCtx } from './swreg.js?v=b473';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b474';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b474';
+import './selfcheck.js?v=b474';
+import { guessCat, setBringCtx } from './bring.js?v=b474';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b474';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b474';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b474';
+import { setAccountCtx } from './account.js?v=b474';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b474';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b474';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b474';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b474';
+import { resetGeo, setGeocodeCtx } from './geocode.js?v=b474';
+import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b474';
+import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b474';
+import { drawToday } from './today.js?v=b474';
+import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b474';
+import { flags, featOn, loadFlags } from './flags.js?v=b474';
+import { setSwRegCtx } from './swreg.js?v=b474';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b473';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b474';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b473';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b474';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -223,7 +223,9 @@ document.getElementById('bootfail')?.remove();
 /* 오프라인 큐가 다 나간 뒤에 무엇을 다시 받아올지는 여기가 압니다.
    net.js 는 trip 도 loadPlans 도 몰라야 하므로 넣어줍니다. */
 setOnDrained(async () => {
-  if (trip && !$('listview').classList.contains('hide')) await loadPlans();
+  /* 일정 탭에 서 있을 때만 갱신합니다. 전에는 `#listview` 가 안 숨었나로
+     봤는데, 덱에서는 다섯이 늘 보이므로 **탭 이름**으로 물어야 합니다(b474). */
+  if (trip && appTab === 'trips') await loadPlans();
 });
 
 /* fail() 이 서버 오류를 한국어로 바꿔 보여주고 **원문은 여기로** 보냅니다.
@@ -427,12 +429,14 @@ const 탭순서 = () => [...document.querySelectorAll('#appbar button[data-a]')]
  * ⚠ 화면 회전·키보드·주소창 접힘마다 다시 잽니다. iOS 는 주소창이 접힐 때
  *   `resize` 대신 `visualViewport` 만 움직이는 경우가 있습니다. */
 function 덱높이맞추기(){
-  const el = [...document.querySelectorAll('.tabpane')]
-    .find(x => !x.classList.contains('hide'));
+  /* ⚠ **덱이 숨어 있으면 재지 않습니다(b474).** 여행·도시 화면을 열면 덱이
+     통째로 사라지는데, 그때 재면 0 이 나와 화면이 통째로 길어집니다.
+     전에 쓰던 값을 그대로 두는 편이 낫습니다. */
+  if (덱.classList.contains("hide")) return;
+  const el = 덱.children[0];
   if (!el) return;
-  /* 높이를 지운 채로 재야 **원래 자리**가 나옵니다 — 이미 줄여 둔 높이로
-     재면 잰 값이 그 높이에 물려 조금씩 밀립니다. */
   const 위 = Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY));
+  if (!위) return;                 /* 아직 화면에 안 붙었으면 다음 기회에 */
   document.documentElement.style.setProperty('--deck-top', 위 + 'px');
 }
 addEventListener('resize', 덱높이맞추기);
@@ -445,29 +449,58 @@ const 탭화면 = { home:'homeview', rate:'rateview', anal:'analview',
                  trips:'listview', set:'setview' };
 const 판찾기 = t => $(탭화면[t]);
 
-function 밀어넣기(앞탭, t){
-  const el = 판찾기(t);
-  if (!el || !앞탭 || 앞탭 === t) return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const o = 탭순서();
-  const 앞 = o.indexOf(앞탭), 뒤 = o.indexOf(t);
-  if (앞 < 0 || 뒤 < 0) return;
-  /* 오른쪽 탭으로 가면 오른쪽에서, 왼쪽 탭으로 가면 왼쪽에서 들어옵니다 —
-     하단바에서 움직인 방향과 같아야 어디로 갔는지가 읽힙니다. */
-  el.classList.remove('slidein-l', 'slidein-r');
-  void el.offsetWidth;                       /* 연속으로 눌러도 다시 돌게 */
-  el.classList.add(뒤 > 앞 ? 'slidein-r' : 'slidein-l');
-  /* ⚠ `animationend` 는 **안 올 수도 있습니다** — 화면이 백그라운드로
-     내려가면 애니메이션이 아예 안 돕니다. 클래스가 남으면 다음 전환의
-     `remove` 가 치워주긴 하지만, 그 사이 다른 코드가 이 클래스를 보고
-     헷갈릴 수 있어 시간으로도 한 번 더 겁니다. */
-  const 떼기 = () => el.classList.remove('slidein-l', 'slidein-r');
-  el.addEventListener('animationend', 떼기, { once:true });
-  setTimeout(떼기, 260);
+/* ══ 탭 덱 ══════════════════════════════════════════════════════════════
+ * **탭 다섯을 가로로 나란히 놓고 브라우저에게 넘기기를 맡깁니다(b474).**
+ *
+ * b469 에서 자바스크립트로 「손가락 따라 끌기」를 만들었다가 되돌렸습니다.
+ * 「지금 어디까지 끌렸나」를 변수로 들고 있으면 그 사이에 무슨 일이든
+ * 끼어들 수 있었습니다 — 관성이 남은 채 자리를 옮기거나, 뒷정리끼리
+ * 엇갈려 두 화면이 겹쳐 보였습니다.
+ * **스크롤 위치에는 그런 틈이 없습니다.** 관성도 스냅도 브라우저 몫입니다.
+ *
+ * ⚠ **덱 순서는 하단바 순서에서 읽습니다.** 여기 또 적으면 스와이프 방향과
+ *   하단바가 언젠가 반대로 움직입니다.
+ * ⚠ 다섯은 이제 **늘 붙어 있습니다**(hide 를 안 씁니다). 덱 안에서 한 칸이
+ *   `display:none` 이 되면 그 뒤 칸들의 가로 위치가 통째로 밀립니다.
+ *   탭 밖 화면(여행·도시·초안…)을 열 때는 **덱을 통째로** 숨깁니다. */
+const 덱 = document.createElement('div');
+덱.id = 'tabdeck';
+{
+  const 첫 = 판찾기(탭순서()[0]) || $('homeview');
+  첫.parentNode.insertBefore(덱, 첫);
+  탭순서().forEach(t => {
+    const el = 판찾기(t);
+    if (!el) return;
+    el.classList.remove('hide');
+    덱.appendChild(el);
+  });
 }
-function showApp(t, 표시탭){
-  /* 애니메이션 방향을 정하려면 **바꾸기 전 탭**을 알아야 합니다. */
-  const 앞탭 = 지난탭; 지난탭 = t;
+
+/* 덱에서 지금 몇 번째 칸인가. 폭이 0 일 때(화면이 숨어 있을 때) 나눗셈이
+   NaN 이 되지 않게 1 로 막습니다. */
+const 칸폭 = () => 덱.clientWidth || 1;
+const 지금칸 = () => Math.round(덱.scrollLeft / 칸폭());
+
+/* ⚠ **덱을 옮기는 것과 「탭이 바뀌었다」를 알리는 것은 다른 일입니다.**
+ *   하단바를 누르면 여기서 옮기고, 손가락으로 밀면 브라우저가 옮깁니다.
+ *   어느 쪽이든 **멎은 뒤에** 아래 `닿았다` 가 한 번 정리합니다. */
+function 덱으로(t, 부드럽게){
+  const i = 탭순서().indexOf(t);
+  if (i < 0) return;
+  /* ⚠ **`scrollTo({behavior:"smooth"})` 를 안 씁니다.** 스크롤 칸에서는 그것이
+     아예 안 도는 환경이 있습니다 — b471 에서 `toTop` 을 그 이유로 고쳤는데
+     여기서 또 썼고, 재보니 덱이 0 에서 꿈쩍도 안 했습니다.
+     부드러움은 CSS 에 맡기고 **값은 직접 넣습니다.** 그러면 애니메이션이
+     돌든 안 돌든 끝 자리는 반드시 그 칸입니다. */
+  /* CSS 기본이 smooth 라(app.css) 여기서는 **즉시 옮길 때만** 꺼 둡니다.
+     대입 뒤에 되돌리면 애니메이션이 시작하자마자 끊깁니다. */
+  if (!부드럽게) 덱.style.scrollBehavior = "auto";
+  덱.scrollLeft = i * 칸폭();
+  if (!부드럽게) 덱.style.scrollBehavior = "";
+}
+/* 탭 하나를 여는 절차. **화면을 고르는 일은 덱이 맡습니다** — 여기서는
+   덮고 있던 것들을 걷고, 내용을 채우고, 덱을 그 칸으로 보냅니다. */
+function showApp(t, 표시탭, 이미덱에){
   appTab = t;
   shutBigMap();
   /* 여행이 열려 있으면 먼저 닫습니다. 안 닫으면 여행 화면이 탭 화면 아래에
@@ -484,15 +517,13 @@ function showApp(t, 표시탭){
   /* 국가 목록은 프로필 위에 얹히는 판입니다. 탭을 옮기면 같이 걷습니다 —
      안 걷으면 홈으로 나갔는데 국가 목록이 그대로 덮고 있습니다. */
   $('ctrypane').classList.add('hide');
-  $('homeview').classList.toggle('hide', t !== 'home');
-  $('listview').classList.toggle('hide', t !== 'trips');
-  $('rateview').classList.toggle('hide', t !== 'rate');
   $('cityview').classList.add('hide'); clearCityOpen();
   $('aiview').classList.add('hide');   /* 비서는 탭이 아니라 시트입니다 */
-  $('analview').classList.toggle('hide', t !== 'anal');
-  $('setview').classList.toggle('hide',  t !== 'set');
   $('newcard').classList.add('hide');
   $('namebox').classList.add('hide');
+  /* ⚠ **탭 화면 다섯은 이제 안 숨깁니다(b474).** 덱 안에서 한 칸이 사라지면
+     그 뒤 칸들의 가로 위치가 통째로 밀립니다. 덱만 되살립니다. */
+  덱.classList.remove('hide');
   document.querySelectorAll('#appbar button').forEach(b =>
     b.classList.toggle('is-on', b.dataset.a === (표시탭 || t)));
   if (t === 'home')      loadHome();
@@ -501,31 +532,65 @@ function showApp(t, 표시탭){
   else if (t === 'rate') loadRatings();
   else if (t === 'anal') loadAnal();
   else                   loadTrips();
-  /* ⚠ **내용을 채우는 load 들보다 뒤**입니다. 앞에 두면 비어 있는 화면이
-     밀려 들어왔다가 뒤늦게 채워지는 것이 보입니다. */
-  밀어넣기(앞탭, t);
-  /* ⚠ **맨 위로 안 보냅니다(b471).** 탭 화면이 각자 스크롤러가 되면서
-     보던 자리가 저절로 남습니다 — 사용자 결정입니다. 긴 목록을 보다가
-     다른 탭에 다녀오면 그 자리로 돌아옵니다.
-     맨 위로 가고 싶으면 **같은 탭을 한 번 더** 누릅니다(아래 appbar). */
+  /* ⚠ **손가락으로 밀어서 온 경우에는 덱을 다시 옮기지 않습니다.** 이미 그
+     칸에 서 있는데 또 `scrollTo` 를 하면 방금 멎은 스크롤을 건드려 튑니다. */
+  if (!이미덱에) 덱으로(t, true);
   덱높이맞추기();
+  /* ⚠ **맨 위로 안 보냅니다(b471).** 탭 화면이 각자 스크롤러라 보던 자리가
+     저절로 남습니다 — 사용자 결정입니다. 맨 위로 가려면 **같은 탭을 한 번 더**
+     누릅니다(아래 appbar). */
+}
+
+/* ── 어느 칸에 서 있나 — **보이는 것으로 판정합니다**(b474) ─────────────
+ * 처음에는 `scroll` · `scrollend` 로 「멎었나」를 물었습니다. 그런데
+ * `scrollend` 는 자바스크립트로 `scrollLeft` 를 넣은 경우 안 오고,
+ * `scroll` 도 안 나는 환경이 있습니다(재보니 0 회였습니다).
+ *
+ * **화면에 무엇이 보이는가**는 그런 사정과 무관합니다. IntersectionObserver
+ * 로 「60% 넘게 보이는 칸」을 물으면, 손가락으로 밀든 코드로 옮기든 답이
+ * 같습니다. 스냅이 걸려 있어 60% 를 넘는 칸은 늘 하나뿐입니다.
+ *
+ * ⚠ 이미 그 탭이면 아무것도 안 합니다 — 하단바를 눌러 온 경우 showApp 이
+ *   먼저 돌았으므로, 여기서 또 부르면 load 가 두 번 돕니다.
+ * ⚠ 덱이 숨어 있을 때(여행·도시 화면)는 무시합니다. 숨는 순간 「안 보임」이
+ *   쏟아지는데 거기에 반응하면 엉뚱한 탭으로 튑니다. */
+function 닿았다(el){
+  if (덱.classList.contains('hide')) return;
+  const t = 탭순서()[[...덱.children].indexOf(el)];
+  if (!t || t === appTab) return;
+  showApp(t, null, true);
+}
+{
+  const 눈 = new IntersectionObserver(목록 => {
+    const 온전한 = 목록
+      .filter(e => e.isIntersecting && e.intersectionRatio >= 0.6)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (온전한) 닿았다(온전한.target);
+  }, { root: 덱, threshold: [0.6, 0.9] });
+  [...덱.children].forEach(el => 눈.observe(el));
+  /* ⚠ **보는 눈 하나만 두지 않습니다.** IntersectionObserver 가 안 도는
+     환경을 만났습니다(화면이 뒤로 물러나 있으면 아무것도 안 옵니다).
+     스크롤이 멎은 뒤 한 번 더 물어봅니다 — 둘 다 불려도 「이미 그 탭이면
+     아무것도 안 함」이라 탈이 없습니다. */
+  let 타이머 = 0;
+  const 나중에 = () => {
+    clearTimeout(타이머);
+    타이머 = setTimeout(() => 닿았다(덱.children[지금칸()]), 130);
+  };
+  덱.addEventListener('scroll', 나중에, { passive:true });
+  덱.addEventListener('scrollend', 나중에, { passive:true });
 }
 $("appbar").addEventListener("click", e => {
   const b = e.target.closest("button[data-a]");
   if (!b) return;
   /* ⚠ **같은 탭을 다시 누르면 맨 위로(b471).** 보던 자리를 남기기로 했으니
-     맨 위로 갈 길이 하나는 있어야 합니다. iOS 앱들이 다 이렇게 합니다 —
-     긴 목록에서 손가락으로 올리는 것보다 훨씬 빠릅니다. */
-  /* ⚠ **같은 탭이어도 그 화면이 닫혀 있으면 엽니다.** `appTab` 은 시작할 때부터
-     "home" 이라, 아직 아무 화면도 안 연 상태에서 홈을 누르면 여기 걸려
-     아무 일도 안 일어납니다. 재보고 알았습니다. */
-  /* ⚠ **보이는 판 아무거나가 아니라 「지금 탭의 판」입니다(b472).**
-     `#listview` 에는 `hide` 가 아예 없어서, 아무거나 찾으면 늘 그것이
-     잡혔습니다. 그러면 처음 홈을 눌렀을 때 「같은 탭」으로 걸려
-     화면이 안 열립니다 — 재보고 알았습니다. */
-  const 판 = 판찾기(appTab);
-  if (b.dataset.a === appTab && 판 && !판.classList.contains("hide")){
-    toTop(판);        /* 같은 탭 다시 누르기 = 맨 위로 */
+     맨 위로 갈 길이 하나는 있어야 합니다. iOS 앱들이 다 이렇게 합니다.
+     ⚠ 판정은 **덱이 보이는가**로 합니다(b474). 탭 화면 다섯은 이제 안
+       숨기므로 「그 화면이 닫혔나」로는 알 수가 없습니다 — 여행이나 도시를
+       열어 둔 상태에서 하단바를 누르면 그 탭으로 **돌아와야** 합니다. */
+  const 덱보임 = !덱.classList.contains('hide');
+  if (b.dataset.a === appTab && 덱보임){
+    toTop(판찾기(appTab));        /* 같은 탭 다시 누르기 = 맨 위로 */
     return;
   }
   showApp(b.dataset.a);

@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     citysearch.js · newtrip.js · plancheck.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b473';
-import { sb } from './db.js?v=b473';
-import { fail } from './net.js?v=b473';
-import { D1, asDate, todayYmd, dayLabel } from './calc.js?v=b473';
-import { plans, legs } from './trip.js?v=b473';
-import { loadCities } from './citysearch.js?v=b473';
-import { openNew, movePrefs } from './newtrip.js?v=b473';
-import { review } from './plancheck.js?v=b473';
+import { $, esc } from './dom.js?v=b474';
+import { sb } from './db.js?v=b474';
+import { fail } from './net.js?v=b474';
+import { D1, asDate, todayYmd, dayLabel } from './calc.js?v=b474';
+import { plans, legs } from './trip.js?v=b474';
+import { loadCities } from './citysearch.js?v=b474';
+import { openNew, movePrefs } from './newtrip.js?v=b474';
+import { review } from './plancheck.js?v=b474';
 
 let ctx = { me: () => null, fillCityList: () => {},
             showApp: () => {}, openTrip: async () => {} };
@@ -71,7 +71,8 @@ export async function openDraft(preselect, lean){
     .select('id,title,destination,start_date,end_date')
     .gte('end_date', today).order('start_date').limit(20);
 
-  ['homeview','listview','rateview','aiview','setview','cityview']
+  /* 탭 화면 다섯은 이제 덱 한 덩어리입니다(b474). */
+  ['tabdeck','aiview','cityview']
     .forEach(v => $(v).classList.add('hide'));
   $('draftview').classList.remove('hide');
   movePrefs('d_prefslot');        /* 새 여행 화면에 가 있었다면 도로 가져옵니다 */

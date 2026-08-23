@@ -17,21 +17,21 @@
  * `channel`·`bumpTimer`·`bumpPending` 은 실시간의 상태라 같이 왔습니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc } from './dom.js?v=b473';
-import { sb } from './db.js?v=b473';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b473';
-import { D1, asDate, dateRange, localTime } from './calc.js?v=b473';
+import { $, esc } from './dom.js?v=b474';
+import { sb } from './db.js?v=b474';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b474';
+import { D1, asDate, dateRange, localTime } from './calc.js?v=b474';
 import { trip, plans, legs, members, expenses, bookings,
-         setTrip, setPickedDay } from './trip.js?v=b473';
-import { loadCities } from './citysearch.js?v=b473';
-import { clearCityOpen } from './city.js?v=b473';
-import { loadReview } from './review.js?v=b473';
-import { loadMembers } from './member.js?v=b473';
-import { loadExpenses } from './expense.js?v=b473';
-import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b473';
-import { inTrip, showTab } from './tabs.js?v=b473';
-import { loadLegs, fillCityList } from './legs.js?v=b473';
-import { loadPlans, backToList } from './tripview.js?v=b473';
+         setTrip, setPickedDay } from './trip.js?v=b474';
+import { loadCities } from './citysearch.js?v=b474';
+import { clearCityOpen } from './city.js?v=b474';
+import { loadReview } from './review.js?v=b474';
+import { loadMembers } from './member.js?v=b474';
+import { loadExpenses } from './expense.js?v=b474';
+import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b474';
+import { inTrip, showTab } from './tabs.js?v=b474';
+import { loadLegs, fillCityList } from './legs.js?v=b474';
+import { loadPlans, backToList } from './tripview.js?v=b474';
 
 let ctx = { me: () => null, appTab: () => '' };
 export function setOpenTripCtx(o){ ctx = { ...ctx, ...o }; }
@@ -121,7 +121,9 @@ export async function openTrip(id){
 
   /* 여행은 어느 탭에서든 열립니다 — 홈에서 열면 홈이 아래에 그대로 남아 있었습니다.
      앱 단계 화면은 하나도 빠짐없이 덮습니다. 돌아갈 탭은 ctx.appTab() 이 기억합니다. */
-  ['homeview','listview','rateview','aiview','setview','cityview','draftview','reviewview']
+  /* 탭 화면 다섯은 이제 덱 한 덩어리입니다(b474) — 낱개로 숨기면 덱 안에서
+     가로 위치가 밀립니다. */
+  ['tabdeck','aiview','cityview','draftview','reviewview']
     .forEach(v => $(v).classList.add('hide'));
   clearCityOpen();
   /* 하단바는 그대로 둡니다. 여행은 '여행' 탭 안쪽이므로 거기에 불을 켭니다 —
