@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b486';
+import { $, esc, toast } from './dom.js?v=b487';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b486';
+import { distKm, pScale, SEOUL } from './calc.js?v=b487';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -309,7 +309,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b486`;
+    img.src = `./persona/${code}.png?v=b487`;
   });
 }
 
@@ -534,6 +534,84 @@ const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r);
  * 테두리·머리말·바닥글은 흐름에 안 넣습니다. 종이의 일부라 늘 같은 자리에
  * 있어야 합니다. */
 
+/* ══ 랜드마크 선 그림(b487) ══════════════════════════════════════════════
+ * 체크 카드에 실사 사진을 넣었더니(b486) 작은 정사각에서 도시 전경이
+ * **죽처럼 뭉개졌습니다.** 색조를 하나로 물들여도 형태가 안 읽힙니다.
+ * 랜드마크는 작아도 삽니다 — 에펠탑은 20px 에서도 에펠탑입니다.
+ *
+ * ⚠ **아주 단순한 실루엣입니다.** 원본 템플릿의 수채화 같은 정교함은
+ *   목표가 아닙니다. 24px 칸에서 「저건 콜로세움이네」로 읽히면 됩니다.
+ *   선이 많아지면 작을 때 뭉쳐서 오히려 못 읽습니다.
+ * ⚠ 좌표는 24×24 기준입니다(앱의 다른 아이콘과 같은 격자).
+ * ⚠ 랜드마크가 뚜렷하지 않은 곳(해변 휴양지)은 **결로 묶은 기본 그림**을
+ *   씁니다 — 억지로 건물을 찾느니 「해변」 하나가 정직합니다.
+ * ⚠ 도시 id 로 걸지 않고 **이름**으로 겁니다. id 는 자료가 바뀌면 흔들리는데
+ *   이름은 화면에 이미 그 글자로 나옵니다. */
+const MARK = {
+  /* ── 유럽 ── */
+  '파리':      'M12 3 L12 21 M12 3 L6.5 21 M12 3 L17.5 21 M8.6 12h6.8 M7.4 16h9.2',
+  '로마':      'M3 20h18 M4 20V9h16v11 M4 9h16 M7 12v5 M12 12v5 M17 12v5 M4.5 6.5h15',
+  '런던':      'M9 21V8h6v13 M9 8l3-3 3 3 M12 5V3 M10.5 11.5h3 M12 11v1.2h1',
+  '바르셀로나':'M4 21V11c0-4 3.5-7 8-7s8 3 8 7v10 M8 21V9 M12 21V6 M16 21V9 M8 5.5l0-2 M12 3l0-1.5 M16 5.5l0-2',
+  '리스본':    'M3 18h18 M5 18v-6h11v6 M7 12V9h7v3 M16 18l3-3 M5 15h11 M7 20.5a1.4 1.4 0 100-2.8 M14 20.5a1.4 1.4 0 100-2.8',
+  '마드리드':  'M3 21h18 M5 21V8h14v13 M5 8l7-5 7 5 M9 21v-6h6v6 M9 11h1.5 M13.5 11H15',
+  '뮌헨':      'M4 21V7h11v14 M15 21V11h5v10 M7 21v-5h5v5 M8 10h3 M17 15h1.5 M4 7l5.5-4L15 7',
+  '밀라노':    'M2 21h20 M4 21V10l4-6 4 6 4-6 4 6v11 M8 21v-6h8v6 M12 8V4',
+  '베네치아':  'M2 17c3 2 5-2 8 0s5-2 8 0 M4 15V7l4-3 4 3v8 M8 15V9 M15 15V8h5v7 M17 8V5',
+  '베를린':    'M3 21h18 M5 21V9h14v12 M6.5 21V12h2v9 M11 21v-9h2v9 M15.5 21v-9h2v9 M5 9l7-4 7 4 M12 5V2.5 M10.5 3.5h3',
+  '부다페스트':'M2 21h20 M4 21V12h16v9 M12 12V4 M10 6h4 M7 21v-6h3v6 M14 21v-6h3v6 M4 12l3-3h10l3 3',
+  '브뤼셀':    'M12 2v6 M12 8L6 14v7h12v-7L12 8 M9 21v-4h6v4 M8 12h8 M12 2l-1.5 1.5M12 2l1.5 1.5',
+  '빈':        'M11 21V6h2v15 M12 6V2 M9 9h6 M4 21V12h5v9 M15 21v-9h5v9 M6 15h1.5 M16.5 15H18',
+  '산토리니':  'M3 20h18 M5 20v-6h6v6 M13 20v-8h6v8 M6 14a2.5 2.5 0 015 0 M14.5 12a2.5 2.5 0 015 0 M7 17h1 M16 16h1',
+  '아테네':    'M3 20h18 M4 20V8h16v12 M4 8l8-5 8 5 M7 20V10 M12 20V10 M17 20V10 M4 11h16',
+  '암스테르담':'M2 21h20 M4 21V8l3-4 3 4v13 M12 21V6l3-3 3 3v15 M6 12h2 M14 10h2 M6 16h2 M14 15h2',
+  '에든버러':  'M3 21h18 M5 21V10h14v11 M5 10l0-3 3 0 0 3 M16 10l0-3 3 0 0 3 M10 21v-6h4v6 M9 13h2 M13 13h2',
+  '이스탄불':  'M3 21h18 M5 21v-8a7 7 0 0114 0v8 M12 6V3 M6 21v-6 M18 21v-6 M4 13h16 M9 21v-4h6v4',
+  '취리히':    'M2 21h20 M5 21V9h4v12 M15 21V9h4v12 M5 9l2-3 2 3 M15 9l2-3 2 3 M6.5 13h1 M16.5 13h1 M9 18h6',
+  '코펜하겐':  'M3 20h18 M5 20V9h5v11 M12 20V7h6v13 M5 9l2.5-3L10 9 M12 7l3-2.5L18 7 M7 13h1 M14.5 12h1',
+  '프라하':    'M2 21h20 M4 21V11h6v10 M12 21V8h8v13 M4 11l3-4 3 4 M12 8l4-3 4 3 M6 15h2 M15 13h2 M18 13h1',
+  '헬싱키':    'M3 21h18 M6 21V12h12v9 M6 12l6-6 6 6 M12 6V3 M10.5 4.5h3 M9 21v-5h6v5',
+  '그단스크':  'M2 21h20 M4 21V9l3-4 3 4v12 M13 21V11h6v10 M13 11l3-3 3 3 M6 13h2 M15 15h2',
+  '그라나다':  'M3 21h18 M5 21V11h14v10 M5 11h14 M8 21v-6a2 2 0 014 0v6 M14 15h3 M6.5 8v3 M10 7v4 M13.5 8v3 M17 7v4',
+  /* ── 아시아 ── */
+  '도쿄':      'M12 2v4 M12 6L7 21 M12 6l5 15 M9.2 14h5.6 M8 18h8 M11 6h2',
+  '다낭':      'M2 18c3-2 5 2 8 0s5 2 8 0 M4 14c2-4 5-6 8-6s6 2 8 6 M8 10V7 M16 10V7 M12 8V4',
+  '방콕':      'M12 2l1.5 4H10.5L12 2 M12 6v3 M8 21V9l4-3 4 3v12 M5 21v-7l3-2 M19 21v-7l-3-2 M9.5 21v-5h5v5',
+  '타이베이':  'M9 21V6h6v15 M9 6h6 M9 10h6 M9 14h6 M9 18h6 M12 6V3 M11 3h2',
+  '세부':      'M2 19c3-2 5 2 8 0s5 2 8 0 M7 15V6 M7 6c-2 .5-3 2-3 2M7 6c2 .5 3 2 3 2 M14 15v-5 M14 10c-1.5.5-2.5 2-2.5 2M14 10c1.5.5 2.5 2 2.5 2',
+  '홍콩':      'M2 21h20 M4 21V10h4v11 M9 21V6h5v15 M15 21V13h5v8 M5.5 13h1 M10.5 9h2 M16.5 16h1.5',
+  '싱가포르':  'M3 20h18 M4 20v-4h16v4 M5 16V9 M10 16V9 M15 16V9 M19 16V9 M4 9c0-2 3.5-3 7.5-3S19 7 19 9',
+  '발리':      'M3 21h18 M12 3l-4 5h8l-4-5 M8 8l-2 4h12l-2-4 M6 12l-2 4h16l-2-4 M11 21v-5h2v5',
+  '쿠알라룸푸르':'M8 21V8l1.5-5L11 8v13 M13 21V8l1.5-5L16 8v13 M8 12h3 M13 12h3 M8 16h3 M13 16h3 M2 21h20',
+  '교토':      'M3 7h18 M5 4h14 M6 7v13 M18 7v13 M3 20h18 M9 20v-5h6v5 M6 11h12',
+  '나고야':    'M3 21h18 M5 21V12h14v9 M5 12l7-5 7 5 M9 21v-5h6v5 M12 7V4 M10 6h4 M7 15h1.5 M15.5 15H17',
+  '나트랑':    'M2 19c3-2 5 2 8 0s5 2 8 0 M6 15V7 M6 7c-2 .5-3 2-3 2M6 7c2 .5 3 2 3 2 M13 15V9h6v6 M16 9V6',
+  '델리':      'M3 21h18 M5 21v-9a7 7 0 0114 0v9 M12 5V2 M8 21v-5h8v5 M5 12h14 M7 8l-2-2 M17 8l2-2',
+  '두바이':    'M11 21V7l1-5 1 5v14 M7 21V12l2-2v11 M15 21V10l2 2v9 M3 21h18 M11 12h2 M11 16h2',
+  '마카오':    'M4 21h16 M6 21V8h12v13 M6 8l6-5 6 5 M10 21v-7h4v7 M9 11h2 M13 11h2 M12 3v2',
+  '베이징':   'M2 20h20 M4 20v-5h16v5 M6 15c0-3 2.5-5 6-5s6 2 6 5 M12 10V6 M9 8h6 M4 15h16',
+  '보라카이':  'M2 19c3-2 5 2 8 0s5 2 8 0 M8 15V6 M8 6c-2 .5-3 2-3 2M8 6c2 .5 3 2 3 2 M15 15v-4 M15 11c-1.5.4-2.5 1.6-2.5 1.6M15 11c1.5.4 2.5 1.6 2.5 1.6',
+  '상하이':    'M2 21h20 M12 21V9 M9 9a3 3 0 016 0 M10.5 5a1.5 1.5 0 013 0 M12 5V2 M5 21v-8h3v8 M16 21v-6h3v6',
+  '치앙마이':  'M3 21h18 M12 3l-3 5h6l-3-5 M9 8l-2 4h10l-2-4 M7 12v9 M17 12v9 M10 21v-5h4v5',
+  '파타야':    'M2 19c3-2 5 2 8 0s5 2 8 0 M5 15V8 M5 8c-2 .5-3 2-3 2M5 8c2 .5 3 2 3 2 M11 15V10h8v5 M14 10V7 M17 10V7',
+  '하노이':    'M3 21h18 M12 21V10 M8 10h8 M9 10V6h6v4 M12 6V3 M5 21v-6h3v6 M16 21v-6h3v6',
+  '가오슝':    'M2 21h20 M5 21V11h4v10 M11 21V7h5v14 M18 21v-7h3v7 M6 14h2 M12.5 11h2 M12.5 15h2',
+  '갈레':      'M3 20h18 M5 20V12h14v8 M5 12h14 M8 20v-5h3v5 M14 15h3 M7 9v3 M12 8v4 M17 9v3',
+  '고아':      'M2 19c3-2 5 2 8 0s5 2 8 0 M6 15V7 M6 7c-2 .5-3 2-3 2M6 7c2 .5 3 2 3 2 M12 15V9h7v6 M15.5 9V6',
+};
+/* 랜드마크가 없는 도시에 씁니다. 「어디든 있는 것」이라 억지 건물보다 낫습니다. */
+const MARK_기본 = 'M2 19c3-2 5 2 8 0s5 2 8 0 M6 15V7 M6 7c-2 .5-3 2-3 2M6 7c2 .5 3 2 3 2 M13 15V9h6v6';
+
+/* 24×24 선 그림을 캔버스에 쓸 수 있는 이미지로. 색과 굵기는 부르는 쪽이 정합니다. */
+function markImage(name, px, color, lw = 1.6){
+  const d = MARK[name] || MARK_기본;
+  return svgImage(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+    width="${px}" height="${px}" fill="none" stroke="${color}" stroke-width="${lw}"
+    stroke-linecap="round" stroke-linejoin="round">${
+      d.split(' M').map((p, i) => `<path d="${i ? 'M' + p : p}"/>`).join('')}</svg>`);
+}
+
+
 /* ══ 대륙 체크 카드(b485) ══════════════════════════════════════════════
  * 인스타에 도는 「EUROPE places to visit — check off the cities you've been to」
  * 템플릿을 보고 만듭니다. 한 장에 10.6만 개 스토리가 붙었습니다.
@@ -550,6 +628,7 @@ const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r);
  *   그냥 자랑이고, 자랑은 한 번 보고 끝입니다.
  * ⚠ 사진은 안 씁니다. 24장을 한 장에 욱여넣으면 어수선하고, 못 받은
  *   도시가 섞이면 칸마다 다른 얼굴이 됩니다. 이름과 표시만으로 충분합니다 —
+
  *   원본 템플릿도 그림은 거들 뿐 읽는 것은 이름입니다. */
 async function drawCheck(s, W, H, F){
   const cv = document.createElement('canvas');
@@ -595,81 +674,58 @@ async function drawCheck(s, W, H, F){
   }
   y += H * .034;
 
-  /* ── 그림 ── **사진을 한 색조로 물들입니다(b486)** ────────────────────
-   * 처음에는 이름과 체크만 두었더니 엑셀 표가 됐습니다. 원본 템플릿의
-   * 매력은 스물네 개의 작은 수채화이고, 그림을 빼면 볼 것이 없습니다.
+  /* ── 그림 ── **랜드마크 선 그림입니다(b487)** ──────────────────────
+   * b486 에 실사 사진을 색조 물들여 넣었는데, 작은 정사각에서 도시 전경이
+   * **죽처럼 뭉개졌습니다.** 색을 통일해도 형태가 안 읽히면 소용이 없습니다.
+   * 랜드마크는 작아도 삽니다 — 에펠탑은 20px 에서도 에펠탑입니다.
+   * 그림은 위 MARK 표에 있습니다(거기 머리말 참고).
    *
-   * ⚠ 그렇다고 **실사를 그대로 넣으면 안 됩니다.** 스물넷의 색이 제각각이라
-   *   한 장에 모으면 어수선합니다. 원본이 통일돼 보이는 것은 한 화가가
-   *   그렸기 때문입니다.
-   *   → 흑백으로 바꾼 뒤 종이색 계열 한 색을 곱합니다. 스물넷이 한 붓으로
-   *     그린 것처럼 보이면서, **실사라서** 저 템플릿이 못 하는 것이 됩니다.
-   * ⚠ 안 간 곳은 **지우지 않고 아주 옅게** 둡니다. 빈 칸이 있어야 「가야지」가
-   *   되고, 받은 사람도 자기 것을 세어 보고 싶어집니다.
-   * ⚠ 사진을 못 받아온 칸은 종이색 네모로 둡니다 — 한 칸이 비어도 격자는
-   *   그대로라 티가 안 납니다. */
+   * ⚠ **안 간 곳도 그립니다.** 흐린 선으로 둡니다 — 빈 칸이 있어야
+   *   「가야지」가 되고, 받은 사람도 자기 것을 세어 보고 싶어집니다.
+   *   칸을 아예 비우면 격자에 구멍이 뚫려 보입니다.
+   * ⚠ 간 곳은 **종이색 바탕 + 진한 선**, 안 간 곳은 바탕 없이 흐린 선.
+   *   바탕이 있고 없고가 체크 표시보다 멀리서 더 잘 읽힙니다. */
   const 열 = 3;
   const 줄 = Math.ceil(s.items.length / 열);
   const 좌 = W * .072, 우 = W - 좌;
   const 칸폭 = (우 - 좌) / 열;
   const 아래 = H * .902;                       /* 셈이 앉을 자리 위 */
   const 칸높 = (아래 - y) / 줄;
-  const 그림 = Math.min(칸폭 * .84, 칸높 * .70);
-  const 그림둥 = 그림 * .22;
+  const 그림 = Math.min(칸폭 * .62, 칸높 * .56);
+  const 판 = 그림 * 1.34;                       /* 그림을 담는 둥근 바탕 */
 
-  /* 스물넷을 한꺼번에 받습니다 — 하나씩 기다리면 스물네 번 왕복입니다. */
-  const 사진들 = await Promise.all(
-    s.items.map(it => it.img ? photoImage(it.img) : Promise.resolve(null)));
+  /* 스물넷을 한꺼번에 만듭니다 — 하나씩 기다리면 스물네 번입니다. */
+  const 그림들 = await Promise.all(s.items.map(it =>
+    markImage(it.name, Math.round(그림 * 2), it.on ? P16.잉크 : '#C9C2B4',
+              it.on ? 1.7 : 1.5)));
 
   s.items.forEach((it, i) => {
     const c = i % 열, r = Math.floor(i / 열);
-    const x0 = 좌 + c * 칸폭 + (칸폭 - 그림) / 2;
+    const mx = 좌 + c * 칸폭 + 칸폭 / 2;        /* 칸 가운데 */
     const y0 = y + r * 칸높;
     const 간 = it.on;
-    const im = 사진들[i];
+    const im = 그림들[i];
 
-    g.save();
-    rrect(g, x0, y0, 그림, 그림, 그림둥); g.clip();
-    if (im){
-      /* 짧은 쪽에 맞춰 잘라 넣습니다 — 늘이면 건물이 휩니다. */
-      const s2 = Math.max(그림 / im.width, 그림 / im.height);
-      const dw = im.width * s2, dh = im.height * s2;
-      g.drawImage(im, x0 + (그림 - dw) / 2, y0 + (그림 - dh) / 2, dw, dh);
-      /* ① 채도를 지웁니다 → 흑백 */
-      g.globalCompositeOperation = 'saturation';
-      g.fillStyle = '#808080'; g.fillRect(x0, y0, 그림, 그림);
-      /* ② 한 색을 곱합니다 → 스물넷이 한 톤 */
-      g.globalCompositeOperation = 'multiply';
-      g.fillStyle = 간 ? '#F2A57A' : '#E8E2D6';
-      g.fillRect(x0, y0, 그림, 그림);
-      /* ③ 안 간 곳은 종이를 더 덮어 물러나게 */
-      if (!간){
-        g.globalCompositeOperation = 'source-over';
-        g.fillStyle = 'rgba(253,251,243,.55)';
-        g.fillRect(x0, y0, 그림, 그림);
-      }
-      g.globalCompositeOperation = 'source-over';
-    } else {
-      g.fillStyle = 간 ? '#FBE3D4' : '#F4F0E6';
-      g.fillRect(x0, y0, 그림, 그림);
-    }
-    g.restore();
-    /* 테두리 — 사진이 종이 위에 놓인 것처럼 */
-    g.strokeStyle = 간 ? P16.주황선 : P16.테두리;
-    g.lineWidth = Math.max(1, W * .0018);
-    rrect(g, x0, y0, 그림, 그림, 그림둥); g.stroke();
-
-    /* 간 곳 표시 — 오른쪽 위 모서리에 걸친 동그란 체크 */
+    /* 바탕 — 간 곳만. 동그란 종이 위에 도장을 찍은 느낌입니다. */
     if (간){
-      const rr = 그림 * .17, bx = x0 + 그림 - rr * .62, by = y0 + rr * .62;
+      g.fillStyle = '#FBEEE4';
+      g.beginPath(); g.arc(mx, y0 + 판 / 2, 판 / 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = P16.주황선; g.lineWidth = Math.max(1, W * .0016);
+      g.stroke();
+    }
+    if (im) g.drawImage(im, mx - 그림 / 2, y0 + 판 / 2 - 그림 / 2, 그림, 그림);
+
+    /* 간 곳 표시 — 오른쪽 아래에 작은 체크. 그림을 안 가립니다. */
+    if (간){
+      const rr = 판 * .19, bx = mx + 판 * .36, by = y0 + 판 * .84;
       g.fillStyle = P16.주황;
       g.beginPath(); g.arc(bx, by, rr, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = '#FFFFFF'; g.lineWidth = Math.max(2, 그림 * .034);
+      g.strokeStyle = '#FFFFFF'; g.lineWidth = Math.max(2, rr * .34);
       g.lineCap = 'round'; g.lineJoin = 'round';
       g.beginPath();
-      g.moveTo(bx - rr * .40, by + rr * .02);
-      g.lineTo(bx - rr * .10, by + rr * .32);
-      g.lineTo(bx + rr * .44, by - rr * .34);
+      g.moveTo(bx - rr * .42, by + rr * .02);
+      g.lineTo(bx - rr * .10, by + rr * .34);
+      g.lineTo(bx + rr * .46, by - rr * .36);
       g.stroke();
       g.lineCap = 'butt';
     }
@@ -682,7 +738,7 @@ async function drawCheck(s, W, H, F){
     while (g.measureText(이름).width > 칸폭 * .96 && 이름.length > 2)
       이름 = 이름.slice(0, -1);
     if (이름 !== it.name) 이름 += '…';
-    g.fillText(이름, 좌 + c * 칸폭 + 칸폭 / 2, y0 + 그림 + W * .034);
+    g.fillText(이름, mx, y0 + 판 + W * .030);
   });
 
   /* ── 셈 ── 맨 아래 한 줄. 이것이 곧 「너 몇 개?」의 답입니다. */
@@ -703,11 +759,9 @@ async function drawCheck(s, W, H, F){
   g.font = F(600, W * .020); g.fillStyle = P16.아주흐림;
   g.fillText(appUrl().replace(/^https?:\/\//, ''), cx, H * .973);
 
-  /* ⚠ **JPEG 입니다.** 사진 스물넷이 들어가 PNG 로는 800KB 가 넘습니다
-     — 공유창에서 거부하는 앱이 있고 올리는 데도 오래 걸립니다.
-     확장자는 `saveCardImage` 가 blob.type 을 보고 정하므로 여기만
-     바꾸면 됩니다(b486). */
-  return await new Promise(res => cv.toBlob(res, 'image/jpeg', .92));
+  /* 선 그림이라 PNG 가 맞습니다(b487) — 단색 선은 JPEG 에서 가장자리가
+     지저분해집니다. 사진이 없으니 크기도 문제가 안 됩니다. */
+  return await new Promise(res => cv.toBlob(res, 'image/png'));
 }
 
 async function drawP16(s, W, H, F){
@@ -2100,10 +2154,9 @@ export function checkList(cities, 대륙, world = {}, n = 24){
   const 집 = world.home || 'KR';
   const { continentOf = {} } = world;
   const 후보 = (cities || [])
-    /* ⚠ **사진이 있는 곳만.** 카드가 사진 격자라 빈 칸이 섞이면 그 자리만
-       종이색으로 떠서 격자가 성겨 보입니다. 469곳 사진은 다 채워져 있어
-       거르는 비용이 거의 없습니다(b486). */
-    .filter(c => c.fame != null && c.image_url && c.country !== 집 &&
+    /* ⚠ 사진 조건을 걷었습니다(b487) — 카드가 랜드마크 선 그림이라 사진을
+       안 씁니다. 다만 유명한 곳은 사진도 있게 마련이라 목록은 거의 같습니다. */
+    .filter(c => c.fame != null && c.country !== 집 &&
                  continentOf[c.country] === 대륙)
     .sort((a, b) => a.fame - b.fame ||
                     (a.pop_rank ?? 9e9) - (b.pop_rank ?? 9e9));
