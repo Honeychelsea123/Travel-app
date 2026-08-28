@@ -986,7 +986,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 보이는 크기는 건드리지 않습니다 — 넓혔더니 별이 커 보여서 목록이 부담스러웠습니다.
    **위아래 여백만** 늘립니다. 이건 눈에 안 보이면서 손가락에는 잡힙니다. */
 .stars{ display:inline-flex; gap:1px; flex:none; cursor:pointer; user-select:none;
-        padding:7px 0; margin:-7px 0; touch-action:manipulation; }
+        padding:7px 0; margin:-7px 0;
+        /* ⚠ **pan-y 여야 합니다(b491).** 별 위에서 좌우로 끌어 매기는데
+           manipulation 이면 그 가로 제스처를 브라우저가 가져가 **탭이
+           넘어갑니다**(#tabdeck 이 가로 스크롤 스냅). 세로는 브라우저에
+           남깁니다 — 별 위에서 시작해도 화면은 굴러야 합니다
+           (일정 손잡이에서 배운 것, 아래 .ev .grip 주석). */
+        touch-action:pan-y; }
 .st{ position:relative; width:1.1em; height:1.1em; line-height:1;
      font-size:var(--f-2xl); color:var(--hairline); }
 .st::before{ content:'★'; position:absolute; left:0; top:0; }
@@ -2961,3 +2967,19 @@ body.kbup .trippane{ padding-bottom:0; }
  *   앱을 아예 못 씁니다 — 읽기는 된다는 것이 읽기 전용의 뜻입니다.
  * ⚠ 글 쓰는 칸은 안 건드립니다. 흐리게 하면 **이미 쓴 글**이 안 읽힙니다. */
 body.readonly .primary{ opacity:.5; }
+
+/* ── 탭 좌우 스와이프 끄기 (b491) ─────────────────────────────────────
+ * 관리자 화면의 스위치(`features.swipe`)로 끕니다. 기본은 켜짐입니다.
+ *
+ * 왜 스위치를 뒀나: 별점을 좌우로 끌어 매기게 되면서 **가로 제스처가
+ * 다섯**이 됐습니다 — 탭 덱 · 여행 구역 덱 · 대륙 카드 · 홈 레일 · 별점.
+ * 실제로 거슬리는지는 며칠 써 봐야 알기에, 코드를 고치지 않고 폰에서
+ * 껐다 켜며 견줄 수 있게 했습니다.
+ *
+ * ⚠ **`overflow-x:hidden` 이어도 «스크롤 칸» 입니다.** `scrollLeft` 로는
+ *   그대로 움직입니다 — 그래서 하단바로 탭을 옮기는 것, 스냅, 부드러운
+ *   이동, 「보던 자리」가 **전부 남고** 손가락 스와이프만 죽습니다.
+ *   덱을 걷는 것이 아닙니다(그러면 판 스크롤과 보던 자리까지 잃습니다).
+ * ⚠ `#tripdeck`(여행 안 구역)은 안 건드립니다. 스위치 이름이 「탭」이고,
+ *   그 안은 화면 안쪽 넘김이라 성격이 다릅니다. */
+body.noswipe #tabdeck{ overflow-x:hidden; }

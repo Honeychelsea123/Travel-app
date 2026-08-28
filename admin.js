@@ -11,9 +11,11 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b490';
-import { sb } from './db.js?v=b490';
-import { fail, netTimeout } from './net.js?v=b490';
+import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b491';
+import { sb } from './db.js?v=b491';
+import { fail, netTimeout } from './net.js?v=b491';
+/* 기능 스위치를 바꾸면 그 자리에서 화면에 먹입니다(b491) — flags.js 머리말. */
+import { reapplyFeatures } from './flags.js?v=b491';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -273,10 +275,11 @@ async function loadSettings(){
  * loadSettings 의 기본값 읽기(`!== false`)와 같은 값이라야 합니다 —
  * 한쪽만 고치면 "기본과 다름"이 거짓말을 합니다. */
 const 정상 = { ai_on:true, signup_on:true, push_on:true, readonly:false,
-               push:true, docs:true, reorder:true, maplink:true };
+               push:true, docs:true, reorder:true, maplink:true, swipe:true };
 const 스위치이름 = { ai_on:'AI', signup_on:'가입', push_on:'알림', readonly:'점검 모드',
                      push:'잠금화면 알림', docs:'여행 서류',
-                     reorder:'끌어서 순서', maplink:'지도 링크' };
+                     reorder:'끌어서 순서', maplink:'지도 링크',
+                     swipe:'탭 좌우 스와이프' };
 
 /* ⚠ **위험한 셋만 묻습니다.** 알림 끄기까지 물으면 확인창이 흔해져서
    정작 점검 모드에서도 그냥 누르게 됩니다. 값은 '이 자리로 갈 때 묻는다'. */
@@ -388,7 +391,13 @@ $('setadmpane').addEventListener('change', async e => {
   document.querySelectorAll('[data-feat]').forEach(el => row[el.dataset.feat] = el.checked);
   const r = await sb.rpc('admin_setting_set', { p_key:'features', p_value:row });
   if (r.error) toast('못 바꿨어요: ' + (r.error.message || ''));
-  else toast('기능 스위치를 바꿨어요');
+  else {
+    /* ⚠ **저장이 된 뒤에 화면에 먹입니다(b491).** 새로고침해야 달라지면
+       스위치를 껐는데 아무 일도 안 일어나 안 먹은 줄 압니다. 화면부터
+       바꾸면 저장 실패 때 화면과 서버가 갈립니다 — 순서가 중요합니다. */
+    reapplyFeatures(row);
+    toast('기능 스위치를 바꿨어요');
+  }
   syncSetState();
 });
 

@@ -12,13 +12,13 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b490';
-import { sb } from './db.js?v=b490';
-import { fail } from './net.js?v=b490';
-import { todayYmd } from './calc.js?v=b490';
-import { starHtml } from './stars.js?v=b490';
-import { trip, legs, nameOf } from './trip.js?v=b490';
-import { arm, disarm } from './ui.js?v=b490';
+import { $, esc, toast } from './dom.js?v=b491';
+import { sb } from './db.js?v=b491';
+import { fail } from './net.js?v=b491';
+import { todayYmd } from './calc.js?v=b491';
+import { starHtml, starValue } from './stars.js?v=b491';
+import { trip, legs, nameOf } from './trip.js?v=b491';
+import { arm, disarm } from './ui.js?v=b491';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -105,8 +105,7 @@ $('reviewbox').addEventListener('click', async e => {
 
   const st = e.target.closest('.st'); if (!st) return;
   const wrap = st.closest('.stars');
-  const box = st.getBoundingClientRect();
-  const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+  const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
 
   if (wrap.dataset.rvcity){
     /* 여기서 매긴 것이 곧 기록 탭의 도시 별점입니다. 두 벌로 두지 않습니다. */

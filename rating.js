@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b490';
-import { sb } from './db.js?v=b490';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b490';
-import { dateRange } from './calc.js?v=b490';
-import { starHtml, paintStars, markRated } from './stars.js?v=b490';
-import { cities, countryName, addCity } from './cities.js?v=b490';
+import { $, esc } from './dom.js?v=b491';
+import { sb } from './db.js?v=b491';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b491';
+import { dateRange } from './calc.js?v=b491';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b491';
+import { cities, countryName, addCity } from './cities.js?v=b491';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b490';
-import { openCity } from './city.js?v=b490';
-import { loadCities } from './citysearch.js?v=b490';
+         putRateFilter, removeRate } from './rate.js?v=b491';
+import { openCity } from './city.js?v=b491';
+import { loadCities } from './citysearch.js?v=b491';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -278,8 +278,7 @@ $('ratelist').addEventListener('click', async e => {
   const st = e.target.closest('.st');
   if (st){
     const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
     /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다.
        "다녀옴"은 따로 켜지 않습니다 — 별점이 있으면 다녀온 것으로 계산됩니다. */
     const cur = myRates[cityId]?.stars;

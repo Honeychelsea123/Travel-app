@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b490';
-import { openCity } from './city.js?v=b490';
-import { sb } from './db.js?v=b490';
-import { cities, countryName } from './cities.js?v=b490';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b490';
-import { starHtml, paintStars, markRated } from './stars.js?v=b490';
-import { fail } from './net.js?v=b490';
-import { arm } from './ui.js?v=b490';
-import { todayYmd } from './calc.js?v=b490';
-import { loadCities } from './citysearch.js?v=b490';
-import { loadRateData, saveRate } from './rating.js?v=b490';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b491';
+import { openCity } from './city.js?v=b491';
+import { sb } from './db.js?v=b491';
+import { cities, countryName } from './cities.js?v=b491';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b491';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b491';
+import { fail } from './net.js?v=b491';
+import { arm } from './ui.js?v=b491';
+import { todayYmd } from './calc.js?v=b491';
+import { loadCities } from './citysearch.js?v=b491';
+import { loadRateData, saveRate } from './rating.js?v=b491';
 
 let ctx = {
   me: () => null,
@@ -366,8 +366,7 @@ $('shelflist').addEventListener('click', async e => {
   /* 식당·카페는 일정 줄에 답니다. 도시 별점과 저장하는 표가 다릅니다. */
   const pw = st?.closest('.stars[data-plan]');
   if (pw){
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
     const cur = [...pw.querySelectorAll('.st i')]
       .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
     const next = Math.abs(cur - v) < .01 ? null : v;
@@ -391,8 +390,7 @@ $('shelflist').addEventListener('click', async e => {
   if (st){
     const wrap = st.closest('.stars'), cityId = wrap.dataset.city;
     const row = st.closest('.rrow');
-    const box = st.getBoundingClientRect();
-    const v = +st.dataset.n - ((e.clientX - box.left) < box.width / 2 ? 0.5 : 0);
+    const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
     const next = Number(myRates[cityId]?.stars) === v ? null : v;
     paintStars(wrap, next, true);
     markRated(row, next);

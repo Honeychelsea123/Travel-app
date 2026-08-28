@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b490';
-import { countryName } from './cities.js?v=b490';
-import { starHtml } from './stars.js?v=b490';
+import { esc } from './dom.js?v=b491';
+import { countryName } from './cities.js?v=b491';
+import { starHtml } from './stars.js?v=b491';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -106,9 +106,10 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
   </div>`;
 }
 
-/* 눌린 자리에서 별점을 읽습니다. **반 칸(0.5점)은 왼쪽 절반**입니다 —
-   세 화면이 같은 규칙을 써야 하므로 여기 한 곳에 둡니다. */
-export function starValue(st, clientX){
-  const b = st.getBoundingClientRect();
-  return +st.dataset.n - ((clientX - b.left) < b.width / 2 ? 0.5 : 0);
-}
+/* 눌린 자리에서 별점을 읽습니다. **반 칸(0.5점)은 왼쪽 절반.**
+   ⚠ **몸통은 stars.js 로 내렸습니다(b491).** 여기 「한 곳에 둔다」고 적어
+     놓고도 rating.js · review.js · shelf.js 가 같은 식을 손으로 베껴 쓰고
+     있었습니다 — 그 셋은 rateui 를 import 하지 않기 때문입니다. 별을 쓰는
+     여섯 화면이 다 닿는 아래층은 stars.js 입니다.
+     이름은 여기서도 그대로 나갑니다(home·spree·try 가 여기서 가져갑니다). */
+export { starValue } from './stars.js?v=b491';

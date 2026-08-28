@@ -16,13 +16,13 @@
  * **작은 것을 아래로 내리면 위쪽 여럿이 가벼워집니다**(b351 의 putHtml 과 같은 꼴).
  *
  * 층: db.js · net.js · dom.js 만 씁니다. */
-import { sb } from './db.js?v=b490';
-import { netTimeout, setReadOnly } from './net.js?v=b490';
+import { sb } from './db.js?v=b491';
+import { netTimeout, setReadOnly } from './net.js?v=b491';
 /* `$` 를 안 가져온 채로 b360 에 나갔습니다. drawNotice 와 applyFeatures 가
    async 안에서 도는 터라 조용한 unhandledrejection 으로만 남았고, 화면에는
    아무 표시도 안 났습니다 — 공지줄·기능 스위치·읽기전용이 통째로 안 걸린
    채였습니다. check-refs 가 `$` 를 못 보고 있었습니다(b362 에서 고침). */
-import { $ } from './dom.js?v=b490';
+import { $ } from './dom.js?v=b491';
 
 /* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
  * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
@@ -69,6 +69,10 @@ function applyFeatures(){
   $('pushkinds')?.classList.toggle('hide', !featOn('push'));
   $('docbtn')?.classList.toggle('hide', !featOn('docs'));
   document.body.classList.toggle('noreorder', !featOn('reorder'));
+  /* 탭 좌우 스와이프(b491). 끄면 **손가락 스와이프만** 죽습니다 —
+     #tabdeck 은 overflow-x:hidden 이어도 여전히 스크롤 칸이라 하단바로
+     옮기는 scrollLeft·스냅·부드러운 이동은 다 남습니다(app.css). */
+  document.body.classList.toggle('noswipe', !featOn('swipe'));
   document.body.classList.toggle('readonly', !!flags.readonly);
   /* **진짜로 막는 것은 여기입니다.** 화면에서 단추를 흐리게 하는 것은
      안내일 뿐이고, 저장은 write() 한 곳을 지나므로 거기서 막습니다. */
@@ -82,3 +86,14 @@ function applyFeatures(){
   }
 }
 
+
+/* ── 관리자 화면에서 바꾸면 그 자리에서 먹게 ──────────────────────────
+ * 전에는 서버에만 쓰고 화면은 그대로였습니다. 스위치를 껐는데 아무 일도
+ * 안 일어나니 **안 먹은 줄 알고** 다시 누르게 됩니다 — 새로고침해야
+ * 달라졌습니다. 기능 스위치 전부에 해당합니다(b491).
+ * ⚠ 서버에 **먼저 쓰고 나서** 부릅니다. 화면부터 바꾸면 저장이 실패했을
+ *   때 화면과 서버가 갈립니다. */
+export function reapplyFeatures(row){
+  flags.features = { ...(flags.features || {}), ...(row || {}) };
+  applyFeatures();
+}
