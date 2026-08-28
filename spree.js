@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b487';
-import { sb } from './db.js?v=b487';
-import { cities } from './cities.js?v=b487';
-import { loadCities } from './citysearch.js?v=b487';
-import { paintStars } from './stars.js?v=b487';
-import { rateHero, starValue } from './rateui.js?v=b487';
-import { saveRate } from './rating.js?v=b487';
-import { resetHomeSig } from './home.js?v=b487';
+import { $, esc } from './dom.js?v=b488';
+import { sb } from './db.js?v=b488';
+import { cities } from './cities.js?v=b488';
+import { loadCities } from './citysearch.js?v=b488';
+import { paintStars } from './stars.js?v=b488';
+import { rateHero, starValue } from './rateui.js?v=b488';
+import { saveRate } from './rating.js?v=b488';
+import { resetHomeSig } from './home.js?v=b488';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -39,6 +39,8 @@ let 주머니 = [], 지금 = null, 센것 = 0, 도는중 = false;
    나갈 때 이걸로 갈라야 합니다 — 센것으로 가드를 걸었더니 「안 가봤어요」
    만 누르고 나온 사람의 홈이 **옛것 그대로**였습니다. */
 let 건드림 = false;
+/* 쭉 매기기 앞줄에 세울 도시(b488). openSpree 가 받아 채우기 가 한 번 씁니다. */
+let 먼저 = [];
 
 /* ── 물어볼 도시 ─────────────────────────────────────────────────────
  * ⚠ **이미 답한 곳은 서버에 물어서 뺍니다.** 별점이든 ♡ 든 「안 가봤어요」든
@@ -56,6 +58,20 @@ async function 채우기(){
     const j = Math.floor(Math.random() * (i + 1));
     if ((주머니[i].fame ?? 9) === (주머니[j].fame ?? 9))
       [주머니[i], 주머니[j]] = [주머니[j], 주머니[i]];
+  }
+  /* ── 앞줄 세우기(b488) ────────────────────────────────────────────
+   * 체크 카드로 들어와 「다녀왔다」고 고른 곳을 맨 앞에 둡니다.
+   * 그 사람은 **그 곳들을 매기겠다고 약속받고** 로그인했습니다 —
+   * 유명도 순으로 엉뚱한 도시부터 물으면 약속을 어기는 것입니다.
+   * ⚠ **끼워 넣지 않고 «앞으로 옮깁니다».** 따로 붙이면 뒤에 같은
+   *   도시가 한 번 더 나옵니다. 이미 답한 곳은 위에서 빠졌으므로
+   *   여기 남은 것만 옮기면 됩니다(로그아웃 전에 매겼던 곳은 자연히
+   *   빠집니다 — 다시 묻지 않습니다). */
+  if (먼저.length){
+    const 앞 = new Set(먼저);
+    주머니 = [...주머니.filter(c => 앞.has(c.id)),
+              ...주머니.filter(c => !앞.has(c.id))];
+    먼저 = [];                                   /* 한 번만 씁니다 */
   }
 }
 
@@ -93,9 +109,14 @@ function 다음(){
   그리기();
 }
 
-export async function openSpree(){
+export async function openSpree(앞줄){
   if (도는중) return;
   도는중 = true;
+  /* ⚠ **가드 «뒤»에서 넣습니다(b488).** 위에서 넣으면 이미 도는 중일 때도
+     값이 남아, 나중에 아무 상관 없는 「쭉 매기기」가 그 앞줄로 시작합니다.
+     ⚠ 단추에도 직접 달려 있어(`spreego`) 여기로 **이벤트 객체**가 옵니다 —
+     그래서 배열인지 반드시 봅니다. 체크 카드 쪽은 check.js 머리말 참고. */
+  먼저 = Array.isArray(앞줄) ? 앞줄 : [];
   $('tabdeck').classList.add('hide');   /* 덱 한 덩어리로(b474) */
   $('spreeview').classList.remove('hide');
   /* ⚠ **탭 바를 진짜로 숨겨야 합니다(b410).** `hastab` 은 본문 아래 **여백**만

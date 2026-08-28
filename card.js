@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b487';
+import { $, esc, toast } from './dom.js?v=b488';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b487';
+import { distKm, pScale, SEOUL } from './calc.js?v=b488';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -309,7 +309,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b487`;
+    img.src = `./persona/${code}.png?v=b488`;
   });
 }
 
@@ -1355,7 +1355,12 @@ async function saveCardImage(spec, mode, name){
        없으니 공유가 유입으로 이어질 수가 없었습니다.
        받는 앱이 글을 버리는 경우도 있어서 **그림 안에도 주소를 적어**
        뒀습니다(위 cardImage) — 둘 중 하나는 남습니다. */
-    const url = appUrl();
+    /* ⚠ **`spec.shareUrl` 이 있으면 그걸 씁니다(b488).** 체크 카드는 받은
+       사람이 **같은 24칸**으로 떨어져야 고리가 이어집니다(`?check=eu`).
+       그냥 앱 주소로 보내면 로그인 화면에 떨어지고, 거기서는 「도시 5곳
+       매기면 성향」이라는 **다른 약속**을 합니다 — 카드를 보고 온 사람이
+       원한 것이 아닙니다. check.js 머리말 참고. */
+    const url = spec.shareUrl || appUrl();
     const share = { files:[file], title: spec.title,
                     text: `${spec.title} · 기로`, url };
     /* url·text 를 못 받는 기기가 있습니다. 그때는 그림만이라도 보냅니다 —
@@ -1370,7 +1375,8 @@ async function saveCardImage(spec, mode, name){
    *   글이라도 보내는 편이 낫습니다 — 카드에 적힌 것이 글에도 있습니다.
    *   내려받기는 그것마저 안 될 때의 마지막 수단으로 내립니다. */
   if (spec.shareText && navigator.share){
-    try { await navigator.share({ title: spec.title, text: spec.shareText, url: appUrl() }); return; }
+    try { await navigator.share({ title: spec.title, text: spec.shareText,
+                                  url: spec.shareUrl || appUrl() }); return; }
     catch (e){ if (e?.name === 'AbortError') return; }
   }
   const a = document.createElement('a');

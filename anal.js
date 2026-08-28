@@ -14,24 +14,27 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b487';
-import { sb } from './db.js?v=b487';
-import { cities, continentOf } from './cities.js?v=b487';
+import { $, esc } from './dom.js?v=b488';
+import { sb } from './db.js?v=b488';
+import { cities, continentOf } from './cities.js?v=b488';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b487';
+import { personaBackTo } from './persona.js?v=b488';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b487';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b487';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b488';
+import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b488';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b487';
+/* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
+   고리가 이어집니다. check.js 머리말 참고. */
+import { checkUrl } from './check.js?v=b488';
+import { similarPicks } from './rec.js?v=b488';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b487';
-import { pickCity } from './citysearch.js?v=b487';
-import { shareMate } from './mate.js?v=b487';
+import { openNew } from './newtrip.js?v=b488';
+import { pickCity } from './citysearch.js?v=b488';
+import { shareMate } from './mate.js?v=b488';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -143,7 +146,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b487"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b488"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -383,6 +386,12 @@ export async function loadAnal(){
         b.onclick = () => shareCard({
           kind:'check', title:이름, sub:'가볼 만한 곳',
           items: 곳.map(c => ({ name:c.name, on: 별점표[c.id] != null })),
+          /* ⚠ **받은 사람이 같은 24칸으로 떨어져야 합니다(b488).** 그냥 앱
+             주소로 보내면 로그인 화면에 떨어지고, 거기서는 「도시 5곳 매기면
+             성향」이라는 다른 약속을 합니다 — 카드를 보고 온 사람이 원한
+             것이 아닙니다. 링크에는 **대륙 두 글자만** 담깁니다(남의 기록을
+             링크에 싣지 않습니다). check.js 머리말 참고. */
+          shareUrl: checkUrl(이름),
         }, `기로-${이름}`);
         줄.appendChild(b);
       });
