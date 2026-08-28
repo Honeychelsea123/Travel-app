@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b491';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b491';
-import { onSwipeX } from './ui.js?v=b491';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b491';
+import { $ } from './dom.js?v=b492';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b492';
+import { onSwipeX } from './ui.js?v=b492';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b492';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -89,9 +89,19 @@ function 여행덱으로(t, 부드럽게){
   if (i < 0) return;
   여행잠금 = true;
   clearTimeout(여행잠금타이머);
+  const 목표 = i * 여행칸폭(), 시작 = 여행덱.scrollLeft;
   if (!부드럽게) 여행덱.style.scrollBehavior = 'auto';
-  여행덱.scrollLeft = i * 여행칸폭();
+  여행덱.scrollLeft = 목표;
   if (!부드럽게) 여행덱.style.scrollBehavior = '';
+  /* ⚠⚠ **CSS `scroll-behavior:smooth` 가 대입을 삼킵니다(b492).**
+   *   탭 덱에서 실제로 겪었습니다 — 하단바만 바뀌고 화면은 그대로였습니다.
+   *   여기도 같은 구조라 같은 방어를 둡니다. 자세한 것은 app.js 의 `덱으로`. */
+  if (부드럽게 && 목표 !== 시작) setTimeout(() => {
+    if (여행덱.scrollLeft !== 시작) return;      /* 돌고 있습니다 — 둡니다 */
+    여행덱.style.scrollBehavior = 'auto';
+    여행덱.scrollLeft = 목표;
+    여행덱.style.scrollBehavior = '';
+  }, 150);
   여행잠금타이머 = setTimeout(() => { 여행잠금 = false; }, 부드럽게 ? 520 : 0);
 }
 const FORMS = ['plancard', 'expcard', 'bookcard', 'card-cand', 'importcard'];
