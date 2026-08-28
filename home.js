@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b488';
-import { sb } from './db.js?v=b488';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b488';
-import { hm, todayYmd } from './calc.js?v=b488';
-import { starHtml, paintStars, markRated } from './stars.js?v=b488';
+import { $, esc } from './dom.js?v=b489';
+import { sb } from './db.js?v=b489';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b489';
+import { hm, todayYmd } from './calc.js?v=b489';
+import { starHtml, paintStars, markRated } from './stars.js?v=b489';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b488';
-import { cities, countryName } from './cities.js?v=b488';
-import { myRates, visited } from './rate.js?v=b488';
-import { plans } from './trip.js?v=b488';
-import { openCity } from './city.js?v=b488';
-import { loadCities, pick } from './citysearch.js?v=b488';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b488';
+import { rateHero, starValue } from './rateui.js?v=b489';
+import { cities, countryName } from './cities.js?v=b489';
+import { myRates, visited } from './rate.js?v=b489';
+import { plans } from './trip.js?v=b489';
+import { openCity } from './city.js?v=b489';
+import { loadCities, pick } from './citysearch.js?v=b489';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b489';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b488';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b489';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b488';
+import { drawReport } from './report.js?v=b489';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b488';
-import { openNew } from './newtrip.js?v=b488';
+import { PERSONA_BG } from './card.js?v=b489';
+import { openNew } from './newtrip.js?v=b489';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -62,7 +62,7 @@ function 지도열기(){
   openMap();
 }
 let lastHomeSig = '';
-export function resetHomeSig(){ lastHomeSig = ''; }
+export function resetHomeSig(){ lastHomeSig = ''; rvCache = undefined; }   /* 재촉 줄도 같이 — 아래 rvCache */
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * **메인은 평가·성향, 일정은 서브입니다**(사용자 결정, b398). 위에서부터:
@@ -350,6 +350,25 @@ async function buildHome(){
        붙이려다 터지면 홈이 통째로 안 그려집니다. */
   await renderQuiz($('home').querySelector('.ratecard') || 통);
 
+  /* ── 다녀온 여행 물어보기 — 홈으로 되돌립니다(b489) ──────────────────
+   * b398 에서 이 재촉을 여행 탭으로 내보냈습니다. 「홈은 평가, 일정은
+   * 서브」라는 정리였는데, **이건 일정이 아니라 평가입니다** — 묻는 것이
+   * 별점입니다. 게다가 이 앱에서 **다시 열 이유가 될 수 있는 것이
+   * 이것 하나뿐**입니다(여행이 실제로 끝나야 생기는, 지어내지 않은
+   * 사건). 그것을 여행 탭 「다녀온」 갈래 안에 두면 **거기까지 간
+   * 사람만** 봅니다 — 새 여행 줄을 세 번이나 되살린 것과 같은 이유로
+   * 홈에 있어야 합니다(아래 ⚠⚠ 참고).
+   *
+   * ⚠ **띠(.rvbar)로 만들지 않습니다.** b419 에서 홈의 덩어리 다섯을
+   *   둘로 줄였습니다. 여기에 띠를 하나 얹으면 그때 고친 것이 그대로
+   *   돌아옵니다. 같은 부품(.fprow)으로 **이 카드 안의 줄**입니다.
+   * ⚠ **맨 위에 넣습니다.** 이 카드에서 유일하게 «시간이 걸린» 줄입니다 —
+   *   여행이 끝났을 때만 잠깐 있다가 다 매기면 사라집니다.
+   * ⚠ **기다리지 않습니다.** pendingTrip 은 여행 다섯 개를 돌며 각각 네
+   *   번씩 물어봅니다. 홈이 이걸 기다리면 첫 화면이 그만큼 늦습니다 —
+   *   줄 하나 때문에 홈 전체를 세우지 않습니다. */
+  reviewRow(통);
+
   /* ⚠ **발자국·성향·지도가 먼저입니다(b423).** 지도를 홈 열자마자 보이게
      하려면 위로 올려야 하는데, 새 여행 줄이 앞에 있으면 그만큼 밀립니다.
      그리고 이 앱은 평가가 주인공이고 일정은 서브입니다 — 순서가 그 말을
@@ -406,14 +425,64 @@ async function buildHome(){
  *   어디 있느냐** 하나뿐이었습니다. 그래서 입구만 내보냅니다.
  *
  * 부르는 쪽(triplist.js)이 `null` 을 받으면 붙일 것이 없다는 뜻입니다. */
+/* ── 남은 것을 세는 말 ───────────────────────────────────────────────
+ * ⚠ **도시를 빼먹고 있었습니다(b489).** `pendingTrip` 은 안 매긴 **도시**와
+ *   안 매긴 **장소**(식사·카페)를 둘 다 주는데, 띠는 장소만 셌습니다.
+ *   도시 둘 · 장소 0 이면 「다녀오신 곳을 평가해주세요」라고만 뜨고 숫자가
+ *   빠져, 할 일이 얼마나 남았는지 알 수 없었습니다.
+ * ⚠ **끝이 보여야 누릅니다.** 「3곳」처럼 셀 수 있는 수가 붙어야 시작할
+ *   마음이 생깁니다 — 끝이 없어 보이는 일은 미룹니다(spree.js 의 세기와
+ *   같은 이유). */
+function 남은말(pend){
+  const 조각 = [];
+  if (pend.cities.length) 조각.push(`${pend.cities.length}곳`);
+  if (pend.places.length) 조각.push(`${pend.places.length}군데`);
+  return 조각.length ? ` · ${조각.join(' · ')}` : '';
+}
+
+/* ── 홈의 「다녀온 여행」 줄(b489) ────────────────────────────────────
+ * 위 buildHome 의 부르는 자리에 왜 여기 있어야 하는지 적었습니다.
+ * ⚠ **통이 아직 화면에 있는지 봅니다.** 기다리지 않고 부르므로, 답이
+ *   오는 사이에 홈이 다시 그려져 이 통이 버려졌을 수 있습니다. 그때
+ *   붙이면 아무 데도 없는 줄을 만듭니다(그리고 다음에 또 붙습니다). */
+/* ⚠ **답을 붙들어 둡니다.** `pendingTrip` 은 여행 다섯 개를 돌며 각각 네
+   번씩 물어봅니다 — **최대 스물한 번**입니다. 홈은 별점을 하나 매길 때마다
+   지문이 바뀌어 다시 그려지는데, 그때마다 이걸 다시 돌리면 줄 하나 때문에
+   왕복이 스물한 번씩 늘어납니다.
+   ⚠ `undefined`(아직 안 물어봄)와 `null`(물어봤는데 없음)을 **가릅니다.**
+     둘을 같이 두면 「끝난 여행 없음」인 사람이 홈을 그릴 때마다 스물한 번을
+     계속 물어봅니다.
+   비우는 곳은 `resetHomeSig`(자료가 바뀐 것을 아는 자리)와 `closeReview`
+   (방금 평가하고 나온 자리) 둘입니다. */
+let rvCache;
+
+async function reviewRow(통){
+  if (rvCache === undefined){
+    try { rvCache = (await pendingTrip()) || null; }
+    catch { rvCache = undefined; return; }   /* 실패는 «모름» 으로 — 다음에 다시 */
+  }
+  const pend = rvCache;
+  if (!pend || !통?.isConnected) return;
+
+  const el = document.createElement('div');
+  el.className = 'fprow';
+  el.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
+      <span>다녀오신 곳을 평가해주세요${남은말(pend)}</span></span>
+    <span class="go">평가 ›</span>`;
+  /* ⚠ **홈으로 되돌립니다.** 여행 탭의 같은 줄은 'trips' 를 남깁니다
+     (아래 reviewBar) — 들어온 자리가 다르므로 나가는 자리도 달라야
+     합니다. 한 곳에서 둘 다 처리하려다 b446 에서 홈에 떨어뜨렸습니다. */
+  el.onclick = () => { reviewBackTo('home'); openReviewTrip(pend.trip.id); };
+  통.prepend(el);
+}
+
 export async function reviewBar(){
   const pend = await pendingTrip();
   if (!pend) return null;
   const b = document.createElement('div');
   b.className = 'rvbar';
   b.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
-      <span>다녀오신 곳을 평가해주세요${
-        pend.places.length ? ` · ${pend.places.length}곳` : ''}</span></span>
+      <span>다녀오신 곳을 평가해주세요${남은말(pend)}</span></span>
     <span class="go">평가 ›</span>`;
   /* ⚠ **들어온 자리를 남깁니다(b446).** 이 띠는 여행 탭의 「다녀온」
      갈래에만 있습니다 — 평가를 마치고 나오면 그리로 돌아가야 합니다.
@@ -538,6 +607,11 @@ let 돌아갈곳 = null;
 export function reviewBackTo(tab){ 돌아갈곳 = tab; }
 export function closeReview(fromPop){
   if (!fromPop && history.state?.t2 === 'rv'){ history.back(); return; }
+  /* ⚠ 방금 평가하고 나왔습니다(b489). **지문까지 비웁니다.**
+     붙들어 둔 답(rvCache)만 비우면 홈 지문이 그대로라 buildHome 이
+     통째로 건너뛰고, **다 매긴 여행이 홈에 계속 남아 재촉합니다.**
+     resetHomeSig 이 둘 다 비웁니다. */
+  resetHomeSig();
   $('reviewview').classList.add('hide');
   const t = 돌아갈곳; 돌아갈곳 = null;
   ctx.showApp(t || 'home');
