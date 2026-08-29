@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b520';
-import { sb } from './db.js?v=b520';
-import { cities, countryName, continentOf } from './cities.js?v=b520';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b521';
+import { sb } from './db.js?v=b521';
+import { cities, countryName, continentOf } from './cities.js?v=b521';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b520';
+import { similarPicks } from './rec.js?v=b521';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b520';
-import { visited } from './rate.js?v=b520';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b521';
+import { visited } from './rate.js?v=b521';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b520';
+         shareCard, cardImage } from './card.js?v=b521';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -78,10 +78,18 @@ export async function openPersona(){
    *   내 유형인지 알 수 없었습니다. 무엇을 견줬는지 그대로 적습니다.
    * ⚠ 재는 방법은 안 바꿉니다 — 전체와 견주면 전체 안에 처음 20곳이 들어
    *   있어 변화가 묽어집니다. 틀린 것은 말이었지 셈이 아니었습니다. */
-  const 변화배지 = (() => {
-    const 시간순 = (data || []).filter(r => r.created_at)
+  /* ⚠⚠ **별점 있는 줄만 셉니다(b521).** 옮겨오면서 `data` 를 그대로
+     넘겼는데, 거기에는 「가보고 싶어요」(별점 없는 줄)가 섞여 있습니다.
+     personaAxes 는 안에서 걸러내지만 **자르는 것은 그 전**이라, 앞 20줄을
+     떼면 실제로 매긴 것은 스물이 안 됩니다 — 분석 탭에서 보던 값과
+     달라집니다(재보니 축 변화가 10 → 37 로 벌어졌습니다).
+   ⚠ 이 배지 하나 때문에 리포트 전체가 안 뜨면 안 됩니다. 여기서 무슨 일이
+     나든 배지만 빠지고 나머지는 나옵니다 — 화면을 못 띄우는 것보다 낫습니다. */
+  const 변화배지 = (() => { try {
+    const 시간순 = (data || []).filter(r => r.created_at && r.stars != null)
       .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
     if (시간순.length < 40) return '';
+
     const 처음 = personaAxes(시간순.slice(0, 20), { cities });
     const 지금 = personaAxes(시간순.slice(-20), { cities });
     /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다.
@@ -107,7 +115,7 @@ export async function openPersona(){
         `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
     return `<div class="pbadge">${문장
       ? `<span class="why">${esc(문장)}</span>` : ''}<span class="pcd">${아래}</span></div>`;
-  })();
+  } catch (e){ console.warn('변화 배지', e); return ''; } })();
 
 
   /* ⚠ **「첫 기록으로부터 N일째」를 뺐습니다(b455).** 머리말 꼬리표와
@@ -243,7 +251,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b520"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b521"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
