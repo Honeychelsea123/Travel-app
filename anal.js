@@ -14,27 +14,27 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b499';
-import { sb } from './db.js?v=b499';
-import { cities, continentOf } from './cities.js?v=b499';
+import { $, esc } from './dom.js?v=b500';
+import { sb } from './db.js?v=b500';
+import { cities, continentOf } from './cities.js?v=b500';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b499';
+import { personaBackTo } from './persona.js?v=b500';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b499';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b499';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b500';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b500';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
 /* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
    고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b499';
-import { similarPicks } from './rec.js?v=b499';
+import { checkUrl } from './check.js?v=b500';
+import { similarPicks } from './rec.js?v=b500';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b499';
-import { pickCity } from './citysearch.js?v=b499';
-import { shareMate } from './mate.js?v=b499';
+import { openNew } from './newtrip.js?v=b500';
+import { pickCity } from './citysearch.js?v=b500';
+import { shareMate } from './mate.js?v=b500';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -146,7 +146,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b499"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b500"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -179,9 +179,19 @@ export async function loadAnal(){
            보여주면 읽는 사람이 그것부터 해석해야 합니다. */
       const 문장 = Math.abs(큰변화.값) >= 10
         ? 큰변화.말[큰변화.값 > 0 ? 0 : 1] : '';
+      /* ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** ⚠⚠
+       *   바로 위 큰 글자가 **전체 별점으로 낸 지금의 유형**(예: FMDP)인데,
+       *   이 줄은 **최근 20곳만**으로 낸 코드(HMDP)입니다. 둘은 다를 수
+       *   있고, 실제로 「FMDP … 지금 HMDP」가 한 화면에 같이 떠서
+       *   **어느 게 내 유형인지 알 수 없었습니다.**
+       * ⚠ **재는 방법은 안 바꿉니다.** 「얼마나 변했나」를 보려면 처음 20곳과
+       *   최근 20곳을 견주는 것이 맞습니다 — 전체와 견주면 전체 안에 처음
+       *   20곳이 들어 있어 변화가 묽어집니다. **틀린 것은 말이었습니다.**
+       *   무엇을 견줬는지 그대로 적습니다. */
       const 아래 = 처음.code === 지금.code
-        ? `처음부터 <b class="on">${esc(처음.code)}</b> 그대로`
-        : `처음 <b>${esc(처음.code)}</b> <i>→</i> 지금 <b class="on">${esc(지금.code)}</b>`;
+        ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
+        : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
+          `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
       배지.innerHTML = 문장
         ? `<span class="why">${esc(문장)}</span><span class="pcd">${아래}</span>`
         : `<span class="pcd">${아래}</span>`;

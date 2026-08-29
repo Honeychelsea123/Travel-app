@@ -3064,3 +3064,14 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    다음 여행을 만듭니다(옛 .contchips 주석 그대로). */
 .cbadge.off{ opacity:.5; }
 .cbadge.off .cbtext i{ color:var(--ink-48); }
+
+/* ── 대륙 카드를 넘기면 지도가 그 대륙으로 (b500) ─────────────────────
+ * 사용자 제안. **지도는 하나면 됩니다.** 카드마다 작은 지도를 넣었다가
+ * 「지도 위에 지도」로 걷었는데(b496 → b497), 넘기는 것이 곧 지도를
+ * 옮기는 것이면 겹칠 일 자체가 없습니다.
+ *
+ * ⚠ **`viewBox` 가 아니라 `transform` 입니다.** viewBox 는 CSS 로 부드럽게
+ *   못 바꿉니다. 안쪽 `<g>` 를 옮기면 그건 전이가 됩니다.
+ * ⚠ 값은 home.js 가 넣습니다 — 여기는 **어떻게 움직일지**만 정합니다. */
+.mmzoom{ transition:transform .38s var(--ease); }
+@media (prefers-reduced-motion:reduce){ .mmzoom{ transition:none; } }

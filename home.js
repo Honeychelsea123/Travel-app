@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b499';
-import { sb } from './db.js?v=b499';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b499';
-import { hm, todayYmd } from './calc.js?v=b499';
-import { starHtml, paintStars, markRated } from './stars.js?v=b499';
+import { $, esc } from './dom.js?v=b500';
+import { sb } from './db.js?v=b500';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b500';
+import { hm, todayYmd } from './calc.js?v=b500';
+import { starHtml, paintStars, markRated } from './stars.js?v=b500';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b499';
-import { cities, countryName } from './cities.js?v=b499';
-import { myRates, visited } from './rate.js?v=b499';
-import { plans } from './trip.js?v=b499';
-import { openCity } from './city.js?v=b499';
-import { loadCities, pick } from './citysearch.js?v=b499';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b499';
+import { rateHero, starValue } from './rateui.js?v=b500';
+import { cities, countryName } from './cities.js?v=b500';
+import { myRates, visited } from './rate.js?v=b500';
+import { plans } from './trip.js?v=b500';
+import { openCity } from './city.js?v=b500';
+import { loadCities, pick } from './citysearch.js?v=b500';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b500';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b499';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b500';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b499';
+import { drawReport } from './report.js?v=b500';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b499';
-import { openNew } from './newtrip.js?v=b499';
+import { PERSONA_BG } from './card.js?v=b500';
+import { openNew } from './newtrip.js?v=b500';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -799,6 +799,11 @@ async function renderFoot(통){
         <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
         <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
       </div>`;
+  /* ⚠ **먼저 비워서 선언합니다(b500).** 아래 넘김 블록이 이걸 부르는데,
+     지도(`mm`)는 그보다 **뒤에** 만들어집니다. 지금 순서로는 스크롤이
+     실제로 뜰 때쯤엔 채워져 있지만, 값이 없는 채로 불릴 수 있는 모양을
+     남기지 않습니다 — 없으면 아무 일도 안 하는 함수가 기본입니다. */
+  let 지도맞추기 = () => {};
   const 넘김 = document.createElement('div');
   넘김.className = 'swipe';
   넘김.innerHTML =
@@ -870,6 +875,9 @@ async function renderFoot(통){
       const i = Math.round(줄기.scrollLeft / 폭());
       const 실제 = ((i - 1) % 수 + 수) % 수;
       점들.forEach((d, k) => d.classList.toggle('on', k === 실제));
+      /* 지도도 같이 옮깁니다(b500). 점과 **같은 자리**에서 정합니다 —
+         따로 세면 점은 아시아인데 지도는 유럽인 순간이 생깁니다. */
+      지도맞추기(장[실제]?.[0]);
       if (있음) return;
       clearTimeout(타이머);
       타이머 = setTimeout(멎으면, 140);
@@ -910,14 +918,51 @@ async function renderFoot(통){
 
      ⚠ **자르지 마십시오.** 대륙에 딱 맞춰 여백만 걷어냅니다.
        값을 건드리려거든 `path.getBBox()` 로 잘리는 나라를 먼저 세십시오. */
+  /* ⚠ **좌표를 `<g>` 로 감쌉니다(b500).** 아래 카드를 넘기면 이 지도가
+     그 대륙으로 **확대·이동**합니다. `viewBox` 는 CSS 로 부드럽게 못
+     바꾸므로 안쪽 `<g>` 의 `transform` 을 옮깁니다 — 그건 전이가 됩니다. */
   mm.innerHTML = `<svg viewBox="20 16 976 392"
-    preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
+    preserveAspectRatio="xMidYMid meet"><g class="mmzoom">${
+      $('worldland').innerHTML}</g></svg>`;
   const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
   mm.querySelectorAll('path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
   mm.onclick = 지도열기;
   box.appendChild(mm);
   box.appendChild(넘김);
+
+  /* ── 넘기면 지도가 그 대륙으로 갑니다(b500) ─────────────────────────
+   * 사용자 제안. **첫 장이 「전체」니까 세계지도고, 아시아로 넘기면
+   * 지도도 아시아가 되는 것이 맞습니다.** 카드마다 작은 지도를 넣었다가
+   * 「지도 위에 지도」로 걷었는데(b496 → b497), 애초에 **지도는 하나면
+   * 됩니다.** 넘기는 것이 곧 지도를 옮기는 것입니다.
+   *
+   * ⚠ **`viewBox` 를 바꾸지 않습니다.** CSS 로 부드럽게 못 바꿉니다.
+   *   안쪽 `<g>` 를 `translate → scale → translate` 로 옮기면 그건
+   *   전이가 됩니다(app.css 의 `.mmzoom`).
+   * ⚠ **배율은 폭과 높이 중 작은 쪽입니다.** 폭만 보면 아프리카·남아메리카
+   *   처럼 키 큰 대륙이 위아래로 잘립니다 — 배지에서 겪은 것과 같은
+   *   함정입니다(b499).
+   * ⚠⚠ **대륙 높이는 `w × 0.62` 입니다. 배지의 0.9 가 아닙니다.**
+   *   처음에 0.9 를 그대로 가져왔더니 **넓은 대륙이 거의 안 움직였습니다** —
+   *   아시아 배율 1.15, 북아메리카 1.21 이라 세계지도와 구별이 안 됐습니다.
+   *   셋(0.9 · 0.62 · 0.45)을 나란히 그려 골랐습니다.
+   *   배지는 칸이 정사각에 가깝고 여기는 **가로로 긴 띠**라, 같은 표를
+   *   써도 비율은 칸 모양을 따라야 합니다.
+   *   대가: 아프리카 남쪽 끝이 살짝 잘립니다 — 그건 배지가 제대로 보여줍니다.
+   * ⚠ **창은 `CONT_VIEW` 하나입니다.** 큰 지도의 대륙 단추도 그 표를
+   *   씁니다 — 여기서 본 자리와 눌러서 들어간 자리가 같아야 합니다. */
+  const 줌 = mm.querySelector('.mmzoom');
+  지도맞추기 = 이름 => {
+    if (!줌) return;
+    const v = CONT_VIEW[이름];
+    if (!v || 이름 === '전체'){ 줌.style.transform = ''; return; }
+    const k = Math.min(976 / v.w, 392 / (v.w * 0.62));
+    /* 보이는 칸의 가운데(508, 212)에 그 대륙의 가운데를 갖다 놓습니다. */
+    줌.style.transform =
+      `translate(508px, 212px) scale(${k.toFixed(3)}) ` +
+      `translate(${-v.cx}px, ${-v.cy}px)`;
+  };
   /* ⚠ **카드에 대륙 지도를 깔았다가 걷었습니다(b496 → b497).**
      대륙마다 모양이 달라 넘기는 맛은 살았는데, **바로 위에 세계지도가
      있어서 지도 위에 지도**가 됐습니다 — 한 카드 안에 지도가 둘이면
