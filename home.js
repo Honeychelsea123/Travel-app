@@ -16,32 +16,34 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b525';
-import { sb } from './db.js?v=b525';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b525';
-import { hm, todayYmd } from './calc.js?v=b525';
-import { starHtml, paintStars, markRated } from './stars.js?v=b525';
+import { $, esc } from './dom.js?v=b526';
+import { sb } from './db.js?v=b526';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b526';
+import { hm, todayYmd } from './calc.js?v=b526';
+import { starHtml, paintStars, markRated } from './stars.js?v=b526';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b525';
-import { cities, countryName } from './cities.js?v=b525';
-import { myRates, visited } from './rate.js?v=b525';
-import { plans } from './trip.js?v=b525';
-import { openCity } from './city.js?v=b525';
-import { loadCities, pick } from './citysearch.js?v=b525';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b525';
+import { rateHero, starValue } from './rateui.js?v=b526';
+import { cities, countryName } from './cities.js?v=b526';
+import { myRates, visited } from './rate.js?v=b526';
+import { plans } from './trip.js?v=b526';
+import { openCity } from './city.js?v=b526';
+import { loadCities, pick } from './citysearch.js?v=b526';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b526';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b525';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b526';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b525';
+import { drawReport } from './report.js?v=b526';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b525';
-import { openNew } from './newtrip.js?v=b525';
+import { PERSONA_BG } from './card.js?v=b526';
+import { openNew } from './newtrip.js?v=b526';
+/* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
+import { checkPersonaShift } from './pshift.js?v=b526';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -248,7 +250,13 @@ export async function loadHome(){
                        !!$('home').querySelector('.hero, .card, .rvbar');
   try {
     await buildHome();
+    /* ⚠ **홈이 다 그려진 뒤에 부릅니다(b526).** buildHome 은 `#home` 을
+       통째로 다시 그리므로, 먼저 얹으면 그 자리에서 지워집니다.
+       ⚠ **안 기다립니다.** 성향을 재느라 홈이 늦게 뜨면 안 됩니다 —
+         늦게 와서 맨 위에 한 줄 얹히는 편이 낫습니다. */
+    checkPersonaShift();
     if (!그렸나()) offHome();
+
     else if (netIsDown()) drawOffbar();   /* 캐시로 그렸으면 그렇다고 띠를 띄웁니다 */
   }
   catch (e){
