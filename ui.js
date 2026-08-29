@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b503';
+import { $ } from './dom.js?v=b504';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -607,29 +607,37 @@ if (window.visualViewport){
   }
 }
 
-/* ── 탭바 높이를 재둡니다(b502) ───────────────────────────────────────
+/* ── 탭바 높이를 재둡니다(b502 · b503 에 고침) ────────────────────────
  * 아래 여백을 84px 로 박아뒀더니 두 가지에 걸렸습니다.
  *   ① 탭바가 글자 크기(--ts)를 타서 자랍니다 — 실측 ts 1 에 58.2px,
  *      1.2 에 61.4, 1.35 에 63.8. 박아둔 값으로는 여유가 8px 까지 줄었습니다.
- *   ② 그 값을 고칠 때마다 두 군데(body.hastab · .tabpane)를 같이 고쳐야
- *      했습니다 — 한쪽만 고치는 일이 실제로 있었습니다.
+ *   ② 고칠 때마다 두 군데(body.hastab · .tabpane)를 같이 고쳐야 했습니다.
  * 재서 --tabh 하나로 넘깁니다. CSS 는 여기에 12(바닥에서 뜬 만큼)와
- * 24(숨쉴 자리)를 더해서 씁니다.
+ * 24(숨쉴 자리)를 더해 씁니다.
  *
- * ⚠ **resize 로는 부족합니다.** 글자 크기는 프로필에서 바꾸는 값이라
- *   창 크기가 안 변합니다. 탭바 자체를 지켜봐야 그때 다시 재집니다.
- * ⚠ 탭바가 숨으면(연속 평가) 높이가 0 으로 옵니다 — 그때는 안 넣습니다.
- *   0 을 넣으면 돌아왔을 때 여백이 36px 뿐이라 또 가립니다. */
-(() => {
+ * ⚠⚠ **ResizeObserver 로 했다가 한 번도 안 불렸습니다(b503).** ⚠⚠
+ *   `.hide` 가 `display:none !important` 라, 로그인 전에는 탭바에 **상자가
+ *   아예 없습니다.** 그래서 첫 측정이 0 으로 나와 건너뛰는데, 로그인해서
+ *   보이게 된 뒤에도 관찰자가 안 왔습니다(재봤습니다 — 기록 0건).
+ *   상자가 없는 요소는 관찰 대상에서 빠지는 것으로 봐야 합니다.
+ *   **클래스가 바뀌는 것을 봅니다** — 그게 실제로 일어나는 일입니다.
+ * ⚠ 0 은 안 넣습니다. 숨었을 때 0 을 넣으면 돌아왔을 때 여백이 36px 뿐이라
+ *   마지막 줄이 또 가립니다. CSS 쪽에 `var(--tabh, 58px)` 로 대비도 둡니다 —
+ *   이 파일이 통째로 안 돌아도 예전 값과 비슷하게는 갑니다.
+ * ⚠ 글자 크기는 창을 안 바꾸므로 resize 로 못 잡습니다. 바꾸는 쪽
+ *   (profile.js 의 글자 크기)에서 이 함수를 직접 부릅니다. */
+export function fitTabBar(){
   const 바 = document.querySelector('.tabbar');
   if (!바) return;
-  const 재기 = () => {
-    const h = Math.round(바.getBoundingClientRect().height);
-    if (h > 0) document.documentElement.style.setProperty('--tabh', h + 'px');
-  };
-  재기();
-  if (window.ResizeObserver) new ResizeObserver(재기).observe(바);
-  else addEventListener('resize', 재기);
-  /* 글꼴이 늦게 실리면 탭바 글자가 커지면서 한 번 더 자랍니다. */
-  document.fonts?.ready?.then(재기);
-})();
+  const h = Math.round(바.getBoundingClientRect().height);
+  if (h > 0) document.documentElement.style.setProperty('--tabh', h + 'px');
+}
+fitTabBar();
+addEventListener('resize', fitTabBar);
+/* 글꼴이 늦게 실리면 탭바 글자가 커지면서 한 번 더 자랍니다. */
+document.fonts?.ready?.then(fitTabBar);
+{
+  const 바 = document.querySelector('.tabbar');
+  if (바) new MutationObserver(fitTabBar)
+    .observe(바, { attributes:true, attributeFilter:['class'] });
+}

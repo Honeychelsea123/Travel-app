@@ -13,16 +13,16 @@
  *
  * 층: dom.js · calc.js · trip.js 와 이미 떼어낸 planline · planmap ·
  *     planview · plancheck · cands · legs · tripview 를 씁니다. */
-import { $, esc } from './dom.js?v=b503';
-import { D1, asDate, hm, hop, todayYmd } from './calc.js?v=b503';
-import { trip, plans, legs, setPickedDay, setTodayOn } from './trip.js?v=b503';
-import { drawCats } from './planline.js?v=b503';
-import { drawPlanMap } from './planmap.js?v=b503';
-import { drawPlans, openPlans } from './planview.js?v=b503';
-import { STAY_MIN, mins } from './plancheck.js?v=b503';
-import { hhmm } from './cands.js?v=b503';
-import { legFor } from './legs.js?v=b503';
-import { drawDays } from './tripview.js?v=b503';
+import { $, esc } from './dom.js?v=b504';
+import { D1, asDate, hm, hop, todayYmd } from './calc.js?v=b504';
+import { trip, plans, legs, setPickedDay, setTodayOn } from './trip.js?v=b504';
+import { drawCats } from './planline.js?v=b504';
+import { drawPlanMap } from './planmap.js?v=b504';
+import { drawPlans, openPlans } from './planview.js?v=b504';
+import { STAY_MIN, mins } from './plancheck.js?v=b504';
+import { hhmm } from './cands.js?v=b504';
+import { legFor } from './legs.js?v=b504';
+import { drawDays } from './tripview.js?v=b504';
 
 /* ── 날씨 ───────────────────────────────────────────────────────────
  * open-meteo 는 키가 없어도 됩니다. 키를 받아 어딘가에 두는 순간
