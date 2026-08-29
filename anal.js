@@ -14,47 +14,31 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b524';
-import { sb } from './db.js?v=b524';
-import { cities, continentOf } from './cities.js?v=b524';
+import { $, esc } from './dom.js?v=b525';
+import { sb } from './db.js?v=b525';
+import { cities, continentOf } from './cities.js?v=b525';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b524';
+import { personaBackTo } from './persona.js?v=b525';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b524';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b524';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b525';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b525';
 /* 손가락으로 돌려 보는 지구본(b519) — 발자국 카드의 지도가 이것입니다. */
-import { mountGlobe } from './globe.js?v=b524';
+import { mountGlobe } from './globe.js?v=b525';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b524';
+import { similarPicks } from './rec.js?v=b525';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b524';
-import { pickCity } from './citysearch.js?v=b524';
+import { openNew } from './newtrip.js?v=b525';
+import { pickCity } from './citysearch.js?v=b525';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
 
-/* 지구본을 처음 어느 쪽으로 놓고 보여줄까. **다녀온 나라들의 한가운데**입니다 —
-   늘 한국을 가운데 두면 유럽만 다닌 사람은 열자마자 빈 태평양을 봅니다.
-   ⚠ 경도는 -180 에서 180 으로 감기므로 그냥 평균 내면 안 됩니다. 각도의
-     평균은 sin·cos 을 더해서 냅니다(안 그러면 날짜변경선 근처에서 반대쪽이
-     나옵니다). 아무 데도 안 갔으면 한국입니다. */
-function 가운데경도(gone){
-  let sx = 0, sy = 0;
-  for (const code of gone){
-    const p = document.querySelector(`#worldland path[data-c="${CSS.escape(code)}"]`);
-    const m = (p?.getAttribute('d') || '').match(/^M\s*(-?[\d.]+)/);
-    if (!m) continue;
-    const 경도 = (+m[1] / 1000 * 360 - 180) * Math.PI / 180;
-    sx += Math.cos(경도); sy += Math.sin(경도);
-  }
-  return (sx || sy) ? Math.atan2(sy, sx) * 180 / Math.PI : 127;
-}
 
 
 /* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
@@ -162,7 +146,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b524"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b525"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -268,7 +252,8 @@ export async function loadAnal(){
      타이머는 배경에서도 (느려질지언정) 옵니다.
      폭이 아직 0 이면 globe.js 가 스스로 몇 번 더 옵니다. */
   setTimeout(() => {
-    const 공 = mountGlobe(공판, gone, 가운데경도(gone));
+    /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
+    const 공 = mountGlobe(공판, gone);
     공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
   }, 0);
 

@@ -16,17 +16,17 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b524';
-import { featOn } from './flags.js?v=b524';
-import { sb } from './db.js?v=b524';
-import { fail, write } from './net.js?v=b524';
+import { $, toast } from './dom.js?v=b525';
+import { featOn } from './flags.js?v=b525';
+import { sb } from './db.js?v=b525';
+import { fail, write } from './net.js?v=b525';
 import { trip, plans, setPlans, editPlanId, setEditPlanId,
-         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b524';
-import { arm } from './ui.js?v=b524';
-import { drawCats } from './planline.js?v=b524';
-import { drawPlanMap } from './planmap.js?v=b524';
-import { drawPlans } from './planview.js?v=b524';
-import { osmLookup } from './cands.js?v=b524';
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b525';
+import { arm } from './ui.js?v=b525';
+import { drawCats } from './planline.js?v=b525';
+import { drawPlanMap } from './planmap.js?v=b525';
+import { drawPlans } from './planview.js?v=b525';
+import { osmLookup } from './cands.js?v=b525';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
