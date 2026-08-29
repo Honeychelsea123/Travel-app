@@ -14,25 +14,25 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b523';
-import { sb } from './db.js?v=b523';
-import { cities, continentOf } from './cities.js?v=b523';
+import { $, esc } from './dom.js?v=b524';
+import { sb } from './db.js?v=b524';
+import { cities, continentOf } from './cities.js?v=b524';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b523';
+import { personaBackTo } from './persona.js?v=b524';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b523';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b523';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b524';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b524';
 /* 손가락으로 돌려 보는 지구본(b519) — 발자국 카드의 지도가 이것입니다. */
-import { mountGlobe } from './globe.js?v=b523';
+import { mountGlobe } from './globe.js?v=b524';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b523';
+import { similarPicks } from './rec.js?v=b524';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b523';
-import { pickCity } from './citysearch.js?v=b523';
+import { openNew } from './newtrip.js?v=b524';
+import { pickCity } from './citysearch.js?v=b524';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -162,7 +162,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b523"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b524"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -259,11 +259,18 @@ export async function loadAnal(){
   공판.setAttribute('aria-label', '지구본');
   공칸.appendChild(공판);
   발.appendChild(공칸);
-  /* 화면에 붙은 뒤라야 폭이 생깁니다 — 붙이고 나서 그립니다. */
-  requestAnimationFrame(() => {
+  /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
+     붙은 뒤에 폭이 생기므로 한 박자 미루는 것은 맞는데, 그 한 박자를
+     `requestAnimationFrame` 으로 잡으면 **창이 뒤에 있을 때 아예 안
+     불립니다.** 크롬은 배경 탭에서 rAF 를 멈춥니다 — 실제로 지구본이
+     영영 안 그려졌습니다(칸은 360×240 인데 캔버스는 손도 안 댄 300×150,
+     `공판.onclick` 도 null 이었습니다. 즉 콜백 자체가 안 왔습니다).
+     타이머는 배경에서도 (느려질지언정) 옵니다.
+     폭이 아직 0 이면 globe.js 가 스스로 몇 번 더 옵니다. */
+  setTimeout(() => {
     const 공 = mountGlobe(공판, gone, 가운데경도(gone));
     공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
-  });
+  }, 0);
 
   /* ── 대륙별 ── 막대 여섯 줄을 칩 한 뭉치로(b464) ───────────────────
      ⚠ **바로 위에 지도가 있습니다.** 어디를 칠했는지는 지도가 이미
