@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b493';
-import { sb } from './db.js?v=b493';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b493';
-import { hm, todayYmd } from './calc.js?v=b493';
-import { starHtml, paintStars, markRated } from './stars.js?v=b493';
+import { $, esc } from './dom.js?v=b494';
+import { sb } from './db.js?v=b494';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b494';
+import { hm, todayYmd } from './calc.js?v=b494';
+import { starHtml, paintStars, markRated } from './stars.js?v=b494';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b493';
-import { cities, countryName } from './cities.js?v=b493';
-import { myRates, visited } from './rate.js?v=b493';
-import { plans } from './trip.js?v=b493';
-import { openCity } from './city.js?v=b493';
-import { loadCities, pick } from './citysearch.js?v=b493';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b493';
+import { rateHero, starValue } from './rateui.js?v=b494';
+import { cities, countryName } from './cities.js?v=b494';
+import { myRates, visited } from './rate.js?v=b494';
+import { plans } from './trip.js?v=b494';
+import { openCity } from './city.js?v=b494';
+import { loadCities, pick } from './citysearch.js?v=b494';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b494';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b493';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b494';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b493';
+import { drawReport } from './report.js?v=b494';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b493';
-import { openNew } from './newtrip.js?v=b493';
+import { PERSONA_BG } from './card.js?v=b494';
+import { openNew } from './newtrip.js?v=b494';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -625,6 +625,11 @@ $('rv_rate').addEventListener('click', async e => {
   const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
   paintStars(wrap, v, true);
   if (wrap.dataset.city) await saveRate(wrap.dataset.city, { stars: v }, true);
+  /* ⚠ **0 은 지우기입니다(b494).** 도시 쪽은 saveRate 가 알아서 dropRate 로
+     보내는데, 맛집(plan_ratings)은 그 길을 안 지나므로 여기서 지웁니다.
+     0 을 그대로 upsert 하면 「0점을 준 맛집」이 생깁니다. */
+  else if (v === 0) await sb.from('plan_ratings').delete()
+    .eq('user_id', ctx.me().id).eq('plan_id', wrap.dataset.plan);
   else await sb.from('plan_ratings').upsert(
     { user_id: ctx.me().id, plan_id: wrap.dataset.plan, stars: v },
     { onConflict: 'user_id,plan_id' });

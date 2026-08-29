@@ -25,16 +25,16 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     card.js · mate.js. */
-import { $, esc } from './dom.js?v=b493';
-import { sb } from './db.js?v=b493';
-import { cities } from './cities.js?v=b493';
-import { loadCities } from './citysearch.js?v=b493';
-import { paintStars } from './stars.js?v=b493';
+import { $, esc } from './dom.js?v=b494';
+import { sb } from './db.js?v=b494';
+import { cities } from './cities.js?v=b494';
+import { loadCities } from './citysearch.js?v=b494';
+import { paintStars } from './stars.js?v=b494';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b493';
-import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b493';
+import { rateHero, starValue } from './rateui.js?v=b494';
+import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b494';
 /* 친구가 보낸 궁합 링크. 링크를 받은 사람이 실제로 도착하는 자리가 여기입니다. */
-import { mateCode, mateHtml } from './mate.js?v=b493';
+import { mateCode, mateHtml } from './mate.js?v=b494';
 
 /* 담아두는 자리. **`localStorage` 입니다** — 탭을 닫았다 와도 남아야 합니다.
    로그인하러 구글로 나갔다 돌아오는 사이에 `sessionStorage` 는 살아남지만,
@@ -213,7 +213,13 @@ $('trybox')?.addEventListener('click', async e => {
     const wrap = st.closest('.stars');
     const v = starValue(st, e.clientX);
     paintStars(wrap, v, true);
-    const o = 읽기(); o[wrap.dataset.city] = { stars: v }; 쓰기(o);
+    const o = 읽기();
+    /* ⚠ **0(끌어서 맨 왼쪽)은 지우기입니다(b494).** 담아두면 「0점을 준
+       곳」이 되어 카드 계산에 들어가고, 로그인할 때 계정으로 따라갑니다.
+       ⚠ **넘기지도 않습니다.** 방금 지운 도시가 바로 사라지면 되돌릴 수가
+         없습니다 — 아직 답 안 한 것으로 되돌아가는 것이 맞습니다. */
+    if (v === 0){ delete o[wrap.dataset.city]; 쓰기(o); return; }
+    o[wrap.dataset.city] = { stars: v }; 쓰기(o);
     /* 별이 찬 것을 보여주고 넘깁니다. 홈과 같은 1.5초입니다. */
     setTimeout(drawTry, 900);
     return;

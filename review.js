@@ -12,13 +12,13 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b493';
-import { sb } from './db.js?v=b493';
-import { fail } from './net.js?v=b493';
-import { todayYmd } from './calc.js?v=b493';
-import { starHtml, starValue } from './stars.js?v=b493';
-import { trip, legs, nameOf } from './trip.js?v=b493';
-import { arm, disarm } from './ui.js?v=b493';
+import { $, esc, toast } from './dom.js?v=b494';
+import { sb } from './db.js?v=b494';
+import { fail } from './net.js?v=b494';
+import { todayYmd } from './calc.js?v=b494';
+import { starHtml, starValue } from './stars.js?v=b494';
+import { trip, legs, nameOf } from './trip.js?v=b494';
+import { arm, disarm } from './ui.js?v=b494';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -111,7 +111,8 @@ $('reviewbox').addEventListener('click', async e => {
     /* 여기서 매긴 것이 곧 기록 탭의 도시 별점입니다. 두 벌로 두지 않습니다. */
     const cur = [...wrap.querySelectorAll('.st i')]
       .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
-    const next = Math.abs(cur - v) < 0.01 ? null : v;
+    /* 0(끌어서 맨 왼쪽)도 지우기입니다 — b494, stars.js 의 끌린값 참고. */
+    const next = (v === 0 || Math.abs(cur - v) < 0.01) ? null : v;
     const up = await sb.from('city_ratings')
       .upsert({ user_id: ctx.me().id, city_id: wrap.dataset.rvcity, stars: next },
               { onConflict: 'user_id,city_id' }).select('stars').maybeSingle();
@@ -120,7 +121,8 @@ $('reviewbox').addEventListener('click', async e => {
     return;
   }
   if (wrap.id === 'rv_stars'){
-    const next = Number(myReview.stars) === v ? null : v;
+    /* 0(끌어서 맨 왼쪽)도 지우기입니다 — b494. */
+    const next = (v === 0 || Number(myReview.stars) === v) ? null : v;
     await saveReview({ stars: next });
   }
 });

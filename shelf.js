@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b493';
-import { openCity } from './city.js?v=b493';
-import { sb } from './db.js?v=b493';
-import { cities, countryName } from './cities.js?v=b493';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b493';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b493';
-import { fail } from './net.js?v=b493';
-import { arm } from './ui.js?v=b493';
-import { todayYmd } from './calc.js?v=b493';
-import { loadCities } from './citysearch.js?v=b493';
-import { loadRateData, saveRate } from './rating.js?v=b493';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b494';
+import { openCity } from './city.js?v=b494';
+import { sb } from './db.js?v=b494';
+import { cities, countryName } from './cities.js?v=b494';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b494';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b494';
+import { fail } from './net.js?v=b494';
+import { arm } from './ui.js?v=b494';
+import { todayYmd } from './calc.js?v=b494';
+import { loadCities } from './citysearch.js?v=b494';
+import { loadRateData, saveRate } from './rating.js?v=b494';
 
 let ctx = {
   me: () => null,
@@ -369,7 +369,8 @@ $('shelflist').addEventListener('click', async e => {
     const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
     const cur = [...pw.querySelectorAll('.st i')]
       .reduce((s, i) => s + parseFloat(i.style.width) / 100, 0);
-    const next = Math.abs(cur - v) < .01 ? null : v;
+    /* 0(끌어서 맨 왼쪽)도 지우기입니다 — b494, stars.js 의 끌린값 참고. */
+    const next = (v === 0 || Math.abs(cur - v) < .01) ? null : v;
     /* 같은 점수를 다시 누르면 아예 지웁니다. 별점 없는 줄을 남겨두면
        "지웠는데 그대로 있다"가 됩니다. */
     if (next == null){

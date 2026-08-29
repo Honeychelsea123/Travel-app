@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b493';
-import { sb } from './db.js?v=b493';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b493';
-import { dateRange } from './calc.js?v=b493';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b493';
-import { cities, countryName, addCity } from './cities.js?v=b493';
+import { $, esc } from './dom.js?v=b494';
+import { sb } from './db.js?v=b494';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b494';
+import { dateRange } from './calc.js?v=b494';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b494';
+import { cities, countryName, addCity } from './cities.js?v=b494';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b493';
-import { openCity } from './city.js?v=b493';
-import { loadCities } from './citysearch.js?v=b493';
+         putRateFilter, removeRate } from './rate.js?v=b494';
+import { openCity } from './city.js?v=b494';
+import { loadCities } from './citysearch.js?v=b494';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -325,6 +325,17 @@ export async function dropRate(cityId){
 }
 
 export async function saveRate(cityId, patch, quiet){
+  /* ⚠⚠ **0 은 「지우기」입니다(b494).** ⚠⚠ 별을 끌어 맨 왼쪽까지 가면
+   *   0 이 옵니다. 그대로 저장하면 **「0점을 준 곳」이라는 없는 상태**가
+   *   생기고, 별점 없는 줄은 이 앱에서 「안 가봤어요」라서(b407) 뜻까지
+   *   뒤집힙니다.
+   * ⚠ **`{stars:null}` 이 아니라 `dropRate` 입니다.** 취소는 줄을 지우는
+   *   것이고, 별점 없는 줄을 남기는 것은 「안 가봤어요」입니다 — b407 에서
+   *   갈라 놓은 것입니다. `dropRate` 가 ♡·한줄평이 있으면 알아서 줄을
+   *   남기고 별점만 비웁니다.
+   * ⚠ **여기 한 곳에서 막습니다.** 별을 누르는 자리가 아홉 군데인데 거기
+   *   마다 적으면 언젠가 한 곳이 빠집니다. 저장은 전부 여기를 지납니다. */
+  if (patch && patch.stars === 0) return dropRate(cityId);
   const r = await sb.from('city_ratings')
     .upsert({ user_id: ctx.me().id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })

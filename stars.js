@@ -58,6 +58,12 @@ export function markRated(row, v){
  *   rateui.js 는 이 이름을 그대로 다시 내보내므로 부르는 쪽은 안 바뀝니다. */
 export function starValue(st, clientX){
   const b = st.getBoundingClientRect();
+  /* ⚠ **별 왼쪽 «밖»이면 그 별 아래입니다(b494).** 첫 별이면 **0** — 즉
+     「지우기」입니다. 손가락으로 끌어 맨 왼쪽까지 갔을 때 0.5 에 붙어
+     있으면 별점을 취소할 길이 없습니다.
+     ⚠ 톡 누를 때는 이 가지를 절대 안 탑니다 — 누른 요소 밖의 좌표가
+       나올 수 없습니다. 아래 끌기가 만들어 보내는 클릭만 여기로 옵니다. */
+  if (clientX < b.left) return +st.dataset.n - 1;
   return +st.dataset.n - ((clientX - b.left) < b.width / 2 ? 0.5 : 0);
 }
 
@@ -68,7 +74,10 @@ function 끌린값(wrap, x){
   if (!별.length) return null;
   const 첫 = 별[0].getBoundingClientRect();
   const 끝 = 별[별.length - 1].getBoundingClientRect();
-  if (x <= 첫.left)  return 0.5;
+  /* ⚠ **맨 왼쪽 밖은 0 입니다(b494).** 0.5 로 붙잡아 두면 끌어서 별점을
+     **취소할 길이 없습니다** — 사용자가 바로 짚은 것이 이것입니다.
+     0 은 앱 전체에서 「지우기」로 통합니다(rating.js 의 saveRate 참고). */
+  if (x <= 첫.left)  return 0;
   if (x >= 끝.right) return 별.length;
   const st = 별.find(s => { const b = s.getBoundingClientRect();
                             return x >= b.left && x <= b.right; });
@@ -157,13 +166,17 @@ export function armStarDrag(){
     if (e.type === 'pointercancel'){ paintStars(d.wrap, d.처음, false); return; }
 
     const v = 끌린값(d.wrap, e.clientX);
-    const st = [...d.wrap.querySelectorAll('.st')]
-      .find(s => +s.dataset.n === Math.ceil(v));
+    const 별 = [...d.wrap.querySelectorAll('.st')];
+    /* 0(지우기)은 **첫 별의 왼쪽 밖**을 누른 셈으로 보냅니다 — starValue 가
+       그것을 0 으로 되읽습니다(위). 0 을 나타낼 별 자체가 없으므로 이렇게
+       합니다. */
+    const st = v === 0 ? 별[0] : 별.find(s => +s.dataset.n === Math.ceil(v));
     if (!st){ paintStars(d.wrap, d.처음, false); return; }
     /* 반 칸이면 그 별의 왼쪽 절반, 아니면 오른쪽 절반을 누른 셈으로 보냅니다 —
        받는 쪽은 starValue 로 되읽으므로 x 가 정확해야 합니다. */
     const b = st.getBoundingClientRect();
-    const x = b.left + (Number.isInteger(v) ? b.width * 0.75 : b.width * 0.25);
+    const x = v === 0 ? b.left - 4
+            : b.left + (Number.isInteger(v) ? b.width * 0.75 : b.width * 0.25);
     const ev = new MouseEvent('click', { bubbles:true, cancelable:true,
                                          clientX:x, clientY:b.top + b.height / 2 });
     ev.끌어서 = true;
