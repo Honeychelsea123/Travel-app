@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b510';
-import { sb } from './db.js?v=b510';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b510';
-import { hm, todayYmd } from './calc.js?v=b510';
-import { starHtml, paintStars, markRated } from './stars.js?v=b510';
+import { $, esc } from './dom.js?v=b511';
+import { sb } from './db.js?v=b511';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b511';
+import { hm, todayYmd } from './calc.js?v=b511';
+import { starHtml, paintStars, markRated } from './stars.js?v=b511';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b510';
-import { cities, countryName } from './cities.js?v=b510';
-import { myRates, visited } from './rate.js?v=b510';
-import { plans } from './trip.js?v=b510';
-import { openCity } from './city.js?v=b510';
-import { loadCities, pick } from './citysearch.js?v=b510';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b510';
+import { rateHero, starValue } from './rateui.js?v=b511';
+import { cities, countryName } from './cities.js?v=b511';
+import { myRates, visited } from './rate.js?v=b511';
+import { plans } from './trip.js?v=b511';
+import { openCity } from './city.js?v=b511';
+import { loadCities, pick } from './citysearch.js?v=b511';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b511';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b510';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b511';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b510';
+import { drawReport } from './report.js?v=b511';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b510';
-import { openNew } from './newtrip.js?v=b510';
+import { PERSONA_BG } from './card.js?v=b511';
+import { openNew } from './newtrip.js?v=b511';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -927,7 +927,48 @@ async function renderFoot(통){
   const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.country));
   mm.querySelectorAll('path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
-  mm.onclick = 지도열기;
+  /* ── 지도 위에서 옆으로 밀어도 카드가 넘어갑니다(b511) ───────────────
+   * 사용자 요청. 지도가 이 카드의 주인공인데, 정작 그 위에서 미는 것은
+   * **탭 넘김**이 가져가고 있었습니다 — 홈에서 지도를 밀면 평가 탭으로
+   * 갔습니다(사용자 확인).
+   *
+   * ⚠ **먼저 탭 덱에게서 그 제스처를 뺏어야 합니다.** `touch-action:pan-y`
+   *   를 이 지도에만 답니다(app.css 의 `.mmswipe`). 위아래는 그대로
+   *   굴러가고 좌우만 브라우저가 손을 뗍니다 — 별점 끌기와 같은 수법입니다.
+   * ⚠ **손가락을 따라가게 만들지 않습니다.** 아래 줄은 스냅이 걸린
+   *   스크롤러라, 미는 대로 scrollLeft 를 대입하면 스냅·관성과 다툽니다
+   *   (b468 · b492 에서 겪은 것). 손을 뗀 뒤 **한 칸만** 넘깁니다 —
+   *   그러면 나머지(점 · 지도 확대 · 복제 자리 고치기)는 아래 `scroll`
+   *   핸들러가 평소처럼 합니다.
+   * ⚠ 지도는 **누르면 큰 지도로 가는 단추**이기도 합니다. 민 것을 눌린
+   *   것으로 치면 지도가 열려 버립니다 — 민 직후의 누름 한 번을 건너뜁니다.
+   * ⚠ 세로로 더 많이 움직였으면 밀기가 아닙니다. 홈을 위아래로 굴리다
+   *   손가락이 지도를 스치는 일이 흔합니다. */
+  mm.classList.add('mmswipe');
+  {
+    const 줄기 = 넘김.querySelector('.swrow');
+    let 시작 = null, 밀림 = false;
+    mm.addEventListener('touchstart', e => {
+      밀림 = false;
+      시작 = e.touches.length === 1
+        ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
+    }, { passive:true });
+    mm.addEventListener('touchmove', e => {
+      if (!시작 || !e.touches.length) return;
+      const dx = e.touches[0].clientX - 시작.x;
+      const dy = e.touches[0].clientY - 시작.y;
+      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) 밀림 = true;
+    }, { passive:true });
+    mm.addEventListener('touchend', e => {
+      const 처음 = 시작; 시작 = null;
+      if (!처음 || !밀림 || !줄기) return;
+      const dx = (e.changedTouches[0]?.clientX ?? 처음.x) - 처음.x;
+      if (Math.abs(dx) < 40) return;
+      줄기.scrollBy({ left: dx < 0 ? 줄기.clientWidth : -줄기.clientWidth,
+                      behavior:'smooth' });
+    }, { passive:true });
+    mm.onclick = () => { if (밀림){ 밀림 = false; return; } 지도열기(); };
+  }
   box.appendChild(mm);
   box.appendChild(넘김);
 

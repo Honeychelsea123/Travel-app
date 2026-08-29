@@ -3076,3 +3076,13 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ 값은 home.js 가 넣습니다 — 여기는 **어떻게 움직일지**만 정합니다. */
 .mmzoom{ transition:transform .38s var(--ease); }
 @media (prefers-reduced-motion:reduce){ .mmzoom{ transition:none; } }
+
+/* ⚠ **지도 위의 좌우 밀기를 탭 덱이 가져가고 있었습니다(b511).**
+   홈에서 지도를 옆으로 밀면 평가 탭으로 넘어갔습니다 — 정작 그 지도가
+   따라가야 할 것은 바로 아래 대륙 카드입니다.
+   `pan-y` 로 **좌우만** 브라우저에게서 뺏습니다(별점 끌기의 `.stars` 와
+   같은 수법). 위아래 스크롤은 그대로 굴러갑니다.
+   ⚠ 분석 탭의 지도(`.minimap`)에는 안 답니다 — 거기엔 넘길 카드가 없어서
+     뺏어봐야 아무 일도 안 하고 탭 넘김만 죽습니다. 홈에서 붙이는
+     클래스입니다(home.js). */
+.mmswipe{ touch-action:pan-y; }
