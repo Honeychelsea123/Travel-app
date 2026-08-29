@@ -3125,9 +3125,17 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   모자랍니다(홈 미니맵은 좌우만 뺏으면 됐습니다 — .mmswipe).
  * ⚠ 그래서 **지구본 위에서는 화면이 안 굴러갑니다.** 카드 폭을 다 쓰지
  *   않고 낮게 두는 이유입니다 — 위아래 여백으로 굴리면 됩니다.
- * ⚠ 정사각으로 두지 않습니다. 정사각이면 폰에서 이 카드 하나가 화면 한
- *   장을 다 먹습니다(390px 폭이면 지구본만 358px). */
-.globebox{ position:relative; height:min(62vw, 240px); margin:10px 0 14px; }
+ * ⚠⚠ **vw 로 재지 마십시오(b520).** 처음에 `height:min(62vw,240px)` 로 했는데,
+ *   ① 카드는 안쪽 여백이 있어서 화면 폭과 다릅니다 — 지구본이 칸 밖으로
+ *      넘칠 뻔했습니다.
+ *   ② 창 폭이 0 인 자리(숨은 창·미리보기)에서는 62vw 가 0 이라 **칸이
+ *      통째로 사라집니다.** 재다가 걸렸습니다.
+ *   `aspect-ratio` 는 **부모 폭**을 따라가므로 둘 다 안 생깁니다.
+ * ⚠ 3:2 입니다. 정사각으로 두면 폰에서 이 카드 하나가 화면 한 장을 다
+ *   먹습니다(390px 폭이면 지구본만 358px).
+ */
+.globebox{ position:relative; aspect-ratio:3 / 2; max-height:240px;
+           margin:10px 0 14px; }
 .globebox canvas{ position:absolute; inset:0; width:100%; height:100%;
                   display:block; touch-action:none; cursor:grab; }
 .globebox canvas:active{ cursor:grabbing; }
