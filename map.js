@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b504';
-import { openCity } from './city.js?v=b504';
-import { distKm } from './calc.js?v=b504';
-import { sb } from './db.js?v=b504';
-import { cities, countryName, continentOf } from './cities.js?v=b504';
-import { PERSONA_ICON, shareCard } from './card.js?v=b504';
+         coverDeck } from './dom.js?v=b505';
+import { openCity } from './city.js?v=b505';
+import { distKm } from './calc.js?v=b505';
+import { sb } from './db.js?v=b505';
+import { cities, countryName, continentOf } from './cities.js?v=b505';
+import { PERSONA_ICON, shareCard } from './card.js?v=b505';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -245,8 +245,15 @@ $('mapbig').addEventListener('click', () => {
 /* flagOk 는 dom.js 로 내렸습니다(b339, 맨 위 import). 짝인 flagOf 도 거기
    있습니다 — 아래에서 같은 계산을 인라인으로 한 번 더 적고 있었습니다. */
 
-export async function openCountries(){
+/* 어디서 열었는가. 지도 화면에서 열면 닫을 때 **그 지도로** 돌아가야 합니다 —
+   프로필로 떨어지면 보던 자리를 잃습니다(b505). */
+let 나라온곳 = null;
+
+export async function openCountries(어디서){
+  나라온곳 = 어디서 === 'map' ? 'map' : null;
   $('profpane').classList.add('hide');
+  /* ⚠ 지도도 **덮는 판**입니다. 안 걷으면 두 판이 겹쳐 섭니다. */
+  if (나라온곳 === 'map') $('mappane').classList.add('hide');
   $('ctrypane').classList.remove('hide');
   coverDeck(true);    /* 판이 열린 동안 탭 덱을 숨깁니다(b481) */
   toTop($('ctrypane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
@@ -348,45 +355,6 @@ export async function openCountries(){
     </div>`;
   }).join('');
 
-  /* ── 기록 ── 분석 탭의 발자국 카드에서 옮겨왔습니다(b503) ────────────
-     발자국 카드는 「어디를 갔나」(지도 · 대륙)까지만 맡고, 「어떻게 갔나」
-     (별점 분포 · 가장 많이 간 나라 · 최북단 · 가장 먼 두 도시)는 여기입니다.
-     나라를 펴 보는 화면이라 같은 주제이고, 그만큼 분석 탭 첫 화면이
-     짧아집니다. 사용자 결정입니다.
-   ⚠ **세는 자료는 위와 같은 것입니다**(mine.data · cities). 여기서 다시
-     부르면 언젠가 두 화면의 숫자가 갈립니다 — 이 화면이 openCountries 와
-     같은 곳에 있는 이유입니다.
-   ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다. 반올림하면
-     아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋나고, 한 화면에 두 숫자가
-     다르면 둘 다 못 믿게 됩니다. */
-  const 매긴줄 = (mine.data || []).filter(r => r.stars != null);
-  const 내도시 = (cities || []).filter(c => stars[c.id] != null);
-  if (내도시.length){
-    const 통 = [0, 0, 0, 0, 0];
-    매긴줄.forEach(r => {
-      const n = Math.floor(Number(r.stars));
-      if (n >= 1 && n <= 5) 통[n - 1]++;
-    });
-    const 합 = 통.reduce((a, b) => a + b, 0) || 1;
-    /* ★5 초록에서 ★1 붉은색으로. anal.js 에 있던 값 그대로입니다. */
-    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
-    /* ⚠ 띠 안에는 글자를 안 넣습니다 — 좁은 칸은 어차피 안 들어가서
-         같은 것이 두 자리에 나뉩니다. 띠는 비율만, 숫자는 아래 범례가. */
-    $('ctrylist').insertAdjacentHTML('beforeend', `<div class="card">
-      <h2>기록</h2>
-      <div class="stackwrap">
-        <div class="stack">${[5, 4, 3, 2, 1].map(n => 통[n - 1]
-          ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
-               background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('')}</div>
-        <div class="stackleg">${[5, 4, 3, 2, 1].map(n =>
-          `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${
-            색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`).join('')}</div>
-      </div>
-      ${funRows(내도시, stars).map(([k, v]) =>
-        `<div class="row"><span class="label">${esc(k)}</span>
-           <span class="val">${esc(v)}</span></div>`).join('')}
-    </div>`);
-  }
 
   /* 공유 카드. **세계지도를 그대로 씁니다** — 이 페이지에서 제일 자랑스러운
      것은 칠해진 지도이고, 그건 이미 그려져 있습니다(#worldland).
@@ -437,11 +405,20 @@ function 돌아가기(){
 }
 export function closeCountries(fromPop){
   if (!fromPop && history.state?.t2 === 'ctry'){ history.back(); return; }
+  /* ⚠ **이미 걷힌 뒤면 아무것도 안 합니다(b505).** 나라 목록을 열어둔 채
+     탭을 옮기면 showApp 이 판을 다 걷는데, 그 뒤에 뒤로가기가 여기까지
+     와서 **지도를 되살려 놓는** 일이 생깁니다. */
+  const 열려있었나 = !$('ctrypane').classList.contains('hide');
   $('ctrypane').classList.add('hide');
+  if (!열려있었나){ 나라온곳 = null; return; }
+  /* ⚠ 지도에서 왔으면 지도로 — 덱은 **계속 덮어둔 채**입니다. 지도도 덮는
+     판이라 여기서 coverDeck(false) 를 하면 덱이 그 밑으로 되살아납니다. */
+  if (나라온곳 === 'map'){ 나라온곳 = null; $('mappane').classList.remove('hide'); return; }
   coverDeck(false);
   if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
+
 $('ctryback').addEventListener('click', () => closeCountries());
 /* 도시 칩을 누르면 그 도시로. 지도 화면과 같은 규칙입니다. */
 $('ctrypane').addEventListener('click', e => {
@@ -495,7 +472,12 @@ export async function openMap(){
        ⚠ 「대륙」은 누를 곳이 없습니다(대륙별 목록이 이 화면 아래에 이미
          있습니다). 그것만 `cursor:default` 로 남깁니다. */
     `<div class="stats" style="margin:0">
-       <button data-shelf="mine"><b>${gone.size}</b><span>국가</span></button>
+       <!-- ⚠ **「국가」는 보관함이 아니라 나라 목록입니다(b505).** 여기만
+            `data-shelf` 였습니다 — 눌러보면 **평가한 도시**가 나와서,
+            프로필의 똑같이 생긴 「국가」 타일(나라 목록)과 다른 곳으로
+            갔습니다. 같은 것을 누른 줄 알았는데 다른 화면이 나왔습니다.
+            「도시」는 보관함이 맞습니다 — 도시 목록이니까요. -->
+       <button data-openmap="1"><b>${gone.size}</b><span>국가</span></button>
        <button data-shelf="mine"><b>${mapCities.length}</b><span>도시</span></button>
        <button style="cursor:default"><b>${conts.size}/6</b><span>대륙</span></button>
      </div>
@@ -562,7 +544,48 @@ export async function openMap(){
     : emptyDo('아직 다녀온 곳이 없어요.', null, null,
               '도시에 별점을 매기면 그 나라가 칠해져요.');
 
-  /* 「기록」은 분석 탭으로 옮겼습니다(b457) — 계산은 아래 funRows 하나입니다. */
+  /* ── 기록 ── 분석 탭 발자국 카드에서 옮겨왔습니다(b503 · b505) ────────
+     발자국 카드는 「어디를 갔나」(지도 · 대륙)까지만 맡고, 「어떻게 갔나」
+     (별점 분포 · 가장 많이 간 나라 · 최북단 · 가장 먼 두 도시)는 여기,
+     「자세히 보기」로 여는 이 화면입니다. 사용자 결정입니다.
+   ⚠⚠ **b457 에 이 자리에서 뺐던 것입니다.** 「지도를 열고 대륙별·국가별을
+     다 지나야 나와서 사실상 아무도 못 봤다」가 그때 적어둔 이유입니다.
+     지금은 분석 탭 첫 화면을 짧게 하는 것이 먼저라 되돌려 놓습니다.
+     또 안 보이면 다음 자리는 나라 목록(#ctrypane)입니다 — 두 번 헤매지
+     않도록 여기 적어둡니다.
+   ⚠ **세는 자료는 위와 같은 것입니다**(mapCities · stars). 여기서 다시
+     받아오면 같은 화면 안에서 두 숫자가 갈립니다.
+   ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다. 반올림하면
+     아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋나고, 한 화면에 두 숫자가
+     다르면 둘 다 못 믿게 됩니다.
+   ⚠ 띠 안에는 글자를 안 넣습니다 — 좁은 칸은 어차피 안 들어가서 같은 것이
+     두 자리에 나뉩니다. 띠는 비율만, 숫자는 아래 범례가 맡습니다. */
+  const 내도시 = mapCities.filter(c => stars[c.id] != null);
+  const 기록칸 = $('m_rec');
+  if (기록칸){
+    const 통 = [0, 0, 0, 0, 0];
+    내도시.forEach(c => {
+      const n = Math.floor(Number(stars[c.id]));
+      if (n >= 1 && n <= 5) 통[n - 1]++;
+    });
+    const 합 = 통.reduce((a, b) => a + b, 0) || 1;
+    /* ★5 초록에서 ★1 붉은색으로. anal.js 에 있던 값 그대로입니다. */
+    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+    기록칸.classList.toggle('hide', !내도시.length);
+    기록칸.innerHTML = !내도시.length ? '' : `<h2>기록</h2>
+      <div class="stackwrap">
+        <div class="stack">${[5, 4, 3, 2, 1].map(n => 통[n - 1]
+          ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
+               background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('')}</div>
+        <div class="stackleg">${[5, 4, 3, 2, 1].map(n =>
+          `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${
+            색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`).join('')}</div>
+      </div>
+      ${funRows(내도시, stars).map(([k, v]) =>
+        `<div class="row"><span class="label">${esc(k)}</span>
+           <span class="val">${esc(v)}</span></div>`).join('')}`;
+  }
+
 }
 
 /* ── 기록 ── 숫자를 곱씹게 만드는 자리 ────────────────────────────────
