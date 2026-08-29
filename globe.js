@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b518';
+import { $ } from './dom.js?v=b519';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -194,8 +194,14 @@ export function mountGlobe(canvas, 갔다, 처음경도){
    * ⚠ 기울기는 ±52° 로 막습니다 — 위 머리말의 남극 구멍 때문입니다.
    * ⚠ 매 이벤트마다 그리지 않고 rAF 한 번으로 모읍니다. 아이폰에서는
    *   pointermove 가 한 프레임에 여러 번 옵니다. */
+  /* ⚠ **누르는 것과 돌리는 것이 한 자리에 있습니다.** 이 지구본은 눌러서
+     지도 화면을 여는 단추이기도 합니다 — 민 것을 눌린 것으로 치면 돌릴
+     때마다 화면이 열립니다. 민 뒤 한 번의 누름만 건너뛰게 알려줍니다
+     (홈 미니맵에서 쓴 것과 같은 수법, home.js 의 `밀림`). */
+  let 민적 = false;
   let 끌기 = null;
   canvas.addEventListener('pointerdown', e => {
+    민적 = false;
     끌기 = { x:e.clientX, y:e.clientY };
     canvas.setPointerCapture?.(e.pointerId);
   });
@@ -206,6 +212,7 @@ export function mountGlobe(canvas, 갔다, 처음경도){
     const 끝 = 52 * RAD;
     φ0 = Math.max(-끝, Math.min(끝, φ0));
     끌기 = { x:e.clientX, y:e.clientY };
+    민적 = true;
     다시();
   });
   const 놓기 = () => { 끌기 = null; };
@@ -220,5 +227,10 @@ export function mountGlobe(canvas, 갔다, 처음경도){
      안 돌아서 지구본이 빈 채로 남습니다(재보다가 걸렸습니다). 토글로 켜는
      순간 한 프레임 비는 것도 없어집니다. 이어지는 그리기만 rAF 로 모읍니다. */
   그리기();
-  return { 다시, 회전:(deg) => { λ0 = deg * RAD; 다시(); } };
+  return {
+    다시,
+    회전: deg => { λ0 = deg * RAD; 다시(); },
+    /* 한 번 물으면 지워집니다 — 그 다음 누름은 진짜 누름입니다. */
+    민적있나: () => { const v = 민적; 민적 = false; return v; },
+  };
 }

@@ -14,43 +14,49 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b518';
-import { sb } from './db.js?v=b518';
-import { cities, continentOf } from './cities.js?v=b518';
+import { $, esc } from './dom.js?v=b519';
+import { sb } from './db.js?v=b519';
+import { cities, continentOf } from './cities.js?v=b519';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b518';
+import { personaBackTo } from './persona.js?v=b519';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b518';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b518';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b519';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b519';
+/* 손가락으로 돌려 보는 지구본(b519) — 발자국 카드의 지도가 이것입니다. */
+import { mountGlobe } from './globe.js?v=b519';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b518';
+import { similarPicks } from './rec.js?v=b519';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b518';
-import { pickCity } from './citysearch.js?v=b518';
+import { openNew } from './newtrip.js?v=b519';
+import { pickCity } from './citysearch.js?v=b519';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
 
-/* ── 축이 움직였을 때 할 말(b467) ────────────────────────────────────
- * [오른 쪽, 내린 쪽]. 축 순서는 AXIS_NAME 과 같습니다.
- * ⚠ **축 이름을 안 씁니다.** 「개척력이 올랐어요」는 개척력이 무엇인지
- *   아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 **그대로** 적어야
- *   처음 보는 사람도 읽습니다.
- * ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
- *   단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
- *   한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
-const 변화말 = [
-  ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
-  ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
-  ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
-  ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
-];
+/* 지구본을 처음 어느 쪽으로 놓고 보여줄까. **다녀온 나라들의 한가운데**입니다 —
+   늘 한국을 가운데 두면 유럽만 다닌 사람은 열자마자 빈 태평양을 봅니다.
+   ⚠ 경도는 -180 에서 180 으로 감기므로 그냥 평균 내면 안 됩니다. 각도의
+     평균은 sin·cos 을 더해서 냅니다(안 그러면 날짜변경선 근처에서 반대쪽이
+     나옵니다). 아무 데도 안 갔으면 한국입니다. */
+function 가운데경도(gone){
+  let sx = 0, sy = 0;
+  for (const code of gone){
+    const p = document.querySelector(`#worldland path[data-c="${CSS.escape(code)}"]`);
+    const m = (p?.getAttribute('d') || '').match(/^M\s*(-?[\d.]+)/);
+    if (!m) continue;
+    const 경도 = (+m[1] / 1000 * 360 - 180) * Math.PI / 180;
+    sx += Math.cos(경도); sy += Math.sin(경도);
+  }
+  return (sx || sy) ? Math.atan2(sy, sx) * 180 / Math.PI : 127;
+}
+
+
 /* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
  * ⚠ 두 화면은 **프로필 위에 얹히는 판**으로 만들어져서, 열려면 프로필
  *   탭을 거쳐야 합니다. 그래서 분석 탭에서 열면 **하단바가 프로필로
@@ -156,58 +162,15 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b518"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b519"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
 
-    /* ── 변화 배지 ── 카드였던 것을 한 줄로(b464) ────────────────────
-       처음 20곳과 최근 20곳을 **같은 함수**로 재서 견줍니다. 카드로 두면
-       260px 인데, 정작 하는 말은 「코드가 이렇게 옮겨갔고 어느 축이 제일
-       움직였다」 한 문장입니다.
-       ⚠ 40곳부터입니다. 20+20 이 겹치면 처음과 지금이 같은 자료가 되어
-         늘 「그대로」가 나옵니다 — 아무 말도 안 하는 줄입니다. */
-    const 시간순 = 매긴것.filter(r => r.created_at)
-      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-    if (시간순.length >= 40){
-      const 처음 = personaAxes(시간순.slice(0, 20), { cities });
-      const 지금 = personaAxes(시간순.slice(-20), { cities });
-      /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다. */
-      const 큰변화 = ['개척', '단골', '모험', '만족']
-        .map((k, i) => ({ 값: 지금[k] - 처음[k], 말: 변화말[i] }))
-        .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
-      const 배지 = document.createElement('div');
-      배지.className = 'pbadge';
-      /* ⚠ **「개척력 50 올랐어요」 를 아무도 못 읽었습니다(b467).**
-           만든 사람도 왜 올랐는지 몰랐습니다 — 「개척력」 이 무엇을 재는
-           말인지 화면 어디에도 없고, 50 이 크다는 것도 알 수가 없습니다.
-           숫자와 축 이름을 빼고 **무엇이 달라졌는지 그 자체**를 적습니다:
-           「숨은 곳을 더 찾게 됐어요」. 축 이름은 바로 아래 막대가 맡습니다.
-         ⚠ 10점 미만은 말로 부풀리지 않습니다 — 3점 움직인 것을 「더
-           찾게 됐어요」라고 하면 거짓말이 됩니다. 그때는 코드만 적습니다.
-         ⚠ 두 줄입니다. **뜻이 먼저, 근거가 아래.** 코드 네 글자를 먼저
-           보여주면 읽는 사람이 그것부터 해석해야 합니다. */
-      const 문장 = Math.abs(큰변화.값) >= 10
-        ? 큰변화.말[큰변화.값 > 0 ? 0 : 1] : '';
-      /* ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** ⚠⚠
-       *   바로 위 큰 글자가 **전체 별점으로 낸 지금의 유형**(예: FMDP)인데,
-       *   이 줄은 **최근 20곳만**으로 낸 코드(HMDP)입니다. 둘은 다를 수
-       *   있고, 실제로 「FMDP … 지금 HMDP」가 한 화면에 같이 떠서
-       *   **어느 게 내 유형인지 알 수 없었습니다.**
-       * ⚠ **재는 방법은 안 바꿉니다.** 「얼마나 변했나」를 보려면 처음 20곳과
-       *   최근 20곳을 견주는 것이 맞습니다 — 전체와 견주면 전체 안에 처음
-       *   20곳이 들어 있어 변화가 묽어집니다. **틀린 것은 말이었습니다.**
-       *   무엇을 견줬는지 그대로 적습니다. */
-      const 아래 = 처음.code === 지금.code
-        ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
-        : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
-          `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
-      배지.innerHTML = 문장
-        ? `<span class="why">${esc(문장)}</span><span class="pcd">${아래}</span>`
-        : `<span class="pcd">${아래}</span>`;
-      성향.appendChild(배지);
-    }
-
+    /* ⚠ **변화 배지(「처음 20곳 → 최근 20곳」)는 여기 없습니다(b519).**
+       리포트 화면으로 옮겼습니다(persona.js) — 사용자 결정. 이 카드는
+       **지금 내가 누구인가**만 말하고, 견주는 이야기는 읽으러 들어온
+       사람의 몫입니다. `변화말` 표도 같이 갔습니다. */
     /* ⚠ **궁합 두 칸만 없습니다(b503).** 궁합은 애초에 남 이야기라 내
        기록을 보는 탭이 아니라 리포트 화면에 있습니다(persona.js — 궁합
        두 칸도 「친구와 궁합 보기」 단추도 거기 그대로입니다).
@@ -273,18 +236,34 @@ export async function loadAnal(){
   발더.onclick = 지도열기;
   발.querySelector('h2').appendChild(발더);
 
-  const mm = document.createElement('div');
-  mm.className = 'minimap';
-  mm.style.cursor = 'pointer';
-  /* 홈과 **같은 viewBox** 입니다(home.js 의 「왜 이 viewBox 인가」 참고). */
-  mm.innerHTML = `<svg viewBox="20 16 976 392"
-    preserveAspectRatio="xMidYMid meet">${$('worldland').innerHTML}</svg>`;
   const gone = new Set((cities || [])
     .filter(c => 매긴것.some(r => r.city_id === c.id)).map(c => c.country));
-  mm.querySelectorAll('path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  mm.onclick = 지도열기;
-  발.appendChild(mm);
+
+  /* ── 여기는 지구본입니다(b519) ──────────────────────────────────────
+   * 사용자 제안. 처음엔 세계지도 화면에 토글로 넣었는데(b516), 거기는
+   * 두 걸음 들어가야 하는 자리라 「돌려 보는 재미」가 안 살았습니다.
+   * 발자국 카드가 제자리입니다 — 이 카드가 곧 「내가 어디를 갔나」입니다.
+   *
+   * ⚠ **여기 지도는 원래 장식이었습니다.** 눌러서 지도 화면을 여는 것
+   *   말고는 하는 일이 없습니다 — 홈 미니맵과 달리 대륙 확대(CONT_VIEW)에
+   *   묶여 있지 않아서, 지구본으로 바꿔도 잃는 것이 없습니다.
+   *   ⚠ **홈 것은 바꾸지 마십시오.** 거기는 아래 대륙 카드를 넘기면 지도가
+   *     그 대륙으로 확대됩니다(b500·b511). 평면 좌표가 있어야 합니다.
+   * ⚠ 절반은 안 보입니다. 그 대신 바로 밑 **대륙 배지 여섯**이 전체를
+   *   숫자로 말하고, 「자세히 보기 ›」가 펼친 평면 지도로 갑니다.
+   * ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
+   *   한 번은 건너뜁니다(globe.js 가 `민적있나` 로 알려줍니다). */
+  const 공칸 = document.createElement('div');
+  공칸.className = 'globebox';
+  const 공판 = document.createElement('canvas');
+  공판.setAttribute('aria-label', '지구본');
+  공칸.appendChild(공판);
+  발.appendChild(공칸);
+  /* 화면에 붙은 뒤라야 폭이 생깁니다 — 붙이고 나서 그립니다. */
+  requestAnimationFrame(() => {
+    const 공 = mountGlobe(공판, gone, 가운데경도(gone));
+    공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
+  });
 
   /* ── 대륙별 ── 막대 여섯 줄을 칩 한 뭉치로(b464) ───────────────────
      ⚠ **바로 위에 지도가 있습니다.** 어디를 칠했는지는 지도가 이미

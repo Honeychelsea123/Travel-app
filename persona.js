@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b518';
-import { sb } from './db.js?v=b518';
-import { cities, countryName, continentOf } from './cities.js?v=b518';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b519';
+import { sb } from './db.js?v=b519';
+import { cities, countryName, continentOf } from './cities.js?v=b519';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b518';
+import { similarPicks } from './rec.js?v=b519';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b518';
-import { visited } from './rate.js?v=b518';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b519';
+import { visited } from './rate.js?v=b519';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b518';
+         shareCard, cardImage } from './card.js?v=b519';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -65,6 +65,50 @@ export async function openPersona(){
      그 숫자를 0~100 점 네 개와 코드 네 글자로 옮깁니다. 화면에 날것을
      같이 두는 이유는, 점수만 있으면 왜 그렇게 나왔는지 따질 수가 없어서입니다. */
   const ax = personaAxes(data || [], { cities });
+
+  /* ── 변화 배지 ── 분석 탭에서 옮겨왔습니다(b519) ─────────────────────
+   * 사용자 결정. 분석 탭의 성향 카드는 **지금 내가 누구인가**만 말하고,
+   * 「처음 20곳과 견주면 이렇게 옮겨갔다」는 이야기는 리포트 안입니다 —
+   * 한 줄로 보고 지나칠 것이 아니라 읽으러 들어오는 사람의 몫입니다.
+   * ⚠ **40곳부터입니다.** 20+20 이 겹치면 처음과 지금이 같은 자료가 되어
+   *   늘 「그대로」가 나옵니다 — 아무 말도 안 하는 줄입니다.
+   * ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** 바로 위 큰 글자는 **전체**
+   *   별점으로 낸 유형(FMDP)인데 이 줄은 **최근 20곳만**으로 낸 코드
+   *   (HMDP)입니다. 둘은 다를 수 있고, 실제로 한 화면에 같이 떠서 어느 게
+   *   내 유형인지 알 수 없었습니다. 무엇을 견줬는지 그대로 적습니다.
+   * ⚠ 재는 방법은 안 바꿉니다 — 전체와 견주면 전체 안에 처음 20곳이 들어
+   *   있어 변화가 묽어집니다. 틀린 것은 말이었지 셈이 아니었습니다. */
+  const 변화배지 = (() => {
+    const 시간순 = (data || []).filter(r => r.created_at)
+      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    if (시간순.length < 40) return '';
+    const 처음 = personaAxes(시간순.slice(0, 20), { cities });
+    const 지금 = personaAxes(시간순.slice(-20), { cities });
+    /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다.
+       ⚠ 축 이름을 안 씁니다 — 「개척력이 올랐어요」는 개척력이 무엇인지
+         아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 그대로 적어야
+         처음 보는 사람도 읽습니다.
+       ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
+         단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
+         한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
+    const 말 = [
+      ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
+      ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
+      ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
+      ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
+    ];
+    const 큰 = ['개척', '단골', '모험', '만족']
+      .map((k, i) => ({ i, 값: 지금[k] - 처음[k] }))
+      .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
+    const 문장 = Math.abs(큰.값) >= 10 ? 말[큰.i][큰.값 > 0 ? 0 : 1] : '';
+    const 아래 = 처음.code === 지금.code
+      ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
+      : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
+        `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
+    return `<div class="pbadge">${문장
+      ? `<span class="why">${esc(문장)}</span>` : ''}<span class="pcd">${아래}</span></div>`;
+  })();
+
 
   /* ⚠ **「첫 기록으로부터 N일째」를 뺐습니다(b455).** 머리말 꼬리표와
      아래 표, 두 자리에 같은 숫자가 있었습니다. 둘 다 뺍니다 — 성향은
@@ -199,7 +243,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b518"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b519"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -208,6 +252,9 @@ async function drawPersona(s, ax, rates){
           ${s.countries}개국 · ${s.cities}도시
         </div>
       </div>
+      <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
+           빈 문자열이라 아무것도 안 붙습니다. -->
+      ${변화배지}
     </div>
 
     ${임시 ? `<div class="card" style="margin-bottom:var(--s-sm)">
