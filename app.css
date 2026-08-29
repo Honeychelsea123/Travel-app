@@ -1420,6 +1420,20 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .fprow .t span{ font-size:calc(13px * var(--ts)); color:var(--dim); }
 .fprow .go{ flex:none; font-size:calc(13px * var(--ts)); color:var(--primary);
             font-weight:600; }
+/* ── 카드 제목 줄 오른쪽의 「자세히 보기 ›」(b503) ─────────────────────
+ * 분석 탭의 단추들이 카드 **맨 아래**에 있었습니다. 카드마다 길이가
+ * 다르니 단추 자리도 매번 달라서, 다 읽고 내려가 봐야 그게 있는지
+ * 알았습니다. 홈의 「내 발자국 · 지도 ›」와 같은 자리로 올립니다 —
+ * 제목 옆이면 어느 카드든 같은 자리라 눈이 찾을 필요가 없습니다.
+ * ⚠ `.card h2` 가 이미 flex 라, 제목을 `.grow` 로 감싸두면 저절로
+ *   오른쪽 끝에 붙습니다(`<h2><span class="grow">발자국</span>…`).
+ * ⚠ 글씨는 `.fprow .go`(홈의 그 단추)와 **같은 값**입니다 — 두 곳이
+ *   달라 보이면 「같은 것」으로 안 읽힙니다. */
+.h2go{ flex:none; background:none; border:0; padding:0; font:inherit;
+       font-size:calc(13px * var(--ts)); font-weight:600;
+       color:var(--primary); cursor:pointer; }
+.h2go:active{ opacity:.55; }
+
 /* ── 프로필 머리 ── been 식으로(b430) ─────────────────────────────────
  * 아바타를 **크게 가운데**, 그 아래 이름, 그 아래 숫자. 전에는 72px 사진이
  * 왼쪽에 붙고 이름이 그 옆이라 **목록의 한 줄**처럼 보였습니다.

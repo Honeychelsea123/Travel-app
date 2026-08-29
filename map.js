@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b502';
-import { openCity } from './city.js?v=b502';
-import { distKm } from './calc.js?v=b502';
-import { sb } from './db.js?v=b502';
-import { cities, countryName, continentOf } from './cities.js?v=b502';
-import { PERSONA_ICON, shareCard } from './card.js?v=b502';
+         coverDeck } from './dom.js?v=b503';
+import { openCity } from './city.js?v=b503';
+import { distKm } from './calc.js?v=b503';
+import { sb } from './db.js?v=b503';
+import { cities, countryName, continentOf } from './cities.js?v=b503';
+import { PERSONA_ICON, shareCard } from './card.js?v=b503';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -347,6 +347,46 @@ export async function openCountries(){
       </div>`).join('')}
     </div>`;
   }).join('');
+
+  /* ── 기록 ── 분석 탭의 발자국 카드에서 옮겨왔습니다(b503) ────────────
+     발자국 카드는 「어디를 갔나」(지도 · 대륙)까지만 맡고, 「어떻게 갔나」
+     (별점 분포 · 가장 많이 간 나라 · 최북단 · 가장 먼 두 도시)는 여기입니다.
+     나라를 펴 보는 화면이라 같은 주제이고, 그만큼 분석 탭 첫 화면이
+     짧아집니다. 사용자 결정입니다.
+   ⚠ **세는 자료는 위와 같은 것입니다**(mine.data · cities). 여기서 다시
+     부르면 언젠가 두 화면의 숫자가 갈립니다 — 이 화면이 openCountries 와
+     같은 곳에 있는 이유입니다.
+   ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다. 반올림하면
+     아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋나고, 한 화면에 두 숫자가
+     다르면 둘 다 못 믿게 됩니다. */
+  const 매긴줄 = (mine.data || []).filter(r => r.stars != null);
+  const 내도시 = (cities || []).filter(c => stars[c.id] != null);
+  if (내도시.length){
+    const 통 = [0, 0, 0, 0, 0];
+    매긴줄.forEach(r => {
+      const n = Math.floor(Number(r.stars));
+      if (n >= 1 && n <= 5) 통[n - 1]++;
+    });
+    const 합 = 통.reduce((a, b) => a + b, 0) || 1;
+    /* ★5 초록에서 ★1 붉은색으로. anal.js 에 있던 값 그대로입니다. */
+    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+    /* ⚠ 띠 안에는 글자를 안 넣습니다 — 좁은 칸은 어차피 안 들어가서
+         같은 것이 두 자리에 나뉩니다. 띠는 비율만, 숫자는 아래 범례가. */
+    $('ctrylist').insertAdjacentHTML('beforeend', `<div class="card">
+      <h2>기록</h2>
+      <div class="stackwrap">
+        <div class="stack">${[5, 4, 3, 2, 1].map(n => 통[n - 1]
+          ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
+               background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('')}</div>
+        <div class="stackleg">${[5, 4, 3, 2, 1].map(n =>
+          `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${
+            색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`).join('')}</div>
+      </div>
+      ${funRows(내도시, stars).map(([k, v]) =>
+        `<div class="row"><span class="label">${esc(k)}</span>
+           <span class="val">${esc(v)}</span></div>`).join('')}
+    </div>`);
+  }
 
   /* 공유 카드. **세계지도를 그대로 씁니다** — 이 페이지에서 제일 자랑스러운
      것은 칠해진 지도이고, 그건 이미 그려져 있습니다(#worldland).

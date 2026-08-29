@@ -29,10 +29,10 @@
  *   넘깁니다(app.js) — 그제야 별점이 되어 제대로 남습니다.
  *
  * 층: dom.js · cities.js · citysearch.js · card.js. */
-import { $, esc, toast } from './dom.js?v=b502';
-import { cities, continentOf } from './cities.js?v=b502';
-import { loadCities } from './citysearch.js?v=b502';
-import { checkList, cardImage, shareCard, appUrl } from './card.js?v=b502';
+import { $, esc, toast } from './dom.js?v=b503';
+import { cities, continentOf } from './cities.js?v=b503';
+import { loadCities } from './citysearch.js?v=b503';
+import { checkList, cardImage, shareCard, appUrl } from './card.js?v=b503';
 
 /* 맛보기 평가와 **다른 자리**에 담습니다(try.js 는 `t2:try`). 섞이면
    체크가 별점으로 옮겨가 위 ⚠⚠ 가 그대로 벌어집니다. */

@@ -14,28 +14,27 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b502';
-import { sb } from './db.js?v=b502';
-import { cities, continentOf } from './cities.js?v=b502';
+import { $, esc } from './dom.js?v=b503';
+import { sb } from './db.js?v=b503';
+import { cities, continentOf } from './cities.js?v=b503';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b502';
-import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b502';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows,
-         openCountries } from './map.js?v=b502';
+import { personaBackTo } from './persona.js?v=b503';
+import { personaAxes, personaRank, PERSONA16,
+         checkList, shareCard } from './card.js?v=b503';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo,
+         openCountries } from './map.js?v=b503';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
 /* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
    고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b502';
-import { similarPicks } from './rec.js?v=b502';
+import { checkUrl } from './check.js?v=b503';
+import { similarPicks } from './rec.js?v=b503';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b502';
-import { pickCity } from './citysearch.js?v=b502';
-import { shareMate } from './mate.js?v=b502';
+import { openNew } from './newtrip.js?v=b503';
+import { pickCity } from './citysearch.js?v=b503';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -140,13 +139,27 @@ export async function loadAnal(){
      이야기를 끊습니다. 변화는 배지 한 줄, 궁합은 단추 하나면 충분합니다. */
   const 성향 = document.createElement('div');
   성향.className = 'card quiet';
-  성향.innerHTML = '<h2>성향</h2>';
+  성향.innerHTML = '<h2><span class="grow">성향</span></h2>';
 
   let 내코드 = null, 내이름 = null;
   if (매긴것.length >= 문턱){
     const ax = personaAxes(매긴것, { cities });
     const 유형 = PERSONA16[ax.code] || { n:'여행자', d:'' };
     내코드 = ax.code; 내이름 = 유형.n;
+
+    /* ── 「자세히 보기」는 제목 줄 오른쪽 하나로(b503) ────────────────
+       카드 **맨 아래** 단추 둘(자세히 보기 · 궁합 보내기)이었습니다.
+       홈의 「내 발자국 · 지도 ›」와 같은 자리로 올립니다 — 단추가 카드마다
+       다른 높이에 있으면 찾을 자리가 매번 달라집니다. 제목 옆이면 어느
+       카드든 같은 자리입니다.
+       ⚠ 궁합은 여기서 뺐습니다. 리포트 화면에 궁합 두 칸도 「친구와 궁합
+         보기」 단추도 이미 있습니다(persona.js 의 #p_mate) — 같은 것을 두
+         곳에 두면 언젠가 한쪽만 고쳐집니다. */
+    const 성향더 = document.createElement('button');
+    성향더.className = 'h2go';
+    성향더.textContent = '자세히 보기 ›';
+    성향더.onclick = 성향열기;
+    성향.querySelector('h2').appendChild(성향더);
     const 나라수 = new Set(매긴것
       .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
       .filter(Boolean)).size;
@@ -158,7 +171,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b502"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b503"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -210,66 +223,12 @@ export async function loadAnal(){
       성향.appendChild(배지);
     }
 
-    /* ── 네 축 ── 가로 막대(b465) ─────────────────────────────────────
-       ⚠ **b464 에 레이더로 바꿨다가 되돌립니다.** 실기기에서 보니
-         다이아몬드는 값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이
-         꼭짓점 길이로 거의 같아 보이고, 이름과 숫자가 사방에 흩어져
-         위에서 아래로 훑을 수가 없습니다.
-       ⚠⚠ **넷 다 앱 파랑입니다(b501).** 전에는 축마다 분류색(--k-*)을
-         달리 줬습니다 — 「서로 다른 것을 잰다」를 색으로 말하려던 것인데,
-         **한 화면에 주황·초록·파랑·보라가 서고** 앱의 다른 어디에도
-         없는 무지개가 됐습니다. 서로 다르다는 것은 **이름과 값**이 이미
-         말합니다. 색은 앱 전체와 같아야 합니다.
-       ⚠ 인라인으로 안 칠합니다 — `.axbar > i` 가 이미 `--primary` 입니다.
-         여기서 덮어쓰면 앱 색을 바꿔도 이 막대만 안 따라옵니다. */
-    const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
-    const 판 = document.createElement('div');
-    판.className = 'axbars';
-    /* ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
-         무엇이 36 인지 알 길이 없습니다 — 처음 보는 말이고, 높은 게
-         좋은 건지도 안 적혀 있습니다.
-         지금 값이 **어느 쪽인지**를 이름 밑에 한 마디로 답니다
-         (36 이면 「유명한 곳」, 85 면 「멀리」). 숫자를 몰라도 읽힙니다.
-       ⚠ 그 말은 card.js 의 AXIS_WORD 하나입니다 — 코드 네 글자(FMDP)가
-         쓰는 것과 **같은 표**라, 글자와 막대가 늘 같은 말을 합니다. */
-    const 극 = i => AXIS_WORD[
-      [값[0] >= 50 ? 'H' : 'F', 값[1] >= 50 ? 'L' : 'M',
-       값[2] >= 50 ? 'D' : 'N', 값[3] >= 50 ? 'G' : 'P'][i]];
-    판.innerHTML = AXIS_NAME.map((n, i) => `
-      <div class="axrow"><span class="axn"><b>${esc(n)}</b>
-        <span>${esc(극(i))}</span></span>
-        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%"></i></span>
-        <span class="axv">${값[i]}</span></div>`).join('');
-    성향.appendChild(판);
-
-    /* ── 궁합 두 칸 ── 카드 그림 안에만 있던 것을 꺼내둡니다(b448). */
-    const m = personaMates(ax.code);
-    const 짝 = document.createElement('div');
-    짝.className = 'mates';
-    짝.innerHTML = [[m.best, m.bestScore, '환상의 메이트', 'good'],
-                    [m.worst, m.worstScore, '최악의 조합', 'bad']]
-      .map(([c, s, 라벨, 갈래]) => `<div class="mate ${갈래}">
-        <span class="ml">${esc(라벨)} · ${s}%</span>
-        <b>${esc(PERSONA16[c]?.n || c)}</b>
-        <span class="mc">${esc(c)}</span></div>`).join('');
-    성향.appendChild(짝);
-
-    /* ── 단추 둘 ── 나란히(b464) ──────────────────────────────────────
-       「친구와 궁합」이 카드 한 장(156px)을 차지하고 있었는데, 하는 일은
-       단추 하나입니다. 위 궁합 두 칸 바로 밑이 **제자리**이기도 합니다 —
-       궁합을 보고 나서 보내고 싶어지는 순서입니다. */
-    const 단추 = document.createElement('div');
-    단추.className = 'pbtns';
-    const 더 = document.createElement('button');
-    더.className = 'matebtn';
-    더.textContent = '자세히 보기';
-    더.onclick = 성향열기;
-    const 보내 = document.createElement('button');
-    보내.className = 'matebtn ghostbtn';
-    보내.textContent = '궁합 보내기';
-    보내.onclick = () => shareMate(내코드, 내이름);
-    단추.append(더, 보내);
-    성향.appendChild(단추);
+    /* ⚠ **축 막대 넷과 궁합 두 칸은 여기 없습니다(b503).** 리포트
+       화면(persona.js)에 그대로 있습니다 — 「자세히 보기」로 갑니다.
+       실측: 성향 카드가 594px 로 폰 첫 화면의 76% 를 먹고 있었고,
+       그 중 축 막대가 169px · 궁합이 79px · 아래 단추가 52px 였습니다.
+       분석 탭이 할 말은 **변하는 것**입니다(위 변화 배지). 축 값과
+       궁합은 한 번 보면 되는 고정값이라 리포트 자리가 맞습니다. */
   } else {
     성향.appendChild(줄('내 성향',
       `${문턱 - 매긴것.length}곳만 더 매기면 유형이 나와요`, '매기러 가기',
@@ -282,10 +241,19 @@ export async function loadAnal(){
        been 도 홈에 지도가 있고 Visualize 탭에 더 많은 시각화가 있습니다. */
   const 발 = document.createElement('div');
   발.className = 'card quiet';
-  발.innerHTML = `<h2>발자국</h2>
+  발.innerHTML = `<h2><span class="grow">발자국</span></h2>
     <div class="memo" style="margin:-4px 0 10px">${esc(나라
       ? `${UN_COUNTRIES}개국 중 ${나라}개국 · ${pct.toFixed(1)}%`
       : '별점을 매기면 여기에 쌓여요')}</div>`;
+
+  /* 「자세히 보기」는 성향 카드와 **같은 자리**입니다(b503) — 제목 줄
+     오른쪽. 카드마다 단추 자리가 다르면 그때그때 찾아야 합니다.
+     가는 곳은 나라 목록(#ctrypane)이고, 아래 기록도 거기 있습니다. */
+  const 발더 = document.createElement('button');
+  발더.className = 'h2go';
+  발더.textContent = '자세히 보기 ›';
+  발더.onclick = 나라열기;
+  발.querySelector('h2').appendChild(발더);
 
   const mm = document.createElement('div');
   mm.className = 'minimap';
@@ -362,66 +330,13 @@ export async function loadAnal(){
   대륙판.appendChild(대륙);
   발.appendChild(대륙판);
 
-  /* ── 기록 ── 같은 카드 안, 소제목으로 나눕니다(b464) ────────────────
-     사용자 결정: **성향은 성향끼리, 발자국은 발자국끼리.** 기록(가장 많이
-     간 국가 · 최북단 · 최남단 · 가장 먼 두 도시 · 별점)은 전부 **다녀온
-     곳 이야기**라 발자국에 속합니다. 카드를 따로 두면 같은 주제가 둘로
-     갈리고 제목만 늘어납니다.
-     ⚠ 카드 하나가 길어지므로 **소제목으로 눈을 쉬게** 합니다 — 위는
-       「어디를 갔나」(지도·대륙), 아래는 「어떻게 갔나」(기록).
-     별점 분포도 여기입니다 — 매긴 것을 되짚는 이야기입니다. */
+  /* ⚠ **기록은 여기 없습니다(b503).** 별점 분포와 「가장 많이 간 나라 ·
+     최북단 …」 줄은 나라 목록 화면(map.js 의 openCountries)으로 옮겼습니다 —
+     제목 줄의 「자세히 보기 ›」로 갑니다. 발자국 카드는 **어디를 갔나**
+     (지도 · 대륙)까지만 맡습니다. 사용자 결정입니다.
+     ⚠ 별점표는 아래 체크 카드가 씁니다 — 같이 지우지 마십시오. */
   const 별점표 = {};
   매긴것.forEach(r => { 별점표[r.city_id] = r.stars; });
-  const 내도시 = (cities || []).filter(c => 별점표[c.id] != null);
-  if (내도시.length){
-    const 기록 = document.createElement('div');
-    기록.className = 'subsec';
-    기록.innerHTML = '<h3 class="secttl">기록</h3>';
-
-    /* ── 별점 분포 ── 막대 다섯 줄을 띠 하나로(b464) ─────────────────
-       「평균 4.2」로는 후한 사람인지 까다로운 사람인지를 못 가립니다.
-       ★5 를 몰아준 사람과 ★4 만 고르게 준 사람의 평균이 같습니다.
-       ⚠ **칸은 내림입니다.** 별점이 0.5 단위라(rateui.js) 4.5 는 ★4 칸에
-         들어갑니다. 반올림하면 아래 「별 다섯을 준 곳」(정확히 5.0)과
-         어긋납니다 — 한 화면에 두 숫자가 다르면 둘 다 못 믿게 됩니다.
-       ⚠ 0 곳인 칸은 띠에서 폭 0 이라 저절로 사라지고, 아래 글에서만
-         숫자로 남습니다. 띠는 **비율**을 보이는 것이라 그래도 됩니다. */
-    const 통 = [0, 0, 0, 0, 0];
-    매긴것.forEach(r => {
-      const n = Math.floor(r.stars);
-      if (n >= 1 && n <= 5) 통[n - 1]++;
-    });
-    const 합 = 통.reduce((a, b) => a + b, 0) || 1;
-    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
-    /* ⚠ **띠 안에는 글자를 안 넣습니다(b466).** b465 에 넓은 칸만 안에
-         적고 좁은 칸은 아래로 뺐더니, 같은 것이 **두 자리에 나뉘어**
-         있어서 오히려 훑기가 어려웠습니다 — 어떤 것은 띠에서 읽고
-         어떤 것은 밑에서 찾아야 합니다. 다섯을 **한 줄에 모아** 둡니다.
-       ⚠ 띠는 색으로 **비율**만 말하고, 숫자는 전부 아래 범례가 맡습니다.
-         띠가 얇아도 되므로(26 → 14px) 자리도 덜 먹습니다.
-       ⚠ 범례에는 **곳** 을 붙입니다. 「★5 3」 은 3 이 점수인지 곳수인지
-         모호했습니다. 한 글자로 사라집니다.
-       ⚠ 0 곳인 칸도 흐리게 적습니다 — 「★1 을 준 적이 없다」도 분포의
-         일부입니다. 빼면 다섯 칸 중 몇 칸을 썼는지가 안 보입니다. */
-    const 띠 = document.createElement('div');
-    띠.className = 'stackwrap';
-    띠.innerHTML = '<div class="stack">' +
-      [5, 4, 3, 2, 1].map(n => 통[n - 1]
-        ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
-             background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('') +
-      '</div><div class="stackleg">' +
-      [5, 4, 3, 2, 1].map(n =>
-        `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${색[n - 1]}"></b>` +
-        `★${n} ${통[n - 1]}곳</span>`).join('') + '</div>';
-    기록.appendChild(띠);
-
-    const 줄들 = document.createElement('div');
-    줄들.innerHTML = funRows(내도시, 별점표).map(([k, v]) =>
-      `<div class="row"><span class="label">${esc(k)}</span>
-         <span class="val">${esc(v)}</span></div>`).join('');
-    기록.appendChild(줄들);
-    발.appendChild(기록);
-  }
 
   /* ── 대륙 체크 카드(b485) ────────────────────────────────────────────
      인스타에 도는 「유럽 24곳 체크」 템플릿과 같은 것을, 매긴 것으로
@@ -464,13 +379,6 @@ export async function loadAnal(){
     }
   }
 
-  /* 단추는 카드 **맨 아래**입니다 — 기록까지 다 읽고 나서 더 볼
-     사람이 누르는 자리입니다. */
-  const 지도더 = document.createElement('button');
-  지도더.className = 'matebtn';
-  지도더.textContent = '나라별로 자세히 보기 ›';
-  지도더.onclick = 나라열기;
-  발.appendChild(지도더);
   box.appendChild(발);
 
   /* ══ ③ 다음 여행 ═══════════════════════════════════════════════════
