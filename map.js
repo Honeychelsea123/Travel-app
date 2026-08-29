@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b509';
-import { openCity } from './city.js?v=b509';
-import { distKm } from './calc.js?v=b509';
-import { sb } from './db.js?v=b509';
-import { cities, countryName, continentOf } from './cities.js?v=b509';
-import { PERSONA_ICON, shareCard } from './card.js?v=b509';
+         coverDeck } from './dom.js?v=b510';
+import { openCity } from './city.js?v=b510';
+import { distKm } from './calc.js?v=b510';
+import { sb } from './db.js?v=b510';
+import { cities, countryName, continentOf } from './cities.js?v=b510';
+import { PERSONA_ICON, shareCard } from './card.js?v=b510';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -359,25 +359,10 @@ export async function openCountries(어디서){
   /* 공유 카드. **세계지도를 그대로 씁니다** — 이 페이지에서 제일 자랑스러운
      것은 칠해진 지도이고, 그건 이미 그려져 있습니다(#worldland).
      지도 화면을 한 번도 안 열었으면 비어 있으므로 그때는 국기만 냅니다. */
-  $('ctry_share').onclick = () => {
-    const land = $('worldland')?.innerHTML || '';
-    const top = codes.sort((a, b) => byC[b].length - byC[a].length).slice(0, 3);
-    shareCard({
-      g:'rare', icon: PERSONA_ICON.globe, sub:'다녀온 나라',
-      big: String(codes.length), bigUnit:'개국',
-      title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
-      nums:`${list.length}개 도시 · ${Object.keys(groups).length}개 대륙`,
-      /* 카드에도 국기를 깔지만, 못 그리는 기기에서는 캔버스에도 못 그립니다 —
-         그림 파일로 저장되는 것이라 더 티가 납니다. 그때는 안 넣습니다. */
-      note: flagOk() ? codes.map(c => flag(c)).join(' ') : '',
-      listTitle: top.length ? '가장 많이 간 곳' : '',
-      list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
-      artRatio: 387 / 1000,
-      art: land ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
-              <style>path{fill:rgba(255,255,255,.16)} path.been{fill:#fff}</style>
-              ${land}</svg>` : '',
-    }, 'aitrip-다녀온나라');
-  };
+  /* 지도 화면의 공유와 **같은 카드**입니다(b510) — 위 발자국스펙 하나가
+     만듭니다. 전에는 여기와 지도가 각자 만들어서, 같은 숫자를 「다녀온
+     나라」와 「내 발자국」 두 이름으로 말했습니다. */
+  $('ctry_share').onclick = () => shareCard(발자국스펙(list), 'aitrip-발자국');
 }
 /* ── 나온 자리로 되돌리기(b453) ───────────────────────────────────────
  * ⚠ 지도·국가목록은 **프로필 위에 얹히는 판**으로 만들어져서, 닫을 때
@@ -435,6 +420,50 @@ $('ctrypane').addEventListener('click', e => {
     c.classList.toggle('on', box && !box.classList.contains('hide'));
   }
 });
+
+/* ── 발자국 카드는 하나입니다(b510) ──────────────────────────────────
+ * 지도 화면의 공유와 나라 목록의 공유가 **거의 같은 카드를 따로** 만들고
+ * 있었습니다. 하나는 「내 발자국 28개국」, 하나는 「다녀온 나라 28개국」 —
+ * 같은 숫자를 다른 이름으로 두 번 말합니다. 사용자 지적.
+ *
+ * 국기와 「가장 많이 간 곳」이 있는 쪽이 나아서 그쪽으로 맞췄습니다.
+ * 큰 숫자(big)도 그쪽 것입니다 — 훑는 눈에 남는 것은 숫자 하나입니다.
+ *
+ * ⚠ **세는 자료를 받아서 씁니다.** 여기서 다시 받아오면 부르는 쪽이 이미
+ *   가진 것을 한 번 더 묻는 셈이고, 두 화면의 숫자가 갈릴 수 있습니다.
+ * ⚠ 지도 칠(.been)도 여기서 합니다. 예전에는 지도 화면이 칠해둔 것을
+ *   빌려 썼는데, 프로필에서 나라 목록으로 바로 들어오면 지도를 한 번도
+ *   안 연 상태라 **전부 회색인 카드**가 나왔습니다.
+ * ⚠ 국기를 못 그리는 기기에서는 뺍니다 — 캔버스에도 못 그려서 네모가
+ *   그림 파일로 저장됩니다. 화면보다 티가 납니다. */
+function 발자국스펙(도시들){
+  const byC = {};
+  (도시들 || []).forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  /* 많이 간 나라부터. 국기 줄도 이 순서라 앞쪽이 그 사람다운 줄이 됩니다. */
+  const codes = Object.keys(byC).sort((a, b) => byC[b].length - byC[a].length);
+  const conts = new Set(codes.map(c => continentOf[c]).filter(Boolean));
+  const pct = codes.length / UN_COUNTRIES * 100;
+  const top = codes.slice(0, 3);
+
+  const 갔다 = new Set(codes);
+  document.querySelectorAll('#worldland path').forEach(p =>
+    p.classList.toggle('been', 갔다.has(p.dataset.c)));
+  const land = $('worldland')?.innerHTML || '';
+
+  return {
+    g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
+    big: String(codes.length), bigUnit:'개국',
+    title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
+    nums:`${(도시들 || []).length}개 도시 · ${conts.size}개 대륙`,
+    note: flagOk() ? codes.map(c => flag(c)).join(' ') : '',
+    listTitle: top.length ? '가장 많이 간 곳' : '',
+    list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
+    artRatio: 387 / 1000,
+    art: land ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
+            <style>path{fill:rgba(255,255,255,.16)} path.been{fill:#fff}</style>
+            ${land}</svg>` : '',
+  };
+}
 
 export async function openMap(){
   $('profpane').classList.add('hide');
@@ -495,17 +524,7 @@ export async function openMap(){
      지도는 **화면에 그려져 있는 것을 그대로 빌려 씁니다** — 어느 나라를
      칠할지 다시 정하면 화면과 어긋납니다. 위에서 이미 .been 을 붙여뒀습니다.
      칠은 카드 배경(남색→보라) 위에 얹히므로 흰색 두 단계로만 씁니다. */
-  $('fp_img').onclick = () => shareCard({
-    g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
-    title:`${gone.size}개국`,
-    nums:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
-    note:`${mapCities.length}개 도시 · ${conts.size}개 대륙`,
-    artRatio: 387 / 1000,
-    art: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
-            <style>path{fill:rgba(255,255,255,.16)}
-                   path.been{fill:#fff}</style>
-            ${$('worldland').innerHTML}</svg>`,
-  }, 'aitrip-발자국');
+  $('fp_img').onclick = () => shareCard(발자국스펙(mapCities), 'aitrip-발자국');
 
   /* ── 대륙별 ── 퍼센트는 국가로만 셉니다 ── */
   /* **막대만 있고 어느 나라인지가 없었습니다.** "유럽 19/44국"을 보고 나면
