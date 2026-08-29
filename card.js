@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b497';
+import { $, esc, toast } from './dom.js?v=b498';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b497';
+import { distKm, pScale, SEOUL } from './calc.js?v=b498';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -317,7 +317,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b497`;
+    img.src = `./persona/${code}.png?v=b498`;
   });
 }
 
@@ -574,7 +574,11 @@ async function drawCheck(s, W, H, F){
   const g = cv.getContext('2d');
   const 여백 = W * .018, 둥금 = W * .046;
 
-  g.fillStyle = P16.판; g.fillRect(0, 0, W, H);
+  /* ⚠ **투명 배경(b498).** 바깥 흰 바탕만 안 칠합니다 — 둥근 카드 자체는
+     그대로 남습니다. 스토리에 올릴 때 자기 배경 위에 얹으라고 두는
+     갈래입니다. 전에는 종이색이 화면을 꽉 채워 **흰 사각형**이었습니다.
+     ⚠ 투명은 PNG 에서만 삽니다. 이 카드들은 이미 PNG 로 뽑습니다. */
+  if (!s.투명){ g.fillStyle = P16.판; g.fillRect(0, 0, W, H); }
   g.fillStyle = P16.카드;
   rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.fill();
   g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
@@ -708,7 +712,11 @@ async function drawP16(s, W, H, F){
   const 둥금 = W * .046;
 
   /* ── 종이 ── */
-  g.fillStyle = P16.판; g.fillRect(0, 0, W, H);
+  /* ⚠ **투명 배경(b498).** 바깥 흰 바탕만 안 칠합니다 — 둥근 카드 자체는
+     그대로 남습니다. 스토리에 올릴 때 자기 배경 위에 얹으라고 두는
+     갈래입니다. 전에는 종이색이 화면을 꽉 채워 **흰 사각형**이었습니다.
+     ⚠ 투명은 PNG 에서만 삽니다. 이 카드들은 이미 PNG 로 뽑습니다. */
+  if (!s.투명){ g.fillStyle = P16.판; g.fillRect(0, 0, W, H); }
   g.fillStyle = P16.카드;
   rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.fill();
   g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
@@ -925,9 +933,15 @@ async function drawP16(s, W, H, F){
   g.setLineDash([W * .016, W * .014]);
   g.beginPath(); g.moveTo(여백, dy); g.lineTo(W - 여백, dy); g.stroke();
   g.setLineDash([]);
-  /* 표 모양 홈. 점선과 같은 높이라 '뜯는 자리'로 읽힙니다. */
+  /* 표 모양 홈. 점선과 같은 높이라 '뜯는 자리'로 읽힙니다.
+     ⚠ **투명일 때는 흰색으로 덮으면 안 됩니다(b498).** 바깥이 투명한데
+       홈만 흰 동그라미면 거기만 도드라집니다. `destination-out` 으로
+       **뚫어냅니다** — 그래야 뒤 배경이 그 자리로 비칩니다. */
+  g.save();
+  if (s.투명) g.globalCompositeOperation = 'destination-out';
   g.fillStyle = P16.판;
   for (const x of [여백, W - 여백]){ g.beginPath(); g.arc(x, dy, W * .022, 0, Math.PI * 2); g.fill(); }
+  g.restore();
 
   /* 기로 마크 — 주황 막대 둘. 로고 파일을 안 받습니다(카드마다 받아올 이유가
      없습니다). 이 크기에서는 모양만 같으면 됩니다. */
@@ -1278,6 +1292,16 @@ export async function cardImage(spec, mode = 'square'){
 async function saveCardImage(spec, mode, name){
   toast('이미지 만드는 중…');
   const { blob, fontOk } = await cardImage(spec, mode);
+  return sendCardBlob(blob, spec, name, fontOk);
+}
+
+/* ── 만든 그림을 보냅니다 ────────────────────────────────────────────
+ * ⚠ **`saveCardImage` 에서 갈라냈습니다(b498).** 미리보기 시트가 **이미
+ *   그려둔 blob** 을 그대로 보내야 하기 때문입니다 — 거기서 다시 그리면
+ *   미리보기와 보내는 것이 갈릴 수 있고 1초를 또 기다립니다.
+ *   보내는 규칙(주소 같이 넘기기·글로 떨어지기·마지막에 내려받기)은
+ *   한 곳에만 있어야 합니다. */
+async function sendCardBlob(blob, spec, name, fontOk = true){
   /* 확장자는 blob 이 정합니다 — 성향 카드는 글자와 단색 위주라 PNG 로 나옵니다.
      .jpg 로 이름만 붙여 보내면 공유창에서 거부하는 앱이 있습니다. */
   const ext = blob.type === 'image/png' ? '.png' : '.jpg';
@@ -1335,8 +1359,95 @@ async function saveCardImage(spec, mode, name){
  * 트레이드오프 하나는 알고 있습니다: 9:16 은 **카톡 대화에서 세로로 길게
  * 잘려** 보입니다(눌러야 다 보입니다). 스토리에 올리는 것이 주 용도라
  * 감수합니다. 되돌리려면 아래 'story' 를 'portrait' 로 바꾸면 됩니다. */
+/* ── 미리보기 시트(b498) ──────────────────────────────────────────────
+ * **전에는 결과를 못 보고 보냈습니다.** 「공유하기」를 누르면 1초 그리고
+ * 바로 공유창이 떠서, 어떻게 나올지 모르는 채로 나갔습니다. 발자취 앱이
+ * 저장 전에 미리보기와 옵션을 주는 것을 보고 같은 자리를 만듭니다.
+ *
+ * ⚠ **옵션은 「배경」 하나뿐입니다.** 저쪽은 넷을 주는데(내용·배경·정렬·
+ *   대비) 그쪽은 **카드가 한 종류**라 감당됩니다. 우리는 성향·영수증·
+ *   체크 셋이고 각각 정보량이 다릅니다 — 셋에 넷씩 두면 결정이 열둘입니다.
+ *   값어치가 제일 큰 하나만 둡니다.
+ * ⚠ **그릴 때마다 다시 그립니다.** 투명은 캔버스를 처음부터 다르게 그리는
+ *   것이라 나중에 못 벗겨냅니다.
+ * ⚠ **`objectURL` 을 반드시 놓아줍니다.** 배경을 왔다 갔다 하면 매번 새
+ *   blob 이 생깁니다 — 안 놓으면 그만큼 메모리에 쌓입니다. */
+let 시트 = null;         /* 지금 열린 미리보기의 상태 */
+
+async function 시트그리기(){
+  const s = 시트; if (!s) return;
+  const 판 = $('cs_view');
+  판.innerHTML = `<div class="empty"><span class="load">그리는 중…</span></div>`;
+  if (s.url){ URL.revokeObjectURL(s.url); s.url = null; }
+  try {
+    const { blob } = await cardImage({ ...s.spec, 투명: !s.배경 }, 'story');
+    if (시트 !== s) { return; }               /* 그 사이에 닫혔거나 다시 눌렸습니다 */
+    s.blob = blob; s.url = URL.createObjectURL(blob);
+    판.innerHTML = `<img src="${s.url}" alt="${esc(s.spec.title || '카드')}">`;
+  } catch {
+    판.innerHTML = `<div class="empty">그림을 못 만들었어요.</div>`;
+  }
+}
+
+function 시트닫기(fromPop){
+  const s = 시트; 시트 = null;
+  if (s?.url) URL.revokeObjectURL(s.url);
+  $('cardsheet')?.classList.add('hide');
+  /* ⚠ **뒤로가기로 닫힐 때는 또 뒤로 가면 안 됩니다** — 두 칸 물러나
+     엉뚱한 화면에 떨어집니다. closeSpree·closeReview 와 같은 수법입니다. */
+  if (!fromPop && history.state?.t2 === 'cs') history.back();
+}
+
 export function shareCard(spec, name){
-  return saveCardImage(spec, 'story', name);
+  const 판 = $('cardsheet');
+  /* 시트가 없는 화면(옛 index.html)에서는 하던 대로 바로 보냅니다 —
+     기능이 통째로 막히는 것보다 낫습니다. */
+  if (!판) return saveCardImage(spec, 'story', name);
+  시트 = { spec, name, 배경: true, url: null, blob: null };
+  판.classList.remove('hide');
+  /* ⚠ **투명을 못 받는 카드에서는 그 줄을 숨깁니다.** 영수증은 제 팔레트로
+     제 배경을 칠하고(RC), 일반 카드는 **JPEG 라 애초에 투명이 없습니다.**
+     눌러도 아무 일이 없는 단추를 두는 것이 제일 나쁩니다.
+     ⚠ 받는 kind 를 늘리면 여기도 같이 늘려야 합니다 — 안 그러면 새 카드가
+       조용히 옵션을 잃습니다. */
+  const 투명가능 = spec.kind === 'p16' || spec.kind === 'check';
+  판.querySelector('.csrow').classList.toggle('hide', !투명가능);
+  if (!투명가능) 시트.배경 = true;
+  /* 뒤로 가기로 닫힙니다 — 안드로이드에서 시트를 뒤로가기로 못 닫으면
+     앱을 나가게 됩니다. */
+  if (history.state?.t2 !== 'cs') history.pushState({ t2:'cs' }, '');
+  [...판.querySelectorAll('#cs_bg button')].forEach(b =>
+    b.classList.toggle('on', (b.dataset.bg === 'on') === true));
+  return 시트그리기();
+}
+
+/* 시트를 붙입니다. `#cardsheet` 이 있을 때만 — 없으면 위에서 안 씁니다. */
+if (typeof document !== 'undefined' && $('cardsheet')){
+  /* ⚠ **화살표로 감쌉니다.** 함수를 그대로 달면 click 이벤트가 첫 인자로
+     들어가 fromPop 이 참이 되고, 히스토리가 안 물러납니다. */
+  $('cs_x').addEventListener('click', () => 시트닫기());
+  $('cardsheet').addEventListener('click', e => {
+    /* 시트 «밖»(덮개)을 눌러도 닫힙니다. ::before 가 시트의 자식이라
+       그 자리 클릭은 시트 자신을 대상으로 옵니다. */
+    if (e.target === $('cardsheet')) 시트닫기();
+  });
+  $('cs_bg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-bg]'); if (!b || !시트) return;
+    const 켬 = b.dataset.bg === 'on';
+    if (켬 === 시트.배경) return;              /* 같은 것을 다시 누른 것 */
+    시트.배경 = 켬;
+    [...e.currentTarget.querySelectorAll('button')].forEach(x =>
+      x.classList.toggle('on', x === b));
+    시트그리기();
+  });
+  $('cs_go').addEventListener('click', async () => {
+    const s = 시트; if (!s?.blob) return;
+    /* ⚠ **이미 그려둔 blob 을 보냅니다.** 여기서 다시 그리면 미리보기와
+       보내는 것이 갈릴 수 있고, 1초를 또 기다립니다. */
+    시트닫기();
+    await sendCardBlob(s.blob, s.spec, s.name);
+  });
+  window.addEventListener('popstate', () => { if (시트) 시트닫기(true); });
 }
 
 /* 평생 누적 값. 별점을 매긴 도시만 셉니다 — "가보고 싶어요"는 간 곳이 아닙니다.
