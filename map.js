@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b498';
-import { openCity } from './city.js?v=b498';
-import { distKm } from './calc.js?v=b498';
-import { sb } from './db.js?v=b498';
-import { cities, countryName, continentOf } from './cities.js?v=b498';
-import { PERSONA_ICON, shareCard } from './card.js?v=b498';
+         coverDeck } from './dom.js?v=b499';
+import { openCity } from './city.js?v=b499';
+import { distKm } from './calc.js?v=b499';
+import { sb } from './db.js?v=b499';
+import { cities, countryName, continentOf } from './cities.js?v=b499';
+import { PERSONA_ICON, shareCard } from './card.js?v=b499';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -41,7 +41,9 @@ export const CONT = [['아시아', 48], ['유럽', 44], ['아프리카', 54],
 /* 대륙별로 당겨 보는 자리. 가운데와 폭만 정하고 높이는 화면 비율에서 냅니다 —
    그래야 viewBox 비율이 화면과 같아져서 여백 없이 딱 맞고, 손가락 좌표를
    지도 좌표로 바꾸는 계산도 한 줄로 끝납니다. */
-const CONT_VIEW = {
+/* ⚠ **내보냅니다(b499).** 분석 탭의 대륙 배지가 같은 창을 씁니다 — 여기서
+   자르는 값과 저기서 자르는 값이 다르면 같은 대륙이 두 모양이 됩니다. */
+export const CONT_VIEW = {
   '전체':      { cx:500, cy:212, w:1000 },
   '아시아':    { cx:750, cy:193, w:380 },
   '유럽':      { cx:549, cy:105, w:195 },

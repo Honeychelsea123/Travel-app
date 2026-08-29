@@ -14,27 +14,27 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b498';
-import { sb } from './db.js?v=b498';
-import { cities, continentOf } from './cities.js?v=b498';
+import { $, esc } from './dom.js?v=b499';
+import { sb } from './db.js?v=b499';
+import { cities, continentOf } from './cities.js?v=b499';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b498';
+import { personaBackTo } from './persona.js?v=b499';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b498';
-import { UN_COUNTRIES, CONT, mapBackTo, funRows } from './map.js?v=b498';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b499';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b499';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
 /* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
    고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b498';
-import { similarPicks } from './rec.js?v=b498';
+import { checkUrl } from './check.js?v=b499';
+import { similarPicks } from './rec.js?v=b499';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b498';
-import { pickCity } from './citysearch.js?v=b498';
-import { shareMate } from './mate.js?v=b498';
+import { openNew } from './newtrip.js?v=b499';
+import { pickCity } from './citysearch.js?v=b499';
+import { shareMate } from './mate.js?v=b499';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -146,7 +146,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b498"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b499"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -289,14 +289,55 @@ export async function loadAnal(){
     const k = continentOf[c.country]; if (!k) return;
     (대륙셈[k] = 대륙셈[k] || new Set()).add(c.country);
   });
+  /* ── 대륙 배지 ── 칩을 배지로(b499) ────────────────────────────────
+   * 전에는 글자 알약 여섯이었습니다. **여섯이 다 같아 보여서** 숫자를
+   * 하나씩 읽어야 어디가 빈 대륙인지 알 수 있었습니다. 이제 그 대륙의
+   * 모양이 배지에 들어가고, **다녀온 나라가 칠해집니다.**
+   *
+   * ⚠⚠ **바로 위에 지도가 있습니다 — 갈라 놓아야 합니다.** ⚠⚠
+   *   b496 에서 홈의 좌우 넘김 카드에 같은 것을 넣었다가 **지도 위에
+   *   지도**가 되어 걷었습니다(b497). 그때는 큰 지도 바로 밑에 붙였던
+   *   것이 문제였습니다. 여기서는 `.subsec`(위 구분선 + 섹션 제목)으로
+   *   **다른 이야기**임을 먼저 보여주고 그 안에 놓습니다 — 발자취 앱이
+   *   「지역 배지」를 그렇게 떼어 놓습니다.
+   * ⚠ **새 자산이 없습니다.** 좌표는 `#worldland` 에 이미 있고, 대륙별로
+   *   어디를 자를지는 map.js 의 `CONT_VIEW` 가 압니다(큰 지도의 대륙
+   *   단추가 쓰는 그 표). 같은 표를 써야 배지와 지도가 같은 모양입니다.
+   * ⚠ **`slice` 입니다. `meet` 이 아닙니다.** `meet` 은 viewBox 밖을 안
+   *   가려서 남는 여백에 나머지 세계가 비칩니다 — b496 에서 유럽 배지에
+   *   북아메리카가 같이 나왔습니다.
+   * ⚠⚠ **비율은 0.9 — 정사각에 가깝습니다.** 큰 지도 비율(2.58)로 잘랐다가
+   *   **키 큰 대륙의 위아래가 잘렸습니다** — 아프리카 배지가 통째로 회색으로
+   *   나왔습니다(이집트가 위, 남아공이 아래라 둘 다 창 밖). 남아메리카도
+   *   반만 보였고 뉴질랜드는 사라졌습니다. 셋을 나란히 그려 골랐습니다
+   *   (2.58 · 0.75 · 0.9). CONT_VIEW 의 `w` 는 그대로 쓰고 **높이만** 넉넉히
+   *   잡습니다 — 가로 가운데는 그 표가 이미 잘 잡아 두었습니다. */
+  const 땅 = $('worldland')?.innerHTML || '';
+  const 비율 = 0.9;
+  const 대륙판 = document.createElement('div');
+  대륙판.className = 'subsec';
+  대륙판.innerHTML = '<h3 class="secttl">대륙</h3>';
   const 대륙 = document.createElement('div');
-  대륙.className = 'cchips contchips';
+  대륙.className = 'contbadges';
   대륙.innerHTML = CONT.map(([이름, 전체]) => {
     const n = 대륙셈[이름]?.size || 0;
-    return `<span class="${n ? '' : 'off'}">${esc(이름)}
-      <b>${n}</b><i>/${전체}</i></span>`;
+    const v = CONT_VIEW[이름];
+    const box = v
+      ? `${(v.cx - v.w / 2).toFixed(1)} ${(v.cy - v.w * 비율 / 2).toFixed(1)}` +
+        ` ${v.w} ${(v.w * 비율).toFixed(1)}`
+      : '20 16 976 392';
+    return `<div class="cbadge${n ? '' : ' off'}">
+      <div class="cbmap" aria-hidden="true">${땅
+        ? `<svg viewBox="${box}" preserveAspectRatio="xMidYMid slice">${땅}</svg>` : ''}</div>
+      <div class="cbtext"><b>${esc(이름)}</b>
+        <span><i>${n}</i> / ${전체}${n ? '' : ' · 아직'}</span></div>
+    </div>`;
   }).join('');
-  발.appendChild(대륙);
+  /* 지도와 **같은 `gone` 으로** 칠합니다 — 따로 세면 둘이 다른 말을 합니다. */
+  대륙.querySelectorAll('.cbmap path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
+  대륙판.appendChild(대륙);
+  발.appendChild(대륙판);
 
   /* ── 기록 ── 같은 카드 안, 소제목으로 나눕니다(b464) ────────────────
      사용자 결정: **성향은 성향끼리, 발자국은 발자국끼리.** 기록(가장 많이
