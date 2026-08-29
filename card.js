@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b508';
+import { $, esc, toast } from './dom.js?v=b509';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b508';
+import { distKm, pScale, SEOUL } from './calc.js?v=b509';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -313,7 +313,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b508`;
+    img.src = `./persona/${code}.png?v=b509`;
   });
 }
 
@@ -1009,10 +1009,24 @@ export async function cardImage(spec, mode = 'square'){
     g.font = F(400, 40); g.globalAlpha = .9;
     g.fillText(spec.nums, cx, y + 40); g.globalAlpha = 1;
   });
-  if (spec.note) add(54, y => {
-    g.font = F(400, 32); g.globalAlpha = .72;
-    g.fillText(spec.note, cx, y + 32); g.globalAlpha = 1;
-  });
+  /* ⚠⚠ **한 줄로 그리면 카드 밖으로 잘립니다(b509).** ⚠⚠
+     다녀온 나라 카드가 국기를 스물여덟 개 이어 붙여 보냈는데, 그대로
+     한 줄로 찍어서 오른쪽이 통째로 잘려 나갔습니다(실기기 사진).
+     바로 위 제목은 이미 wrapText 로 접고 있었는데 이 줄만 안 썼습니다 —
+     **같은 판에 그리는 글은 같은 도구로 접어야 합니다.**
+   ⚠ 두 줄까지입니다. 그보다 길면 국기가 카드의 주인공이 되어 버립니다.
+     잘린 줄에는 말줄임표를 답니다 — 소리 없이 자르면 「다 나온 것」으로
+     읽힙니다. */
+  if (spec.note){
+    g.font = F(400, 32);
+    let 줄 = wrapText(g, spec.note, maxW);
+    if (줄.length > 2) 줄 = [줄[0], 줄[1] + ' …'];
+    add(줄.length * 44 + 10, y => {
+      g.font = F(400, 32); g.globalAlpha = .72;
+      줄.forEach((t, i) => g.fillText(t, cx, y + 32 + i * 44));
+      g.globalAlpha = 1;
+    });
+  }
 
   /* ── 그 사람이 쓴 문장 ─────────────────────────────────────────────
    * 카드에 있는 것이 전부 숫자였습니다. 숫자는 자랑이지 감성이 아닙니다.

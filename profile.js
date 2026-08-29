@@ -15,11 +15,11 @@
  * íëê° íë¦¬ê² ë©ëë¤. ì´ì ë ì ìª½ ì£¼ììë ì í ììµëë¤.
  *
  * ì¸µ: dom.js Â· db.js Â· net.js ë§ ìëë¤. */
-import { $, esc, avatarOf } from './dom.js?v=b508';
-import { sb } from './db.js?v=b508';
-import { fail, NOROW } from './net.js?v=b508';
+import { $, esc, avatarOf } from './dom.js?v=b509';
+import { sb } from './db.js?v=b509';
+import { fail, NOROW } from './net.js?v=b509';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b508';
+import { fitTabBar } from './ui.js?v=b509';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
