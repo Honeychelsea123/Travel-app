@@ -1083,13 +1083,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 하나 바뀔 때마다 여기도 고쳐야 합니다. */
 .rrow:has(> .stars){ display:grid; grid-template-columns:auto 1fr auto;
                      align-items:center; column-gap:9px; row-gap:4px; }
-/* 한줄평은 **줄 밖에 붙는 딸린 글**입니다(`.rrow` 다음 형제).
-   글자와 세로줄을 맞춰야 그 줄에 딸린 것으로 읽힙니다 —
-   썸네일 폭(76) + 칸 사이(9) = 85px.
-   ⚠ 이 값을 코드에 적지 마십시오. 예전에 60px 로 박아뒀다가 썸네일이
-   56 → 76 으로 커지면서 25px 이 어긋났습니다. 여기 한 곳에서만 정합니다. */
-.rcmt{ margin:-2px 0 10px 85px; color:var(--ink-48); font-size:var(--f-md);
-       line-height:1.5; word-break:keep-all; }
+/* ⚠ **한줄평은 이제 `.rcmt` 가 아닙니다(b513).** 줄 밖에 붙는 딸린 글로
+   두었더니 화면에서 제일 작고 흐린 글씨가 됐습니다 — 정작 그 화면의
+   주인공인데요. 아래쪽 `.cmt`·`.cq` 로 옮겼습니다(문장이 위, 도시가 밑). */
 .rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:stretch;
                               width:76px; height:auto; }
 .rrow:has(> .stars) > .t{ grid-column:2; grid-row:1; }
@@ -3086,3 +3082,32 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      뺏어봐야 아무 일도 안 하고 탭 넘김만 죽습니다. 홈에서 붙이는
      클래스입니다(home.js). */
 .mmswipe{ touch-action:pan-y; }
+
+/* ── 한줄평 목록 ── 문장이 주인공입니다(b513) ─────────────────────────
+ * 사용자 지적: 「한줄평이 제대로 보이지도 않는다」. 재보니 읽는 순서가
+ * 정확히 거꾸로였습니다 —
+ *
+ *   도시 이름  17px · 600 · 잉크 100%
+ *   나라       13px ·       잉크 48%
+ *   한줄평     13px ·       잉크 48%   ← 화면 이름이 「한줄평 남긴 곳」인데
+ *
+ * 문장에 잉크를 다 주고 크기를 올립니다. 도시·나라·별점은 그 밑에서
+ * 「누가 어디서 한 말인가」를 답니다.
+ * ⚠ **별 크기는 안 건드립니다.** 여기서도 눌러서 매길 수 있는 별이라,
+ *   작게 만들면 누르는 자리가 화면마다 달라집니다(위 `.stars` 주석).
+ * ⚠ 줄 사이는 실선으로 끊습니다 — 한 덩이가 한 사람의 한마디입니다.
+ *   안쪽 `.rrow` 의 제 실선은 지웁니다(덩이 안에서 또 끊기면 두 줄로
+ *   읽힙니다). */
+.cmt{ padding:14px 0 12px; }
+.cmt:first-child{ padding-top:4px; }
+.cmt + .cmt{ border-top:1px solid var(--divider-soft); }
+.cq{
+  font-size:calc(17px * var(--ts)); font-weight:600; color:var(--ink);
+  line-height:1.55; letter-spacing:calc(-.2px * var(--ts));
+  word-break:keep-all; margin:0 0 11px;
+}
+/* 덩이 안이라 위아래 여백과 실선을 걷습니다 — 덩이가 이미 갖고 있습니다. */
+.cmt .rrow, .cmt .rrow + .rrow{ padding:0; border-top:0; }
+/* 사진과 이름은 딸린 정보라 한 계단 내립니다. 문장보다 크면 안 됩니다. */
+.cmt .rrow:has(> .stars) > .thumb{ width:56px; }
+.cmt .rrow .t b{ font-size:var(--f-lg); font-weight:600; color:var(--ink-48); }

@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b512';
-import { openCity } from './city.js?v=b512';
-import { sb } from './db.js?v=b512';
-import { cities, countryName } from './cities.js?v=b512';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b512';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b512';
-import { fail } from './net.js?v=b512';
-import { arm } from './ui.js?v=b512';
-import { todayYmd } from './calc.js?v=b512';
-import { loadCities } from './citysearch.js?v=b512';
-import { loadRateData, saveRate } from './rating.js?v=b512';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b513';
+import { openCity } from './city.js?v=b513';
+import { sb } from './db.js?v=b513';
+import { cities, countryName } from './cities.js?v=b513';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b513';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b513';
+import { fail } from './net.js?v=b513';
+import { arm } from './ui.js?v=b513';
+import { todayYmd } from './calc.js?v=b513';
+import { loadCities } from './citysearch.js?v=b513';
+import { loadRateData, saveRate } from './rating.js?v=b513';
 
 let ctx = {
   me: () => null,
@@ -301,7 +301,7 @@ export async function openShelf(kind){
   $('shelflist').innerHTML = list.length
     ? list.map(c => {
         const r = myRates[c.id] || {};
-        return `<div class="rrow" data-cityopen="${esc(c.id)}">
+        const 줄 = `<div class="rrow" data-cityopen="${esc(c.id)}">
           ${c.image_url
             ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy">`
             : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
@@ -310,16 +310,27 @@ export async function openShelf(kind){
               avgTail(cityStat[c.id], r)}</span></div>
           <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
           <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}">♡</button>
-        </div>` +
-        /* 한줄평은 한줄평 탭에서만 펼칩니다. 내 평가 목록에서는 별점만 봅니다 —
-           어떤 줄만 두 줄이 되면 목록이 들쭉날쭉해집니다. */
-        /* ⚠ **들여쓰기를 여기서 px 로 적지 않습니다.** 예전엔 `padding-left:60px`
-           이었는데, 썸네일이 56 → 76px 로 커지면서(b270) 25px 이 어긋났습니다.
-           재보니 실제로는 0px 에서 시작해 **85px 이 밀려 있었습니다.**
-           줄 안의 자리는 `.rrow` 격자가 알고 있으므로 CSS 에서 맞춥니다 —
-           숫자를 두 곳에 적으면 한쪽만 고치게 됩니다. */
-        (kind === 'comment' && r.comment
-          ? `<div class="rcmt">${esc(r.comment)}</div>` : '');
+        </div>`;
+        /* ── 한줄평 목록은 문장이 주인공입니다(b513) ─────────────────
+           사용자 지적: 「한줄평이 제대로 보이지도 않는다」.
+           맞습니다 — 화면 이름이 「한줄평 남긴 곳」인데, 정작 그 문장이
+           줄 밑에 **제일 작고 제일 흐린 글씨**로 딸려 있었습니다.
+           도시 이름 17px/진하게, 나라 13px, 그리고 한줄평이 13px/48% —
+           읽는 순서가 정확히 거꾸로였습니다.
+
+           문장을 위로 올리고 잉크를 다 줍니다. 도시·나라·별점은 그 밑에
+           **누가 어디서 한 말인가**로 붙습니다. 줄 사이는 실선으로
+           끊습니다 — 한 덩이가 한 사람의 한마디입니다.
+
+           ⚠ 한줄평 탭에서만입니다. 내 평가 목록에서는 별점만 봅니다 —
+             어떤 줄만 두 줄이 되면 목록이 들쭉날쭉해집니다.
+           ⚠ 안쪽은 `.rrow` 를 **그대로 씁니다.** 별점 누르기(.stars
+             [data-city])·♡(data-want)·도시 열기(data-cityopen)가 전부
+             그 줄에 걸려 있어서, 새로 짜면 셋 다 다시 이어야 합니다. */
+        return kind === 'comment' && r.comment
+          ? `<div class="cmt" data-cityopen="${esc(c.id)}">
+               <div class="cq">${esc(r.comment)}</div>${줄}</div>`
+          : 줄;
       }).join('')
     : shelfEmpty();
 }
