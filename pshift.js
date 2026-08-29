@@ -24,32 +24,36 @@
  *   누르는 것이 곧 봤다는 증거입니다. 그전까지는 홈을 그릴 때마다 다시
  *   붙습니다 — 그게 「다시 열 이유」의 뜻이기도 합니다.
  */
-import { $, esc } from './dom.js?v=b528';
-import { sb } from './db.js?v=b528';
-import { netTimeout } from './net.js?v=b528';
-import { cities } from './cities.js?v=b528';
-import { personaAxes, PERSONA16 } from './card.js?v=b528';
+import { $, esc } from './dom.js?v=b529';
+import { sb } from './db.js?v=b529';
+import { netTimeout } from './net.js?v=b529';
+import { cities } from './cities.js?v=b529';
+import { personaAxes, PERSONA16 } from './card.js?v=b529';
 
 let ctx = { me: () => null, 열기: () => {} };
 export function setShiftCtx(o){ ctx = { ...ctx, ...o }; }
 
-const KEY = 't2:pcode';
+/* ⚠⚠ **계정마다 따로 적습니다(b529).** 처음엔 열쇠 하나(`t2:pcode`)에
+   적고 로그아웃·로그인에 지웠는데, **지우는 줄을 로그인 쪽에도 넣어서**
+   앱을 열 때마다 기준이 사라졌습니다 — 늘 「처음 본 코드」가 되어 알림이
+   영영 안 떴습니다(실측: 씨앗을 심어도 저장값이 새 코드로만 남음).
+   계정 id 를 열쇠에 넣으면 지울 일이 아예 없습니다. 같은 기기에서 계정을
+   바꿔도 서로 안 섞입니다. */
+const KEY = uid => 't2:pcode:' + uid;
 /* 성향이 서는 문턱. persona.js · try.js · anal.js 와 **같은 값**이어야
    합니다 — 여기만 낮으면 아직 유형이 없는 사람에게 「바뀌었다」고 합니다. */
 const 문턱 = 5;
 
-const 읽기 = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
-const 쓰기 = v => { try { localStorage.setItem(KEY, v); } catch {} };
+const 읽기 = uid => { try { return localStorage.getItem(KEY(uid)) || ''; } catch { return ''; } };
+const 쓰기 = (uid, v) => { try { localStorage.setItem(KEY(uid), v); } catch {} };
 
 /* 아직 안 치운 알림. 홈을 다시 그려도 이것이 남아 있으면 다시 붙습니다. */
 let 대기 = null;
 
-/* 로그아웃할 때 지웁니다 — 같은 기기에서 계정을 바꾸면 앞사람 코드와
-   견주게 됩니다(별점을 비우는 것과 같은 이유, app.js 의 clearRates). */
-export function clearPcode(){
-  대기 = null;
-  try { localStorage.removeItem(KEY); } catch {}
-}
+/* 로그아웃하면 화면에 남은 알림만 버립니다. **적어둔 코드는 안 지웁니다** —
+   계정 id 로 갈라 두어서 서로 안 섞이고, 다시 들어왔을 때 견줄 기준이
+   남아 있는 편이 맞습니다. */
+export function clearPcode(){ 대기 = null; }
 
 /* ── 재고, 바뀌었으면 알린다 ──────────────────────────────────────────
  * 홈이 다 그려진 뒤에 부릅니다. **화면을 막지 않습니다** — 늦게 와서
@@ -71,16 +75,16 @@ export async function checkPersonaShift(){
   const 지금 = ax?.code;
   if (!지금 || 지금.length !== 4) return;
 
-  const 전 = 읽기();
-  if (!전){ 쓰기(지금); return; }   /* 처음 본 코드는 견줄 기준일 뿐입니다 */
+  const 전 = 읽기(me.id);
+  if (!전){ 쓰기(me.id, 지금); return; }   /* 처음 본 코드는 견줄 기준일 뿐입니다 */
   if (전 === 지금) return;
-  대기 = { 전, 지금 };
+  대기 = { 전, 지금, uid: me.id };
   그리기();
 }
 
 /* 치웠다 = 봤다. 그때 적습니다(위 머리말의 b528). */
 function 치움(){
-  if (대기) 쓰기(대기.지금);
+  if (대기) 쓰기(대기.uid, 대기.지금);
   대기 = null;
 }
 
