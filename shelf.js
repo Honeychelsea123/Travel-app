@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b513';
-import { openCity } from './city.js?v=b513';
-import { sb } from './db.js?v=b513';
-import { cities, countryName } from './cities.js?v=b513';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b513';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b513';
-import { fail } from './net.js?v=b513';
-import { arm } from './ui.js?v=b513';
-import { todayYmd } from './calc.js?v=b513';
-import { loadCities } from './citysearch.js?v=b513';
-import { loadRateData, saveRate } from './rating.js?v=b513';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b514';
+import { openCity } from './city.js?v=b514';
+import { sb } from './db.js?v=b514';
+import { cities, countryName } from './cities.js?v=b514';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b514';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b514';
+import { fail } from './net.js?v=b514';
+import { arm } from './ui.js?v=b514';
+import { todayYmd } from './calc.js?v=b514';
+import { loadCities } from './citysearch.js?v=b514';
+import { loadRateData, saveRate } from './rating.js?v=b514';
 
 let ctx = {
   me: () => null,
@@ -318,8 +318,9 @@ export async function openShelf(kind){
            도시 이름 17px/진하게, 나라 13px, 그리고 한줄평이 13px/48% —
            읽는 순서가 정확히 거꾸로였습니다.
 
-           문장을 위로 올리고 잉크를 다 줍니다. 도시·나라·별점은 그 밑에
-           **누가 어디서 한 말인가**로 붙습니다. 줄 사이는 실선으로
+           문장에 잉크를 다 주고 크기를 올립니다. 자리는 **줄 밑**입니다 —
+           b513 에 위로 올려봤다가 b514 에 내렸습니다(사용자 결정). 어느
+           도시 이야기인지 먼저 보고 그 사람 말을 읽는 순서입니다. 줄 사이는 실선으로
            끊습니다 — 한 덩이가 한 사람의 한마디입니다.
 
            ⚠ 한줄평 탭에서만입니다. 내 평가 목록에서는 별점만 봅니다 —
@@ -329,7 +330,7 @@ export async function openShelf(kind){
              그 줄에 걸려 있어서, 새로 짜면 셋 다 다시 이어야 합니다. */
         return kind === 'comment' && r.comment
           ? `<div class="cmt" data-cityopen="${esc(c.id)}">
-               <div class="cq">${esc(r.comment)}</div>${줄}</div>`
+               ${줄}<div class="cq">${esc(r.comment)}</div></div>`
           : 줄;
       }).join('')
     : shelfEmpty();

@@ -3104,7 +3104,10 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .cq{
   font-size:calc(17px * var(--ts)); font-weight:600; color:var(--ink);
   line-height:1.55; letter-spacing:calc(-.2px * var(--ts));
-  word-break:keep-all; margin:0 0 11px;
+  word-break:keep-all;
+  /* 자리는 **줄 밑**입니다(b514). b513 에 위로 올려봤다가 내렸습니다 —
+     어느 도시 이야기인지 먼저 보고 그 사람 말을 읽는 순서입니다. */
+  margin:10px 0 0;
 }
 /* 덩이 안이라 위아래 여백과 실선을 걷습니다 — 덩이가 이미 갖고 있습니다. */
 .cmt .rrow, .cmt .rrow + .rrow{ padding:0; border-top:0; }
