@@ -14,22 +14,23 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b507';
-import { sb } from './db.js?v=b507';
-import { cities, continentOf } from './cities.js?v=b507';
+import { $, esc } from './dom.js?v=b508';
+import { sb } from './db.js?v=b508';
+import { cities, continentOf } from './cities.js?v=b508';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b507';
-import { personaAxes, personaRank, PERSONA16 } from './card.js?v=b507';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b507';
+import { personaBackTo } from './persona.js?v=b508';
+import { personaAxes, personaRank, PERSONA16,
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b508';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b508';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b507';
+import { similarPicks } from './rec.js?v=b508';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b507';
-import { pickCity } from './citysearch.js?v=b507';
+import { openNew } from './newtrip.js?v=b508';
+import { pickCity } from './citysearch.js?v=b508';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -155,7 +156,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b507"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b508"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -207,12 +208,45 @@ export async function loadAnal(){
       성향.appendChild(배지);
     }
 
-    /* ⚠ **축 막대 넷과 궁합 두 칸은 여기 없습니다(b503).** 리포트
-       화면(persona.js)에 그대로 있습니다 — 「자세히 보기」로 갑니다.
-       실측: 성향 카드가 594px 로 폰 첫 화면의 76% 를 먹고 있었고,
-       그 중 축 막대가 169px · 궁합이 79px · 아래 단추가 52px 였습니다.
-       분석 탭이 할 말은 **변하는 것**입니다(위 변화 배지). 축 값과
-       궁합은 한 번 보면 되는 고정값이라 리포트 자리가 맞습니다. */
+    /* ⚠ **궁합 두 칸만 없습니다(b503).** 궁합은 애초에 남 이야기라 내
+       기록을 보는 탭이 아니라 리포트 화면에 있습니다(persona.js — 궁합
+       두 칸도 「친구와 궁합 보기」 단추도 거기 그대로입니다).
+       ⚠ **축 막대 넷은 b508 에 되살렸습니다.** b503 에 카드 길이를 줄이려고
+         같이 걷었는데, 성향 탭에 들어와서 그래프가 없으면 「내 성향」이
+         숫자 없는 이름 네 글자로만 남습니다. 사용자 지적 — 그래프가 이
+         카드의 알맹이입니다. 길이는 궁합·아래 단추를 뺀 것으로 벌었습니다
+         (594 → 442px). */
+    /* ── 네 축 ── 가로 막대(b465) ─────────────────────────────────────
+       ⚠ **b464 에 레이더로 바꿨다가 되돌립니다.** 실기기에서 보니
+         다이아몬드는 값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이
+         꼭짓점 길이로 거의 같아 보이고, 이름과 숫자가 사방에 흩어져
+         위에서 아래로 훑을 수가 없습니다.
+       ⚠⚠ **넷 다 앱 파랑입니다(b501).** 전에는 축마다 분류색(--k-*)을
+         달리 줬습니다 — 「서로 다른 것을 잰다」를 색으로 말하려던 것인데,
+         **한 화면에 주황·초록·파랑·보라가 서고** 앱의 다른 어디에도
+         없는 무지개가 됐습니다. 서로 다르다는 것은 **이름과 값**이 이미
+         말합니다. 색은 앱 전체와 같아야 합니다.
+       ⚠ 인라인으로 안 칠합니다 — `.axbar > i` 가 이미 `--primary` 입니다.
+         여기서 덮어쓰면 앱 색을 바꿔도 이 막대만 안 따라옵니다. */
+    const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
+    const 판 = document.createElement('div');
+    판.className = 'axbars';
+    /* ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
+         무엇이 36 인지 알 길이 없습니다 — 처음 보는 말이고, 높은 게
+         좋은 건지도 안 적혀 있습니다.
+         지금 값이 **어느 쪽인지**를 이름 밑에 한 마디로 답니다
+         (36 이면 「유명한 곳」, 85 면 「멀리」). 숫자를 몰라도 읽힙니다.
+       ⚠ 그 말은 card.js 의 AXIS_WORD 하나입니다 — 코드 네 글자(FMDP)가
+         쓰는 것과 **같은 표**라, 글자와 막대가 늘 같은 말을 합니다. */
+    const 극 = i => AXIS_WORD[
+      [값[0] >= 50 ? 'H' : 'F', 값[1] >= 50 ? 'L' : 'M',
+       값[2] >= 50 ? 'D' : 'N', 값[3] >= 50 ? 'G' : 'P'][i]];
+    판.innerHTML = AXIS_NAME.map((n, i) => `
+      <div class="axrow"><span class="axn"><b>${esc(n)}</b>
+        <span>${esc(극(i))}</span></span>
+        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%"></i></span>
+        <span class="axv">${값[i]}</span></div>`).join('');
+    성향.appendChild(판);
   } else {
     성향.appendChild(줄('내 성향',
       `${문턱 - 매긴것.length}곳만 더 매기면 유형이 나와요`, '매기러 가기',
