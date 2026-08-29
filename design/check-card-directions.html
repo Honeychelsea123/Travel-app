@@ -1,0 +1,200 @@
+<title>체크 카드 세 방향</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --page:#EFEDE8; --ink:#22211E; --dim:#6E6A62; --line:#DAD6CE; --tint:#F25E26;
+  }
+  :root:not([data-theme="light"]){ }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --page:#191817; --ink:#EDEAE4; --dim:#9B958B; --line:#33312D; }
+  }
+  :root[data-theme="dark"]{ --page:#191817; --ink:#EDEAE4; --dim:#9B958B; --line:#33312D; }
+
+  body{ margin:0; background:var(--page); color:var(--ink);
+        font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",sans-serif; }
+  .wrap{ max-width:1280px; margin:0 auto; padding:44px 24px 80px; }
+  h1{ font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:34px;
+      margin:0 0 10px; letter-spacing:-0.01em; text-wrap:balance; }
+  .lead{ font-size:15px; line-height:1.75; color:var(--dim); margin:0 0 6px; max-width:62ch; }
+  .lead b{ color:var(--ink); font-weight:600; }
+  .rule{ height:1px; background:var(--line); margin:30px 0 34px; }
+
+  .row{ display:flex; gap:28px; overflow-x:auto; padding-bottom:14px;
+        scrollbar-width:thin; }
+  .col{ flex:0 0 auto; width:396px; display:flex; flex-direction:column; gap:16px; }
+  .tag{ display:flex; align-items:baseline; gap:10px; }
+  .tag b{ font-size:19px; font-weight:700; letter-spacing:-0.01em; }
+  .tag span{ font-size:13px; color:var(--dim); }
+
+  /* 1080×1350 을 실제 크기로 그리고 통째로 줄입니다 — 값이 안 흔들립니다 */
+  .frame{ width:396px; height:495px; overflow:hidden; border-radius:18px;
+          box-shadow:0 2px 4px rgba(0,0,0,.07), 0 14px 40px rgba(0,0,0,.13); }
+  .frame > div{ transform:scale(0.36667); transform-origin:0 0; }
+
+  .why{ font-size:14px; line-height:1.7; color:var(--dim); }
+  .why p{ margin:0 0 7px; }
+  .why .ok::before{ content:"좋은 점 "; color:var(--ink); font-weight:600; }
+  .why .no::before{ content:"약한 점 "; color:var(--ink); font-weight:600; }
+
+  .tail{ margin-top:44px; font-size:14px; line-height:1.75; color:var(--dim); max-width:62ch; }
+  .tail b{ color:var(--ink); font-weight:600; }
+</style>
+
+<div class="wrap">
+  <h1>체크 카드 세 방향</h1>
+  <p class="lead">앱 카드의 색과 글꼴을 그대로 씁니다 — 종이 <b>#FDFBF3</b>, 주황 <b>#F25E26</b>,
+    Pretendard + 나눔명조. 1080&times;1350, 여백 19px, 모서리 50px.</p>
+  <p class="lead"><b>랜드마크 선 그림은 셋 다 뺐습니다.</b> 24개를 한 장에 넣으면 하나가 60px 남짓인데,
+    그 크기에서 형태가 살아남는 그림을 24개 그리는 건 제가 이미 두 번 실패한 일입니다.
+    이름과 색만으로 세웁니다.</p>
+  <p class="lead">샘플은 <b>유럽 10/24</b>입니다.</p>
+
+  <div class="rule"></div>
+  <div class="row" id="row"></div>
+
+  <p class="tail"><b>고르실 때 기준 하나.</b> 이 카드가 처음 보이는 곳은 인스타 피드의 손톱만 한
+    썸네일입니다. 거기서 무엇이 읽히는지가 유입을 가릅니다 — C는 숫자가, B는 도장 무늬가,
+    A는 「빽빽한 목록」이 읽힙니다.</p>
+</div>
+
+<script>
+const 도시 = ['파리','로마','런던','바르셀로나','리스본','마드리드','뮌헨','밀라노',
+  '베네치아','베를린','부다페스트','브뤼셀','빈','산토리니','아테네','암스테르담',
+  '에든버러','이스탄불','취리히','코펜하겐','프라하','헬싱키','그단스크','그라나다'];
+const 간곳 = new Set(['파리','로마','런던','마드리드','밀라노','베네치아','베를린','빈','암스테르담','프라하']);
+const N = 간곳.size, T = 도시.length;
+const 체크 = (c,w) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none"
+  stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>`;
+const 껍데기 = inner => `<div style="width:1080px;height:1350px;background:#FFFFFF;box-sizing:border-box;
+  padding:19px;font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif">${inner}</div>`;
+
+/* ── A · 타이포 ── 이름이 곧 그림 ─────────────────────────────────── */
+function A(){
+  const 줄 = 도시.map((name,i)=>{ const on = 간곳.has(name); return `
+    <div style="display:flex;align-items:center;gap:16px;padding:13px 0;border-bottom:1px solid #F0EADD">
+      <span style="width:30px;font-size:21px;font-weight:500;color:${on?'#F25E26':'#DCD5C8'};
+        font-variant-numeric:tabular-nums">${String(i+1).padStart(2,'0')}</span>
+      <span style="flex-grow:1;font-size:${on?34:31}px;font-weight:${on?700:400};
+        color:${on?'#1A1A1A':'#B0A89A'};letter-spacing:-0.01em">${name}</span>
+      ${on?`<span style="width:26px;height:26px;border-radius:999px;background:#F25E26;display:flex;
+        align-items:center;justify-content:center">${체크('#FDFBF3',15)}</span>`:''}
+    </div>`;}).join('');
+  return 껍데기(`<div style="width:100%;height:100%;box-sizing:border-box;background:#FDFBF3;
+    border:2px solid #F0EADD;border-radius:50px;padding:74px 82px 60px;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:32px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:148px;line-height:0.9;
+          letter-spacing:-0.02em;color:#1A1A1A">유럽</div>
+        <div style="font-size:27px;font-weight:500;letter-spacing:0.14em;color:#8A8578">GONE / NOT YET</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-top:12px">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-size:112px;font-weight:900;line-height:0.86;color:#F25E26;
+            font-variant-numeric:tabular-nums">${N}</span>
+          <span style="font-size:46px;font-weight:700;color:#B0A89A">/${T}</span>
+        </div>
+        <div style="font-size:25px;color:#8A8578">다녀온 곳</div>
+      </div>
+    </div>
+    <div style="height:2px;background:#DCD5C8;margin:40px 0 34px"></div>
+    <div style="flex-grow:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:0 56px;align-content:start">${줄}</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-top:30px">
+      <div style="font-family:'Nanum Myeongjo',serif;font-size:30px;color:#8A8578">기록이 길이 되다</div>
+      <div style="font-size:25px;font-weight:500;color:#B0A89A">honeychelsea123.github.io/Travel-app</div>
+    </div></div>`);
+}
+
+/* ── B · 도장 ── 여권 도장을 모읍니다 ─────────────────────────────── */
+const 기울기 = [-4,3,-2,5,-3,2,-5,4,1,-3,3,-2,4,-4,2,-1,5,-3,3,-5,2,-2,4,-1];
+function B(){
+  const 칸 = 도시.map((name,i)=>{ const on = 간곳.has(name); return `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:11px">
+      <div style="width:172px;height:172px;border-radius:999px;display:flex;align-items:center;
+        justify-content:center;box-sizing:border-box;transform:rotate(${on?기울기[i]:0}deg);
+        background:${on?'#FDEBE2':'transparent'};border:${on?'3px solid #F25E26':'2px dashed #E4DDD0'}">
+        ${on?`<div style="width:138px;height:138px;border-radius:999px;border:2px solid #F7CDB8;
+          display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+          ${체크('#F25E26',42)}
+          <div style="font-size:19px;font-weight:700;letter-spacing:0.16em;color:#F25E26;
+            padding-left:0.16em">VISITED</div></div>`:''}
+      </div>
+      <div style="font-size:${on?30:28}px;font-weight:${on?700:400};color:${on?'#1A1A1A':'#B0A89A'};
+        text-align:center;letter-spacing:-0.01em">${name}</div>
+    </div>`;}).join('');
+  return 껍데기(`<div style="width:100%;height:100%;box-sizing:border-box;background:#FDFBF3;
+    border:2px solid #F0EADD;border-radius:50px;padding:62px 58px 52px;display:flex;flex-direction:column">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+      <div style="font-size:24px;font-weight:500;letter-spacing:0.34em;color:#B0A89A;
+        padding-left:0.34em">KEYRO PASSPORT</div>
+      <div style="font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:96px;line-height:1;
+        letter-spacing:0.14em;color:#1A1A1A;padding-left:0.14em">유럽</div>
+      <div style="display:flex;align-items:center;gap:20px;width:100%;padding:6px 40px 0;box-sizing:border-box">
+        <div style="flex-grow:1;height:1px;background:#DCD5C8"></div>
+        <div style="font-size:30px;font-weight:700;color:#F25E26;font-variant-numeric:tabular-nums">${N}<span
+          style="color:#B0A89A;font-weight:500"> / ${T} 도장</span></div>
+        <div style="flex-grow:1;height:1px;background:#DCD5C8"></div>
+      </div>
+    </div>
+    <div style="flex-grow:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:22px 12px;align-content:center;padding:8px 0">${칸}</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-top:18px">
+      <div style="font-family:'Nanum Myeongjo',serif;font-size:28px;color:#8A8578">기록이 길이 되다</div>
+      <div style="font-size:24px;font-weight:500;color:#B0A89A">honeychelsea123.github.io/Travel-app</div>
+    </div></div>`);
+}
+
+/* ── C · 숫자 ── 썸네일에서 숫자 하나만 읽혀도 성립 ───────────────── */
+function C(){
+  const 칩 = 도시.map(name=>{ const on = 간곳.has(name); return `
+    <div style="height:82px;border-radius:22px;box-sizing:border-box;display:flex;align-items:center;
+      justify-content:center;gap:10px;background:${on?'#F25E26':'#FDFBF3'};
+      border:2px solid ${on?'#F25E26':'#EDE6D9'}">
+      ${on?체크('#FDFBF3',24):''}
+      <span style="font-size:32px;font-weight:${on?700:400};color:${on?'#FDFBF3':'#B0A89A'};
+        letter-spacing:-0.02em">${name}</span>
+    </div>`;}).join('');
+  return 껍데기(`<div style="width:100%;height:100%;box-sizing:border-box;background:#FDFBF3;
+    border:2px solid #F0EADD;border-radius:50px;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#FDEBE2;padding:64px 76px 54px;display:flex;align-items:flex-end;
+      justify-content:space-between;gap:30px">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:27px;font-weight:500;letter-spacing:0.2em;color:#C88463;
+          padding-left:0.2em">유명한 곳 24</div>
+        <div style="font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:104px;line-height:0.92;
+          letter-spacing:0.06em;color:#1A1A1A">유럽</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:4px">
+        <span style="font-size:210px;font-weight:900;line-height:0.78;letter-spacing:-0.05em;
+          color:#F25E26;font-variant-numeric:tabular-nums">${N}</span>
+        <span style="font-size:66px;font-weight:700;color:#C88463">/${T}</span>
+      </div>
+    </div>
+    <div style="height:16px;background:#F0EAE0;display:flex">
+      <div style="width:${Math.round(N/T*100)}%;background:#F25E26"></div></div>
+    <div style="flex-grow:1;padding:46px 60px 0;display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-content:start">${칩}</div>
+    <div style="padding:34px 60px 46px;display:flex;align-items:flex-end;justify-content:space-between">
+      <div style="font-family:'Nanum Myeongjo',serif;font-size:30px;color:#8A8578">나는 어떤 여행자일까</div>
+      <div style="font-size:25px;font-weight:500;color:#B0A89A">honeychelsea123.github.io/Travel-app</div>
+    </div></div>`);
+}
+
+const 방향 = [
+  { 이름:'A · 타이포', 한줄:'이름이 곧 그림', 그리기:A,
+    ok:'24개 이름이 다 읽힙니다. 그림이 없어 포스터처럼 서고, 도시 목록 자체가 대화거리가 됩니다.',
+    no:'썸네일에서는 글자가 뭉쳐 「무슨 목록」으로만 보입니다. 멀리서 숫자가 안 읽힙니다.' },
+  { 이름:'B · 도장', 한줄:'여권 도장을 모읍니다', 그리기:B,
+    ok:'모으고 싶어집니다. 빈 자리가 눈에 밟혀 다음 여행을 부르고, 앱의 「발자국」과 결이 맞습니다.',
+    no:'도장이 커서 4열이라도 이름이 작습니다. 많이 갔을수록 어수선해집니다.' },
+  { 이름:'C · 숫자', 한줄:'10/24 가 주인공', 그리기:C,
+    ok:'썸네일에서 숫자 하나만 읽혀도 성립합니다 — 인스타에서 제일 중요한 조건입니다.',
+    no:'셋 중 제일 「앱 화면」 같습니다. 감성이 덜하고, 채운 칩이 많으면 주황이 무겁습니다.' },
+];
+document.getElementById('row').innerHTML = 방향.map(d=>`
+  <div class="col">
+    <div class="tag"><b>${d.이름}</b><span>${d.한줄}</span></div>
+    <div class="frame">${d.그리기()}</div>
+    <div class="why"><p class="ok">${d.ok}</p><p class="no">${d.no}</p></div>
+  </div>`).join('');
+</script>

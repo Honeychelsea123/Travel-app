@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #F25E26; } a:hover { color: #C94A1B; }
+  </style>
+</helmet>
+
+<div style="width: 1080px; height: 1350px; background: #FFFFFF; box-sizing: border-box; padding: 19px; font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;">
+  <div style="width: 100%; height: 100%; box-sizing: border-box; background: #FDFBF3; border: 2px solid #F0EADD; border-radius: 50px; display: flex; flex-direction: column; overflow: hidden;">
+
+    <!-- 숫자가 주인공. 썸네일에서 이것 하나만 읽혀도 성립합니다. -->
+    <div style="background: #FDEBE2; padding: 64px 76px 54px; display: flex; align-items: flex-end; justify-content: space-between; gap: 30px;">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="font-size: 27px; font-weight: 500; letter-spacing: 0.2em; color: #C88463; padding-left: 0.2em;">유명한 곳 24</div>
+        <div style="font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 104px; line-height: 0.92; letter-spacing: 0.06em; color: #1A1A1A;">{{cont}}</div>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 4px;">
+        <span style="font-size: 210px; font-weight: 900; line-height: 0.78; letter-spacing: -0.05em; color: #F25E26; font-variant-numeric: tabular-nums;">{{n}}</span>
+        <span style="font-size: 66px; font-weight: 700; color: #C88463;">/{{total}}</span>
+      </div>
+    </div>
+
+    <!-- 진행 막대 — 채운 만큼이 한눈에. -->
+    <div style="height: 16px; background: #F0EAE0; display: flex;">
+      <div style="width: {{pct}}; background: #F25E26;"></div>
+    </div>
+
+    <!-- 칩 격자. 이름만, 촘촘하게. -->
+    <div style="flex-grow: 1; padding: 46px 60px 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 16px; align-content: start;">
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="24">
+        <div style="height: 82px; border-radius: 22px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 10px; background: {{it.bg}}; border: {{it.border}};">
+          <sc-if value="{{it.on}}" hint-placeholder-val="{{true}}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FDFBF3" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
+          </sc-if>
+          <span style="font-size: 32px; font-weight: {{it.weight}}; color: {{it.color}}; letter-spacing: -0.02em;">{{it.name}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="padding: 34px 60px 46px; display: flex; align-items: flex-end; justify-content: space-between;">
+      <div style="font-family: 'Nanum Myeongjo', serif; font-size: 30px; color: #8A8578;">나는 어떤 여행자일까</div>
+      <div style="font-size: 25px; font-weight: 500; color: #B0A89A;">honeychelsea123.github.io/Travel-app</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"cont":{"editor":"text","default":"유럽"}}'>
+const 도시 = ['파리','로마','런던','바르셀로나','리스본','마드리드','뮌헨','밀라노',
+              '베네치아','베를린','부다페스트','브뤼셀','빈','산토리니','아테네','암스테르담',
+              '에든버러','이스탄불','취리히','코펜하겐','프라하','헬싱키','그단스크','그라나다'];
+const 간곳 = new Set(['파리','로마','런던','마드리드','밀라노','베네치아','베를린','빈','암스테르담','프라하']);
+class Component extends DCLogic {
+  renderVals(){
+    return {
+      cont: this.props.cont ?? '유럽',
+      n: 간곳.size, total: 도시.length,
+      pct: Math.round(간곳.size / 도시.length * 100) + '%',
+      items: 도시.map(name => {
+        const on = 간곳.has(name);
+        return { name, on,
+          bg:     on ? '#F25E26' : '#FDFBF3',
+          border: on ? '2px solid #F25E26' : '2px solid #EDE6D9',
+          color:  on ? '#FDFBF3' : '#B0A89A',
+          weight: on ? 700 : 400 };
+      }),
+    };
+  }
+}
+</script>
+</body>
+</html>

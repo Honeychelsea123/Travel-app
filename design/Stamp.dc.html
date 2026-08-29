@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #F25E26; } a:hover { color: #C94A1B; }
+  </style>
+</helmet>
+
+<div style="width: 1080px; height: 1350px; background: #FFFFFF; box-sizing: border-box; padding: 19px; font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;">
+  <div style="width: 100%; height: 100%; box-sizing: border-box; background: #FDFBF3; border: 2px solid #F0EADD; border-radius: 50px; padding: 62px 58px 52px; display: flex; flex-direction: column;">
+
+    <!-- 여권 속표지처럼 — 가운데 정렬, 얇은 겹선 -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+      <div style="font-size: 24px; font-weight: 500; letter-spacing: 0.34em; color: #B0A89A; padding-left: 0.34em;">KEYRO PASSPORT</div>
+      <div style="font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 96px; line-height: 1; letter-spacing: 0.14em; color: #1A1A1A; padding-left: 0.14em;">{{cont}}</div>
+      <div style="display: flex; align-items: center; gap: 20px; width: 100%; padding: 6px 40px 0; box-sizing: border-box;">
+        <div style="flex-grow: 1; height: 1px; background: #DCD5C8;"></div>
+        <div style="font-size: 30px; font-weight: 700; color: #F25E26; font-variant-numeric: tabular-nums;">{{n}}<span style="color: #B0A89A; font-weight: 500;"> / {{total}} 도장</span></div>
+        <div style="flex-grow: 1; height: 1px; background: #DCD5C8;"></div>
+      </div>
+    </div>
+
+    <!-- 도장 격자. 간 곳은 기울어진 도장, 안 간 곳은 점선 빈 자리. -->
+    <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px 12px; align-content: center; padding: 8px 0;">
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="24">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 11px;">
+          <div style="width: 172px; height: 172px; border-radius: 999px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; transform: rotate({{it.rot}}); background: {{it.bg}}; border: {{it.ring}};">
+            <sc-if value="{{it.on}}" hint-placeholder-val="{{true}}">
+              <div style="width: 138px; height: 138px; border-radius: 999px; border: 2px solid #F7CDB8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#F25E26" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
+                <div style="font-size: 19px; font-weight: 700; letter-spacing: 0.16em; color: #F25E26; padding-left: 0.16em;">VISITED</div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="font-size: {{it.size}}; font-weight: {{it.weight}}; color: {{it.color}}; text-align: center; letter-spacing: -0.01em;">{{it.name}}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; padding-top: 18px;">
+      <div style="font-family: 'Nanum Myeongjo', serif; font-size: 28px; color: #8A8578;">기록이 길이 되다</div>
+      <div style="font-size: 24px; font-weight: 500; color: #B0A89A;">honeychelsea123.github.io/Travel-app</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"cont":{"editor":"text","default":"유럽"}}'>
+const 도시 = ['파리','로마','런던','바르셀로나','리스본','마드리드','뮌헨','밀라노',
+              '베네치아','베를린','부다페스트','브뤼셀','빈','산토리니','아테네','암스테르담',
+              '에든버러','이스탄불','취리히','코펜하겐','프라하','헬싱키','그단스크','그라나다'];
+const 간곳 = new Set(['파리','로마','런던','마드리드','밀라노','베네치아','베를린','빈','암스테르담','프라하']);
+/* 도장은 손으로 찍은 것처럼 조금씩 비뚤어야 합니다 — 값은 고정입니다
+   (같은 카드가 늘 같아야 공유했을 때 이상하지 않습니다). */
+const 기울기 = [-4, 3, -2, 5, -3, 2, -5, 4, 1, -3, 3, -2, 4, -4, 2, -1, 5, -3, 3, -5, 2, -2, 4, -1];
+class Component extends DCLogic {
+  renderVals(){
+    return {
+      cont: this.props.cont ?? '유럽',
+      n: 간곳.size, total: 도시.length,
+      items: 도시.map((name, i) => {
+        const on = 간곳.has(name);
+        return { name, on,
+          rot:    on ? 기울기[i] + 'deg' : '0deg',
+          bg:     on ? '#FDEBE2' : 'transparent',
+          ring:   on ? '3px solid #F25E26' : '2px dashed #E4DDD0',
+          color:  on ? '#1A1A1A' : '#B0A89A',
+          weight: on ? 700 : 400,
+          size:   on ? '30px' : '28px' };
+      }),
+    };
+  }
+}
+</script>
+</body>
+</html>

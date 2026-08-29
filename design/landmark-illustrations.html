@@ -1,0 +1,159 @@
+<title>랜드마크 일러스트 시안</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{ --page:#EFEDE8; --ink:#22211E; --dim:#6E6A62; --line:#DAD6CE; }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --page:#191817; --ink:#EDEAE4; --dim:#9B958B; --line:#33312D; }
+  }
+  :root[data-theme="dark"]{ --page:#191817; --ink:#EDEAE4; --dim:#9B958B; --line:#33312D; }
+
+  body{ margin:0; background:var(--page); color:var(--ink);
+        font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",sans-serif; }
+  .wrap{ max-width:1000px; margin:0 auto; padding:44px 24px 90px; }
+  h1{ font-family:"Nanum Myeongjo",serif; font-weight:800; font-size:32px; margin:0 0 10px;
+      letter-spacing:-0.01em; }
+  h2{ font-size:17px; font-weight:700; margin:46px 0 6px; letter-spacing:-0.01em; }
+  .lead{ font-size:15px; line-height:1.75; color:var(--dim); margin:0 0 6px; max-width:62ch; }
+  .lead b{ color:var(--ink); font-weight:600; }
+  .sub{ font-size:14px; line-height:1.7; color:var(--dim); margin:0 0 18px; max-width:62ch; }
+  .rule{ height:1px; background:var(--line); margin:28px 0 0; }
+
+  /* 크게 보기 */
+  .big{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:18px 14px; }
+  .big figure{ margin:0; display:flex; flex-direction:column; align-items:center; gap:9px; }
+  .big figcaption{ font-size:14px; color:var(--dim); }
+
+  /* 실제 카드 안 */
+  .cardwrap{ overflow-x:auto; padding-bottom:10px; }
+  .cardscale{ width:396px; height:495px; overflow:hidden; border-radius:18px;
+    box-shadow:0 2px 4px rgba(0,0,0,.07), 0 14px 40px rgba(0,0,0,.13); }
+  .cardscale > div{ transform:scale(0.36667); transform-origin:0 0; }
+
+  .pair{ display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap; }
+  .note{ flex:1 1 320px; font-size:14px; line-height:1.75; color:var(--dim); }
+  .note b{ color:var(--ink); font-weight:600; }
+  .note p{ margin:0 0 9px; }
+</style>
+
+<div class="wrap">
+  <h1>랜드마크 일러스트 시안</h1>
+  <p class="lead">전에 「구리다」고 하신 것은 <b>24칸 격자에 1.6px 선</b>이었습니다. 세부를 넣을 자리가 없어
+    전부 「바닥선 + 네모 + 지붕」이 됐습니다.</p>
+  <p class="lead">이번엔 <b>면으로 채운 2색 일러스트</b>입니다. 64칸 격자, 둥근 바탕(<b>#FDEBE2</b>) 위에
+    짙은 실루엣(<b>#241F1A</b>), 그리고 주황(<b>#F25E26</b>) 한 점씩. 앱 카드 팔레트 그대로입니다.</p>
+  <p class="lead"><b>열두 개만 먼저 그렸습니다.</b> 실제 카드에서 살아남는지가 먼저고, 통과하면 48개로 늘립니다.</p>
+
+  <div class="rule"></div>
+
+  <h2>크게</h2>
+  <p class="sub">120px. 여기서 예쁜 건 당연합니다 — 판단은 아래에서 하십시오.</p>
+  <div class="big" id="big"></div>
+
+  <h2>실제 카드 안에서</h2>
+  <p class="sub">이게 진짜 시험입니다. 1080&times;1350 카드에 3열로 놓으면 그림 하나가 <b>62px</b>입니다.</p>
+  <div class="pair">
+    <div class="cardwrap"><div class="cardscale" id="card"></div></div>
+    <div class="note">
+      <p><b>보실 것 하나.</b> 이름을 가리고도 어느 도시인지 구별되는가.
+        스물넷이 나란히 놓였을 때 서로 안 닮아 보이는가.</p>
+      <p><b>간 곳 / 안 간 곳</b>이 갈리는 방식도 봐주십시오 — 간 곳은 바탕이 차고 색이 살고,
+        안 간 곳은 바탕 없이 연한 회색 실루엣만 남습니다. 색이 있고 없고가
+        체크 표시보다 멀리서 훨씬 잘 읽힙니다.</p>
+      <p><b>아직 안 푼 것</b> — 다낭·나트랑·고아·보라카이·세부·파타야·갈레는
+        세계적으로 아는 랜드마크가 없습니다. 뭘 그려도 야자수입니다.
+        그 일곱은 도시를 바꾸거나, 랜드마크 대신 다른 걸 그려야 합니다.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── 일러스트 ────────────────────────────────────────────────────────
+   각 항목: [짙은 실루엣 path, 주황 강조 path]
+   64칸 격자. 면으로만 그립니다 — 선은 작아지면 사라집니다. */
+const L = {
+  '파리': [
+    'M30.2 8h3.6l1 12h-5.6zM28.8 21c-.4 7-1.6 12-3 17h12.4c-1.4-5-2.6-10-3-17zM21.5 40h21v2.6h-21zM25.4 43.6c-2.1 6-5.6 12.6-10.4 18.4h7.2c3-6.3 4.8-12.6 6-18.4zM38.6 43.6c1.2 5.8 3 12.1 6 18.4h7.2c-4.8-5.8-8.3-12.4-10.4-18.4z',
+    'M18 52c6-4.6 22-4.6 28 0v3.4c-6-4-22-4-28 0z' ],
+  '로마': [
+    'M8 56V22c0-7 11-11 24-11s24 4 24 11v34zM12 34v-8a4 4 0 018 0v8zM23 34v-8a4 4 0 018 0v8zM34 34v-8a4 4 0 018 0v8zM45 34v-8a4 4 0 018 0v8zM12 47v-8a4 4 0 018 0v8zM23 47v-8a4 4 0 018 0v8zM34 47v-8a4 4 0 018 0v8zM45 47v-8a4 4 0 018 0v8z',
+    'M4 56h56v6H4z' ],
+  '런던': [
+    'M32 3l6.6 12H25.4zM26.4 16h11.2v6H26.4zM26.6 37h10.8v20H26.6zM23.4 58h17.2v4H23.4z',
+    'M24.4 23h15.2v13H24.4zM32 25.6a3.9 3.9 0 100 7.8 3.9 3.9 0 100-7.8z' ],
+  '바르셀로나': [
+    'M11 57V31Q16 10 21 31v26zM22.6 57V27Q27.6 4 32.6 27v30zM34 57V29Q39 7 44 29v28zM45.6 57V34Q50 15 54.4 34v23z',
+    'M8 55h49v7H8z' ],
+  '이스탄불': [
+    'M19 58V42c0-12 5.8-19 13-19s13 7 13 19v16zM14 58h4V30l2-4 2 4v28h-4zM50 58h-4V30l-2-4-2 4v28h4z',
+    'M2 58h60v4H2zM31 14h2v9h-2zM29.6 16.5h4.8v1.8h-4.8z' ],
+  '프라하': [
+    'M18 22L32 8l14 14zM20 22h24v38H20zM16 60h32v3H16z',
+    'M32 27a9.5 9.5 0 100 19 9.5 9.5 0 100-19zM32 33.5a3 3 0 100 6 3 3 0 100-6z' ],
+  '도쿄': [
+    'M28.6 5h6.8L38 26L48 60h-8L32 32L24 60h-8L26 26zM22 24h20v3.4H22zM27.4 12.5h9.2v2.8h-9.2z',
+    'M31.2 0h1.6v5h-1.6zM12 60h40v3H12z' ],
+  '방콕': [
+    'M32 4l2.4 8L37 24l2.4 14L42 52l2 8H20l2-8 2.6-14L27 24l2.6-12zM10 58V40l2.5-8 2.5 8v18zM49 58V40l2.5-8 2.5 8v18z',
+    'M25.6 26h12.8v2.6H25.6zM23.6 38h16.8v2.6H23.6zM4 60h56v3H4z' ],
+  '싱가포르': [
+    'M9 22h12v36h-4V30h-4v28H9zM26 22h12v36h-4V30h-4v28h-4zM43 22h12v36h-4V30h-4v28h-4z',
+    'M6 15h44c6 0 10-3 11-4.6l.6 6.4C60 19 56.6 21 50 21H6z' ],
+  '베이징': [
+    'M32 10l12 10H20zM22 20h20v3H22zM32 23l16 11H16zM18 34h28v3H18zM32 37l22 13H10zM12 50h40v6H12zM8 56h48v5H8z',
+    'M31 4h2v6h-2z' ],
+  '두바이': [
+    'M31 21l1-17 1 17 1.4 12L36 47l1.6 13H26.4L28 47l1.6-14zM18 60V42l4-4v22zM46 60V42l-4-4v22z',
+    'M31.4 0h1.2v6h-1.2zM4 60h56v3H4z' ],
+  '발리': [
+    'M8 58V34l3.4-4v-6l3.4-4v-6L18 10l4-4v52zM56 58V34l-3.4-4v-6L49.2 20v-6L45.6 10l-4-4v52z',
+    'M2 58h60v5H2zM26 44h12v3H26zM26 50h12v3H26z' ],
+};
+
+const 그림 = (name, px, on=true) => {
+  const [d, a] = L[name];
+  const 짙 = on ? '#241F1A' : '#C7C0B4';
+  const 강 = on ? '#F25E26' : '#D8D2C6';
+  return `<svg viewBox="0 0 64 64" width="${px}" height="${px}" role="img" aria-label="${name}">
+    ${on ? `<circle cx="32" cy="32" r="32" fill="#FDEBE2"/>` : ''}
+    <path d="${d}" fill="${짙}"/><path d="${a}" fill="${강}"/></svg>`;
+};
+
+document.getElementById('big').innerHTML = Object.keys(L).map(n =>
+  `<figure>${그림(n,120)}<figcaption>${n}</figcaption></figure>`).join('');
+
+/* ── 실제 카드 ── 유럽 24칸 자리에 있는 12개만 채우고 나머지는 빈 칸 ── */
+const 도시 = ['파리','로마','런던','바르셀로나','이스탄불','프라하',
+  '도쿄','방콕','싱가포르','베이징','두바이','발리'];
+const 간곳 = new Set(['파리','로마','런던','이스탄불','도쿄','싱가포르','두바이']);
+const 칸 = 도시.map(n => {
+  const on = 간곳.has(n);
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="width:112px;height:112px;border-radius:999px;display:flex;align-items:center;
+      justify-content:center;box-sizing:border-box;
+      ${on?'background:#FDEBE2;border:2px solid #F7CDB8':'border:2px dashed #E7E0D3'}">
+      ${그림(n,62,on).replace('<circle cx="32" cy="32" r="32" fill="#FDEBE2"/>','')}
+    </div>
+    <div style="font-size:29px;font-weight:${on?700:400};color:${on?'#1A1A1A':'#B0A89A'};
+      letter-spacing:-0.01em">${n}</div></div>`;
+}).join('');
+
+document.getElementById('card').innerHTML = `
+<div style="width:1080px;height:1350px;background:#FFFFFF;box-sizing:border-box;padding:19px;
+  font-family:'Pretendard Variable',Pretendard,'Noto Sans KR',sans-serif">
+  <div style="width:100%;height:100%;box-sizing:border-box;background:#FDFBF3;border:2px solid #F0EADD;
+    border-radius:50px;padding:66px 70px 54px;display:flex;flex-direction:column">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+      <div style="font-family:'Nanum Myeongjo',serif;font-weight:800;font-size:92px;line-height:1;
+        letter-spacing:0.1em;color:#1A1A1A;padding-left:0.1em">유럽</div>
+      <div style="font-size:30px;font-weight:700;color:#F25E26;font-variant-numeric:tabular-nums">7<span
+        style="color:#B0A89A;font-weight:500"> / 24 다녀온 곳</span></div>
+    </div>
+    <div style="flex-grow:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:34px 16px;align-content:center;padding:16px 0">${칸}</div>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div style="font-family:'Nanum Myeongjo',serif;font-size:29px;color:#8A8578">기록이 길이 되다</div>
+      <div style="font-size:24px;font-weight:500;color:#B0A89A">honeychelsea123.github.io/Travel-app</div>
+    </div>
+  </div>
+</div>`;
+</script>

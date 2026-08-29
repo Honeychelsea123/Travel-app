@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #F25E26; } a:hover { color: #C94A1B; }
+  </style>
+</helmet>
+
+<div style="width: 1080px; height: 1350px; background: #FFFFFF; box-sizing: border-box; padding: 19px; font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', sans-serif;">
+  <div style="width: 100%; height: 100%; box-sizing: border-box; background: #FDFBF3; border: 2px solid #F0EADD; border-radius: 50px; padding: 74px 82px 60px; display: flex; flex-direction: column;">
+
+    <!-- 머리: 대륙 이름이 주인공. 세로로 크게 눕혀 왼쪽에 세웁니다. -->
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 32px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-family: 'Nanum Myeongjo', serif; font-weight: 800; font-size: 148px; line-height: 0.9; letter-spacing: -0.02em; color: #1A1A1A;">{{cont}}</div>
+        <div style="font-size: 27px; font-weight: 500; letter-spacing: 0.14em; color: #8A8578;">GONE / NOT YET</div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-top: 12px;">
+        <div style="display: flex; align-items: baseline; gap: 6px;">
+          <span style="font-size: 112px; font-weight: 900; line-height: 0.86; color: #F25E26; font-variant-numeric: tabular-nums;">{{n}}</span>
+          <span style="font-size: 46px; font-weight: 700; color: #B0A89A;">/{{total}}</span>
+        </div>
+        <div style="font-size: 25px; color: #8A8578;">다녀온 곳</div>
+      </div>
+    </div>
+
+    <div style="height: 2px; background: #DCD5C8; margin: 40px 0 34px;"></div>
+
+    <!-- 이름이 곧 그림입니다. 그림을 안 씁니다. -->
+    <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 56px; align-content: start;">
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="24">
+        <div style="display: flex; align-items: center; gap: 16px; padding: 13px 0; border-bottom: 1px solid #F0EADD;">
+          <span style="width: 30px; font-size: 21px; font-weight: 500; color: {{it.num}}; font-variant-numeric: tabular-nums;">{{it.idx}}</span>
+          <span style="flex-grow: 1; font-size: {{it.size}}; font-weight: {{it.weight}}; color: {{it.color}}; letter-spacing: -0.01em;">{{it.name}}</span>
+          <sc-if value="{{it.on}}" hint-placeholder-val="{{true}}">
+            <span style="width: 26px; height: 26px; border-radius: 999px; background: #F25E26; display: flex; align-items: center; justify-content: center;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FDFBF3" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
+            </span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; padding-top: 30px;">
+      <div style="font-family: 'Nanum Myeongjo', serif; font-size: 30px; color: #8A8578;">기록이 길이 되다</div>
+      <div style="font-size: 25px; font-weight: 500; color: #B0A89A; letter-spacing: 0.01em;">honeychelsea123.github.io/Travel-app</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"cont":{"editor":"text","default":"유럽"},"n":{"editor":"int","default":10,"min":0,"max":24}}'>
+const 도시 = ['파리','로마','런던','바르셀로나','리스본','마드리드','뮌헨','밀라노',
+              '베네치아','베를린','부다페스트','브뤼셀','빈','산토리니','아테네','암스테르담',
+              '에든버러','이스탄불','취리히','코펜하겐','프라하','헬싱키','그단스크','그라나다'];
+const 간곳 = new Set(['파리','로마','런던','마드리드','밀라노','베네치아','베를린','빈','암스테르담','프라하']);
+class Component extends DCLogic {
+  renderVals(){
+    return {
+      cont: this.props.cont ?? '유럽',
+      n: 간곳.size, total: 도시.length,
+      items: 도시.map((name, i) => {
+        const on = 간곳.has(name);
+        return { name, on,
+          idx: String(i + 1).padStart(2, '0'),
+          num:    on ? '#F25E26' : '#DCD5C8',
+          color:  on ? '#1A1A1A' : '#B0A89A',
+          weight: on ? 700 : 400,
+          size:   on ? '34px' : '31px' };
+      }),
+    };
+  }
+}
+</script>
+</body>
+</html>
