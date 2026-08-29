@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b521';
-import { sb } from './db.js?v=b521';
-import { cities, countryName, continentOf } from './cities.js?v=b521';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b522';
+import { sb } from './db.js?v=b522';
+import { cities, countryName, continentOf } from './cities.js?v=b522';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b521';
+import { similarPicks } from './rec.js?v=b522';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b521';
-import { visited } from './rate.js?v=b521';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b522';
+import { visited } from './rate.js?v=b522';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b521';
+         shareCard, cardImage } from './card.js?v=b522';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -65,58 +65,6 @@ export async function openPersona(){
      그 숫자를 0~100 점 네 개와 코드 네 글자로 옮깁니다. 화면에 날것을
      같이 두는 이유는, 점수만 있으면 왜 그렇게 나왔는지 따질 수가 없어서입니다. */
   const ax = personaAxes(data || [], { cities });
-
-  /* ── 변화 배지 ── 분석 탭에서 옮겨왔습니다(b519) ─────────────────────
-   * 사용자 결정. 분석 탭의 성향 카드는 **지금 내가 누구인가**만 말하고,
-   * 「처음 20곳과 견주면 이렇게 옮겨갔다」는 이야기는 리포트 안입니다 —
-   * 한 줄로 보고 지나칠 것이 아니라 읽으러 들어오는 사람의 몫입니다.
-   * ⚠ **40곳부터입니다.** 20+20 이 겹치면 처음과 지금이 같은 자료가 되어
-   *   늘 「그대로」가 나옵니다 — 아무 말도 안 하는 줄입니다.
-   * ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** 바로 위 큰 글자는 **전체**
-   *   별점으로 낸 유형(FMDP)인데 이 줄은 **최근 20곳만**으로 낸 코드
-   *   (HMDP)입니다. 둘은 다를 수 있고, 실제로 한 화면에 같이 떠서 어느 게
-   *   내 유형인지 알 수 없었습니다. 무엇을 견줬는지 그대로 적습니다.
-   * ⚠ 재는 방법은 안 바꿉니다 — 전체와 견주면 전체 안에 처음 20곳이 들어
-   *   있어 변화가 묽어집니다. 틀린 것은 말이었지 셈이 아니었습니다. */
-  /* ⚠⚠ **별점 있는 줄만 셉니다(b521).** 옮겨오면서 `data` 를 그대로
-     넘겼는데, 거기에는 「가보고 싶어요」(별점 없는 줄)가 섞여 있습니다.
-     personaAxes 는 안에서 걸러내지만 **자르는 것은 그 전**이라, 앞 20줄을
-     떼면 실제로 매긴 것은 스물이 안 됩니다 — 분석 탭에서 보던 값과
-     달라집니다(재보니 축 변화가 10 → 37 로 벌어졌습니다).
-   ⚠ 이 배지 하나 때문에 리포트 전체가 안 뜨면 안 됩니다. 여기서 무슨 일이
-     나든 배지만 빠지고 나머지는 나옵니다 — 화면을 못 띄우는 것보다 낫습니다. */
-  const 변화배지 = (() => { try {
-    const 시간순 = (data || []).filter(r => r.created_at && r.stars != null)
-      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-    if (시간순.length < 40) return '';
-
-    const 처음 = personaAxes(시간순.slice(0, 20), { cities });
-    const 지금 = personaAxes(시간순.slice(-20), { cities });
-    /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다.
-       ⚠ 축 이름을 안 씁니다 — 「개척력이 올랐어요」는 개척력이 무엇인지
-         아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 그대로 적어야
-         처음 보는 사람도 읽습니다.
-       ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
-         단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
-         한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
-    const 말 = [
-      ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
-      ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
-      ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
-      ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
-    ];
-    const 큰 = ['개척', '단골', '모험', '만족']
-      .map((k, i) => ({ i, 값: 지금[k] - 처음[k] }))
-      .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
-    const 문장 = Math.abs(큰.값) >= 10 ? 말[큰.i][큰.값 > 0 ? 0 : 1] : '';
-    const 아래 = 처음.code === 지금.code
-      ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
-      : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
-        `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
-    return `<div class="pbadge">${문장
-      ? `<span class="why">${esc(문장)}</span>` : ''}<span class="pcd">${아래}</span></div>`;
-  } catch (e){ console.warn('변화 배지', e); return ''; } })();
-
 
   /* ⚠ **「첫 기록으로부터 N일째」를 뺐습니다(b455).** 머리말 꼬리표와
      아래 표, 두 자리에 같은 숫자가 있었습니다. 둘 다 뺍니다 — 성향은
@@ -155,6 +103,62 @@ const 문턱 = 5;
  * 여기서는 **그림에 넣을 것만 고릅니다.** 어떤 유형인지, 누구와 맞는지는
  * card.js 가 정합니다 — 계산이 두 군데 있으면 언젠가 갈라집니다. */
 async function drawPersona(s, ax, rates){
+  /* ⚠⚠ **여기서 만들어야 합니다(b521).** b519 에 openPersona 안에서
+     만들었는데, 화면을 그리는 것은 **다른 함수**입니다 — 그 자리에서는
+     이름이 아예 없어서 `변화배지 is not defined` 로 리포트가 통째로
+     안 떴습니다(「성향을 계산하는 중」에서 멈춤). 쓰는 곳과 만드는 곳은
+     같은 함수 안이어야 합니다.
+   ⚠ 자료는 매개변수 `rates` 입니다(openPersona 가 넘긴 city_ratings). */
+  /* ── 변화 배지 ── 분석 탭에서 옮겨왔습니다(b519) ─────────────────────
+   * 사용자 결정. 분석 탭의 성향 카드는 **지금 내가 누구인가**만 말하고,
+   * 「처음 20곳과 견주면 이렇게 옮겨갔다」는 이야기는 리포트 안입니다 —
+   * 한 줄로 보고 지나칠 것이 아니라 읽으러 들어오는 사람의 몫입니다.
+   * ⚠ **40곳부터입니다.** 20+20 이 겹치면 처음과 지금이 같은 자료가 되어
+   *   늘 「그대로」가 나옵니다 — 아무 말도 안 하는 줄입니다.
+   * ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** 바로 위 큰 글자는 **전체**
+   *   별점으로 낸 유형(FMDP)인데 이 줄은 **최근 20곳만**으로 낸 코드
+   *   (HMDP)입니다. 둘은 다를 수 있고, 실제로 한 화면에 같이 떠서 어느 게
+   *   내 유형인지 알 수 없었습니다. 무엇을 견줬는지 그대로 적습니다.
+   * ⚠ 재는 방법은 안 바꿉니다 — 전체와 견주면 전체 안에 처음 20곳이 들어
+   *   있어 변화가 묽어집니다. 틀린 것은 말이었지 셈이 아니었습니다. */
+  /* ⚠⚠ **별점 있는 줄만 셉니다(b521).** 옮겨오면서 `data` 를 그대로
+     넘겼는데, 거기에는 「가보고 싶어요」(별점 없는 줄)가 섞여 있습니다.
+     personaAxes 는 안에서 걸러내지만 **자르는 것은 그 전**이라, 앞 20줄을
+     떼면 실제로 매긴 것은 스물이 안 됩니다 — 분석 탭에서 보던 값과
+     달라집니다(재보니 축 변화가 10 → 37 로 벌어졌습니다).
+   ⚠ 이 배지 하나 때문에 리포트 전체가 안 뜨면 안 됩니다. 여기서 무슨 일이
+     나든 배지만 빠지고 나머지는 나옵니다 — 화면을 못 띄우는 것보다 낫습니다. */
+  const 변화배지 = (() => { try {
+    const 시간순 = (rates || []).filter(r => r.created_at && r.stars != null)
+      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    if (시간순.length < 40) return '';
+
+    const 처음 = personaAxes(시간순.slice(0, 20), { cities });
+    const 지금 = personaAxes(시간순.slice(-20), { cities });
+    /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다.
+       ⚠ 축 이름을 안 씁니다 — 「개척력이 올랐어요」는 개척력이 무엇인지
+         아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 그대로 적어야
+         처음 보는 사람도 읽습니다.
+       ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
+         단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
+         한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
+    const 말 = [
+      ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
+      ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
+      ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
+      ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
+    ];
+    const 큰 = ['개척', '단골', '모험', '만족']
+      .map((k, i) => ({ i, 값: 지금[k] - 처음[k] }))
+      .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
+    const 문장 = Math.abs(큰.값) >= 10 ? 말[큰.i][큰.값 > 0 ? 0 : 1] : '';
+    const 아래 = 처음.code === 지금.code
+      ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
+      : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
+        `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
+    return `<div class="pbadge">${문장
+      ? `<span class="why">${esc(문장)}</span>` : ''}<span class="pcd">${아래}</span></div>`;
+  } catch (e){ console.warn('변화 배지', e); return ''; } })();
   /* ⚠ **문턱을 3곳에서 5곳으로 올렸습니다(b381).** 축이 넷이라 3곳으로는
      한 곳만 바뀌어도 코드가 통째로 뒤집힙니다 — "어제는 골목 탐험가였는데
      오늘은 명소 검열관" 이면 아무도 안 믿습니다. 5곳이면 나라도 대개
@@ -251,7 +255,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b521"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b522"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
