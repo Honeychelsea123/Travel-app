@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b505';
-import { openCity } from './city.js?v=b505';
-import { distKm } from './calc.js?v=b505';
-import { sb } from './db.js?v=b505';
-import { cities, countryName, continentOf } from './cities.js?v=b505';
-import { PERSONA_ICON, shareCard } from './card.js?v=b505';
+         coverDeck } from './dom.js?v=b506';
+import { openCity } from './city.js?v=b506';
+import { distKm } from './calc.js?v=b506';
+import { sb } from './db.js?v=b506';
+import { cities, countryName, continentOf } from './cities.js?v=b506';
+import { PERSONA_ICON, shareCard } from './card.js?v=b506';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -473,10 +473,13 @@ export async function openMap(){
          있습니다). 그것만 `cursor:default` 로 남깁니다. */
     `<div class="stats" style="margin:0">
        <!-- ⚠ **「국가」는 보관함이 아니라 나라 목록입니다(b505).** 여기만
-            `data-shelf` 였습니다 — 눌러보면 **평가한 도시**가 나와서,
-            프로필의 똑같이 생긴 「국가」 타일(나라 목록)과 다른 곳으로
-            갔습니다. 같은 것을 누른 줄 알았는데 다른 화면이 나왔습니다.
-            「도시」는 보관함이 맞습니다 — 도시 목록이니까요. -->
+            data-shelf 였습니다 — 눌러보면 **평가한 도시**가 나와서, 프로필의
+            똑같이 생긴 「국가」 타일(나라 목록)과 다른 곳으로 갔습니다.
+            같은 것을 누른 줄 알았는데 다른 화면이 나왔습니다.
+            「도시」는 보관함이 맞습니다 — 도시 목록이니까요.
+            ⚠⚠ **이 주석은 템플릿 리터럴 안입니다 — 역따옴표를 쓰면 문자열이
+              거기서 끊겨 앱이 통째로 안 뜹니다.** b505 에 실제로 그랬습니다
+              (map.js 를 가져오는 모듈 아홉이 같이 죽었습니다). -->
        <button data-openmap="1"><b>${gone.size}</b><span>국가</span></button>
        <button data-shelf="mine"><b>${mapCities.length}</b><span>도시</span></button>
        <button style="cursor:default"><b>${conts.size}/6</b><span>대륙</span></button>
