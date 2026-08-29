@@ -14,27 +14,28 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b501';
-import { sb } from './db.js?v=b501';
-import { cities, continentOf } from './cities.js?v=b501';
+import { $, esc } from './dom.js?v=b502';
+import { sb } from './db.js?v=b502';
+import { cities, continentOf } from './cities.js?v=b502';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b501';
+import { personaBackTo } from './persona.js?v=b502';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b501';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b501';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b502';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows,
+         openCountries } from './map.js?v=b502';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
 /* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
    고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b501';
-import { similarPicks } from './rec.js?v=b501';
+import { checkUrl } from './check.js?v=b502';
+import { similarPicks } from './rec.js?v=b502';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b501';
-import { pickCity } from './citysearch.js?v=b501';
-import { shareMate } from './mate.js?v=b501';
+import { openNew } from './newtrip.js?v=b502';
+import { pickCity } from './citysearch.js?v=b502';
+import { shareMate } from './mate.js?v=b502';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -72,6 +73,17 @@ function 지도열기(){
   mapBackTo('anal');
   ctx.showApp('set', 'anal');
   $('openmap')?.click();
+}
+/* ⚠ **작은 지도와 아래 단추는 서로 다른 곳으로 갑니다(b502).**
+ *   지도를 누르면 지도(#mappane)로, 「나라별로 자세히 보기」는 나라
+ *   목록(#ctrypane)으로 갑니다. 단추 글자가 말하는 곳이 그쪽이고,
+ *   무엇보다 **프로필에서 「국가」를 눌렀을 때와 같은 화면**입니다
+ *   (app.js 의 data-openmap → openCountries). 여기만 지도로 보내고
+ *   있어서, 같은 것을 누른 줄 알았는데 다른 화면이 나왔습니다. */
+function 나라열기(){
+  mapBackTo('anal');          /* 닫을 때 돌아갈 곳 — closeCountries 도 같은 값을 봅니다 */
+  ctx.showApp('set', 'anal');
+  openCountries();
 }
 
 /* ── 추천 도시로 바로 여행 만들기(b463) ──────────────────────────────
@@ -146,7 +158,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b501"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b502"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -457,7 +469,7 @@ export async function loadAnal(){
   const 지도더 = document.createElement('button');
   지도더.className = 'matebtn';
   지도더.textContent = '나라별로 자세히 보기 ›';
-  지도더.onclick = 지도열기;
+  지도더.onclick = 나라열기;
   발.appendChild(지도더);
   box.appendChild(발);
 

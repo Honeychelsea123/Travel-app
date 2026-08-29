@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b501';
+import { $ } from './dom.js?v=b502';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -350,7 +350,12 @@ if (window.visualViewport){
        높이는 --vvh(보이는 높이)가 맡고, 이 값은 여백이 맡습니다. */
     const kb = typing()
       ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
-    document.documentElement.style.setProperty('--kb', Math.round(kb) + 'px');
+    /* ⚠ **숫자가 아니면 안 넣습니다(b502).** `--kb` 가 'NaNpx' 가 되면
+       그것을 쓰는 calc 가 통째로 무효가 되어 **아래 여백이 0 이 됩니다** —
+       실험으로 재현했습니다(body padding-bottom 84px → 0px). 죽은 var 는
+       조용히 무시되는 게 아니라 그 줄을 통째로 죽입니다. */
+    document.documentElement.style.setProperty(
+      '--kb', (Number.isFinite(kb) ? Math.round(kb) : 0) + 'px');
     /* 시트는 --kb 를 안 씁니다. iOS 는 키보드가 뜨면 **화면을 스크롤**하기 때문에
        레이아웃 바닥이 곧 보이는 화면의 바닥입니다(off 303 → 보이는 영역 303~695).
        거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
@@ -601,3 +606,30 @@ if (window.visualViewport){
     if (localStorage.getItem('t2:kbdbg') === '1') window.startRuler();
   }
 }
+
+/* ── 탭바 높이를 재둡니다(b502) ───────────────────────────────────────
+ * 아래 여백을 84px 로 박아뒀더니 두 가지에 걸렸습니다.
+ *   ① 탭바가 글자 크기(--ts)를 타서 자랍니다 — 실측 ts 1 에 58.2px,
+ *      1.2 에 61.4, 1.35 에 63.8. 박아둔 값으로는 여유가 8px 까지 줄었습니다.
+ *   ② 그 값을 고칠 때마다 두 군데(body.hastab · .tabpane)를 같이 고쳐야
+ *      했습니다 — 한쪽만 고치는 일이 실제로 있었습니다.
+ * 재서 --tabh 하나로 넘깁니다. CSS 는 여기에 12(바닥에서 뜬 만큼)와
+ * 24(숨쉴 자리)를 더해서 씁니다.
+ *
+ * ⚠ **resize 로는 부족합니다.** 글자 크기는 프로필에서 바꾸는 값이라
+ *   창 크기가 안 변합니다. 탭바 자체를 지켜봐야 그때 다시 재집니다.
+ * ⚠ 탭바가 숨으면(연속 평가) 높이가 0 으로 옵니다 — 그때는 안 넣습니다.
+ *   0 을 넣으면 돌아왔을 때 여백이 36px 뿐이라 또 가립니다. */
+(() => {
+  const 바 = document.querySelector('.tabbar');
+  if (!바) return;
+  const 재기 = () => {
+    const h = Math.round(바.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty('--tabh', h + 'px');
+  };
+  재기();
+  if (window.ResizeObserver) new ResizeObserver(재기).observe(바);
+  else addEventListener('resize', 재기);
+  /* 글꼴이 늦게 실리면 탭바 글자가 커지면서 한 번 더 자랍니다. */
+  document.fonts?.ready?.then(재기);
+})();
