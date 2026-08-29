@@ -12,12 +12,12 @@
  * closeDocs. 서류는 시트로 열리므로 닫는 길만 밖에서 필요합니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b506';
-import { sb } from './db.js?v=b506';
-import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b506';
-import { hm } from './calc.js?v=b506';
-import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b506';
-import { arm } from './ui.js?v=b506';
+import { $, esc, toast, emptyDo } from './dom.js?v=b507';
+import { sb } from './db.js?v=b507';
+import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b507';
+import { hm } from './calc.js?v=b507';
+import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b507';
+import { arm } from './ui.js?v=b507';
 
 /* ── 예약 ───────────────────────────────────────────────────────────
  * 여행 중에 제일 자주 열어보는 것입니다 — 항공편 번호, 숙소 예약번호.

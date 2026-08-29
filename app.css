@@ -2939,36 +2939,6 @@ body.kbup .trippane{ padding-bottom:0; }
 .tabpane, .trippane{ scrollbar-width:none; -ms-overflow-style:none; }
 .tabpane::-webkit-scrollbar, .trippane::-webkit-scrollbar{ display:none; }
 
-/* ── 체크 카드 칸 (로그인 전 · check.js) ───────────────────────────────
- * 24칸을 «누르는 것»으로 보여줍니다. 별점이 아니라 **다녀왔나 아닌가**
- * 하나만 묻습니다 — 링크로 온 사람에게 별 다섯을 요구하면 24번을 안
- * 합니다. 별점은 로그인 뒤 쭉 매기기가 받습니다(check.js 머리말).
- * ⚠ **세 칸입니다.** 넷으로 하면 「쿠알라룸푸르」·「바르셀로나」가 줄을
- *   바꿉니다. 칸 높이가 들쭉날쭉하면 24칸이 격자로 안 읽힙니다.
- * ⚠ 이름이 길면 **줄이지 않고 줄입니다**(글자 크기). 말줄임표로 자르면
- *   어느 도시인지 모르게 되어 못 고릅니다. */
-.ckgrid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; }
-.ckc{
-  padding:9px 4px; min-height:42px; border-radius:var(--r-sm);
-  border:1px solid var(--line); background:var(--canvas); color:var(--ink);
-  font-weight:500; line-height:1.25;
-  word-break:keep-all; cursor:pointer;
-  /* 긴 이름이 칸을 넘기지 않게. 글자 배율을 줄여도 11px 아래로는 안
-     내려갑니다 — 하단바 라벨과 같은 규칙입니다. */
-  font-size:max(11px, var(--f-sm));
-}
-/* ⚠ **고른 칸은 색 하나로 끝내지 않습니다.** 색맹이면 안 갈립니다.
-   바탕·글자·테두리에 체크 표시까지 넷이 같이 바뀝니다. */
-.ckc.on{
-  background:var(--primary); color:#fff; border-color:transparent;
-  font-weight:600;
-}
-.ckc.on::before{ content:'✓ '; }
-.ckfoot{ display:flex; align-items:center; gap:10px; margin-top:12px; }
-.ckn{ font-size:var(--f-md); color:var(--ink-48); font-variant-numeric:tabular-nums; }
-.ckn b{ font-size:var(--f-xl); color:var(--ink); font-weight:700; }
-/* 단추가 남은 자리를 다 씁니다 — `.primary` 의 flex:1 이 여기서 삽니다. */
-
 /* ── 점검 중 (읽기 전용) ───────────────────────────────────────────────
  * `flags.readonly` 가 켜지면 `body.readonly` 가 붙습니다(flags.js).
  * **그런데 이 규칙이 없었습니다** — 클래스만 붙고 아무 일도 안 일어나서,

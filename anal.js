@@ -14,26 +14,22 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b506';
-import { sb } from './db.js?v=b506';
-import { cities, continentOf } from './cities.js?v=b506';
+import { $, esc } from './dom.js?v=b507';
+import { sb } from './db.js?v=b507';
+import { cities, continentOf } from './cities.js?v=b507';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b506';
-import { personaAxes, personaRank, PERSONA16,
-         checkList, shareCard } from './card.js?v=b506';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b506';
+import { personaBackTo } from './persona.js?v=b507';
+import { personaAxes, personaRank, PERSONA16 } from './card.js?v=b507';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b507';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-/* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
-   고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b506';
-import { similarPicks } from './rec.js?v=b506';
+import { similarPicks } from './rec.js?v=b507';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b506';
-import { pickCity } from './citysearch.js?v=b506';
+import { openNew } from './newtrip.js?v=b507';
+import { pickCity } from './citysearch.js?v=b507';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -159,7 +155,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b506"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b507"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -318,55 +314,17 @@ export async function loadAnal(){
   대륙판.appendChild(대륙);
   발.appendChild(대륙판);
 
-  /* ⚠ **기록은 여기 없습니다(b503 · b505).** 별점 분포와 「가장 많이 간
-     나라 · 최북단 …」 줄은 제목 줄의 「자세히 보기 ›」가 여는 세계지도
-     화면(#mappane 의 #m_rec, map.js 가 채웁니다)으로 옮겼습니다.
-     발자국 카드는 **어디를 갔나**(지도 · 대륙)까지만 맡습니다. 사용자 결정.
-   ⚠ 별점표는 아래 체크 카드가 씁니다 — 같이 지우지 마십시오. */
-  const 별점표 = {};
-  매긴것.forEach(r => { 별점표[r.city_id] = r.stars; });
-
-  /* ── 대륙 체크 카드(b485) ────────────────────────────────────────────
-     인스타에 도는 「유럽 24곳 체크」 템플릿과 같은 것을, 매긴 것으로
-     **자동으로** 채워 만듭니다(card.js 의 drawCheck 머리말).
-     ⚠ **유럽·아시아만 답니다.** 나머지 대륙은 대부분 한두 곳이라 칸이
-       텅 빈 카드가 나옵니다 — 빈 칸은 「가야지」가 되라고 두는 것이지
-       스물세 칸이 비면 그냥 초라합니다.
-     ⚠ 한 대륙이라도 목록을 못 뽑으면(도시 자료가 아직 안 왔을 때)
-       단추를 아예 안 답니다. */
-  {
-    const 낼것 = ['유럽', '아시아']
-      .map(이름 => ({ 이름, 곳: checkList(cities, 이름, { continentOf }) }))
-      .filter(x => x.곳.length >= 12);
-    if (낼것.length){
-      const 체크 = document.createElement('div');
-      체크.className = 'subsec';
-      체크.innerHTML = '<h3 class="secttl">체크 카드</h3>' +
-        '<div class="memo" style="margin:-4px 0 10px">' +
-        '유명한 곳 24군데 중 몇 곳을 다녀왔는지 한 장으로 만들어요.</div>';
-      const 줄 = document.createElement('div');
-      줄.className = 'cchips';
-      낼것.forEach(({ 이름, 곳 }) => {
-        const 간수 = 곳.filter(c => 별점표[c.id] != null).length;
-        const b = document.createElement('button');
-        b.textContent = `${이름} ${간수}/${곳.length}`;
-        b.onclick = () => shareCard({
-          kind:'check', title:이름, sub:'가볼 만한 곳',
-          items: 곳.map(c => ({ name:c.name, on: 별점표[c.id] != null })),
-          /* ⚠ **받은 사람이 같은 24칸으로 떨어져야 합니다(b488).** 그냥 앱
-             주소로 보내면 로그인 화면에 떨어지고, 거기서는 「도시 5곳 매기면
-             성향」이라는 다른 약속을 합니다 — 카드를 보고 온 사람이 원한
-             것이 아닙니다. 링크에는 **대륙 두 글자만** 담깁니다(남의 기록을
-             링크에 싣지 않습니다). check.js 머리말 참고. */
-          shareUrl: checkUrl(이름),
-        }, `기로-${이름}`);
-        줄.appendChild(b);
-      });
-      체크.appendChild(줄);
-      발.appendChild(체크);
-    }
-  }
-
+  /* ⚠ **기록도 체크 카드도 여기 없습니다(b503 · b505 · b507).**
+     ① 기록 — 별점 분포와 「가장 많이 간 나라 · 최북단 …」 줄은 제목 줄의
+        「자세히 보기 ›」가 여는 세계지도 화면(#mappane 의 #m_rec, map.js 가
+        채웁니다)으로 옮겼습니다.
+     ② 체크 카드 — 「유럽 24곳 체크」를 만들어 보내는 자리가 여기 하나였는데
+        아예 없앴습니다(b507). 사용자 결정 — 공유하는 길이 이미 여럿입니다
+        (성향 카드 · 궁합 링크 · 영수증 · 나라 목록). 받는 쪽(?check=eu)과
+        그리는 코드도 같이 걷었습니다: check.js · card.js 의 drawCheck ·
+        checkList · #checkbox · .ckgrid 무리. 옛 링크로 들어와도 맛보기
+        평가가 그대로 떠서 빈 화면은 안 납니다.
+     발자국 카드는 **어디를 갔나**(지도 · 대륙)까지만 맡습니다. */
   box.appendChild(발);
 
   /* ══ ③ 다음 여행 ═══════════════════════════════════════════════════
