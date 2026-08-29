@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b496';
-import { sb } from './db.js?v=b496';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b496';
-import { hm, todayYmd } from './calc.js?v=b496';
-import { starHtml, paintStars, markRated } from './stars.js?v=b496';
+import { $, esc } from './dom.js?v=b497';
+import { sb } from './db.js?v=b497';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b497';
+import { hm, todayYmd } from './calc.js?v=b497';
+import { starHtml, paintStars, markRated } from './stars.js?v=b497';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b496';
-import { cities, countryName } from './cities.js?v=b496';
-import { myRates, visited } from './rate.js?v=b496';
-import { plans } from './trip.js?v=b496';
-import { openCity } from './city.js?v=b496';
-import { loadCities, pick } from './citysearch.js?v=b496';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b496';
+import { rateHero, starValue } from './rateui.js?v=b497';
+import { cities, countryName } from './cities.js?v=b497';
+import { myRates, visited } from './rate.js?v=b497';
+import { plans } from './trip.js?v=b497';
+import { openCity } from './city.js?v=b497';
+import { loadCities, pick } from './citysearch.js?v=b497';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b497';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b496';
+import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b497';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b496';
+import { drawReport } from './report.js?v=b497';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b496';
-import { openNew } from './newtrip.js?v=b496';
+import { PERSONA_BG } from './card.js?v=b497';
+import { openNew } from './newtrip.js?v=b497';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -62,7 +62,7 @@ function 지도열기(){
   openMap();
 }
 let lastHomeSig = '';
-export function resetHomeSig(){ lastHomeSig = ''; rvCache = undefined; }   /* 재촉 줄도 같이 — 아래 rvCache */
+export function resetHomeSig(){ lastHomeSig = ''; }
 
 /* ── 홈 ─────────────────────────────────────────────────────────────
  * **메인은 평가·성향, 일정은 서브입니다**(사용자 결정, b398). 위에서부터:
@@ -350,24 +350,6 @@ async function buildHome(){
        붙이려다 터지면 홈이 통째로 안 그려집니다. */
   await renderQuiz($('home').querySelector('.ratecard') || 통);
 
-  /* ── 다녀온 여행 물어보기 — 홈으로 되돌립니다(b489) ──────────────────
-   * b398 에서 이 재촉을 여행 탭으로 내보냈습니다. 「홈은 평가, 일정은
-   * 서브」라는 정리였는데, **이건 일정이 아니라 평가입니다** — 묻는 것이
-   * 별점입니다. 게다가 이 앱에서 **다시 열 이유가 될 수 있는 것이
-   * 이것 하나뿐**입니다(여행이 실제로 끝나야 생기는, 지어내지 않은
-   * 사건). 그것을 여행 탭 「다녀온」 갈래 안에 두면 **거기까지 간
-   * 사람만** 봅니다 — 새 여행 줄을 세 번이나 되살린 것과 같은 이유로
-   * 홈에 있어야 합니다(아래 ⚠⚠ 참고).
-   *
-   * ⚠ **띠(.rvbar)로 만들지 않습니다.** b419 에서 홈의 덩어리 다섯을
-   *   둘로 줄였습니다. 여기에 띠를 하나 얹으면 그때 고친 것이 그대로
-   *   돌아옵니다. 같은 부품(.fprow)으로 **이 카드 안의 줄**입니다.
-   * ⚠ **맨 위에 넣습니다.** 이 카드에서 유일하게 «시간이 걸린» 줄입니다 —
-   *   여행이 끝났을 때만 잠깐 있다가 다 매기면 사라집니다.
-   * ⚠ **기다리지 않습니다.** pendingTrip 은 여행 다섯 개를 돌며 각각 네
-   *   번씩 물어봅니다. 홈이 이걸 기다리면 첫 화면이 그만큼 늦습니다 —
-   *   줄 하나 때문에 홈 전체를 세우지 않습니다. */
-  reviewRow(통);
 
   /* ⚠ **발자국·성향·지도가 먼저입니다(b423).** 지도를 홈 열자마자 보이게
      하려면 위로 올려야 하는데, 새 여행 줄이 앞에 있으면 그만큼 밀립니다.
@@ -439,43 +421,6 @@ function 남은말(pend){
   if (pend.places.length) 조각.push(`${pend.places.length}군데`);
   return 조각.length ? ` · ${조각.join(' · ')}` : '';
 }
-
-/* ── 홈의 「다녀온 여행」 줄(b489) ────────────────────────────────────
- * 위 buildHome 의 부르는 자리에 왜 여기 있어야 하는지 적었습니다.
- * ⚠ **통이 아직 화면에 있는지 봅니다.** 기다리지 않고 부르므로, 답이
- *   오는 사이에 홈이 다시 그려져 이 통이 버려졌을 수 있습니다. 그때
- *   붙이면 아무 데도 없는 줄을 만듭니다(그리고 다음에 또 붙습니다). */
-/* ⚠ **답을 붙들어 둡니다.** `pendingTrip` 은 여행 다섯 개를 돌며 각각 네
-   번씩 물어봅니다 — **최대 스물한 번**입니다. 홈은 별점을 하나 매길 때마다
-   지문이 바뀌어 다시 그려지는데, 그때마다 이걸 다시 돌리면 줄 하나 때문에
-   왕복이 스물한 번씩 늘어납니다.
-   ⚠ `undefined`(아직 안 물어봄)와 `null`(물어봤는데 없음)을 **가릅니다.**
-     둘을 같이 두면 「끝난 여행 없음」인 사람이 홈을 그릴 때마다 스물한 번을
-     계속 물어봅니다.
-   비우는 곳은 `resetHomeSig`(자료가 바뀐 것을 아는 자리)와 `closeReview`
-   (방금 평가하고 나온 자리) 둘입니다. */
-let rvCache;
-
-async function reviewRow(통){
-  if (rvCache === undefined){
-    try { rvCache = (await pendingTrip()) || null; }
-    catch { rvCache = undefined; return; }   /* 실패는 «모름» 으로 — 다음에 다시 */
-  }
-  const pend = rvCache;
-  if (!pend || !통?.isConnected) return;
-
-  const el = document.createElement('div');
-  el.className = 'fprow';
-  el.innerHTML = `<span class="t"><b>${esc(pend.trip.title)} 어땠어요?</b>
-      <span>다녀오신 곳을 평가해주세요${남은말(pend)}</span></span>
-    <span class="go">평가 ›</span>`;
-  /* ⚠ **홈으로 되돌립니다.** 여행 탭의 같은 줄은 'trips' 를 남깁니다
-     (아래 reviewBar) — 들어온 자리가 다르므로 나가는 자리도 달라야
-     합니다. 한 곳에서 둘 다 처리하려다 b446 에서 홈에 떨어뜨렸습니다. */
-  el.onclick = () => { reviewBackTo('home'); openReviewTrip(pend.trip.id); };
-  통.prepend(el);
-}
-
 export async function reviewBar(){
   const pend = await pendingTrip();
   if (!pend) return null;
@@ -607,10 +552,9 @@ let 돌아갈곳 = null;
 export function reviewBackTo(tab){ 돌아갈곳 = tab; }
 export function closeReview(fromPop){
   if (!fromPop && history.state?.t2 === 'rv'){ history.back(); return; }
-  /* ⚠ 방금 평가하고 나왔습니다(b489). **지문까지 비웁니다.**
-     붙들어 둔 답(rvCache)만 비우면 홈 지문이 그대로라 buildHome 이
-     통째로 건너뛰고, **다 매긴 여행이 홈에 계속 남아 재촉합니다.**
-     resetHomeSig 이 둘 다 비웁니다. */
+  /* 방금 평가하고 나왔습니다 — 발자국 숫자가 달라졌으니 홈을 다시
+     그리게 합니다(b489). 재촉 줄 자체는 홈에서 걷었습니다(b497) — 아래
+     `reviewBar` 가 여행 탭에서만 씁니다. */
   resetHomeSig();
   $('reviewview').classList.add('hide');
   const t = 돌아갈곳; 돌아갈곳 = null;
@@ -849,49 +793,8 @@ async function renderFoot(통){
      끝에서 되감는 방식은 옮기는 순간이 눈에 보여 **툭 끊겨** 보였습니다.
      복제가 있으면 왼쪽 끝까지 밀었을 때 **마지막 장과 똑같은 그림**이
      이미 보이고, 그 뒤에 진짜 자리로 옮기므로 옮긴 것이 안 보입니다. */
-  /* ── 카드마다 그 대륙 지도를 깔았습니다(b496) ──────────────────────
-   * 전에는 **일곱 장이 숫자만 다르고 그림이 같았습니다.** 넘겨도 넘긴
-   * 것 같지 않고, 어느 대륙인지는 작은 제목 글자로만 알 수 있었습니다.
-   * 이제 카드 자체가 그 대륙의 지도이고, **다녀온 나라가 칠해져** 있어
-   * 숫자를 안 읽어도 얼마나 찼는지 보입니다.
-   *
-   * ⚠ **새 자산이 없습니다.** 좌표는 `#worldland` 에 이미 있고(app.js 가
-   *   한 번 넣습니다), 대륙별로 어디를 자를지는 map.js 의 `CONT_VIEW` 가
-   *   이미 압니다 — 큰 지도의 대륙 단추가 쓰는 그 표입니다. **같은 표를
-   *   써야** 카드에서 본 모양과 지도에서 당겨 본 모양이 같습니다.
-   * ⚠ 좌표를 여기서 또 넣지 않습니다. `#worldland` 의 것을 읽어 씁니다 —
-   *   두 곳에 넣으면 화면과 카드가 어긋납니다(map.js 머리말).
-   * ⚠ **높이는 폭에서 냅니다.** CONT_VIEW 는 `cx·cy·w` 만 정해 두고
-   *   높이를 화면 비율에서 냅니다(거기 주석). 여기 비율은 카드 모양이
-   *   정합니다 — 가로로 넓은 띠(2.6:1)라야 한 줄에 얹힙니다.
-   * ⚠ **글자를 지도 위에 얹지 않습니다.** 지도는 뒤에서 흐리게 깔리고
-   *   숫자가 앞입니다 — 대륙 모양이 복잡해서 위에 얹으면 숫자가 안 읽힙니다. */
-  const 땅 = $('worldland')?.innerHTML || '';
-  /* ⚠ **큰 지도와 같은 비율(2.58)입니다.** CONT_VIEW 의 창은 그 화면
-     비율에 맞춰 잡힌 값이라, 다른 비율로 잘라 넣으면 대륙이 카드 한가운데
-     조그맣게 앉습니다. 재봤습니다 — 카드 비율(3.27)로 자르면 유럽이
-     카드의 3분의 1도 안 찹니다. */
-  const 비율 = 1 / 2.58;
-  const 지도칸 = 이름 => {
-    if (!땅) return '';
-    const v = CONT_VIEW[이름];
-    /* 「전체」는 CONT_VIEW 에 있지만 세계 전체라 위 작은 지도와 같은
-       창을 씁니다 — 카드에서만 다르게 자르면 두 그림이 어긋나 보입니다. */
-    const box = 이름 === '전체' || !v
-      ? '20 16 976 392'
-      : `${(v.cx - v.w / 2).toFixed(1)} ${(v.cy - v.w * 비율 / 2).toFixed(1)}` +
-        ` ${v.w} ${(v.w * 비율).toFixed(1)}`;
-    /* ⚠⚠ **`meet` 이 아니라 `slice` 입니다.** ⚠⚠ `meet` 은 viewBox 를
-       칸 안에 «넣기만» 하고 **밖을 안 가립니다** — 남는 여백 자리에
-       나머지 세계가 그대로 비쳐서, 유럽 카드에 북아메리카와 아시아가
-       같이 나왔습니다(실제로 그랬습니다). `slice` 는 칸을 채우고 넘치는
-       것을 자릅니다. */
-    return `<div class="swmap" aria-hidden="true"><svg viewBox="${box}"
-      preserveAspectRatio="xMidYMid slice">${땅}</svg></div>`;
-  };
   const 칸 = ([이름, n, 전체]) => `
       <div class="swcard">
-        ${지도칸(이름)}
         <div class="swtitle">${esc(이름)}</div>
         <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
         <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
@@ -1015,12 +918,13 @@ async function renderFoot(통){
   mm.onclick = 지도열기;
   box.appendChild(mm);
   box.appendChild(넘김);
-  /* ⚠ **카드 지도도 같이 칠합니다(b496).** 위 작은 지도와 **같은 `gone`
-     으로** 칠해야 합니다 — 따로 세면 지도와 카드가 다른 말을 합니다.
-     여기서 하는 이유는 넘김이 box 에 붙은 뒤라야 querySelectorAll 이
-     닿기 때문입니다. */
-  넘김.querySelectorAll('.swmap path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
+  /* ⚠ **카드에 대륙 지도를 깔았다가 걷었습니다(b496 → b497).**
+     대륙마다 모양이 달라 넘기는 맛은 살았는데, **바로 위에 세계지도가
+     있어서 지도 위에 지도**가 됐습니다 — 한 카드 안에 지도가 둘이면
+     어느 것을 보라는 건지 모릅니다. 카드는 숫자만 맡습니다.
+     ⚠ 다시 넣고 싶으면 **위 작은 지도를 걷는 것이 먼저**입니다.
+       첫 장이 「전체」라 그 자리를 대신할 수 있지만, 지도가 작아지고
+       카드를 넘겨야 보인다는 대가가 있습니다(b452 참고). */
 
   /* ⚠ **「내 성향」 한 줄을 뺐습니다(b457).** b398 에 넣었던 것입니다 —
      그때는 성향이 프로필 깊숙이 있어서 홈에 길을 내야 했습니다.
