@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b511';
-import { sb } from './db.js?v=b511';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b511';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b511';
+import { $, esc, toast, emptyDo } from './dom.js?v=b512';
+import { sb } from './db.js?v=b512';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b512';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b512';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b511';
-import { arm } from './ui.js?v=b511';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b512';
+import { arm } from './ui.js?v=b512';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */

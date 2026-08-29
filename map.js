@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b511';
-import { openCity } from './city.js?v=b511';
-import { distKm } from './calc.js?v=b511';
-import { sb } from './db.js?v=b511';
-import { cities, countryName, continentOf } from './cities.js?v=b511';
-import { PERSONA_ICON, shareCard } from './card.js?v=b511';
+         coverDeck } from './dom.js?v=b512';
+import { openCity } from './city.js?v=b512';
+import { distKm } from './calc.js?v=b512';
+import { sb } from './db.js?v=b512';
+import { cities, countryName, continentOf } from './cities.js?v=b512';
+import { PERSONA_ICON, shareCard } from './card.js?v=b512';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -455,7 +455,13 @@ function 발자국스펙(도시들){
     big: String(codes.length), bigUnit:'개국',
     title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
     nums:`${(도시들 || []).length}개 도시 · ${conts.size}개 대륙`,
-    note: flagOk() ? codes.map(c => flag(c)).join(' ') : '',
+    /* ⚠⚠ **여기서 `flag(...)` 를 쓰면 안 됩니다(b512).** ⚠⚠
+       그건 openCountries **안에서만** 사는 지역 변수입니다(위 316줄).
+       b510 에 카드 만드는 코드를 그 함수 밖으로 꺼내면서 이름을 그대로
+       들고 나왔고, 공유 단추가 눌러도 **아무 일도 안 하는 채**로 나갔습니다
+       (ReferenceError 는 핸들러 안에서 조용히 죽습니다).
+       바깥에서 쓸 것은 dom.js 의 flagOf 입니다. */
+    note: flagOk() ? codes.map(c => flagOf(c)).join(' ') : '',
     listTitle: top.length ? '가장 많이 간 곳' : '',
     list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
     artRatio: 387 / 1000,
