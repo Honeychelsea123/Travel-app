@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b516';
+import { $ } from './dom.js?v=b517';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -214,6 +214,9 @@ export function mountGlobe(canvas, 갔다, 처음경도){
   canvas.addEventListener('touchmove', e => { if (끌기) e.preventDefault(); },
                           { passive:false });
 
-  다시();
+  /* ⚠ **첫 판은 rAF 에 맡기지 않습니다.** 창이 숨어 있으면 rAF 가 아예
+     안 돌아서 지구본이 빈 채로 남습니다(재보다가 걸렸습니다). 토글로 켜는
+     순간 한 프레임 비는 것도 없어집니다. 이어지는 그리기만 rAF 로 모읍니다. */
+  그리기();
   return { 다시, 회전:(deg) => { λ0 = deg * RAD; 다시(); } };
 }
