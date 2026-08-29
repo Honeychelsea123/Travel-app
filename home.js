@@ -16,32 +16,32 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
  *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b495';
-import { sb } from './db.js?v=b495';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b495';
-import { hm, todayYmd } from './calc.js?v=b495';
-import { starHtml, paintStars, markRated } from './stars.js?v=b495';
+import { $, esc } from './dom.js?v=b496';
+import { sb } from './db.js?v=b496';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b496';
+import { hm, todayYmd } from './calc.js?v=b496';
+import { starHtml, paintStars, markRated } from './stars.js?v=b496';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b495';
-import { cities, countryName } from './cities.js?v=b495';
-import { myRates, visited } from './rate.js?v=b495';
-import { plans } from './trip.js?v=b495';
-import { openCity } from './city.js?v=b495';
-import { loadCities, pick } from './citysearch.js?v=b495';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b495';
+import { rateHero, starValue } from './rateui.js?v=b496';
+import { cities, countryName } from './cities.js?v=b496';
+import { myRates, visited } from './rate.js?v=b496';
+import { plans } from './trip.js?v=b496';
+import { openCity } from './city.js?v=b496';
+import { loadCities, pick } from './citysearch.js?v=b496';
+import { saveRate, dropRate, refreshVisited } from './rating.js?v=b496';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, mapBackTo } from './map.js?v=b495';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b496';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b495';
+import { drawReport } from './report.js?v=b496';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b495';
-import { openNew } from './newtrip.js?v=b495';
+import { PERSONA_BG } from './card.js?v=b496';
+import { openNew } from './newtrip.js?v=b496';
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -849,8 +849,49 @@ async function renderFoot(통){
      끝에서 되감는 방식은 옮기는 순간이 눈에 보여 **툭 끊겨** 보였습니다.
      복제가 있으면 왼쪽 끝까지 밀었을 때 **마지막 장과 똑같은 그림**이
      이미 보이고, 그 뒤에 진짜 자리로 옮기므로 옮긴 것이 안 보입니다. */
+  /* ── 카드마다 그 대륙 지도를 깔았습니다(b496) ──────────────────────
+   * 전에는 **일곱 장이 숫자만 다르고 그림이 같았습니다.** 넘겨도 넘긴
+   * 것 같지 않고, 어느 대륙인지는 작은 제목 글자로만 알 수 있었습니다.
+   * 이제 카드 자체가 그 대륙의 지도이고, **다녀온 나라가 칠해져** 있어
+   * 숫자를 안 읽어도 얼마나 찼는지 보입니다.
+   *
+   * ⚠ **새 자산이 없습니다.** 좌표는 `#worldland` 에 이미 있고(app.js 가
+   *   한 번 넣습니다), 대륙별로 어디를 자를지는 map.js 의 `CONT_VIEW` 가
+   *   이미 압니다 — 큰 지도의 대륙 단추가 쓰는 그 표입니다. **같은 표를
+   *   써야** 카드에서 본 모양과 지도에서 당겨 본 모양이 같습니다.
+   * ⚠ 좌표를 여기서 또 넣지 않습니다. `#worldland` 의 것을 읽어 씁니다 —
+   *   두 곳에 넣으면 화면과 카드가 어긋납니다(map.js 머리말).
+   * ⚠ **높이는 폭에서 냅니다.** CONT_VIEW 는 `cx·cy·w` 만 정해 두고
+   *   높이를 화면 비율에서 냅니다(거기 주석). 여기 비율은 카드 모양이
+   *   정합니다 — 가로로 넓은 띠(2.6:1)라야 한 줄에 얹힙니다.
+   * ⚠ **글자를 지도 위에 얹지 않습니다.** 지도는 뒤에서 흐리게 깔리고
+   *   숫자가 앞입니다 — 대륙 모양이 복잡해서 위에 얹으면 숫자가 안 읽힙니다. */
+  const 땅 = $('worldland')?.innerHTML || '';
+  /* ⚠ **큰 지도와 같은 비율(2.58)입니다.** CONT_VIEW 의 창은 그 화면
+     비율에 맞춰 잡힌 값이라, 다른 비율로 잘라 넣으면 대륙이 카드 한가운데
+     조그맣게 앉습니다. 재봤습니다 — 카드 비율(3.27)로 자르면 유럽이
+     카드의 3분의 1도 안 찹니다. */
+  const 비율 = 1 / 2.58;
+  const 지도칸 = 이름 => {
+    if (!땅) return '';
+    const v = CONT_VIEW[이름];
+    /* 「전체」는 CONT_VIEW 에 있지만 세계 전체라 위 작은 지도와 같은
+       창을 씁니다 — 카드에서만 다르게 자르면 두 그림이 어긋나 보입니다. */
+    const box = 이름 === '전체' || !v
+      ? '20 16 976 392'
+      : `${(v.cx - v.w / 2).toFixed(1)} ${(v.cy - v.w * 비율 / 2).toFixed(1)}` +
+        ` ${v.w} ${(v.w * 비율).toFixed(1)}`;
+    /* ⚠⚠ **`meet` 이 아니라 `slice` 입니다.** ⚠⚠ `meet` 은 viewBox 를
+       칸 안에 «넣기만» 하고 **밖을 안 가립니다** — 남는 여백 자리에
+       나머지 세계가 그대로 비쳐서, 유럽 카드에 북아메리카와 아시아가
+       같이 나왔습니다(실제로 그랬습니다). `slice` 는 칸을 채우고 넘치는
+       것을 자릅니다. */
+    return `<div class="swmap" aria-hidden="true"><svg viewBox="${box}"
+      preserveAspectRatio="xMidYMid slice">${땅}</svg></div>`;
+  };
   const 칸 = ([이름, n, 전체]) => `
       <div class="swcard">
+        ${지도칸(이름)}
         <div class="swtitle">${esc(이름)}</div>
         <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
         <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
@@ -974,6 +1015,12 @@ async function renderFoot(통){
   mm.onclick = 지도열기;
   box.appendChild(mm);
   box.appendChild(넘김);
+  /* ⚠ **카드 지도도 같이 칠합니다(b496).** 위 작은 지도와 **같은 `gone`
+     으로** 칠해야 합니다 — 따로 세면 지도와 카드가 다른 말을 합니다.
+     여기서 하는 이유는 넘김이 box 에 붙은 뒤라야 querySelectorAll 이
+     닿기 때문입니다. */
+  넘김.querySelectorAll('.swmap path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
 
   /* ⚠ **「내 성향」 한 줄을 뺐습니다(b457).** b398 에 넣었던 것입니다 —
      그때는 성향이 프로필 깊숙이 있어서 홈에 길을 내야 했습니다.

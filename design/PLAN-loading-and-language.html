@@ -1,0 +1,255 @@
+<title>기다림과 그래픽 언어</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --page:#F4F2ED; --card:#FDFCF9; --ink:#20201D; --dim:#6B675F; --faint:#9A958B;
+    --line:#E2DED5; --rule:#CFC9BC; --hot:#C7521E; --ok:#4E7A46;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#161614; --card:#1E1D1A; --ink:#EDEAE3; --dim:#A29C91; --faint:#7A756C;
+      --line:#2E2C27; --rule:#3A3730; --hot:#E87B48; --ok:#8FBF84;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#161614; --card:#1E1D1A; --ink:#EDEAE3; --dim:#A29C91; --faint:#7A756C;
+    --line:#2E2C27; --rule:#3A3730; --hot:#E87B48; --ok:#8FBF84;
+  }
+
+  body{ margin:0; background:var(--page); color:var(--ink);
+        font-family:"Pretendard Variable",Pretendard,"Noto Sans KR",sans-serif;
+        font-size:16px; line-height:1.75; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:52px 22px 110px; }
+
+  .eyebrow{ font-size:12px; font-weight:500; letter-spacing:.24em; color:var(--faint);
+            margin:0 0 14px; }
+  h1{ font-family:"Nanum Myeongjo",serif; font-weight:700; font-size:38px; line-height:1.2;
+      letter-spacing:-.01em; margin:0 0 14px; text-wrap:balance; }
+  .stand{ font-size:17px; color:var(--dim); margin:0; max-width:60ch; }
+  .stand b{ color:var(--ink); font-weight:600; }
+
+  h2{ font-family:"Nanum Myeongjo",serif; font-weight:700; font-size:25px;
+      margin:0 0 6px; letter-spacing:-.01em; }
+  h3{ font-size:16px; font-weight:700; margin:30px 0 8px; }
+  section{ margin-top:56px; padding-top:30px; border-top:2px solid var(--rule); }
+  .num{ font-size:12px; font-weight:500; letter-spacing:.22em; color:var(--hot);
+        margin:0 0 8px; }
+  p{ margin:0 0 14px; max-width:62ch; }
+  p b{ font-weight:600; }
+  .lede{ color:var(--dim); }
+
+  .box{ background:var(--card); border:1px solid var(--line); border-radius:14px;
+        padding:18px 20px; margin:20px 0; }
+  .box p:last-child{ margin-bottom:0; }
+  .box.warn{ border-color:var(--hot); }
+  .k{ display:inline-block; font-size:11px; font-weight:700; letter-spacing:.14em;
+      color:var(--hot); margin-bottom:6px; }
+  .k.ok{ color:var(--ok); }
+
+  .scroll{ overflow-x:auto; margin:20px 0; border:1px solid var(--line);
+           border-radius:14px; background:var(--card); }
+  table{ border-collapse:collapse; width:100%; font-size:14.5px; min-width:620px; }
+  th,td{ text-align:left; padding:11px 14px; border-bottom:1px solid var(--line);
+         vertical-align:top; }
+  th{ font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--faint);
+      background:transparent; white-space:nowrap; }
+  tr:last-child td{ border-bottom:0; }
+  td.id{ font-family:ui-monospace,monospace; font-size:12.5px; color:var(--dim);
+         white-space:nowrap; }
+  td.now{ color:var(--faint); }
+  td.new{ font-weight:600; }
+  .tag{ font-size:11px; font-weight:700; letter-spacing:.1em; padding:2px 7px;
+        border-radius:99px; border:1px solid currentColor; white-space:nowrap; }
+  .keep{ color:var(--ok); } .drop{ color:var(--hot); } .quiet{ color:var(--faint); }
+
+  ol,ul{ margin:0 0 14px; padding-left:1.35em; max-width:62ch; }
+  li{ margin-bottom:9px; }
+  li::marker{ color:var(--faint); }
+  code{ font-family:ui-monospace,monospace; font-size:13.5px;
+        background:var(--card); border:1px solid var(--line);
+        border-radius:5px; padding:1px 5px; }
+  .rule{ height:1px; background:var(--line); margin:26px 0; }
+  .foot{ margin-top:54px; padding-top:22px; border-top:2px solid var(--rule);
+         font-size:14px; color:var(--faint); }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">기로 · 정리 메모</p>
+  <h1>기다림과 그래픽 언어</h1>
+  <p class="stand">발자취 앱 화면을 보고 우리 코드를 훑어 나온 것 둘.
+    하나는 <b>오늘 고칠 수 있는 것</b>, 하나는 <b>결정이 먼저인 것</b>입니다.</p>
+
+<!-- ══ 1 ══════════════════════════════════════════════════════════ -->
+<section>
+  <p class="num">01</p>
+  <h2>기다림 문구</h2>
+  <p class="lede">전수로 세어봤습니다. <b>단추 안쪽은 이미 잘 되어 있습니다</b> —
+    「지우는 중」·「보내는 중」·「담는 중」·「채우는 중」·「되돌리는 중」처럼
+    동사가 다 다릅니다. 여기는 손댈 게 없습니다.</p>
+
+  <div class="box warn">
+    <span class="k">문제는 여기</span>
+    <p><b><code>index.html</code>의 화면 자리표시자 17개가 전부
+      「불러오는 중…」입니다.</b> 그런데 이 자리가 제일 오래 걸리고 제일
+      자주 보입니다 — 탭을 열 때마다 첫 화면입니다.</p>
+    <p style="margin-top:10px">사람은 <b>무엇을</b> 기다리는지 모르면 그냥
+      멈춘 줄 압니다. 발자취는 「현재 위치를 확인하고 있어요」라고 씁니다.
+      같은 시간이 짧게 느껴집니다.</p>
+  </div>
+
+  <h3>바꿀 열일곱</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>자리</th><th>지금</th><th>바꿀 말</th><th>기다리는 것</th></tr></thead>
+      <tbody>
+        <tr><td class="id">#home</td><td class="now">불러오는 중…</td>
+            <td class="new">오늘 볼 것을 고르는 중…</td><td class="now">퀴즈 도시 · 발자국</td></tr>
+        <tr><td class="id">#ratelist</td><td class="now">불러오는 중…</td>
+            <td class="new">도시 목록을 받는 중…</td><td class="now">469곳 + 내 별점</td></tr>
+        <tr><td class="id">#analbox</td><td class="now">불러오는 중…</td>
+            <td class="new">별점을 세는 중…</td><td class="now">발자국 + 평가 전체</td></tr>
+        <tr><td class="id">#trips</td><td class="now">불러오는 중…</td>
+            <td class="new">여행을 꺼내는 중…</td><td class="now">여행 목록</td></tr>
+        <tr><td class="id">#personabox</td><td class="now">불러오는 중…</td>
+            <td class="new">성향을 계산하는 중…</td><td class="now">축 넷 · 16유형</td></tr>
+        <tr><td class="id">#shelflist</td><td class="now">불러오는 중…</td>
+            <td class="new">보관함을 여는 중…</td><td class="now">내가 매긴 것</td></tr>
+        <tr><td class="id">#plans</td><td class="now">불러오는 중…</td>
+            <td class="new">일정을 받는 중…</td><td class="now">그 여행의 일정</td></tr>
+        <tr><td class="id">#cands</td><td class="now">불러오는 중…</td>
+            <td class="new">후보를 받는 중…</td><td class="now">가볼까 한 곳</td></tr>
+        <tr><td class="id">#expenses</td><td class="now">불러오는 중…</td>
+            <td class="new">지출을 세는 중…</td><td class="now">지출 + 환율</td></tr>
+        <tr><td class="id">#bookings</td><td class="now">불러오는 중…</td>
+            <td class="new">예약을 꺼내는 중…</td><td class="now">항공·숙소</td></tr>
+        <tr><td class="id">#packing</td><td class="now">불러오는 중…</td>
+            <td class="new">준비물을 꺼내는 중…</td><td class="now">챙길 것</td></tr>
+        <tr><td class="id">#links</td><td class="now">불러오는 중…</td>
+            <td class="new">링크를 꺼내는 중…</td><td class="now">붙여둔 주소</td></tr>
+        <tr><td class="id">#review</td><td class="now">불러오는 중…</td>
+            <td class="new">다녀온 곳을 모으는 중…</td><td class="now">평가할 도시·맛집</td></tr>
+        <tr><td class="id">#cv_trips</td><td class="now">불러오는 중…</td>
+            <td class="new">이 도시의 여행을 찾는 중…</td><td class="now">그 도시가 낀 여행</td></tr>
+        <tr><td class="id">#chat</td><td class="now">불러오는 중…</td>
+            <td class="new">지난 대화를 꺼내는 중…</td><td class="now">AI 대화 기록</td></tr>
+        <tr><td class="id">#sub</td><td class="now">불러오는 중…</td>
+            <td class="new">(빈 칸)</td><td class="now">상단바 부제 — 없으면 안 씁니다</td></tr>
+        <tr><td class="id">#s_note</td><td class="now">불러오는 중…</td>
+            <td class="new">설정을 읽는 중…</td><td class="now">서버 설정값</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <span class="k ok">규칙 넷</span>
+    <ol style="margin-bottom:0">
+      <li><b>동사를 다르게.</b> 받는다 · 세다 · 꺼내다 · 고르다 · 계산하다 —
+        무슨 일이 도는지가 동사에 있습니다.</li>
+      <li><b>기다리는 대상을 이름으로.</b> 「도시 목록」·「별점」·「예약」.
+        이게 없으면 어느 화면에서든 같은 말입니다.</li>
+      <li><b>세는 일에는 「세는 중」.</b> 이미 두 곳이 그렇게 씁니다
+        (「무엇이 지워지는지 세는 중…」·관리자 「세는 중…」). 그 결을 따릅니다.</li>
+      <li><b>안 보여줄 자리는 비웁니다.</b> <code>#sub</code>는 값이 없으면
+        빈 칸이 맞습니다 — 상단바에 「불러오는 중…」이 떠 있을 이유가 없습니다.</li>
+    </ol>
+  </div>
+
+  <p><b>덤으로 잡히는 것 하나.</b> 홈은 자리표시자를 「그린 것」으로
+    안 치는 판정이 있습니다(<code>home.js</code>). 문구가 자리마다 달라지면
+    그 판정이 문자열 하나에 안 걸리므로, 바꿀 때 같이 봐야 합니다.</p>
+</section>
+
+<!-- ══ 2 ══════════════════════════════════════════════════════════ -->
+<section>
+  <p class="num">02</p>
+  <h2>그래픽 언어</h2>
+  <p class="lede">발자취는 <b>점 하나</b>로 앱 전체를 묶었습니다 — 전국도,
+    시도별 미니도, 세계도 전부 같은 점. 어느 화면을 봐도 같은 앱입니다.</p>
+  <p>우리는 훨씬 많은 일을 하니 그렇게까지는 못 합니다. 다만
+    <b>지금 여덟 가지가 서로 다른 말을 하고 있는 것</b>은 줄일 수 있습니다.</p>
+
+  <h3>지금 쓰는 여덟</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>언어</th><th>어디에</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td class="new">도시 사진 469장</td><td class="now">홈 히어로 · 평가 · 여행 · 도시</td>
+            <td><span class="tag keep">주인공</span></td></tr>
+        <tr><td class="new">선 아이콘</td><td class="now">하단바 · 줄 · 단추</td>
+            <td><span class="tag keep">이미 일관</span></td></tr>
+        <tr><td class="new">★ 별</td><td class="now">평가 다섯 화면</td>
+            <td><span class="tag keep">앱의 동사</span></td></tr>
+        <tr><td class="new">가로 막대</td><td class="now">축 넷 · 발자국 · 별점 분포</td>
+            <td><span class="tag keep">유지</span></td></tr>
+        <tr><td class="new">세계지도 실루엣</td><td class="now">발자국 · 큰 지도 · 카드</td>
+            <td><span class="tag quiet">조율</span></td></tr>
+        <tr><td class="new">대륙 카드 숫자</td><td class="now">홈 발자국 좌우 넘김</td>
+            <td><span class="tag quiet">조율</span></td></tr>
+        <tr><td class="new">성향 일러스트 16장</td><td class="now">분석 탭 · 성향 카드</td>
+            <td><span class="tag drop">혼자 다름</span></td></tr>
+        <tr><td class="new">국기 이모지</td><td class="now">도시 줄 · 나라 목록</td>
+            <td><span class="tag drop">기기마다 다름</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="box">
+    <span class="k">제안</span>
+    <p style="font-size:18px; font-weight:600; margin-bottom:10px">
+      기로의 그래픽 언어는 <span style="color:var(--hot)">사진</span>입니다.</p>
+    <p>이미 469곳에 눈으로 고른 사진이 붙어 있습니다. 이건 저쪽이 못 가진
+      자산이고, 홈·평가·여행에서 이미 주인공입니다. <b>남은 일은 사진과
+      싸우는 것들을 물러나게 하는 것</b>입니다 — 사진 옆의 모든 것은
+      조용한 글자와 한 벌의 선 아이콘으로.</p>
+    <p style="margin-bottom:0">랜드마크 그림이 세 번 실패한 이유도 여기 있습니다.
+      그건 <b>아홉 번째 언어</b>를 만드는 일이었습니다.</p>
+  </div>
+
+  <h3>순서대로 할 일</h3>
+  <ol>
+    <li><b>국기 이모지를 걷습니다.</b> 이모지는 기기마다 다르게 그려지고,
+      우리가 직접 그린 아이콘 옆에서 혼자 튑니다. 나라 이름 글자로 두거나,
+      정말 필요하면 같은 24칸 격자로 그립니다.
+      <span style="color:var(--faint)">— 작고 확실합니다.</span></li>
+
+    <li><b>선 아이콘의 굵기를 하나로.</b> 스물셋 중 열여덟이 이미
+      <code>1.8</code>인데 다섯이 어긋나 있습니다(1.7·1.9·2·2.1).
+      격자는 이미 24×24로 통일돼 있습니다.
+      <span style="color:var(--faint)">— 한 번에 끝납니다.</span></li>
+
+    <li><b>대륙 카드에 그 대륙 모양을 넣습니다.</b> 지금은 숫자만 달라서
+      일곱 장이 다 같아 보입니다. 세계지도 좌표(<code>world.js</code>)가
+      이미 있으니 <b>대륙만 잘라 쓰면</b> 새 자산이 필요 없습니다 —
+      발자취의 시도별 미니 지도가 정확히 그것이고, 그게 수집욕을 만듭니다.
+      <span style="color:var(--faint)">— 이 목록에서 가장 값어치 큽니다.</span></li>
+
+    <li><b>성향 일러스트 16장을 어떻게 할지 정합니다.</b> 앱에서 유일한
+      캐릭터 그림입니다. 셋 중 하나입니다:
+      <ul style="margin-top:8px">
+        <li>그대로 둔다 — 성향 카드는 원래 특별한 자리이고, 자랑하려고
+          만드는 것이니 혼자 달라도 된다.</li>
+        <li>성향 카드에만 남기고 <b>분석 탭에서는 뺀다</b> — 탭 안에서는
+          사진·글자와 섞여 튑니다.</li>
+        <li>다시 그린다 — 비용이 큽니다. 지금은 권하지 않습니다.</li>
+      </ul>
+      <span style="color:var(--faint)">— 결정이 먼저입니다. 제 추천은 두 번째.</span></li>
+
+    <li><b>카드 셋의 뼈대를 맞춥니다.</b> 성향·영수증·체크가 각각 다른
+      레이아웃입니다. 셋이 공유하는 것을 정해둡니다 —
+      종이색 <code>#FDFBF3</code>, 모서리 <code>W×.046</code>,
+      머리(명조)와 바닥(주소) 자리, 여백.
+      <span style="color:var(--faint)">— 이미 팔레트는 하나입니다. 뼈대만.</span></li>
+  </ol>
+
+  <div class="box warn" style="margin-top:26px">
+    <span class="k">안 할 것</span>
+    <p style="margin-bottom:0">지금 화면을 다 갈아엎지 않습니다. 위 다섯은
+      전부 <b>있는 것을 정리하는 일</b>이고, 새 자산이 필요한 것은 하나도
+      없습니다. 새 그림을 만드는 순간 아홉 번째 언어가 됩니다.</p>
+  </div>
+</section>
+
+<p class="foot">근거는 코드 전수입니다 — 기다림 문구 41군데, 아이콘 굵기 23개,
+  격자 30개, 성향 그림 16장, 지도 좌표 1벌. 순서는 <b>값어치 ÷ 위험</b>으로
+  잡았습니다.</p>
+</div>
