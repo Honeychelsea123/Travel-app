@@ -102,20 +102,40 @@ export function armStarDrag(){
   if (armStarDrag.done) return;    /* 두 번 달면 한 번 끌 때 두 번 매깁니다 */
   armStarDrag.done = true;
 
+  /* ⚠⚠ **iOS 는 `pointermove` 의 preventDefault 로 안 멈춥니다(b493).** ⚠⚠
+   *   b491 에서 그것만 걸어 두었더니 **폰에서 가로 끌기가 잘 안 됐습니다.**
+   *   밑에서 도는 `touchmove` 가 그대로 굴러서 사파리가 세로 팬으로 판단하고
+   *   `pointercancel` 을 던졌고, 우리 쪽은 원래 값으로 되돌리니 아무 일도
+   *   안 일어난 것처럼 보였습니다.
+   *   `planview.js` 의 일정 끌기에서 **이미 겪고 적어둔 함정**인데 여기서
+   *   똑같이 걸렸습니다 — 그쪽 주석: 「iOS 에서는 이 줄이 있어야 멈춥니다」.
+   * ⚠ **끌기가 시작된 뒤에만** 막습니다. 늘 막으면 별 위에서 시작한 세로
+   *   스크롤이 죽습니다 — 기록 탭은 줄마다 별이 있어 목록을 못 굴립니다.
+   * ⚠ `passive:false` 여야 preventDefault 가 먹습니다.
+   * ⚠ **통에 답니다.** 터치 이벤트는 손가락이 벗어나도 «시작한 요소»로
+   *   갑니다. 문서에 non-passive 로 달면 앱 전체 스크롤이 무거워집니다. */
+  const 굴림막기 = e => { if (끌기?.끌림) e.preventDefault(); };
+
   document.addEventListener('pointerdown', e => {
     if (e.button != null && e.button !== 0) return;
     const st = e.target.closest?.('.st');
     const wrap = st?.closest('.stars');
     if (!wrap) return;
-    끌기 = { wrap, id:e.pointerId, x0:e.clientX, 끌림:false,
+    끌기 = { wrap, id:e.pointerId, x0:e.clientX, y0:e.clientY, 끌림:false, 포기:false,
              처음:[...wrap.querySelectorAll('.st i')]
                     .reduce((s, i) => s + (parseFloat(i.style.width) || 0) / 100, 0) };
+    wrap.addEventListener('touchmove', 굴림막기, { passive:false });
   });
 
   document.addEventListener('pointermove', e => {
-    if (!끌기 || e.pointerId !== 끌기.id) return;
+    if (!끌기 || e.pointerId !== 끌기.id || 끌기.포기) return;
+    const dx = e.clientX - 끌기.x0, dy = e.clientY - 끌기.y0;
     if (!끌기.끌림){
-      if (Math.abs(e.clientX - 끌기.x0) < 4) return;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      /* ⚠ **세로가 이기면 포기합니다.** `touch-action:pan-y` 라 세로는
+         브라우저 것입니다 — 여기서 붙잡으면 목록을 굴리려던 손가락이
+         별점을 매깁니다. 하단바 쓸기(ui.js 의 onSwipeX)와 같은 규칙입니다. */
+      if (Math.abs(dx) <= Math.abs(dy)){ 끌기.포기 = true; return; }
       끌기.끌림 = true;
       /* 손가락이 별을 벗어나도 계속 받습니다. */
       try { 끌기.wrap.setPointerCapture(e.pointerId); } catch {}
@@ -127,7 +147,11 @@ export function armStarDrag(){
 
   const 끝내기 = e => {
     const d = 끌기; 끌기 = null;
-    if (!d || e.pointerId !== d.id) return;
+    if (!d) return;
+    /* 다른 손가락의 끝은 무시하되, 내 것이면 반드시 뒷정리합니다 —
+       안 떼면 통마다 touchmove 가 쌓여 스크롤이 점점 무거워집니다. */
+    if (e.pointerId !== d.id){ 끌기 = d; return; }
+    d.wrap.removeEventListener('touchmove', 굴림막기, { passive:false });
     try { d.wrap.releasePointerCapture(e.pointerId); } catch {}
     if (!d.끌림) return;                       /* 톡 누른 것 — 기존 click 에 맡깁니다 */
     if (e.type === 'pointercancel'){ paintStars(d.wrap, d.처음, false); return; }
