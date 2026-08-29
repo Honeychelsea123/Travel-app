@@ -13,12 +13,14 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b515';
-import { openCity } from './city.js?v=b515';
-import { distKm } from './calc.js?v=b515';
-import { sb } from './db.js?v=b515';
-import { cities, countryName, continentOf } from './cities.js?v=b515';
-import { PERSONA_ICON, shareCard } from './card.js?v=b515';
+         coverDeck } from './dom.js?v=b516';
+import { openCity } from './city.js?v=b516';
+import { distKm } from './calc.js?v=b516';
+import { sb } from './db.js?v=b516';
+import { cities, countryName, continentOf } from './cities.js?v=b516';
+import { PERSONA_ICON, shareCard } from './card.js?v=b516';
+/* 손가락으로 돌려 보는 지구본(b516). 평면 지도와 자리를 바꿔 섭니다. */
+import { mountGlobe } from './globe.js?v=b516';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -531,6 +533,44 @@ export async function openMap(){
      칠할지 다시 정하면 화면과 어긋납니다. 위에서 이미 .been 을 붙여뒀습니다.
      칠은 카드 배경(남색→보라) 위에 얹히므로 흰색 두 단계로만 씁니다. */
   $('fp_img').onclick = () => shareCard(발자국스펙(mapCities), 'aitrip-발자국');
+
+  /* ── 지구본(b516) ──────────────────────────────────────────────────
+     사용자 제안: 「드래그로 하면서 보는 게 재밌는 것」.
+     ⚠ **평면 지도를 대신하지 않습니다.** 대륙 확대(setMapView) · 핀 ·
+       크게 보기 · 공유 카드가 전부 평면 좌표 위에 지어져 있습니다.
+       둘이 자리를 바꿔 가며 서고, 평면 SVG 는 지우지 않고 감춥니다.
+     ⚠ 칠할 나라는 **위에서 이미 센 `gone`** 을 그대로 줍니다. 여기서
+       다시 세면 평면과 지구본의 칠이 언젠가 갈립니다.
+     ⚠ 처음 보이는 경도는 **다녀온 나라들의 한가운데**입니다. 늘 한국을
+       가운데 두면 유럽만 다닌 사람은 열자마자 빈 바다를 봅니다.
+       경도는 -180 에서 180 으로 감기므로 평균을 그냥 내면 안 됩니다 —
+       각도의 평균은 sin·cos 을 더해서 냅니다. */
+  let 공 = null;
+  const 지구본단추 = $('globebtn'), 공판 = $('globe'), 평면 = $('worldsvg');
+  if (지구본단추 && 공판 && 평면){
+    지구본단추.onclick = () => {
+      const 켠다 = 공판.classList.contains('hide');
+      공판.classList.toggle('hide', !켠다);
+      평면.classList.toggle('hide', 켠다);
+      공판.closest('.mapwrap')?.classList.toggle('globeon', 켠다);
+      지구본단추.classList.toggle('on', 켠다);
+      지구본단추.title = 켠다 ? '평면 지도로 보기' : '지구본으로 보기';
+      if (!켠다) return;
+      if (공) return 공.다시();
+      let sx = 0, sy = 0;
+      for (const c of mapCities){
+        const p = document.querySelector(`#worldland path[data-c="${CSS.escape(c.country)}"]`);
+        if (!p) continue;
+        const m = (p.getAttribute('d') || '').match(/^M\s*(-?[\d.]+)/);
+        if (!m) continue;
+        const 경도 = (+m[1] / 1000 * 360 - 180) * Math.PI / 180;
+        sx += Math.cos(경도); sy += Math.sin(경도);
+      }
+      const 가운데 = (sx || sy) ? Math.atan2(sy, sx) * 180 / Math.PI : 127;
+      공 = mountGlobe(공판, gone, 가운데);
+    };
+  }
+
 
   /* ── 대륙별 ── 퍼센트는 국가로만 셉니다 ── */
   /* **막대만 있고 어느 나라인지가 없었습니다.** "유럽 19/44국"을 보고 나면
