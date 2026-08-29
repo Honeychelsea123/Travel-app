@@ -14,9 +14,9 @@
  *
  * 층: dom.js · calc.js · trip.js 만 씁니다. 네트워크도 DB 도 안 씁니다 —
  * Leaflet 을 받아오는 것 하나뿐입니다. */
-import { $, esc } from './dom.js?v=b500';
-import { hm } from './calc.js?v=b500';
-import { plans, pickedDay, catFilter } from './trip.js?v=b500';
+import { $, esc } from './dom.js?v=b501';
+import { hm } from './calc.js?v=b501';
+import { plans, pickedDay, catFilter } from './trip.js?v=b501';
 
 /* ── 일정 지도 ───────────────────────────────────────────────────────
  * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.

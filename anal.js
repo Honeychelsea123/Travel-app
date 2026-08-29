@@ -14,27 +14,27 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b500';
-import { sb } from './db.js?v=b500';
-import { cities, continentOf } from './cities.js?v=b500';
+import { $, esc } from './dom.js?v=b501';
+import { sb } from './db.js?v=b501';
+import { cities, continentOf } from './cities.js?v=b501';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b500';
+import { personaBackTo } from './persona.js?v=b501';
 import { personaAxes, personaRank, personaMates, PERSONA16, AXIS_WORD,
-         AXIS_NAME, checkList, shareCard } from './card.js?v=b500';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b500';
+         AXIS_NAME, checkList, shareCard } from './card.js?v=b501';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo, funRows } from './map.js?v=b501';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
 /* 체크 카드 공유 링크(b488) — 보낸 사람과 받은 사람이 같은 24칸을 봐야
    고리가 이어집니다. check.js 머리말 참고. */
-import { checkUrl } from './check.js?v=b500';
-import { similarPicks } from './rec.js?v=b500';
+import { checkUrl } from './check.js?v=b501';
+import { similarPicks } from './rec.js?v=b501';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b500';
-import { pickCity } from './citysearch.js?v=b500';
-import { shareMate } from './mate.js?v=b500';
+import { openNew } from './newtrip.js?v=b501';
+import { pickCity } from './citysearch.js?v=b501';
+import { shareMate } from './mate.js?v=b501';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -146,7 +146,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b500"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b501"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -203,12 +203,14 @@ export async function loadAnal(){
          다이아몬드는 값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이
          꼭짓점 길이로 거의 같아 보이고, 이름과 숫자가 사방에 흩어져
          위에서 아래로 훑을 수가 없습니다.
-       ⚠ 대신 **축마다 색을 다르게** 둡니다. 넷을 같은 파랑으로 두면
-         하나의 긴 표로 읽혀 서로 다른 것을 잰다는 게 안 보입니다.
-       ⚠ 색은 앱이 이미 쓰는 분류색(--k-*)에서 가져옵니다 — 새로
-         만들면 앱 안에 색 체계가 둘이 됩니다. */
+       ⚠⚠ **넷 다 앱 파랑입니다(b501).** 전에는 축마다 분류색(--k-*)을
+         달리 줬습니다 — 「서로 다른 것을 잰다」를 색으로 말하려던 것인데,
+         **한 화면에 주황·초록·파랑·보라가 서고** 앱의 다른 어디에도
+         없는 무지개가 됐습니다. 서로 다르다는 것은 **이름과 값**이 이미
+         말합니다. 색은 앱 전체와 같아야 합니다.
+       ⚠ 인라인으로 안 칠합니다 — `.axbar > i` 가 이미 `--primary` 입니다.
+         여기서 덮어쓰면 앱 색을 바꿔도 이 막대만 안 따라옵니다. */
     const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
-    const 축색 = ['var(--k-food)', 'var(--k-see)', 'var(--k-move)', 'var(--k-stay)'];
     const 판 = document.createElement('div');
     판.className = 'axbars';
     /* ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
@@ -224,8 +226,7 @@ export async function loadAnal(){
     판.innerHTML = AXIS_NAME.map((n, i) => `
       <div class="axrow"><span class="axn"><b>${esc(n)}</b>
         <span>${esc(극(i))}</span></span>
-        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%;
-          background:${축색[i]}"></i></span>
+        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%"></i></span>
         <span class="axv">${값[i]}</span></div>`).join('');
     성향.appendChild(판);
 

@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b500';
-import { sb } from './db.js?v=b500';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b500';
-import { dateRange } from './calc.js?v=b500';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b500';
-import { cities, countryName, addCity } from './cities.js?v=b500';
+import { $, esc } from './dom.js?v=b501';
+import { sb } from './db.js?v=b501';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b501';
+import { dateRange } from './calc.js?v=b501';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b501';
+import { cities, countryName, addCity } from './cities.js?v=b501';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b500';
-import { openCity } from './city.js?v=b500';
-import { loadCities } from './citysearch.js?v=b500';
+         putRateFilter, removeRate } from './rate.js?v=b501';
+import { openCity } from './city.js?v=b501';
+import { loadCities } from './citysearch.js?v=b501';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -282,7 +282,12 @@ $('ratelist').addEventListener('click', async e => {
     /* 같은 점수를 다시 누르면 지웁니다. 잘못 누른 것을 되돌릴 길이 있어야 합니다.
        "다녀옴"은 따로 켜지 않습니다 — 별점이 있으면 다녀온 것으로 계산됩니다. */
     const cur = myRates[cityId]?.stars;
-    const next = Number(cur) === v ? null : v;
+    /* ⚠ **0 도 「지우기」입니다(b501).** 별을 끌어 맨 왼쪽까지 가면 0 이
+       옵니다. 자료는 `saveRate` 가 알아서 `dropRate` 로 보내는데(b494),
+       **화면은 그걸 몰라서** 「★ 0 기록」 딱지가 붙었습니다 — 지웠는데
+       0점을 준 것처럼 보였습니다. 아래 `paintStars`·`markRated` 가 이
+       값을 그대로 쓰므로 여기서 null 로 만들어야 합니다. */
+    const next = (v === 0 || Number(cur) === v) ? null : v;
     /* 저장을 기다리지 않고 먼저 칠합니다. 여기서는 줄을 옮기지도 지우지도 않습니다. */
     paintStars(wrap, next, true);
     markRated(st.closest('.rrow'), next);
