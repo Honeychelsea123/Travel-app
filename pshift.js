@@ -14,11 +14,11 @@
  * ⚠ 기기마다 따로 셉니다(localStorage). 계정에 두려면 표가 하나 필요한데,
  *   두 기기에서 한 번씩 보는 것은 나쁜 일이 아니라 그냥 둡니다.
  */
-import { $, esc } from './dom.js?v=b526';
-import { sb } from './db.js?v=b526';
-import { netTimeout } from './net.js?v=b526';
-import { cities } from './cities.js?v=b526';
-import { personaAxes, PERSONA16 } from './card.js?v=b526';
+import { $, esc } from './dom.js?v=b527';
+import { sb } from './db.js?v=b527';
+import { netTimeout } from './net.js?v=b527';
+import { cities } from './cities.js?v=b527';
+import { personaAxes, PERSONA16 } from './card.js?v=b527';
 
 let ctx = { me: () => null, 열기: () => {} };
 export function setShiftCtx(o){ ctx = { ...ctx, ...o }; }
@@ -53,14 +53,23 @@ export async function checkPersonaShift(){
   if (!지금 || 지금.length !== 4) return;
 
   const 전 = 읽기();
-  쓰기(지금);                       /* 먼저 적습니다 — 두 번 말하지 않으려고 */
-  if (!전 || 전 === 지금) return;   /* 처음이거나 그대로면 조용히 */
-  그리기(전, 지금);
+  if (!전){ 쓰기(지금); return; }   /* 처음 본 코드는 적어만 둡니다 */
+  if (전 === 지금) return;
+
+  /* ⚠⚠ **알린 뒤에 적습니다(b527).** 먼저 적었더니, 홈이 한 번 더 그려지며
+     카드가 지워진 경우 **영영 다시 안 떴습니다** — 이미 적힌 코드와 견주니
+     「그대로」가 되기 때문입니다. 실제로 그랬습니다: 저장된 코드는 새 것으로
+     바뀌었는데 화면에는 아무것도 없었습니다.
+     못 띄웠으면 안 적습니다. 다음에 홈을 그릴 때 다시 시도합니다. */
+  if (그리기(전, 지금)) 쓰기(지금);
+
 }
 
 function 그리기(전, 지금){
   const 홈 = $('home');
-  if (!홈 || 홈.querySelector('.pshift')) return;
+  /* 홈이 아직 없거나 이미 떠 있으면 아무것도 안 합니다.
+     ⚠ **띄웠는지를 돌려줍니다** — 부르는 쪽이 그걸 보고 적습니다. */
+  if (!홈 || 홈.querySelector('.pshift')) return false;
   const 앞 = PERSONA16[전]?.n || '', 뒤 = PERSONA16[지금]?.n || '';
 
   const 칸 = document.createElement('div');
@@ -80,4 +89,5 @@ function 그리기(전, 지금){
   칸.querySelector('.psh-x').onclick = () => 칸.remove();
   칸.querySelector('.psh-go').onclick = () => { 칸.remove(); ctx.열기(); };
   홈.prepend(칸);
+  return true;
 }
