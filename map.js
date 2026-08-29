@@ -13,14 +13,14 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b517';
-import { openCity } from './city.js?v=b517';
-import { distKm } from './calc.js?v=b517';
-import { sb } from './db.js?v=b517';
-import { cities, countryName, continentOf } from './cities.js?v=b517';
-import { PERSONA_ICON, shareCard } from './card.js?v=b517';
+         coverDeck } from './dom.js?v=b518';
+import { openCity } from './city.js?v=b518';
+import { distKm } from './calc.js?v=b518';
+import { sb } from './db.js?v=b518';
+import { cities, countryName, continentOf } from './cities.js?v=b518';
+import { PERSONA_ICON, shareCard } from './card.js?v=b518';
 /* 손가락으로 돌려 보는 지구본(b516). 평면 지도와 자리를 바꿔 섭니다. */
-import { mountGlobe } from './globe.js?v=b517';
+import { mountGlobe } from './globe.js?v=b518';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.

@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b517';
+import { $ } from './dom.js?v=b518';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -147,9 +147,11 @@ export function mountGlobe(canvas, 갔다, 처음경도){
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
-    if (canvas.width !== Math.round(w * dpr)){
-      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-    }
+    const W = Math.round(w * dpr), H = Math.round(h * dpr);
+    /* ⚠ **높이도 같이 봐야 합니다.** 처음에 폭만 보고 넘겼더니, 캔버스의
+       기본값이 300×150 이라 폭 300 짜리 칸에서 **폭은 맞고 높이만 150 인
+       채로** 그렸습니다. 지구본이 위아래로 잘렸습니다(실측). */
+    if (canvas.width !== W || canvas.height !== H){ canvas.width = W; canvas.height = H; }
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
