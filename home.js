@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b557';
-import { sb } from './db.js?v=b557';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b557';
-import { hm, todayYmd } from './calc.js?v=b557';
-import { starHtml, paintStars } from './stars.js?v=b557';
+import { $, esc } from './dom.js?v=b559';
+import { sb } from './db.js?v=b559';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b559';
+import { hm, todayYmd } from './calc.js?v=b559';
+import { starHtml, paintStars } from './stars.js?v=b559';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b557';
-import { cities, countryName } from './cities.js?v=b557';
-import { myRates, cityStat, visited } from './rate.js?v=b557';
-import { plans } from './trip.js?v=b557';
-import { loadCities } from './citysearch.js?v=b557';
+import { starValue } from './rateui.js?v=b559';
+import { cities, countryName } from './cities.js?v=b559';
+import { myRates, cityStat, visited } from './rate.js?v=b559';
+import { plans } from './trip.js?v=b559';
+import { loadCities } from './citysearch.js?v=b559';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b557';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b557';
+import { openCity } from './city.js?v=b559';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b559';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b557';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b559';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b557';
+import { drawReport } from './report.js?v=b559';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b557';
+import { PERSONA_BG } from './card.js?v=b559';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b557';
+import { checkPersonaShift } from './pshift.js?v=b559';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b557';
+import { diaryBackTo } from './diary.js?v=b559';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b557';
+import { mountGlobe } from './globe.js?v=b559';
 
 /* ══ 나라 카드 ══ 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ═══════
  * 사용자 요청. 「지구본을 돌리다 대한민국을 누르면 아래에 카드가 뜨고,
@@ -91,16 +91,19 @@ function 시트만들기(){
   판.id = 'gsheet';
   판.className = 'hide';
   판.innerHTML = '<div class="gsdim"></div>' +
-    '<div class="gswrap"><div class="gsrow"></div>' +
-    '<div class="gsdots"></div></div>';
+    '<div class="gswrap"><div class="gsrow"></div></div>';
   document.body.appendChild(판);
   /* 바깥(어두운 곳)을 누르면 닫습니다. 카드 위는 안 닫습니다. */
   판.querySelector('.gsdim').onclick = () => 시트닫기();
   /* 점은 보여주기만 합니다 — 미는 것으로 넘깁니다(홈 넘김 카드와 같은 규칙). */
+  /* ⚠ 점은 **사진 위**에 있습니다(b559) — 카드마다 하나씩 들어 있고,
+     지금 보이는 카드의 것만 켭니다. 카드 밖 아래에 두었더니 카드와
+     떨어져 보였습니다(에어비앤비도 사진 안입니다). */
   판.querySelector('.gsrow').addEventListener('scroll', () => {
     const 줄 = 판.querySelector('.gsrow');
     const i = Math.round(줄.scrollLeft / (줄.clientWidth || 1));
-    [...판.querySelectorAll('.gsdots i')].forEach((d, k) => d.classList.toggle('on', k === i));
+    [...판.querySelectorAll('.gscard')].forEach((c, k) =>
+      [...c.querySelectorAll('.gsdot i')].forEach((d, j) => d.classList.toggle('on', j === i)));
   }, { passive:true });
   return 판;
 }
@@ -112,9 +115,9 @@ export function 시트닫기(뒤로온것){
   판.classList.add('hide');
 }
 
-/* 별 다섯 개를 글자로. 반 칸까지 봅니다(별점이 0.5 단위입니다). */
-const 별글 = v => v == null ? '' :
-  '★'.repeat(Math.floor(v)) + (v % 1 ? '⯨' : '') + '☆'.repeat(5 - Math.ceil(v));
+/* ⚠ 별을 글자로 찍던 `별글` 을 걷었습니다(b559). 반 칸 기호(U+2BE8)가
+   아이폰에서 **두부(네모)** 로 나왔습니다 — 폰트에 없는 글자입니다.
+   앱이 이미 쓰는 별 부품(stars.js 의 `starHtml`)을 씁니다. */
 
 async function 나라카드(코드){
   /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말). */
@@ -127,30 +130,53 @@ async function 나라카드(코드){
   if (!목록.length) return;                 /* 매긴 곳이 없으면 아무 일도 안 합니다 */
   const 판 = 시트만들기();
   const 나라 = countryName[코드] || 코드;
+  /* ── 카드 한 장(b559 에 다시 그림) ──────────────────────────────────
+   * ⚠⚠ **처음 것은 「사진 + 글 몇 줄」이었고 허술했습니다(사용자 지적).**
+   *   고친 것 넷을 적어둡니다 — 다시 손댈 때 되돌리지 마십시오.
+   *   ① **별을 글자로 찍지 않습니다.** 「★⯨☆☆☆」 처럼 반 칸 기호를 썼는데
+   *      아이폰에서 **네모(두부)로** 나왔습니다. 앱이 이미 쓰는 별 부품
+   *      (`starHtml` · `.stars`)을 씁니다 — 어디서나 같은 별이고 반 칸도
+   *      제대로 나옵니다. `.ro` 를 달아 눌러도 안 매겨지게 합니다.
+   *   ② **카드 «전체»가 눌립니다.** 사진만 눌리면 손가락이 갈 곳이 좁고,
+   *      「여행지 보기 ›」 알약이 사진 위에 떠서 지저분했습니다.
+   *   ③ **닫기 ✕ 를 사진 위에** 답니다. 전에는 어두운 곳을 눌러야만
+   *      닫혔는데, 카드가 화면 아래에 붙어 있어 누를 자리가 좁습니다.
+   *   ④ **점은 사진 안**입니다(카드마다 하나). 밖에 두니 떨어져 보였습니다.
+   * ⚠ 제목 줄 오른쪽은 **평균**입니다 — 남들 점수라 내 것과 자리를 나눕니다.
+   *   내 별점은 아래 줄에 별 그림으로. */
   판.querySelector('.gsrow').innerHTML = 목록.map(c => {
     const r = myRates[c.id] || {};
     const st = cityStat[c.id];
-    return `<div class="gscard"><div class="gsin">
-      <button class="gsimg" data-go="${esc(c.id)}">${c.image_url
+    const 점 = 목록.length > 1
+      ? `<div class="gsdot">${목록.map((_, i) =>
+          `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : '';
+    return `<div class="gscard"><div class="gsin" data-go="${esc(c.id)}">
+      <div class="gsimg">${c.image_url
         ? `<img src="${esc(c.image_url)}" alt="" loading="lazy">`
         : `<span class="gsph">${esc(c.name.slice(0, 1))}</span>`}
-        <span class="gsgo">여행지 보기 ›</span></button>
+        <button class="gsx" type="button" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        ${점}</div>
       <div class="gsbody">
-        <div class="gstitle"><b>${esc(c.name)}</b><span>${esc(나라)}</span></div>
-        <div class="gsstars">
-          <span><i>내 별점</i>${별글(r.stars)} ${r.stars.toFixed(1)}</span>
-          <span><i>평균</i>${st?.avg_stars != null
-            ? `★ ${Number(st.avg_stars).toFixed(1)}` : '–'}</span>
-        </div>
+        <div class="gstitle"><b>${esc(c.name)}</b>
+          <span class="gsavg">${st?.avg_stars != null
+            ? `★ ${Number(st.avg_stars).toFixed(1)}` : ''}</span></div>
+        <div class="gssub">${esc(나라)}</div>
+        <div class="gsmine"><span class="stars ro">${starHtml(r.stars)}</span>
+          <b>${r.stars.toFixed(1)}</b><i>내 별점</i></div>
         ${r.comment ? `<div class="gscmt">${esc(r.comment)}</div>` : ''}
       </div></div></div>`;
   }).join('');
-  판.querySelector('.gsdots').innerHTML = 목록.length > 1
-    ? 목록.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
-  /* 사진을 누르면 그 도시 화면으로. 시트는 먼저 닫습니다 — 도시 화면
-     위에 시트가 남아 있으면 뒤로가기가 두 번 필요합니다. */
-  판.querySelectorAll('.gsimg').forEach(b => {
-    b.onclick = () => { const id = b.dataset.go; 시트닫기(); openCity(id); };
+  /* 카드를 누르면 그 도시 화면으로. 시트는 먼저 닫습니다 — 도시 화면
+     위에 시트가 남아 있으면 뒤로가기가 두 번 필요합니다.
+     ⚠ 닫기 ✕ 는 카드 «안»에 있으므로 거기서 멈춰 세웁니다. */
+  판.querySelectorAll('.gsin').forEach(b => {
+    b.onclick = e => {
+      if (e.target.closest('.gsx')) return 시트닫기();
+      시트닫기(); openCity(b.dataset.go);
+    };
   });
   판.querySelector('.gsrow').scrollLeft = 0;
   판.classList.remove('hide');
@@ -544,9 +570,9 @@ async function buildHome(){
  *   마음이 생깁니다 — 끝이 없어 보이는 일은 미룹니다(spree.js 의 세기와
  *   같은 이유). */
 function 남은말(pend){
+  /* ⚠ 장소(`places`)를 세던 줄을 걷었습니다(b558) — 이제 도시만 남습니다. */
   const 조각 = [];
   if (pend.cities.length) 조각.push(`${pend.cities.length}곳`);
-  if (pend.places.length) 조각.push(`${pend.places.length}군데`);
   return 조각.length ? ` · ${조각.join(' · ')}` : '';
 }
 export async function reviewBar(){
@@ -581,19 +607,17 @@ async function pendingTrip(){
     .order('end_date', { ascending:false }).limit(5));
   if (!data?.length) return null;
 
+  /* ⚠ **맛집·관광지는 안 셉니다(b558).** 따로 매기는 것을 그만뒀습니다 —
+     남은 것은 「아직 별점을 안 매긴 도시」뿐입니다. 질의도 넷에서 둘로
+     줄었습니다(plans · plan_ratings 를 안 부릅니다). */
   for (const t of data){
-    const [lg, ps, cr, pr] = await Promise.all([
+    const [lg, cr] = await Promise.all([
       netTimeout(sb.from('trip_legs').select('city_id').eq('trip_id', t.id).not('city_id','is',null)),
-      netTimeout(sb.from('plans').select('id').eq('trip_id', t.id).is('deleted_at', null)
-        .in('category', ['식사','카페'])),
       netTimeout(sb.from('city_ratings').select('city_id').eq('user_id', ctx.me().id).not('stars','is',null)),
-      netTimeout(sb.from('plan_ratings').select('plan_id').eq('user_id', ctx.me().id).not('stars','is',null)),
     ]);
     const rated = new Set((cr.data || []).map(r => r.city_id));
-    const done  = new Set((pr.data || []).map(r => r.plan_id));
     const cities = [...new Set((lg.data || []).map(l => l.city_id))].filter(id => !rated.has(id));
-    const places = (ps.data || []).filter(p => !done.has(p.id)).map(p => p.id);
-    if (cities.length || places.length) return { trip: t, cities, places };
+    if (cities.length) return { trip: t, cities };
   }
   return null;
 }
@@ -626,47 +650,49 @@ async function openReviewTrip(id){
   window.scrollTo({ top:0 });
   if (history.state?.t2 !== 'rv') history.pushState({ t2:'rv' }, '');
 
+  /* ⚠ **맛집·관광지 질의를 걷었습니다(b558).** 다녀온 뒤에 묻는 것은
+     이제 도시 셋뿐입니다 — 별점 · 한줄평 · 일기.
+   ⚠ 한줄평·일기도 **미리 받아옵니다.** 안 받으면 이미 적어둔 것이 빈
+     칸으로 보이고, 그대로 저장하면 **적어둔 것을 지워버립니다.** */
   await loadCities();
-  const [t, lg, ps, cr, pr] = await Promise.all([
+  const [t, lg, cr] = await Promise.all([
     sb.from('trips').select('title,start_date,end_date').eq('id', id).maybeSingle(),
     sb.from('trip_legs').select('city_id').eq('trip_id', id).not('city_id','is',null),
-    sb.from('plans').select('id,title,category,date').eq('trip_id', id)
-      .is('deleted_at', null).in('category', ['식사','카페','관광','쇼핑']).order('date'),
-    sb.from('city_ratings').select('city_id,stars').eq('user_id', ctx.me().id),
-    sb.from('plan_ratings').select('plan_id,stars').eq('user_id', ctx.me().id),
+    sb.from('city_ratings').select('city_id,stars,comment,journal')
+      .eq('user_id', ctx.me().id),
   ]);
-  const cs = Object.fromEntries((cr.data || []).map(r => [r.city_id, r.stars]));
-  const psr = Object.fromEntries((pr.data || []).map(r => [r.plan_id, r.stars]));
+  const 이미 = Object.fromEntries((cr.data || []).map(r => [r.city_id, r]));
 
   $('rv_head').textContent = `${t.data?.title || '여행'} 어땠어요?`;
-  $('rv_sub').textContent  = '다녀오신 곳을 평가해주세요. 건너뛰어도 괜찮아요.';
+  $('rv_sub').textContent  = '별점 · 한줄평 · 일기를 남겨보세요. 건너뛰어도 괜찮아요.';
 
+  /* ── 도시마다 한 칸 ── 별점 · 한줄평 · 일기(b558) ────────────────────
+   * ⚠ **한줄평과 일기는 다른 것입니다.** 한줄평은 도시 화면에서 남들에게
+   *   보이고(city_comments), 일기는 나만 봅니다(db/071 의 journal).
+   *   그 차이를 «칸 밑에» 적어둡니다 — 안 적으면 일기에 남들 보라고
+   *   쓰거나, 한줄평에 혼잣말을 씁니다.
+   * ⚠ 저장은 **칸을 벗어날 때**입니다(change). 한 글자마다 보내면 여행
+   *   하나에 도시가 다섯이면 수백 번 갑니다.
+   * ⚠ 빈 칸은 `null` 로 보냅니다 — 빈 문자열을 넣으면 「적었는데 비웠다」와
+   *   「원래 안 적었다」가 구별이 안 됩니다. */
   const ids = [...new Set((lg.data || []).map(l => l.city_id))];
-  $('rvt_cities').innerHTML = ids.length
-    ? '<div class="daysep">도시</div>' + ids.map(cid => {
-        const c = (cities || []).find(x => x.id === cid); if (!c) return '';
-        return `<div class="rrow">
-          ${c.image_url ? `<img class="thumb" src="${esc(c.image_url)}" alt="">`
-                        : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
-          <div class="t"><b>${esc(c.name)}</b>
-            <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
-          <span class="stars" data-city="${esc(cid)}">${starHtml(cs[cid])}</span>
-        </div>`;
-      }).join('') : '';
-
-  /* 먹은 곳과 본 곳을 나눠 묻습니다. 리포트에서 둘을 견줘 보여주려면
-     따로 받아야 합니다 — "5만엔 오마카세보다 라멘에 별을 더 줬다" 같은 것. */
-  const ICON = { 식사:'🍽', 카페:'☕', 관광:'📸', 쇼핑:'🛍' };
-  const group = (title, list) => list.length
-    ? `<div class="daysep">${title}</div>` + list.map(p => `<div class="rrow">
-        <span class="thumb ph">${ICON[p.category] || '📍'}</span>
-        <div class="t"><b>${esc(p.title)}</b><span class="memo">${esc(p.date)}</span></div>
-        <span class="stars" data-plan="${esc(p.id)}">${starHtml(psr[p.id])}</span>
-      </div>`).join('') : '';
-  const all = ps.data || [];
-  $('rv_places').innerHTML =
-    group('먹은 곳', all.filter(p => ['식사','카페'].includes(p.category))) +
-    group('본 곳',   all.filter(p => ['관광','쇼핑'].includes(p.category)));
+  $('rvt_cities').innerHTML = ids.map(cid => {
+    const c = (cities || []).find(x => x.id === cid); if (!c) return '';
+    const r = 이미[cid] || {};
+    return `<div class="rvcity">
+      <div class="rrow">
+        ${c.image_url ? `<img class="thumb" src="${esc(c.image_url)}" alt="">`
+                      : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
+        <div class="t"><b>${esc(c.name)}</b>
+          <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
+        <span class="stars" data-city="${esc(cid)}">${starHtml(r.stars)}</span>
+      </div>
+      <input class="rvcmt" data-cmt="${esc(cid)}" maxlength="80"
+             placeholder="한줄평 — 남들에게도 보여요" value="${esc(r.comment || '')}">
+      <textarea class="rvjrn" data-jrn="${esc(cid)}" rows="3" maxlength="4000"
+        placeholder="일기 — 나만 봅니다">${esc(r.journal || '')}</textarea>
+    </div>`;
+  }).join('') || '<div class="empty">이 여행에는 도시가 없어요.</div>';
 }
 
 /* ── 평가 화면에서 나가면 **들어온 자리**로 ─────────────────────────
@@ -690,21 +716,31 @@ export function closeReview(fromPop){
 }
 $('rvback').addEventListener('click', () => closeReview());
 
-/* 평가 줄. 도시는 city_ratings, 맛집은 plan_ratings 로 갑니다. */
+/* 평가 줄. 도시(city_ratings)뿐입니다 — 맛집은 b558 에 걷었습니다. */
+/* ⚠ 맛집(plan_ratings) 갈래를 걷었습니다(b558) — 여기서 매기는 것은
+   도시뿐입니다. 0 은 saveRate 가 알아서 지우기로 보냅니다(b494). */
 $('rv_rate').addEventListener('click', async e => {
   const st = e.target.closest('.st'); if (!st) return;
   const wrap = st.closest('.stars');
+  if (!wrap?.dataset.city) return;
   const v = starValue(st, e.clientX);   /* 반칸 규칙은 stars.js 한 곳(b491) */
   paintStars(wrap, v, true);
-  if (wrap.dataset.city) await saveRate(wrap.dataset.city, { stars: v }, true);
-  /* ⚠ **0 은 지우기입니다(b494).** 도시 쪽은 saveRate 가 알아서 dropRate 로
-     보내는데, 맛집(plan_ratings)은 그 길을 안 지나므로 여기서 지웁니다.
-     0 을 그대로 upsert 하면 「0점을 준 맛집」이 생깁니다. */
-  else if (v === 0) await sb.from('plan_ratings').delete()
-    .eq('user_id', ctx.me().id).eq('plan_id', wrap.dataset.plan);
-  else await sb.from('plan_ratings').upsert(
-    { user_id: ctx.me().id, plan_id: wrap.dataset.plan, stars: v },
-    { onConflict: 'user_id,plan_id' });
+  await saveRate(wrap.dataset.city, { stars: v }, true);
+});
+
+/* ── 한줄평·일기 저장(b558) ──────────────────────────────────────────
+ * ⚠ `change` 입니다 — 칸을 벗어날 때 한 번. `input` 으로 하면 한 글자마다
+ *   서버에 갑니다.
+ * ⚠ **조용히 저장합니다**(세 번째 인자). 다시 그리면 지금 쓰던 칸이
+ *   날아가고 커서가 사라집니다.
+ * ⚠ 빈 칸은 `null` — 빈 문자열은 「적었다가 비웠다」와 「원래 안 적었다」를
+ *   구별 못 하게 만듭니다. */
+$('rv_rate').addEventListener('change', async e => {
+  const el = e.target;
+  const id = el.dataset?.cmt || el.dataset?.jrn;
+  if (!id) return;
+  const v = (el.value || '').trim() || null;
+  await saveRate(id, el.dataset.cmt ? { comment: v } : { journal: v }, true);
 });
 
 /* ── 리포트 ──────────────────────────────────────────────────────────

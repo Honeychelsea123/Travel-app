@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b557';
-import { sb } from './db.js?v=b557';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b557';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b557';
-import { trip, plans, legs } from './trip.js?v=b557';
-import { search } from './cities.js?v=b557';
-import { picked } from './citysearch.js?v=b557';
-import { mapLinks } from './planmap.js?v=b557';
-import { openPlanForm } from './cards.js?v=b557';
-import { syncSheets } from './ui.js?v=b557';
+import { $, esc, emptyDo } from './dom.js?v=b559';
+import { sb } from './db.js?v=b559';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b559';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b559';
+import { trip, plans, legs } from './trip.js?v=b559';
+import { search } from './cities.js?v=b559';
+import { picked } from './citysearch.js?v=b559';
+import { mapLinks } from './planmap.js?v=b559';
+import { openPlanForm } from './cards.js?v=b559';
+import { syncSheets } from './ui.js?v=b559';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
