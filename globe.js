@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b529';
+import { $ } from './dom.js?v=b530';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -182,7 +182,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
     const cs = getComputedStyle(document.documentElement);
     const 바다 = cs.getPropertyValue('--parchment').trim() || '#eeeef2';
     const 땅   = cs.getPropertyValue('--line').trim()      || '#d8d8dd';
-    const 파랑 = cs.getPropertyValue('--primary').trim()   || '#0066cc';
+    /* 「내 것」의 색입니다(b530) — 평면 지도와 **같은 토큰**을 읽습니다.
+       여기서 다른 값을 쓰면 같은 나라가 두 색으로 보입니다. */
+    const 내것 = cs.getPropertyValue('--mine').trim()      || '#F25E26';
 
     const R = Math.min(w, h) / 2 - 6;
     const cx = w / 2, cy = h / 2;
@@ -201,7 +203,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
     ctx.lineWidth = .4;
     for (const 나라 of 목록){
       const 감 = 갔다.has(나라.code);
-      ctx.fillStyle = 감 ? 파랑 : 땅;
+      ctx.fillStyle = 감 ? 내것 : 땅;
       ctx.strokeStyle = 바다;
       for (const 고리 of 나라.고리){
         if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){ ctx.fill(); ctx.stroke(); }

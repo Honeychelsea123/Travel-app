@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b529';
+import { $, esc, toast } from './dom.js?v=b530';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b529';
+import { distKm, pScale, SEOUL } from './calc.js?v=b530';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -313,7 +313,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b529`;
+    img.src = `./persona/${code}.png?v=b530`;
   });
 }
 
@@ -377,7 +377,10 @@ async function drawReceipt(s, W, H, F){
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   /* 등폭. `F` 는 본문 글꼴이라 여기서는 안 씁니다 — 영수증은 등폭이 전부입니다. */
-  const M = (w, px) => `${w} ${px}px "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace`;
+  /* ⚠ 예전엔 "IBM Plex Mono" 가 맨 앞이었는데 **아무 데서도 안 받아왔습니다**
+     (b530). 캔버스는 없는 글꼴을 조용히 기기 것으로 바꿔 그립니다 —
+     그래서 영수증 카드도 처음부터 기기 고정폭이었습니다. 이름을 뺍니다. */
+  const M = (w, px) => `${w} ${px}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   const L = W * .12, R = W * .88;
 
   /* ── 조각들 ── 화면 쪽과 같은 순서입니다. 높이는 자(U) 기준입니다. */
