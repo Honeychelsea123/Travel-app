@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b560';
-import { sb } from './db.js?v=b560';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b560';
-import { hm, todayYmd } from './calc.js?v=b560';
-import { starHtml, paintStars } from './stars.js?v=b560';
+import { $, esc } from './dom.js?v=b561';
+import { sb } from './db.js?v=b561';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b561';
+import { hm, todayYmd } from './calc.js?v=b561';
+import { starHtml, paintStars } from './stars.js?v=b561';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b560';
-import { cities, countryName } from './cities.js?v=b560';
-import { myRates, cityStat, visited } from './rate.js?v=b560';
-import { plans } from './trip.js?v=b560';
-import { loadCities } from './citysearch.js?v=b560';
+import { starValue } from './rateui.js?v=b561';
+import { cities, countryName } from './cities.js?v=b561';
+import { myRates, cityStat, visited } from './rate.js?v=b561';
+import { plans } from './trip.js?v=b561';
+import { loadCities } from './citysearch.js?v=b561';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b560';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b560';
+import { openCity } from './city.js?v=b561';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b561';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b560';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b561';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b560';
+import { drawReport } from './report.js?v=b561';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b560';
+import { PERSONA_BG } from './card.js?v=b561';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b560';
+import { checkPersonaShift } from './pshift.js?v=b561';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b560';
+import { diaryBackTo } from './diary.js?v=b561';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b560';
+import { mountGlobe } from './globe.js?v=b561';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -1139,17 +1139,8 @@ async function renderFoot(통){
   자세히.onclick = 지도열기;
   감쌈.appendChild(자세히);
 
-  /* ── ＋ / − ── 손가락 둘이 어려운 사람도 확대할 수 있게(b560) ────────
-   * ⚠ 사용자가 두 번 말했습니다: 「나라를 더 잘 고르려면 줌인 줌아웃이
-   *   돼야 한다」. 집기(핀치)는 넣었지만 **보이지 않는 기능**입니다 —
-   *   단추가 있어야 있는 줄 압니다.
-   * ⚠ 지구본 오른쪽 «아래»입니다. 위쪽 두 모서리는 이미 3D/2D 와
-   *   「자세히」가 쓰고 있습니다. */
-  const 확대 = document.createElement('div');
-  확대.className = 'gzoom';
-  확대.innerHTML = '<button type="button" data-z="1" aria-label="확대">＋</button>' +
-                   '<button type="button" data-z="-1" aria-label="축소">−</button>';
-  감쌈.appendChild(확대);
+  /* ⚠ ＋/− 단추가 여기 있었습니다(b560 → b561 에 걷음, 사용자 결정).
+     확대는 손가락 둘로 집기와 마우스 휠 둘입니다. */
 
   const 바꿈 = document.createElement('div');
   바꿈.className = 'gswitch';
@@ -1194,10 +1185,6 @@ async function renderFoot(통){
        그 일을 맡습니다. 그래서 `민적있나`(민 뒤의 누름 한 번 건너뛰기)도
        여기서는 쓸 일이 없어졌습니다 — globe.js 에는 그대로 둡니다.
        평면 쪽(`mm.onclick`)도 같은 이유로 걷었습니다. */
-    확대.onclick = e => {
-      const b = e.target.closest('button'); if (!b) return;
-      공?.더보기(+b.dataset.z);
-    };
     바꿈.onclick = e => {
       const b = e.target.closest('button'); if (!b) return;
       평면인가 = b === 바꿈.children[1];

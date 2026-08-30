@@ -3260,18 +3260,8 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .rvcmt, .rvjrn{ width:100%; margin-top:8px; }
 .rvjrn{ resize:vertical; min-height:64px; line-height:1.5; }
 
-/* ── ＋ / − ── 지구본 확대(b560) ───────────────────────────────────────
- * ⚠ 오른쪽 «아래»입니다. 위 두 모서리는 3D/2D 와 「자세히」가 씁니다.
- * ⚠ 지구본 위에 얹히므로 흰 알약으로 둡니다 — 어떤 면 위에서도 보입니다. */
-.gzoom{ position:absolute; right:8px; bottom:8px; z-index:2;
-        display:flex; flex-direction:column; overflow:hidden;
-        border-radius:12px; background:var(--panel);
-        border:1px solid var(--line); box-shadow:0 1px 4px rgba(0,0,0,.08); }
-.gzoom button{ appearance:none; border:0; background:none; cursor:pointer;
-               width:34px; height:34px; font-size:var(--f-xl); line-height:1;
-               color:var(--ink); }
-.gzoom button + button{ border-top:1px solid var(--divider-soft); }
-.gzoom button:active{ background:var(--sunk); }
+/* ⚠ `.gzoom`(＋/− 단추)을 걷었습니다(b561) — 확대는 손가락으로만.
+   되살리려거든 home.js 의 그 자리 주석부터 보십시오. */
 
 .gmore{ position:absolute; right:2px; top:2px; z-index:2;
         appearance:none; border:0; background:none; cursor:pointer;
@@ -3330,6 +3320,14 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
       display:flex; align-items:center; justify-content:center;
       border:0; border-radius:50%; background:rgba(255,255,255,.94);
       color:var(--ink); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.18); }
+/* ⚠⚠ **크기를 CSS 로 줘야 합니다(b561).** `width="16"` 같은 «속성»만
+   두면 flex 안에서 **0×0 으로 찌그러집니다** — 실측: `getBoundingClientRect().width`
+   가 0 이었고, 획 색과 굵기는 멀쩡한데 화면에는 **빈 흰 동그라미**만
+   보였습니다(사용자: 「이 동그라미는 뭐야」).
+   앱의 다른 아이콘들이 전부 CSS 로 크기를 주는 이유가 이것입니다
+   (`.tabbar button svg` · `.shelf svg` 참고). 새 아이콘을 flex 안에 넣을
+   때마다 같은 함정입니다. */
+.gsx svg{ width:16px; height:16px; flex:none; display:block; }
 .gsx:active{ background:#fff; }
 /* 몇 곳 중 몇 번째인가 — 사진 «안» 아래 가운데. 보여주기만 합니다. */
 .gsdot{ position:absolute; left:0; right:0; bottom:9px; display:flex;
