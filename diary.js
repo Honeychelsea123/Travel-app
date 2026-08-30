@@ -18,10 +18,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b538';
-import { sb } from './db.js?v=b538';
-import { cities, countryName } from './cities.js?v=b538';
-import { starHtml } from './stars.js?v=b538';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b539';
+import { sb } from './db.js?v=b539';
+import { cities, countryName } from './cities.js?v=b539';
+import { starHtml } from './stars.js?v=b539';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -94,9 +94,20 @@ export async function openDiary(){
   /* ── 몇째 장인가 ── 점이 아니라 숫자입니다.
      장이 스물이 넘으면 점은 세어지지도 않고 줄만 어지럽습니다. */
   const 줄기 = $('diarybody').querySelector('.dgrow');
+  /* ⚠⚠ **한 칸은 `clientWidth` 가 아닙니다(b539).** 줄기에 좌우 여백과
+     장 사이 틈이 있어서, 실측하면 줄기 480 · 한 장 446 · 한 칸 458 입니다.
+     `clientWidth` 로 세면 오차가 장마다 쌓여 **열두째 장쯤에서 한 장씩
+     어긋납니다**(458/480 = 0.954). 장과 틈을 직접 재서 씁니다. */
+  const 칸폭 = () => {
+    const p = 줄기.querySelector('.dgpage');
+    if (!p) return 줄기.clientWidth || 1;
+    const cs = getComputedStyle(줄기);
+    const 틈 = parseFloat(cs.columnGap || cs.gap) || 0;
+    return (p.offsetWidth + 틈) || 1;
+  };
   const 세기 = () => {
-    const w = 줄기.clientWidth || 1;
-    const i = Math.min(장들.length, Math.max(1, Math.round(줄기.scrollLeft / w) + 1));
+    const i = Math.min(장들.length,
+                       Math.max(1, Math.round(줄기.scrollLeft / 칸폭()) + 1));
     $('diarycount').textContent = `${i} / ${장들.length}`;
   };
   세기();

@@ -3249,13 +3249,20 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   붙어서 넘길 자리가 안 보입니다(.days.oneline 과 같은 수법). */
 .dgrow{
   display:flex; overflow-x:auto; overflow-y:hidden;
-  scroll-snap-type:x mandatory; scroll-behavior:smooth;
+  scroll-snap-type:x mandatory;
+  /* ⚠ **`scroll-behavior:smooth` 를 넣지 마십시오(b539).** 손가락으로
+     넘기는 데는 필요 없고, 자바스크립트가 `scrollLeft` 를 넣을 때 그 값을
+     **삼킵니다**(b492 에서 탭 덱이 같은 것으로 멎었습니다. 실측: 500 을
+     넣었는데 0, auto 로 바꾸니 458). */
   scrollbar-width:none; -ms-overflow-style:none;
   margin:0 calc(-1 * var(--s-md)); padding:0 var(--s-md); gap:12px;
 }
 .dgrow::-webkit-scrollbar{ display:none; }
 .dgpage{
-  flex:0 0 100%; scroll-snap-align:center; min-width:0;
+  /* ⚠ `center` 가 아니라 `start` 입니다 — 이 저장소에 이미 적힌 규칙인데
+     (b468, `.swcard`) 새로 만들면서 어겼습니다. 몇째 장인지를 `i × 칸폭`
+     으로 세는데 그 셈은 **start 기준**입니다. */
+  flex:0 0 100%; scroll-snap-align:start; min-width:0;
   /* 일기가 길면 이 안에서 굴립니다. 한 장의 키를 정해두지 않으면 제일
      긴 일기가 나머지 장을 다 늘려서, 짧은 일기가 허공에 뜹니다. */
   height:min(58vh, 460px); overflow-y:auto; overscroll-behavior:contain;
