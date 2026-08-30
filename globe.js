@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b559';
+import { $ } from './dom.js?v=b560';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -233,6 +233,15 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
   /* 마지막으로 그린 판(반지름·가운데). **눌린 자리를 나라로 되돌릴 때**
      씁니다 — 그때 다시 재면 그 사이에 창이 바뀌었을 수 있습니다. */
   let 판 = null;
+  /* ── 확대(b560, 사용자 요청) ─────────────────────────────────────
+   * 1 이 「칸에 딱 맞는 크기」입니다. 키우면 지구가 칸보다 커지고,
+   * 칸 밖으로 나간 부분은 잘립니다 — 그게 확대입니다.
+   * ⚠ **4배까지.** 더 키우면 자료가 못 따라옵니다 — 이 지도는 110m
+   *   축척이라 5배쯤부터 해안선이 각져 보입니다(원본이 그만큼입니다).
+   * ⚠ 1 아래로는 안 내려갑니다. 칸보다 작아지면 지구 둘레에 빈 자리가
+   *   생겨서 「덜 그려진 것」처럼 보입니다. */
+  let 배율 = 1;
+  const 배율끝 = [1, 4];
 
   const 그리기 = () => {
     예약 = 0;
@@ -273,21 +282,34 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          R 166 · 번짐 188 인데 쓸 수 있는 것은 179 라 **9px 이 잘렸습니다**
          (사용자 지적: 「파란 원이 영역 모자라서 잘리잖아」).
          1.14 로 나누면 번짐(1.13)이 언제나 딱 들어갑니다. */
-    const R = Math.min(w, h) / 2 / 1.14;
-    const cx = w / 2, cy = h / 2;
+    /* ⚠⚠ **지구 크기와 자리는 «대기광이 안 잘리는 만큼»이 전부입니다.**
+     *   번짐은 R 의 1.10 배까지 갑니다(아래 ①). 그래서 1.11 로 나눕니다 —
+     *   1.13 이던 것을 줄여 지구를 그만큼 키운 것입니다(b561, 사용자 요청:
+     *   「살짝만 더 키워줘 대기광이 안 잘릴 때까지」).
+     * ⚠ **아래로 내리는 것도 남는 세로만큼만.** 칸이 정사각보다 길면
+     *   그 여유의 절반쯤을 씁니다. 그러고도 `h - R*1.10` 을 안 넘깁니다 —
+     *   넘기는 순간 아래쪽 번짐이 잘립니다.
+     * ⚠ 값을 만지려거든 **재고 만지십시오.** 캔버스 가장자리 한 줄에
+     *   칠해진 픽셀이 하나라도 있으면 잘린 것입니다(그렇게 쟀습니다). */
+    const R = Math.min(w, h) / 2 / 1.11 * 배율;
+    const cx = w / 2;
+    const cy = Math.min(h - R * 1.10, h / 2 + Math.max(0, h - w) * 0.45);
     판 = { R, cx, cy };
 
     /* ── ① 대기광 ── 가장자리 바깥으로 번지는 파란 띠 한 겹 ───────────
        ⚠ 안쪽(0~R)은 완전 투명입니다. 여기에 색을 조금이라도 넣으면
          지구 전체에 파란 안개가 껴서 다녀온 나라의 파랑이 죽습니다. */
     {
-      const g = ctx.createRadialGradient(cx, cy, R * 0.93, cx, cy, R * 1.13);
+      /* ① 번짐은 R 의 **1.10 배**까지입니다(b561 에 1.13 에서 줄임).
+         줄인 만큼 지구가 커집니다 — 위 R 계산의 1.11 과 «짝»입니다.
+         한쪽만 고치면 잘리거나 빈 자리가 생깁니다. */
+      const g = ctx.createRadialGradient(cx, cy, R * 0.94, cx, cy, R * 1.10);
       g.addColorStop(0,    'rgba(0,102,204,0)');
-      g.addColorStop(0.42, 'rgba(0,102,204,.13)');
-      g.addColorStop(0.72, 'rgba(0,102,204,.06)');
+      g.addColorStop(0.44, 'rgba(0,102,204,.14)');
+      g.addColorStop(0.74, 'rgba(0,102,204,.06)');
       g.addColorStop(1,    'rgba(0,102,204,0)');
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(cx, cy, R * 1.13, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, R * 1.10, 0, Math.PI * 2); ctx.fill();
     }
 
     /* ── ② 바다 ────────────────────────────────────────────────────── */
@@ -453,11 +475,15 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
    *   없습니다(내가 매긴 도시가 없습니다).
    * ⚠ 작은 나라는 손가락으로 못 맞힙니다. 안 맞으면 **핀 자리가 24px
    *   안에 있는 나라**를 찾습니다 — 싱가포르·몰타가 그 덕에 눌립니다. */
+  /* ⚠ **안 가본 나라도 봅니다(b560, 사용자 결정).** 전에는 다녀온 나라만
+     봤는데, 「안 가본 나라를 누르면 거기 도시가 뜨고 별점을 매길 수
+     있게」가 되면서 모든 나라가 대상입니다. 부르는 쪽이 무엇을 보여줄지
+     정합니다 — 여기는 **어느 나라인지만** 답합니다. */
   function 어느나라(x, y){
-    if (!판 || !갔다.size) return null;
+    if (!판) return null;
     const ctx = canvas.getContext('2d');
     for (const 나라 of 목록){
-      if (!갔다.has(나라.code)) continue;
+      if (!나라.code) continue;
       for (const 고리 of 나라.고리)
         if (만들기(ctx, 판.R, 판.cx, 판.cy, 고리, λ0, φ0) && ctx.isPointInPath(x, y))
           return 나라.code;
@@ -466,7 +492,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
     let 가깝 = null, 거리 = 24;
     for (const 나라 of 목록){
-      if (!나라.핀 || !갔다.has(나라.code)) continue;
+      if (!나라.핀 || !나라.code) continue;
       const [λ, φ] = 나라.핀;
       const cφ = Math.cos(φ), sφ = Math.sin(φ), cΔ = Math.cos(λ - λ0);
       if (sφ0 * sφ + cφ0 * cφ * cΔ <= 0) continue;
@@ -480,14 +506,42 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
   let 민적 = false;
   let 끌기 = null;
+  /* ── 손가락 둘로 집어 늘리기(b560) ───────────────────────────────────
+   * ⚠ 손가락이 둘이면 **돌리기를 멈춥니다.** 둘 다 하면 집으면서 지구가
+   *   같이 돌아 어지럽습니다.
+   * ⚠ 두 번째 손가락이 닿는 순간 `끌기` 를 비웁니다 — 안 그러면 손을
+   *   뗄 때 그 사이 거리가 「민 것」으로 계산돼 지구가 튕겨 나갑니다.
+   * ⚠ 손가락을 하나 떼면 집기는 끝입니다. 남은 손가락으로 이어서 돌리지
+   *   않습니다 — 그때 좌표가 뛰어서 지구가 홱 돌아갑니다. */
+  const 손 = new Map();
+  let 집기 = null;
+  const 두손거리 = () => {
+    const [a, b] = [...손.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y) || 1;
+  };
   canvas.addEventListener('pointerdown', e => {
+    손.set(e.pointerId, { x:e.clientX, y:e.clientY });
     민적 = false;
     세우기();                      /* 손이 닿는 순간 자동 회전은 끝입니다 */
+    if (손.size >= 2){
+      끌기 = null;
+      민적 = true;                 /* 집은 것은 누른 것이 아닙니다 */
+      집기 = { 거리: 두손거리(), 배율 };
+      canvas.setPointerCapture?.(e.pointerId);
+      return;
+    }
     끌기 = { x:e.clientX, y:e.clientY, 손가락:e.pointerType !== 'mouse',
              깨움:false, 때:e.timeStamp, 속:0 };
     canvas.setPointerCapture?.(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
+    if (손.has(e.pointerId)) 손.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    if (집기 && 손.size >= 2){
+      배율 = Math.max(배율끝[0], Math.min(배율끝[1],
+        집기.배율 * 두손거리() / 집기.거리));
+      다시();
+      return;
+    }
     if (!끌기) return;
     const dx = e.clientX - 끌기.x, dy = e.clientY - 끌기.y;
 
@@ -520,6 +574,8 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
      오래됐으면 손가락이 멈춰 있다가 뗀 것이라 안 던집니다 — 안 그러면
      자리를 맞추고 손을 떼도 지구가 스르륵 흘러갑니다. */
   const 놓기 = e => {
+    if (e) 손.delete(e.pointerId);
+    if (손.size < 2) 집기 = null;
     const 그거 = 끌기; 끌기 = null;
     if (!그거) return;
     /* ── 민 것이 아니면 «누른 것»입니다(b555) ──────────────────────────
@@ -537,14 +593,27 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     if (Math.abs(v) > 0.25){ 관성 = v; 마지막 = 0; 깨우기(); }
   };
   canvas.addEventListener('pointerup', 놓기);
-  canvas.addEventListener('pointercancel', () => { 끌기 = null; });
+  canvas.addEventListener('pointercancel', e => {
+    손.delete(e.pointerId); if (손.size < 2) 집기 = null; 끌기 = null;
+  });
+  /* 마우스 휠·트랙패드. 손가락 둘이 없는 기기에서도 확대가 돼야 합니다.
+     ⚠ `passive:false` 여야 `preventDefault` 가 먹습니다 — 안 막으면
+       지구본 위에서 휠을 굴릴 때 화면이 같이 굴러갑니다. */
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    세우기();
+    배율 = Math.max(배율끝[0], Math.min(배율끝[1],
+      배율 * Math.exp(-e.deltaY * 0.0016)));
+    다시();
+  }, { passive:false });
   /* ⚠ **iOS 는 pointermove 의 preventDefault 를 무시합니다(b493).**
      `touch-action:none` 으로 이미 막히지만 한 겹 더 둡니다 — 여기서
      화면이 굴러가면 지구본을 못 돌립니다.
      ⚠ b535~b544 에는 「좌우로 정해졌을 때만」 막았습니다. 이제 두 축을
        다 쓰므로 끌고 있는 동안은 전부 막습니다(b545). */
   canvas.addEventListener('touchmove', e => {
-    if (끌기) e.preventDefault();
+    /* 집는 중에도 막습니다 — 안 막으면 사파리가 «화면 전체»를 확대합니다. */
+    if (끌기 || 집기) e.preventDefault();
   }, { passive:false });
 
   /* ⚠ **첫 판은 rAF 에 맡기지 않습니다.** 창이 숨어 있으면 rAF 가 아예
@@ -575,7 +644,17 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
      * ⚠ 좌표를 부르는 쪽에 적어두지 «않습니다». 처음 보이는 면을 정하는
      *   것은 여기(`KR`) 하나여야 합니다 — 두 곳에 적으면 처음 화면과
      *   「전체로 돌아온 화면」이 언젠가 다른 데를 봅니다. */
-    처음으로(){ this.회전(KR[0], KR[1]); },
+    /* ⚠ 확대도 같이 풉니다 — 「전체」로 돌아왔는데 지구가 확대돼 있으면
+       처음 화면이 아닙니다. */
+    처음으로(){ 배율 = 1; this.회전(KR[0], KR[1]); },
+    /* ＋/− 단추(b560). 한 번에 1.5배 — 손가락으로 집는 것과 비슷한 폭입니다.
+       ⚠ 자동 회전은 멈춥니다. 확대해 놓고 흘러가면 맞춰 놓은 자리를 잃습니다. */
+    더보기(쪽){
+      세우기();
+      배율 = Math.max(배율끝[0], Math.min(배율끝[1],
+        배율 * (쪽 > 0 ? 1.5 : 1 / 1.5)));
+      다시();
+    },
     /* 평면에서 돌아올 때 씁니다 — 캔버스 크기가 다시 잡히고 회전이 이어집니다.
        ⚠ 안쪽 `깨우기` 와 이름이 같으면 헷갈립니다. 밖으로 내보내는 것은 `되살리기`. */
     되살리기: () => { 마지막 = 0; 다시(); 깨우기(); },

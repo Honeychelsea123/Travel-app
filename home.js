@@ -33,40 +33,44 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b559';
-import { sb } from './db.js?v=b559';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b559';
-import { hm, todayYmd } from './calc.js?v=b559';
-import { starHtml, paintStars } from './stars.js?v=b559';
+import { $, esc } from './dom.js?v=b560';
+import { sb } from './db.js?v=b560';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b560';
+import { hm, todayYmd } from './calc.js?v=b560';
+import { starHtml, paintStars } from './stars.js?v=b560';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b559';
-import { cities, countryName } from './cities.js?v=b559';
-import { myRates, cityStat, visited } from './rate.js?v=b559';
-import { plans } from './trip.js?v=b559';
-import { loadCities } from './citysearch.js?v=b559';
+import { starValue } from './rateui.js?v=b560';
+import { cities, countryName } from './cities.js?v=b560';
+import { myRates, cityStat, visited } from './rate.js?v=b560';
+import { plans } from './trip.js?v=b560';
+import { loadCities } from './citysearch.js?v=b560';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b559';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b559';
+import { openCity } from './city.js?v=b560';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b560';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b559';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b560';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b559';
+import { drawReport } from './report.js?v=b560';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b559';
+import { PERSONA_BG } from './card.js?v=b560';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b559';
+import { checkPersonaShift } from './pshift.js?v=b560';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b559';
+import { diaryBackTo } from './diary.js?v=b560';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b559';
+import { mountGlobe } from './globe.js?v=b560';
+
+/* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
+   별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
+let 지구 = null, 지구갔다 = null;
 
 /* ══ 나라 카드 ══ 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ═══════
  * 사용자 요청. 「지구본을 돌리다 대한민국을 누르면 아래에 카드가 뜨고,
@@ -122,12 +126,25 @@ export function 시트닫기(뒤로온것){
 async function 나라카드(코드){
   /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말). */
   if (!Object.keys(myRates || {}).length) await loadRateData();
-  const 목록 = (cities || [])
-    .filter(c => c.country === 코드 && myRates[c.id]?.stars != null)
-    /* 높은 별점부터. 「내가 제일 좋았던 곳」이 먼저 보이는 편이 맞습니다. */
+  /* ── 무엇을 보여줄까(b560, 사용자 결정) ─────────────────────────────
+   * ⚠ **안 가본 나라도 보여줍니다.** 「안 가본 나라를 누르면 카드가 뜨고
+   *   거기서 별점을 매길 수 있게」 — 그러면 지구본이 곧 평가하는 자리가
+   *   됩니다. 매긴 곳을 먼저(높은 별점 순), 그 뒤에 안 매긴 곳.
+   * ⚠ **열두 곳까지만.** 미국·일본은 사전에 도시가 스무 곳이 넘습니다.
+   *   다 넣으면 옆으로 스무 번 밀어야 하고, 그건 목록이 할 일입니다
+   *   (평가 탭). 여기는 「이 나라에서 뭐가 있더라」를 훑는 자리입니다.
+   * ⚠ 사전에 도시가 하나도 없는 나라는 아무 일도 안 합니다 — 빈 카드를
+   *   띄우면 눌러도 안 되는 줄 모르고 계속 누릅니다. */
+  const 이나라 = (cities || []).filter(c => c.country === 코드);
+  const 매긴 = 이나라.filter(c => myRates[c.id]?.stars != null)
     .sort((a, b) => (myRates[b.id].stars - myRates[a.id].stars) ||
                     a.name.localeCompare(b.name, 'ko'));
-  if (!목록.length) return;                 /* 매긴 곳이 없으면 아무 일도 안 합니다 */
+  const 안매긴 = 이나라.filter(c => myRates[c.id]?.stars == null)
+    /* 유명한 곳부터. `fame` 이 없으면 이름순으로 떨어집니다. */
+    .sort((a, b) => (b.fame || 0) - (a.fame || 0) ||
+                    a.name.localeCompare(b.name, 'ko'));
+  const 목록 = [...매긴, ...안매긴].slice(0, 12);
+  if (!목록.length) return;
   const 판 = 시트만들기();
   const 나라 = countryName[코드] || 코드;
   /* ── 카드 한 장(b559 에 다시 그림) ──────────────────────────────────
@@ -161,11 +178,20 @@ async function 나라카드(코드){
         ${점}</div>
       <div class="gsbody">
         <div class="gstitle"><b>${esc(c.name)}</b>
-          <span class="gsavg">${st?.avg_stars != null
-            ? `★ ${Number(st.avg_stars).toFixed(1)}` : ''}</span></div>
-        <div class="gssub">${esc(나라)}</div>
-        <div class="gsmine"><span class="stars ro">${starHtml(r.stars)}</span>
-          <b>${r.stars.toFixed(1)}</b><i>내 별점</i></div>
+          <span class="gssub">${esc(나라)}</span></div>
+        <!-- ⚠ **여기서 바로 매깁니다(b560).** 읽기 전용이 아니라 누를 수
+             있는 별입니다 — 안 가본 나라를 눌러 들어온 사람에게 이것이
+             유일한 할 일입니다.
+             ⚠ 「data-city」 가 있어야 어느 도시인지 압니다(별 부품의 규칙).
+             ⚠ **글자에 「.gslab」 을 답니다.** 「i」 로 두었더니 그 규칙이
+                별 부품의 「.st i」(주황 칠)까지 덮어서 **별이 통째로
+                회색으로** 나왔습니다(b560 에서 겪음, 사용자 지적). -->
+        <div class="gsmine"><span class="stars" data-city="${esc(c.id)}"
+            >${starHtml(r.stars)}</span>
+          <b class="gsnum">${r.stars != null ? r.stars.toFixed(1) : ''}</b>
+          <span class="gslab">${r.stars != null ? '내 별점' : '눌러서 매기기'}</span>
+          ${st?.avg_stars != null ? `<span class="gsavg">평균
+            <b>${Number(st.avg_stars).toFixed(1)}</b></span>` : ''}</div>
         ${r.comment ? `<div class="gscmt">${esc(r.comment)}</div>` : ''}
       </div></div></div>`;
   }).join('');
@@ -175,7 +201,32 @@ async function 나라카드(코드){
   판.querySelectorAll('.gsin').forEach(b => {
     b.onclick = e => {
       if (e.target.closest('.gsx')) return 시트닫기();
+      /* ⚠ 별을 누른 것은 «매기는 것»입니다 — 도시 화면으로 가면 안 됩니다.
+         아래 별 처리기가 따로 맡습니다. */
+      if (e.target.closest('.stars')) return;
       시트닫기(); openCity(b.dataset.go);
+    };
+  });
+  /* ── 카드에서 바로 매기기(b560) ─────────────────────────────────────
+   * ⚠ **저장은 `saveRate` 하나를 지납니다.** 0 은 지우기로 가는 것도
+   *   거기서 정합니다(b494) — 여기서 또 적으면 규칙이 두 벌이 됩니다.
+   * ⚠ 매기는 순간 **지구본에 칠합니다.** 안 가본 나라를 눌러 별을 줬는데
+   *   지구가 그대로면 무엇이 달라졌는지 알 수가 없습니다. `gone` 은
+   *   mountGlobe 가 참조로 들고 있어, 더한 뒤 다시 그리면 됩니다.
+   * ⚠ 카드를 다시 그리지 «않습니다» — 지금 보고 있는 카드가 날아가고
+   *   옆으로 민 자리도 처음으로 돌아갑니다. 별과 숫자만 손봅니다. */
+  판.querySelectorAll('.gsmine .stars').forEach(wrap => {
+    wrap.onclick = async e => {
+      const st = e.target.closest('.st'); if (!st) return;
+      const v = starValue(st, e.clientX);
+      paintStars(wrap, v, true);
+      const 칸 = wrap.parentElement;
+      칸.querySelector('.gsnum').textContent = v ? v.toFixed(1) : '';
+      칸.querySelector('.gslab').textContent = v ? '내 별점' : '눌러서 매기기';
+      await saveRate(wrap.dataset.city, { stars: v }, true);
+      if (v && 지구갔다 && !지구갔다.has(코드)){ 지구갔다.add(코드); 지구?.다시(); }
+      /* 발자국 숫자가 달라졌으니 이 탭은 다음에 다시 그립니다. */
+      resetHomeSig();
     };
   });
   판.querySelector('.gsrow').scrollLeft = 0;
@@ -831,6 +882,10 @@ async function renderFoot(통){
      실제로 뜰 때쯤엔 채워져 있지만, 값이 없는 채로 불릴 수 있는 모양을
      남기지 않습니다 — 없으면 아무 일도 안 하는 함수가 기본입니다. */
   let 지도맞추기 = () => {};
+  /* ⚠ 지구본과 「다녀온 나라」 뭉치를 **밖에서도** 만져야 합니다(b560) —
+     나라 카드에서 별점을 매기면 그 나라가 그 자리에서 칠해져야 합니다.
+     `gone` 은 mountGlobe 가 «참조로» 들고 있으므로, 여기에 더하고
+     `다시()` 만 부르면 다시 그려집니다. */
   /* ⚠ **먼저 비워서 선언합니다.** `지도맞추기` 와 같은 이유입니다 —
      지구본은 아래에서 `setTimeout` 으로 붙는데, 대륙 넘김의 scroll 이
      그보다 먼저 올 수 있습니다. 없으면 아무 일도 안 하는 쪽이 기본입니다. */
@@ -1084,6 +1139,18 @@ async function renderFoot(통){
   자세히.onclick = 지도열기;
   감쌈.appendChild(자세히);
 
+  /* ── ＋ / − ── 손가락 둘이 어려운 사람도 확대할 수 있게(b560) ────────
+   * ⚠ 사용자가 두 번 말했습니다: 「나라를 더 잘 고르려면 줌인 줌아웃이
+   *   돼야 한다」. 집기(핀치)는 넣었지만 **보이지 않는 기능**입니다 —
+   *   단추가 있어야 있는 줄 압니다.
+   * ⚠ 지구본 오른쪽 «아래»입니다. 위쪽 두 모서리는 이미 3D/2D 와
+   *   「자세히」가 쓰고 있습니다. */
+  const 확대 = document.createElement('div');
+  확대.className = 'gzoom';
+  확대.innerHTML = '<button type="button" data-z="1" aria-label="확대">＋</button>' +
+                   '<button type="button" data-z="-1" aria-label="축소">−</button>';
+  감쌈.appendChild(확대);
+
   const 바꿈 = document.createElement('div');
   바꿈.className = 'gswitch';
   /* ⚠ **「지구」가 아니라 「3D」입니다(b557, 사용자 결정).** 「지구 / 평면」은
@@ -1091,7 +1158,7 @@ async function renderFoot(통){
      지구입니다. 「3D / 평면」은 **어떻게 보여주나**로 짝이 맞습니다.
    ⚠ 저장하는 값(`t2:mapview`)은 그대로 globe/flat 입니다. 글자만
      바뀐 것이라 이미 골라둔 사람의 설정이 안 날아갑니다. */
-  바꿈.innerHTML = '<button type="button">3D</button><button type="button">평면</button>';
+  바꿈.innerHTML = '<button type="button">3D</button><button type="button">2D</button>';
   감쌈.appendChild(바꿈);
 
   /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
@@ -1119,6 +1186,7 @@ async function renderFoot(통){
     /* ⚠ 다섯째가 「나라를 눌렀을 때」입니다(b555). 돌린 뒤의 누름은
        globe.js 가 걸러서 안 옵니다. */
     공 = mountGlobe(공판, gone, undefined, undefined, 나라카드);
+    지구 = 공; 지구갔다 = gone;
     /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
        한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
        쓰는 `밀림` 과 같은 수법입니다. */
@@ -1126,6 +1194,10 @@ async function renderFoot(통){
        그 일을 맡습니다. 그래서 `민적있나`(민 뒤의 누름 한 번 건너뛰기)도
        여기서는 쓸 일이 없어졌습니다 — globe.js 에는 그대로 둡니다.
        평면 쪽(`mm.onclick`)도 같은 이유로 걷었습니다. */
+    확대.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      공?.더보기(+b.dataset.z);
+    };
     바꿈.onclick = e => {
       const b = e.target.closest('button'); if (!b) return;
       평면인가 = b === 바꿈.children[1];
