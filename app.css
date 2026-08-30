@@ -595,6 +595,10 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .nogeo:disabled{ opacity:.6; }
 /* 못 찾은 뒤에는 더 조용해집니다 — 다시 눌러도 같은 결과입니다. */
 .nogeo.miss{ border-style:dashed; }
+/* ⚠ 아이콘 크기는 **CSS 로** 줍니다 — `width="16"` 같은 속성만 두면
+   flex 안에서 0×0 으로 찌그러집니다(b561 에서 겪음). */
+.nogeo{ display:inline-flex; align-items:center; gap:3px; }
+.nogeo svg{ width:12px; height:12px; flex:none; }
 
 .snote{ color:var(--ink-48); font-size:var(--f-sm); line-height:1.5;
         padding:7px 0 0; }

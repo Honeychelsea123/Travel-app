@@ -17,30 +17,30 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b565';
-import { sb } from './db.js?v=b565';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b565';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b565';
+import { $, esc, toast } from './dom.js?v=b566';
+import { sb } from './db.js?v=b566';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b566';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b566';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b565';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b565';
-import { drawPlanMap } from './planmap.js?v=b565';
-import { drawPlans } from './planview.js?v=b565';
-import { legIn, fillCityList } from './legs.js?v=b565';
-import { inTrip } from './tabs.js?v=b565';
-import { closeAi } from './aiscreen.js?v=b565';
-import { closeDraft } from './draft.js?v=b565';
-import { closeReview } from './home.js?v=b565';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b566';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b566';
+import { drawPlanMap } from './planmap.js?v=b566';
+import { drawPlans } from './planview.js?v=b566';
+import { legIn, fillCityList } from './legs.js?v=b566';
+import { inTrip } from './tabs.js?v=b566';
+import { closeAi } from './aiscreen.js?v=b566';
+import { closeDraft } from './draft.js?v=b566';
+import { closeReview } from './home.js?v=b566';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b565';
-import { closeCity, isCityOpen } from './city.js?v=b565';
-import { closeMap, closeCountries } from './map.js?v=b565';
-import { closePersona } from './persona.js?v=b565';
+import { closeSpree } from './spree.js?v=b566';
+import { closeCity, isCityOpen } from './city.js?v=b566';
+import { closeMap, closeCountries } from './map.js?v=b566';
+import { closePersona } from './persona.js?v=b566';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b565';
-import { closeShelf } from './shelf.js?v=b565';
-import { closeDiary } from './diary.js?v=b565';
-import { closeDocs } from './prep.js?v=b565';
+import { 시트닫기 } from './home.js?v=b566';
+import { closeShelf } from './shelf.js?v=b566';
+import { closeDiary } from './diary.js?v=b566';
+import { closeDocs } from './prep.js?v=b566';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };

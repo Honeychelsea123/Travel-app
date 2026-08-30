@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b565';
-import { featOn, flags } from './flags.js?v=b565';
-import { fail, write } from './net.js?v=b565';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b565';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b565';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b565';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b565';
-import { STAY_MIN, mins } from './plancheck.js?v=b565';
+import { $, esc, emptyDo } from './dom.js?v=b566';
+import { featOn, flags } from './flags.js?v=b566';
+import { fail, write } from './net.js?v=b566';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b566';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b566';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b566';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b566';
+import { STAY_MIN, mins } from './plancheck.js?v=b566';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b565';
+import { fillOnePlan } from './cands.js?v=b566';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -121,14 +121,22 @@ $('plans').addEventListener('click', async e => {
   if (b.disabled) return;
   const p = plans.find(x => x.id === b.dataset.geo);
   b.disabled = true; b.textContent = '찾는 중…';
+  b.title = '';
   const ok = await fillOnePlan(b.dataset.geo, p?.title || '', p?.date);
   if (ok === true) return;                       /* loadPlans 가 다시 그립니다 */
   b.disabled = false;
   /* 못 찾았을 때 **되는 길**을 알려줍니다 (b388). 전에는 "이름으로 못 찾았어요"
      로 끝나서, 이름을 몇 번 고쳐보다 포기하게 됐습니다(고쳐도 대개 안 됩니다).
      지도 링크는 확실히 됩니다 — 실측 오차 0.00km. */
-  b.textContent = ok === 'stop' ? '지도에 안 떠요' : '수정 → 지도 링크 붙여넣기';
-  b.title = ok === 'stop' ? '' : '이름으로는 못 찾았어요. 「수정」의 메모 칸에 구글 지도 링크를 붙여넣으면 잡힙니다.';
+  /* ⚠ 못 찾았을 때도 **무엇을 하면 되는지**로 적습니다(b566). 「지도에 안
+     떠요」로 돌려놓으면 방금 누른 것이 아무 일도 안 한 것처럼 보입니다.
+     ⚠ 한도에 걸린 것(`stop`)과 못 찾은 것은 다릅니다 — 앞의 것은 **기다리면
+       되는 일**이고 뒤의 것은 **사람이 할 일**입니다. 같은 말로 뭉뚱그리면
+       기다려도 되는데 주소를 고치러 갑니다. */
+  b.textContent = ok === 'stop' ? '잠시 뒤 다시' : '못 찾았어요 · 지도 링크 붙여넣기';
+  b.title = ok === 'stop'
+    ? '지도 검색이 잠시 막혔어요. 조금 뒤에 다시 눌러보세요.'
+    : '이름과 메모로는 못 찾았어요. 「수정」의 메모 칸에 구글 지도 링크나 주소를 붙여넣으면 잡힙니다.';
   b.classList.toggle('miss', ok !== 'stop');
 }, false);
 
@@ -344,8 +352,20 @@ export function drawPlans(){
              ⚠ **`<b>` 안에 넣습니다.** 밖에 두면 `.ev .body b` 가
              `display:block` 이라 아랫줄로 떨어져 줄 높이가 49 → 74px 로
              부풉니다(재봄). 제목 끝에 이어 붙어야 합니다. */
+          /* ⚠⚠ **글자가 「지도에 안 떠요」였습니다(b566 에 고침).** 사용자
+             지적: 「이게 좌표를 찾는 건지 알 수가 없어」. 그 말은 **상태**만
+             말하고 **누르면 무슨 일이 일어나는지**는 말하지 않습니다 —
+             단추인 줄도 모릅니다.
+             이제 **「위치 찾기」**입니다. 「찾기」가 곧 누르라는 뜻이고,
+             앞에 붙은 핀이 「위치가 없다」는 상태까지 같이 말합니다.
+             ⚠ 아이콘 크기는 **CSS 로** 줍니다(b561 에 0×0 으로 찌그러진
+               그 함정). `.nogeo svg` 참고. */
           p.lat == null ? `<button class="nogeo" data-geo="${esc(p.id)}"
-            >지도에 안 떠요</button>` : ''}</b>${''}
+            title="지도에 안 떠요. 눌러서 위치를 찾아봅니다."
+            ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              ><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle
+                  cx="12" cy="10" r="2.4"/></svg>위치 찾기</button>` : ''}</b>${''}
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>

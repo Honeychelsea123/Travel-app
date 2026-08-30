@@ -13,16 +13,16 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo } from './dom.js?v=b565';
-import { sb } from './db.js?v=b565';
-import { cities, countryName, continentOf } from './cities.js?v=b565';
-import { myRates, cityStat, visited } from './rate.js?v=b565';
-import { starHtml, starValue } from './stars.js?v=b565';
-import { localTime } from './calc.js?v=b565';
-import { fail } from './net.js?v=b565';
+import { $, esc, avatarImg, emptyDo } from './dom.js?v=b566';
+import { sb } from './db.js?v=b566';
+import { cities, countryName, continentOf } from './cities.js?v=b566';
+import { myRates, cityStat, visited } from './rate.js?v=b566';
+import { starHtml, starValue } from './stars.js?v=b566';
+import { localTime } from './calc.js?v=b566';
+import { fail } from './net.js?v=b566';
 /* 사진 줄이기는 프로필 사진이 쓰던 것 그대로입니다 — 두 벌로 만들면
    한쪽만 고쳐집니다(b565). */
-import { shrink } from './profile.js?v=b565';
+import { shrink } from './profile.js?v=b566';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
