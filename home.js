@@ -33,35 +33,35 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b544';
-import { sb } from './db.js?v=b544';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b544';
-import { hm, todayYmd } from './calc.js?v=b544';
-import { starHtml, paintStars } from './stars.js?v=b544';
+import { $, esc } from './dom.js?v=b545';
+import { sb } from './db.js?v=b545';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b545';
+import { hm, todayYmd } from './calc.js?v=b545';
+import { starHtml, paintStars } from './stars.js?v=b545';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b544';
-import { cities, countryName } from './cities.js?v=b544';
-import { myRates, visited } from './rate.js?v=b544';
-import { plans } from './trip.js?v=b544';
-import { loadCities } from './citysearch.js?v=b544';
-import { saveRate, refreshVisited } from './rating.js?v=b544';
+import { starValue } from './rateui.js?v=b545';
+import { cities, countryName } from './cities.js?v=b545';
+import { myRates, visited } from './rate.js?v=b545';
+import { plans } from './trip.js?v=b545';
+import { loadCities } from './citysearch.js?v=b545';
+import { saveRate, refreshVisited } from './rating.js?v=b545';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b544';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b545';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b544';
+import { drawReport } from './report.js?v=b545';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b544';
+import { PERSONA_BG } from './card.js?v=b545';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b544';
+import { checkPersonaShift } from './pshift.js?v=b545';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b544';
+import { mountGlobe } from './globe.js?v=b545';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -672,23 +672,32 @@ async function renderFoot(통){
      한마디는 있어야 합니다.
      ⚠ 아직 한 곳도 없으면 숫자 대신 **무엇을 하면 되는지**를 적습니다 —
        「0개국 · 0.0%」는 알려주는 것이 없습니다. */
-  box.appendChild(줄만들기('내 발자국',
-    f.countries ? `${UN_COUNTRIES}개국 중 ${f.countries}개국 · ${pct.toFixed(1)}%`
-                : '별점을 매기면 여기에 쌓여요',
-    '지도', 지도열기));
+  /* ⚠⚠ **「내 발자국 · 195개국 중 28개국 · 14.4% · 지도 ›」 줄을 걷었습니다
+     (b545, 사용자 결정).** ⚠⚠ 같은 화면에서 국가 수를 세 번 말하고
+     있었습니다 — 이 줄 · 아래 숫자 셋 · 넘김의 「전체」 장. 제일 덜
+     말해주는 것을 뺐습니다.
+   ⚠ 그러면서 **「지도 ›」 라는 이름표도 같이 없어졌습니다.** 세계지도로
+     가는 길은 아래 숫자 타일과 지구본 누르기 둘로 남습니다. 「지도로
+     가는 데를 못 찾겠다」는 말이 나오면 여기부터 보십시오. */
 
-  /* ── 숫자 셋 ── 국가 · 도시 · 대륙(b544, 사용자 요청) ────────────────
+  /* ── 숫자 셋 ── 국가 · 도시 · 대륙(b544 · 눌리게 된 것은 b545) ───────
    * ⚠ **아래 넘김 카드와 다른 일을 합니다.** 넘김은 «대륙 하나씩» 이라
    *   전부를 보려면 일곱 번 넘겨야 합니다. 이 줄은 **안 넘겨도 보이는
    *   요약**입니다 — 지구본 바로 밑에서 「그래서 얼마나?」에 한 번에
    *   답하는 자리입니다.
-   * ⚠ 국가 수가 위 밑말과 겹칩니다. 알고 둡니다 — 밑말은 «195개국 중»
-   *   이라는 분모를 말하고 여기는 도시·대륙과 «나란히» 놓는 것이 일입니다.
-   *   셋 중 하나만 남기려거든 **밑말**을 지우십시오. 여기가 아닙니다.
    * ⚠ 도시는 `rated`(별점 매긴 곳)입니다. `my_visited` 기준(다녀온 도시)이
    *   아닙니다 — 프로필 보관함의 「내가 매긴 곳」과 **같은 수**여야 합니다.
-   *   기준이 갈리면 같은 화면 두 곳에서 다른 숫자가 나옵니다(b370 에서
-   *   타일 두 개가 그래서 하나로 합쳐졌습니다). */
+   *   기준이 갈리면 같은 것을 두고 두 숫자가 나옵니다(b370 에서 타일 두
+   *   개가 그래서 하나로 합쳐졌습니다).
+   * ⚠⚠ **셋 다 눌리는 단추입니다(b545, 사용자 지적).** ⚠⚠ 숫자 상자처럼
+   *   생겼는데 눌러도 아무 일이 없었습니다. 프로필 머리의 같은 타일은
+   *   원래 눌리는 것이었는데(`data-shelf`·`data-openmap`), 여기로 옮기면서
+   *   `div` 로 그려 그 성질을 잃었습니다.
+   * ⚠ 가는 곳을 **둘로만** 둡니다. 국가·대륙은 세계지도(대륙별 · 국가별
+   *   다녀온 도시)가 한 화면에서 둘 다 답합니다. 도시는 평가 탭의 목록입니다.
+   *   ⚠ 보관함(`openShelf`)으로 보내지 «않습니다» — 보관함은 프로필 위에
+   *     얹히는 판이라 **닫으면 프로필에 떨어집니다.** 돌아올 길이 없습니다
+   *     (`mapBackTo` 같은 것이 shelf 에는 없습니다). 만들 생각이면 그것부터. */
   {
     const 대륙수 = CONT.filter(([이름]) => (f.by_continent || {})[이름] > 0).length;
     const 셋 = document.createElement('div');
@@ -696,7 +705,10 @@ async function renderFoot(통){
     셋.innerHTML = [[f.countries || 0, '국가'],
                     [f.rated ?? 0, '도시'],
                     [`${대륙수}/${CONT.length}`, '대륙']]
-      .map(([v, k]) => `<div><b>${esc(String(v))}</b><span>${esc(k)}</span></div>`).join('');
+      .map(([v, k]) => `<button type="button"><b>${esc(String(v))}</b>` +
+                       `<span>${esc(k)}</span></button>`).join('');
+    const 갈곳 = [지도열기, () => ctx.showApp('rate'), 지도열기];
+    [...셋.children].forEach((b, i) => { b.onclick = 갈곳[i]; });
     box.appendChild(셋);
   }
   /* ⚠ **숫자 카드는 지도 아래입니다(b452).** 위에 두었더니 지도가 밀려

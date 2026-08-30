@@ -14,25 +14,25 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b544';
-import { sb } from './db.js?v=b544';
-import { cities } from './cities.js?v=b544';
+import { $, esc } from './dom.js?v=b545';
+import { sb } from './db.js?v=b545';
+import { cities } from './cities.js?v=b545';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b544';
+import { personaBackTo } from './persona.js?v=b545';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b544';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b545';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
-import { funRows, mapBackTo } from './map.js?v=b544';
+import { funRows, mapBackTo } from './map.js?v=b545';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b544';
+import { similarPicks } from './rec.js?v=b545';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b544';
-import { pickCity } from './citysearch.js?v=b544';
+import { openNew } from './newtrip.js?v=b545';
+import { pickCity } from './citysearch.js?v=b545';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -144,7 +144,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b544"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b545"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
