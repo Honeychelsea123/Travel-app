@@ -33,35 +33,38 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b545';
-import { sb } from './db.js?v=b545';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b545';
-import { hm, todayYmd } from './calc.js?v=b545';
-import { starHtml, paintStars } from './stars.js?v=b545';
+import { $, esc } from './dom.js?v=b546';
+import { sb } from './db.js?v=b546';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b546';
+import { hm, todayYmd } from './calc.js?v=b546';
+import { starHtml, paintStars } from './stars.js?v=b546';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b545';
-import { cities, countryName } from './cities.js?v=b545';
-import { myRates, visited } from './rate.js?v=b545';
-import { plans } from './trip.js?v=b545';
-import { loadCities } from './citysearch.js?v=b545';
-import { saveRate, refreshVisited } from './rating.js?v=b545';
+import { starValue } from './rateui.js?v=b546';
+import { cities, countryName } from './cities.js?v=b546';
+import { myRates, visited } from './rate.js?v=b546';
+import { plans } from './trip.js?v=b546';
+import { loadCities } from './citysearch.js?v=b546';
+import { saveRate, refreshVisited } from './rating.js?v=b546';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b545';
+/* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
+   화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo,
+         funRows } from './map.js?v=b546';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b545';
+import { drawReport } from './report.js?v=b546';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b545';
+import { PERSONA_BG } from './card.js?v=b546';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b545';
+import { checkPersonaShift } from './pshift.js?v=b546';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b545';
+import { mountGlobe } from './globe.js?v=b546';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -989,8 +992,14 @@ async function renderFoot(통){
        ⚠ 「전체」는 안 돌립니다. 대한민국이 한가운데인 처음 자리로 두는
          것이 맞습니다 — 「전체」에 해당하는 각도가 따로 없습니다. */
     const v = CONT_VIEW[이름];
-    if (공 && v && 이름 !== '전체')
-      공.회전(v.cx / 1000 * 360 - 180, 90 - v.cy / 500 * 180);
+    if (공){
+      /* ⚠ **「전체」는 처음 자리(대한민국 한가운데)로 돌아옵니다(b546,
+         사용자 요청).** 전에는 아무것도 안 해서, 유럽을 보다가 「전체」로
+         돌아와도 지구는 유럽을 보고 있었습니다 — 첫 장이 「전체」니까
+         앱을 막 열었을 때와 같은 면이어야 합니다. */
+      if (!v || 이름 === '전체') 공.처음으로();
+      else 공.회전(v.cx / 1000 * 360 - 180, 90 - v.cy / 500 * 180);
+    }
     if (!줌) return;
     if (!v || 이름 === '전체'){ 줌.style.transform = ''; return; }
     const k = Math.min(976 / v.w, 392 / (v.w * 0.62));
@@ -1012,6 +1021,52 @@ async function renderFoot(통){
      이제 하단바에 **분석 탭**이 있고 그 첫 카드가 성향입니다. 홈에
      한 줄로 또 두면 같은 것이 두 곳에 있고, 홈은 아래로 길어집니다.
      홈은 「지금 무엇을 할까」, 분석은 「나는 어떤 사람인가」입니다. */
+
+  /* ══ 진기록 ═══════════════════════════════════════════════════════
+   * **성향 탭에서 왔습니다(b546, 사용자 결정).** 「가장 많이 간 나라 ·
+   * 최북단 · 가장 먼 두 도시」는 성향(내가 어떤 여행자인가)이 아니라
+   * **발자국**(어디를 얼마나 다녔나) 이야기입니다. 위 지구본과 같은 것을
+   * 다른 방식으로 말하는 자리라 한 탭에 있는 것이 맞습니다.
+   * ⚠ 자리를 세 번 옮겼습니다 — 분석(b457 이전) → 지도 화면(b457) →
+   *   성향(b542) → 여기(b546). 또 옮기려거든 **왜 세 번 안 맞았는지**를
+   *   먼저 보십시오. 세 번 다 「이 화면의 주제와 다르다」가 이유였습니다.
+   * ⚠ **이름이 「기록」이 아니라 「진기록」입니다.** 이 탭 이름이 「기록」
+   *   입니다 — 여기까지 「기록」이면 둘이 헷갈립니다. 최고 기록입니다.
+   * ⚠ 세는 것은 map.js 의 `funRows` 하나입니다. 여기서 다시 세면 같은
+   *   물음에 두 답이 나옵니다.
+   * ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다.
+   *   반올림하면 아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋납니다.
+   * ⚠ 별점 자료는 위에서 이미 받아 둔 것(`별점`)을 씁니다 — 다시 받으면
+   *   같은 화면 안에서 두 숫자가 갈립니다. */
+  {
+    const 표 = Object.fromEntries((별점?.data || []).map(r => [r.city_id, r.stars]));
+    const 내도시 = (cities || []).filter(c => 표[c.id] != null);
+    if (내도시.length){
+      const 진 = document.createElement('div');
+      진.className = 'card quiet';
+      const 통계 = [0, 0, 0, 0, 0];
+      내도시.forEach(c => {
+        const k = Math.floor(Number(표[c.id]));
+        if (k >= 1 && k <= 5) 통계[k - 1]++;
+      });
+      const 합 = 통계.reduce((x, y) => x + y, 0) || 1;
+      /* ★5 초록에서 ★1 붉은색으로. 지도 화면에 있던 값 그대로입니다. */
+      const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+      진.innerHTML = `<h2>진기록</h2>
+        <div class="stackwrap">
+          <div class="stack">${[5, 4, 3, 2, 1].map(k => 통계[k - 1]
+            ? `<i style="width:${(통계[k - 1] / 합 * 100).toFixed(1)}%;
+                 background:${색[k - 1]}" title="★${k} ${통계[k - 1]}곳"></i>` : '').join('')}</div>
+          <div class="stackleg">${[5, 4, 3, 2, 1].map(k =>
+            `<span${통계[k - 1] ? '' : ' class="off"'}><b style="background:${
+              색[k - 1]}"></b>★${k} ${통계[k - 1]}곳</span>`).join('')}</div>
+        </div>
+        ${funRows(내도시, 표).map(([제목, 값]) =>
+          `<div class="row"><span class="label">${esc(제목)}</span>
+             <span class="val">${esc(값)}</span></div>`).join('')}`;
+      $('home').appendChild(진);
+    }
+  }
 
   /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }

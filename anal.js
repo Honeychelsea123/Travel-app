@@ -14,25 +14,25 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b545';
-import { sb } from './db.js?v=b545';
-import { cities } from './cities.js?v=b545';
+import { $, esc } from './dom.js?v=b546';
+import { sb } from './db.js?v=b546';
+import { cities } from './cities.js?v=b546';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b545';
+import { personaBackTo } from './persona.js?v=b546';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b545';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b546';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
-import { funRows, mapBackTo } from './map.js?v=b545';
+import { mapBackTo } from './map.js?v=b546';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b545';
+import { similarPicks } from './rec.js?v=b546';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b545';
-import { pickCity } from './citysearch.js?v=b545';
+import { openNew } from './newtrip.js?v=b546';
+import { pickCity } from './citysearch.js?v=b546';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -101,8 +101,6 @@ export async function loadAnal(){
 
   const 전부   = 평가?.data || [];
   const 매긴것 = 전부.filter(r => r.stars != null);
-  /* 도시 id → 별점. 진기록이 씁니다 — 지도 화면이 쓰는 것과 같은 모양입니다. */
-  const 별점   = Object.fromEntries(매긴것.map(r => [r.city_id, r.stars]));
   box.innerHTML = '';
 
   /* ══ ① 내 여행 성향 ══════════════════════════════════════════════════
@@ -144,7 +142,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b545"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b546"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -199,50 +197,13 @@ export async function loadAnal(){
   }
   box.appendChild(성향);
 
-  /* ══ ② 진기록 ══════════════════════════════════════════════════════
-   * **발자국 카드는 기록 탭으로 통째로 갔습니다(b542).** 지구본·대륙
-   * 배지·「195개국 중 28개국」이 전부 그쪽입니다 — 앱을 열면 첫 화면이
-   * 그것입니다. 여기 또 두면 같은 지도가 두 탭에 섭니다.
-   *
-   * 대신 **지도 화면 두 걸음 안에 갇혀 있던 것**을 여기로 꺼냅니다.
-   * ⚠⚠ **이 자리는 세 번째입니다.** b457 에 여기서 빼서 지도 화면으로
-   *   보냈고(「분석 탭 첫 화면을 짧게」), b503 에 그 결정을 지도 쪽에
-   *   적어두면서 「또 안 보이면 다음 자리는 나라 목록」이라고 남겼습니다.
-   *   이번에는 **분석 탭이 성향만 맡게 되면서 자리가 비었습니다.**
-   *   「가장 먼 두 도시」는 지도의 부록이 아니라 분석입니다.
-   * ⚠ **이름이 「기록」이 아니라 「진기록」입니다.** 하단바의 첫 탭 이름이
-   *   「기록」이 되었습니다 — 여기까지 「기록」이면 둘이 헷갈립니다.
-   *   이건 일기가 아니라 **최고 기록**입니다.
-   * ⚠ **세는 것은 map.js 의 `funRows` 하나입니다.** 여기서 다시 세면
-   *   같은 물음에 두 답이 나옵니다.
-   * ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다.
-   *   반올림하면 아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋납니다. */
-  const 내도시 = (cities || []).filter(c => 별점[c.id] != null);
-  if (내도시.length){
-    const 진 = document.createElement('div');
-    진.className = 'card quiet';
-    const 통계 = [0, 0, 0, 0, 0];
-    내도시.forEach(c => {
-      const k = Math.floor(Number(별점[c.id]));
-      if (k >= 1 && k <= 5) 통계[k - 1]++;
-    });
-    const 합 = 통계.reduce((x, y) => x + y, 0) || 1;
-    /* ★5 초록에서 ★1 붉은색으로. 지도 화면에 있던 값 그대로입니다. */
-    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
-    진.innerHTML = `<h2>진기록</h2>
-      <div class="stackwrap">
-        <div class="stack">${[5, 4, 3, 2, 1].map(k => 통계[k - 1]
-          ? `<i style="width:${(통계[k - 1] / 합 * 100).toFixed(1)}%;
-               background:${색[k - 1]}" title="★${k} ${통계[k - 1]}곳"></i>` : '').join('')}</div>
-        <div class="stackleg">${[5, 4, 3, 2, 1].map(k =>
-          `<span${통계[k - 1] ? '' : ' class="off"'}><b style="background:${
-            색[k - 1]}"></b>★${k} ${통계[k - 1]}곳</span>`).join('')}</div>
-      </div>
-      ${funRows(내도시, 별점).map(([제목, 값]) =>
-        `<div class="row"><span class="label">${esc(제목)}</span>
-           <span class="val">${esc(값)}</span></div>`).join('')}`;
-    box.appendChild(진);
-  }
+  /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
+     b542 에 지도 화면에서 여기로 꺼냈던 것인데, 실기기에서 보니 「가장
+     많이 간 나라 · 최북단 · 가장 먼 두 도시」는 **성향이 아니라 발자국**
+     이야기였습니다. 이 탭은 「나는 어떤 여행자인가」 하나만 맡습니다.
+   ⚠ 세는 함수(`funRows`)는 여전히 map.js 것입니다 — 이제 home.js 가
+     그것을 씁니다. 여기로 되돌리려거든 거기서 먼저 빼십시오. */
+
 
 
   /* ══ ③ 다음 여행 ═══════════════════════════════════════════════════
