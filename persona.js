@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b547';
-import { sb } from './db.js?v=b547';
-import { cities, countryName, continentOf } from './cities.js?v=b547';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b548';
+import { sb } from './db.js?v=b548';
+import { cities, countryName, continentOf } from './cities.js?v=b548';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b547';
+import { similarPicks } from './rec.js?v=b548';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b547';
-import { visited } from './rate.js?v=b547';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b548';
+import { visited } from './rate.js?v=b548';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b547';
+         shareCard, cardImage } from './card.js?v=b548';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -269,7 +269,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b547"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b548"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -360,17 +360,16 @@ async function drawPersona(s, ax, rates){
              거기는 한 장으로 끝나는 물건이라 근거가 붙어야 뜻이 통합니다. -->
     </div>
 
-    <!-- ── 다음에 갈 만한 곳 ── 두 줄의 성격이 다릅니다(rec.js 맨 위).
-         「어울리는 곳」은 감추고-맞히기로 재서 정한 것이고, 「반대로
-         가보면」은 **정확도를 주장하지 않습니다**. 한 덩어리로 합치지
-         마십시오 — 뒤의 넷까지 맞다고 말하는 셈이 됩니다. -->
-    ${(spec.picks.match.length || spec.picks.opposite.length) ? `<div class="card">
-      <h2>다음에 가볼 만한 곳</h2>
-      ${spec.picks.match.length ? `<div class="row"><span class="label">어울리는 곳
-        <div class="memo">${esc(spec.picks.match.join(' · '))}</div></span></div>` : ''}
-      ${spec.picks.opposite.length ? `<div class="row"><span class="label">반대로 가보면
-        <div class="memo">${esc(spec.picks.opposite.join(' · '))}</div></span></div>` : ''}
-    </div>` : ''}
+    <!-- ⚠⚠ **「다음에 가볼 만한 곳」을 여기서 걷었습니다(b547).** ⚠⚠
+         b547 에 이 리포트가 «성향 탭 그 자체»가 되면서, 탭 맨 아래
+         「다음 여행」 카드(anal.js)와 **한 화면에 두 벌**로 섰습니다.
+         남긴 쪽은 아래 것입니다 — 거기는 도시가 «누를 수 있는 칩»이라
+         누르면 그 도시로 여행 만들기가 열리고(b463), 「가보고 싶어요」
+         줄도 같이 있습니다. 여기 것은 글자만이었습니다.
+         ⚠ 세는 것은 spec.picks 하나 그대로입니다 — 공유 카드 그림과
+           보내는 글에는 여전히 들어갑니다(아래 공유글). 화면에서만
+           안 보일 뿐이라 갈라질 일이 없습니다.
+         ⚠ 되살리려거든 **anal.js 의 「다음 여행」 카드를 먼저 빼십시오.** -->
 
     ${임시 ? '' : `<div class="card">
       <!-- ⚠ **이게 유입이 유입을 만드는 유일한 고리입니다(b408).**
