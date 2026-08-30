@@ -16,17 +16,17 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b563';
-import { featOn } from './flags.js?v=b563';
-import { sb } from './db.js?v=b563';
-import { fail, write } from './net.js?v=b563';
+import { $, toast } from './dom.js?v=b564';
+import { featOn } from './flags.js?v=b564';
+import { sb } from './db.js?v=b564';
+import { fail, write } from './net.js?v=b564';
 import { trip, plans, setPlans, editPlanId, setEditPlanId,
-         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b563';
-import { arm } from './ui.js?v=b563';
-import { drawCats } from './planline.js?v=b563';
-import { drawPlanMap } from './planmap.js?v=b563';
-import { drawPlans } from './planview.js?v=b563';
-import { osmLookup } from './cands.js?v=b563';
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b564';
+import { arm } from './ui.js?v=b564';
+import { drawCats } from './planline.js?v=b564';
+import { drawPlanMap } from './planmap.js?v=b564';
+import { drawPlans } from './planview.js?v=b564';
+import { osmLookup, addressQueries } from './cands.js?v=b564';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -89,8 +89,18 @@ async function sniffMapLink(){
      있습니다 — 앱이 '좌표 채우기'에서 쓰는 그 검색입니다. 이어 붙입니다. */
   if (lat == null && name){
     note.textContent = '주소로 위치를 찾는 중…';
-    const hit = await osmLookup(name);
-    if (hit && hit !== 'stop'){ lat = hit.lat; lng = hit.lng; }
+    /* ⚠⚠ **주소를 «그대로» 물으면 일본에서는 한 곳도 안 나옵니다(b564).** ⚠⚠
+       구글이 주는 꼴(「일본 〒104-0061 Tokyo, Chuo City, Ginza, 6 Chome−4−16 …」)
+       을 OSM 은 못 읽습니다 — 실측 0건. `addressQueries` 가 「번지 동네, 구,
+       도, Japan」 꼴로 바꿔 줍니다(그 함수 머리말에 잰 값이 있습니다).
+       ⚠ 그래도 안 되면 **원문 그대로** 한 번 더 봅니다 — 일본이 아닌 나라
+         에서는 원문이 더 나을 수 있습니다. */
+    for (const q of [...addressQueries(name), name]){
+      const hit = await osmLookup(q);
+      if (hit === 'stop') break;
+      if (hit){ lat = hit.lat; lng = hit.lng; break; }
+      await new Promise(r => setTimeout(r, 1100));
+    }
   }
 
   /* 주소로 한 번 더 찾는 갈래까지 끝난 뒤에 풉니다 — 여기가 진짜 끝입니다. */

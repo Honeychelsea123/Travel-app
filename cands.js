@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b563';
-import { sb } from './db.js?v=b563';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b563';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b563';
-import { trip, plans, legs } from './trip.js?v=b563';
-import { search } from './cities.js?v=b563';
-import { picked } from './citysearch.js?v=b563';
-import { mapLinks } from './planmap.js?v=b563';
-import { openPlanForm } from './cards.js?v=b563';
-import { syncSheets } from './ui.js?v=b563';
+import { $, esc, emptyDo } from './dom.js?v=b564';
+import { sb } from './db.js?v=b564';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b564';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b564';
+import { trip, plans, legs } from './trip.js?v=b564';
+import { search } from './cities.js?v=b564';
+import { picked } from './citysearch.js?v=b564';
+import { mapLinks } from './planmap.js?v=b564';
+import { openPlanForm } from './cards.js?v=b564';
+import { syncSheets } from './ui.js?v=b564';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -234,8 +234,9 @@ export async function osmLookup(q, opts = {}){
 /* 좌표가 없는 것들. 일정과 후보를 한 목록으로 다룹니다 —
    버튼을 따로 두면 두 번 눌러야 하고 어느 쪽이 남았는지도 헷갈립니다. */
 const needCoord = () => [
+  /* ⚠ `memo` 도 같이 보냅니다(b564) — 거기 주소가 들어 있습니다. */
   ...(plans || []).filter(p => p.lat == null)
-    .map(p => ({ kind:'plans', id:p.id, title:p.title, date:p.date })),
+    .map(p => ({ kind:'plans', id:p.id, title:p.title, date:p.date, memo:p.memo })),
   ...(cands || []).filter(c => c.lat == null)
     .map(c => ({ kind:'candidates', id:c.id, title:c.title })),
 ];
@@ -266,6 +267,78 @@ export function drawGeoBtn(){
      않고, 누르면 그 한 곳만 찾아봅니다. */
 }
 
+/* ── 붙여넣은 «주소»를 OSM 이 알아듣는 꼴로(b564) ─────────────────────
+ * ⚠⚠ **구글에서 복사한 일본 주소는 그대로는 한 곳도 안 찾힙니다.** ⚠⚠
+ *   실측(Nominatim, 200 OK 에 빈 배열):
+ *     「일본 〒104-0061 Tokyo, Chuo City, Ginza, 6 Chome−4−16 …」  0건
+ *     「東京都中央区銀座6-4-16」(일본어)                            0건
+ *     「Ginza, 6 Chome-4-16, Chuo City, Tokyo」                     0건
+ *   그런데 **꼴만 바꾸면 찾힙니다**:
+ *     「6-4-16 Ginza, Chuo, Tokyo, Japan」  → 긴자6초메 35.66926, 139.76443
+ *   막힌 것도, 한도에 걸린 것도 아닙니다. OSM 은 일본 주소를
+ *   **「번지 동네, 구, 도, Japan」** 꼴로만 알아듣습니다.
+ *
+ * 그래서 세 가지를 차례로 물어봅니다 — 앞엣것이 더 정확합니다.
+ *   ① 번지 + 동네 + 구 + 도        (블록 단위 · 제일 정확)
+ *   ② 동네 + 구 + 도               (동네 단위)
+ *   ③ 우편번호                     (우편구역 가운데)
+ *
+ * ⚠ **「Bldg」가 붙은 조각은 건물이지 동네가 아닙니다.** 이걸로 갈랐습니다 —
+ *   「6 Chome-4-16 Hanatsubaki Bldg」 의 남은 글자를 동네로 쓰면
+ *   「Hanatsubaki」 를 찾게 되고 그런 동네는 없습니다. 그때는 **한 칸 앞**
+ *   조각이 동네입니다(Ginza). 반대로 「1 Chome-2-6 Nihonbashiningyocho」
+ *   처럼 건물 표시가 없으면 남은 글자가 곧 동네입니다.
+ * ⚠ 「−」(빼기 기호 U+2212)와 전각 숫자를 먼저 폅니다 — 구글이 그렇게
+ *   복사해 줍니다. 눈으로는 붙임표와 구별이 안 갑니다.
+ * ⚠ 이 함수는 **질의만 만듭니다.** 고르는 것은 osmLookup 이 합니다
+ *   (나라·기준점으로 걸러내는 규칙이 거기 있습니다). */
+export function addressQueries(text){
+  let t = String(text || '').replace(/[−–—－]/g, '-')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const 우편 = (t.match(/\b\d{3}-\d{4}\b/) || [])[0] || null;
+  t = t.replace(/〒/g, '').replace(/\b\d{3}-\d{4}\b/g, ' ')
+       .replace(/일본/g, ' ').replace(/\bJapan\b/gi, ' ');
+  const 조각 = t.split(',').map(x => x.trim()).filter(Boolean);
+  const 번지꼴 = p => p.match(/(\d+)\s*Chome[-\s]*(\d+)[-\s]*(\d+)/i)
+                   || p.match(/\b(\d+)-(\d+)-(\d+)\b/);
+  const 건물꼴 = /\b(Bldg|Building|Tower|Annex)\b|ビル|\d+\s*階|\b\d+\s*F\b/i;
+  let 번지 = null, 동네 = null, 구 = null, 도 = null, 번지칸 = -1;
+  조각.forEach((p, i) => {
+    const m = 번지꼴(p);
+    if (m && !번지){
+      번지 = `${m[1]}-${m[2]}-${m[3]}`; 번지칸 = i;
+      const 남 = p.replace(m[0], '').trim().replace(/^[-,\s]+|[-,\s]+$/g, '');
+      if (남 && /^[A-Za-z]/.test(남) && !건물꼴.test(남)) 동네 = 남;
+      return;
+    }
+    if (/\bCity\b|区$|-ku$/i.test(p)){ 구 = p.replace(/\s*City\b/i, '').trim(); return; }
+    if (!도 && /^(Tokyo|Osaka|Kyoto|Fukuoka|Sapporo|Nagoya|Yokohama|Kobe)\b/i.test(p))
+      도 = p.trim();
+  });
+  if (!동네 && 번지칸 > 0){
+    const 앞 = 조각[번지칸 - 1].trim();
+    if (/^[A-Za-z]/.test(앞) && 앞 !== 구 && 앞 !== 도 && !번지꼴(앞) && !건물꼴.test(앞))
+      동네 = 앞;
+  }
+  if (!동네){
+    const 후보 = 조각.filter(p => /^[A-Za-z]/.test(p) && p !== 구 && p !== 도
+                                  && !번지꼴(p) && !건물꼴.test(p));
+    동네 = 후보[후보.length - 1] || null;
+  }
+  /* ⚠ **주소처럼 안 생겼으면 아무것도 안 묻습니다(b564).** 메모가 「Age」
+     한 마디면 「Age, Japan」 같은 질의가 만들어지는데, 그건 찾는 것이
+     아니라 «아무거나 걸리기를 바라는» 것입니다. 우편번호도 번지도 없고
+     쉼표로 나뉜 조각도 둘이 안 되면 주소가 아닙니다.
+     ⚠ 못 찾는 것은 괜찮습니다. **엉뚱한 데 찍히는 것이 나쁩니다** —
+       41km 떨어진 데를 잡았던 b388 이 그 값을 치른 자리입니다. */
+  if (!우편 && !번지 && 조각.length < 2) return [];
+  const q = [];
+  if (번지 && 동네) q.push([`${번지} ${동네}`, 구, 도, 'Japan'].filter(Boolean).join(', '));
+  if (동네)         q.push([동네, 구, 도, 'Japan'].filter(Boolean).join(', '));
+  if (우편)         q.push(`${우편} Japan`);
+  return q;
+}
+
 /* ── 한 곳만 찾기 ────────────────────────────────────────────────────
  * 일정 줄의 '지도에 안 떠요' 를 누르면 **그 한 곳만** 찾습니다(b376).
  * 일괄 채우기와 같은 식을 써야 결과가 갈리지 않으므로 여기 한 곳에 둡니다.
@@ -282,6 +355,18 @@ async function geoOne(it){
   const city = leg?.destination || trip?.destination || '';
 
   let hit = null;
+  /* ⚠⚠ **메모에 든 주소를 «먼저» 씁니다(b564).** ⚠⚠ 전에는 «제목»으로만
+     찾았습니다 — 「스시야」·「아카리조명」 같은 우리말 이름은 OSM 에
+     없으므로 영영 못 찾습니다. 그런데 주소는 **메모에 이미 적혀
+     있었습니다.** 있는 것을 안 쓰고 없는 것을 찾고 있었던 셈입니다.
+     실측: 「스시야」로는 0건, 메모의 주소를 다듬으니 긴자6초메로 잡힙니다. */
+  for (const q of addressQueries(it.memo || '')){
+    hit = await osmLookup(q, { country, near: 기준 });
+    if (hit === 'stop') return 'stop';
+    if (hit) break;
+    await new Promise(r => setTimeout(r, 1100));
+  }
+  if (hit) return await 저장(it, hit);
   for (const q of geoQueries(it.title)){
     /* 이름만으로 먼저 찾고, 못 찾으면 도시를 덧붙여 한 번 더 봅니다.
        「구로몬 시장」처럼 흔한 이름은 도시가 있어야 잡힙니다. */
@@ -296,6 +381,12 @@ async function geoOne(it){
     await new Promise(r => setTimeout(r, 1100));   /* 초당 한 번이 그쪽 규칙입니다 */
   }
   if (!hit) return false;
+  return await 저장(it, hit);
+}
+
+/* 찾은 좌표를 넣습니다. **두 갈래(주소·제목)가 같은 길로 저장해야** 결과가
+   갈리지 않습니다 — 한쪽만 고치는 일이 없게 여기 하나로 둡니다(b564). */
+async function 저장(it, hit){
   const r = await sb.from(it.kind).update({ lat: hit.lat, lng: hit.lng })
     .eq('id', it.id).select('id');
   return !r.error && !!r.data?.length;
