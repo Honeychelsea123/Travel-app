@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo } from './dom.js?v=b535';
-import { sb } from './db.js?v=b535';
-import { cities, countryName, continentOf } from './cities.js?v=b535';
-import { myRates, cityStat, visited } from './rate.js?v=b535';
-import { starHtml, starValue } from './stars.js?v=b535';
-import { localTime, dateRange, hm } from './calc.js?v=b535';
-import { fail } from './net.js?v=b535';
+import { $, esc, avatarImg, emptyDo } from './dom.js?v=b536';
+import { sb } from './db.js?v=b536';
+import { cities, countryName, continentOf } from './cities.js?v=b536';
+import { myRates, cityStat, visited } from './rate.js?v=b536';
+import { starHtml, starValue } from './stars.js?v=b536';
+import { localTime, dateRange, hm } from './calc.js?v=b536';
+import { fail } from './net.js?v=b536';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -64,6 +64,8 @@ export async function openCity(id){
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
   cvNoteDirty();
+  그때채우기(r.visited_on);
+
 
   /* 위키백과 요약. 없는 도시는 아래 사실만 보여줍니다. */
   $('cv_about').classList.toggle('hide', !c.summary);
@@ -183,3 +185,84 @@ $('cv_save').addEventListener('click', async () => {
   await openCity(cityOpen.id);
 });
 
+
+/* ── 언제 다녀왔나(b536) ──────────────────────────────────────────────
+ * 이 앱의 시간은 `created_at`(매긴 날) 하나뿐이라 **10년 전 파리를 어제
+ * 매기면 어제 일**이 됐습니다. 일기의 뼈대인 시간을 받습니다(db/070).
+ *
+ * ⚠ **연·월까지만 받습니다.** 2019년 여행의 날짜를 기억하는 사람은 없습니다 —
+ *   일 단위로 물으면 안 적거나 아무 날이나 찍어서 **틀린 기록**이 남습니다.
+ *   저장은 그 달 1일로 하지만 **화면에는 일을 절대 안 보여줍니다** —
+ *   1일이라고 뜨면 사용자가 안 적은 것을 앱이 지어낸 것이 됩니다.
+ * ⚠ **둘 다 골라야 저장합니다.** 「2019년 (월 모름)」을 담을 자리가 지금
+ *   없습니다 — 1월로 저장하면 안 적은 달을 지어내는 것입니다. 연도만
+ *   기억나면 비워 두는 편이 맞습니다.
+ * ⚠ `input[type=month]` 를 안 씁니다 — 사파리가 안 받아서 그냥 글자칸이
+ *   됩니다. 셀렉트 둘이면 아이폰에서 휠로 나옵니다.
+ * ⚠ 앞날은 못 고릅니다(db/070 의 check 와 **같은 뜻**). 「다녀온」 날이라
+ *   앞날일 수 없습니다 — 가고 싶은 곳은 ♡ 가 맡습니다. */
+const 올해 = new Date().getFullYear();
+
+function 고르개채우기(){
+  const y = $('cv_year'), m = $('cv_mon');
+  if (!y || y.options.length) return;          /* 한 번만 만듭니다 */
+  y.innerHTML = '<option value="">해</option>' +
+    Array.from({ length: 61 }, (_, i) => 올해 - i)
+      .map(v => `<option value="${v}">${v}년</option>`).join('');
+  m.innerHTML = '<option value="">달</option>' +
+    Array.from({ length: 12 }, (_, i) => i + 1)
+      .map(v => `<option value="${v}">${v}월</option>`).join('');
+}
+
+function 그때채우기(값){
+  고르개채우기();
+  const y = $('cv_year'), m = $('cv_mon');
+  if (!y) return;
+  /* 'YYYY-MM-DD' 를 그대로 자릅니다 — `new Date()` 로 파싱하면 시간대가
+     끼어들어 **하루 전 달**이 되는 날이 있습니다(1일 저장이라 특히). */
+  const t = String(값 || '');
+  y.value = t.slice(0, 4);
+  m.value = t ? String(Number(t.slice(5, 7))) : '';
+  그때표시();
+}
+
+function 그때표시(){
+  const y = $('cv_year')?.value, m = $('cv_mon')?.value;
+  const x = $('cv_when_x'), 말 = $('cv_when_note');
+  if (!말) return;
+  if (y && m){
+    말.textContent = `${y}년 ${m}월에 다녀왔어요.`;
+    if (x) x.hidden = false;
+  } else {
+    말.textContent = y || m
+      ? '해와 달을 둘 다 골라야 남아요.'
+      : '기억나는 만큼만 골라도 돼요.';
+    if (x) x.hidden = !(y || m);
+  }
+}
+
+async function 그때저장(){
+  if (!cityOpen) return;
+  const y = $('cv_year').value, m = $('cv_mon').value;
+  그때표시();
+  if ((y && !m) || (!y && m)) return;          /* 반만 고른 것은 아직 저장 안 합니다 */
+  /* 그 달 1일. 앞날이면 안 보냅니다 — 서버 check 가 막지만, 막히기 전에
+     화면에서 먼저 말해주는 편이 낫습니다. */
+  const 값 = y && m ? `${y}-${String(m).padStart(2, '0')}-01` : null;
+  if (값){
+    const 오늘 = new Date();
+    if (+y > 오늘.getFullYear() ||
+        (+y === 오늘.getFullYear() && +m > 오늘.getMonth() + 1)){
+      $('cv_when_note').textContent = '앞날은 고를 수 없어요.';
+      return;
+    }
+  }
+  await ctx.saveRate(cityOpen.id, { visited_on: 값 }, true);
+}
+
+$('cv_year')?.addEventListener('change', 그때저장);
+$('cv_mon') ?.addEventListener('change', 그때저장);
+$('cv_when_x')?.addEventListener('click', () => {
+  $('cv_year').value = ''; $('cv_mon').value = '';
+  그때저장();
+});

@@ -3200,3 +3200,25 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .psh-btns{ display:flex; gap:8px; margin-top:12px; }
 .psh-btns .primary{ flex:1; }
 
+
+/* ── 언제 다녀왔나 고르개(b536) ────────────────────────────────────────
+ * 셀렉트 둘을 나란히. 아이폰에서는 눌러야 하므로 손가락 크기(44px)를
+ * 지킵니다 — 여기가 작으면 「고르기 싫은 칸」이 됩니다.
+ * ⚠ 폭을 반반으로 나눠 두면 「2019년」이 잘립니다. 해를 조금 더 줍니다. */
+.whenrow{ display:flex; gap:8px; align-items:center; }
+.whenrow select{
+  flex:1 1 0; min-width:0; min-height:44px;
+  padding:0 10px; font:inherit; font-size:var(--f-lg);
+  color:var(--ink); background:var(--pearl);
+  border:1px solid var(--hairline); border-radius:var(--r-sm);
+  -webkit-appearance:none; appearance:none;
+  /* 화살표를 직접 그립니다 — appearance:none 이면 기본 화살표가 사라집니다. */
+  background-image:linear-gradient(45deg, transparent 50%, var(--ink-48) 50%),
+                   linear-gradient(135deg, var(--ink-48) 50%, transparent 50%);
+  background-position:calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size:5px 5px, 5px 5px;
+  background-repeat:no-repeat;
+  padding-right:30px;
+}
+.whenrow select:first-child{ flex:1.25 1 0; }   /* 「2019년」이 안 잘리게 */
+.whenrow button{ flex:none; }
