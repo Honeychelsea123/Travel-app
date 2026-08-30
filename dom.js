@@ -228,6 +228,37 @@ export const dropHtml = id => { delete lastHtml[id]; };
 /* ⚠ **하단바에 적힌 것과 «똑같은» 말이어야 합니다(b542).** 「← 기록」을
    눌렀는데 하단바에는 「홈」이라 적혀 있으면 같은 곳인 줄 모릅니다.
    이름을 바꾸려거든 index.html 의 탭바와 여기를 «같이» 고치십시오. */
+/* ── 사진을 «비율 그대로» 줄입니다(b567) ──────────────────────────────
+ * ⚠⚠ **프로필의 `shrink` 를 쓰면 안 됩니다.** 그건 아바타용이라
+ *   ① 가운데를 **정사각으로 잘라내고** ② 작은 사진도 **늘립니다**.
+ *   일기 사진에 썼다가 실제로 겪었습니다(b565): 1280×853 짜리가
+ *   **1280×1280 정사각**이 되고, 파일이 125KB → 254KB 로 «커졌습니다».
+ *   줄이려고 부른 함수가 늘린 것입니다.
+ * ⚠ 여기서는 긴 변만 맞추고 **원본보다 크게 안 만듭니다**(scale ≤ 1).
+ * ⚠ 품질 0.82 — 0.85 와 눈으로 구별이 안 가는데 파일은 뚜렷이 작습니다.
+ * ⚠ 다 그린 뒤에 `revokeObjectURL` 을 부릅니다. 그리기 전에 부르면
+ *   사파리에서 빈 그림이 나옵니다. */
+export function fitImage(file, maxEdge = 1280, quality = 0.82){
+  return new Promise((ok, no) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, maxEdge / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width  * k));
+      const h = Math.max(1, Math.round(img.height * k));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      cv.toBlob(b => {
+        URL.revokeObjectURL(img.src);
+        b ? ok(b) : no(new Error('사진을 바꾸지 못했어요.'));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(img.src);
+                          no(new Error('사진을 읽지 못했어요.')); };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 const 탭이름 = { home:'기록', rate:'평가', anal:'분석', trips:'여행', set:'프로필' };
 export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }
 

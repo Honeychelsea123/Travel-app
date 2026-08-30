@@ -13,16 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo } from './dom.js?v=b566';
-import { sb } from './db.js?v=b566';
-import { cities, countryName, continentOf } from './cities.js?v=b566';
-import { myRates, cityStat, visited } from './rate.js?v=b566';
-import { starHtml, starValue } from './stars.js?v=b566';
-import { localTime } from './calc.js?v=b566';
-import { fail } from './net.js?v=b566';
-/* 사진 줄이기는 프로필 사진이 쓰던 것 그대로입니다 — 두 벌로 만들면
-   한쪽만 고쳐집니다(b565). */
-import { shrink } from './profile.js?v=b566';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b567';
+import { sb } from './db.js?v=b567';
+import { cities, countryName, continentOf } from './cities.js?v=b567';
+import { myRates, cityStat, visited } from './rate.js?v=b567';
+import { starHtml, starValue } from './stars.js?v=b567';
+import { localTime } from './calc.js?v=b567';
+import { fail } from './net.js?v=b567';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -220,8 +217,10 @@ $('cv_jfile')?.addEventListener('change', async e => {
   const 빈 = $('cv_jpick'), 원래 = 빈.textContent;
   빈.disabled = true; 빈.textContent = '올리는 중…';
   try {
-    /* 일기 사진은 한 화면을 채웁니다 — 프로필 사진(256)보다 큽니다. */
-    const blob = await shrink(f, 1280);
+    /* ⚠ **`shrink` 가 아니라 `fitImage` 입니다(b567).** 프로필용은 가운데를
+       정사각으로 잘라내고 작은 사진은 늘립니다 — 일기 사진이 1280×1280
+       정사각이 되고 파일이 되레 커졌습니다(dom.js 의 그 자리 참고). */
+    const blob = await fitImage(f, 1280);
     const path = `${ctx.me().id}/${cityOpen.id}.jpg`;
     const up = await sb.storage.from('journal-photos')
       .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
