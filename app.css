@@ -3222,3 +3222,21 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 }
 .whenrow select:first-child{ flex:1.25 1 0; }   /* 「2019년」이 안 잘리게 */
 .whenrow button{ flex:none; }
+
+/* ── 내 일기(b537) ─────────────────────────────────────────────────────
+ * ⚠ 바로 위 한줄평 칸이 「다른 사람에게도 보여요」라고 말합니다. 여기서
+ *   말을 안 하면 같은 것으로 읽혀서, 남 볼까 봐 아무것도 안 씁니다.
+ *   제목 옆에 붙박이로 「나만 봐요」를 답니다 — 회색 알약이라 조용하지만
+ *   제목 줄에 있어서 안 볼 수가 없습니다. */
+.onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
+         background:var(--pearl); color:var(--ink-48);
+         font-size:var(--f-xs); font-weight:600; letter-spacing:0; }
+#cv_journal{
+  width:100%; min-height:104px; resize:none; overflow:hidden;
+  padding:12px; font:inherit; font-size:var(--f-lg); line-height:1.65;
+  color:var(--ink); background:var(--pearl);
+  border:1px solid var(--hairline); border-radius:var(--r-sm);
+  /* 일기는 길게 쓰는 칸이라 글자 사이를 조금 풉니다. */
+  letter-spacing:0; word-break:keep-all;
+}
+#cv_journal:focus{ outline:none; border-color:var(--primary); background:var(--canvas); }

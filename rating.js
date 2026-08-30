@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b536';
-import { sb } from './db.js?v=b536';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b536';
-import { dateRange } from './calc.js?v=b536';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b536';
-import { cities, countryName, addCity } from './cities.js?v=b536';
+import { $, esc } from './dom.js?v=b537';
+import { sb } from './db.js?v=b537';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b537';
+import { dateRange } from './calc.js?v=b537';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b537';
+import { cities, countryName, addCity } from './cities.js?v=b537';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b536';
-import { openCity } from './city.js?v=b536';
-import { loadCities } from './citysearch.js?v=b536';
+         putRateFilter, removeRate } from './rate.js?v=b537';
+import { openCity } from './city.js?v=b537';
+import { loadCities } from './citysearch.js?v=b537';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -59,7 +59,7 @@ export function resetRateHtml(){ lastRateHtml = ''; }
  * **실패하면 아무것도 안 바꿉니다.** 반쯤 지워진 자료가 빈 화면보다 나쁩니다. */
 export async function loadRateData(){
   const [mine, stats, vis] = await Promise.all([
-    sb.from('city_ratings').select('city_id,stars,want,comment,visited_on,updated_at')
+    sb.from('city_ratings').select('city_id,stars,want,comment,journal,updated_at')
       .eq('user_id', ctx.me().id),
     sb.rpc('city_stats'),
     sb.rpc('my_visited'),
@@ -344,7 +344,7 @@ export async function saveRate(cityId, patch, quiet){
   const r = await sb.from('city_ratings')
     .upsert({ user_id: ctx.me().id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })
-    .select('city_id,stars,want,comment,visited_on').maybeSingle();
+    .select('city_id,stars,want,comment,journal').maybeSingle();
   if (r.error) return fail(r.error, 'rate');
   /* 별점 · 방금 매긴 것 · 다녀온 곳을 **한 번에** 맞춥니다(rate.js).
      셋을 따로 적으면 그중 하나를 빠뜨립니다. 별을 지운 경우만 다녀온 곳을
