@@ -3170,8 +3170,12 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ max-height 는 **폭 상한이기도 합니다.** aspect-ratio 가 걸려 있으면
  *   높이 240 은 곧 폭 360 입니다(b533 에 이걸로 한 번 막혔습니다).
  *   여기서는 그게 오히려 안전장치 노릇을 합니다. */
+/* ⚠ **가로 가운데로 놓습니다(b542).** `aspect-ratio` + `max-height` 가
+     폭을 360 으로 묶는데(위 참고), 카드가 그보다 넓으면 지구본이 **왼쪽에
+     붙습니다.** 실측: 카드 안쪽 444px 인데 지구본은 360px — 84px 이 통째로
+     오른쪽에 남았습니다. `auto` 로 양쪽에 42px 씩 나눕니다. */
 .globebox{ position:relative; aspect-ratio:3 / 2; max-height:240px;
-           margin:10px 0 14px; }
+           margin:10px auto 14px; }
 /* ⚠⚠ **none 이 아니라 pan-y 입니다(b535).** none 이면 지구본 위에서
    화면이 안 굴러갑니다 — 폰(390px)에서 지구본이 358px 라 양옆에 16px
    밖에 안 남고, 240px 짜리 스크롤 죽은 띠가 화면을 가로지릅니다.

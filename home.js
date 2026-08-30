@@ -33,35 +33,35 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b542';
-import { sb } from './db.js?v=b542';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b542';
-import { hm, todayYmd } from './calc.js?v=b542';
-import { starHtml, paintStars } from './stars.js?v=b542';
+import { $, esc } from './dom.js?v=b543';
+import { sb } from './db.js?v=b543';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b543';
+import { hm, todayYmd } from './calc.js?v=b543';
+import { starHtml, paintStars } from './stars.js?v=b543';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b542';
-import { cities, countryName } from './cities.js?v=b542';
-import { myRates, visited } from './rate.js?v=b542';
-import { plans } from './trip.js?v=b542';
-import { loadCities } from './citysearch.js?v=b542';
-import { saveRate, refreshVisited } from './rating.js?v=b542';
+import { starValue } from './rateui.js?v=b543';
+import { cities, countryName } from './cities.js?v=b543';
+import { myRates, visited } from './rate.js?v=b543';
+import { plans } from './trip.js?v=b543';
+import { loadCities } from './citysearch.js?v=b543';
+import { saveRate, refreshVisited } from './rating.js?v=b543';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b542';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b543';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b542';
+import { drawReport } from './report.js?v=b543';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b542';
+import { PERSONA_BG } from './card.js?v=b543';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b542';
+import { checkPersonaShift } from './pshift.js?v=b543';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b542';
+import { mountGlobe } from './globe.js?v=b543';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -660,8 +660,17 @@ async function renderFoot(통){
     `<div class="swrow">${칸(장[장.length - 1])}${장.map(칸).join('')}${칸(장[0])}</div>
      <div class="swdots">${장.map((_, i) =>
        `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
-  box.appendChild(줄만들기('내 발자국', '', '지도',
-    지도열기));
+  /* ⚠ **밑줄이 비어 있었습니다(b542 에서 채움).** 성향 탭의 발자국 카드에는
+     「195개국 중 28개국 · 14.4%」가 있었는데 여기로 옮기면서 빠졌습니다.
+     아래 넘김 카드의 첫 장이 28 / 195 를 크게 말하지만 **%는 거기 작게만**
+     있고, 무엇보다 이 줄이 제목 노릇을 하려면 무엇을 말하는 줄인지
+     한마디는 있어야 합니다.
+     ⚠ 아직 한 곳도 없으면 숫자 대신 **무엇을 하면 되는지**를 적습니다 —
+       「0개국 · 0.0%」는 알려주는 것이 없습니다. */
+  box.appendChild(줄만들기('내 발자국',
+    f.countries ? `${UN_COUNTRIES}개국 중 ${f.countries}개국 · ${pct.toFixed(1)}%`
+                : '별점을 매기면 여기에 쌓여요',
+    '지도', 지도열기));
   /* ⚠ **숫자 카드는 지도 아래입니다(b452).** 위에 두었더니 지도가 밀려
      내려가 홈에서 잘 안 보였습니다. 이 화면의 주인공은 **칠해진 지도**이고
      숫자는 그 밑에서 거드는 것입니다 — 넘겨 보는 것도 지도를 본 다음에
