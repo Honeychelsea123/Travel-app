@@ -3181,6 +3181,37 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
                   display:block; touch-action:pan-y; cursor:grab; }
 .globebox canvas:active{ cursor:grabbing; }
 
+/* ── 지구 / 평면 바꿈(b541) ───────────────────────────────────────────
+ * 사용자 요청. **둘은 다른 일을 합니다** — 지구본은 돌려 보는 재미고,
+ * 평면은 「내가 어디를 다녔나」를 **한눈에 세는** 자리입니다. 지구본은
+ * 언제나 절반이 뒤통수라 세는 일을 못 합니다.
+ * ⚠ 고른 쪽은 기억합니다(`t2:mapview`). 기기마다 따로입니다 — 폰에서
+ *   지구본을 보는 사람이 노트북에서도 그러란 법은 없습니다.
+ * ⚠ 단추는 지도 **위에 얹습니다.** 아래에 줄로 놓으면 카드가 그만큼
+ *   길어지는데, 이 카드는 앱을 열면 제일 먼저 보이는 것이라 한 줄이
+ *   아깝습니다. */
+.gwrap{ position:relative; }
+.gswitch{ position:absolute; right:2px; top:2px; z-index:2;
+          display:flex; padding:2px; gap:2px; border-radius:999px;
+          background:var(--panel); border:1px solid var(--line);
+          box-shadow:0 1px 3px rgba(0,0,0,.06); }
+.gswitch button{ appearance:none; border:0; cursor:pointer;
+                 padding:4px 11px; border-radius:999px; background:none;
+                 font-size:var(--f-sm); font-weight:600; color:var(--ink-48);
+                 transition:background var(--t) var(--ease), color var(--t) var(--ease); }
+.gswitch button.on{ background:var(--ink); color:var(--canvas); }
+
+/* 평면 쪽. 좌표도 색도 홈 미니맵과 **같은 것**을 씁니다 — 여기서 따로
+   그리면 같은 지도가 두 벌이 되어 언젠가 갈라집니다.
+   ⚠ 지구본과 **높이를 맞춥니다.** 안 맞추면 바꿀 때마다 카드가 들썩여서
+     아래 내용이 위아래로 뜁니다. */
+.flatbox{ display:flex; align-items:center; justify-content:center;
+          aspect-ratio:3 / 2; max-height:240px; margin:10px 0 14px;
+          cursor:pointer; }
+.flatbox svg{ width:100%; height:auto; display:block; }
+.flatbox path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
+.flatbox path.been{ fill:var(--primary); opacity:.85; }
+
 /* ── 성향이 바뀌었어요(b526) ───────────────────────────────────────────
  * 락인에서 마지막까지 빠져 있던 「다시 열 이유」입니다. 앱을 열었을 때
  * 홈 맨 위에 한 번 뜹니다(푸시는 일행 기능이 실제로 쓰인 뒤입니다).

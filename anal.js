@@ -14,30 +14,44 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b540';
-import { sb } from './db.js?v=b540';
-import { cities, continentOf } from './cities.js?v=b540';
+import { $, esc } from './dom.js?v=b541';
+import { sb } from './db.js?v=b541';
+import { cities, continentOf } from './cities.js?v=b541';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b540';
+import { personaBackTo } from './persona.js?v=b541';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b540';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b540';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b541';
+import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b541';
 /* 손가락으로 돌려 보는 지구본(b519) — 발자국 카드의 지도가 이것입니다. */
-import { mountGlobe } from './globe.js?v=b540';
+import { mountGlobe } from './globe.js?v=b541';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b540';
+import { similarPicks } from './rec.js?v=b541';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b540';
-import { pickCity } from './citysearch.js?v=b540';
+import { openNew } from './newtrip.js?v=b541';
+import { pickCity } from './citysearch.js?v=b541';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
+
+/* ── 지구본이냐 평면이냐(b541) ────────────────────────────────────────
+ * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
+ * 세어 보려고 평면을 고른 사람이 올 때마다 다시 눌러야 합니다.
+ * ⚠ 기기마다 따로입니다(localStorage). 계정에 매달지 않습니다 — 폰에서
+ *   지구본을 돌려 보는 사람이 노트북에서도 그러란 법이 없고, 이건
+ *   **취향이 아니라 화면 크기** 이야기에 가깝습니다.
+ * ⚠ 사파리 비공개 모드에서 localStorage 가 던집니다. 감싸 둡니다. */
+const 뷰열쇠 = 't2:mapview';
+function 뷰읽기(){
+  try { return localStorage.getItem(뷰열쇠) === 'flat' ? 'flat' : 'globe'; }
+  catch { return 'globe'; }
+}
+function 뷰쓰기(v){ try { localStorage.setItem(뷰열쇠, v); } catch {} }
 
 
 
@@ -146,7 +160,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b540"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b541"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -237,12 +251,52 @@ export async function loadAnal(){
    *   숫자로 말하고, 「자세히 보기 ›」가 펼친 평면 지도로 갑니다.
    * ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
    *   한 번은 건너뜁니다(globe.js 가 `민적있나` 로 알려줍니다). */
+  /* ── 지구 / 평면 (b541, 사용자 요청) ────────────────────────────────
+   * ⚠ **둘은 다른 일을 합니다.** 지구본은 언제나 절반이 뒤통수라
+   *   「내가 어디를 다녔나」를 **세지 못합니다.** 평면은 그게 됩니다.
+   *   하나를 고르라는 것이 아니라 **두 가지 질문**이라 둘 다 둡니다.
+   * ⚠ 평면 쪽은 홈 미니맵과 **같은 좌표·같은 색**입니다(app.css 의
+   *   `.flatbox`가 `.minimap` 과 같은 규칙). 여기서 따로 그리면 같은
+   *   지도가 두 벌이 되어 언젠가 갈라집니다.
+   * ⚠ 고른 쪽은 기억합니다 — 기기마다 따로(`t2:mapview`).
+   * ⚠ 지구본은 **평면을 보는 동안 멈춥니다.** 따로 알려줄 필요가 없습니다:
+   *   `display:none` 이 되면 IntersectionObserver 가 「안 보인다」고
+   *   하고 globe.js 가 스스로 멈춥니다. */
+  const 감쌈 = document.createElement('div');
+  감쌈.className = 'gwrap';
+
   const 공칸 = document.createElement('div');
   공칸.className = 'globebox';
   const 공판 = document.createElement('canvas');
   공판.setAttribute('aria-label', '지구본');
   공칸.appendChild(공판);
-  발.appendChild(공칸);
+  감쌈.appendChild(공칸);
+
+  /* 평면. 좌표는 `#worldland` 에 이미 있습니다(홈 미니맵과 같은 viewBox). */
+  const 평칸 = document.createElement('div');
+  평칸.className = 'flatbox';
+  평칸.innerHTML = `<svg viewBox="20 16 976 392"
+    preserveAspectRatio="xMidYMid meet">${$('worldland')?.innerHTML || ''}</svg>`;
+  평칸.querySelectorAll('path').forEach(p =>
+    p.classList.toggle('been', gone.has(p.dataset.c)));
+  평칸.onclick = 지도열기;
+  감쌈.appendChild(평칸);
+
+  const 바꿈 = document.createElement('div');
+  바꿈.className = 'gswitch';
+  바꿈.innerHTML = '<button type="button">지구</button><button type="button">평면</button>';
+  감쌈.appendChild(바꿈);
+  발.appendChild(감쌈);
+
+  /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
+  let 평면인가 = 뷰읽기() === 'flat';
+  const 맞추기 = () => {
+    공칸.classList.toggle('hide', 평면인가);
+    평칸.classList.toggle('hide', !평면인가);
+    바꿈.children[0].classList.toggle('on', !평면인가);
+    바꿈.children[1].classList.toggle('on', 평면인가);
+  };
+  맞추기();
   /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
      붙은 뒤에 폭이 생기므로 한 박자 미루는 것은 맞는데, 그 한 박자를
      `requestAnimationFrame` 으로 잡으면 **창이 뒤에 있을 때 아예 안
@@ -255,6 +309,16 @@ export async function loadAnal(){
     /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
     const 공 = mountGlobe(공판, gone);
     공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
+    /* ⚠ **평면에서 돌아오면 다시 그려야 합니다.** 숨어 있는 동안 캔버스는
+       크기를 잃고(clientWidth 0), globe.js 는 「안 보인다」며 멈춰 있습니다.
+       `되살리기` 가 크기를 다시 재고 회전을 잇습니다. */
+    바꿈.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      평면인가 = b === 바꿈.children[1];
+      뷰쓰기(평면인가 ? 'flat' : 'globe');
+      맞추기();
+      if (!평면인가) 공?.되살리기();
+    };
   }, 0);
 
   /* ── 대륙별 ── 막대 여섯 줄을 칩 한 뭉치로(b464) ───────────────────

@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b540';
+import { $ } from './dom.js?v=b541';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -75,6 +75,29 @@ function 읽기(){
 const RAD = Math.PI / 180;
 /* [경도(rad), 위도(rad)] 로 미리 바꿔 둡니다 — 매 프레임 곱하지 않으려고. */
 const 점 = (x, y) => [ (x / 1000 * 360 - 180) * RAD, (90 - y / 500 * 180) * RAD ];
+
+
+/* ── 나라마다 한가운데 점 ─────────────────────────────────────────────
+ * ⚠ **작은 나라는 지구본에서 안 보입니다.** 싱가포르·몰타·바레인은 칠해도
+ *   한 픽셀이 안 됩니다 — 다녀왔는데 지구가 그대로인 것처럼 보입니다.
+ *   그래서 다녀온 나라마다 **핀을 하나** 찍습니다.
+ * ⚠ 평면에서 좌표를 평균 내면 안 됩니다. 날짜변경선에 걸친 나라(러시아·
+ *   피지)가 경도 +180 과 -180 을 평균해서 **아프리카 앞바다**로 갑니다.
+ *   단위벡터로 바꿔 더한 뒤 다시 각도로 되돌립니다 — 구 위의 평균입니다.
+ * ⚠ 조각이 여럿이면 **제일 큰 것** 하나만 봅니다. 프랑스에 해외령을
+ *   섞으면 핀이 대서양 한가운데에 섭니다. */
+function 한가운데(고리들){
+  let 큰 = 고리들[0];
+  for (const g of 고리들) if (g.length > 큰.length) 큰 = g;
+  let X = 0, Y = 0, Z = 0;
+  for (const [λ, φ] of 큰){
+    const c = Math.cos(φ);
+    X += c * Math.cos(λ); Y += c * Math.sin(λ); Z += Math.sin(φ);
+  }
+  const r = Math.hypot(X, Y, Z);
+  if (!r) return null;
+  return [ Math.atan2(Y, X), Math.asin(Z / r) ];
+}
 
 /* ── 여기가 지구본입니다 ──────────────────────────────────────────────
  * 정사도법: 보는 방향에서 90° 넘게 돌아간 점은 **뒤통수**라 안 보입니다.
@@ -131,6 +154,47 @@ function 만들기(ctx, R, cx, cy, 고리, λ0, φ0){
   return true;
 }
 
+/* ── 경위선(b541) ─────────────────────────────────────────────────────
+ * 30° 마다 한 줄씩. **이게 있어야 도는 것이 보입니다** — 태평양만 보일 때는
+ * 땅이 하나도 없어서, 격자가 없으면 지구본이 멈춘 것처럼 보입니다.
+ * ⚠ 아주 흐리게. 여기가 진해지면 지구본이 아니라 철망이 됩니다.
+ * ⚠ 테두리를 따라 잇지 않습니다 — 선이라 닫을 필요가 없습니다. 끊긴
+ *   채로 두면 그대로 「뒤로 넘어갔다」가 됩니다. */
+function 격자(ctx, R, cx, cy, λ0, φ0){
+  const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
+  const 줄 = (점들) => {
+    ctx.beginPath();
+    let 붙었나 = false;
+    for (const [λ, φ] of 점들){
+      const cφ = Math.cos(φ), sφ = Math.sin(φ), cΔ = Math.cos(λ - λ0);
+      if (sφ0 * sφ + cφ0 * cφ * cΔ < 0){ 붙었나 = false; continue; }
+      const x = cx + R * cφ * Math.sin(λ - λ0);
+      const y = cy - R * (cφ0 * sφ - sφ0 * cφ * cΔ);
+      if (붙었나) ctx.lineTo(x, y); else { ctx.moveTo(x, y); 붙었나 = true; }
+    }
+    ctx.stroke();
+  };
+  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = 'rgba(0,0,0,.055)';
+  for (let d = -180; d < 180; d += 30){          /* 자오선 열둘 */
+    const λ = d * RAD, 점들 = [];
+    for (let p = -84; p <= 84; p += 3) 점들.push([λ, p * RAD]);
+    줄(점들);
+  }
+  for (let p = -60; p <= 60; p += 30){           /* 위선 넷 */
+    if (!p) continue;
+    const φ = p * RAD, 점들 = [];
+    for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, φ]);
+    줄(점들);
+  }
+  ctx.strokeStyle = 'rgba(0,0,0,.085)';          /* 적도만 한 겹 진하게 */
+  {
+    const 점들 = [];
+    for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, 0]);
+    줄(점들);
+  }
+}
+
 /* ── 붙이기 ───────────────────────────────────────────────────────────
  * `갔다` 는 나라 코드 Set 입니다. 지도 화면이 이미 갖고 있는 것을 받습니다 —
  * 여기서 다시 세면 평면 지도와 지구본의 칠이 갈립니다. */
@@ -144,9 +208,21 @@ function 만들기(ctx, R, cx, cy, 고리, λ0, φ0){
    ⚠ 기울기 한계(±52)를 안 넘습니다. 넘기면 남극 구멍이 보입니다. */
 const KR = [127.8, 36.5];   /* 대한민국 한가운데 (경도, 위도) */
 
+/* ⚠⚠ **바다를 파랗게 칠하지 마십시오.** ⚠⚠
+   지구본이니 바다는 파랑이 맞아 보이는데, 이 앱에서 파랑(--primary)은
+   **「내가 다녀온 나라」**입니다. 바다를 파랗게 하면 다녀온 나라가 바다와
+   같은 색이 되어 **칠한 것이 안 보입니다.** 바다는 평면 지도와 같은
+   회백색(--parchment)으로 두고, 「지구답게」는 대기광·경위선·명암으로
+   만듭니다(b541). 평면 지도와 색이 갈리면 안 되는 것도 같은 이유입니다. */
+const 자동속도 = 2.2;    /* 초당 도. 한 바퀴에 164초 — 도는 것은 알겠고 안 어지러운 값 */
+
 export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   const 목록 = 읽기();
   if (!목록 || !canvas) return null;
+
+  /* 핀 자리는 한 번만 셉니다(점이 9,918개입니다 — 매 프레임 평균낼 수 없습니다). */
+  if (목록.length && 목록[0].핀 === undefined)
+    for (const n of 목록) n.핀 = 한가운데(n.고리);
 
   let λ0 = (처음경도 ?? KR[0]) * RAD;
   let φ0 = (처음위도 ?? KR[1]) * RAD;
@@ -157,10 +233,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     const w = canvas.clientWidth, h = canvas.clientHeight;
     /* ⚠⚠ **크기가 아직 0 이면 포기하지 말고 다시 옵니다(b523).** ⚠⚠
-       분석 탭에서 붙자마자 그리면 그 순간에는 칸이 아직 폭을 못 가진
-       때가 있습니다. 처음에 여기서 그냥 `return` 했더니 **영영 안
-       그려졌습니다** — 칸은 360×240 인데 캔버스는 손도 안 댄 300×150
-       이었습니다(실측).
+       탭에 붙자마자 그리면 그 순간에는 칸이 아직 폭을 못 가진 때가
+       있습니다. 처음에 여기서 그냥 `return` 했더니 **영영 안 그려졌습니다** —
+       칸은 360×240 인데 캔버스는 손도 안 댄 300×150 이었습니다(실측).
      ⚠ 다시 부르는 것은 setTimeout 입니다. rAF 로 하면 창이 숨어 있을 때
        (다른 탭에 있을 때) 아예 안 돌아서 같은 자리에 멈춥니다.
      ⚠ 무한히 기다리지 않습니다. 40번(약 5초)이면 칸이 영영 안 열리는
@@ -186,21 +261,36 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
        두 색으로 보입니다. 오렌지로 줘봤다가 되돌렸습니다(b531, app.css 참고). */
     const 내것 = cs.getPropertyValue('--primary').trim()   || '#0066cc';
 
-    const R = Math.min(w, h) / 2 - 6;
+    /* ⚠ 대기광이 밖으로 번지므로 반지름을 그만큼 줄여 자리를 냅니다.
+         전에는 -6 이었는데, 그대로 두면 번짐이 캔버스 밖에서 잘립니다. */
+    const R = Math.min(w, h) / 2 - 13;
     const cx = w / 2, cy = h / 2;
 
+    /* ── ① 대기광 ── 가장자리 바깥으로 번지는 파란 띠 한 겹 ───────────
+       ⚠ 안쪽(0~R)은 완전 투명입니다. 여기에 색을 조금이라도 넣으면
+         지구 전체에 파란 안개가 껴서 다녀온 나라의 파랑이 죽습니다. */
+    {
+      const g = ctx.createRadialGradient(cx, cy, R * 0.93, cx, cy, R * 1.13);
+      g.addColorStop(0,    'rgba(0,102,204,0)');
+      g.addColorStop(0.42, 'rgba(0,102,204,.13)');
+      g.addColorStop(0.72, 'rgba(0,102,204,.06)');
+      g.addColorStop(1,    'rgba(0,102,204,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 1.13, 0, Math.PI * 2); ctx.fill();
+    }
+
+    /* ── ② 바다 ────────────────────────────────────────────────────── */
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.fillStyle = 바다; ctx.fill();
-    /* 가장자리에 그림자를 한 겹 — 이게 없으면 원판이지 구가 아닙니다. */
-    const 결 = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .1, cx, cy, R);
-    결.addColorStop(0, 'rgba(255,255,255,.55)');
-    결.addColorStop(.75, 'rgba(255,255,255,0)');
-    결.addColorStop(1, 'rgba(0,0,0,.13)');
-    ctx.fillStyle = 결; ctx.fill();
 
     ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
-    ctx.lineWidth = .4;
+
+    /* ── ③ 경위선 (땅 밑에 깝니다) ─────────────────────────────────── */
+    격자(ctx, R, cx, cy, λ0, φ0);
+
+    /* ── ④ 땅 ──────────────────────────────────────────────────────── */
+    ctx.lineWidth = 0.4;
     for (const 나라 of 목록){
       const 감 = 갔다.has(나라.code);
       ctx.fillStyle = 감 ? 내것 : 땅;
@@ -209,9 +299,98 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
         if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){ ctx.fill(); ctx.stroke(); }
       }
     }
+
+    /* ── ⑤ 핀 ── 다녀온 나라마다 하나 ─────────────────────────────────
+       ⚠ 지평선에 가까울수록 흐려집니다. 딱 잘라 없애면 돌릴 때 점이
+         **깜빡** 하고 사라져서 눈에 거슬립니다. */
+    {
+      const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
+      for (const 나라 of 목록){
+        if (!나라.핀 || !갔다.has(나라.code)) continue;
+        const [λ, φ] = 나라.핀;
+        const cφ = Math.cos(φ), sφ = Math.sin(φ), cΔ = Math.cos(λ - λ0);
+        const 앞 = sφ0 * sφ + cφ0 * cφ * cΔ;
+        if (앞 <= 0.02) continue;
+        ctx.globalAlpha = Math.min(1, 앞 * 3.4);
+        const x = cx + R * cφ * Math.sin(λ - λ0);
+        const y = cy - R * (cφ0 * sφ - sφ0 * cφ * cΔ);
+        ctx.beginPath(); ctx.arc(x, y, 3.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 1.7, 0, Math.PI * 2);
+        ctx.fillStyle = 내것; ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    /* ── ⑥ 명암 ── 왼쪽 위에서 빛이 옵니다 ───────────────────────────
+       ⚠ 이게 없으면 원판이지 구가 아닙니다. **가장자리를 어둡게** 하는
+         쪽이 부풀어 보이게 하는 데 더 셉니다 — 하이라이트만으로는 안 됩니다. */
+    {
+      const g = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.38, R * 0.06,
+                                         cx, cy, R * 1.02);
+      g.addColorStop(0,    'rgba(255,255,255,.62)');
+      g.addColorStop(0.34, 'rgba(255,255,255,.16)');
+      g.addColorStop(0.68, 'rgba(255,255,255,0)');
+      g.addColorStop(0.9,  'rgba(0,0,0,.07)');
+      g.addColorStop(1,    'rgba(0,0,0,.19)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
+
+    /* ── ⑦ 테두리 ── 머리카락 한 올. 구와 배경을 갈라 줍니다 ───────── */
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(0,0,0,.10)'; ctx.stroke();
   };
   const 다시 = () => { if (!예약) 예약 = requestAnimationFrame(그리기); };
+
+  /* ── 스스로 도는 것과 미끄러지는 것(b541) ───────────────────────────
+   * ⚠⚠ **안 보이면 멈춥니다.** 이 앱에서 네 번 데인 자리입니다 — 크롬은
+   *   배경 탭에서 rAF 를 아예 안 부릅니다. 여기서는 그게 오히려 맞는
+   *   동작이라 그대로 두되, **깨어났을 때 몰아서 돌지 않도록** 시간차를
+   *   잘라냅니다(dt 상한 0.05초). 안 그러면 다른 탭에 갔다 오는 순간
+   *   지구가 홱 돌아갑니다.
+   * ⚠ 화면 밖으로 나가면 IntersectionObserver 가 알려줍니다 — 평면 보기로
+   *   바꾸면 캔버스가 `display:none` 이 되므로 그때도 여기서 멈춥니다.
+   *   따로 알려줄 필요가 없습니다.
+   * ⚠ **손대면 그걸로 끝입니다.** 다시 돌기 시작하면 사용자가 맞춰 놓은
+   *   자리가 흘러가 버립니다 — 「내가 놓은 대로 있어야」 합니다.
+   * ⚠ 던진 뒤 미끄러지는 것은 관성입니다. 초당 0.06 배로 줄어듭니다
+   *   (약 1.2초면 섭니다). */
+  let 자동 = true, 보임 = true, 루프 = 0, 마지막 = 0, 관성 = 0, 그린때 = 0;
+  const 돌까 = () => (자동 || 관성) && 보임;
+  function 한바퀴(t){
+    루프 = 0;
+    const dt = 마지막 ? Math.min((t - 마지막) / 1000, 0.05) : 0;
+    마지막 = t;
+    if (관성){
+      λ0 += 관성 * dt;
+      관성 *= Math.pow(0.06, dt);
+      if (Math.abs(관성) < 0.04) 관성 = 0;
+    } else if (자동){
+      λ0 -= 자동속도 * RAD * dt;   /* 지구가 도는 쪽 — 땅이 오른쪽으로 흐릅니다 */
+    }
+    /* ⚠ 스스로 돌 때는 30fps 면 충분합니다. 매 프레임 9,918개를 다시
+       투영하면 폰에서 다른 것이 버벅입니다. 관성일 때는 손을 막 뗀
+       참이라 최대한 부드럽게 갑니다. */
+    if (관성 || t - 그린때 >= 32){ 그린때 = t; 그리기(); }
+    if (돌까()) 루프 = requestAnimationFrame(한바퀴);
+    else 마지막 = 0;
+  }
+  const 깨우기 = () => { if (!루프 && 돌까()) 루프 = requestAnimationFrame(한바퀴); };
+  const 세우기 = () => { 자동 = false; 관성 = 0; };
+
+  const 눈 = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(es => {
+        보임 = es.some(e => e.isIntersecting);
+        if (보임){ 마지막 = 0; 다시(); 깨우기(); }
+      }, { threshold: 0 })
+    : null;
+  눈?.observe(canvas);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    마지막 = 0; 다시(); 깨우기();
+  });
 
   /* ── 돌리기 ─────────────────────────────────────────────────────────
    * ⚠⚠ **손가락으로는 좌우만 돌립니다(b535).** ⚠⚠
@@ -237,8 +416,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   let 끌기 = null;
   canvas.addEventListener('pointerdown', e => {
     민적 = false;
+    세우기();                      /* 손이 닿는 순간 자동 회전은 끝입니다 */
     끌기 = { x:e.clientX, y:e.clientY, 손가락:e.pointerType !== 'mouse',
-             잠금:null };
+             잠금:null, 때:e.timeStamp, 속:0 };
     canvas.setPointerCapture?.(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
@@ -256,22 +436,35 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
     /* 굴리기로 정해졌으면 브라우저가 화면을 굴리게 두고 손을 뗍니다. */
     if (끌기.잠금 === '굴리기') return;
 
-    λ0 -= dx * .35 * RAD;
+    const dλ = -dx * 0.35 * RAD;
+    λ0 += dλ;
+    /* 던질 때 쓸 속도(라디안/초). **마지막 움직임만** 봅니다 — 평균을 내면
+       멈췄다가 톡 미는 손가락에서도 지구가 날아갑니다. */
+    const dt = Math.max(1, e.timeStamp - 끌기.때) / 1000;
+    끌기.속 = dλ / dt;
+    끌기.때 = e.timeStamp;
     /* 위아래 기울기는 **마우스에만** 줍니다 — 손가락의 세로는 화면 굴리기
        몫입니다(위 머리말 b535). */
     if (!끌기.손가락){
       const 끝 = 52 * RAD;
-      φ0 = Math.max(-끝, Math.min(끝, φ0 + dy * .35 * RAD));
+      φ0 = Math.max(-끝, Math.min(끝, φ0 + dy * 0.35 * RAD));
     }
     끌기.x = e.clientX; 끌기.y = e.clientY;
     민적 = true;
     다시();
   });
-  const 놓기 = () => { 끌기 = null; };
+  /* ⚠ **던지기는 손을 뗀 그 순간만 봅니다.** 마지막 움직임이 90ms 보다
+     오래됐으면 손가락이 멈춰 있다가 뗀 것이라 안 던집니다 — 안 그러면
+     자리를 맞추고 손을 떼도 지구가 스르륵 흘러갑니다. */
+  const 놓기 = e => {
+    const 그거 = 끌기; 끌기 = null;
+    if (!그거 || 그거.잠금 === '굴리기') return;
+    if (e && e.timeStamp - 그거.때 > 90) return;
+    const v = Math.max(-9, Math.min(9, 그거.속 || 0));
+    if (Math.abs(v) > 0.25){ 관성 = v; 마지막 = 0; 깨우기(); }
+  };
   canvas.addEventListener('pointerup', 놓기);
-  canvas.addEventListener('pointercancel', 놓기);
-  /* iOS 는 pointermove 의 preventDefault 를 무시합니다(b493). touch-action 으로
-     이미 막히지만, 한 겹 더 둡니다 — 여기서 화면이 굴러가면 못 돌립니다. */
+  canvas.addEventListener('pointercancel', () => { 끌기 = null; });
   /* ⚠ **돌리기로 정해졌을 때만 막습니다(b535).** 그냥 `끌기` 만 보고
      막으면 굴리려던 손가락까지 붙잡아, `pan-y` 로 돌려준 스크롤이 다시
      죽습니다. iOS 는 pointermove 의 preventDefault 를 무시하므로(b493)
@@ -284,9 +477,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
      안 돌아서 지구본이 빈 채로 남습니다(재보다가 걸렸습니다). 토글로 켜는
      순간 한 프레임 비는 것도 없어집니다. 이어지는 그리기만 rAF 로 모읍니다. */
   그리기();
+  깨우기();
   return {
     다시,
-    회전: deg => { λ0 = deg * RAD; 다시(); },
+    회전: deg => { 세우기(); λ0 = deg * RAD; 다시(); },
+    /* 평면에서 돌아올 때 씁니다 — 캔버스 크기가 다시 잡히고 회전이 이어집니다.
+       ⚠ 안쪽 `깨우기` 와 이름이 같으면 헷갈립니다. 밖으로 내보내는 것은 `되살리기`. */
+    되살리기: () => { 마지막 = 0; 다시(); 깨우기(); },
+    끝: () => { 세우기(); 보임 = false; 눈?.disconnect(); },
     /* 한 번 물으면 지워집니다 — 그 다음 누름은 진짜 누름입니다. */
     민적있나: () => { const v = 민적; 민적 = false; return v; },
   };
