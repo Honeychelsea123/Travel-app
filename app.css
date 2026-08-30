@@ -3183,3 +3183,36 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .psh-ar{ flex:none; font-style:normal; color:var(--ink-48); font-size:var(--f-xl); }
 .psh-btns{ display:flex; gap:8px; margin-top:12px; }
 .psh-btns .primary{ flex:1; }
+
+/* ══ 이어지는 화면 ── 분석 탭에서 먼저 시험합니다(b532) ═══════════════
+ * 사용자 제안: 「카드로 다 분리해놨는데 쭉 이어지게 하는 건 어때」.
+ * 맞는 방향입니다. 흰 카드 · 같은 모서리 · 같은 그림자가 셋 넷 쌓이면
+ * 무엇이 중요한지 눈이 못 고르고, 화면이 「디자인 시스템 예시」로 읽힙니다.
+ *
+ * ⚠⚠ **진짜 이득은 「사진이 화면 끝까지 간다」입니다.** 증거가 이미 코드에
+ *   있었습니다 — `.minimap` 이 카드 안쪽 여백을 벗어나려고 **좌우 음수
+ *   마진**을 쓰고 있습니다(b423). 디자인이 그동안 카드와 싸우고 있었던
+ *   것입니다. 카드를 걷으면 싸울 일이 없어집니다.
+ *
+ * ⚠ **분석 탭에만 겁니다.** `.card` 는 앱 전체가 쓰는 것이라 한 번에
+ *   바꾸면 설정·여행·평가까지 다 흔들립니다. 설정처럼 **줄을 묶어 보여야
+ *   하는 화면은 카드가 맞습니다** — 거기까지 걷으면 나빠집니다.
+ *   여기서 보고 좋으면 화면 하나씩 옮깁니다.
+ * ⚠ 되돌리기는 이 블록을 지우는 것 하나입니다. anal.js 는 안 건드렸습니다 —
+ *   클래스 이름(`card quiet`)은 그대로 두고 여기서 모양만 벗깁니다. */
+#analview{ background:var(--canvas); }
+#analview .card{
+  background:none; box-shadow:none; border:0; border-radius:0;
+  /* 좌우 여백은 남깁니다 — 글이 화면 끝에 붙으면 못 읽습니다.
+     위아래는 넉넉히 벌려 덩어리가 보이게 합니다(안쪽 12 · 사이 34). */
+  padding:22px var(--s-md) 26px;
+  margin:0;
+}
+/* 덩어리 사이는 **화면 끝까지 가는 실선** 하나입니다. 좌우 여백을 두면
+   그건 또 하나의 상자가 됩니다 — 끝까지 가야 「구분」으로만 읽힙니다. */
+#analview .card + .card{ border-top:1px solid var(--divider-soft); }
+/* ── 여기가 이 시도의 핵심입니다 ──
+   지도·지구본은 좌우 여백을 벗어나 **화면 끝까지** 갑니다. 카드가 없으니
+   음수 마진으로 도망칠 필요도 없어졌습니다. */
+#analview .globebox{ margin-left:calc(-1 * var(--s-md));
+                     margin-right:calc(-1 * var(--s-md)); }
