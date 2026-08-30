@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b561';
+import { $ } from './dom.js?v=b562';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -257,6 +257,26 @@ export function syncSheets(){
    display-mode 는 안드로이드·데스크톱까지 봅니다. 둘 다 봅니다. */
 const STANDALONE = !!navigator.standalone ||
   matchMedia('(display-mode: standalone)').matches;
+
+/* ── 화면(브라우저) 확대를 막습니다(b562) ─────────────────────────────
+ * ⚠⚠ **이 앱은 자리를 «재서» 잡습니다** — --vvh(보이는 창 높이) ·
+ *   --deck-top(탭 화면이 시작하는 y) · --tabh(탭바 높이) · 덱 칸폭.
+ *   손가락 둘로 «화면»을 확대하면 그 자가 통째로 어긋나 레이아웃이
+ *   무너집니다. 사용자가 두 가지로 겪었습니다:
+ *     · 「두 번 두드려 화면이 커지고 나서 줄이면 레이아웃이 무너지네」
+ *     · 「여행 탭 머리가 고정된 영역이 아닌데 고정되면서 무너져」
+ *   둘 다 확대 뒤에 잰 값이 남아서 생긴 것입니다.
+ * ⚠ **글자가 작아 확대하던 사람을 버리는 것이 아닙니다.** 설정 →
+ *   화면 → 글자 크기가 이미 있고, 그쪽은 레이아웃을 안 깹니다.
+ *   막는 대신 그 길을 남겨 두는 것이 맞습니다.
+ * ⚠ **iOS 사파리는 `user-scalable=no` 를 무시합니다.** 실제로 막으려면
+ *   `gesturestart` 를 막아야 합니다. 두 번 두드려 커지는 것은 CSS 의
+ *   `touch-action:manipulation` 이 맡습니다(app.css).
+ * ⚠ **지구본의 «손가락 둘로 집기»와 안 다툽니다.** 지구본은 pointer
+ *   이벤트로 제가 처리하고 `touch-action:none` 이라, 여기서 막는 것은
+ *   그 바깥의 «화면» 확대뿐입니다. */
+for (const t of ['gesturestart', 'gesturechange', 'gestureend'])
+  document.addEventListener(t, e => e.preventDefault(), { passive:false });
 
 if (window.visualViewport){
   const vv = window.visualViewport;

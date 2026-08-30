@@ -173,6 +173,12 @@ body{
     var(--parchment);
   background-attachment:fixed;
 }
+/* ⚠ **두 번 두드려도 화면이 안 커집니다(b562).** 이 앱은 자리를 재서
+     잡으므로 화면이 확대되면 레이아웃이 무너집니다(ui.js 의 gesturestart
+     주석 참고). `manipulation` 은 두 번 두드리기만 뺍니다 — 밀기도
+     스크롤도 그대로입니다.
+   ⚠ 지구본 캔버스는 제 `touch-action:none` 이 이깁니다(더 구체적). */
+html{ touch-action:manipulation; }
 main{ max-width:480px; margin:0 auto; min-width:0; }
 .hide{ display:none !important; }
 
