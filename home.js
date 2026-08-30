@@ -33,35 +33,35 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b552';
-import { sb } from './db.js?v=b552';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b552';
-import { hm, todayYmd } from './calc.js?v=b552';
-import { starHtml, paintStars } from './stars.js?v=b552';
+import { $, esc } from './dom.js?v=b553';
+import { sb } from './db.js?v=b553';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b553';
+import { hm, todayYmd } from './calc.js?v=b553';
+import { starHtml, paintStars } from './stars.js?v=b553';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b552';
-import { cities, countryName } from './cities.js?v=b552';
-import { myRates, visited } from './rate.js?v=b552';
-import { plans } from './trip.js?v=b552';
-import { loadCities } from './citysearch.js?v=b552';
-import { saveRate, refreshVisited } from './rating.js?v=b552';
+import { starValue } from './rateui.js?v=b553';
+import { cities, countryName } from './cities.js?v=b553';
+import { myRates, visited } from './rate.js?v=b553';
+import { plans } from './trip.js?v=b553';
+import { loadCities } from './citysearch.js?v=b553';
+import { saveRate, refreshVisited } from './rating.js?v=b553';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b552';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b553';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b552';
+import { drawReport } from './report.js?v=b553';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b552';
+import { PERSONA_BG } from './card.js?v=b553';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b552';
+import { checkPersonaShift } from './pshift.js?v=b553';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b552';
+import { mountGlobe } from './globe.js?v=b553';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,

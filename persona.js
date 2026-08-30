@@ -19,20 +19,20 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b552';
-import { sb } from './db.js?v=b552';
-import { cities, countryName, continentOf } from './cities.js?v=b552';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b553';
+import { sb } from './db.js?v=b553';
+import { cities, countryName, continentOf } from './cities.js?v=b553';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b552';
+import { similarPicks } from './rec.js?v=b553';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b552';
-import { visited } from './rate.js?v=b552';
+import { mateCode, mateHtml } from './mate.js?v=b553';
+import { visited } from './rate.js?v=b553';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b552';
+         shareCard } from './card.js?v=b553';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -266,12 +266,33 @@ async function drawPersona(s, ax, rates){
          사람이니 무엇보다 먼저 봐야 합니다(아래 innerHTML 뒤에서 끼웁니다). -->
     <div id="matehere"></div>
 
-    <div class="card quiet">
+    <div class="card quiet" style="position:relative">
+      <!-- ── 공유 ── 아이콘 하나(b553, 사용자 결정) ─────────────────────
+           b551 에 카드 하나(큰 파란 단추)였고 그 전에는 카드 + 그림이었습니다.
+           「자리 차지하지 말고 아이콘으로」 — 카드 우상단에 띄웁니다.
+           프로필 머리의 톱니가 같은 수법입니다: 한 줄을 통째로 차지할
+           이유가 없습니다.
+         ⚠ **누르면 미리보기 시트가 뜹니다**(#cardsheet, b498). 무엇이
+           나가는지 보고 배경을 고른 뒤 내보냅니다 — 「보는 것이 곧
+           올리는 것」 규칙은 그대로입니다(card.js 머리말).
+         ⚠ **확정 전에는 아이콘을 안 답니다(b408).** 흔들리는 코드가
+           남에게 가면 안 됩니다. 그때는 바로 아래 카드가 「도시 N곳만 더
+           매기면 성향이 확정돼요」라고 이미 말하고 있으므로, 여기에
+           또 적지 않습니다. -->
+      ${임시 ? '' : `<button class="ghost" id="p_img" title="성향 카드 공유하기"
+              style="position:absolute; top:6px; right:8px; padding:6px 8px">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none"
+             stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/>
+          <circle cx="18" cy="19" r="2.6"/>
+          <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/>
+        </svg></button>`}
       <div class="ptop" style="cursor:default">
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b552"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b553"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -430,11 +451,7 @@ async function drawPersona(s, ax, rates){
          일이 없어집니다. 시트가 열릴 때 그립니다.
        ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
          남에게 가면 안 됩니다. -->
-    <div class="card">
-      ${임시 ? `<div class="empty" style="padding:2px 0 0">
-          도시 ${남은곳}곳만 더 매기면 공유할 수 있어요</div>`
-        : `<button class="primary" id="p_img" style="width:100%">공유하기</button>`}
-    </div>`;
+    `;
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지
      않고 `shareText` 로 옮겼습니다 — **그림을 못 받는 기기**(문자·메모)에서는
