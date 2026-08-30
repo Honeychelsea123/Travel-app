@@ -2605,10 +2605,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
            color:var(--ink); font-variant-numeric:tabular-nums; }
 .fpnums span{ display:block; font-size:var(--f-sm); color:var(--ink-48); margin-top:1px; }
 
-/* 「평가하러」 띠가 카드 «안»으로 들어왔습니다(b544). 카드 밖에 홀로
-   설 때는 위아래 마진을 바깥이 정했는데, 안에서는 앞 줄과의 사이를
-   여기서 냅니다. */
+/* ⚠ b544 에 카드 «안»으로 넣었다가 b552 에 다시 «맨 위»로 꺼냈습니다 —
+   이 화면에서 하러 가는 곳은 이 띠 하나뿐인데 카드 맨 아래에 있어서
+   다 지나야 보였습니다. 카드 안에 놓을 일이 또 생기면 이 규칙을 쓰십시오. */
 .card > .tripbar{ margin-top:12px; }
+
+/* ── 보관함이 발자국 카드 안으로(b552) ────────────────────────────────
+ * 프로필에서 옮겨온 통(`#shelfbox`)이 카드 안에 들어가면서 제 옷을
+ * 벗었습니다. 위 넘김 카드와 갈라 보이게 **머리카락 한 올**만 긋습니다 —
+ * 카드를 또 만들면 모서리가 두 겹이 됩니다.
+ * ⚠ `.shelf` 의 줄 사이 선은 그대로 씁니다. 여기서 또 그으면 두 벌입니다. */
+.fpshelf{ margin-top:12px; padding-top:2px; border-top:1px solid var(--line); }
 
 /* ── 분석 탭의 「이름 + 값」 줄 크기를 한 벌로(b460) ──────────────────
  * 한 탭 안에 같은 꼴의 줄이 세 벌 있었는데 크기가 다 달랐습니다:

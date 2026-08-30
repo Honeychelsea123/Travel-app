@@ -33,35 +33,35 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b551';
-import { sb } from './db.js?v=b551';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b551';
-import { hm, todayYmd } from './calc.js?v=b551';
-import { starHtml, paintStars } from './stars.js?v=b551';
+import { $, esc } from './dom.js?v=b552';
+import { sb } from './db.js?v=b552';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b552';
+import { hm, todayYmd } from './calc.js?v=b552';
+import { starHtml, paintStars } from './stars.js?v=b552';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b551';
-import { cities, countryName } from './cities.js?v=b551';
-import { myRates, visited } from './rate.js?v=b551';
-import { plans } from './trip.js?v=b551';
-import { loadCities } from './citysearch.js?v=b551';
-import { saveRate, refreshVisited } from './rating.js?v=b551';
+import { starValue } from './rateui.js?v=b552';
+import { cities, countryName } from './cities.js?v=b552';
+import { myRates, visited } from './rate.js?v=b552';
+import { plans } from './trip.js?v=b552';
+import { loadCities } from './citysearch.js?v=b552';
+import { saveRate, refreshVisited } from './rating.js?v=b552';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b551';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b552';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b551';
+import { drawReport } from './report.js?v=b552';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b551';
+import { PERSONA_BG } from './card.js?v=b552';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b551';
+import { checkPersonaShift } from './pshift.js?v=b552';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b551';
+import { mountGlobe } from './globe.js?v=b552';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -393,8 +393,25 @@ async function buildHome(){
      **바로 위 지도 이야기**라 같은 카드에 있어야 말이 이어집니다.
      b419 에 홈의 덩어리를 다섯에서 둘로 줄인 것과 같은 이유입니다 —
      옷이 여러 번 바뀌면 무엇이 한 덩어리인지 알려주는 것이 없습니다. */
-  통.appendChild(매기러);
-  if (서랍) $('home').appendChild(서랍);
+  /* ⚠ **띠는 카드 «밖», 그것도 맨 위입니다(b552, 사용자 결정).** 카드 안
+     맨 아래(b544)에서 옮겼습니다 — 이 화면에서 «하러 가는 곳»은 이것
+     하나뿐인데, 지구본과 숫자와 보관함을 다 지나야 보였습니다.
+     맨 위에 있으면 안 굴려도 보입니다.
+   ⚠ 카드 안에 두면 안 됩니다 — 아래 한 판은 전부 «보는 것»이고 이 띠만
+     «하는 것»입니다. 옷이 달라야 그 차이가 읽힙니다(b438 과 같은 이유). */
+  $('home').prepend(매기러);
+
+  /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
+     가져올 때는 제 카드였는데, 지구본·숫자와 «한 판»이어야 한 화면이
+     한 덩어리로 읽힙니다.
+   ⚠ 통 안에 넣으면서 `card quiet` 옷을 벗깁니다 — 안 벗기면 카드 안에
+     카드가 생겨 모서리가 두 겹입니다.
+   ⚠ **노드째 옮기는 것은 그대로입니다.** 위에서 `innerHTML = ''` 전에
+     붙잡아 두는 이유가 여기 있습니다(그 자리 주석 참고). */
+  if (서랍){
+    서랍.className = 'fpshelf';
+    통.appendChild(서랍);
+  }
 
   /* ⚠⚠ **「새 여행」 띠를 여기서 걷었습니다(b542). 네 번째입니다.** ⚠⚠
      b377 에 「권유는 하나만」이라며 뺐다가 b378 에 되살렸고, b402 에
