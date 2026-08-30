@@ -19,18 +19,20 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b550';
-import { sb } from './db.js?v=b550';
-import { cities, countryName, continentOf } from './cities.js?v=b550';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b551';
+import { sb } from './db.js?v=b551';
+import { cities, countryName, continentOf } from './cities.js?v=b551';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b550';
-/* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b550';
-import { visited } from './rate.js?v=b550';
+import { similarPicks } from './rec.js?v=b551';
+/* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
+   shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
+   쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
+import { mateCode, mateHtml } from './mate.js?v=b551';
+import { visited } from './rate.js?v=b551';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b550';
+         shareCard } from './card.js?v=b551';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -269,7 +271,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b550"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b551"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -281,6 +283,37 @@ async function drawPersona(s, ax, rates){
       <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
            빈 문자열이라 아무것도 안 붙습니다. -->
       ${변화배지}
+      <!-- ── 네 축 ── 가로 막대(b551 에 되살림) ───────────────────────
+           ⚠⚠ **b547 에 조용히 사라졌던 것입니다.** 성향 탭의 요약 카드를
+             걷고 리포트를 그 자리에 놓으면서, 요약 카드에만 있던 막대가
+             같이 없어졌습니다(사용자 지적: 「가로 막대 그래프 어디갔어」).
+             옮길 때는 **옮겨지는 화면에 없는 것**을 먼저 세어야 합니다.
+           ⚠ b464 에 레이더로 바꿨다가 b465 에 되돌린 자리입니다. 다이아몬드는
+             값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이 꼭짓점 길이로
+             거의 같아 보이고, 이름과 숫자가 사방에 흩어져 위에서 아래로
+             훑을 수가 없습니다.
+           ⚠⚠ **넷 다 앱 파랑입니다(b501).** 축마다 분류색을 달리 줬다가
+             한 화면에 주황·초록·파랑·보라가 서서 앱 어디에도 없는 무지개가
+             됐습니다. 서로 다르다는 것은 이름과 값이 이미 말합니다.
+             인라인으로 칠하지 마십시오 — 「.axbar > i」 가 이미 앱 파랑입니다.
+           ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
+             무엇이 36 인지 알 길이 없습니다. 지금 값이 어느 쪽인지를 이름
+             밑에 한 마디로 답니다(36 이면 「유명한 곳」, 85 면 「멀리」).
+             그 말은 card.js 의 AXIS_WORD 하나 — 코드 네 글자(FMDP)가 쓰는
+             것과 같은 표라, 글자와 막대가 늘 같은 말을 합니다.
+           ⚠ 아래 「왜 인가요」 카드에 같은 숫자가 또 나옵니다. 알고 둡니다 —
+             여기는 **한눈에 보는 그림**이고 거기는 **왜 그런지 따지는 근거**
+             (극 이름 · 원자료 평균)입니다. 하나만 남기려거든 여기가 아니라
+             거기 숫자를 지우십시오. -->
+      <div class="axbars">${AXIS_NAME.map((이름, i) => {
+        const 값 = [ax.개척, ax.단골, ax.모험, ax.만족][i];
+        const 극 = AXIS_WORD[[값 >= 50 ? 'H' : 'F', 값 >= 50 ? 'L' : 'M',
+                              값 >= 50 ? 'D' : 'N', 값 >= 50 ? 'G' : 'P'][i]];
+        return `<div class="axrow"><span class="axn"><b>${esc(이름)}</b>
+          <span>${esc(극)}</span></span>
+          <span class="axbar"><i style="width:${Math.max(값, 2)}%"></i></span>
+          <span class="axv">${값}</span></div>`;
+      }).join('')}</div>
     </div>
 
     ${임시 ? `<div class="card" style="margin-bottom:var(--s-sm)">
@@ -371,23 +404,33 @@ async function drawPersona(s, ax, rates){
            안 보일 뿐이라 갈라질 일이 없습니다.
          ⚠ 되살리려거든 **anal.js 의 「다음 여행」 카드를 먼저 빼십시오.** -->
 
-    ${임시 ? '' : `<div class="card">
-      <!-- ⚠ **이게 유입이 유입을 만드는 유일한 고리입니다(b408).**
-           카드 한 장은 한 번 퍼지고 끝인데, 궁합은 링크를 받은 사람이
-           자기 카드를 만들어야 결과가 나오고 그 결과가 또 공유거리가
-           됩니다. 자세한 것은 mate.js 머리말. -->
-      <button class="matebtn" id="p_mate" style="margin-top:0">친구와 궁합 보기</button>
-    </div>`}
+    <!-- ⚠⚠ **「친구와 궁합 보기」를 걷었습니다(b551, 사용자 결정).** ⚠⚠
+         「그냥 공유하기 버튼 하나만 있으면 되는 것 아니냐」.
+       ⚠ **잃는 것을 적어둡니다.** b408 에 이것을 「유입이 유입을 만드는
+         유일한 고리」라고 적었습니다 — 카드 한 장은 한 번 퍼지고 끝인데,
+         궁합 링크는 받은 사람이 **자기 카드를 만들어야** 결과가 나오고
+         그 결과가 또 공유거리가 됩니다. 새로 오는 사람이 줄면 여기부터
+         보십시오.
+       ⚠ **받는 쪽은 그대로 살아 있습니다.** 「?mate=CODE」 로 들어오면 위
+         「#matehere」 에 궁합이 뜹니다. 즉 **이미 나간 링크는 계속 됩니다** —
+         없어진 것은 «새로 보내는 자리» 하나입니다. 되살리려면 여기에
+         단추만 다시 놓으면 됩니다(shareMate 는 mate.js 에 그대로). -->
 
-    <!-- ── 공유 ── 여기가 **결과물**입니다(b450) ──────────────────────
-         ⚠ 카드를 계속 보여줍니다. 안 보여주면 무엇이 나가는지 모르고
-           누르게 됩니다 — 「보는 것이 곧 올리는 것」(card.js 머리말).
-           자리를 맨 아래로 옮기고 무엇인지 적어 둘 뿐입니다.
-         ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
-           남에게 가면 안 됩니다. 카드는 보여주되 밖으로는 못 나가게. -->
+    <!-- ── 공유 ── 단추 하나(b551, 사용자 결정) ───────────────────────
+         「공유하면 이렇게 나가요」 제목 + 카드 그림이 여기 늘 떠 있었습니다.
+         화면 한 장을 통째로 먹는데, **누르기 전에는 아무도 안 보는 그림**
+         입니다(사용자 지적: 「왜 영역을 잡아먹고 있어」).
+       ⚠ **「보는 것이 곧 올리는 것」 규칙은 안 깨집니다(card.js 머리말).**
+         「shareCard」 가 여는 미리보기 시트(#cardsheet, b498)가 만든 카드를
+         먼저 보여주고 「배경」을 고르게 한 뒤에 내보냅니다 — 무엇이
+         나가는지 모르고 누르는 일은 없습니다. 자리만 «누른 뒤»로 옮긴
+         것입니다.
+       ⚠ 그래서 **미리 그려두지도 않습니다.** 여기서 「cardImage」 를 먼저
+         돌리던 것을 걷었습니다 — 화면을 열 때마다 4:5 캔버스를 굽던
+         일이 없어집니다. 시트가 열릴 때 그립니다.
+       ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
+         남에게 가면 안 됩니다. -->
     <div class="card">
-      <h2>공유하면 이렇게 나가요</h2>
-      <div class="pcardwrap" id="pcardwrap"></div>
       ${임시 ? `<div class="empty" style="padding:2px 0 0">
           도시 ${남은곳}곳만 더 매기면 공유할 수 있어요</div>`
         : `<button class="primary" id="p_img" style="width:100%">공유하기</button>`}
@@ -407,15 +450,10 @@ async function drawPersona(s, ax, rates){
      둘 중 하나만 있으므로 있는 쪽에만 답니다 — `$()` 가 없는 것을 주면
      여기서 터지고 카드가 통째로 안 그려집니다. */
   if (임시) $('pgo').onclick = () => { closePersona(); ctx.showApp('rate'); };
-  else {
-    $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
-    /* 링크 보내기는 mate.js 의 shareMate 하나입니다(b461) — 분석 탭도
-       같은 것을 씁니다. 여기 인라인으로 적어 두면 두 벌이 됩니다. */
-    $('p_mate').onclick = () => shareMate(code, type.n);
-  }
+  else $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
 
   /* ── 친구가 보낸 궁합(b408) ────────────────────────────────────────
-     `?mate=CODE` 로 들어왔으면 여기서 답니다. **카드보다 위**입니다 —
+     「?mate=CODE」 로 들어왔으면 여기서 답니다. **카드보다 위**입니다 —
      그것 때문에 온 사람이라 제일 먼저 봐야 합니다. */
   {
     const 상대 = mateCode();
@@ -427,19 +465,9 @@ async function drawPersona(s, ax, rates){
     }
   }
 
-  /* 4:5 로 만듭니다. 인스타 피드에서 세로가 정사각보다 화면을 훨씬 많이
-     먹고, 고르는 목록에서도 세로가 먼저입니다(card.js 의 IMG_SIZES).
-     못 그려도 조용히 넘어갑니다 — 위 '왜 이런가요' 는 그대로 보이고,
-     저장·공유 단추도 따로 그리므로 여전히 됩니다. */
-  try {
-    const { blob } = await cardImage(spec, 'portrait');
-    if (personaUrl) URL.revokeObjectURL(personaUrl);   /* 다시 그릴 때마다 쌓입니다 */
-    personaUrl = URL.createObjectURL(blob);
-    const box = $('pcardwrap');
-    if (box) box.innerHTML =
-      `<img src="${personaUrl}" alt="${esc(code)} ${esc(type.n)} 성향 카드">`;
-  } catch {}
+  /* ⚠ **여기서 카드를 미리 굽던 것을 걷었습니다(b551).** 화면에 미리보기가
+     없어졌으니 그릴 이유도 없습니다 — 성향 탭을 열 때마다 4:5 캔버스를
+     굽고 blob URL 을 만들던 일이 사라집니다. 그리는 것은 공유 단추를
+     눌러 시트가 열릴 때 card.js 가 합니다.
+     `personaUrl`(앞 그림을 놓아주던 변수)도 같이 없앴습니다. */
 }
-/* 방금 만든 카드 그림의 주소. 다시 그릴 때 앞것을 놓아줍니다 —
-   안 놓으면 화면을 드나들 때마다 메모리에 그림이 쌓입니다. */
-let personaUrl = '';

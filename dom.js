@@ -228,7 +228,7 @@ export const dropHtml = id => { delete lastHtml[id]; };
 /* ⚠ **하단바에 적힌 것과 «똑같은» 말이어야 합니다(b542).** 「← 기록」을
    눌렀는데 하단바에는 「홈」이라 적혀 있으면 같은 곳인 줄 모릅니다.
    이름을 바꾸려거든 index.html 의 탭바와 여기를 «같이» 고치십시오. */
-const 탭이름 = { home:'기록', rate:'평가', anal:'성향', trips:'일정', set:'프로필' };
+const 탭이름 = { home:'기록', rate:'평가', anal:'성향', trips:'여행', set:'프로필' };
 export function backLabel(tab){ return '← ' + (탭이름[tab] || '프로필'); }
 
 /* ── 「맨 위로」는 **어느 스크롤러**의 맨 위인가(b471) ────────────────────
