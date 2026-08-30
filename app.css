@@ -3206,8 +3206,15 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      폭을 360 으로 묶는데(위 참고), 카드가 그보다 넓으면 지구본이 **왼쪽에
      붙습니다.** 실측: 카드 안쪽 444px 인데 지구본은 360px — 84px 이 통째로
      오른쪽에 남았습니다. `auto` 로 양쪽에 42px 씩 나눕니다. */
-.globebox{ position:relative; aspect-ratio:3 / 2; max-height:240px;
-           margin:10px auto 14px; }
+/* ⚠ **폰에서 꽉 차게(b555, 사용자 요청).** 3:2 · 240px 이면 폰에서
+     지구가 화면의 3분의 1도 안 됐습니다. 정사각으로 두면 카드 폭이 곧
+     지름이라 훨씬 큽니다.
+   ⚠ 화면 높이의 절반을 안 넘깁니다 — 넘으면 아래 넘김 카드가 첫 화면에서
+     아예 안 보이고, 굴려야 할 것이 있다는 것을 모릅니다.
+   ⚠ 큰 화면에서는 460 에서 멈춥니다. 노트북에서 지구가 화면을 덮을 이유가
+     없습니다. */
+.globebox{ position:relative; aspect-ratio:1 / 1;
+           max-height:min(52vh, 460px); margin:10px auto 14px; }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).
@@ -3244,6 +3251,62 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
         padding:8px 10px; font-size:var(--f-sm); font-weight:600;
         color:var(--primary); }
 .gmore:active{ opacity:.55; }
+
+/* ── 나라 카드 ── 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ────────
+ * ⚠ `main` 밖에 삽니다(home.js 머리말) — 탭 덱의 가로 스크롤에 안 딸려
+ *   가야 합니다. 그래서 자리는 `fixed` 로 잡습니다.
+ * ⚠ 어두운 막은 **카드 위쪽만** 덮습니다. 카드는 손가락이 닿는 자리라
+ *   막 위에 얹혀야 하고, 막을 누르면 닫힙니다.
+ * ⚠ 탭바 위에 섭니다 — 탭바를 가리면 다른 데로 갈 수가 없습니다. */
+#gsheet{ position:fixed; inset:0; z-index:1200; display:flex;
+         flex-direction:column; justify-content:flex-end;
+         pointer-events:none; }
+#gsheet.hide{ display:none; }
+.gsdim{ flex:1; background:rgba(0,0,0,.22); pointer-events:auto;
+        animation:gsfade var(--t) var(--ease); }
+@keyframes gsfade{ from{ opacity:0 } to{ opacity:1 } }
+.gswrap{ pointer-events:auto; padding-bottom:calc(var(--tabh, 58px) + 22px + var(--sab));
+         animation:gsup .22s var(--ease); }
+@keyframes gsup{ from{ transform:translateY(16px); opacity:0 } to{ transform:none; opacity:1 } }
+
+/* 옆으로 밀어 그 나라의 다른 도시로. 스냅은 CSS 가 맡습니다 — 홈의
+   대륙 넘김과 같은 수법이라 자바스크립트가 붙지 않습니다. */
+.gsrow{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+        scrollbar-width:none; -webkit-overflow-scrolling:touch;
+        overscroll-behavior-x:contain; }
+.gsrow::-webkit-scrollbar{ display:none; }
+.gscard{ flex:0 0 100%; scroll-snap-align:center; padding:0 12px; }
+.gsin{ background:var(--panel); border-radius:var(--r-lg); overflow:hidden;
+       box-shadow:0 8px 28px rgba(0,0,0,.16); }
+
+/* 사진이 주인공입니다 — 누르면 그 도시 화면으로 갑니다. */
+.gsimg{ position:relative; display:block; width:100%; height:150px; padding:0;
+        border:0; background:var(--parchment); cursor:pointer; }
+.gsimg img{ width:100%; height:100%; object-fit:cover; display:block; }
+.gsph{ display:flex; align-items:center; justify-content:center; width:100%;
+       height:100%; font-size:var(--f-2xl); color:var(--ink-48); }
+/* 사진이 눌린다는 것을 말로 적습니다 — 안 적으면 아무도 안 누릅니다. */
+.gsgo{ position:absolute; right:10px; bottom:8px; padding:4px 10px;
+       border-radius:999px; background:rgba(0,0,0,.46); color:#fff;
+       font-size:var(--f-xs); font-weight:600; }
+.gsimg:active .gsgo{ background:rgba(0,0,0,.62); }
+
+.gsbody{ padding:11px 13px 13px; }
+.gstitle{ display:flex; align-items:baseline; gap:7px; }
+.gstitle b{ font-size:var(--f-xl); font-weight:700; color:var(--ink); }
+.gstitle span{ font-size:var(--f-sm); color:var(--ink-48); }
+.gsstars{ display:flex; gap:14px; margin-top:6px; align-items:baseline;
+          font-size:var(--f-md); color:var(--star); letter-spacing:1px; }
+.gsstars span{ display:flex; align-items:baseline; gap:5px; }
+.gsstars i{ font-style:normal; font-size:var(--f-xs); color:var(--ink-48);
+            letter-spacing:0; }
+.gscmt{ margin-top:8px; font-size:var(--f-md); color:var(--ink-80);
+        line-height:1.5; word-break:keep-all; }
+
+/* 몇 곳 중 몇 번째인가. 누르는 것이 아니라 보여주기만 합니다. */
+.gsdots{ display:flex; gap:5px; justify-content:center; margin-top:9px; }
+.gsdots i{ width:5px; height:5px; border-radius:50%; background:rgba(0,0,0,.2); }
+.gsdots i.on{ background:var(--panel); box-shadow:0 0 0 1px rgba(0,0,0,.18); }
 .gswitch{ position:absolute; right:2px; top:2px; z-index:2;
           display:flex; padding:2px; gap:2px; border-radius:999px;
           background:var(--panel); border:1px solid var(--line);

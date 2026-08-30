@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b554';
+import { $ } from './dom.js?v=b555';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -216,7 +216,10 @@ const KR = [127.8, 36.5];   /* 대한민국 한가운데 (경도, 위도) */
    만듭니다(b541). 평면 지도와 색이 갈리면 안 되는 것도 같은 이유입니다. */
 const 자동속도 = 2.2;    /* 초당 도. 한 바퀴에 164초 — 도는 것은 알겠고 안 어지러운 값 */
 
-export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
+/* ⚠ `누름` 은 **나라를 눌렀을 때** 부를 함수입니다(b555). 나라 코드를
+   넘깁니다. 안 넘기면 누르기는 아무 일도 안 합니다 — 지구본은 원래
+   돌리는 물건이고, 누르는 것은 부르는 쪽이 원할 때만 답니다. */
+export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
   const 목록 = 읽기();
   if (!목록 || !canvas) return null;
 
@@ -227,6 +230,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   let λ0 = (처음경도 ?? KR[0]) * RAD;
   let φ0 = (처음위도 ?? KR[1]) * RAD;
   let 예약 = 0, 헛걸음 = 0;
+  /* 마지막으로 그린 판(반지름·가운데). **눌린 자리를 나라로 되돌릴 때**
+     씁니다 — 그때 다시 재면 그 사이에 창이 바뀌었을 수 있습니다. */
+  let 판 = null;
 
   const 그리기 = () => {
     예약 = 0;
@@ -265,6 +271,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
          전에는 -6 이었는데, 그대로 두면 번짐이 캔버스 밖에서 잘립니다. */
     const R = Math.min(w, h) / 2 - 13;
     const cx = w / 2, cy = h / 2;
+    판 = { R, cx, cy };
 
     /* ── ① 대기광 ── 가장자리 바깥으로 번지는 파란 띠 한 겹 ───────────
        ⚠ 안쪽(0~R)은 완전 투명입니다. 여기에 색을 조금이라도 넣으면
@@ -429,6 +436,44 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
      지도 화면을 여는 단추이기도 합니다 — 민 것을 눌린 것으로 치면 돌릴
      때마다 화면이 열립니다. 민 뒤 한 번의 누름만 건너뛰게 알려줍니다
      (홈 미니맵에서 쓴 것과 같은 수법, home.js 의 `밀림`). */
+  /* ── 눌린 자리가 어느 나라인가(b555) ────────────────────────────────
+   * ⚠ **캔버스가 아는 것을 그대로 씁니다.** 화면 좌표를 경위도로 되돌리는
+   *   역투영을 새로 적을 수도 있지만, 그러면 그리는 식과 되돌리는 식이
+   *   두 벌이 되어 언젠가 갈라집니다. 여기서는 **그릴 때 쓰는 바로 그
+   *   함수**(만들기)로 길을 다시 만들고 `isPointInPath` 로 묻습니다 —
+   *   지평선에 걸린 나라도, 뒤로 넘어간 나라도 그림과 똑같이 판정됩니다.
+   * ⚠ 채우거나 긋지 않습니다. 길만 만들고 묻습니다 — 화면은 안 바뀝니다.
+   * ⚠ 좌표는 **CSS 픽셀**입니다. `그리기` 가 `setTransform(dpr…)` 을
+   *   걸어둔 채로 끝나므로 여기서 따로 나눌 필요가 없습니다.
+   * ⚠ **다녀온 나라만 봅니다.** 안 가본 나라를 눌러도 보여줄 것이
+   *   없습니다(내가 매긴 도시가 없습니다).
+   * ⚠ 작은 나라는 손가락으로 못 맞힙니다. 안 맞으면 **핀 자리가 24px
+   *   안에 있는 나라**를 찾습니다 — 싱가포르·몰타가 그 덕에 눌립니다. */
+  function 어느나라(x, y){
+    if (!판 || !갔다.size) return null;
+    const ctx = canvas.getContext('2d');
+    for (const 나라 of 목록){
+      if (!갔다.has(나라.code)) continue;
+      for (const 고리 of 나라.고리)
+        if (만들기(ctx, 판.R, 판.cx, 판.cy, 고리, λ0, φ0) && ctx.isPointInPath(x, y))
+          return 나라.code;
+    }
+    /* 못 맞혔으면 제일 가까운 핀. 지평선 뒤로 넘어간 것은 뺍니다. */
+    const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
+    let 가깝 = null, 거리 = 24;
+    for (const 나라 of 목록){
+      if (!나라.핀 || !갔다.has(나라.code)) continue;
+      const [λ, φ] = 나라.핀;
+      const cφ = Math.cos(φ), sφ = Math.sin(φ), cΔ = Math.cos(λ - λ0);
+      if (sφ0 * sφ + cφ0 * cφ * cΔ <= 0) continue;
+      const px = 판.cx + 판.R * cφ * Math.sin(λ - λ0);
+      const py = 판.cy - 판.R * (cφ0 * sφ - sφ0 * cφ * cΔ);
+      const d = Math.hypot(px - x, py - y);
+      if (d < 거리){ 거리 = d; 가깝 = 나라.code; }
+    }
+    return 가깝;
+  }
+
   let 민적 = false;
   let 끌기 = null;
   canvas.addEventListener('pointerdown', e => {
@@ -473,6 +518,16 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   const 놓기 = e => {
     const 그거 = 끌기; 끌기 = null;
     if (!그거) return;
+    /* ── 민 것이 아니면 «누른 것»입니다(b555) ──────────────────────────
+       ⚠ `민적` 은 6px 을 넘겨 움직였는지입니다. 손가락은 가만히 눌러도
+         한두 픽셀 흔들리므로, 그 정도는 누름으로 칩니다.
+       ⚠ 누름이면 관성도 없습니다 — 아래로 안 내려갑니다. */
+    if (!민적 && 누름 && e){
+      const r = canvas.getBoundingClientRect();
+      const 코드 = 어느나라(e.clientX - r.left, e.clientY - r.top);
+      if (코드){ 누름(코드); return; }
+      return;
+    }
     if (e && e.timeStamp - 그거.때 > 90) return;
     const v = Math.max(-9, Math.min(9, 그거.속 || 0));
     if (Math.abs(v) > 0.25){ 관성 = v; 마지막 = 0; 깨우기(); }

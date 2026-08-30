@@ -33,38 +33,129 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b554';
-import { sb } from './db.js?v=b554';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b554';
-import { hm, todayYmd } from './calc.js?v=b554';
-import { starHtml, paintStars } from './stars.js?v=b554';
+import { $, esc } from './dom.js?v=b555';
+import { sb } from './db.js?v=b555';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b555';
+import { hm, todayYmd } from './calc.js?v=b555';
+import { starHtml, paintStars } from './stars.js?v=b555';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b554';
-import { cities, countryName } from './cities.js?v=b554';
-import { myRates, visited } from './rate.js?v=b554';
-import { plans } from './trip.js?v=b554';
-import { loadCities } from './citysearch.js?v=b554';
-import { saveRate, refreshVisited } from './rating.js?v=b554';
+import { starValue } from './rateui.js?v=b555';
+import { cities, countryName } from './cities.js?v=b555';
+import { myRates, cityStat, visited } from './rate.js?v=b555';
+import { plans } from './trip.js?v=b555';
+import { loadCities } from './citysearch.js?v=b555';
+/* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
+import { openCity } from './city.js?v=b555';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b555';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b554';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b555';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b554';
+import { drawReport } from './report.js?v=b555';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b554';
+import { PERSONA_BG } from './card.js?v=b555';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b554';
+import { checkPersonaShift } from './pshift.js?v=b555';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b554';
+import { diaryBackTo } from './diary.js?v=b555';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b554';
+import { mountGlobe } from './globe.js?v=b555';
+
+/* ══ 나라 카드 ══ 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ═══════
+ * 사용자 요청. 「지구본을 돌리다 대한민국을 누르면 아래에 카드가 뜨고,
+ *  서울 사진 · 내 별점 · 평균 별점 · 한줄평이 보이고, 사진을 누르면 그
+ *  도시 화면으로 가고, 옆으로 밀면 그 나라의 다른 도시들.」
+ *
+ * ⚠⚠ **`main` «밖»에 답니다.** 안에 두면 탭 덱 안으로 들어가 가로
+ *   스크롤에 딸려갑니다(공유 시트 `#cardsheet` 가 같은 이유로 밖입니다).
+ * ⚠ 한 번만 만듭니다. 나라를 누를 때마다 새로 만들면 그때마다 붙인
+ *   핸들러가 쌓입니다.
+ * ⚠ **자료는 평가 탭이 쓰는 것과 같은 것입니다**(`myRates` · `cityStat`).
+ *   여기서 따로 받아오면 같은 도시의 별점이 두 화면에서 갈립니다.
+ *   다만 그 둘은 **평가 탭을 한 번 열어야** 채워지므로(rating.js 의
+ *   `loadRateData`), 비어 있으면 여기서 한 번 받습니다.
+ * ⚠ 뒤로가기로 닫힙니다 — tripview.js 의 popstate 사슬 맨 위에
+ *   이 시트가 있습니다. 거기 줄을 지우면 안드로이드에서 뒤로가기를
+ *   눌렀을 때 앱이 통째로 나갑니다. */
+function 시트만들기(){
+  let 판 = $('gsheet');
+  if (판) return 판;
+  판 = document.createElement('div');
+  판.id = 'gsheet';
+  판.className = 'hide';
+  판.innerHTML = '<div class="gsdim"></div>' +
+    '<div class="gswrap"><div class="gsrow"></div>' +
+    '<div class="gsdots"></div></div>';
+  document.body.appendChild(판);
+  /* 바깥(어두운 곳)을 누르면 닫습니다. 카드 위는 안 닫습니다. */
+  판.querySelector('.gsdim').onclick = () => 시트닫기();
+  /* 점은 보여주기만 합니다 — 미는 것으로 넘깁니다(홈 넘김 카드와 같은 규칙). */
+  판.querySelector('.gsrow').addEventListener('scroll', () => {
+    const 줄 = 판.querySelector('.gsrow');
+    const i = Math.round(줄.scrollLeft / (줄.clientWidth || 1));
+    [...판.querySelectorAll('.gsdots i')].forEach((d, k) => d.classList.toggle('on', k === i));
+  }, { passive:true });
+  return 판;
+}
+
+export function 시트닫기(뒤로온것){
+  const 판 = $('gsheet');
+  if (!판 || 판.classList.contains('hide')) return;
+  if (!뒤로온것 && history.state?.t2 === 'gsheet'){ history.back(); return; }
+  판.classList.add('hide');
+}
+
+/* 별 다섯 개를 글자로. 반 칸까지 봅니다(별점이 0.5 단위입니다). */
+const 별글 = v => v == null ? '' :
+  '★'.repeat(Math.floor(v)) + (v % 1 ? '⯨' : '') + '☆'.repeat(5 - Math.ceil(v));
+
+async function 나라카드(코드){
+  /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말). */
+  if (!Object.keys(myRates || {}).length) await loadRateData();
+  const 목록 = (cities || [])
+    .filter(c => c.country === 코드 && myRates[c.id]?.stars != null)
+    /* 높은 별점부터. 「내가 제일 좋았던 곳」이 먼저 보이는 편이 맞습니다. */
+    .sort((a, b) => (myRates[b.id].stars - myRates[a.id].stars) ||
+                    a.name.localeCompare(b.name, 'ko'));
+  if (!목록.length) return;                 /* 매긴 곳이 없으면 아무 일도 안 합니다 */
+  const 판 = 시트만들기();
+  const 나라 = countryName[코드] || 코드;
+  판.querySelector('.gsrow').innerHTML = 목록.map(c => {
+    const r = myRates[c.id] || {};
+    const st = cityStat[c.id];
+    return `<div class="gscard"><div class="gsin">
+      <button class="gsimg" data-go="${esc(c.id)}">${c.image_url
+        ? `<img src="${esc(c.image_url)}" alt="" loading="lazy">`
+        : `<span class="gsph">${esc(c.name.slice(0, 1))}</span>`}
+        <span class="gsgo">여행지 보기 ›</span></button>
+      <div class="gsbody">
+        <div class="gstitle"><b>${esc(c.name)}</b><span>${esc(나라)}</span></div>
+        <div class="gsstars">
+          <span><i>내 별점</i>${별글(r.stars)} ${r.stars.toFixed(1)}</span>
+          <span><i>평균</i>${st?.avg_stars != null
+            ? `★ ${Number(st.avg_stars).toFixed(1)}` : '–'}</span>
+        </div>
+        ${r.comment ? `<div class="gscmt">${esc(r.comment)}</div>` : ''}
+      </div></div></div>`;
+  }).join('');
+  판.querySelector('.gsdots').innerHTML = 목록.length > 1
+    ? 목록.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('') : '';
+  /* 사진을 누르면 그 도시 화면으로. 시트는 먼저 닫습니다 — 도시 화면
+     위에 시트가 남아 있으면 뒤로가기가 두 번 필요합니다. */
+  판.querySelectorAll('.gsimg').forEach(b => {
+    b.onclick = () => { const id = b.dataset.go; 시트닫기(); openCity(id); };
+  });
+  판.querySelector('.gsrow').scrollLeft = 0;
+  판.classList.remove('hide');
+  if (history.state?.t2 !== 'gsheet') history.pushState({ t2:'gsheet' }, '');
+}
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -984,7 +1075,9 @@ async function renderFoot(통){
      폭이 아직 0 이면 globe.js 가 스스로 몇 번 더 옵니다. */
   setTimeout(() => {
     /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
-    공 = mountGlobe(공판, gone);
+    /* ⚠ 다섯째가 「나라를 눌렀을 때」입니다(b555). 돌린 뒤의 누름은
+       globe.js 가 걸러서 안 옵니다. */
+    공 = mountGlobe(공판, gone, undefined, undefined, 나라카드);
     /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
        한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
        쓰는 `밀림` 과 같은 수법입니다. */
