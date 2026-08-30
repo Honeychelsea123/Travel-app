@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b534';
+import { $ } from './dom.js?v=b535';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -214,8 +214,18 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   const 다시 = () => { if (!예약) 예약 = requestAnimationFrame(그리기); };
 
   /* ── 돌리기 ─────────────────────────────────────────────────────────
-   * ⚠ `touch-action:none` 이 CSS 에 있어야 합니다(app.css 의 `#globe`).
-   *   안 그러면 손가락이 지구본이 아니라 **화면을 굴립니다.**
+   * ⚠⚠ **손가락으로는 좌우만 돌립니다(b535).** ⚠⚠
+   *   처음엔 `touch-action:none` 으로 두 축을 다 가져왔습니다. 그랬더니
+   *   **지구본 위에서 화면이 안 굴러갑니다.** 폰(390px)에서 지구본은 358px —
+   *   양옆에 16px 밖에 안 남아서, 240px 짜리 **스크롤 죽은 띠**가 화면을
+   *   가로지릅니다. 「분석 탭 스크롤이 잘 안 먹는다」는 이것이었습니다.
+   *   (480px 창에서 재고 60px 남는다고 안심했던 것이 잘못이었습니다.)
+   *   `pan-y` 로 **위아래는 브라우저에 돌려주고** 좌우만 씁니다 —
+   *   별점 끌기(`.stars`)·홈 미니맵(`.mmswipe`)과 같은 수법입니다.
+   * ⚠ 그래서 **세로로 더 움직인 제스처는 통째로 무시**합니다. 안 그러면
+   *   화면을 굴리는 동안 지구본이 같이 기울어 어지럽습니다.
+   * ⚠ 마우스는 두 축 다 됩니다 — 마우스에는 「화면 굴리기」와 겹칠 일이
+   *   없습니다(휠이 따로 있습니다).
    * ⚠ 기울기는 ±52° 로 막습니다 — 위 머리말의 남극 구멍 때문입니다.
    * ⚠ 매 이벤트마다 그리지 않고 rAF 한 번으로 모읍니다. 아이폰에서는
    *   pointermove 가 한 프레임에 여러 번 옵니다. */
@@ -227,16 +237,33 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   let 끌기 = null;
   canvas.addEventListener('pointerdown', e => {
     민적 = false;
-    끌기 = { x:e.clientX, y:e.clientY };
+    끌기 = { x:e.clientX, y:e.clientY, 손가락:e.pointerType !== 'mouse',
+             잠금:null };
     canvas.setPointerCapture?.(e.pointerId);
   });
   canvas.addEventListener('pointermove', e => {
     if (!끌기) return;
-    λ0 -= (e.clientX - 끌기.x) * .35 * RAD;
-    φ0 += (e.clientY - 끌기.y) * .35 * RAD;
-    const 끝 = 52 * RAD;
-    φ0 = Math.max(-끝, Math.min(끝, φ0));
-    끌기 = { x:e.clientX, y:e.clientY };
+    const dx = e.clientX - 끌기.x, dy = e.clientY - 끌기.y;
+
+    /* ── 방향 잠금 ── 첫 움직임으로 「돌리기」인지 「굴리기」인지 정합니다.
+       손가락일 때만 봅니다. 한 번 정하면 그 제스처가 끝날 때까지 안 바꿉니다 —
+       중간에 바꾸면 굴리다가 갑자기 지구가 돌아갑니다.
+       ⚠ 6px 은 손이 떨리는 폭입니다. 그 전에는 아직 아무것도 안 정합니다. */
+    if (끌기.손가락 && !끌기.잠금){
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      끌기.잠금 = Math.abs(dx) > Math.abs(dy) ? '돌리기' : '굴리기';
+    }
+    /* 굴리기로 정해졌으면 브라우저가 화면을 굴리게 두고 손을 뗍니다. */
+    if (끌기.잠금 === '굴리기') return;
+
+    λ0 -= dx * .35 * RAD;
+    /* 위아래 기울기는 **마우스에만** 줍니다 — 손가락의 세로는 화면 굴리기
+       몫입니다(위 머리말 b535). */
+    if (!끌기.손가락){
+      const 끝 = 52 * RAD;
+      φ0 = Math.max(-끝, Math.min(끝, φ0 + dy * .35 * RAD));
+    }
+    끌기.x = e.clientX; 끌기.y = e.clientY;
     민적 = true;
     다시();
   });
@@ -245,8 +272,13 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도){
   canvas.addEventListener('pointercancel', 놓기);
   /* iOS 는 pointermove 의 preventDefault 를 무시합니다(b493). touch-action 으로
      이미 막히지만, 한 겹 더 둡니다 — 여기서 화면이 굴러가면 못 돌립니다. */
-  canvas.addEventListener('touchmove', e => { if (끌기) e.preventDefault(); },
-                          { passive:false });
+  /* ⚠ **돌리기로 정해졌을 때만 막습니다(b535).** 그냥 `끌기` 만 보고
+     막으면 굴리려던 손가락까지 붙잡아, `pan-y` 로 돌려준 스크롤이 다시
+     죽습니다. iOS 는 pointermove 의 preventDefault 를 무시하므로(b493)
+     여기 touchmove 가 필요합니다. */
+  canvas.addEventListener('touchmove', e => {
+    if (끌기?.잠금 === '돌리기') e.preventDefault();
+  }, { passive:false });
 
   /* ⚠ **첫 판은 rAF 에 맡기지 않습니다.** 창이 숨어 있으면 rAF 가 아예
      안 돌아서 지구본이 빈 채로 남습니다(재보다가 걸렸습니다). 토글로 켜는
