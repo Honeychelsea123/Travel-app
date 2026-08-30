@@ -3265,7 +3265,12 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .gsdim{ flex:1; background:rgba(0,0,0,.22); pointer-events:auto;
         animation:gsfade var(--t) var(--ease); }
 @keyframes gsfade{ from{ opacity:0 } to{ opacity:1 } }
-.gswrap{ pointer-events:auto; padding-bottom:calc(var(--tabh, 58px) + 22px + var(--sab));
+/* ⚠ **앱 본문과 같은 480px 입니다(b556).** `main` 밖에 살다 보니
+     노트북에서 화면 폭 전체로 퍼졌습니다 — 시트만 혼자 넓어서 앱이
+     아니라 브라우저 알림처럼 보였습니다. `main` 의 max-width 를 바꾸면
+     여기도 같이 고쳐야 합니다. */
+.gswrap{ pointer-events:auto; width:100%; max-width:480px; margin:0 auto;
+         padding-bottom:calc(var(--tabh, 58px) + 22px + var(--sab));
          animation:gsup .22s var(--ease); }
 @keyframes gsup{ from{ transform:translateY(16px); opacity:0 } to{ transform:none; opacity:1 } }
 
