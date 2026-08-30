@@ -33,38 +33,35 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b549';
-import { sb } from './db.js?v=b549';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b549';
-import { hm, todayYmd } from './calc.js?v=b549';
-import { starHtml, paintStars } from './stars.js?v=b549';
+import { $, esc } from './dom.js?v=b550';
+import { sb } from './db.js?v=b550';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b550';
+import { hm, todayYmd } from './calc.js?v=b550';
+import { starHtml, paintStars } from './stars.js?v=b550';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b549';
-import { cities, countryName } from './cities.js?v=b549';
-import { myRates, visited } from './rate.js?v=b549';
-import { plans } from './trip.js?v=b549';
-import { loadCities } from './citysearch.js?v=b549';
-import { saveRate, refreshVisited } from './rating.js?v=b549';
+import { starValue } from './rateui.js?v=b550';
+import { cities, countryName } from './cities.js?v=b550';
+import { myRates, visited } from './rate.js?v=b550';
+import { plans } from './trip.js?v=b550';
+import { loadCities } from './citysearch.js?v=b550';
+import { saveRate, refreshVisited } from './rating.js?v=b550';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-/* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
-   화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo,
-         funRows } from './map.js?v=b549';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b550';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b549';
+import { drawReport } from './report.js?v=b550';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b549';
+import { PERSONA_BG } from './card.js?v=b550';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b549';
+import { checkPersonaShift } from './pshift.js?v=b550';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b549';
+import { mountGlobe } from './globe.js?v=b550';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -325,6 +322,13 @@ async function buildHome(){
   if (sig === lastHomeSig && $('homefp')) return;
   lastHomeSig = sig;
 
+  /* ⚠⚠ **지우기 «전»에 붙잡습니다(b550).** 보관함 통(`#shelfbox`)은 처음엔
+     프로필 마크업 안에 있고, 한 번 옮기고 나면 **여기 자식**입니다.
+     아래 한 줄이 자식을 다 지우므로, 여기서 안 잡으면 두 번째부터
+     `getElementById` 가 null 을 주고 보관함이 영영 사라집니다.
+     (성향 탭에서 `#personabox` 로 겪은 것과 같은 함정입니다.) */
+  const 서랍 = $('shelfbox');
+
   $('home').innerHTML = '';
 
   /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
@@ -376,12 +380,21 @@ async function buildHome(){
       <span>다녀온 도시에 별을 매겨 보세요</span></span>
     <span class="go">평가하러 ›</span>`;
   매기러.onclick = () => ctx.showApp('rate');
+  /* ── 보관함 ── 프로필에서 왔습니다(b550, 사용자 결정) ────────────────
+   * 내가 매긴 곳 · 한줄평 남긴 곳 · 가보고 싶은 곳 · 여행 배지.
+   * ⚠ 넷 다 **도시 평가로 쌓인 것**이라 이 탭 이야기입니다. 프로필은
+   *   계정과 내 기록으로 «가는 길»만 맡습니다.
+   * ⚠ **「보관함」이라는 제목은 안 답니다.** 이 탭에서는 그 네 줄이
+   *   곧 이 탭이 하는 일이라 이름표가 군더더기입니다.
+   * ⚠ 화면을 새로 안 만들고 **통째로 옮겨** 옵니다 — 두 벌로 그리면
+   *   숫자가 갈립니다. 마크업은 index.html 의 프로필 자리에 있습니다. */
   /* ⚠ **카드 «안»입니다(b544, 사용자 요청).** 밖에 따로 세웠더니 지도와
      떨어진 별개의 권유처럼 보였습니다. 「평가를 남기면 지도가 칠해져요」는
      **바로 위 지도 이야기**라 같은 카드에 있어야 말이 이어집니다.
      b419 에 홈의 덩어리를 다섯에서 둘로 줄인 것과 같은 이유입니다 —
      옷이 여러 번 바뀌면 무엇이 한 덩어리인지 알려주는 것이 없습니다. */
   통.appendChild(매기러);
+  if (서랍) $('home').appendChild(서랍);
 
   /* ⚠⚠ **「새 여행」 띠를 여기서 걷었습니다(b542). 네 번째입니다.** ⚠⚠
      b377 에 「권유는 하나만」이라며 뺐다가 b378 에 되살렸고, b402 에
@@ -641,7 +654,16 @@ async function renderFoot(통){
    * ⚠ 점(・・・)은 **보여주기만** 합니다 — 눌러서 넘기는 것까지 만들면
    *   자바스크립트가 붙습니다. 손가락으로 넘기는 것이 이미 됩니다. */
   const by = f.by_continent || {};
-  const 장 = [['전체', f.countries || 0, UN_COUNTRIES],
+  /* ⚠ **첫 장 이름이 「전체」였습니다(b550 에 「국가」로).** 사용자 지적 —
+     「전체」만 보고는 무엇의 전체인지 알 수가 없습니다. 뒤 여섯 장이
+     대륙 이름이라 더 그렇습니다: 「전체 28 / 195」 다음이 「아시아 7 / 48」
+     이면 앞의 195 가 무엇인지 물어보게 됩니다. 「국가 28 / 195」면
+     한 번에 읽힙니다.
+   ⚠ 아래 `지도맞추기` 가 **이 글자로 판정합니다**(첫 장이면 지구본을
+     처음 자리로). 한쪽만 고치면 첫 장에서 지도가 안 돌아옵니다 —
+     그래서 이름을 여기 한 곳에 두고 둘이 같이 씁니다. */
+  const 첫장 = '국가';
+  const 장 = [[첫장, f.countries || 0, UN_COUNTRIES],
               ...CONT.map(([이름, 전체]) => [이름, by[이름] || 0, 전체])];
   /* ⚠ **양끝에 복제를 답니다(b455).** [마지막] 실제일곱장 [첫장].
      끝에서 되감는 방식은 옮기는 순간이 눈에 보여 **툭 끊겨** 보였습니다.
@@ -683,37 +705,14 @@ async function renderFoot(통){
      가는 길은 아래 숫자 타일과 지구본 누르기 둘로 남습니다. 「지도로
      가는 데를 못 찾겠다」는 말이 나오면 여기부터 보십시오. */
 
-  /* ── 숫자 셋 ── 국가 · 도시 · 대륙(b544 · 눌리게 된 것은 b545) ───────
-   * ⚠ **아래 넘김 카드와 다른 일을 합니다.** 넘김은 «대륙 하나씩» 이라
-   *   전부를 보려면 일곱 번 넘겨야 합니다. 이 줄은 **안 넘겨도 보이는
-   *   요약**입니다 — 지구본 바로 밑에서 「그래서 얼마나?」에 한 번에
-   *   답하는 자리입니다.
-   * ⚠ 도시는 `rated`(별점 매긴 곳)입니다. `my_visited` 기준(다녀온 도시)이
-   *   아닙니다 — 프로필 보관함의 「내가 매긴 곳」과 **같은 수**여야 합니다.
-   *   기준이 갈리면 같은 것을 두고 두 숫자가 나옵니다(b370 에서 타일 두
-   *   개가 그래서 하나로 합쳐졌습니다).
-   * ⚠⚠ **셋 다 눌리는 단추입니다(b545, 사용자 지적).** ⚠⚠ 숫자 상자처럼
-   *   생겼는데 눌러도 아무 일이 없었습니다. 프로필 머리의 같은 타일은
-   *   원래 눌리는 것이었는데(`data-shelf`·`data-openmap`), 여기로 옮기면서
-   *   `div` 로 그려 그 성질을 잃었습니다.
-   * ⚠ 가는 곳을 **둘로만** 둡니다. 국가·대륙은 세계지도(대륙별 · 국가별
-   *   다녀온 도시)가 한 화면에서 둘 다 답합니다. 도시는 평가 탭의 목록입니다.
-   *   ⚠ 보관함(`openShelf`)으로 보내지 «않습니다» — 보관함은 프로필 위에
-   *     얹히는 판이라 **닫으면 프로필에 떨어집니다.** 돌아올 길이 없습니다
-   *     (`mapBackTo` 같은 것이 shelf 에는 없습니다). 만들 생각이면 그것부터. */
-  {
-    const 대륙수 = CONT.filter(([이름]) => (f.by_continent || {})[이름] > 0).length;
-    const 셋 = document.createElement('div');
-    셋.className = 'fpnums';
-    셋.innerHTML = [[f.countries || 0, '국가'],
-                    [f.rated ?? 0, '도시'],
-                    [`${대륙수}/${CONT.length}`, '대륙']]
-      .map(([v, k]) => `<button type="button"><b>${esc(String(v))}</b>` +
-                       `<span>${esc(k)}</span></button>`).join('');
-    const 갈곳 = [지도열기, () => ctx.showApp('rate'), 지도열기];
-    [...셋.children].forEach((b, i) => { b.onclick = 갈곳[i]; });
-    box.appendChild(셋);
-  }
+  /* ⚠ **숫자 셋(국가 · 도시 · 대륙)을 걷었습니다(b550, 사용자 결정).**
+     b544 에 넣고 b545 에 눌리게 만들었던 것입니다. 바로 아래 넘김 카드가
+     같은 것을 «대륙까지 갈라서» 말하고 있어서, 지구본과 넘김 사이에 낀
+     세 상자가 화면만 길게 했습니다.
+   ⚠ 그러면서 이 탭에서 세계지도로 «걸어 들어가는» 자리가 없어졌습니다 —
+     지구본을 누르는 것 하나뿐입니다(b545 에 「지도 ›」 줄도 걷었습니다).
+     「지도로 가는 데를 못 찾겠다」는 말이 나오면 여기부터 보십시오. */
+
   /* ⚠ **숫자 카드는 지도 아래입니다(b452).** 위에 두었더니 지도가 밀려
      내려가 홈에서 잘 안 보였습니다. 이 화면의 주인공은 **칠해진 지도**이고
      숫자는 그 밑에서 거드는 것입니다 — 넘겨 보는 것도 지도를 본 다음에
@@ -997,11 +996,11 @@ async function renderFoot(통){
          사용자 요청).** 전에는 아무것도 안 해서, 유럽을 보다가 「전체」로
          돌아와도 지구는 유럽을 보고 있었습니다 — 첫 장이 「전체」니까
          앱을 막 열었을 때와 같은 면이어야 합니다. */
-      if (!v || 이름 === '전체') 공.처음으로();
+      if (!v || 이름 === 첫장) 공.처음으로();
       else 공.회전(v.cx / 1000 * 360 - 180, 90 - v.cy / 500 * 180);
     }
     if (!줌) return;
-    if (!v || 이름 === '전체'){ 줌.style.transform = ''; return; }
+    if (!v || 이름 === 첫장){ 줌.style.transform = ''; return; }
     const k = Math.min(976 / v.w, 392 / (v.w * 0.62));
     /* 보이는 칸의 가운데(508, 212)에 그 대륙의 가운데를 갖다 놓습니다. */
     줌.style.transform =
@@ -1022,51 +1021,14 @@ async function renderFoot(통){
      한 줄로 또 두면 같은 것이 두 곳에 있고, 홈은 아래로 길어집니다.
      홈은 「지금 무엇을 할까」, 분석은 「나는 어떤 사람인가」입니다. */
 
-  /* ══ 진기록 ═══════════════════════════════════════════════════════
-   * **성향 탭에서 왔습니다(b546, 사용자 결정).** 「가장 많이 간 나라 ·
-   * 최북단 · 가장 먼 두 도시」는 성향(내가 어떤 여행자인가)이 아니라
-   * **발자국**(어디를 얼마나 다녔나) 이야기입니다. 위 지구본과 같은 것을
-   * 다른 방식으로 말하는 자리라 한 탭에 있는 것이 맞습니다.
-   * ⚠ 자리를 세 번 옮겼습니다 — 분석(b457 이전) → 지도 화면(b457) →
-   *   성향(b542) → 여기(b546). 또 옮기려거든 **왜 세 번 안 맞았는지**를
-   *   먼저 보십시오. 세 번 다 「이 화면의 주제와 다르다」가 이유였습니다.
-   * ⚠ **이름이 「기록」이 아니라 「진기록」입니다.** 이 탭 이름이 「기록」
-   *   입니다 — 여기까지 「기록」이면 둘이 헷갈립니다. 최고 기록입니다.
-   * ⚠ 세는 것은 map.js 의 `funRows` 하나입니다. 여기서 다시 세면 같은
-   *   물음에 두 답이 나옵니다.
-   * ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다.
-   *   반올림하면 아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋납니다.
-   * ⚠ 별점 자료는 위에서 이미 받아 둔 것(`별점`)을 씁니다 — 다시 받으면
-   *   같은 화면 안에서 두 숫자가 갈립니다. */
-  {
-    const 표 = Object.fromEntries((별점?.data || []).map(r => [r.city_id, r.stars]));
-    const 내도시 = (cities || []).filter(c => 표[c.id] != null);
-    if (내도시.length){
-      const 진 = document.createElement('div');
-      진.className = 'card quiet';
-      const 통계 = [0, 0, 0, 0, 0];
-      내도시.forEach(c => {
-        const k = Math.floor(Number(표[c.id]));
-        if (k >= 1 && k <= 5) 통계[k - 1]++;
-      });
-      const 합 = 통계.reduce((x, y) => x + y, 0) || 1;
-      /* ★5 초록에서 ★1 붉은색으로. 지도 화면에 있던 값 그대로입니다. */
-      const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
-      진.innerHTML = `<h2>진기록</h2>
-        <div class="stackwrap">
-          <div class="stack">${[5, 4, 3, 2, 1].map(k => 통계[k - 1]
-            ? `<i style="width:${(통계[k - 1] / 합 * 100).toFixed(1)}%;
-                 background:${색[k - 1]}" title="★${k} ${통계[k - 1]}곳"></i>` : '').join('')}</div>
-          <div class="stackleg">${[5, 4, 3, 2, 1].map(k =>
-            `<span${통계[k - 1] ? '' : ' class="off"'}><b style="background:${
-              색[k - 1]}"></b>★${k} ${통계[k - 1]}곳</span>`).join('')}</div>
-        </div>
-        ${funRows(내도시, 표).map(([제목, 값]) =>
-          `<div class="row"><span class="label">${esc(제목)}</span>
-             <span class="val">${esc(값)}</span></div>`).join('')}`;
-      $('home').appendChild(진);
-    }
-  }
+  /* ⚠ **진기록은 세계지도 화면으로 갔습니다(b550, 사용자 결정).**
+     b546 에 성향 탭에서 여기로 데려온 것인데, 이름부터 어색했습니다 —
+     이 탭 이름이 「기록」이라 「진기록」이라 부를 수밖에 없었습니다.
+     이름을 **「분석」**으로 되돌리고 자리도 세계지도 화면의 대륙별
+     카드 밑으로 옮겼습니다(map.js · index.html 의 `#m_rec`).
+   ⚠ 이 자리는 이제 다섯 번째입니다. 또 옮기려거든 map.js 의 그 자리에
+     적어둔 내력부터 읽으십시오. */
+
 
   /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }

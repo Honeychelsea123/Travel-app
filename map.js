@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b549';
-import { openCity } from './city.js?v=b549';
-import { distKm } from './calc.js?v=b549';
-import { sb } from './db.js?v=b549';
-import { cities, countryName, continentOf } from './cities.js?v=b549';
-import { PERSONA_ICON, shareCard } from './card.js?v=b549';
+         coverDeck } from './dom.js?v=b550';
+import { openCity } from './city.js?v=b550';
+import { distKm } from './calc.js?v=b550';
+import { sb } from './db.js?v=b550';
+import { cities, countryName, continentOf } from './cities.js?v=b550';
+import { PERSONA_ICON, shareCard } from './card.js?v=b550';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -573,18 +573,55 @@ export async function openMap(){
     : emptyDo('아직 다녀온 곳이 없어요.', null, null,
               '도시에 별점을 매기면 그 나라가 칠해져요.');
 
-  /* ⚠⚠ **기록(진기록)은 여기 없습니다 — 성향 탭으로 갔습니다(b542).** ⚠⚠
-     이 자리는 세 번 옮겨 다녔습니다.
-       b457  분석 탭에서 여기로 (분석 첫 화면을 짧게)
-       b503  그 결정을 굳힘 (발자국 카드는 「어디를 갔나」까지만)
-       b542  다시 성향 탭으로 — 이번에는 **자리가 빈 것**이 이유입니다.
-             발자국 카드가 통째로 기록 탭으로 가면서 성향 탭에 성향
-             하나만 남았고, 「가장 먼 두 도시」는 지도의 부록이 아니라
-             분석입니다. b457 에 적어둔 것과 같은 말입니다.
-     ⚠ 세는 함수(`funRows`)는 **여기 그대로 둡니다.** 성향 탭이 그것을
-       import 해서 씁니다 — 두 벌로 만들면 같은 물음에 두 답이 나옵니다.
-     ⚠ 다시 여기로 옮기려거든 **성향 탭에서 먼저 빼십시오.** 두 곳에
-       두면 같은 숫자가 앱 안에 두 번 섭니다. */
+  /* ── 분석 ── 대륙별 카드 바로 밑입니다(b550, 사용자 결정) ────────────
+   * 별점 분포 · 가장 많이 간 나라 · 최북단 · 가장 먼 두 도시.
+   *
+   * ⚠⚠ **이 자리는 다섯 번째입니다. 옮기기 전에 내력을 읽으십시오.** ⚠⚠
+   *     분석 탭        b457 이전. 「분석 첫 화면이 너무 길다」로 나감
+   *     지도 화면      b457~b541. 「대륙별·국가별을 다 지나야 나와서
+   *                    아무도 못 본다」로 나감 → b515 에 국가별 «위»로
+   *                    올려서 그 문제는 이미 고쳐졌습니다
+   *     성향 탭        b542~b545. 「성향이 아니라 발자국 이야기」로 나감
+   *     기록 탭        b546~b549. 「이름이 이상하다」로 나감 — 그 탭이
+   *                    「기록」이라 「진기록」이라 부를 수밖에 없었습니다
+   *     지도 화면      b550. **이름을 「분석」으로 되돌리고** 여기로.
+   *   네 번 다 이유가 같았습니다: **그 화면의 주제와 다르다.** 이 화면은
+   *   「내가 어디를 얼마나 다녔나」를 파고드는 자리라 여기가 맞습니다.
+   *
+   * ⚠ **국가별 목록보다 «위»입니다(b515).** 아래 목록은 나라가 스물여덟이면
+   *   화면 여러 장이라, 그 밑에 두면 여기까지 내려오는 사람이 없습니다.
+   * ⚠ **세는 자료는 위와 같은 것입니다**(mapCities · stars). 여기서 다시
+   *   받아오면 같은 화면 안에서 두 숫자가 갈립니다.
+   * ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다. 반올림하면
+   *   아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋나고, 한 화면에 두 숫자가
+   *   다르면 둘 다 못 믿게 됩니다.
+   * ⚠ 띠 안에는 글자를 안 넣습니다 — 좁은 칸은 어차피 안 들어가서 같은 것이
+   *   두 자리에 나뉩니다. 띠는 비율만, 숫자는 아래 범례가 맡습니다. */
+  const 내도시 = mapCities.filter(c => stars[c.id] != null);
+  const 기록칸 = $('m_rec');
+  if (기록칸){
+    const 통 = [0, 0, 0, 0, 0];
+    내도시.forEach(c => {
+      const n = Math.floor(Number(stars[c.id]));
+      if (n >= 1 && n <= 5) 통[n - 1]++;
+    });
+    const 합 = 통.reduce((a, b) => a + b, 0) || 1;
+    /* ★5 초록에서 ★1 붉은색으로. */
+    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+    기록칸.classList.toggle('hide', !내도시.length);
+    기록칸.innerHTML = !내도시.length ? '' : `<h2>분석</h2>
+      <div class="stackwrap">
+        <div class="stack">${[5, 4, 3, 2, 1].map(n => 통[n - 1]
+          ? `<i style="width:${(통[n - 1] / 합 * 100).toFixed(1)}%;
+               background:${색[n - 1]}" title="★${n} ${통[n - 1]}곳"></i>` : '').join('')}</div>
+        <div class="stackleg">${[5, 4, 3, 2, 1].map(n =>
+          `<span${통[n - 1] ? '' : ' class="off"'}><b style="background:${
+            색[n - 1]}"></b>★${n} ${통[n - 1]}곳</span>`).join('')}</div>
+      </div>
+      ${funRows(내도시, stars).map(([k, v]) =>
+        `<div class="row"><span class="label">${esc(k)}</span>
+           <span class="val">${esc(v)}</span></div>`).join('')}`;
+  }
 
 }
 
