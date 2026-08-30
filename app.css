@@ -2585,6 +2585,25 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .tripbar .go{ flex:none; font-size:var(--f-sm); font-weight:600;
               color:var(--primary); }
 
+/* ── 발자국 숫자 셋(b544) ─────────────────────────────────────────────
+ * 국가 · 도시 · 대륙. 지구본 바로 밑에서 「그래서 얼마나?」에 한 번에
+ * 답하는 자리입니다 — 아래 넘김 카드는 대륙을 하나씩 보여주므로 전부를
+ * 보려면 일곱 번 넘겨야 합니다.
+ * ⚠ 셋이 **같은 폭**입니다. 글자 수에 따라 폭이 달라지면 「3/6」 쪽이
+ *   좁아져서 셋이 한 줄로 안 읽힙니다.
+ * ⚠ 숫자는 `tabular-nums`. 28 → 29 로 바뀔 때 글자가 안 흔들립니다. */
+.fpnums{ display:flex; gap:8px; margin:10px 0 2px; }
+.fpnums > div{ flex:1 1 0; min-width:0; text-align:center;
+               padding:10px 4px; border-radius:12px; background:var(--sunk); }
+.fpnums b{ display:block; font-size:var(--f-2xl); font-weight:700;
+           color:var(--ink); font-variant-numeric:tabular-nums; }
+.fpnums span{ display:block; font-size:var(--f-sm); color:var(--ink-48); margin-top:1px; }
+
+/* 「평가하러」 띠가 카드 «안»으로 들어왔습니다(b544). 카드 밖에 홀로
+   설 때는 위아래 마진을 바깥이 정했는데, 안에서는 앞 줄과의 사이를
+   여기서 냅니다. */
+.card > .tripbar{ margin-top:12px; }
+
 /* ── 분석 탭의 「이름 + 값」 줄 크기를 한 벌로(b460) ──────────────────
  * 한 탭 안에 같은 꼴의 줄이 세 벌 있었는데 크기가 다 달랐습니다:
  *
