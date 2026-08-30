@@ -19,18 +19,18 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b546';
-import { sb } from './db.js?v=b546';
-import { cities, countryName, continentOf } from './cities.js?v=b546';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b547';
+import { sb } from './db.js?v=b547';
+import { cities, countryName, continentOf } from './cities.js?v=b547';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b546';
+import { similarPicks } from './rec.js?v=b547';
 /* 친구와 궁합. 유입이 유입을 만드는 고리입니다(b408) — mate.js 머리말 참고. */
-import { mateCode, mateHtml, shareMate } from './mate.js?v=b546';
-import { visited } from './rate.js?v=b546';
+import { mateCode, mateHtml, shareMate } from './mate.js?v=b547';
+import { visited } from './rate.js?v=b547';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard, cardImage } from './card.js?v=b546';
+         shareCard, cardImage } from './card.js?v=b547';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -39,16 +39,26 @@ export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
  * 한 줄평이 주인공이라 제일 크게, 나머지는 근거로 작게 답니다.
  * 앱 이름은 구석에 작게 — 크게 넣으면 광고처럼 보입니다.
  * 보는 사람이 궁금해서 찾아오는 정도면 충분합니다. */
+/* ⚠⚠ **리포트는 이제 «성향 탭 그 자체»입니다(b547, 사용자 결정).** ⚠⚠
+ * b447 부터 이 화면은 프로필 위에 얹히는 판(`#personapane`)이었고, 성향
+ * 탭에는 요약 카드와 「자세히 보기 ›」만 있었습니다. 그런데 성향 탭이
+ * **성향 하나만** 맡게 되면서(b542·b546) 요약과 원본이 같은 탭에 두 겹으로
+ * 서게 됐습니다 — 한 걸음 더 들어가야 할 이유가 없어졌습니다.
+ * 이제 `#personabox` 를 **성향 탭 안으로 옮겨** 거기서 그립니다(anal.js).
+ *
+ * ⚠ `#personapane` 은 껍데기만 남깁니다. 지우지 «않습니다» — `?mate=` 로
+ *   들어오는 길과 뒤로가기(app.js·tripview.js)가 그 id 를 봅니다.
+ * ⚠ **여는 절차가 바뀌었습니다.** 이제 「성향 탭으로 보내기」입니다.
+ *   `$('openpersona').click()` 을 쓰던 곳(app.js·anal.js)도 그대로
+ *   동작합니다 — 아래 리스너가 그리로 보냅니다. */
 export async function openPersona(){
-  $('profpane').classList.add('hide');
-  $('mappane').classList.add('hide');
-  $('shelfpane').classList.add('hide');
-  $('personapane').classList.remove('hide');
-  coverDeck(true);    /* 판이 열린 동안 탭 덱을 숨깁니다(b481) */
-  /* ⚠ 프로필 안이라 **문서가 아니라 setview** 를 올려야 합니다(b471). */
-  toTop($('personapane'));
-  if (history.state?.t2 !== 'persona') history.pushState({ t2:'persona' }, '');
+  ctx.showApp('anal');
+}
 
+/* ── 리포트를 그립니다 ── 성향 탭이 부릅니다(b547) ────────────────────
+ * ⚠ 화면 여닫기를 여기서 안 합니다. 「어느 화면에 그릴까」는 부르는 쪽이
+ *   정하고, 여기는 **받아온 것을 그리기만** 합니다. */
+export async function renderPersona(){
   await ctx.loadCities();
   const { data, error } = await sb.from('city_ratings')
     .select('city_id,stars,want,comment,created_at').eq("user_id", ctx.me().id);
@@ -82,6 +92,9 @@ export function personaBackTo(tab){
   const b = $('personaback');
   if (b) b.textContent = backLabel(tab);
 }
+/* ⚠ 판이 안 열리므로 여기 오는 일이 없습니다(b547). 지우지 않는 이유는
+   뒤로가기 처리(app.js·tripview.js)가 이 이름을 부르기 때문입니다 —
+   부르는 쪽을 다 고치는 것보다 안전한 자리에 남겨두는 편이 낫습니다. */
 export function closePersona(fromPop){
   if (!fromPop && history.state?.t2 === 'persona'){ history.back(); return; }
   $('personapane').classList.add('hide');
@@ -90,6 +103,7 @@ export function closePersona(fromPop){
   if (t){ ctx.showApp(t); return; }
   $('profpane').classList.remove('hide');
 }
+/* 프로필의 감춘 단추. 이제 성향 «탭»으로 보냅니다. */
 $('openpersona').addEventListener('click', openPersona);
 $('personaback').addEventListener('click', () => closePersona());
 
@@ -255,7 +269,7 @@ async function drawPersona(s, ax, rates){
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
         <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b546"
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b547"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">

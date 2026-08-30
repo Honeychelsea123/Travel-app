@@ -9,50 +9,41 @@
  *   누르면 그 화면으로 보냅니다. 카드를 여기서 또 그리면 두 벌이 되어
  *   언젠가 갈라집니다(card.js 머리말과 같은 이유).
  *
- * ⚠ **문턱은 5곳입니다.** persona.js · try.js 와 같은 값이어야 합니다 —
- *   여기서만 낮추면 "성향 보기" 를 눌렀는데 "아직" 이 나옵니다.
+ * ⚠ **이 파일은 성향을 «안 셉니다»(b547).** 리포트를 통째로 persona.js
+ *   에게 맡기고 자리만 내줍니다 — 문턱도 축도 거기 하나입니다.
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b546';
-import { sb } from './db.js?v=b546';
-import { cities } from './cities.js?v=b546';
-/* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
-   닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b546';
-import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b546';
+import { $, esc } from './dom.js?v=b547';
+import { sb } from './db.js?v=b547';
+import { cities } from './cities.js?v=b547';
+/* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
+   ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
+     요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
+     것은 persona.js 한 곳입니다. */
+import { renderPersona } from './persona.js?v=b547';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
-import { mapBackTo } from './map.js?v=b546';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b546';
+import { similarPicks } from './rec.js?v=b547';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b546';
-import { pickCity } from './citysearch.js?v=b546';
+import { openNew } from './newtrip.js?v=b547';
+import { pickCity } from './citysearch.js?v=b547';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
-const 문턱 = 5;
+/* ⚠ **문턱(5곳)은 persona.js 가 압니다.** 여기 두 벌로 두었다가 값이
+   갈리면 「성향 보기」를 눌렀는데 「아직」이 나옵니다 — 이 파일은 이제
+   성향을 안 세므로 아예 지웁니다. */
 
 
-/* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
- * ⚠ 두 화면은 **프로필 위에 얹히는 판**으로 만들어져서, 열려면 프로필
- *   탭을 거쳐야 합니다. 그래서 분석 탭에서 열면 **하단바가 프로필로
- *   옮겨가고**, 뒤로 가면 프로필에 떨어졌습니다.
- * ⚠ **「분석에서 왔다」를 먼저 적어둡니다.** 닫을 때 그 값을 보고 분석
- *   탭으로 돌려보냅니다(map.js·persona.js 의 「나온 자리로」).
- * ⚠ 여는 절차를 다섯 군데에 흩어 두면 한 곳만 고쳐집니다 — 여기 둘로
- *   모읍니다. */
-function 성향열기(){
-  personaBackTo('anal');
-  ctx.showApp('set', 'anal');   /* 하단바는 분석에 남깁니다 */
-  $('openpersona')?.click();
-}
+/* ⚠ **`성향열기` 를 걷었습니다(b547).** 성향 화면이 이 탭 «안»에 있으므로
+   열러 갈 데가 없습니다. 지도를 여는 길(`지도열기`)은 b542 에 기록 탭으로
+   갔습니다 — 이 파일에는 이제 다른 화면을 여는 길이 하나도 없습니다. */
 /* ⚠ **`지도열기` 를 걷었습니다(b542).** 발자국 카드가 기록 탭으로 가면서
    이 탭에서 지도를 여는 자리가 없어졌습니다. 다시 필요하면 home.js 에
    같은 것이 있습니다 — 두 벌로 만들지 마십시오. */
@@ -100,102 +91,33 @@ export async function loadAnal(){
     .eq('user_id', ctx.me().id);
 
   const 전부   = 평가?.data || [];
-  const 매긴것 = 전부.filter(r => r.stars != null);
+  /* ⚠ **지우기 «전»에 붙잡습니다.** 아래 ① 참고 — 이 줄이 자식을 다
+     지우므로, 두 번째부터는 여기서 안 잡으면 리포트를 영영 잃습니다. */
+  const 리포트 = $('personabox');
   box.innerHTML = '';
 
-  /* ══ ① 내 여행 성향 ══════════════════════════════════════════════════
-     **카드 셋을 하나로 합쳤습니다(b464).** 「성향」·「성향이 변했어요」·
-     「친구와 궁합」이 따로 서 있었는데, 셋 다 **같은 것 하나**를 말합니다 —
-     내 유형. 카드가 갈려 있으면 스크롤만 길어지고, 사이에 낀 다른 주제가
-     이야기를 끊습니다. 변화는 배지 한 줄, 궁합은 단추 하나면 충분합니다. */
-  const 성향 = document.createElement('div');
-  성향.className = 'card quiet';
-  성향.innerHTML = '<h2><span class="grow">성향</span></h2>';
-
-  let 내코드 = null, 내이름 = null;
-  if (매긴것.length >= 문턱){
-    const ax = personaAxes(매긴것, { cities });
-    const 유형 = PERSONA16[ax.code] || { n:'여행자', d:'' };
-    내코드 = ax.code; 내이름 = 유형.n;
-
-    /* ── 「자세히 보기」는 제목 줄 오른쪽 하나로(b503) ────────────────
-       카드 **맨 아래** 단추 둘(자세히 보기 · 궁합 보내기)이었습니다.
-       홈의 「내 발자국 · 지도 ›」와 같은 자리로 올립니다 — 단추가 카드마다
-       다른 높이에 있으면 찾을 자리가 매번 달라집니다. 제목 옆이면 어느
-       카드든 같은 자리입니다.
-       ⚠ 궁합은 여기서 뺐습니다. 리포트 화면에 궁합 두 칸도 「친구와 궁합
-         보기」 단추도 이미 있습니다(persona.js 의 #p_mate) — 같은 것을 두
-         곳에 두면 언젠가 한쪽만 고쳐집니다. */
-    const 성향더 = document.createElement('button');
-    성향더.className = 'h2go';
-    성향더.textContent = '자세히 보기 ›';
-    성향더.onclick = 성향열기;
-    성향.querySelector('h2').appendChild(성향더);
-    const 나라수 = new Set(매긴것
-      .map(r => (cities || []).find(c => c.id === r.city_id)?.country)
-      .filter(Boolean)).size;
-
-    /* 유형을 크게 · 그림과 함께. 일러스트는 card.js 가 카드에 쓰는 것과
-       **같은 파일**입니다(persona/{코드}.png) — 두 벌로 두면 갈라집니다. */
-    const 머리 = document.createElement('div');
-    머리.className = 'ptop';
-    머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
-      <div class="pname">${esc(유형.n)}</div>
-      <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b546"
-        alt="" onerror="this.closest('.part').remove()"></div>`;
-    머리.onclick = 성향열기;
-    성향.appendChild(머리);
-
-    /* ⚠ **변화 배지(「처음 20곳 → 최근 20곳」)는 여기 없습니다(b519).**
-       리포트 화면으로 옮겼습니다(persona.js) — 사용자 결정. 이 카드는
-       **지금 내가 누구인가**만 말하고, 견주는 이야기는 읽으러 들어온
-       사람의 몫입니다. `변화말` 표도 같이 갔습니다. */
-    /* ⚠ **궁합 두 칸만 없습니다(b503).** 궁합은 애초에 남 이야기라 내
-       기록을 보는 탭이 아니라 리포트 화면에 있습니다(persona.js — 궁합
-       두 칸도 「친구와 궁합 보기」 단추도 거기 그대로입니다).
-       ⚠ **축 막대 넷은 b508 에 되살렸습니다.** b503 에 카드 길이를 줄이려고
-         같이 걷었는데, 성향 탭에 들어와서 그래프가 없으면 「내 성향」이
-         숫자 없는 이름 네 글자로만 남습니다. 사용자 지적 — 그래프가 이
-         카드의 알맹이입니다. 길이는 궁합·아래 단추를 뺀 것으로 벌었습니다
-         (594 → 442px). */
-    /* ── 네 축 ── 가로 막대(b465) ─────────────────────────────────────
-       ⚠ **b464 에 레이더로 바꿨다가 되돌립니다.** 실기기에서 보니
-         다이아몬드는 값을 읽기 어렵습니다 — 개척력 36 과 만족력 26 이
-         꼭짓점 길이로 거의 같아 보이고, 이름과 숫자가 사방에 흩어져
-         위에서 아래로 훑을 수가 없습니다.
-       ⚠⚠ **넷 다 앱 파랑입니다(b501).** 전에는 축마다 분류색(--k-*)을
-         달리 줬습니다 — 「서로 다른 것을 잰다」를 색으로 말하려던 것인데,
-         **한 화면에 주황·초록·파랑·보라가 서고** 앱의 다른 어디에도
-         없는 무지개가 됐습니다. 서로 다르다는 것은 **이름과 값**이 이미
-         말합니다. 색은 앱 전체와 같아야 합니다.
-       ⚠ 인라인으로 안 칠합니다 — `.axbar > i` 가 이미 `--primary` 입니다.
-         여기서 덮어쓰면 앱 색을 바꿔도 이 막대만 안 따라옵니다. */
-    const 값 = [ax.개척, ax.단골, ax.모험, ax.만족];
-    const 판 = document.createElement('div');
-    판.className = 'axbars';
-    /* ⚠ **축 이름만으로는 아무도 모릅니다(b467).** 「개척력 36」 을 보고
-         무엇이 36 인지 알 길이 없습니다 — 처음 보는 말이고, 높은 게
-         좋은 건지도 안 적혀 있습니다.
-         지금 값이 **어느 쪽인지**를 이름 밑에 한 마디로 답니다
-         (36 이면 「유명한 곳」, 85 면 「멀리」). 숫자를 몰라도 읽힙니다.
-       ⚠ 그 말은 card.js 의 AXIS_WORD 하나입니다 — 코드 네 글자(FMDP)가
-         쓰는 것과 **같은 표**라, 글자와 막대가 늘 같은 말을 합니다. */
-    const 극 = i => AXIS_WORD[
-      [값[0] >= 50 ? 'H' : 'F', 값[1] >= 50 ? 'L' : 'M',
-       값[2] >= 50 ? 'D' : 'N', 값[3] >= 50 ? 'G' : 'P'][i]];
-    판.innerHTML = AXIS_NAME.map((n, i) => `
-      <div class="axrow"><span class="axn"><b>${esc(n)}</b>
-        <span>${esc(극(i))}</span></span>
-        <span class="axbar"><i style="width:${Math.max(값[i], 2)}%"></i></span>
-        <span class="axv">${값[i]}</span></div>`).join('');
-    성향.appendChild(판);
-  } else {
-    성향.appendChild(줄('내 성향',
-      `${문턱 - 매긴것.length}곳만 더 매기면 유형이 나와요`, '매기러 가기',
-      () => ctx.showApp('rate')));
+  /* ══ ① 성향 리포트 ═══════════════════════════════════════════════════
+   * ⚠⚠ **요약 카드를 걷고 «리포트 그 자체»를 놓습니다(b547, 사용자 결정).** ⚠⚠
+   *   b447 부터 여기는 요약(유형 · 축 막대 넷)이었고, 제목 줄의
+   *   「자세히 보기 ›」가 프로필 위에 얹히는 판을 열었습니다. 그 구조는
+   *   이 탭이 **여러 가지를 맡던 시절**의 것입니다 — 발자국·다음 여행과
+   *   나란히 놓으려니 성향은 요약이어야 했습니다.
+   *   b542·b546 을 거치며 이 탭은 **성향 하나만** 맡게 됐습니다. 그러면
+   *   요약과 원본이 같은 탭에 두 겹으로 서고, 한 걸음 더 들어갈 이유가
+   *   없습니다. 「두 걸음 깊은 것은 아무도 안 본다」가 이 앱에서 여러 번
+   *   나온 말인데(b457·b503), 여기서는 아예 걸음을 없앨 수 있습니다.
+   * ⚠ **화면을 새로 만들지 않습니다.** `#personabox` 를 **옮겨와서**
+   *   persona.js 가 그대로 그립니다 — 두 벌로 그리면 언젠가 갈라집니다.
+   * ⚠⚠ **`box.innerHTML = ''` 보다 «먼저» 붙잡아야 합니다.** 그 한 줄이
+   *   자식을 다 지우는데, 두 번째로 이 탭을 열 때 `#personabox` 는 이미
+   *   그 자식입니다 — 지워지고 나면 `getElementById` 가 null 을 줍니다.
+   *   그래서 위에서 미리 잡아 둡니다(`리포트`).
+   * ⚠ 매긴 곳이 문턱(5곳)에 못 미쳐도 그냥 그립니다 — 리포트가 스스로
+   *   「도시 N곳만 더 매기면」과 「평가하러 가기」를 냅니다(persona.js 의 `임시`). */
+  if (리포트){
+    box.appendChild(리포트);
+    renderPersona();
   }
-  box.appendChild(성향);
 
   /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
      b542 에 지도 화면에서 여기로 꺼냈던 것인데, 실기기에서 보니 「가장
