@@ -3206,11 +3206,11 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    ⚠ 지구본과 **높이를 맞춥니다.** 안 맞추면 바꿀 때마다 카드가 들썩여서
      아래 내용이 위아래로 뜁니다. */
 .flatbox{ display:flex; align-items:center; justify-content:center;
-          aspect-ratio:3 / 2; max-height:240px; margin:10px 0 14px;
+          min-height:240px;
           cursor:pointer; }
-.flatbox svg{ width:100%; height:auto; display:block; }
-.flatbox path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
-.flatbox path.been{ fill:var(--primary); opacity:.85; }
+/* ⚠ **색과 svg 규칙은 여기 안 적습니다.** `.minimap` 이 이미 갖고
+   있고, 이 칸은 `class="minimap flatbox"` 로 둘 다 답니다 — 여기서 또
+   적으면 나라 색이 두 곳에 있게 되어 언젠가 갈라집니다. */
 
 /* ── 성향이 바뀌었어요(b526) ───────────────────────────────────────────
  * 락인에서 마지막까지 빠져 있던 「다시 열 이유」입니다. 앱을 열었을 때

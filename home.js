@@ -1,49 +1,81 @@
-/* ── 홈 · 여기 가봤어요 · 내 발자국 ───────────────────────────────────
- * 앱을 열면 처음 보는 화면입니다. 다가오는 여행 히어로, 끝난 여행에 후기를
- * 남기라는 줄, 도시 별점 퀴즈, 그리고 다녀온 나라 발자국까지.
+/* ── 기록 탭 · 내 발자국 ──────────────────────────────────────────────
+ * 앱을 열면 처음 보는 화면입니다. **여기가 맡은 것은 하나입니다 —
+ * 내가 어디를 다녔나.** 지구본(또는 평면 지도) · 대륙별 숫자 · 평가로
+ * 가는 줄 하나. 그게 전부입니다.
+ *
+ * ⚠⚠ **b542 에 이 화면에서 평가를 통째로 걷어냈습니다.** ⚠⚠
+ *   b398 부터 맨 위가 「평가 히어로」(사진 위에서 바로 별을 누르는 것)
+ *   였고, 그 아래에 「쭉 매기기」 줄이 있었습니다. 별을 누르는 자리가
+ *   기록·평가 두 탭에 있었고, 발자국은 기록·성향 두 탭에 있었습니다.
+ *   **한 탭이 한 가지**로 정리하면서(사용자 결정) 이렇게 갈랐습니다:
+ *       기록  내 발자국 — 여기
+ *       평가  매기기 — 별은 거기서만
+ *       성향  나는 어떤 여행자인가
+ * ⚠ **잃은 것을 적어둡니다.** 첫 화면에서 별을 바로 누르는 것이 평가를
+ *   남기게 하는 데 제일 셌습니다(b398 의 판단이 그것이었습니다).
+ *   평가 수가 줄면 여기부터 보십시오 — 되살릴 자리는 아래 「평가하러」
+ *   줄이고, 히어로를 다시 얹는 것은 그 다음입니다.
+ * ⚠ 같이 걷은 것: `rateHeroHtml` · `heroCity` · `fillQuiz` · `quizPool` ·
+ *   `renderQuiz` · `quizRow` · `#quizlist` 핸들러 뭉치. b416 에 「다음
+ *   판에서 따로 걷어내라, 히어로 매기기를 먼저 떼고 나서」라고 적어둔
+ *   그 순서대로 했습니다. 400줄이 빠졌습니다.
  *
  * ── app.js 에서 떼어낸 열여덟 번째 조각입니다(b344) ──────────────────
- * **홈과 퀴즈는 서로를 부릅니다.** 홈이 퀴즈 줄(`renderQuiz`)과 발자국
- * (`renderFoot`)을 자기 화면에 얹고, 퀴즈는 별을 매긴 뒤 홈을 다시 그립니다
- * (`loadHome`). 따로 떼면 둘이 서로를 import 하는 고리가 됩니다 —
- * **한 파일로 묶는 것이 맞습니다.** 666줄로 지금까지 중 제일 큽니다.
- *
  * app.js 만 아는 것은 셋입니다 — 로그인한 사람, 여행 열기, 앱 화면 켜기.
- * `quizPool`·`quizFilled`·`quizFilling`·`lastHomeSig` 는 이 블록에서만
- * 쓰던 상태라 같이 데려왔습니다. `lastHomeSig` 만 app.js 가 로그아웃할 때
- * 되돌려야 해서 길(`resetHomeSig`)을 냅니다.
+ * `lastHomeSig` 만 app.js 가 로그아웃할 때 되돌려야 해서 길
+ * (`resetHomeSig`)을 냅니다.
  *
- * 층: 아래층 여럿과 이미 떼어낸 조각들(city · citysearch · rating · map ·
- *     report · newtrip)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
- *     생기지 않습니다 — 저쪽이 홈을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b541';
-import { sb } from './db.js?v=b541';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b541';
-import { hm, todayYmd } from './calc.js?v=b541';
-import { starHtml, paintStars, markRated } from './stars.js?v=b541';
+ * ⚠ **여행 후기 화면(`openReviewTrip`)은 아직 여기 있습니다.** 홈에
+ *   있던 재촉 띠는 b398 에 일정 탭으로 갔는데 화면은 안 옮겼습니다 —
+ *   입구가 어디 있느냐만 문제였기 때문입니다. 이 파일이 여전히 900줄인
+ *   것은 그 때문이고, 다음에 쪼갠다면 거기입니다.
+ *
+ * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
+ *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
+ *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
+import { $, esc } from './dom.js?v=b542';
+import { sb } from './db.js?v=b542';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b542';
+import { hm, todayYmd } from './calc.js?v=b542';
+import { starHtml, paintStars } from './stars.js?v=b542';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b541';
-import { cities, countryName } from './cities.js?v=b541';
-import { myRates, visited } from './rate.js?v=b541';
-import { plans } from './trip.js?v=b541';
-import { openCity } from './city.js?v=b541';
-import { loadCities, pick } from './citysearch.js?v=b541';
-import { saveRate, dropRate, refreshVisited } from './rating.js?v=b541';
+import { starValue } from './rateui.js?v=b542';
+import { cities, countryName } from './cities.js?v=b542';
+import { myRates, visited } from './rate.js?v=b542';
+import { plans } from './trip.js?v=b542';
+import { loadCities } from './citysearch.js?v=b542';
+import { saveRate, refreshVisited } from './rating.js?v=b542';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b541';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b542';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b541';
+import { drawReport } from './report.js?v=b542';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b541';
-import { openNew } from './newtrip.js?v=b541';
+import { PERSONA_BG } from './card.js?v=b542';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b541';
+import { checkPersonaShift } from './pshift.js?v=b542';
+/* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
+   이 탭이 곧 「내가 어디를 갔나」입니다. */
+import { mountGlobe } from './globe.js?v=b542';
+
+/* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
+ * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
+ * 세어 보려고 평면을 고른 사람이 열 때마다 다시 눌러야 합니다.
+ * ⚠ 기기마다 따로입니다(localStorage). 계정에 매달지 않습니다 — 폰에서
+ *   지구본을 돌려 보는 사람이 노트북에서도 그러란 법이 없고, 이건
+ *   **취향이 아니라 화면 크기** 이야기에 가깝습니다.
+ * ⚠ 사파리 비공개 모드에서 localStorage 가 던집니다. 감싸 둡니다. */
+const 뷰열쇠 = 't2:mapview';
+function 뷰읽기(){
+  try { return localStorage.getItem(뷰열쇠) === 'flat' ? 'flat' : 'globe'; }
+  catch { return 'globe'; }
+}
+function 뷰쓰기(v){ try { localStorage.setItem(뷰열쇠, v); } catch {} }
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -189,29 +221,6 @@ export function heroHtml(photo, dd, title, memo, btn, ai){
   </div>`;
 }
 
-/* ── 평가 히어로 ─────────────────────────────────────────────────────
- * 홈 맨 위에서 **바로 별을 누릅니다**(b398). 이 앱의 메인은 평가라, 첫
- * 화면이 "평가하러 가세요" 라고 시키는 대신 **그 자리에서 되게** 합니다.
- * 한 번 더 누르게 만들 때마다 사람이 줄어듭니다.
- *
- * ⚠ **별은 `.stars` 통에 담아야 합니다.** 아래 클릭 처리기가 `.stars` 의
- *   `data-city` 로 어느 도시인지 알아냅니다(퀴즈 줄과 같은 방식). 통을
- *   바꾸면 눌러도 아무 일이 안 일어나는데, 화면은 멀쩡해 보입니다.
- *
- * ⚠ **사진이 없는 도시는 여기 오면 안 됩니다.** 히어로는 사진이 주인공이라
- *   빈 색 덩어리만 남습니다. 고르는 쪽(buildHome)에서 걸러 옵니다. */
-/* ⚠ **그리는 것은 rateui.js 한 곳에서 합니다(b409).** 홈·맛보기·연속 평가
-   셋이 같은 히어로를 씁니다. 여기서 또 적으면 세 벌이 되고, 그러면 고칠 때
-   한 벌만 고쳐집니다 — 별 크기 때문에 이미 한 번 겪었습니다(b401).
-
-   ⚠ **묻기만 하고 무엇을 하라는 말이 없었습니다(b400).** 별이 장식으로
-   보이고 누를 수 있는 줄 몰랐습니다. `ask` 한 줄이 그것입니다. */
-const rateHeroHtml = c =>
-  rateHero(c, { id:'hero', ask:'다녀오셨다면 별점을 남겨주세요' });
-/* 지금 히어로에 걸린 도시. **퀴즈가 이걸 빼고 그려야** 같은 도시가 위아래에
-   두 번 안 나옵니다(renderQuiz · 다음 줄 채우기 둘 다). */
-let heroCity = null;
-
 /* 홈은 받아올 것이 여럿입니다(도시·다음 여행·평가·발자국).
    하나라도 실패하면 그대로 멈춰서 "불러오는 중…"만 남았습니다.
    중간에 죽어도 화면에는 뭐라도 남기고, 왜 그런지 말합니다. */
@@ -303,29 +312,17 @@ export async function loadHome(){
 async function buildHome(){
   await loadCities();          /* 나라 이름과 도시 페이지에 필요합니다. 한 번만 받습니다. */
 
-  /* 히어로에 걸 도시. 퀴즈와 **같은 우물**을 씁니다(fillQuiz) — 두 벌로
-     만들면 같은 도시가 위아래에 두 번 나옵니다. 여기서 한 곳을 집어가고
-     renderQuiz 가 그것을 빼고 그립니다. 사진이 없는 곳은 히어로가 될 수
-     없습니다(사진이 주인공인 자리라 빈 색만 남습니다). */
-  await fillQuiz();
-  heroCity = quizPool.find(c => c.image_url) || null;
-
-  /* ── 자료가 그대로면 홈을 아예 다시 그리지 않습니다 ──────────────────
-     홈은 히어로를 `innerHTML` 로 지우고 그 뒤에 카드를 **덧붙이는** 구조라,
-     목록 하나만 지키는 방식(putHtml)으로는 안 됩니다. 히어로를 지우는 순간
-     뒤에 붙은 것이 전부 같이 날아가기 때문입니다.
-     그래서 **그릴 내용이 같은지를 먼저 보고** 같으면 통째로 건너뜁니다. */
-  const sig = [heroCity?.id || '',
-               quizPool.slice(0, QUIZ_ROWS + 1).map(c => c.id).join(),
-               visited.size, Object.keys(myRates || {}).length,
-               Object.values(myRates || {}).filter(r => r.want).length].join('|');
-  if (sig === lastHomeSig && $('home').querySelector('.hero')) return;
+  /* ── 자료가 그대로면 다시 그리지 않습니다 ──────────────────────────
+     ⚠ **표식(sig)에서 히어로와 퀴즈 주머니를 뺐습니다(b542).** 둘 다
+       없어졌습니다 — 이 화면이 말하는 것은 이제 **발자국 하나**뿐이라
+       그것만 셉니다.
+     ⚠ 조건의 `.hero` 도 같이 바꿉니다. 없어진 것을 찾으면 **늘 거짓**이라
+       홈이 매번 통째로 다시 그려지고, 그때마다 지구본이 새로 붙습니다. */
+  const sig = [visited.size, Object.keys(myRates || {}).length].join('|');
+  if (sig === lastHomeSig && $('homefp')) return;
   lastHomeSig = sig;
 
-  /* 히어로. 매길 도시가 하나도 없으면(다 매겼거나 오프라인) 앱이 무슨 앱인지
-     말합니다 — 빈 화면보다 낫고, 그 사람은 이미 평가를 다 한 사람입니다. */
-  $('home').innerHTML = heroCity ? rateHeroHtml(heroCity)
-    : heroHtml('', '', '기로', '다녀온 도시를 매기면 여행 성향이 나와요', '');
+  $('home').innerHTML = '';
 
   /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
    * **① 평가하는 자리** — 사진 · 별점 · 두 단추가 한 카드(.ratecard).
@@ -351,59 +348,46 @@ async function buildHome(){
   통.id = 'homefp';
   $('home').appendChild(통);
 
-  /* 쭉 매기기 줄은 **평가 카드 바닥**에 붙입니다(b420) — 「이 도시 말고
-     더 매기고 싶으면」이라 평가 자리에 속합니다.
-     ⚠ 매길 도시가 하나도 없으면 `.ratecard` 가 아예 없습니다(위 히어로가
-       heroHtml 로 떨어집니다). 그때는 아래 통에 붙입니다 — 없는 곳에
-       붙이려다 터지면 홈이 통째로 안 그려집니다. */
-  await renderQuiz($('home').querySelector('.ratecard') || 통);
-
-
-  /* ⚠ **발자국·성향·지도가 먼저입니다(b423).** 지도를 홈 열자마자 보이게
-     하려면 위로 올려야 하는데, 새 여행 줄이 앞에 있으면 그만큼 밀립니다.
-     그리고 이 앱은 평가가 주인공이고 일정은 서브입니다 — 순서가 그 말을
-     해야 합니다. */
   await renderFoot(통);
 
-  /* ── 새 여행으로 가는 길 ─────────────────────────────────────────────
-     ⚠⚠ **이 줄을 홈에서 빼지 마십시오. 세 번째입니다.** ⚠⚠
-     b377 에서 "권유는 하나만" 이라며 뺐다가 b378 에서 되살렸고, b402 에서
-     "여행 탭 머리줄에 ＋새 여행이 이미 있으니 중복" 이라며 또 뺐다가
-     같은 날 사용자에게 지적받고 되살렸습니다.
-
-     **홈에서도 여행을 만들 수 있어야 합니다.** 여행 탭의 ＋새 여행 은
-     거기까지 간 사람만 봅니다. 홈은 앱을 여는 사람이 다 보는 자리이고,
-     이 앱이 일정도 짠다는 것을 아는 유일한 자리입니다. 중복처럼 보이는
-     것이 값입니다.
-
-     ⚠ 문구가 「다음에 어디 갈까요?」 였습니다(b402 에서 고침). **처음 온
-       사람에게는 '다음' 이 없습니다** — 아직 한 번도 안 간 사람에게
-       "다음에" 라고 하면 자기 얘기가 아닙니다. */
-  /* ⚠ **홈 맨 위 · 생김새도 다릅니다(b438).** 아래 카드들은 전부 「평가로
-     쌓인 나」인데(별점 → 발자국 → 성향), 이 줄만 **여행을 만드는 다른
-     기능**입니다. 카드 안의 한 줄로 두면 그 차이가 안 읽혀서, 흰 카드가
-     아니라 **강조색 띠**로 세우고 맨 위로 올립니다.
-     ⚠ 그래도 **작게** 둡니다. 이 앱은 평가가 주인공이고 일정은 서브입니다
-       (b416·b423) — 맨 위라도 큰 사진 카드(평가)가 주인공으로 남게
-       띠 하나 높이만 씁니다. 여기를 키우지 마십시오. */
-  const nt = document.createElement('div');
-  nt.className = 'tripbar';
-  nt.innerHTML = `<span class="ic" aria-hidden="true">
+  /* ── 평가로 가는 길 하나 ─────────────────────────────────────────────
+   * ⚠ **이 탭에서 별을 누르는 자리는 이제 없습니다(b542).** 전에는 맨 위
+   *   히어로에서 바로 눌렀는데, 그러면 평가가 세 탭(기록·평가·성향)에
+   *   흩어집니다. 여기는 **보는 탭**이고 매기는 것은 평가 탭입니다.
+   * ⚠ 그래도 **가는 길은 있어야 합니다.** 지도가 안 칠해진 사람에게
+   *   「어떻게 칠하나」를 말해 주는 것이 이 줄입니다 — 지도 바로 밑이
+   *   제자리입니다.
+   * ⚠ 「새 여행」 띠가 있던 자리입니다. 생김새(`.tripbar`)를 그대로
+   *   물려받습니다 — 이 화면에서 **유일하게 무엇을 하러 가는 줄**이라,
+   *   보기만 하는 줄들(`.fprow`)과 옷이 달라야 합니다. */
+  const 매기러 = document.createElement('div');
+  매기러.className = 'tripbar';
+  매기러.innerHTML = `<span class="ic" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
            stroke="currentColor" stroke-width="1.8"
            stroke-linecap="round" stroke-linejoin="round">
-        <!-- ⚠ 좌표(지도핀)였는데 **비행기**로 바꿨습니다(b440). 핀은 하단바의
-             「여행」 탭 아이콘과 같은 모양이라, 나란히 놓이면 같은 곳으로
-             가는 줄 읽힙니다. 여기는 **일정을 만드는** 자리입니다. -->
-        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8
-                 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1
-                 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+        <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1
+                 5.8-.8z"/>
       </svg></span>
-    <span class="t"><b>어디로 떠나볼까요?</b>
-      <span>어디로 언제 가는지만 정하면 돼요</span></span>
-    <span class="go">여행 만들기 ›</span>`;
-  nt.onclick = () => openNew();
-  $('home').prepend(nt);
+    <span class="t"><b>평가를 남기면 지도가 칠해져요</b>
+      <span>다녀온 도시에 별을 매겨 보세요</span></span>
+    <span class="go">평가하러 ›</span>`;
+  매기러.onclick = () => ctx.showApp('rate');
+  $('home').appendChild(매기러);
+
+  /* ⚠⚠ **「새 여행」 띠를 여기서 걷었습니다(b542). 네 번째입니다.** ⚠⚠
+     b377 에 「권유는 하나만」이라며 뺐다가 b378 에 되살렸고, b402 에
+     「여행 탭에 ＋새 여행이 이미 있으니 중복」이라며 또 뺐다가 같은 날
+     지적받고 되살렸습니다. 그때 이유는 **「여행 탭의 ＋새 여행은 거기까지
+     간 사람만 본다」** 였습니다.
+
+     이번에는 전제가 다릅니다. 탭마다 한 가지만 맡기기로 하면서(사용자
+     결정) 이 탭은 **내 발자국** 하나만 말합니다 — 여행 만들기를 남기면
+     「한 탭이 한 가지」가 첫 화면에서부터 깨집니다. **알고도 뺍니다.**
+
+     ⚠ 또 아쉬우면 그때는 하단바의 「일정」이 제 일을 못 하고 있다는
+       뜻이고, 고칠 곳은 여기가 아니라 거기입니다. 이 줄을 다시 여기에
+       붙이는 것은 다섯 번째가 됩니다. */
 }
 /* ── 다녀온 여행 평가 재촉 띠 ────────────────────────────────────────
  * **홈에 있다가 여행 탭으로 옮겼습니다(b398).** 홈은 도시 평가가 주인공이고,
@@ -592,152 +576,6 @@ $('rv_rate').addEventListener('click', async e => {
 $('rv_done').addEventListener('click', () => drawReport(rvTrip));
 
 
-/* ── 여기 가봤어요? ──────────────────────────────────────────────────
- * 안 매긴 도시를 몇 곳씩 늘어놓고 아는 곳에만 별을 답니다.
- * 한 곳씩 크게 물어보면 모르는 도시가 나왔을 때 할 일이 없습니다.
- * 줄 모양은 기록 탭과 같게 맞춥니다.
- * 전부 받아오면 무거우니 임의의 구간에서 스무 곳만 집어 씁니다. */
-const QUIZ_ROWS = 5;
-let quizPool = [], quizFilling = false, quizFilled = 0;
-
-/* 처음 보이는 다섯 곳이 스플리트 · 브뤼헤 · 크레타뿐이면
-   "나 이런 데 안 가봤는데" 하고 바로 닫습니다.
-   누구나 이름은 아는 곳을 먼저 내보내고, 다른 도시 보기를 누를수록
-   생소한 곳이 나오게 합니다. 유행이 아니라 인지도 기준입니다. */
-const FAMOUS = new Set([
-  'seoul','busan','jeju','gyeongju','jeonju','gangneung','sokcho',
-  'tokyo','osaka','kyoto','fukuoka','sapporo','okinawa','nagoya','hakone','nara',
-  'beijing','shanghai','xian','hongkong','macau','taipei','qingdao',
-  'bangkok','chiangmai','phuket','pattaya','singapore','kualalumpur','bali','jakarta',
-  'hanoi','hochiminh','danang','nhatrang','phuquoc','siemreap','manila','cebu','boracay',
-  'guam','saipan','male','kathmandu','delhi','mumbai','agra','jaipur','colombo',
-  'dubai','abudhabi','doha','istanbul','cappadocia','cairo','telaviv','petra',
-  'paris','nice','london','edinburgh','dublin','rome','venice','florence','milan','naples',
-  'barcelona','madrid','seville','granada','lisbon','porto','amsterdam','brussels',
-  'berlin','munich','frankfurt','prague','vienna','salzburg','budapest','zurich',
-  'interlaken','lucerne','zermatt','copenhagen','stockholm','helsinki','oslo','reykjavik',
-  'athens','santorini','dubrovnik','krakow','warsaw',
-  'newyork','losangeles','sanfrancisco','lasvegas','honolulu','seattle','chicago',
-  'boston','washington','orlando','miami','toronto','vancouver','banff',
-  'mexicocity','cancun','rio','buenosaires','lima','cusco',
-  'sydney','melbourne','goldcoast','brisbane','cairns','auckland','queenstown',
-  'capetown','marrakech','nairobi',
-]);
-
-async function fillQuiz(){
-  if (quizFilling) return;
-  quizFilling = true;
-  try {
-    /* 기록 탭에서 별점을 매겨도 여기 남아 있던 것을 막습니다.
-       주머니를 들고 있다가 그대로 다시 그려서 이미 매긴 곳이 또 나왔습니다.
-       매번 답한 목록을 받아 걸러냅니다.
-
-       ⚠ **전에는 `.not('stars','is',null)` 이 붙어 있었습니다(b414).**
-       그래서 **별점 있는 줄만** 빠졌습니다. 「안 가봤어요」는 `stars:null`
-       줄을 남기므로 안 빠졌고, 쭉 매기기에서 넘긴 도시가 홈 목록에
-       **그대로 남아 다시 물었습니다.** 실제로 재봤습니다 — 쿠알라룸푸르를
-       넘기고 홈에 갔더니 목록에 그대로 있었습니다.
-
-       ⚠ **아래 주머니를 처음 만드는 곳과 같은 기준이어야 합니다**(rated).
-       거기는 조건 없이 `city_ratings` 의 **모든 줄**을 제외합니다.
-       한쪽만 고치면 또 어긋납니다. 취소한 것은 줄 자체가 지워지므로
-       (rating.js 의 dropRate) 여기서 걸러지지 않고 다시 물어집니다 — 맞습니다. */
-    {
-      const r = await sb.from('city_ratings').select('city_id')
-        .eq('user_id', ctx.me().id);
-      const done = new Set((r.data || []).map(x => x.city_id));
-      quizPool = quizPool.filter(c => !done.has(c.id));
-    }
-    if (quizPool.length >= QUIZ_ROWS) return;
-    /* 도시는 이미 다 받아 두었습니다. 서버에서 잘라 오면 id 순으로 붙어 있는
-       구간이 나와서 오타루 · 오타와 · 옥스퍼드처럼 이름이 몰립니다.
-       여기서 통째로 섞습니다. */
-    await loadCities();
-    const mine = await sb.from('city_ratings').select('city_id').eq('user_id', ctx.me().id);
-    const rated = new Set((mine.data || []).map(r => r.city_id));
-    const have  = new Set(quizPool.map(c => c.id));
-    let pool = (cities || []).filter(c => !rated.has(c.id) && !have.has(c.id));
-    /* 사진 있는 곳을 먼저 씁니다. 사진 칸을 못 받아온 경우에는 그냥 다 씁니다. */
-    const withImg = pool.filter(c => c.image_url);
-    if (withImg.length) pool = withImg;
-    /* 피셔–예이츠. sort(() => Math.random()-0.5) 로 섞으면 앞쪽이 덜 움직입니다. */
-    for (let i = pool.length - 1; i > 0; i--){
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    /* 처음 채울 때만 유명한 곳을 앞으로 당깁니다. 안에서는 여전히 무작위라
-       열 때마다 다른 도시가 나옵니다. 다 보고 나면 다음부터는 치우침 없이
-       뽑히므로, 다른 도시 보기를 누를수록 생소한 곳이 나옵니다. */
-    if (!quizFilled)
-      pool.sort((a, b) => (FAMOUS.has(b.id) ? 1 : 0) - (FAMOUS.has(a.id) ? 1 : 0));
-    quizFilled++;
-    quizPool = quizPool.concat(pool.slice(0, 40));
-  } finally { quizFilling = false; }
-}
-
-/* ⚠ **아래 quizRow 와 `#quizlist` 를 보는 핸들러들은 지금 안 돕니다(b416).**
-   홈의 「여기 가보셨어요?」 목록을 「쭉 매기기」 줄로 바꾸면서 `#quizlist`
-   자체가 화면에서 사라졌습니다. `closest` 가 null 을 주니 **오류는 안 나고
-   그냥 아무 일도 안 합니다.**
-
-   ⚠ **일부러 안 지웠습니다.** 히어로에서 매긴 뒤 다음 도시를 고르는 길
-     (아래 `shown`)이 이 코드와 얽혀 있어서, 한 판에 같이 걷어내면 홈에서
-     별을 매기는 것 자체가 깨질 위험이 있습니다. 목록을 되살릴 일이 없다면
-     **다음 판에서 따로** 걷어내십시오 — 그때는 히어로 매기기를 먼저
-     떼어내고 나서 지우는 순서가 맞습니다. */
-const quizRow = c => `<div class="rrow" data-cityopen="${esc(c.id)}">
-  ${c.image_url
-    ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy"
-           onerror="this.replaceWith(Object.assign(document.createElement('span'),
-             {className:'thumb ph', textContent:'${esc(c.name.slice(0,1))}'}))">`
-    : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
-  <div class="t"><b>${esc(c.name)}</b>
-    <span class="memo">${esc(countryName[c.country] || c.country)}</span></div>
-  <span class="stars" data-city="${esc(c.id)}">${starHtml(null)}</span>
-  <button class="ghost want" data-want="${esc(c.id)}" title="가보고 싶어요">♡</button>
-</div>`;
-
-/* ── 쭉 매기기로 가는 줄 ─────────────────────────────────────────────
- * ⚠ **전에는 여기가 「여기 가보셨어요?」 목록이었습니다(b416 에서 바꿈).**
- *   도시 다섯 줄에 별을 각각 달아 뒀는데 **위 히어로에도 별이 있어서
- *   같은 동작이 홈에 두 자리** 있었습니다. 재보니 한 화면에 별 30개 ·
- *   사진 6장 · 하트 5개. 어디서 매겨야 하는지가 안 정해져 있었습니다.
- *
- * ⚠ **그리고 그 목록은 「쭉 매기기」의 열등한 사본이었습니다.**
- *   쭉 매기기는 탭바까지 숨기고 그것만 하게 만듭니다(spree.js).
- *   같은 일을 두 벌로 두면 둘 다 어중간해집니다. 줄 하나로 보냅니다.
- *
- * ⚠ **fillQuiz 는 그대로 부릅니다.** 목록은 없어졌지만 **히어로가 같은
- *   주머니(quizPool)를 씁니다** — 여기서 안 채우면 히어로가 빕니다.
- *   지우지 마십시오.
- *
- * ⚠ 매긴 수는 **제 질의로** 셉니다. myRates 는 홈에서 비어 있습니다 —
- *   renderFoot 머리말과 같은 이유입니다. head:true 라 개수만 오고
- *   자료는 안 받으므로 홈이 느려지지 않습니다. */
-async function renderQuiz(통){
-  const [, 센것] = await Promise.all([
-    fillQuiz(),
-    netTimeout(sb.from('city_ratings').select('city_id', { count:'exact', head:true })
-      .eq('user_id', ctx.me().id).not('stars', 'is', null)),
-  ]);
-  const 매긴 = 센것?.count ?? 0, 전체 = (cities || []).length;
-  const bar = document.createElement('div');
-  /* 새 여행 줄과 **같은 부품**입니다. 띠로 따로 만들면 카드 안에
-     상자가 하나 더 생깁니다(위 buildHome 머리말). */
-  bar.className = 'fprow';
-  bar.innerHTML = `<span class="t"><b>쭉 매기기</b>
-      <span>사진 보고 훅훅 눌러요${
-        매긴 && 전체 ? ` · ${전체}곳 중 ${매긴}곳` : ''}</span></span>
-    <span class="go">시작 ›</span>`;
-  /* 기록 탭으로 옮긴 뒤 거기 있는 시작 단추를 누릅니다. openSpree 를 직접
-     부르면 rateview 가 안 보이는 채로 열려서 나올 때 빈 화면이 됩니다. */
-  /* ⚠ **들어온 자리를 먼저 남깁니다(b423).** 안 그러면 「그만」 을 눌렀을 때
-     홈이 아니라 기록 탭에 떨어집니다 — 아래 showApp('rate') 때문에 닫을
-     때는 이미 기록 탭이 제자리이기 때문입니다. */
-  bar.onclick = () => { ctx.spreeBackTo?.('home'); ctx.showApp('rate'); $('spreego')?.click(); };
-  통.appendChild(bar);
-}
-
 /* ── 내가 쌓은 것 ────────────────────────────────────────────────────
  * ⚠ **been 처럼 같은 리듬의 줄로 맞췄습니다(b416).** 전에는 발자국이
  *   「제목 + 문장 + 진행바」였고 성향만 줄(.fprow)이라 **한 카드 안에서
@@ -812,6 +650,10 @@ async function renderFoot(통){
      실제로 뜰 때쯤엔 채워져 있지만, 값이 없는 채로 불릴 수 있는 모양을
      남기지 않습니다 — 없으면 아무 일도 안 하는 함수가 기본입니다. */
   let 지도맞추기 = () => {};
+  /* ⚠ **먼저 비워서 선언합니다.** `지도맞추기` 와 같은 이유입니다 —
+     지구본은 아래에서 `setTimeout` 으로 붙는데, 대륙 넘김의 scroll 이
+     그보다 먼저 올 수 있습니다. 없으면 아무 일도 안 하는 쪽이 기본입니다. */
+  let 공 = null;
   const 넘김 = document.createElement('div');
   넘김.className = 'swipe';
   넘김.innerHTML =
@@ -905,7 +747,11 @@ async function renderFoot(통){
    * ⚠ 중간에 오므로 **아래 음수 마진을 쓰면 안 됩니다** — 다음 줄을
    *   덮습니다. 좌우만 넓힙니다(app.css 의 .minimap). */
   const mm = document.createElement('div');
-  mm.className = 'minimap';
+  /* ⚠ **클래스가 둘입니다(b542).** `.minimap` 은 여태 쓰던 규칙(좌우로
+     넓히기 · 나라 색)이고, `.flatbox` 는 **지구본과 높이를 맞추는** 것만
+     합니다. 안 맞추면 지구 ↔ 평면을 오갈 때 카드가 들썩여서 아래 내용이
+     위아래로 뜁니다. */
+  mm.className = 'minimap flatbox';
   mm.style.cursor = 'pointer';
   /* ── 왜 이 viewBox 인가(b425) ────────────────────────────────────────
      been 은 1.88:1 인데 우리는 2.58:1 이라 가로로 찌그러져 보인다는
@@ -997,8 +843,70 @@ async function renderFoot(통){
     }, { passive:true });
     mm.onclick = () => { if (밀림){ 밀림 = false; return; } 지도열기(); };
   }
-  box.appendChild(mm);
+  /* ── 지구 / 평면 (b542) ─────────────────────────────────────────────
+   * ⚠ **둘은 다른 일을 합니다.** 지구본은 언제나 절반이 뒤통수라
+   *   「내가 어디를 다녔나」를 **세지 못합니다.** 평면은 그게 됩니다.
+   *   하나를 고르라는 것이 아니라 **두 가지 질문**이라 둘 다 둡니다.
+   * ⚠ 평면 쪽은 여태 쓰던 미니맵 그대로입니다 — 좌우로 미는 것도,
+   *   대륙으로 확대되는 것도(b500·b511) 그대로 삽니다.
+   * ⚠ 지구본은 **평면을 보는 동안 스스로 멈춥니다.** 따로 알려줄 필요가
+   *   없습니다: `display:none` 이 되면 IntersectionObserver 가 「안 보인다」고
+   *   하고 globe.js 가 멈춥니다.
+   * ⚠ **지도를 카드 맨 위로 올립니다(b542).** 앱을 열면 이것이 먼저 보여야
+   *   합니다 — 이 탭이 맡은 것은 「내가 어디를 갔나」 하나뿐입니다. */
+  const 감쌈 = document.createElement('div');
+  감쌈.className = 'gwrap';
+
+  const 공칸 = document.createElement('div');
+  공칸.className = 'globebox';
+  const 공판 = document.createElement('canvas');
+  공판.setAttribute('aria-label', '지구본');
+  공칸.appendChild(공판);
+  감쌈.appendChild(공칸);
+  감쌈.appendChild(mm);
+
+  const 바꿈 = document.createElement('div');
+  바꿈.className = 'gswitch';
+  바꿈.innerHTML = '<button type="button">지구</button><button type="button">평면</button>';
+  감쌈.appendChild(바꿈);
+
+  /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
+  let 평면인가 = 뷰읽기() === 'flat';
+  const 맞추기 = () => {
+    공칸.classList.toggle('hide', 평면인가);
+    mm.classList.toggle('hide', !평면인가);
+    바꿈.children[0].classList.toggle('on', !평면인가);
+    바꿈.children[1].classList.toggle('on', 평면인가);
+  };
+  맞추기();
+
+  box.prepend(감쌈);
   box.appendChild(넘김);
+
+  /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
+     붙은 뒤에 폭이 생기므로 한 박자 미루는 것은 맞는데, 그 한 박자를
+     `requestAnimationFrame` 으로 잡으면 **창이 뒤에 있을 때 아예 안
+     불립니다.** 크롬은 배경 탭에서 rAF 를 멈춥니다 — 실제로 지구본이
+     영영 안 그려졌습니다(칸은 360×240 인데 캔버스는 손도 안 댄 300×150).
+     타이머는 배경에서도 (느려질지언정) 옵니다.
+     폭이 아직 0 이면 globe.js 가 스스로 몇 번 더 옵니다. */
+  setTimeout(() => {
+    /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
+    공 = mountGlobe(공판, gone);
+    /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
+       한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
+       쓰는 `밀림` 과 같은 수법입니다. */
+    공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
+    바꿈.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      평면인가 = b === 바꿈.children[1];
+      뷰쓰기(평면인가 ? 'flat' : 'globe');
+      맞추기();
+      /* ⚠ **평면에서 돌아오면 다시 그려야 합니다.** 숨어 있는 동안 캔버스는
+         크기를 잃고(clientWidth 0), globe.js 는 「안 보인다」며 멈춰 있습니다. */
+      if (!평면인가) 공?.되살리기();
+    };
+  }, 0);
 
   /* ── 넘기면 지도가 그 대륙으로 갑니다(b500) ─────────────────────────
    * 사용자 제안. **첫 장이 「전체」니까 세계지도고, 아시아로 넘기면
@@ -1023,8 +931,18 @@ async function renderFoot(통){
    *   씁니다 — 여기서 본 자리와 눌러서 들어간 자리가 같아야 합니다. */
   const 줌 = mm.querySelector('.mmzoom');
   지도맞추기 = 이름 => {
-    if (!줌) return;
+    /* ── 지구본도 같이 돕니다(b542) ─────────────────────────────────
+       ⚠ **평면일 때만 확대하고 지구본일 때만 돌립니다** — 가 아니라 둘 다
+         합니다. 숨어 있는 쪽도 맞춰 놔야, 바꿈 단추를 눌렀을 때 방금 보던
+         대륙이 그대로 있습니다. 한쪽만 맞추면 바꾸는 순간 딴 데로 튑니다.
+       ⚠ 좌표는 `CONT_VIEW` 를 그대로 씁니다 — 평면의 x/y 를 경위도로
+         되돌리는 식은 globe.js 의 `점()` 과 같아야 합니다(1000×500 기준).
+       ⚠ 「전체」는 안 돌립니다. 대한민국이 한가운데인 처음 자리로 두는
+         것이 맞습니다 — 「전체」에 해당하는 각도가 따로 없습니다. */
     const v = CONT_VIEW[이름];
+    if (공 && v && 이름 !== '전체')
+      공.회전(v.cx / 1000 * 360 - 180, 90 - v.cy / 500 * 180);
+    if (!줌) return;
     if (!v || 이름 === '전체'){ 줌.style.transform = ''; return; }
     const k = Math.min(976 / v.w, 392 / (v.w * 0.62));
     /* 보이는 칸의 가운데(508, 212)에 그 대륙의 가운데를 갖다 놓습니다. */
@@ -1049,210 +967,6 @@ async function renderFoot(통){
   /* box 는 통입니다 — 이미 홈에 붙어 있습니다(b419). */
 }
 
-/* 별을 매긴 줄은 빠지고 그 자리에 다음 도시가 들어옵니다.
-   화면을 통째로 다시 그리지 않아야 매기던 흐름이 안 끊깁니다. */
-$('home').addEventListener('click', async e => {
-  /* ── 히어로에서 바로 매기기(b398) ──────────────────────────────────
-     퀴즈 줄과 **셈은 같고 뒤처리만 다릅니다.** 줄은 밀려나고 다음 줄이
-     들어오지만, 히어로는 자리가 하나뿐이라 **다음 도시로 갈아 끼웁니다.**
-
-     ⚠ **`loadHome()` 을 부르면 안 됩니다.** 홈을 통째로 다시 그리면 화면이
-       맨 위로 튀고 사진이 깜빡입니다. 여기만 갈아 끼웁니다.
-     ⚠ 매긴 뒤에는 `lastHomeSig` 를 비웁니다 — 안 그러면 다른 화면에 갔다
-       오면서 홈을 다시 그릴 때 "그릴 내용이 같다" 며 건너뛰어, 방금 매긴
-       도시가 히어로에 그대로 남습니다. */
-  const hs = e.target.closest('#hero .st');
-  if (hs){
-    const wrap = hs.closest('.stars'), hero = hs.closest('.hero');
-    const cityId = wrap.dataset.city;
-    if (hero.dataset.done) return;
-    hero.dataset.done = '1';
-    const v = starValue(hs, e.clientX);
-
-    /* ── 같은 자리를 다시 누르면 **취소**(b403) ────────────────────────
-       사용자 지적: "별 3개 누르고 다시 눌러서 취소하고 싶어도 안 된다".
-       그 전에는 다시 눌러도 같은 점수로 덮어써서 아무 일도 안 일어난
-       것처럼 보였습니다. 별점 UI 에서 같은 별을 또 누르는 것은 **끄겠다는
-       뜻**입니다 — 잘못 눌렀을 때 되돌릴 길이 이것밖에 없습니다.
-       ⚠ 지운 도시는 **주머니에 돌려놓습니다.** 안 그러면 취소해 놓고도
-         다시는 안 물어봅니다. */
-    const 지금 = wrap.dataset.v ? +wrap.dataset.v : null;
-    /* ⚠ **0 도 취소입니다(b501).** 별을 끌어 맨 왼쪽까지 가면 0 이
-       옵니다. 「같은 자리 다시」와 **같은 길**로 보냅니다 — 안 그러면
-       「★ 0 기록」 딱지가 붙고 줄이 매긴 것으로 표시됩니다. */
-    if (v === 0 || (지금 != null && Math.abs(지금 - v) < 1e-9)){
-      clearTimeout(hero._go);
-      wrap.dataset.v = '';
-      paintStars(wrap, null, true);
-      /* ⚠ **`saveRate(id, {stars:null})` 이 아니라 `dropRate` 입니다(b407).**
-         전자는 줄을 남기는데, 남은 줄은 "이미 물어본 곳"이라 새로고침하면
-         **다시는 안 물어봅니다.** 잘못 눌러 취소한 도시가 영영 사라집니다 —
-         화면 안에서는 아래 unshift 로 돌아오는데 새로고침하면 없어지는,
-         눈에 잘 안 띄는 종류였습니다. 자세한 것은 rate.js 의 removeRate. */
-      await dropRate(cityId);
-      if (heroCity && !quizPool.some(c => c.id === cityId)) quizPool.unshift(heroCity);
-      lastHomeSig = '';
-      hero.dataset.done = '';
-      return;
-    }
-
-    /* ⚠ 여기서 안내 줄을 「다시 누르면 취소돼요」로 바꿨었습니다(b403).
-       **뺐습니다(b404, 사용자 결정).** 별을 누른 뒤 글자가 바뀌면 눈이
-       거기로 끌려가는데, 정작 그 순간 볼 것은 채워진 별입니다. 취소는
-       **알면 되는 것이지 매번 알릴 것이 아닙니다.** */
-    wrap.dataset.v = String(v);
-    paintStars(wrap, v, true);
-    await saveRate(cityId, { stars: v }, true);
-    quizPool = quizPool.filter(c => c.id !== cityId);
-    /* ⚠ **여기서 `lastHomeSig` 를 비우면 안 됩니다(b405 에서 겪음).**
-       비우는 순간 다른 무엇이든 홈을 다시 그리면(saveRate 안쪽에서 다녀온
-       곳을 다시 받는 것만으로도) `buildHome` 이 **새 히어로를 뽑아 갈아
-       끼웁니다.** 그러면 되돌릴 1.5초가 통째로 사라져, 취소하려고 다시
-       누른 손가락이 **다음 도시에 별을 매깁니다.** 실제로 그렇게 됐고
-       재보고서야 알았습니다(dublin 을 취소하려다 losangeles 에 매김).
-       비우는 것은 **갈아끼우기 직전**으로 미룹니다 — 아래 타이머 안. */
-    /* 별이 찬 것을 보여주고 나서 넘깁니다. 바로 갈아 끼우면 "눌렸나?" 싶습니다. */
-    clearTimeout(hero._go);
-    hero.dataset.done = '';
-    hero._go = setTimeout(async () => {
-      await fillQuiz();
-      const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-        .map(r => r.dataset.cityopen));
-      const nx = quizPool.find(c => c.image_url && !shown.has(c.id));
-      if (!nx) return;                       /* 더 물어볼 곳이 없으면 그냥 둡니다 */
-      heroCity = nx;
-      /* ⚠ **`rateHeroHtml` 은 뿌리가 둘입니다**(히어로 + 단추 줄, b407).
-         `hero.outerHTML` 만 갈아끼우면 **옛 단추 줄이 그대로 남아** 화면에
-         줄이 둘이 됩니다. 새것이 들어오면서 id 가 겹치므로 **바꾸기 전에**
-         옛것을 잡아둬야 합니다 — 나중에 찾으면 새것이 잡힙니다. */
-      const 옛단추 = $('hero')?.nextElementSibling;
-      hero.outerHTML = rateHeroHtml(nx);
-      옛단추?.remove();
-      /* **되돌릴 창이 닫힌 지금** 비웁니다. 이제 홈을 다시 그려도
-         잃을 것이 없습니다(위 ⚠ 참고). */
-      lastHomeSig = '';
-    }, 1500);
-    return;
-  }
-  /* ── 히어로의 「안 가봤어요」·♡ (b407) ─────────────────────────────
-     ⚠ **둘이 남기는 흔적이 다릅니다.**
-       · 안 가봤어요 → 별점 없는 **줄을 남깁니다.** 남은 줄은 "이미 물어본
-         곳"이라 다시 안 묻습니다(fillQuiz). 그게 이 단추의 뜻입니다.
-       · ♡        → `want` 를 켭니다. 보관함에 쌓이고 역시 다시 안 묻습니다.
-     ⚠ 기다렸다 넘기지 않습니다 — 별점과 달리 **되돌려 볼 것이 없습니다.**
-       바로 다음 도시를 올립니다. */
-  const hb = e.target.closest('#home .trybar [data-rate]');
-  if (hb){
-    const bar = hb.closest('.trybar');
-    const cityId = bar.dataset.city;
-    if (bar.dataset.done) return;
-    bar.dataset.done = '1';
-    await saveRate(cityId, hb.dataset.rate === 'want' ? { want: true }
-                                                      : { stars: null }, true);
-    quizPool = quizPool.filter(c => c.id !== cityId);
-    await fillQuiz();
-    const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-      .map(r => r.dataset.cityopen));
-    const nx = quizPool.find(c => c.image_url && !shown.has(c.id));
-    const hero = $('hero');
-    if (nx && hero){
-      heroCity = nx;
-      const 옛단추 = $('hero')?.nextElementSibling;
-      hero.outerHTML = rateHeroHtml(nx);
-      옛단추?.remove();
-    } else bar.dataset.done = '';
-    lastHomeSig = '';
-    return;
-  }
-  const st = e.target.closest('#quizlist .st');
-  if (st){
-    const wrap = st.closest('.stars'), row = st.closest('.rrow');
-    const cityId = wrap.dataset.city;
-    const v = starValue(st, e.clientX);
-    if (row.dataset.done) return;          /* 밀려나는 중에 또 누르는 것을 막습니다 */
-    row.dataset.done = '1';
-
-    /* ── 같은 자리를 다시 누르면 **취소**(b403) ────────────────────────
-       히어로와 **같은 규칙**입니다. 한 화면 안에 별이 두 벌인데 한쪽만
-       취소가 되면 그게 더 나쁩니다. 자세한 이유는 위 히어로 쪽 주석. */
-    const 지금 = wrap.dataset.v ? +wrap.dataset.v : null;
-    /* ⚠ **0 도 취소입니다(b501).** 별을 끌어 맨 왼쪽까지 가면 0 이
-       옵니다. 「같은 자리 다시」와 **같은 길**로 보냅니다 — 안 그러면
-       「★ 0 기록」 딱지가 붙고 줄이 매긴 것으로 표시됩니다. */
-    if (v === 0 || (지금 != null && Math.abs(지금 - v) < 1e-9)){
-      clearTimeout(row._go);
-      wrap.dataset.v = '';
-      paintStars(wrap, null, true);
-      row.classList.remove('rated');
-      markRated(row, null);
-      /* 히어로와 같은 이유로 **줄을 지웁니다**(b407) — 위 히어로 주석 참고. */
-      await dropRate(cityId);
-      /* 주머니에서 뺐던 것을 돌려놓습니다 — 취소했는데 다시는 안 물어보면
-         안 됩니다. 줄은 그대로 두므로 목록에서 사라지지 않습니다. */
-      const c = (cities || []).find(x => x.id === cityId);
-      if (c && !quizPool.some(x => x.id === cityId)) quizPool.unshift(c);
-      lastHomeSig = '';
-      row.dataset.done = '';
-      return;
-    }
-
-    /* 별이 차는 것을 보여주고 밀어냅니다.
-       0.62초는 너무 짧았습니다 — 손이 미끄러져도 고칠 새가 없었습니다.
-       1.5초 두었다가 밀어냅니다. 그동안 다시 누르면 점수가 바뀌고,
-       **같은 자리를 누르면 취소됩니다**(위). */
-    wrap.dataset.v = String(v);
-    paintStars(wrap, v, true);
-    markRated(row, v);
-    row.classList.add('rated');
-    await saveRate(cityId, { stars: v }, true);
-    quizPool = quizPool.filter(c => c.id !== cityId);
-
-    clearTimeout(row._go);                 /* 고쳐 누르면 시계를 다시 겁니다 */
-    row.dataset.done = '';
-    row._go = setTimeout(() => {
-      row.dataset.done = '1';
-      row.classList.add('gone');
-      setTimeout(async () => {
-        row.remove();
-        await fillQuiz();
-        const shown = new Set([...document.querySelectorAll('#quizlist .rrow')]
-          .map(r => r.dataset.cityopen));
-        const nx = quizPool.find(c => !shown.has(c.id) && c.id !== heroCity?.id);
-        if (nx) $('quizlist').insertAdjacentHTML('beforeend', quizRow(nx));
-      }, 280);
-    }, 1500);
-    return;
-  }
-  const w = e.target.closest('#quizlist button[data-want]');
-  if (w){
-    const on = !myRates[w.dataset.want]?.want;
-    await saveRate(w.dataset.want, { want: on });
-    w.classList.toggle('on', on);
-    return;
-  }
-  /* 다섯 곳 다 모르는 곳일 수 있습니다. 통째로 갈아치웁니다.
-     예전에는 loadHome() 을 불러 홈 전체를 다시 그렸습니다. 그러면 히어로 사진과
-     다음 여행까지 새로 그려지면서 화면이 맨 위로 튀어 올랐습니다.
-     바꿔야 하는 것은 이 목록뿐이므로 여기만 갈아 끼웁니다 — 스크롤이 그대로 있습니다. */
-  const more = e.target.closest('#quizmore');
-  if (more){
-    more.disabled = true;
-    /* 지금 보이는 줄은 매긴 것까지 포함해 전부 물러납니다. */
-    const seen = new Set([...document.querySelectorAll('#quizlist .rrow')]
-      .map(r => r.dataset.cityopen));
-    quizPool = quizPool.filter(c => !seen.has(c.id));
-    await fillQuiz();
-    const list = quizPool.filter(c => c.id !== heroCity?.id).slice(0, QUIZ_ROWS);
-    $('quizlist').innerHTML = list.length
-      ? list.map(quizRow).join('')
-      : '<div class="empty">물어볼 도시를 다 봤어요.</div>';
-    more.disabled = false;
-    more.classList.toggle('hide', !list.length);
-    return;
-  }
-  const row = e.target.closest('#quizlist .rrow');
-  if (row) return openCity(row.dataset.cityopen);
-});
 
 /* ── 알림 ── 만드는 쪽은 아직 없습니다. 읽는 자리를 먼저 잡아둡니다. */
 /* ── 내 발자국 ──────────────────────────────────────────────────────
@@ -1266,17 +980,19 @@ export async function loadFootprint(){
   const { data, error } = await sb.rpc('my_footprint');
   if (error || !data) return;
   const f = data;
-  $('s_country').textContent = f.countries;
-  /* `f.cities`(다녀온 도시)를 쓰던 타일은 걷었습니다 — '매긴 곳'과 늘 같은
-     숫자로 보였습니다(index.html 의 그 자리에 왜 그런지 적어뒀습니다).
-     ⚠ 이제 **화면 어디서도 `f.cities` 를 안 씁니다.** 지도와 발자국은
-       `my_visited()` 를 직접 부릅니다(4487·4630줄). my_footprint 는 그대로
-       두는데, 지우려면 서버 함수를 고쳐야 하고 `countries` 는 여기서 씁니다. */
-  $('s_rated').textContent   = f.rated;
-  /* 한줄평 수는 my_footprint 에 없습니다. 개수만 따로 셉니다. */
+  /* ⚠⚠ **`#s_country`·`#s_rated`·`#s_prog`·`#s_cont` 는 없어졌습니다(b542).** ⚠⚠
+     프로필 머리의 숫자 줄과 진행 막대를 걷었습니다 — 기록 탭이 첫 화면에서
+     같은 것을 더 크게 말합니다. **여기서 `$('s_country').textContent` 를
+     그대로 두면 `null` 에 쓰다가 던지고, 그 아래 보관함 숫자가 통째로 안
+     채워집니다.** 없어진 칸에는 손을 안 댑니다.
+     ⚠ 되살리려거든 index.html 의 그 자리(주석으로 남겨뒀습니다)와 여기를
+       **같이** 고치십시오. */
+  /* 한줄평 수는 my_footprint 에 없습니다. 개수만 따로 셉니다.
+     ⚠ 칸이 프로필 머리에서 **보관함 줄로 내려갔습니다** — id 는 그대로라
+       여기는 안 바꿉니다. */
   sb.from('city_ratings').select('city_id', { count:'exact', head:true })
     .eq('user_id', ctx.me().id).not('comment', 'is', null)
-    .then(r => { $('s_comment').textContent = r.count ?? 0; });
+    .then(r => { const el = $('s_comment'); if (el) el.textContent = r.count ?? 0; });
   $('s_rated2').textContent  = f.rated;
   /* 맛집은 일정 줄에 매기므로 my_footprint 에 없습니다. 따로 셉니다.
      평가 화면에서 관광지도 매기게 했더니 그것까지 세어 18 로 나왔습니다.
@@ -1299,22 +1015,11 @@ export async function loadFootprint(){
       (r.data || []).filter(b => b.earned_at).length; })
     .catch(() => {});
 
-  const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
-  /* ⚠ 여기 `195개국 중 27개국 · 13.8%` 라고 적었는데, **바로 위 통계 줄이
-     이미 `27 국가` 를 크게 보여주고 있습니다**(b370). 같은 화면에 같은 수가
-     두 번이면 읽는 사람이 둘을 견주느라 한 번 멈춥니다. 여기서는 위가 안
-     말해주는 것만 — 전체 중 얼마나 왔는지 — 남깁니다. */
-  $('s_prog').innerHTML = f.countries
-    ? `${UN_COUNTRIES}개국 중 <b>${pct.toFixed(1)}%</b>
-       <div class="bar"><i style="width:${Math.max(pct, 1.5)}%"></i></div>`
-    : '다녀온 곳을 표시하면 여기에 쌓여요.';
-
-  /* ⚠ **대륙 칩을 뺐습니다(b448).** 「유럽 19 · 아시아 7 · 북아메리카 1」이
-     여기 있었는데, **분석 탭에 대륙별 진행도**가 생기면서 같은 것을 두 번
-     말하게 됐습니다. 게다가 거기는 분모까지 있어(19/44) 얼마나 남았는지도
-     보입니다 — 이쪽은 이길 수가 없습니다.
-     ⚠ `#s_cont` 자체는 index.html 에 남아 있습니다(빈 채로). 지우려거든
-       프로필 머리를 손볼 때 같이 하십시오. */
+  /* ⚠ 「195개국 중 14.4%」 막대와 대륙 칩이 여기서 그려졌습니다. 둘 다
+     b542 에 프로필 머리에서 걷었습니다 — 기록 탭의 대륙 넘김 카드가
+     대륙마다 분모까지 보여주므로 이쪽은 이길 수가 없습니다.
+     ⚠ `f.countries` 는 이제 이 함수에서 안 씁니다. `my_footprint` 는
+       `rated`·`wants` 때문에 그대로 부릅니다. */
 }
 
 

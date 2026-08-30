@@ -14,45 +14,30 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b541';
-import { sb } from './db.js?v=b541';
-import { cities, continentOf } from './cities.js?v=b541';
+import { $, esc } from './dom.js?v=b542';
+import { sb } from './db.js?v=b542';
+import { cities } from './cities.js?v=b542';
 /* personaBackTo 는 persona.js 것입니다 — 「분석에서 왔다」를 적어두면
    닫을 때 분석 탭으로 돌아옵니다(b453). */
-import { personaBackTo } from './persona.js?v=b541';
+import { personaBackTo } from './persona.js?v=b542';
 import { personaAxes, personaRank, PERSONA16,
-         AXIS_NAME, AXIS_WORD } from './card.js?v=b541';
-import { UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b541';
-/* 손가락으로 돌려 보는 지구본(b519) — 발자국 카드의 지도가 이것입니다. */
-import { mountGlobe } from './globe.js?v=b541';
+         AXIS_NAME, AXIS_WORD } from './card.js?v=b542';
+/* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
+   화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
+import { funRows, mapBackTo } from './map.js?v=b542';
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b541';
+import { similarPicks } from './rec.js?v=b542';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b541';
-import { pickCity } from './citysearch.js?v=b541';
+import { openNew } from './newtrip.js?v=b542';
+import { pickCity } from './citysearch.js?v=b542';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
 
 const 문턱 = 5;
-
-/* ── 지구본이냐 평면이냐(b541) ────────────────────────────────────────
- * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
- * 세어 보려고 평면을 고른 사람이 올 때마다 다시 눌러야 합니다.
- * ⚠ 기기마다 따로입니다(localStorage). 계정에 매달지 않습니다 — 폰에서
- *   지구본을 돌려 보는 사람이 노트북에서도 그러란 법이 없고, 이건
- *   **취향이 아니라 화면 크기** 이야기에 가깝습니다.
- * ⚠ 사파리 비공개 모드에서 localStorage 가 던집니다. 감싸 둡니다. */
-const 뷰열쇠 = 't2:mapview';
-function 뷰읽기(){
-  try { return localStorage.getItem(뷰열쇠) === 'flat' ? 'flat' : 'globe'; }
-  catch { return 'globe'; }
-}
-function 뷰쓰기(v){ try { localStorage.setItem(뷰열쇠, v); } catch {} }
-
 
 
 /* ── 성향·지도를 여는 길(b453) ────────────────────────────────────────
@@ -68,11 +53,9 @@ function 성향열기(){
   ctx.showApp('set', 'anal');   /* 하단바는 분석에 남깁니다 */
   $('openpersona')?.click();
 }
-function 지도열기(){
-  mapBackTo('anal');
-  ctx.showApp('set', 'anal');
-  $('openmap')?.click();
-}
+/* ⚠ **`지도열기` 를 걷었습니다(b542).** 발자국 카드가 기록 탭으로 가면서
+   이 탭에서 지도를 여는 자리가 없어졌습니다. 다시 필요하면 home.js 에
+   같은 것이 있습니다 — 두 벌로 만들지 마십시오. */
 
 /* ── 추천 도시로 바로 여행 만들기(b463) ──────────────────────────────
  * ⚠ **`#newcard` 는 탭 안에 있지 않습니다.** 화면 위에 얹히는 한 장이라
@@ -109,16 +92,17 @@ export async function loadAnal(){
      ⚠ **한 번에 다 받습니다(b461).** 「다음 여행」이 씨앗으로 want 도 씁니다 —
        별점만 쓰면 아직 안 가본 결이 통째로 빠집니다(rec.js). created_at 은
        성향 변화가 씁니다. 카드가 넷이어도 왕복은 하나입니다. */
-  const [{ data: f }, 평가] = await Promise.all([
-    sb.rpc('my_footprint'),
-    sb.from('city_ratings').select('city_id,stars,want,created_at')
-      .eq('user_id', ctx.me().id),
-  ]);
+  /* ⚠ **`my_footprint` 를 안 부릅니다(b542).** 그것이 주던 「28개국 ·
+     14.4%」는 발자국 카드의 것이었고, 카드는 기록 탭으로 갔습니다.
+     여기 남은 셋(성향 · 진기록 · 다음 여행)은 전부 평가 줄로 셉니다.
+     왕복이 둘에서 하나로 줄었습니다. */
+  const 평가 = await sb.from('city_ratings').select('city_id,stars,want,created_at')
+    .eq('user_id', ctx.me().id);
 
   const 전부   = 평가?.data || [];
   const 매긴것 = 전부.filter(r => r.stars != null);
-  const 나라   = f?.countries ?? 0;
-  const pct    = Math.min(100, 나라 / UN_COUNTRIES * 100);
+  /* 도시 id → 별점. 진기록이 씁니다 — 지도 화면이 쓰는 것과 같은 모양입니다. */
+  const 별점   = Object.fromEntries(매긴것.map(r => [r.city_id, r.stars]));
   box.innerHTML = '';
 
   /* ══ ① 내 여행 성향 ══════════════════════════════════════════════════
@@ -160,7 +144,7 @@ export async function loadAnal(){
     머리.innerHTML = `<div class="pmeta"><div class="pcode">${esc(ax.code)}</div>
       <div class="pname">${esc(유형.n)}</div>
       <span class="prank">${esc(personaRank(나라수))}</span></div>
-      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b541"
+      <div class="part"><img src="./persona/${esc(ax.code)}.png?v=b542"
         alt="" onerror="this.closest('.part').remove()"></div>`;
     머리.onclick = 성향열기;
     성향.appendChild(머리);
@@ -215,186 +199,51 @@ export async function loadAnal(){
   }
   box.appendChild(성향);
 
-  /* ══ ② 내 발자국 ═══════════════════════════════════════════════════
-     ⚠ 홈에도 지도가 있습니다(사용자 결정 — 중복을 알고 둡니다).
-       been 도 홈에 지도가 있고 Visualize 탭에 더 많은 시각화가 있습니다. */
-  const 발 = document.createElement('div');
-  발.className = 'card quiet';
-  발.innerHTML = `<h2><span class="grow">발자국</span></h2>
-    <div class="memo" style="margin:-4px 0 10px">${esc(나라
-      ? `${UN_COUNTRIES}개국 중 ${나라}개국 · ${pct.toFixed(1)}%`
-      : '별점을 매기면 여기에 쌓여요')}</div>`;
-
-  /* 「자세히 보기」는 성향 카드와 **같은 자리**입니다(b503) — 제목 줄
-     오른쪽. 카드마다 단추 자리가 다르면 그때그때 찾아야 합니다.
-     가는 곳은 나라 목록(#ctrypane)이고, 아래 기록도 거기 있습니다. */
-  const 발더 = document.createElement('button');
-  발더.className = 'h2go';
-  발더.textContent = '자세히 보기 ›';
-  발더.onclick = 지도열기;
-  발.querySelector('h2').appendChild(발더);
-
-  const gone = new Set((cities || [])
-    .filter(c => 매긴것.some(r => r.city_id === c.id)).map(c => c.country));
-
-  /* ── 여기는 지구본입니다(b519) ──────────────────────────────────────
-   * 사용자 제안. 처음엔 세계지도 화면에 토글로 넣었는데(b516), 거기는
-   * 두 걸음 들어가야 하는 자리라 「돌려 보는 재미」가 안 살았습니다.
-   * 발자국 카드가 제자리입니다 — 이 카드가 곧 「내가 어디를 갔나」입니다.
+  /* ══ ② 진기록 ══════════════════════════════════════════════════════
+   * **발자국 카드는 기록 탭으로 통째로 갔습니다(b542).** 지구본·대륙
+   * 배지·「195개국 중 28개국」이 전부 그쪽입니다 — 앱을 열면 첫 화면이
+   * 그것입니다. 여기 또 두면 같은 지도가 두 탭에 섭니다.
    *
-   * ⚠ **여기 지도는 원래 장식이었습니다.** 눌러서 지도 화면을 여는 것
-   *   말고는 하는 일이 없습니다 — 홈 미니맵과 달리 대륙 확대(CONT_VIEW)에
-   *   묶여 있지 않아서, 지구본으로 바꿔도 잃는 것이 없습니다.
-   *   ⚠ **홈 것은 바꾸지 마십시오.** 거기는 아래 대륙 카드를 넘기면 지도가
-   *     그 대륙으로 확대됩니다(b500·b511). 평면 좌표가 있어야 합니다.
-   * ⚠ 절반은 안 보입니다. 그 대신 바로 밑 **대륙 배지 여섯**이 전체를
-   *   숫자로 말하고, 「자세히 보기 ›」가 펼친 평면 지도로 갑니다.
-   * ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
-   *   한 번은 건너뜁니다(globe.js 가 `민적있나` 로 알려줍니다). */
-  /* ── 지구 / 평면 (b541, 사용자 요청) ────────────────────────────────
-   * ⚠ **둘은 다른 일을 합니다.** 지구본은 언제나 절반이 뒤통수라
-   *   「내가 어디를 다녔나」를 **세지 못합니다.** 평면은 그게 됩니다.
-   *   하나를 고르라는 것이 아니라 **두 가지 질문**이라 둘 다 둡니다.
-   * ⚠ 평면 쪽은 홈 미니맵과 **같은 좌표·같은 색**입니다(app.css 의
-   *   `.flatbox`가 `.minimap` 과 같은 규칙). 여기서 따로 그리면 같은
-   *   지도가 두 벌이 되어 언젠가 갈라집니다.
-   * ⚠ 고른 쪽은 기억합니다 — 기기마다 따로(`t2:mapview`).
-   * ⚠ 지구본은 **평면을 보는 동안 멈춥니다.** 따로 알려줄 필요가 없습니다:
-   *   `display:none` 이 되면 IntersectionObserver 가 「안 보인다」고
-   *   하고 globe.js 가 스스로 멈춥니다. */
-  const 감쌈 = document.createElement('div');
-  감쌈.className = 'gwrap';
+   * 대신 **지도 화면 두 걸음 안에 갇혀 있던 것**을 여기로 꺼냅니다.
+   * ⚠⚠ **이 자리는 세 번째입니다.** b457 에 여기서 빼서 지도 화면으로
+   *   보냈고(「분석 탭 첫 화면을 짧게」), b503 에 그 결정을 지도 쪽에
+   *   적어두면서 「또 안 보이면 다음 자리는 나라 목록」이라고 남겼습니다.
+   *   이번에는 **분석 탭이 성향만 맡게 되면서 자리가 비었습니다.**
+   *   「가장 먼 두 도시」는 지도의 부록이 아니라 분석입니다.
+   * ⚠ **이름이 「기록」이 아니라 「진기록」입니다.** 하단바의 첫 탭 이름이
+   *   「기록」이 되었습니다 — 여기까지 「기록」이면 둘이 헷갈립니다.
+   *   이건 일기가 아니라 **최고 기록**입니다.
+   * ⚠ **세는 것은 map.js 의 `funRows` 하나입니다.** 여기서 다시 세면
+   *   같은 물음에 두 답이 나옵니다.
+   * ⚠ 칸은 **내림**입니다. 별점이 0.5 단위라 4.5 는 ★4 칸입니다.
+   *   반올림하면 아래 「별 다섯을 준 곳」(정확히 5.0)과 어긋납니다. */
+  const 내도시 = (cities || []).filter(c => 별점[c.id] != null);
+  if (내도시.length){
+    const 진 = document.createElement('div');
+    진.className = 'card quiet';
+    const 통계 = [0, 0, 0, 0, 0];
+    내도시.forEach(c => {
+      const k = Math.floor(Number(별점[c.id]));
+      if (k >= 1 && k <= 5) 통계[k - 1]++;
+    });
+    const 합 = 통계.reduce((x, y) => x + y, 0) || 1;
+    /* ★5 초록에서 ★1 붉은색으로. 지도 화면에 있던 값 그대로입니다. */
+    const 색 = ['#C4626B', '#D08A5A', '#C9A227', '#7FA05A', '#4C8C4A'];
+    진.innerHTML = `<h2>진기록</h2>
+      <div class="stackwrap">
+        <div class="stack">${[5, 4, 3, 2, 1].map(k => 통계[k - 1]
+          ? `<i style="width:${(통계[k - 1] / 합 * 100).toFixed(1)}%;
+               background:${색[k - 1]}" title="★${k} ${통계[k - 1]}곳"></i>` : '').join('')}</div>
+        <div class="stackleg">${[5, 4, 3, 2, 1].map(k =>
+          `<span${통계[k - 1] ? '' : ' class="off"'}><b style="background:${
+            색[k - 1]}"></b>★${k} ${통계[k - 1]}곳</span>`).join('')}</div>
+      </div>
+      ${funRows(내도시, 별점).map(([제목, 값]) =>
+        `<div class="row"><span class="label">${esc(제목)}</span>
+           <span class="val">${esc(값)}</span></div>`).join('')}`;
+    box.appendChild(진);
+  }
 
-  const 공칸 = document.createElement('div');
-  공칸.className = 'globebox';
-  const 공판 = document.createElement('canvas');
-  공판.setAttribute('aria-label', '지구본');
-  공칸.appendChild(공판);
-  감쌈.appendChild(공칸);
-
-  /* 평면. 좌표는 `#worldland` 에 이미 있습니다(홈 미니맵과 같은 viewBox). */
-  const 평칸 = document.createElement('div');
-  평칸.className = 'flatbox';
-  평칸.innerHTML = `<svg viewBox="20 16 976 392"
-    preserveAspectRatio="xMidYMid meet">${$('worldland')?.innerHTML || ''}</svg>`;
-  평칸.querySelectorAll('path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  평칸.onclick = 지도열기;
-  감쌈.appendChild(평칸);
-
-  const 바꿈 = document.createElement('div');
-  바꿈.className = 'gswitch';
-  바꿈.innerHTML = '<button type="button">지구</button><button type="button">평면</button>';
-  감쌈.appendChild(바꿈);
-  발.appendChild(감쌈);
-
-  /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
-  let 평면인가 = 뷰읽기() === 'flat';
-  const 맞추기 = () => {
-    공칸.classList.toggle('hide', 평면인가);
-    평칸.classList.toggle('hide', !평면인가);
-    바꿈.children[0].classList.toggle('on', !평면인가);
-    바꿈.children[1].classList.toggle('on', 평면인가);
-  };
-  맞추기();
-  /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
-     붙은 뒤에 폭이 생기므로 한 박자 미루는 것은 맞는데, 그 한 박자를
-     `requestAnimationFrame` 으로 잡으면 **창이 뒤에 있을 때 아예 안
-     불립니다.** 크롬은 배경 탭에서 rAF 를 멈춥니다 — 실제로 지구본이
-     영영 안 그려졌습니다(칸은 360×240 인데 캔버스는 손도 안 댄 300×150,
-     `공판.onclick` 도 null 이었습니다. 즉 콜백 자체가 안 왔습니다).
-     타이머는 배경에서도 (느려질지언정) 옵니다.
-     폭이 아직 0 이면 globe.js 가 스스로 몇 번 더 옵니다. */
-  setTimeout(() => {
-    /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
-    const 공 = mountGlobe(공판, gone);
-    공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
-    /* ⚠ **평면에서 돌아오면 다시 그려야 합니다.** 숨어 있는 동안 캔버스는
-       크기를 잃고(clientWidth 0), globe.js 는 「안 보인다」며 멈춰 있습니다.
-       `되살리기` 가 크기를 다시 재고 회전을 잇습니다. */
-    바꿈.onclick = e => {
-      const b = e.target.closest('button'); if (!b) return;
-      평면인가 = b === 바꿈.children[1];
-      뷰쓰기(평면인가 ? 'flat' : 'globe');
-      맞추기();
-      if (!평면인가) 공?.되살리기();
-    };
-  }, 0);
-
-  /* ── 대륙별 ── 막대 여섯 줄을 칩 한 뭉치로(b464) ───────────────────
-     ⚠ **바로 위에 지도가 있습니다.** 어디를 칠했는지는 지도가 이미
-       말하고 있어서, 막대 여섯 줄은 같은 말을 한 번 더 하면서 120px 을
-       썼습니다. 남은 것은 **숫자**이고 그건 칩으로 충분합니다.
-     ⚠ 한 곳도 안 간 대륙은 흐리게 — 「여기가 비었다」가 다음 여행을
-       만듭니다. 아예 빼면 여섯 중 몇인지가 안 보입니다. */
-  const 대륙셈 = {};
-  (cities || []).forEach(c => {
-    if (!gone.has(c.country)) return;
-    const k = continentOf[c.country]; if (!k) return;
-    (대륙셈[k] = 대륙셈[k] || new Set()).add(c.country);
-  });
-  /* ── 대륙 배지 ── 칩을 배지로(b499) ────────────────────────────────
-   * 전에는 글자 알약 여섯이었습니다. **여섯이 다 같아 보여서** 숫자를
-   * 하나씩 읽어야 어디가 빈 대륙인지 알 수 있었습니다. 이제 그 대륙의
-   * 모양이 배지에 들어가고, **다녀온 나라가 칠해집니다.**
-   *
-   * ⚠⚠ **바로 위에 지도가 있습니다 — 갈라 놓아야 합니다.** ⚠⚠
-   *   b496 에서 홈의 좌우 넘김 카드에 같은 것을 넣었다가 **지도 위에
-   *   지도**가 되어 걷었습니다(b497). 그때는 큰 지도 바로 밑에 붙였던
-   *   것이 문제였습니다. 여기서는 `.subsec`(위 구분선 + 섹션 제목)으로
-   *   **다른 이야기**임을 먼저 보여주고 그 안에 놓습니다 — 발자취 앱이
-   *   「지역 배지」를 그렇게 떼어 놓습니다.
-   * ⚠ **새 자산이 없습니다.** 좌표는 `#worldland` 에 이미 있고, 대륙별로
-   *   어디를 자를지는 map.js 의 `CONT_VIEW` 가 압니다(큰 지도의 대륙
-   *   단추가 쓰는 그 표). 같은 표를 써야 배지와 지도가 같은 모양입니다.
-   * ⚠ **`slice` 입니다. `meet` 이 아닙니다.** `meet` 은 viewBox 밖을 안
-   *   가려서 남는 여백에 나머지 세계가 비칩니다 — b496 에서 유럽 배지에
-   *   북아메리카가 같이 나왔습니다.
-   * ⚠⚠ **비율은 0.9 — 정사각에 가깝습니다.** 큰 지도 비율(2.58)로 잘랐다가
-   *   **키 큰 대륙의 위아래가 잘렸습니다** — 아프리카 배지가 통째로 회색으로
-   *   나왔습니다(이집트가 위, 남아공이 아래라 둘 다 창 밖). 남아메리카도
-   *   반만 보였고 뉴질랜드는 사라졌습니다. 셋을 나란히 그려 골랐습니다
-   *   (2.58 · 0.75 · 0.9). CONT_VIEW 의 `w` 는 그대로 쓰고 **높이만** 넉넉히
-   *   잡습니다 — 가로 가운데는 그 표가 이미 잘 잡아 두었습니다. */
-  const 땅 = $('worldland')?.innerHTML || '';
-  const 비율 = 0.9;
-  const 대륙판 = document.createElement('div');
-  대륙판.className = 'subsec';
-  대륙판.innerHTML = '<h3 class="secttl">대륙</h3>';
-  const 대륙 = document.createElement('div');
-  대륙.className = 'contbadges';
-  대륙.innerHTML = CONT.map(([이름, 전체]) => {
-    const n = 대륙셈[이름]?.size || 0;
-    const v = CONT_VIEW[이름];
-    const box = v
-      ? `${(v.cx - v.w / 2).toFixed(1)} ${(v.cy - v.w * 비율 / 2).toFixed(1)}` +
-        ` ${v.w} ${(v.w * 비율).toFixed(1)}`
-      : '20 16 976 392';
-    return `<div class="cbadge${n ? '' : ' off'}">
-      <div class="cbmap" aria-hidden="true">${땅
-        ? `<svg viewBox="${box}" preserveAspectRatio="xMidYMid slice">${땅}</svg>` : ''}</div>
-      <div class="cbtext"><b>${esc(이름)}</b>
-        <span><i>${n}</i> / ${전체}${n ? '' : ' · 아직'}</span></div>
-    </div>`;
-  }).join('');
-  /* 지도와 **같은 `gone` 으로** 칠합니다 — 따로 세면 둘이 다른 말을 합니다. */
-  대륙.querySelectorAll('.cbmap path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  대륙판.appendChild(대륙);
-  발.appendChild(대륙판);
-
-  /* ⚠ **기록도 체크 카드도 여기 없습니다(b503 · b505 · b507).**
-     ① 기록 — 별점 분포와 「가장 많이 간 나라 · 최북단 …」 줄은 제목 줄의
-        「자세히 보기 ›」가 여는 세계지도 화면(#mappane 의 #m_rec, map.js 가
-        채웁니다)으로 옮겼습니다.
-     ② 체크 카드 — 「유럽 24곳 체크」를 만들어 보내는 자리가 여기 하나였는데
-        아예 없앴습니다(b507). 사용자 결정 — 공유하는 길이 이미 여럿입니다
-        (성향 카드 · 궁합 링크 · 영수증 · 나라 목록). 받는 쪽(?check=eu)과
-        그리는 코드도 같이 걷었습니다: check.js · card.js 의 drawCheck ·
-        checkList · #checkbox · .ckgrid 무리. 옛 링크로 들어와도 맛보기
-        평가가 그대로 떠서 빈 화면은 안 납니다.
-     발자국 카드는 **어디를 갔나**(지도 · 대륙)까지만 맡습니다. */
-  box.appendChild(발);
 
   /* ══ ③ 다음 여행 ═══════════════════════════════════════════════════
      「다음에 가볼 만한 곳」과 「가보고 싶어요」를 합쳤습니다(b464).
