@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b556';
-import { sb } from './db.js?v=b556';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b556';
-import { hm, todayYmd } from './calc.js?v=b556';
-import { starHtml, paintStars } from './stars.js?v=b556';
+import { $, esc } from './dom.js?v=b557';
+import { sb } from './db.js?v=b557';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b557';
+import { hm, todayYmd } from './calc.js?v=b557';
+import { starHtml, paintStars } from './stars.js?v=b557';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b556';
-import { cities, countryName } from './cities.js?v=b556';
-import { myRates, cityStat, visited } from './rate.js?v=b556';
-import { plans } from './trip.js?v=b556';
-import { loadCities } from './citysearch.js?v=b556';
+import { starValue } from './rateui.js?v=b557';
+import { cities, countryName } from './cities.js?v=b557';
+import { myRates, cityStat, visited } from './rate.js?v=b557';
+import { plans } from './trip.js?v=b557';
+import { loadCities } from './citysearch.js?v=b557';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b556';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b556';
+import { openCity } from './city.js?v=b557';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b557';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b556';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b557';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b556';
+import { drawReport } from './report.js?v=b557';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b556';
+import { PERSONA_BG } from './card.js?v=b557';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b556';
+import { checkPersonaShift } from './pshift.js?v=b557';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b556';
+import { diaryBackTo } from './diary.js?v=b557';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b556';
+import { mountGlobe } from './globe.js?v=b557';
 
 /* ══ 나라 카드 ══ 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ═══════
  * 사용자 요청. 「지구본을 돌리다 대한민국을 누르면 아래에 카드가 뜨고,
@@ -1050,7 +1050,12 @@ async function renderFoot(통){
 
   const 바꿈 = document.createElement('div');
   바꿈.className = 'gswitch';
-  바꿈.innerHTML = '<button type="button">지구</button><button type="button">평면</button>';
+  /* ⚠ **「지구」가 아니라 「3D」입니다(b557, 사용자 결정).** 「지구 / 평면」은
+     둘 다 «무엇을 보여주나»를 말해서 짝이 안 맞았습니다 — 평면 지도도
+     지구입니다. 「3D / 평면」은 **어떻게 보여주나**로 짝이 맞습니다.
+   ⚠ 저장하는 값(`t2:mapview`)은 그대로 globe/flat 입니다. 글자만
+     바뀐 것이라 이미 골라둔 사람의 설정이 안 날아갑니다. */
+  바꿈.innerHTML = '<button type="button">3D</button><button type="button">평면</button>';
   감쌈.appendChild(바꿈);
 
   /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
