@@ -3240,3 +3240,41 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
   letter-spacing:0; word-break:keep-all;
 }
 #cv_journal:focus{ outline:none; border-color:var(--primary); background:var(--canvas); }
+
+/* ── 일기장 ── 한 장씩 넘깁니다(b538) ──────────────────────────────────
+ * 넘기기는 브라우저 몫입니다(scroll-snap) — 홈의 대륙 카드와 같은 수법.
+ * ⚠ **줄기는 가로, 장은 세로.** 축이 갈려 있어야 둘 다 브라우저가 알아서
+ *   합니다 — 한 칸에 두 축을 다 맡기면 서로 잡아먹습니다.
+ * ⚠ 카드 안쪽 여백을 넘겨서 굴립니다. 안 그러면 끝 장이 모서리에 딱
+ *   붙어서 넘길 자리가 안 보입니다(.days.oneline 과 같은 수법). */
+.dgrow{
+  display:flex; overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory; scroll-behavior:smooth;
+  scrollbar-width:none; -ms-overflow-style:none;
+  margin:0 calc(-1 * var(--s-md)); padding:0 var(--s-md); gap:12px;
+}
+.dgrow::-webkit-scrollbar{ display:none; }
+.dgpage{
+  flex:0 0 100%; scroll-snap-align:center; min-width:0;
+  /* 일기가 길면 이 안에서 굴립니다. 한 장의 키를 정해두지 않으면 제일
+     긴 일기가 나머지 장을 다 늘려서, 짧은 일기가 허공에 뜹니다. */
+  height:min(58vh, 460px); overflow-y:auto; overscroll-behavior:contain;
+  padding:16px; border-radius:var(--r-lg);
+  background:var(--pearl); border:1px solid var(--divider-soft);
+}
+.dghead{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+         padding-bottom:10px; border-bottom:1px solid var(--divider-soft); }
+.dghead b{ font-size:var(--f-2xl); font-weight:700; }
+.dghead > span:first-of-type{ color:var(--ink-48); font-size:var(--f-sm); }
+.dghead .stars{ margin-left:auto; }
+/* 한줄평은 일기 위에 인용처럼. 공개된 말과 나만 보는 말을 눈으로 갈라둡니다. */
+.dgone{ margin:12px 0 0; padding-left:10px; border-left:2px solid var(--hairline);
+        color:var(--ink-48); font-size:var(--f-md); }
+.dgtext{
+  margin:14px 0 0; white-space:pre-wrap; word-break:keep-all;
+  font-size:var(--f-lg); line-height:1.75; color:var(--ink);
+}
+.dgfoot{ display:flex; align-items:center; gap:10px; margin-top:18px;
+         padding-top:12px; border-top:1px solid var(--divider-soft); }
+.dgfoot span{ color:var(--ink-48); font-size:var(--f-sm); }
+.dgfoot button{ margin-left:auto; }
