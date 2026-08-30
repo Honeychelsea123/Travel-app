@@ -3234,6 +3234,16 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   길어지는데, 이 카드는 앱을 열면 제일 먼저 보이는 것이라 한 줄이
  *   아깝습니다. */
 .gwrap{ position:relative; }
+/* ── 「자세히」 ── 지도 화면으로 가는 이름표(b554) ─────────────────────
+ * 지구/평면 단추 맞은편(왼쪽 위)입니다. 지구본 위에 얹히므로 **글자만**
+ * 둡니다 — 여기에 배경이나 테두리를 주면 단추가 둘이 되어 어느 쪽이
+ * 지도를 여는 것인지 헷갈립니다.
+ * ⚠ 누를 자리는 44px 을 채웁니다(패딩). 글자는 작아도 손가락은 큽니다. */
+.gmore{ position:absolute; left:2px; top:2px; z-index:2;
+        appearance:none; border:0; background:none; cursor:pointer;
+        padding:8px 10px; font-size:var(--f-sm); font-weight:600;
+        color:var(--primary); }
+.gmore:active{ opacity:.55; }
 .gswitch{ position:absolute; right:2px; top:2px; z-index:2;
           display:flex; padding:2px; gap:2px; border-radius:999px;
           background:var(--panel); border:1px solid var(--line);

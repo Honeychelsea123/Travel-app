@@ -33,35 +33,38 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b553';
-import { sb } from './db.js?v=b553';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b553';
-import { hm, todayYmd } from './calc.js?v=b553';
-import { starHtml, paintStars } from './stars.js?v=b553';
+import { $, esc } from './dom.js?v=b554';
+import { sb } from './db.js?v=b554';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b554';
+import { hm, todayYmd } from './calc.js?v=b554';
+import { starHtml, paintStars } from './stars.js?v=b554';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b553';
-import { cities, countryName } from './cities.js?v=b553';
-import { myRates, visited } from './rate.js?v=b553';
-import { plans } from './trip.js?v=b553';
-import { loadCities } from './citysearch.js?v=b553';
-import { saveRate, refreshVisited } from './rating.js?v=b553';
+import { starValue } from './rateui.js?v=b554';
+import { cities, countryName } from './cities.js?v=b554';
+import { myRates, visited } from './rate.js?v=b554';
+import { plans } from './trip.js?v=b554';
+import { loadCities } from './citysearch.js?v=b554';
+import { saveRate, refreshVisited } from './rating.js?v=b554';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b553';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b554';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b553';
+import { drawReport } from './report.js?v=b554';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b553';
+import { PERSONA_BG } from './card.js?v=b554';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b553';
+import { checkPersonaShift } from './pshift.js?v=b554';
+/* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
+   프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
+import { diaryBackTo } from './diary.js?v=b554';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b553';
+import { mountGlobe } from './globe.js?v=b554';
 
 /* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
  * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
@@ -411,6 +414,10 @@ async function buildHome(){
   if (서랍){
     서랍.className = 'fpshelf';
     통.appendChild(서랍);
+    /* ⚠ 여는 절차는 감춰둔 `#opendiary` 하나입니다 — 여기서 또 적으면
+       두 벌이 됩니다. 「기록 탭에서 왔다」만 먼저 적어 둡니다. */
+    const 일기줄 = 서랍.querySelector('#diaryrow');
+    if (일기줄) 일기줄.onclick = () => { diaryBackTo('home'); $('opendiary')?.click(); };
   }
 
   /* ⚠⚠ **「새 여행」 띠를 여기서 걷었습니다(b542). 네 번째입니다.** ⚠⚠
@@ -909,7 +916,8 @@ async function renderFoot(통){
       줄기.scrollBy({ left: dx < 0 ? 줄기.clientWidth : -줄기.clientWidth,
                       behavior:'smooth' });
     }, { passive:true });
-    mm.onclick = () => { if (밀림){ 밀림 = false; return; } 지도열기(); };
+    /* ⚠ 평면도 눌러서 열지 않습니다(b554) — 위 「자세히」 하나입니다.
+       `밀림` 은 옆으로 밀어 대륙을 넘길 때 여전히 씁니다. */
   }
   /* ── 지구 / 평면 (b542) ─────────────────────────────────────────────
    * ⚠ **둘은 다른 일을 합니다.** 지구본은 언제나 절반이 뒤통수라
@@ -932,6 +940,22 @@ async function renderFoot(통){
   공칸.appendChild(공판);
   감쌈.appendChild(공칸);
   감쌈.appendChild(mm);
+
+  /* ── 「자세히」 ── 지도 화면으로 가는 «이름표»(b554, 사용자 요청) ──────
+   * ⚠ 전에는 **지구본을 누르면** 지도 화면이 열렸습니다. 그런데 이 지구본은
+   *   돌리는 물건이라, 누르는 것과 돌리는 것이 한 자리에서 다퉜습니다 —
+   *   민 뒤의 누름을 건너뛰는 장치(`민적있나`)가 그 때문에 있었습니다.
+   *   무엇보다 **눌러서 어디로 가는지 아무 데도 안 적혀 있었습니다.**
+   * ⚠ 이제 지구본은 돌리기만 합니다. 가는 길은 이 글자 하나입니다 —
+   *   왼쪽 위, 지구/평면 단추 맞은편.
+   * ⚠ b545·b550 에 「지도 ›」 줄과 숫자 타일을 걷으면서 이 탭에서 지도로
+   *   걸어 들어가는 자리가 하나도 없어졌던 것을 여기서 되찾습니다. */
+  const 자세히 = document.createElement('button');
+  자세히.className = 'gmore';
+  자세히.type = 'button';
+  자세히.textContent = '자세히 ›';
+  자세히.onclick = 지도열기;
+  감쌈.appendChild(자세히);
 
   const 바꿈 = document.createElement('div');
   바꿈.className = 'gswitch';
@@ -964,7 +988,10 @@ async function renderFoot(통){
     /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
        한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
        쓰는 `밀림` 과 같은 수법입니다. */
-    공판.onclick = () => { if (!공?.민적있나()) 지도열기(); };
+    /* ⚠ **지구본을 눌러도 지도가 안 열립니다(b554).** 위 「자세히」가
+       그 일을 맡습니다. 그래서 `민적있나`(민 뒤의 누름 한 번 건너뛰기)도
+       여기서는 쓸 일이 없어졌습니다 — globe.js 에는 그대로 둡니다.
+       평면 쪽(`mm.onclick`)도 같은 이유로 걷었습니다. */
     바꿈.onclick = e => {
       const b = e.target.closest('button'); if (!b) return;
       평면인가 = b === 바꿈.children[1];
@@ -1076,6 +1103,12 @@ export async function loadFootprint(){
   sb.from('city_ratings').select('city_id', { count:'exact', head:true })
     .eq('user_id', ctx.me().id).not('comment', 'is', null)
     .then(r => { const el = $('s_comment'); if (el) el.textContent = r.count ?? 0; });
+  /* 일기를 쓴 도시 수(b554). 한줄평과 **다른 칸**입니다 — 한줄평은 남에게
+     보이고 일기는 나만 봅니다(db/071 의 journal). */
+  sb.from('city_ratings').select('city_id', { count:'exact', head:true })
+    .eq('user_id', ctx.me().id).not('journal', 'is', null)
+    .then(r => { const el = $('s_diary'); if (el) el.textContent = r.count ?? 0; })
+    .catch(() => {});
   $('s_rated2').textContent  = f.rated;
   /* ⚠ **맛집 · 관광지 · 후기 수를 안 셉니다(b549).** 보관함에서 그 세 줄을
      걷었습니다(index.html 의 그 자리에 왜 그런지 적어뒀습니다). 칸이

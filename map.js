@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b553';
-import { openCity } from './city.js?v=b553';
-import { distKm } from './calc.js?v=b553';
-import { sb } from './db.js?v=b553';
-import { cities, countryName, continentOf } from './cities.js?v=b553';
-import { PERSONA_ICON, shareCard } from './card.js?v=b553';
+         coverDeck } from './dom.js?v=b554';
+import { openCity } from './city.js?v=b554';
+import { distKm } from './calc.js?v=b554';
+import { sb } from './db.js?v=b554';
+import { cities, countryName, continentOf } from './cities.js?v=b554';
+import { PERSONA_ICON, shareCard } from './card.js?v=b554';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -692,7 +692,10 @@ export function closeMap(fromPop){
   if (돌아가기()) return;
   $('profpane').classList.remove('hide');
 }
-$('openmap').addEventListener('click', openMap);
+/* ⚠ **`?.` 입니다(b554).** 이 단추는 화면에서 안 보이는 「프로그램이 누르는
+   자리」라, 언젠가 정리하다 지워질 수 있습니다. 그때 여기서 터지면 지도
+   화면이 통째로 안 열립니다 — 모듈이 로드되다 죽기 때문입니다. */
+$('openmap')?.addEventListener('click', openMap);
 
 /* 앱 자체를 권하는 자리. 여행 초대(그 여행에 들어오는 것)와는 다릅니다.
    휴대폰은 기본 공유창을 띄우고, 안 되는 브라우저는 주소만 복사합니다. */
