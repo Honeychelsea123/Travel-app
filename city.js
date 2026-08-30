@@ -13,13 +13,16 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo } from './dom.js?v=b564';
-import { sb } from './db.js?v=b564';
-import { cities, countryName, continentOf } from './cities.js?v=b564';
-import { myRates, cityStat, visited } from './rate.js?v=b564';
-import { starHtml, starValue } from './stars.js?v=b564';
-import { localTime } from './calc.js?v=b564';
-import { fail } from './net.js?v=b564';
+import { $, esc, avatarImg, emptyDo } from './dom.js?v=b565';
+import { sb } from './db.js?v=b565';
+import { cities, countryName, continentOf } from './cities.js?v=b565';
+import { myRates, cityStat, visited } from './rate.js?v=b565';
+import { starHtml, starValue } from './stars.js?v=b565';
+import { localTime } from './calc.js?v=b565';
+import { fail } from './net.js?v=b565';
+/* 사진 줄이기는 프로필 사진이 쓰던 것 그대로입니다 — 두 벌로 만들면
+   한쪽만 고쳐집니다(b565). */
+import { shrink } from './profile.js?v=b565';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -65,6 +68,7 @@ export async function openCity(id){
   $('cv_note').value = r.comment || '';
   cvNoteDirty();
   $('cv_journal').value = r.journal || '';
+  사진보이기(r.journal_photo || null);
   일기바뀜();
 
 
@@ -183,6 +187,64 @@ function 키맞추기(){
   칸.style.height = 'auto';
   칸.style.height = Math.min(칸.scrollHeight, 520) + 'px';
 }
+
+/* ── 일기 사진(b565) ─────────────────────────────────────────────────
+ * ⚠ 통이 **비공개**라 주소가 오래 못 갑니다. 그래서 칸에는 **서명 주소**를
+ *   넣고(db/072 머리말), 열 때마다 남은 시간을 안 따집니다 — 만료돼서
+ *   안 보이면 다음에 열 때 새로 받습니다(`사진주소`).
+ * ⚠ 경로는 `<내 id>/<도시>.jpg` 하나입니다. 도시마다 한 장이라 이름을
+ *   고정하면 **덮어쓰기**가 되고, 지난 사진이 통에 쌓이지 않습니다.
+ * ⚠ 올리기 전에 줄입니다. 폰 사진은 4MB 가 예사인데 일기장은 한 화면에
+ *   스무 장까지 그립니다 — 줄이지 않으면 그 화면이 못 뜹니다. */
+function 사진보이기(url){
+  const 통 = $('cv_jwrap'), 빈 = $('cv_jpick'), img = $('cv_jimg');
+  if (!통 || !빈 || !img) return;
+  통.classList.toggle('hide', !url);
+  빈.classList.toggle('hide', !!url);
+  if (url) img.src = url;
+}
+
+/* 비공개 통에서 볼 수 있는 주소를 받아옵니다. 1년 — 일기는 오래 두고
+   보는 것이라 짧게 잡으면 옛 장이 자꾸 깨집니다. */
+async function 사진주소(path){
+  const r = await sb.storage.from('journal-photos').createSignedUrl(path, 60 * 60 * 24 * 365);
+  return r.data?.signedUrl || null;
+}
+
+$('cv_jpick')?.addEventListener('click', () => $('cv_jfile').click());
+$('cv_jfile')?.addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  e.target.value = '';                 /* 같은 파일을 또 골라도 걸리게 */
+  if (!f || !cityOpen) return;
+  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있어요.', 'city');
+  const 빈 = $('cv_jpick'), 원래 = 빈.textContent;
+  빈.disabled = true; 빈.textContent = '올리는 중…';
+  try {
+    /* 일기 사진은 한 화면을 채웁니다 — 프로필 사진(256)보다 큽니다. */
+    const blob = await shrink(f, 1280);
+    const path = `${ctx.me().id}/${cityOpen.id}.jpg`;
+    const up = await sb.storage.from('journal-photos')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+    if (up.error) throw up.error;
+    const url = await 사진주소(path);
+    if (!url) throw new Error('사진 주소를 못 받았어요.');
+    await ctx.saveRate(cityOpen.id, { journal_photo: url }, true);
+    사진보이기(url);
+  } catch (err) {
+    fail(/bucket|not found/i.test(err.message || '')
+      ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요(db/072).'
+      : err, 'city');
+  }
+  빈.disabled = false; 빈.textContent = 원래;
+});
+
+$('cv_jdel')?.addEventListener('click', async () => {
+  if (!cityOpen) return;
+  /* 통에서도 지웁니다 — 칸만 비우면 파일이 남아 용량만 먹습니다. */
+  await sb.storage.from('journal-photos').remove([`${ctx.me().id}/${cityOpen.id}.jpg`]);
+  await ctx.saveRate(cityOpen.id, { journal_photo: null }, true);
+  사진보이기(null);
+});
 
 $('cv_journal')?.addEventListener('input', 일기바뀜);
 $('cv_jsave')?.addEventListener('click', async () => {

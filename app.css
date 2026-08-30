@@ -3438,6 +3438,35 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   말을 안 하면 같은 것으로 읽혀서, 남 볼까 봐 아무것도 안 씁니다.
  *   제목 옆에 붙박이로 「나만 봐요」를 답니다 — 회색 알약이라 조용하지만
  *   제목 줄에 있어서 안 볼 수가 없습니다. */
+
+
+/* ── 일기 사진(b565) ──────────────────────────────────────────────────
+ * ⚠ 없을 때는 **점선 자리**만 둡니다. 큰 단추를 두면 사진이 꼭 있어야
+ *   하는 것처럼 보입니다 — 일기는 글만 써도 됩니다.
+ * ⚠ 비율은 4:3 으로 잘라 둡니다. 세로 사진이 섞이면 일기장을 넘길 때마다
+ *   장 높이가 들썩입니다. */
+.jphoto{ margin-bottom:10px; }
+.jpempty{ width:100%; padding:18px 10px; border-radius:var(--r-sm);
+          border:1.5px dashed var(--line); background:none; cursor:pointer;
+          font-size:var(--f-sm); color:var(--ink-48); }
+.jpempty:active{ background:var(--sunk); }
+.jpempty:disabled{ opacity:.6; cursor:default; }
+.jpwrap{ position:relative; }
+.jpwrap img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+             border-radius:var(--r-sm); background:var(--parchment); }
+/* 지우기. 사진 위에 얹히므로 흰 원이라야 어떤 사진에서도 보입니다.
+   ⚠ 크기는 **CSS 로** 줍니다 — 속성만 두면 flex 안에서 0×0 이 됩니다(b561). */
+.jpdel{ position:absolute; right:8px; top:8px; width:30px; height:30px;
+        display:flex; align-items:center; justify-content:center;
+        border:0; border-radius:50%; background:rgba(255,255,255,.94);
+        color:var(--ink); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.18); }
+.jpdel svg{ width:15px; height:15px; flex:none; display:block; }
+
+/* 일기장 장 안의 사진. 글보다 위이고, 장 높이를 안 흔들게 비율을 고정합니다. */
+.dgimg{ margin:0 0 10px; }
+.dgimg img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+            border-radius:var(--r-sm); background:var(--parchment); }
+
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);
          font-size:var(--f-xs); font-weight:600; letter-spacing:0; }

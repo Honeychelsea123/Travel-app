@@ -18,10 +18,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b564';
-import { sb } from './db.js?v=b564';
-import { cities, countryName } from './cities.js?v=b564';
-import { starHtml } from './stars.js?v=b564';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b565';
+import { sb } from './db.js?v=b565';
+import { cities, countryName } from './cities.js?v=b565';
+import { starHtml } from './stars.js?v=b565';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -49,7 +49,7 @@ export async function openDiary(){
   const me = ctx.me();
   if (!me) return;
   const r = await sb.from('city_ratings')
-    .select('city_id,stars,comment,journal,updated_at')
+    .select('city_id,stars,comment,journal,journal_photo,updated_at')
     .eq('user_id', me.id).not('journal', 'is', null)
     .order('updated_at', { ascending: false });
 
@@ -81,6 +81,9 @@ export async function openDiary(){
             <span>${esc(countryName[c?.country] || c?.country || '')}</span>
             <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
           </header>
+          ${x.journal_photo
+            ? `<div class="dgimg"><img src="${esc(x.journal_photo)}" alt="" loading="lazy"
+                 onerror="this.closest('.dgimg').remove()"></div>` : ''}
           ${x.comment ? `<p class="dgone">${esc(x.comment)}</p>` : ''}
           <p class="dgtext">${esc(x.journal)}</p>
           <footer class="dgfoot">
