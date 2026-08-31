@@ -3532,16 +3532,31 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      넣었는데 0, auto 로 바꾸니 458). */
   scrollbar-width:none; -ms-overflow-style:none;
   margin:0 calc(-1 * var(--s-md)); padding:0 var(--s-md); gap:12px;
+  /* ⚠ **장이 저마다 다른 키로 자랍니다(b570).** `stretch` 로 두면 제일 긴
+     장이 나머지를 다 늘려서 짧은 일기가 허공에 뜹니다. */
+  align-items:flex-start;
+  /* 줄기 키는 «보고 있는 장»에 맞춥니다(diary.js 의 `키맞추기`). 넘길 때
+     털썩 바뀌지 않게 짧게 이어줍니다. */
+  transition:height .22s ease;
 }
+@media (prefers-reduced-motion: reduce){ .dgrow{ transition:none; } }
 .dgrow::-webkit-scrollbar{ display:none; }
 .dgpage{
   /* ⚠ `center` 가 아니라 `start` 입니다 — 이 저장소에 이미 적힌 규칙인데
      (b468, `.swcard`) 새로 만들면서 어겼습니다. 몇째 장인지를 `i × 칸폭`
      으로 세는데 그 셈은 **start 기준**입니다. */
   flex:0 0 100%; scroll-snap-align:start; min-width:0;
-  /* 일기가 길면 이 안에서 굴립니다. 한 장의 키를 정해두지 않으면 제일
-     긴 일기가 나머지 장을 다 늘려서, 짧은 일기가 허공에 뜹니다. */
-  height:min(58vh, 460px); overflow-y:auto; overscroll-behavior:contain;
+  /* ⚠⚠ **장은 «제 키»대로 자랍니다(b570).** ⚠⚠
+   *   b538 에는 `height:min(58vh,460px)` + `overflow-y:auto` 였습니다.
+   *   이유는 「제일 긴 일기가 나머지 장을 다 늘린다」였는데, 그 대가로
+   *   **일기가 문장 한가운데서 잘리고 장 안에 또 스크롤막대가 생겼습니다**
+   *   (사용자 지적: 「레이아웃 밑에 내용이 더 있으면 쭉 아래로 길게 해줘」).
+   *   ⚠ 스크롤이 **두 겹**이었던 것이 진짜 문제입니다 — 화면도 굴러가고
+   *     장 안도 굴러가서, 손가락이 어디를 굴리는지 알 수가 없습니다.
+   *   ⚠ 「제일 긴 장이 나머지를 늘린다」는 `align-items:flex-start`(줄기)와
+   *     **줄기 키를 «보고 있는 장»에 맞추는 것**(diary.js)으로 풉니다.
+   *     장마다 키를 못 박는 것이 답이 아니었습니다. */
+  align-self:flex-start;
   padding:16px; border-radius:var(--r-lg);
   background:var(--pearl); border:1px solid var(--divider-soft);
 }

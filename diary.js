@@ -10,18 +10,21 @@
  * ⚠ **여기는 덮는 판이라 탭 덱과 안 다툽니다.** `coverDeck(true)` 로 덱을
  *   숨기고 열기 때문에, 좌우로 밀어도 탭이 안 넘어갑니다. 홈 미니맵에서
  *   `touch-action` 을 손봐야 했던 것과 다른 점입니다.
- * ⚠ 일기가 길면 **그 장 안에서 위아래로** 굴러야 합니다. 장이 세로
- *   스크롤러이고 줄기가 가로 스크롤러입니다 — 축이 갈려 있어서 둘 다
- *   브라우저가 알아서 합니다.
+ * ⚠⚠ **일기가 길면 장이 «아래로» 자랍니다(b570).** ⚠⚠ b538 에는 장에 키를
+ *   못 박고 그 안에서 굴렸습니다. 그랬더니 글이 문장 한가운데서 잘리고
+ *   장 안에 스크롤막대가 또 생겼습니다 — **스크롤이 두 겹**이라 손가락이
+ *   어디를 굴리는지 알 수가 없습니다(사용자 지적).
+ *   이제 장은 제 키대로 자라고, **줄기 키를 「보고 있는 장」에 맞춥니다**
+ *   (아래 `키맞추기`). 세로 스크롤은 화면 하나만 합니다.
  *
  * ⚠ **순서는 「쓴 때」입니다(updated_at).** 다녀온 때가 아닙니다 —
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b569';
-import { sb } from './db.js?v=b569';
-import { cities, countryName } from './cities.js?v=b569';
-import { starHtml } from './stars.js?v=b569';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b570';
+import { sb } from './db.js?v=b570';
+import { cities, countryName } from './cities.js?v=b570';
+import { starHtml } from './stars.js?v=b570';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -108,13 +111,36 @@ export async function openDiary(){
     const 틈 = parseFloat(cs.columnGap || cs.gap) || 0;
     return (p.offsetWidth + 틈) || 1;
   };
+  const 몇째 = () => Math.min(장들.length,
+                    Math.max(1, Math.round(줄기.scrollLeft / 칸폭()) + 1));
+
+  /* ── 줄기 키를 «보고 있는 장»에 맞춥니다(b570) ─────────────────────────
+   * 장마다 키가 다릅니다(사진이 있는 것/없는 것, 긴 글/짧은 글). 줄기를
+   * 그냥 두면 **제일 긴 장이 나머지를 다 늘려서** 짧은 일기 밑에 빈 판이
+   * 남습니다. 보고 있는 장의 키를 그대로 씁니다.
+   * ⚠ **`scrollHeight` 가 아니라 `offsetHeight`** 입니다 — 장은 이제
+   *   스크롤러가 아니라 그냥 자란 상자입니다.
+   * ⚠ **사진이 늦게 옵니다.** `loading="lazy"` 라 그 장에 닿아야 받기
+   *   시작하고, 받고 나면 키가 늘어납니다. 그래서 `load` 때 다시 잽니다.
+   *   안 그러면 줄기가 사진 없는 키에 멎어 글 아래가 잘립니다.
+   * ⚠ 글꼴이 늦게 와도 줄 수가 바뀝니다. 한 번 더 늦게 잽니다. */
+  const 키맞추기 = () => {
+    const p = 줄기.children[몇째() - 1];
+    if (p) 줄기.style.height = p.offsetHeight + 'px';
+  };
   const 세기 = () => {
-    const i = Math.min(장들.length,
-                       Math.max(1, Math.round(줄기.scrollLeft / 칸폭()) + 1));
-    $('diarycount').textContent = `${i} / ${장들.length}`;
+    $('diarycount').textContent = `${몇째()} / ${장들.length}`;
+    키맞추기();
   };
   세기();
   줄기.addEventListener('scroll', 세기, { passive:true });
+  줄기.querySelectorAll('img').forEach(img => {
+    if (img.complete) return;
+    img.addEventListener('load', 키맞추기, { once:true });
+    img.addEventListener('error', 키맞추기, { once:true });
+  });
+  addEventListener('resize', 키맞추기, { passive:true });
+  setTimeout(키맞추기, 400);
 }
 
 /* 「2026년 8월 30일에 씀」. 시간까지는 안 적습니다 — 일기에 분 단위는
