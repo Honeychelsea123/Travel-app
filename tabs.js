@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b567';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b567';
-import { onSwipeX } from './ui.js?v=b567';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b567';
+import { $ } from './dom.js?v=b568';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b568';
+import { onSwipeX } from './ui.js?v=b568';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b568';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -51,8 +51,15 @@ const TABS = {
  *   (trash.js 의 TAB_TRASH) 카드는 하나입니다. 복제하면 안쪽 id 가 겹치므로,
  *   구역을 옮길 때마다 **그 칸으로 데려옵니다.** DOM 하나를 옮기는 것이라
  *   내용도 저절로 따라옵니다.
- * ⚠ 머리(제목·후기·수정)는 구역 밖입니다 — 넷이 같이 쓰는 것이라 어느 한
- *   칸에 넣을 수가 없습니다. 덱 위에 고정으로 둡니다. */
+ * ⚠⚠ **머리(제목·후기·수정)도 칸 안으로 넣습니다(b568).** ⚠⚠
+ *   b479 에는 「넷이 같이 쓰니 어느 칸에도 못 넣는다」로 보고 덱 위에
+ *   고정했습니다. 결과는 **내용만 그 밑으로 흘러 들어가는** 화면이었고,
+ *   「왜 이게 고정되냐」는 말을 두 번 들었습니다.
+ *   하나를 넷이 쓰는 것은 맞지만, **보고 있는 칸으로 옮기면** 됩니다 —
+ *   지운 것 카드가 이미 그러고 있었습니다. 복제가 아닌 **이동**이라
+ *   id 가 겹치지 않고 핸들러도 그대로 따라옵니다.
+ *   ⚠ ← 만 상단바로 빼 놨습니다(index.html) — 머리가 위로 사라졌을 때
+ *     돌아갈 길까지 사라지면 안 됩니다. */
 const 구역카드 = {
   plans: ['card-today', 'card-plans', 'card-cand', 'plancard', 'importcard'],
   exp:   ['card-exp', 'expcard', 'settlecard'],
@@ -128,6 +135,16 @@ export function showTab(t, 이미덱에){
   const 칸 = 구역칸(t);
   const 휴지 = $('card-trash');
   if (칸 && 휴지 && 휴지.parentNode !== 칸) 칸.appendChild(휴지);
+
+  /* ⚠ **머리 셋을 이 칸 맨 앞으로 데려옵니다(b568).** 위 머리말 참고.
+     ⚠ **거꾸로 꽂습니다.** 하나씩 맨 앞에 넣으므로 마지막에 넣은 것이
+       제일 위로 갑니다 — 결과는 머리 · 후기 · 수정 순서입니다.
+     ⚠ 이미 그 칸에 있어도 그냥 다시 꽂습니다. 제자리로 넣는 것은 브라우저가
+       알아서 아무 일도 안 합니다 — 「지금 어디 있나」를 따질 필요가 없습니다. */
+  if (칸) for (const id of ['editcard', 'reviewbox', 'thead']){
+    const e = $(id);
+    if (e) 칸.insertBefore(e, 칸.firstChild);
+  }
 
   $('editcard').classList.add('hide');
   document.querySelectorAll('#tstrip button').forEach(b =>

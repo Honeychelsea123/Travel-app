@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b567';
-import { sb } from './db.js?v=b567';
-import { cities } from './cities.js?v=b567';
-import { loadCities } from './citysearch.js?v=b567';
-import { paintStars } from './stars.js?v=b567';
-import { rateHero, starValue } from './rateui.js?v=b567';
-import { saveRate } from './rating.js?v=b567';
-import { resetHomeSig } from './home.js?v=b567';
+import { $, esc } from './dom.js?v=b568';
+import { sb } from './db.js?v=b568';
+import { cities } from './cities.js?v=b568';
+import { loadCities } from './citysearch.js?v=b568';
+import { paintStars } from './stars.js?v=b568';
+import { rateHero, starValue } from './rateui.js?v=b568';
+import { saveRate } from './rating.js?v=b568';
+import { resetHomeSig } from './home.js?v=b568';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
