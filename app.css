@@ -1598,10 +1598,24 @@ body.kbon .assheet{ padding-bottom:16px; }
           font-size:var(--f-2xl); color:var(--ink); }
 body.intrip #backbtn{ display:block; }
 
-.thead{ padding:8px 14px 10px; }
+/* ⚠⚠ **위아래를 «같은 값»으로.** 8 / 10 이었습니다(b569 에 고침). ⚠⚠
+ *   줄이 하나뿐인 카드라 1~2px 만 어긋나도 글자가 위로 붙어 보입니다.
+ *   실제로 그렇게 보였습니다(사용자 지적: 「텍스트 중앙 정렬 좀 해줘」). */
+.thead{ padding:10px 14px; }
+/* ⚠⚠ **빈 구간 줄이 «아래 여백»을 만들고 있었습니다(b569).** ⚠⚠
+ *   `#t_legs` 는 구간이 둘 이상일 때만 채웁니다. 그런데 비어 있어도
+ *   상자는 남고 `margin-top:10px`(index.html 의 inline)이 살아 있어서,
+ *   카드 아래에 **보이지 않는 10px** 이 깔렸습니다. 위 8 + 아래 10+10 이니
+ *   아래가 두 배 넓었고, 그래서 글자가 위로 쏠려 보인 것입니다.
+ *   ⚠ `display:none` 이라야 합니다 — `height:0` 으로는 **마진이 안 죽습니다.**
+ *   ⚠ `:empty` 는 «공백 한 칸»만 있어도 안 걸립니다. 채우는 쪽(legs.js)이
+ *     빈 값으로 `''` 를 넣는 한 괜찮습니다. 거기서 ' ' 를 넣지 마십시오. */
+#t_legs:empty{ display:none; }
 /* 제목과 날짜를 한 줄에. 두 줄을 잡으면 그만큼 지도 자리가 줄어듭니다. */
-.thead .tline{ display:flex; align-items:baseline; gap:8px; margin-top:2px;
-               min-width:0; }
+/* ⚠ **`margin-top:2px` 를 걷었습니다(b569).** 위에 줄이 하나 더 있던 시절
+     (← 와 수정)의 흔적입니다. 이제 이 줄이 카드의 유일한 줄이라, 그 2px 이
+     그대로 «위아래 어긋남»이 됩니다. */
+.thead .tline{ display:flex; align-items:baseline; gap:8px; min-width:0; }
 .thead #t_title{ flex:none; font-weight:700; font-size:var(--f-lg);
                  letter-spacing:calc(-.3px * var(--ts)); }
 /* 넘치면 자릅니다. 자세한 것은 수정에서 다 봅니다. */
