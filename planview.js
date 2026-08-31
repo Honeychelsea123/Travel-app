@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b570';
-import { featOn, flags } from './flags.js?v=b570';
-import { fail, write } from './net.js?v=b570';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b570';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b570';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b570';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b570';
-import { STAY_MIN, mins } from './plancheck.js?v=b570';
+import { $, esc, emptyDo } from './dom.js?v=b571';
+import { featOn, flags } from './flags.js?v=b571';
+import { fail, write } from './net.js?v=b571';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b571';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b571';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b571';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b571';
+import { STAY_MIN, mins } from './plancheck.js?v=b571';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b570';
+import { fillOnePlan } from './cands.js?v=b571';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -122,7 +122,9 @@ $('plans').addEventListener('click', async e => {
   const p = plans.find(x => x.id === b.dataset.geo);
   b.disabled = true; b.textContent = '찾는 중…';
   b.title = '';
-  const ok = await fillOnePlan(b.dataset.geo, p?.title || '', p?.date);
+  /* â  **ë©ëª¨ê¹ì§ ëê¹ëë¤(b571).** ê±°ê¸° ì£¼ìê° ë¤ì´ ìê³ ,
+     ì¬ì¤ ì´ë¦ë³´ë¤ ê·¸ìª½ì´ í¨ì¬ ì ì¡í½ëë¤. ì ëê²¨ì ëª» ì°¾ê³  ìììµëë¤. */
+  const ok = await fillOnePlan(b.dataset.geo, p?.title || '', p?.date, p?.memo);
   if (ok === true) return;                       /* loadPlans 가 다시 그립니다 */
   b.disabled = false;
   /* 못 찾았을 때 **되는 길**을 알려줍니다 (b388). 전에는 "이름으로 못 찾았어요"

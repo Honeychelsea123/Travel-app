@@ -21,10 +21,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b570';
-import { sb } from './db.js?v=b570';
-import { cities, countryName } from './cities.js?v=b570';
-import { starHtml } from './stars.js?v=b570';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b571';
+import { sb } from './db.js?v=b571';
+import { cities, countryName } from './cities.js?v=b571';
+import { starHtml } from './stars.js?v=b571';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -79,20 +79,25 @@ export async function openDiary(){
       <div class="dgrow">${장들.map(x => {
         const c = 이름(x.city_id);
         return `<article class="dgpage" data-dgcity="${esc(x.city_id)}">
-          <header class="dghead">
-            <b>${esc(c?.name || x.city_id)}</b>
-            <span>${esc(countryName[c?.country] || c?.country || '')}</span>
-            <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
-          </header>
-          ${x.journal_photo
-            ? `<div class="dgimg"><img src="${esc(x.journal_photo)}" alt="" loading="lazy"
-                 onerror="this.closest('.dgimg').remove()"></div>` : ''}
-          ${x.comment ? `<p class="dgone">${esc(x.comment)}</p>` : ''}
-          <p class="dgtext">${esc(x.journal)}</p>
-          <footer class="dgfoot">
-            <span>${esc(적은때(x.updated_at))}</span>
-            <button class="small" data-dgedit="${esc(x.city_id)}">고치기</button>
-          </footer>
+          <!-- 스프링 — 그림이 아니라 배경으로 그립니다(app.css 의 .dgcoil).
+               장이 스물이면 고리도 스무 벌이라, 요소로 만들면 그만큼 늘어납니다. -->
+          <div class="dgcoil" aria-hidden="true"></div>
+          <div class="dgsheet">
+            <header class="dghead">
+              <b>${esc(c?.name || x.city_id)}</b>
+              <span class="dgland">${esc(countryName[c?.country] || c?.country || '')}</span>
+              <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
+            </header>
+            <div class="dgdate">${적은날칸(x.updated_at)}</div>
+            ${x.journal_photo
+              ? `<div class="dgimg"><img src="${esc(x.journal_photo)}" alt="" loading="lazy"
+                   onerror="this.closest('.dgimg').remove()"></div>` : ''}
+            ${x.comment ? `<p class="dgone">${esc(x.comment)}</p>` : ''}
+            <p class="dgtext">${esc(x.journal)}</p>
+            <footer class="dgfoot">
+              <button class="small" data-dgedit="${esc(x.city_id)}">고치기</button>
+            </footer>
+          </div>
         </article>`;
       }).join('')}</div>
     </div>`;
@@ -128,9 +133,34 @@ export async function openDiary(){
     const p = 줄기.children[몇째() - 1];
     if (p) 줄기.style.height = p.offsetHeight + 'px';
   };
+  /* ── 넘기는 «느낌»(b571) ─────────────────────────────────────────────
+   * ⚠⚠ **스크롤은 여전히 브라우저 것입니다.** 손가락을 우리가 받아 자리를
+   *   옮기는 방식은 b469 에 만들었다가 b470 에 **되돌렸습니다**(관성이 남은
+   *   채 자리를 옮기거나 반쯤 걸친 채 멈춤). 여기서 하는 일은 «이미 굴러간
+   *   자리»를 읽어 **기울기만 칠하는 것**입니다 — 제스처를 안 뺏습니다.
+   * ⚠ 값만 넘기고 꾸미기는 CSS 가 합니다(`--t` 부호, `--a` 절대값).
+   *   `abs()` 는 아직 못 믿을 브라우저가 있어 여기서 미리 냅니다.
+   * ⚠ **양옆 두 장만** 손댑니다. 스무 장짜리에서 매 프레임 전부 만지면
+   *   넘기는 동안 손가락이 걸립니다. 나머지는 값을 지워 평평하게 둡니다.
+   * ⚠ `transform-origin` 은 **넘어가는 쪽 모서리**입니다 — 오른쪽 장은
+   *   왼쪽 모서리를 축으로 열리고, 지나간 장은 오른쪽 모서리로 닫힙니다.
+   *   축을 하나로 두면 한쪽이 «뒤집히는» 것처럼 보입니다. */
+  const 기울이기 = () => {
+    const 폭 = 칸폭(), 현재 = 줄기.scrollLeft / 폭;
+    [...줄기.children].forEach((p, i) => {
+      const d = i - 현재;
+      if (Math.abs(d) > 2){ p.style.removeProperty('--t'); p.style.removeProperty('--a'); return; }
+      const t = Math.max(-1, Math.min(1, d));
+      p.style.setProperty('--t', t.toFixed(3));
+      p.style.setProperty('--a', Math.abs(t).toFixed(3));
+      p.style.transformOrigin = (t >= 0 ? 'left' : 'right') + ' center';
+    });
+  };
+
   const 세기 = () => {
     $('diarycount').textContent = `${몇째()} / ${장들.length}`;
     키맞추기();
+    기울이기();
   };
   세기();
   줄기.addEventListener('scroll', 세기, { passive:true });
@@ -143,13 +173,16 @@ export async function openDiary(){
   setTimeout(키맞추기, 400);
 }
 
-/* 「2026년 8월 30일에 씀」. 시간까지는 안 적습니다 — 일기에 분 단위는
-   쓸데없고, 오래된 것일수록 시각이 의미가 없습니다. */
-function 적은때(t){
-  if (!t) return '';
-  const d = new Date(t);
-  if (isNaN(d)) return '';
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일에 씀`;
+/* 다이어리 맨 위의 날짜 칸 — 「2026 · 8 · 31」(b571).
+   ⚠ 전에는 장 «맨 아래»에 「…일에 씀」으로 있었습니다. 종이 일기장은
+     날짜가 첫 줄입니다 — 그게 그 장을 여는 말이라서요.
+   ⚠ 날짜가 없으면 **칸 자체를 안 냅니다.** 빈 칸을 두면 밑줄만 뜬
+     자리가 남습니다. */
+function 적은날칸(t){
+  const d = t ? new Date(t) : null;
+  if (!d || isNaN(d)) return '';
+  return `<b>${d.getFullYear()}</b><i>·</i><b>${d.getMonth() + 1}</b>` +
+         `<i>·</i><b>${d.getDate()}</b>`;
 }
 
 export function closeDiary(fromPop){

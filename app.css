@@ -3499,10 +3499,16 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
         color:var(--ink); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.18); }
 .jpdel svg{ width:15px; height:15px; flex:none; display:block; }
 
-/* 일기장 장 안의 사진. 글보다 위이고, 장 높이를 안 흔들게 비율을 고정합니다. */
-.dgimg{ margin:0 0 10px; }
+/* 일기장 장 안의 사진 — **인화지에 붙인 것처럼**(b571).
+   ⚠ 흰 테를 두르고 살짝 비틀어야 「붙인 사진」으로 읽힙니다. 각진 사진을
+     그냥 얹으면 앱 화면이지 일기장이 아닙니다.
+   ⚠ 비틀기는 **1.2도**입니다. 더 주면 글줄과 싸워서 어지럽습니다.
+   ⚠ 비율은 고정합니다 — 사진이 늦게 와도 줄기 키가 덜 흔들립니다. */
+.dgimg{ margin:14px 0 4px; padding:8px 8px 10px; background:#fff;
+        border-radius:4px; box-shadow:0 2px 8px rgba(60,48,30,.16);
+        transform:rotate(-1.2deg); }
 .dgimg img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
-            border-radius:var(--r-sm); background:var(--parchment); }
+            border-radius:2px; background:var(--dg-rule); }
 
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);
@@ -3541,11 +3547,45 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 }
 @media (prefers-reduced-motion: reduce){ .dgrow{ transition:none; } }
 .dgrow::-webkit-scrollbar{ display:none; }
+/* ── 종이·스프링·괘선 (b571) ──────────────────────────────────────────
+ * 사용자 요청(사진 첨부): 「레이아웃도 내가 첨부한 일기장 느낌으로」.
+ * 크림 종이 · 왼쪽 스프링 · 괘선 · 인화지 사진 · 첫 줄 날짜 칸.
+ * ⚠ 색은 **여기서만 쓰는 이름**(--dg-*)으로 둡니다. 앱 토큰(--pearl 등)을
+ *   직접 쓰면 나중에 앱 색을 손볼 때 종이만 엉뚱하게 따라 바뀝니다.
+ * ⚠ **괘선 간격은 글줄 높이와 «같은 변수»** 라야 합니다. 글자 크기 설정
+ *   (--ts)이 바뀌면 줄도 같이 움직여야 하니, 픽셀로 못 박으면 어긋납니다. */
+.dgbook{
+  --dg-paper:#FDFAF2;  --dg-edge:#EADFC2;  --dg-rule:#E9E1CE;
+  --dg-ink:#3B332A;    --dg-dim:#8B8171;   --dg-coil:#BFB49A;
+  --dg-hole:#EFE7D6;   --dg-note:#FBF0D8;
+  --dg-line:calc(var(--f-lg) * 1.85);
+  /* 넘김을 입체로 보이게 하는 것은 이 한 줄입니다 — 깊이가 없으면
+     rotateY 가 그냥 «납작하게 눌린 그림»이 됩니다. */
+  perspective:1500px;
+}
+@media (prefers-color-scheme: dark){
+  .dgbook{
+    --dg-paper:#26221C; --dg-edge:#3B342A; --dg-rule:#38312A;
+    --dg-ink:#EDE6D9;   --dg-dim:#A2988A;  --dg-coil:#6E6553;
+    --dg-hole:#1B1813;  --dg-note:#332C21;
+  }
+  .dgimg{ background:#3A342B; box-shadow:0 2px 8px rgba(0,0,0,.45); }
+}
 .dgpage{
   /* ⚠ `center` 가 아니라 `start` 입니다 — 이 저장소에 이미 적힌 규칙인데
      (b468, `.swcard`) 새로 만들면서 어겼습니다. 몇째 장인지를 `i × 칸폭`
      으로 세는데 그 셈은 **start 기준**입니다. */
   flex:0 0 100%; scroll-snap-align:start; min-width:0;
+  position:relative;
+  /* ── 넘어가는 시늉(b571) ────────────────────────────────────────────
+   * `--t` 는 **부호 있는** 거리(-1 지나감 … 0 지금 … +1 다음),
+   * `--a` 는 그 절대값입니다. 둘 다 diary.js 가 «스크롤을 읽어» 넣습니다.
+   * ⚠ **transition 을 걸지 마십시오.** 손가락과 같이 움직여야 하는 값입니다.
+   *   0.2초라도 이어 붙이면 손가락보다 늦게 따라와 미끄러져 보입니다.
+   * ⚠ 축(transform-origin)은 diary.js 가 넘어가는 쪽으로 세웁니다. */
+  transform:rotateY(calc(var(--t, 0) * -26deg))
+            scale(calc(1 - var(--a, 0) * .06));
+  backface-visibility:hidden;
   /* ⚠⚠ **장은 «제 키»대로 자랍니다(b570).** ⚠⚠
    *   b538 에는 `height:min(58vh,460px)` + `overflow-y:auto` 였습니다.
    *   이유는 「제일 긴 일기가 나머지 장을 다 늘린다」였는데, 그 대가로
@@ -3557,22 +3597,68 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    *     **줄기 키를 «보고 있는 장»에 맞추는 것**(diary.js)으로 풉니다.
    *     장마다 키를 못 박는 것이 답이 아니었습니다. */
   align-self:flex-start;
-  padding:16px; border-radius:var(--r-lg);
-  background:var(--pearl); border:1px solid var(--divider-soft);
+  /* ⚠ 왼쪽은 **스프링 자리**라 여백이 넓습니다. 모서리도 왼쪽만 각지게 —
+       묶인 쪽은 안 둥그니까요. */
+  padding:18px 18px 16px 46px;
+  border-radius:4px 16px 16px 4px;
+  background:var(--dg-paper); border:1px solid var(--dg-edge);
+  box-shadow:0 1px 2px rgba(60,48,30,.10), 0 10px 26px rgba(60,48,30,.10);
+  color:var(--dg-ink);
 }
-.dghead{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
-         padding-bottom:10px; border-bottom:1px solid var(--divider-soft); }
-.dghead b{ font-size:var(--f-2xl); font-weight:700; }
-.dghead > span:first-of-type{ color:var(--ink-48); font-size:var(--f-sm); }
+/* 묶인 쪽으로 갈수록 어둡습니다 — 종이가 안으로 말려 들어가는 자리입니다.
+   넘길수록 짙어져서(`--a`) 「들리는」 느낌을 냅니다. */
+.dgpage::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(to right, rgba(60,48,30,.13), transparent 22%);
+  opacity:calc(.45 + var(--a, 0) * .55);
+}
+/* ── 스프링 ── 요소가 아니라 배경입니다(장이 스물이면 고리도 스무 벌). */
+.dgcoil{
+  position:absolute; left:0; top:10px; bottom:10px; width:34px;
+  pointer-events:none; z-index:1;
+  /* 구멍: 26px 마다 한 개 */
+  background-image:radial-gradient(circle at 17px 13px,
+                   var(--dg-hole) 0 4.2px, transparent 4.9px);
+  background-size:100% 26px;
+}
+/* 고리(철사)가 구멍 위를 지나갑니다 — 순서가 반대면 종이에 그린 그림이 됩니다. */
+.dgcoil::before{
+  content:''; position:absolute; left:6px; right:7px; top:0; bottom:0;
+  border-radius:2px;
+  background:repeating-linear-gradient(to bottom,
+    transparent 0 9px, var(--dg-coil) 9px 12px, transparent 12px 26px);
+}
+.dgsheet{ position:relative; z-index:2; }
+.dghead{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.dghead b{ font-size:var(--f-2xl); font-weight:700; color:var(--dg-ink); }
+.dgland{ color:var(--dg-dim); font-size:var(--f-sm); }
 .dghead .stars{ margin-left:auto; }
-/* 한줄평은 일기 위에 인용처럼. 공개된 말과 나만 보는 말을 눈으로 갈라둡니다. */
-.dgone{ margin:12px 0 0; padding-left:10px; border-left:2px solid var(--hairline);
-        color:var(--ink-48); font-size:var(--f-md); }
+/* ── 날짜 칸 ── 종이 일기장은 날짜가 첫 줄입니다(b571).
+   ⚠ 숫자는 **너비가 같아야** 합니다(tabular-nums). 안 그러면 1 이 든 날만
+     칸이 좁아져서 줄이 들쭉날쭉합니다. */
+.dgdate{ display:flex; align-items:center; gap:6px; margin:8px 0 2px;
+         padding-bottom:9px; border-bottom:1px dashed var(--dg-edge); }
+.dgdate b{ min-width:2.1em; padding:2px 7px; border-radius:6px;
+           background:var(--dg-note); border:1px solid var(--dg-edge);
+           text-align:center; font-size:var(--f-sm); font-weight:700;
+           color:var(--dg-ink); font-variant-numeric:tabular-nums; }
+.dgdate i{ font-style:normal; color:var(--dg-dim); font-size:var(--f-xs); }
+/* 한줄평은 «붙임쪽지»입니다. 공개된 말과 나만 보는 말을 눈으로 갈라둡니다. */
+.dgone{ margin:14px 0 0; padding:9px 12px; border-radius:12px 12px 12px 3px;
+        background:var(--dg-note); border:1px solid var(--dg-edge);
+        color:var(--dg-ink); font-size:var(--f-md); }
+/* ── 본문 ── 괘선 위에 씁니다.
+   ⚠⚠ **줄 높이와 괘선 간격이 «같은 변수»** 라야 합니다(--dg-line).
+     하나라도 픽셀로 박으면 글자 크기 설정을 바꾼 순간 글이 줄에서 뜹니다.
+   ⚠ 줄은 글자 **아래**에 와야 합니다 — 그래서 마지막 1px 에만 칠합니다. */
 .dgtext{
-  margin:14px 0 0; white-space:pre-wrap; word-break:keep-all;
-  font-size:var(--f-lg); line-height:1.75; color:var(--ink);
+  margin:16px 0 0; white-space:pre-wrap; word-break:keep-all;
+  font-size:var(--f-lg); line-height:var(--dg-line); color:var(--dg-ink);
+  background-image:repeating-linear-gradient(to bottom,
+    transparent 0 calc(var(--dg-line) - 1px),
+    var(--dg-rule) calc(var(--dg-line) - 1px) var(--dg-line));
 }
 .dgfoot{ display:flex; align-items:center; gap:10px; margin-top:18px;
-         padding-top:12px; border-top:1px solid var(--divider-soft); }
-.dgfoot span{ color:var(--ink-48); font-size:var(--f-sm); }
+         padding-top:12px; border-top:1px dashed var(--dg-edge); }
 .dgfoot button{ margin-left:auto; }

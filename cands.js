@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b570';
-import { sb } from './db.js?v=b570';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b570';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b570';
-import { trip, plans, legs } from './trip.js?v=b570';
-import { search } from './cities.js?v=b570';
-import { picked } from './citysearch.js?v=b570';
-import { mapLinks } from './planmap.js?v=b570';
-import { openPlanForm } from './cards.js?v=b570';
-import { syncSheets } from './ui.js?v=b570';
+import { $, esc, emptyDo } from './dom.js?v=b571';
+import { sb } from './db.js?v=b571';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b571';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b571';
+import { trip, plans, legs } from './trip.js?v=b571';
+import { search } from './cities.js?v=b571';
+import { picked } from './citysearch.js?v=b571';
+import { mapLinks } from './planmap.js?v=b571';
+import { openPlanForm } from './cards.js?v=b571';
+import { syncSheets } from './ui.js?v=b571';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -392,9 +392,19 @@ async function 저장(it, hit){
   return !r.error && !!r.data?.length;
 }
 
-/* 일정 한 줄에서 부릅니다. 찾으면 일정을 다시 받아 화면이 저절로 고쳐집니다. */
-export async function fillOnePlan(id, title, date){
-  const ok = await geoOne({ kind:'plans', id, title, date });
+/* 일정 한 줄에서 부릅니다. 찾으면 일정을 다시 받아 화면이 저절로 고쳐집니다.
+ * ⚠⚠ **`memo` 를 반드시 같이 넘기십시오(b571).** ⚠⚠
+ *   b564 에서 「주소는 메모에 이미 적혀 있다」를 알아내고 `geoOne` 이 메모를
+ *   먼저 보게 고쳤는데, **일괄(`needCoord`) 쪽만 고치고 여기를 빠뜨렸습니다.**
+ *   그래서 한 줄짜리 「위치 찾기」는 여전히 **제목으로만** 찾았고,
+ *   「스시야」 같은 우리말 이름은 OSM 에 없으니 영영 못 찾았습니다
+ *   (사용자 지적: 「이거 아직도 주소 못찾는다」 — 메모에 주소가 그대로 있는 채로).
+ *   실측: 그 메모로 만든 질의 `6-4-16 Ginza, Chuo, Tokyo, Japan` 은
+ *   35.669261 / 139.764429 로 **한 번에 잡힙니다.** 안 넘겼을 뿐이었습니다.
+ *   ⚠ 입구가 둘인 기능은 **둘 다 고쳤는지** 확인하십시오. 이 파일 위쪽
+ *     `drawGeoBtn` 주석에도 「입구가 둘입니다」라고 적혀 있습니다. */
+export async function fillOnePlan(id, title, date, memo){
+  const ok = await geoOne({ kind:'plans', id, title, date, memo });
   if (ok === true) await ctx.loadPlans();
   return ok;
 }
