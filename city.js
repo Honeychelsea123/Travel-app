@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b572';
-import { sb } from './db.js?v=b572';
-import { cities, countryName, continentOf } from './cities.js?v=b572';
-import { myRates, cityStat, visited } from './rate.js?v=b572';
-import { starHtml, starValue } from './stars.js?v=b572';
-import { localTime } from './calc.js?v=b572';
-import { fail } from './net.js?v=b572';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b573';
+import { sb } from './db.js?v=b573';
+import { cities, countryName, continentOf } from './cities.js?v=b573';
+import { myRates, cityStat, visited } from './rate.js?v=b573';
+import { starHtml, starValue } from './stars.js?v=b573';
+import { localTime } from './calc.js?v=b573';
+import { fail } from './net.js?v=b573';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -65,7 +65,7 @@ export async function openCity(id){
   $('cv_note').value = r.comment || '';
   cvNoteDirty();
   $('cv_journal').value = r.journal || '';
-  사진보이기(r.journal_photo || null);
+  사진불러오기();
   일기바뀜();
 
 
@@ -185,20 +185,56 @@ function 키맞추기(){
   칸.style.height = Math.min(칸.scrollHeight, 520) + 'px';
 }
 
-/* ── 일기 사진(b565) ─────────────────────────────────────────────────
- * ⚠ 통이 **비공개**라 주소가 오래 못 갑니다. 그래서 칸에는 **서명 주소**를
- *   넣고(db/072 머리말), 열 때마다 남은 시간을 안 따집니다 — 만료돼서
- *   안 보이면 다음에 열 때 새로 받습니다(`사진주소`).
- * ⚠ 경로는 `<내 id>/<도시>.jpg` 하나입니다. 도시마다 한 장이라 이름을
- *   고정하면 **덮어쓰기**가 되고, 지난 사진이 통에 쌓이지 않습니다.
+/* ── 일기 사진 ── 여러 장(b565 한 장 → b573 여러 장, db/073) ──────────
+ * ⚠ 통이 **비공개**라 주소가 오래 못 갑니다. 그래서 표에 **서명 주소**를
+ *   넣어 두고(db/073 머리말), 열 때마다 남은 시간을 안 따집니다 —
+ *   만료돼서 안 보이면 그때 새로 받습니다.
+ * ⚠⚠ **경로에 «임의의 이름»을 씁니다: `<내 id>/<도시>/<난수>.jpg`.** ⚠⚠
+ *   한 장이던 시절에는 `<내 id>/<도시>.jpg` 로 **이름을 고정해** 덮어썼는데,
+ *   여러 장에서 그러면 두 번째 사진이 첫 번째를 지웁니다. 반대로 「1,2,3…」
+ *   으로 세면 가운데를 지운 뒤 번호가 겹칩니다. **한 번 쓰고 안 쓰는 이름**
+ *   이라야 그런 사고가 아예 안 납니다.
+ * ⚠ 통 정책은 **안 고쳐도 됩니다** — 규칙이 「경로 맨 앞 칸이 내 id」라서
+ *   한 겹 깊어져도 그대로 맞습니다(db/073 머리말).
  * ⚠ 올리기 전에 줄입니다. 폰 사진은 4MB 가 예사인데 일기장은 한 화면에
- *   스무 장까지 그립니다 — 줄이지 않으면 그 화면이 못 뜹니다. */
-function 사진보이기(url){
-  const 통 = $('cv_jwrap'), 빈 = $('cv_jpick'), img = $('cv_jimg');
-  if (!통 || !빈 || !img) return;
-  통.classList.toggle('hide', !url);
-  빈.classList.toggle('hide', !!url);
-  if (url) img.src = url;
+ *   스무 장까지 그립니다 — 줄이지 않으면 그 화면이 못 뜹니다.
+ * ⚠ **`shrink` 가 아니라 `fitImage`**(b567). 프로필용은 가운데를 정사각으로
+ *   잘라내고 작은 사진은 늘립니다 — 1280×1280 정사각이 되고 파일이 되레
+ *   커졌습니다(dom.js 의 그 자리 참고). */
+const 사진최대 = 8;
+let 내사진 = [];
+
+function 사진그리기(){
+  const 판 = $('cv_jgrid'), 빈 = $('cv_jpick');
+  if (!판 || !빈) return;
+  판.innerHTML = 내사진.map(p => `<div class="jpcell">
+      <img src="${esc(p.url)}" alt="" loading="lazy">
+      <button type="button" class="jpdel" data-jpdel="${esc(p.id)}"
+              aria-label="이 사진 지우기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>`).join('');
+  /* ⚠ 다 찼으면 단추를 **숨깁니다.** 눌리는데 아무 일도 안 나면 고장으로
+     보입니다. 몇 장까지인지도 같이 알려줍니다. */
+  빈.classList.toggle('hide', 내사진.length >= 사진최대);
+  빈.textContent = 내사진.length ? `사진 더 넣기 (${내사진.length}/${사진최대})` : '사진 넣기';
+}
+
+async function 사진불러오기(){
+  내사진 = [];
+  사진그리기();
+  if (!cityOpen) return;
+  const r = await sb.from('journal_photos')
+    .select('id,url,path,sort,created_at')
+    .eq('user_id', ctx.me().id).eq('city_id', cityOpen.id)
+    .order('sort').order('created_at');
+  /* ⚠ 표가 아직 없을 수도 있습니다(db/073 을 안 돌린 상태). 그때는 조용히
+     비워 둡니다 — 일기 자체는 멀쩡히 써야 하니 여기서 화면을 막지 않습니다. */
+  if (r.error) return;
+  내사진 = r.data || [];
+  사진그리기();
 }
 
 /* 비공개 통에서 볼 수 있는 주소를 받아옵니다. 1년 — 일기는 오래 두고
@@ -210,39 +246,71 @@ async function 사진주소(path){
 
 $('cv_jpick')?.addEventListener('click', () => $('cv_jfile').click());
 $('cv_jfile')?.addEventListener('change', async e => {
-  const f = e.target.files?.[0];
+  const 고른것 = [...(e.target.files || [])];
   e.target.value = '';                 /* 같은 파일을 또 골라도 걸리게 */
-  if (!f || !cityOpen) return;
-  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있어요.', 'city');
+  if (!고른것.length || !cityOpen) return;
+  const 그림 = 고른것.filter(f => /^image\//.test(f.type));
+  if (!그림.length) return fail('사진 파일만 올릴 수 있어요.', 'city');
+  /* ⚠ 넘치게 고르면 **앞에서부터** 받고 나머지는 말해 줍니다. 통째로
+     거절하면 왜 안 되는지 모른 채 다시 고르게 됩니다. */
+  const 넣을것 = 그림.slice(0, Math.max(0, 사진최대 - 내사진.length));
   const 빈 = $('cv_jpick'), 원래 = 빈.textContent;
-  빈.disabled = true; 빈.textContent = '올리는 중…';
+  빈.disabled = true;
+  let 올린수 = 0;
   try {
-    /* ⚠ **`shrink` 가 아니라 `fitImage` 입니다(b567).** 프로필용은 가운데를
-       정사각으로 잘라내고 작은 사진은 늘립니다 — 일기 사진이 1280×1280
-       정사각이 되고 파일이 되레 커졌습니다(dom.js 의 그 자리 참고). */
-    const blob = await fitImage(f, 1280);
-    const path = `${ctx.me().id}/${cityOpen.id}.jpg`;
-    const up = await sb.storage.from('journal-photos')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (up.error) throw up.error;
-    const url = await 사진주소(path);
-    if (!url) throw new Error('사진 주소를 못 받았어요.');
-    await ctx.saveRate(cityOpen.id, { journal_photo: url }, true);
-    사진보이기(url);
+    for (const f of 넣을것){
+      빈.textContent = `올리는 중… ${올린수 + 1}/${넣을것.length}`;
+      const blob = await fitImage(f, 1280);
+      /* 한 번 쓰고 안 쓰는 이름 — 위 머리말 참고 */
+      const 이름 = (crypto.randomUUID?.() || String(Date.now()) + Math.random().toString(36).slice(2));
+      const path = `${ctx.me().id}/${cityOpen.id}/${이름}.jpg`;
+      const up = await sb.storage.from('journal-photos')
+        .upload(path, blob, { contentType: 'image/jpeg' });
+      if (up.error) throw up.error;
+      const url = await 사진주소(path);
+      if (!url) throw new Error('사진 주소를 못 받았어요.');
+      const ins = await sb.from('journal_photos')
+        .insert({ user_id: ctx.me().id, city_id: cityOpen.id,
+                  path, url, sort: 내사진.length + 올린수 })
+        .select('id,url,path,sort').single();
+      if (ins.error){
+        /* ⚠ 줄을 못 넣었으면 **올린 파일도 도로 지웁니다.** 안 그러면
+           아무 데서도 안 보이는 파일이 통에 남아 용량만 먹습니다. */
+        await sb.storage.from('journal-photos').remove([path]);
+        throw ins.error;
+      }
+      내사진.push(ins.data);
+      올린수++;
+      사진그리기();
+    }
+    if (그림.length > 넣을것.length)
+      fail(`사진은 ${사진최대}장까지예요. ${넣을것.length}장만 넣었어요.`, 'city');
   } catch (err) {
-    fail(/bucket|not found/i.test(err.message || '')
+    fail(/relation|does not exist|schema cache/i.test(err.message || '')
+      ? '사진 여러 장 저장이 아직 준비되지 않았어요. 만든 사람에게 알려주세요(db/073).'
+      : /bucket|not found/i.test(err.message || '')
       ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요(db/072).'
       : err, 'city');
   }
-  빈.disabled = false; 빈.textContent = 원래;
+  빈.disabled = false;
+  사진그리기();
+  if (!내사진.length) 빈.textContent = 원래;
 });
 
-$('cv_jdel')?.addEventListener('click', async () => {
-  if (!cityOpen) return;
-  /* 통에서도 지웁니다 — 칸만 비우면 파일이 남아 용량만 먹습니다. */
-  await sb.storage.from('journal-photos').remove([`${ctx.me().id}/${cityOpen.id}.jpg`]);
-  await ctx.saveRate(cityOpen.id, { journal_photo: null }, true);
-  사진보이기(null);
+/* ⚠ 단추가 사진마다 하나라 **위임**으로 받습니다. 그려질 때마다 새로
+   붙이면 그린 횟수만큼 쌓여서 한 번 눌러도 여러 번 지웁니다. */
+$('cv_jgrid')?.addEventListener('click', async e => {
+  const b = e.target.closest('[data-jpdel]'); if (!b) return;
+  const id = b.dataset.jpdel;
+  const p = 내사진.find(x => x.id === id);
+  if (!p) return;
+  b.disabled = true;
+  /* 통에서도 지웁니다 — 줄만 지우면 파일이 남아 용량만 먹습니다. */
+  await sb.storage.from('journal-photos').remove([p.path]);
+  const d = await sb.from('journal_photos').delete().eq('id', id);
+  if (d.error){ b.disabled = false; return fail(d.error, 'city'); }
+  내사진 = 내사진.filter(x => x.id !== id);
+  사진그리기();
 });
 
 $('cv_journal')?.addEventListener('input', 일기바뀜);

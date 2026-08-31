@@ -3498,15 +3498,29 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
         border:0; border-radius:50%; background:rgba(255,255,255,.94);
         color:var(--ink); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.18); }
 .jpdel svg{ width:15px; height:15px; flex:none; display:block; }
+/* ── 일기 사진 여러 장(b573) ──────────────────────────────────────────
+ * ⚠ **가로 두 칸입니다.** 한 줄에 하나면 여덟 장일 때 화면이 끝없이
+ *   길어지고, 셋이면 폰에서 한 장이 엄지손톱만 해집니다.
+ * ⚠ 비율을 고정합니다 — 사진이 하나씩 도착할 때마다 판이 들썩이면
+ *   그 사이에 지우기 단추를 잘못 누릅니다. */
+.jpgrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.jpgrid:empty{ display:none; }
+.jpcell{ position:relative; }
+.jpcell img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+             border-radius:var(--r-sm); background:var(--parchment); }
+.jpcell .jpdel{ position:absolute; top:6px; right:6px; }
 
 /* 일기장 장 안의 사진 — **인화지에 붙인 것처럼**(b571).
    ⚠ 흰 테를 두르고 살짝 비틀어야 「붙인 사진」으로 읽힙니다. 각진 사진을
      그냥 얹으면 앱 화면이지 일기장이 아닙니다.
    ⚠ 비틀기는 **1.2도**입니다. 더 주면 글줄과 싸워서 어지럽습니다.
    ⚠ 비율은 고정합니다 — 사진이 늦게 와도 줄기 키가 덜 흔들립니다. */
+/* ⚠ 여러 장이면 **번갈아** 기웁니다(--k 는 diary.js 가 1 / -1 로 넣습니다).
+     다 같은 쪽으로 기울면 쌓아 놓은 것이 아니라 «비뚤어진 판»으로 보입니다. */
 .dgimg{ margin:14px 0 4px; padding:8px 8px 10px; background:#fff;
         border-radius:4px; box-shadow:0 2px 8px rgba(60,48,30,.16);
-        transform:rotate(-1.2deg); }
+        transform:rotate(calc(var(--k, -1) * 1.2deg)); }
+.dgimg + .dgimg{ margin-top:10px; }
 .dgimg img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
             border-radius:2px; background:var(--dg-rule); }
 
@@ -3542,8 +3556,10 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      장이 나머지를 다 늘려서 짧은 일기가 허공에 뜹니다. */
   align-items:flex-start;
   /* 줄기 키는 «보고 있는 장»에 맞춥니다(diary.js 의 `키맞추기`). 넘길 때
-     털썩 바뀌지 않게 짧게 이어줍니다. */
-  transition:height .22s ease;
+     털썩 바뀌지 않게 짧게 이어줍니다.
+     ⚠ **키를 매 프레임 고치면 이 이음이 계속 새로 시작돼 「팍팍」 튑니다**
+       (b573 에서 겪음). 그래서 diary.js 는 **장이 바뀔 때만** 고칩니다. */
+  transition:height .28s cubic-bezier(.22,.61,.36,1);
 }
 @media (prefers-reduced-motion: reduce){ .dgrow{ transition:none; } }
 .dgrow::-webkit-scrollbar{ display:none; }

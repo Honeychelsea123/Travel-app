@@ -21,10 +21,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b572';
-import { sb } from './db.js?v=b572';
-import { cities, countryName } from './cities.js?v=b572';
-import { starHtml } from './stars.js?v=b572';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b573';
+import { sb } from './db.js?v=b573';
+import { cities, countryName } from './cities.js?v=b573';
+import { starHtml } from './stars.js?v=b573';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -64,6 +64,19 @@ export async function openDiary(){
 
   /* 빈 글자만 남은 줄은 일기가 아닙니다 — 지운 흔적입니다. */
   const 장들 = (r.data || []).filter(x => String(x.journal || '').trim());
+
+  /* 그 도시들의 사진을 한 번에 받습니다(b573, db/073).
+     ⚠ **장마다 따로 부르지 않습니다** — 일기가 스물이면 왕복도 스물입니다.
+     ⚠ 표가 아직 없으면(073 을 안 돌린 상태) 조용히 빈 채로 둡니다 —
+       글은 멀쩡히 보여야 합니다. */
+  const 사진들 = {};
+  if (장들.length){
+    const ph = await sb.from('journal_photos').select('city_id,url,sort,created_at')
+      .eq('user_id', me.id).in('city_id', 장들.map(x => x.city_id))
+      .order('sort').order('created_at');
+    for (const p of (ph.data || [])) (사진들[p.city_id] ||= []).push(p.url);
+  }
+
   if (!장들.length){
     $('diarybody').innerHTML = `<div class="card"><div class="empty">
       아직 쓴 일기가 없어요.<br>
@@ -89,9 +102,10 @@ export async function openDiary(){
               <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
             </header>
             <div class="dgdate">${적은날칸(x.updated_at)}</div>
-            ${x.journal_photo
-              ? `<div class="dgimg"><img src="${esc(x.journal_photo)}" alt="" loading="lazy"
-                   onerror="this.closest('.dgimg').remove()"></div>` : ''}
+            ${(사진들[x.city_id] || (x.journal_photo ? [x.journal_photo] : []))
+              .map((u, k) => `<div class="dgimg" style="--k:${k % 2 ? 1 : -1}">
+                   <img src="${esc(u)}" alt="" loading="lazy"
+                        onerror="this.closest('.dgimg').remove()"></div>`).join('')}
             ${x.comment ? `<p class="dgone">${esc(x.comment)}</p>` : ''}
             <p class="dgtext">${esc(x.journal)}</p>
             <footer class="dgfoot">
@@ -157,13 +171,35 @@ export async function openDiary(){
     });
   };
 
+  /* ⚠⚠ **키는 «장이 바뀔 때만» 고칩니다(b573).** ⚠⚠
+   *   처음에는 스크롤이 올 때마다 줄기 키를 다시 넣었습니다. 키를 건드리면
+   *   **판이 다시 짜이고**(reflow), 게다가 그 값에 0.22초 이음(transition)이
+   *   걸려 있어서 넘기는 내내 이음이 새로 시작됩니다 — 그래서 **팍팍
+   *   튀었습니다**(사용자 지적: 「좌우 스크롤도 부드러워야 하는데 팍팍 튄다」).
+   *   기울기(transform)는 판을 다시 안 짜므로 매 프레임 발라도 됩니다.
+   * ⚠ **한 프레임에 한 번만** 합니다(rAF). 스크롤은 프레임보다 자주 옵니다.
+   * ⚠ `몇째()` 는 반올림이라 넘기는 도중 **한가운데를 지날 때 한 번** 바뀝니다.
+   *   그 한 번이 키를 바꾸기 딱 좋은 때입니다. */
+  let 마지막장 = 0, 대기 = 0;
   const 세기 = () => {
-    $('diarycount').textContent = `${몇째()} / ${장들.length}`;
-    키맞추기();
-    기울이기();
+    if (대기) return;
+    대기 = requestAnimationFrame(() => {
+      대기 = 0;
+      기울이기();
+      const i = 몇째();
+      if (i === 마지막장) return;
+      마지막장 = i;
+      $('diarycount').textContent = `${i} / ${장들.length}`;
+      키맞추기();
+    });
   };
-  세기();
+  마지막장 = 몇째();
+  $('diarycount').textContent = `${마지막장} / ${장들.length}`;
+  키맞추기();
+  기울이기();
   줄기.addEventListener('scroll', 세기, { passive:true });
+  /* ⚠ 사진이 늦게 오면 그 장이 길어집니다. `load` 때 다시 재야
+     줄기가 사진 없는 키에 멎어 글 아래를 자르지 않습니다. */
   줄기.querySelectorAll('img').forEach(img => {
     if (img.complete) return;
     img.addEventListener('load', 키맞추기, { once:true });
