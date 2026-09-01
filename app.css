@@ -713,8 +713,9 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 /* 문구가 길어도(예: "지구 반대편만 골라 가는 사람") 두 줄에 들어가게 합니다.
    나라 이름이 긴 "리히텐슈타인 덕후" 같은 것도 여기서 접힙니다. */
 .pcard .ptitle{
-  font-size:var(--f-3xl); font-weight:700; line-height:1.3;
-  letter-spacing:calc(-0.8px * var(--ts)); word-break:keep-all;
+  font-family:var(--serif);
+  font-size:var(--f-3xl); font-weight:400; line-height:1.35;
+  letter-spacing:0; word-break:keep-all;
   max-width:11em;
 }
 .pcard .pnums{ margin-top:14px; font-size:var(--f-lg); opacity:.92; }
@@ -891,7 +892,8 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 .wizbar i{ display:block; height:100%; width:25%; border-radius:2px;
            background:var(--primary); transition:width var(--t) var(--ease); }
 /* 단계 제목은 크게. 지금 뭘 묻는지가 화면에서 제일 커야 합니다. */
-.wiz h2{ font-size:var(--f-3xl); line-height:1.35; margin:0 0 16px; }
+.wiz h2{ font-family:var(--serif); font-size:var(--f-3xl); font-weight:400;
+         letter-spacing:0; line-height:1.35; margin:0 0 16px; }
 .wizstep{ animation:wizin var(--t) var(--ease); }
 @keyframes wizin{ from{ opacity:0; transform:translateX(10px) } to{ opacity:1; transform:none } }
 @media (prefers-reduced-motion: reduce){ .wizstep{ animation:none } }
@@ -1026,7 +1028,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    무엇이 묶음이고 무엇이 항목인지가 사라집니다.
    b268(홈 `.rrow`) · b270(`.ev`·`.plan`) 에 이어 세 번째입니다 —
    **새 목록을 만들 때 `b` 에 크기·굵기를 적는 것이 규칙입니다.** */
-.trip .t b{ display:block; font-size:var(--f-xl); font-weight:600; }
+/* 여행 이름도 같습니다 — 목록의 주인공입니다. */
+.trip .t b{ display:block; font-family:var(--serif);
+            font-size:var(--f-2xl); font-weight:500; letter-spacing:0; }
 .trip .meta{ color:var(--ink-48); font-size:var(--f-md); }
 .badge{ font-size:var(--f-sm); padding:3px 10px; border-radius:var(--r-pill);
         background:var(--parchment); color:var(--ink-48); flex:none; }
@@ -1206,7 +1210,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 설명(`195개국 중`)은 13px 회색 그대로 — 커져야 하는 것은 숫자입니다. */
 .prog{ text-align:center; margin-top:14px;
        color:var(--ink-48); font-size:var(--f-md); }
-.prog b{ font-size:var(--f-2xl); font-weight:700; color:var(--primary);
+.prog b{ font-family:var(--serif); font-size:var(--f-2xl); font-weight:400;
+         color:var(--primary);
          letter-spacing:-.02em; margin-left:2px; }
 
 /* 채워지는 게 보이면 채우고 싶어집니다 */
@@ -1336,9 +1341,17 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rrow .t{ flex:1 1 auto; min-width:0; }
 /* 여기가 `.card h2` 보다 크고 굵었습니다. 한 계단 내립니다(21 › 17) —
    `b` 라서 안 적으면 17px/700 이 그대로 옵니다. */
+/* ⚠⚠ **목록에서 제일 많이 읽는 글자입니다(b609).** 도시 이름·장소 이름이
+ *   전부 여기를 지납니다. 여기가 고딕이면 아무리 제목을 명조로 바꿔도
+ *   화면의 «본론»은 그대로입니다 — 책 목록이 명조인 것과 같은 이치입니다.
+ * ⚠ **Nanum Myeongjo 에는 400 과 700 밖에 없습니다.** 여기 적은 500 은
+ *   브라우저가 400 으로 내려 맞춥니다(가짜 굵게는 안 만듭니다 — 500
+ *   이하를 원하면 400 을 먼저 봅니다). 즉 **실제로는 400 입니다.**
+ *   위계는 굵기가 아니라 **크기(17 대 13)와 색(먹 대 48%)** 이 냅니다.
+ * ⚠ 크기는 그대로 17 입니다. 명조는 같은 크기에서 커 보입니다. */
 .rrow .t b{ display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-            font-size:var(--f-xl); font-weight:600;
-            letter-spacing:calc(-.2px * var(--ts)); }
+            font-family:var(--serif);
+            font-size:var(--f-xl); font-weight:500; letter-spacing:0; }
 .rrow .memo{ display:block;   /* 크기·색은 위의 .memo 한 곳에서 옵니다 */
              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .rrow .stars{ flex:none; margin-left:auto; white-space:nowrap; }
@@ -1470,7 +1483,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .hero > *{ position:relative; z-index:2; }
 .hero .dd{ font-size:var(--f-hero); font-weight:700; line-height:1;
            letter-spacing:calc(-2px * var(--ts)); text-shadow:0 2px 12px rgba(0,0,0,.35); }
-.hero .ht{ font-size:var(--f-2xl); font-weight:700; margin-top:8px;
+/* 화면의 첫 마디들도 명조입니다(b609) — 홈 히어로·평가 화면·마법사.
+   ⚠ 명조에 굵기를 안 얹습니다. 얹으면 고딕 볼드와 구별이 안 갑니다. */
+.hero .ht{ font-family:var(--serif); font-size:var(--f-3xl); font-weight:400;
+           letter-spacing:0; margin-top:8px;
            text-shadow:0 1px 8px rgba(0,0,0,.4); }
 .hero .hm{ font-size:var(--f-md); opacity:.88;
            text-shadow:0 1px 8px rgba(0,0,0,.4); }
@@ -1562,7 +1578,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .mateside b{ font-size:calc(15px * var(--ts)); font-weight:700; }
 .mateside span{ font-size:calc(12px * var(--ts)); color:var(--dim);
                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.matescore{ flex:none; font-size:calc(30px * var(--ts)); font-weight:800;
+.matescore{ flex:none; font-family:var(--serif);
+            font-size:calc(32px * var(--ts)); font-weight:400;
             line-height:1; font-variant-numeric:tabular-nums; }
 .matescore i{ font-size:calc(14px * var(--ts)); font-style:normal; font-weight:700;
               margin-left:1px; opacity:.7; }
@@ -1602,7 +1619,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rateq .rqimg{ width:min(100%, 52vh); aspect-ratio:1; border-radius:var(--r-lg);
                overflow:hidden; background:var(--line); }
 .rateq .rqimg img{ width:100%; height:100%; object-fit:cover; display:block; }
-.rateq .ht{ font-size:var(--f-2xl); font-weight:700; margin-top:16px;
+.rateq .ht{ font-family:var(--serif); font-size:var(--f-3xl); font-weight:400;
+            letter-spacing:0; margin-top:16px;
             word-break:keep-all; }
 .rateq .hm{ font-size:var(--f-md); color:var(--dim); margin-top:2px; }
 .rateq .hask{ font-size:calc(13px * var(--ts)); color:var(--dim); margin-top:6px; }
@@ -2974,7 +2992,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
                   padding:10px 4px; border-radius:12px; background:var(--sunk);
                   transition:background var(--t) var(--ease); }
 .fpnums > button:active{ background:var(--line); }
-.fpnums b{ display:block; font-size:var(--f-2xl); font-weight:700;
+.fpnums b{ display:block; font-family:var(--serif);
+           font-size:var(--f-3xl); font-weight:400;
            color:var(--ink); font-variant-numeric:tabular-nums; }
 .fpnums span{ display:block; font-size:var(--f-sm); color:var(--ink-48); margin-top:1px; }
 
@@ -3039,7 +3058,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .part{ flex:none; width:min(34%, 112px); margin:0; aspect-ratio:1;
        border-radius:var(--r-lg); overflow:hidden; }
 .part img{ width:100%; height:100%; object-fit:contain; display:block; }
-.pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:var(--primary);
+.pcode{ font-family:var(--serif);
+        font-size:calc(36px * var(--ts)); font-weight:400; color:var(--primary);
         letter-spacing:calc(1px * var(--ts)); line-height:1.1; }
 .pname{ font-size:calc(17px * var(--ts)); font-weight:700; margin-top:3px; }
 .prank{ display:inline-block; margin-top:8px; padding:3px 10px;
@@ -3174,9 +3194,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
    으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이
    여전히 쓰므로 남깁니다 — 여기만 지웁니다. */
+/* ⚠⚠ **큰 수는 명조로 냅니다(b609).** ⚠⚠
+ * b608 에서 섹션 제목(`.card h2`)만 명조로 바꿨는데, **홈 화면에는
+ * `.card h2` 가 거의 없습니다.** 첫 화면이 그대로라 「색만 바뀐 것
+ * 같다」가 안 풀립니다. 홈에서 제일 큰 글자가 바로 이 수입니다.
+ * ⚠ 굵기 800 → 400. 명조는 400 이 제 모습이고, 800 은 획이 뭉쳐
+ *   오히려 고딕처럼 보입니다. 무게는 크기가 냅니다(46px).
+ * ⚠ `font-variant-numeric:tabular-nums` 는 그대로 둡니다 — 캐러셀에서
+ *   대륙을 넘길 때 수가 흔들리면 안 됩니다. */
 .bnrow{ display:flex; align-items:baseline; justify-content:center; gap:6px;
         font-variant-numeric:tabular-nums; }
-.bnrow b{ font-size:calc(46px * var(--ts)); font-weight:800; line-height:1;
+.bnrow b{ font-family:var(--serif);
+          font-size:calc(46px * var(--ts)); font-weight:400; line-height:1;
           color:var(--primary); letter-spacing:calc(-1px * var(--ts)); }
 .bnrow span{ font-size:calc(19px * var(--ts)); font-weight:700;
              color:var(--ink-48); }
@@ -4157,7 +4186,8 @@ body.pvon{ overflow:hidden; }
 }
 .dgsheet{ position:relative; z-index:2; }
 .dghead{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
-.dghead b{ font-size:var(--f-2xl); font-weight:700; color:var(--dg-ink); }
+.dghead b{ font-family:var(--serif); font-size:var(--f-2xl); font-weight:400;
+           letter-spacing:0; color:var(--dg-ink); }
 .dgland{ color:var(--dg-dim); font-size:var(--f-sm); }
 .dghead .stars{ margin-left:auto; }
 /* ── 날짜 칸 ── 종이 일기장은 날짜가 첫 줄입니다(b571).
