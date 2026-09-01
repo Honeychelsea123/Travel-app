@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b586';
+import { $ } from './dom.js?v=b587';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -272,7 +272,15 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
     const cs = getComputedStyle(document.documentElement);
     const 바다 = cs.getPropertyValue('--parchment').trim() || '#eeeef2';
-    const 땅   = cs.getPropertyValue('--line').trim()      || '#d8d8dd';
+    /* ⚠⚠ **`--line` 을 쓰면 지구가 «투명»해집니다(b587 에 고침).**
+       b585 에서 그대로 뒀는데, b584 로 종이색이 되면서
+       바다 #F1EEE6 대 땅 #DFDAD0 — 차이가 거의 없어 대륙이 안 보였습니다
+       (사용자 지적: 「지구본은 투명이 되면 안 되지」).
+       ⚠ `--line` 은 «테두리»용이라 원래 배경과 가깝습니다. **면을 칠하는
+         데 쓰면 안 됩니다.** 땅은 제 값을 갖습니다 — 종이 위에 한 톤 앉힌
+         미색입니다. 바다(종이)와는 확실히 갈리고, 다녀온 곳(오렌지)보다는
+         한참 물러섭니다. */
+    const 땅   = cs.getPropertyValue('--globe-land').trim() || '#DDD5C4';
     /* ⚠⚠ **평면 지도와 «같은 색»이라야 합니다.** 다른 값을 쓰면 같은 나라가
        3D 와 2D 에서 두 색으로 보입니다. b531 에 오렌지로 줬다가 되돌린 적이
        있는데, 그때는 **평면 쪽을 같이 안 바꿔서** 어긋난 것이었습니다.
@@ -350,7 +358,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     for (const 나라 of 목록){
       const 감 = 갔다.has(나라.code);
       ctx.fillStyle = 감 ? 내것 : 땅;
-      ctx.strokeStyle = 바다;
+      /* ⚠ 전에는 «바다색»으로 그어 나라 사이를 «벌려» 놨습니다. 종이에서는
+         경계가 선이라야 새긴 것으로 읽힙니다 — 옅은 먹선으로 긋습니다. */
+      ctx.strokeStyle = 'rgba(46,38,26,.20)';
       for (const 고리 of 나라.고리){
         if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){ ctx.fill(); ctx.stroke(); }
       }
