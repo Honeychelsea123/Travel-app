@@ -3446,8 +3446,20 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      아래로 내립니다(globe.js 의 cy) — 위 모서리 두 개(3D/2D · 자세히)와
      덜 겹칩니다. 비율을 더 늘리면 그만큼 더 내려가지만, 지구는 «폭»이
      정하므로 커지지는 않습니다. */
+/* ⚠⚠ **지구본이 화면을 다 덮으면 «스크롤을 잡을 자리»가 없어집니다(b594).**
+ *   지구본은 `touch-action:none` 이라 손가락을 «돌리기»로 가져갑니다
+ *   (위아래로 기울이려면 그래야 합니다 — b535·b545 참고).
+ *   b593 에서 카드 좌우 여백을 걷자 지구본이 34px 넓어졌고, 비율로 키가
+ *   정해지므로 **키도 같이 커져** 화면을 거의 다 덮었습니다.
+ *   그러자 위로 스크롤할 자리가 없어 **맨 위로 못 올라갔습니다**
+ *   (사용자 지적: 「위로 스크롤을 해도 제일 위로 올라가지지를 않아」).
+ * ⚠ **폭을 넓히면 키를 같이 낮춰야 합니다.** 비율만 두고 상한을 그대로
+ *   두면 넓힌 만큼 그대로 자랍니다. 56vh → 42vh.
+ * ⚠ 키 상한이 걸리면 칸은 «가로로 넓고 세로로 낮은» 상자가 되는데,
+ *   globe.js 가 반지름을 `min(w,h)` 로 내므로 지구는 여전히 동그랗고
+ *   가운데에 옵니다. */
 .globebox{ position:relative; aspect-ratio:1 / 1.08;
-           max-height:min(56vh, 480px); margin:10px auto 14px; }
+           max-height:min(42vh, 380px); margin:6px auto 12px; }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).
@@ -3473,7 +3485,15 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ 단추는 지도 **위에 얹습니다.** 아래에 줄로 놓으면 카드가 그만큼
  *   길어지는데, 이 카드는 앱을 열면 제일 먼저 보이는 것이라 한 줄이
  *   아깝습니다. */
-.gwrap{ position:relative; }
+/* ── 지구본은 «화면 끝까지» (b594, 사용자 요청) ───────────────────────
+ * 「지구본이랑 보관함을 하나의 카드로 감싸지 말고 좌우 여백이랑 쭉
+ *  이어지게 해줘」. 몸통 여백만큼 도로 빼서 화면 폭을 다 씁니다.
+ * ⚠ 이건 **줄이 아니라 «통» 하나**라 음수 여백이 겹칠 일이 없습니다
+ *   (b587 에 줄마다 줬다가 계단이 된 것과 다릅니다).
+ * ⚠ 위에 얹힌 단추 둘(3D/2D · 자세히)은 화면 끝에 붙으면 안 됩니다 —
+ *   그만큼 안으로 다시 넣습니다. */
+.gwrap{ position:relative;
+        margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md)); }
 /* ── 「자세히」 ── 지도 화면으로 가는 이름표(b554) ─────────────────────
  * 지구/평면 단추 맞은편(왼쪽 위)입니다. 지구본 위에 얹히므로 **글자만**
  * 둡니다 — 여기에 배경이나 테두리를 주면 단추가 둘이 되어 어느 쪽이
@@ -3492,7 +3512,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 /* ⚠ `.gzoom`(＋/− 단추)을 걷었습니다(b561) — 확대는 손가락으로만.
    되살리려거든 home.js 의 그 자리 주석부터 보십시오. */
 
-.gmore{ position:absolute; right:2px; top:2px; z-index:2;
+.gmore{ position:absolute; right:var(--s-md); top:2px; z-index:2;
         appearance:none; border:0; background:none; cursor:pointer;
         padding:8px 10px; font-size:var(--f-sm); font-weight:600;
         color:var(--primary); }
@@ -3643,7 +3663,7 @@ body.pvon{ overflow:hidden; }
 /* ⚠ **왼쪽입니다(b557, 사용자 결정).** 「자세히」와 자리를 맞바꿨습니다 —
    보는 방식을 고르는 것이 «먼저»고, 다른 화면으로 나가는 것이 «나중»이라
    왼쪽에서 오른쪽으로 읽는 순서와 맞습니다. */
-.gswitch{ position:absolute; left:2px; top:2px; z-index:2;
+.gswitch{ position:absolute; left:var(--s-md); top:2px; z-index:2;
           display:flex; padding:2px; gap:2px; border-radius:999px;
           background:var(--panel); border:1px solid var(--line);
           box-shadow:0 1px 3px rgba(0,0,0,.06); }
