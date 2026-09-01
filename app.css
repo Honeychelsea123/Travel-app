@@ -1878,7 +1878,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 #homefp{ overflow:hidden; }
 .minimap svg{ width:100%; height:auto; display:block; }
 .minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
-.minimap path.been{ fill:var(--primary); opacity:.85; }
+.minimap path.been{ fill:var(--brand); opacity:.9; }
 
 /* 잠깐 뜨는 알림 */
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
@@ -2145,7 +2145,7 @@ body.bigmap .tabbar{ display:none; }
    **이 화면에 남은 것은 이 칠 하나입니다(b415)** — 도시 깃발을 걷어냈습니다.
    깃발이 74개나 꽂혀서 유럽처럼 몰린 곳은 칠을 오히려 가렸습니다.
    자세한 것은 map.js 의 「도시 깃발은 안 그립니다」. */
-#worldsvg path.been{ fill:var(--primary); opacity:.85; }
+#worldsvg path.been{ fill:var(--brand); opacity:.9; }
 
 /* 대륙 줄 — 이름 · 진행바 · 숫자 */
 .crow{ display:flex; align-items:center; gap:10px; padding:9px 0;
@@ -3238,7 +3238,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .cbmap svg{ width:100%; height:100%; display:block; }
 /* 색은 작은 지도(.minimap)와 같습니다 — 같은 지도가 두 색이면 안 됩니다. */
 .cbmap path{ fill:var(--line); stroke:none; }
-.cbmap path.been{ fill:var(--primary); }
+.cbmap path.been{ fill:var(--brand); }
 .cbtext{ min-width:0; display:flex; flex-direction:column; gap:1px; }
 .cbtext b{ font-size:var(--f-md); font-weight:600; color:var(--ink);
            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

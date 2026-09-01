@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b584';
+import { $ } from './dom.js?v=b585';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -175,7 +175,8 @@ function 격자(ctx, R, cx, cy, λ0, φ0){
     ctx.stroke();
   };
   ctx.lineWidth = 0.5;
-  ctx.strokeStyle = 'rgba(0,0,0,.055)';
+  /* 새긴 선입니다 — 검정이 아니라 «먹»입니다(b585). */
+  ctx.strokeStyle = 'rgba(46,38,26,.085)';
   for (let d = -180; d < 180; d += 30){          /* 자오선 열둘 */
     const λ = d * RAD, 점들 = [];
     for (let p = -84; p <= 84; p += 3) 점들.push([λ, p * RAD]);
@@ -187,7 +188,7 @@ function 격자(ctx, R, cx, cy, λ0, φ0){
     for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, φ]);
     줄(점들);
   }
-  ctx.strokeStyle = 'rgba(0,0,0,.085)';          /* 적도만 한 겹 진하게 */
+  ctx.strokeStyle = 'rgba(46,38,26,.14)';        /* 적도만 한 겹 진하게 */
   {
     const 점들 = [];
     for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, 0]);
@@ -272,9 +273,15 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     const cs = getComputedStyle(document.documentElement);
     const 바다 = cs.getPropertyValue('--parchment').trim() || '#eeeef2';
     const 땅   = cs.getPropertyValue('--line').trim()      || '#d8d8dd';
-    /* 평면 지도와 **같은 색**입니다 — 여기서 다른 값을 쓰면 같은 나라가
-       두 색으로 보입니다. 오렌지로 줘봤다가 되돌렸습니다(b531, app.css 참고). */
-    const 내것 = cs.getPropertyValue('--primary').trim()   || '#0066cc';
+    /* ⚠⚠ **평면 지도와 «같은 색»이라야 합니다.** 다른 값을 쓰면 같은 나라가
+       3D 와 2D 에서 두 색으로 보입니다. b531 에 오렌지로 줬다가 되돌린 적이
+       있는데, 그때는 **평면 쪽을 같이 안 바꿔서** 어긋난 것이었습니다.
+       b585 에서 둘 다 `--brand` 로 옮겼습니다 —
+       app.css 의 `.minimap path.been` · `#worldsvg path.been` · `.cbmap path.been`.
+       ⚠ **셋 중 하나라도 빠뜨리면 또 어긋납니다.**
+       왜 오렌지인가: 종이 문법에서 다녀온 곳은 «도장이 찍힌 자리»입니다.
+       도장은 늘 색이 있고, 그 색이 브랜드 오렌지입니다. */
+    const 내것 = cs.getPropertyValue('--brand').trim()     || '#F25E26';
 
     /* ⚠⚠ **자리는 «비율»로 냅니다(b559).** 대기광은 R 의 1.13 배까지
          번지는데, 고정 13px 을 빼는 식이었습니다. 지구본이 커질수록
@@ -313,11 +320,17 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       /* ① 번짐은 R 의 **1.10 배**까지입니다(b561 에 1.13 에서 줄임).
          줄인 만큼 지구가 커집니다 — 위 R 계산의 1.11 과 «짝»입니다.
          한쪽만 고치면 잘리거나 빈 자리가 생깁니다. */
+      /* ⚠⚠ **파란 대기광을 걷었습니다(b585).** 빛 번짐은 «유리»의 문법입니다 —
+         종이 위에서는 얼룩으로 보입니다. 대신 아주 옅은 «자국»만 남깁니다.
+         종이에 도장을 찍으면 가장자리에 잉크가 번지는 그 정도입니다.
+         ⚠ **번지는 폭(1.10)은 그대로 둡니다.** 위 R 계산의 1.11 과 «짝»이라
+           한쪽만 고치면 잘리거나 빈 자리가 생깁니다(b559·b561 에서 두 판
+           걸렸습니다). 색만 바꿉니다. */
       const g = ctx.createRadialGradient(cx, cy, R * 0.94, cx, cy, R * 1.10);
-      g.addColorStop(0,    'rgba(0,102,204,0)');
-      g.addColorStop(0.44, 'rgba(0,102,204,.14)');
-      g.addColorStop(0.74, 'rgba(0,102,204,.06)');
-      g.addColorStop(1,    'rgba(0,102,204,0)');
+      g.addColorStop(0,    'rgba(70,58,40,0)');
+      g.addColorStop(0.42, 'rgba(70,58,40,.055)');
+      g.addColorStop(0.74, 'rgba(70,58,40,.022)');
+      g.addColorStop(1,    'rgba(70,58,40,0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(cx, cy, R * 1.10, 0, Math.PI * 2); ctx.fill();
     }
@@ -355,15 +368,19 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
     /* ── ⑥ 명암 ── 왼쪽 위에서 빛이 옵니다 ───────────────────────────
        ⚠ 이게 없으면 원판이지 구가 아닙니다. **가장자리를 어둡게** 하는
-         쪽이 부풀어 보이게 하는 데 더 셉니다 — 하이라이트만으로는 안 됩니다. */
+         쪽이 부풀어 보이게 하는 데 더 셉니다 — 하이라이트만으로는 안 됩니다.
+       ⚠⚠ **b585 에서 «유리 광택»을 걷었습니다.** 흰 하이라이트 62% 는
+         반들거리는 구슬입니다. 종이에 새긴 지구는 그렇게 안 빛납니다.
+         하이라이트를 4분의 1로 줄이고, 가장자리 그늘은 «먹»으로 바꿔
+         남겼습니다 — 구로 읽히게 하는 일은 그늘이 하기 때문입니다. */
     {
       const g = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.38, R * 0.06,
                                          cx, cy, R * 1.02);
-      g.addColorStop(0,    'rgba(255,255,255,.62)');
-      g.addColorStop(0.34, 'rgba(255,255,255,.16)');
+      g.addColorStop(0,    'rgba(255,255,255,.16)');
+      g.addColorStop(0.34, 'rgba(255,255,255,.05)');
       g.addColorStop(0.68, 'rgba(255,255,255,0)');
-      g.addColorStop(0.9,  'rgba(0,0,0,.07)');
-      g.addColorStop(1,    'rgba(0,0,0,.19)');
+      g.addColorStop(0.9,  'rgba(46,38,26,.05)');
+      g.addColorStop(1,    'rgba(46,38,26,.15)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
     }
@@ -371,7 +388,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
     /* ── ⑦ 테두리 ── 머리카락 한 올. 구와 배경을 갈라 줍니다 ───────── */
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(0,0,0,.10)'; ctx.stroke();
+    ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(46,38,26,.22)'; ctx.stroke();
   };
   const 다시 = () => { if (!예약) 예약 = requestAnimationFrame(그리기); };
 
