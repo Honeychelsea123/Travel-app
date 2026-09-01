@@ -21,10 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b580';
-import { sb } from './db.js?v=b580';
-import { cities, countryName } from './cities.js?v=b580';
-import { starHtml } from './stars.js?v=b580';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b581';
+import { sb } from './db.js?v=b581';
+import { cities, countryName } from './cities.js?v=b581';
+import { starHtml } from './stars.js?v=b581';
+import { openPhotos } from './photoview.js?v=b581';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -231,6 +232,17 @@ export async function openDiary(){
   키맞추기();
   기울이기();
   줄기.addEventListener('scroll', 세기, { passive:true });
+
+  /* ⚠ 사진을 누르면 크게 봅니다(b581).
+     ⚠ **위임으로 받습니다** — 장마다 붙이면 다시 그릴 때마다 쌓입니다.
+     ⚠ 그 «장»의 사진들만 넘겨줍니다. 일기장 전체를 넘기면 도쿄를 보다
+       옆으로 밀었는데 로바니에미 사진이 나옵니다. */
+  줄기.addEventListener('click', e => {
+    const img = e.target.closest('.dgimg img'); if (!img) return;
+    const 장 = img.closest('.dgshots');
+    const 다 = [...(장 || 줄기).querySelectorAll('.dgimg img')];
+    openPhotos(다.map(i => i.src), 다.indexOf(img));
+  });
   /* ⚠ 사진이 늦게 오면 그 장이 길어집니다. `load` 때 다시 재야
      줄기가 사진 없는 키에 멎어 글 아래를 자르지 않습니다. */
   줄기.querySelectorAll('img').forEach(img => {

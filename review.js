@@ -12,13 +12,14 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b580';
-import { sb } from './db.js?v=b580';
-import { fail } from './net.js?v=b580';
-import { todayYmd } from './calc.js?v=b580';
-import { starHtml, starValue } from './stars.js?v=b580';
-import { trip, legs, nameOf } from './trip.js?v=b580';
-import { arm, disarm } from './ui.js?v=b580';
+import { $, esc, toast } from './dom.js?v=b581';
+import { sb } from './db.js?v=b581';
+import { fail } from './net.js?v=b581';
+import { todayYmd } from './calc.js?v=b581';
+import { starHtml, starValue } from './stars.js?v=b581';
+import { trip, legs, nameOf } from './trip.js?v=b581';
+import { arm, disarm } from './ui.js?v=b581';
+import { openPhotos } from './photoview.js?v=b581';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -190,6 +191,19 @@ async function drawPhotos(){
      </div>`).join('');
   $('rv_shotnote').textContent = `${rvPhotos.length}장`;
 }
+
+/* ⚠ 사진을 누르면 크게 봅니다(b581) — 일기장과 **같은 뷰어**입니다.
+   이 파일의 CSS 주석(app.css `.rvshots`)에 「원본 비는 눌러서 크게 볼 때
+   지킵니다」라고 **적어만 두고 안 만들어** 뒀던 것입니다.
+   ⚠ 지우기(×)를 누른 것은 넘깁니다 — 지우려다 크게 열리면 안 됩니다.
+   ⚠ 한 번만 붙입니다. `drawPhotos` 는 여러 번 도는데, 그때마다 붙이면
+     한 번 눌러도 여러 번 열립니다. */
+$('rv_shots')?.addEventListener('click', e => {
+  if (e.target.closest('button')) return;
+  const img = e.target.closest('.rvshot img'); if (!img) return;
+  const 다 = [...$('rv_shots').querySelectorAll('.rvshot img')];
+  openPhotos(다.map(i => i.src), 다.indexOf(img));
+});
 
 $('rv_file').addEventListener('change', async e => {
   const files = [...(e.target.files || [])];

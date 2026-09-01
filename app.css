@@ -2477,7 +2477,8 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 .rvshots:empty{ display:none; }
 .rvshot{ position:relative; aspect-ratio:1/1; border-radius:var(--r-sm);
          overflow:hidden; background:var(--parchment); }
-.rvshot img{ width:100%; height:100%; object-fit:cover; display:block; }
+.rvshot img{ width:100%; height:100%; object-fit:cover; display:block;
+             cursor:zoom-in; }
 /* 지우기는 내 사진에만 붙습니다. 작게 두되 손가락이 닿을 만큼은 둡니다.
    × 는 아이콘이라 22px 상자에 맞춘 px 입니다 (.shot1 .x 와 같은 이유). */
 .rvshot .x{ position:absolute; top:3px; right:3px; width:22px; height:22px;
@@ -3334,6 +3335,38 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ 어두운 막은 **카드 위쪽만** 덮습니다. 카드는 손가락이 닿는 자리라
  *   막 위에 얹혀야 하고, 막을 누르면 닫힙니다.
  * ⚠ 탭바 위에 섭니다 — 탭바를 가리면 다른 데로 갈 수가 없습니다. */
+/* ── 사진 크게 보기(b581) ──────────────────────────────────────────────
+ * ⚠ **제일 위입니다(1400).** 시트(1210)·뒷판(1200)·카드 미리보기(1300)
+ *   무엇 위에서든 열립니다. 아래에 두면 시트 뒤에 갇힙니다.
+ * ⚠ 넘기기는 **브라우저 몫**(scroll-snap)입니다 — 일기장·탭 덱과 같습니다.
+ * ⚠ 바탕은 **거의 검정**입니다. 사진을 보는 자리라 앱 색을 쓰면 사진이
+ *   그 색에 물듭니다. */
+#pvview{ position:fixed; inset:0; z-index:1400; background:#0A0B0E;
+         display:flex; flex-direction:column; }
+#pvview.hide{ display:none; }
+body.pvon{ overflow:hidden; }
+.pvtop{ flex:none; display:flex; align-items:center; gap:10px;
+        padding:calc(10px + var(--sat)) 14px 10px; color:#fff; }
+.pvnum{ flex:1; font-size:var(--f-md); font-variant-numeric:tabular-nums;
+        opacity:.85; }
+/* ⚠ 손가락이 닿을 크기(44)로 둡니다. 아이콘만 작게 그립니다 —
+     `.gsx` 에서 겪은 것처럼 svg 를 속성으로만 재면 0×0 이 됩니다. */
+.pvx{ flex:none; width:44px; height:44px; display:flex; align-items:center;
+      justify-content:center; padding:0; border:0; border-radius:50%;
+      background:rgba(255,255,255,.14); color:#fff; cursor:pointer; }
+.pvx svg{ width:20px; height:20px; display:block; }
+.pvrow{ flex:1; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden;
+        scroll-snap-type:x mandatory; overscroll-behavior:contain;
+        scrollbar-width:none; -ms-overflow-style:none; }
+.pvrow::-webkit-scrollbar{ display:none; }
+.pvcell{ flex:0 0 100%; min-width:0; scroll-snap-align:start;
+         display:flex; align-items:center; justify-content:center;
+         padding:0 10px calc(14px + var(--sab)); }
+/* ⚠ **`contain` 입니다.** `cover` 로 두면 크게 보려고 열었는데 가장자리가
+     잘립니다 — 목록에서 이미 잘린 것을 다시 잘라 보여주는 꼴입니다. */
+.pvcell img{ max-width:100%; max-height:100%; object-fit:contain;
+             border-radius:var(--r-sm); display:block; }
+
 #gsheet{ position:fixed; inset:0; z-index:1200; display:flex;
          flex-direction:column; justify-content:flex-end;
          pointer-events:none; }
@@ -3551,7 +3584,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .dgshots.one .dgimg img,
 .dgshots.odd > .dgimg:first-child img{ aspect-ratio:4/3; }
 .dgimg img{ width:100%; object-fit:cover; display:block;
-            border-radius:2px; background:var(--dg-rule); }
+            border-radius:2px; background:var(--dg-rule); cursor:zoom-in; }
 
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);
