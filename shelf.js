@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b606';
-import { openCity } from './city.js?v=b606';
-import { sb } from './db.js?v=b606';
-import { cities, countryName } from './cities.js?v=b606';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b606';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b606';
-import { fail } from './net.js?v=b606';
-import { arm } from './ui.js?v=b606';
-import { todayYmd } from './calc.js?v=b606';
-import { loadCities } from './citysearch.js?v=b606';
-import { loadRateData, saveRate } from './rating.js?v=b606';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b607';
+import { openCity } from './city.js?v=b607';
+import { sb } from './db.js?v=b607';
+import { cities, countryName } from './cities.js?v=b607';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b607';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b607';
+import { fail } from './net.js?v=b607';
+import { arm } from './ui.js?v=b607';
+import { todayYmd } from './calc.js?v=b607';
+import { loadCities } from './citysearch.js?v=b607';
+import { loadRateData, saveRate } from './rating.js?v=b607';
 
 let ctx = {
   me: () => null,
@@ -255,6 +255,14 @@ export async function openShelf(kind){
   $('shelffilter').querySelectorAll('[data-ssort]').forEach(b =>
     b.classList.toggle('on', b.dataset.ssort === shelfSort));
 
+  /* ⚠⚠ **벽은 여기서 먼저 벗깁니다(b607).** 아래 세 갈래(맛집·관광지·
+     후기·배지)는 여기서 «일찍 나가»서, 벽을 씌우고 벗기는 줄을 지나가지
+     않습니다. 그러면 **앞서 본 목록의 벽이 그대로 남아** 배지 화면이
+     두 칸 격자로 찢어집니다(도시 벽 → 배지 순으로 열면 재현됩니다).
+     ⚠ **일찍 나가는 길이 있는 함수에서 «켜기»만 끝에 두면 안 됩니다.**
+       끄는 것은 맨 위, 켜는 것은 정해진 뒤 — 이 순서라야 어느 길로
+       나가도 남는 것이 없습니다. */
+  $('shelflist').classList.remove('wall');
   if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
   if (kind === 'review') return openReviewShelf();
   if (kind === 'badge')  return openBadgeShelf();
@@ -316,6 +324,7 @@ export async function openShelf(kind){
    *   갇혀 가운데가 아니라 왼쪽에 붙습니다. */
   $('shelflist').classList.toggle(
     'wall', list.length > 0 && (kind === 'mine' || kind === 'been' || kind === 'want'));
+  /* (벗기는 것은 이 함수 맨 위에서 이미 했습니다 — 위 주석 참고.) */
   $('shelflist').innerHTML = list.length
     ? list.map(c => {
         const r = myRates[c.id] || {};
