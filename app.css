@@ -3847,15 +3847,19 @@ body.pvon{ overflow:hidden; }
  *   하는 것처럼 보입니다 — 일기는 글만 써도 됩니다.
  * ⚠ 비율은 4:3 으로 잘라 둡니다. 세로 사진이 섞이면 일기장을 넘길 때마다
  *   장 높이가 들썩입니다. */
+/* ⚠ **엽서 위의 사진은 모서리가 각집니다(b602).** 인화지는 둥글지 않습니다.
+     도시 화면은 사진(#cv_hero)·선·줄이 다 각졌는데 여기만 10px 로 둥글어서
+     혼자 «웹 상자»로 보였습니다. 일기장 화면(.dgimg)은 안 건드립니다 —
+     그쪽은 «붙여 놓은 인화지» 연출이라 2px 가 일부러 준 것입니다. */
 .jphoto{ margin-bottom:10px; }
-.jpempty{ width:100%; padding:18px 10px; border-radius:var(--r-sm);
+.jpempty{ width:100%; padding:18px 10px; border-radius:0;
           border:1.5px dashed var(--line); background:none; cursor:pointer;
           font-size:var(--f-sm); color:var(--ink-48); }
 .jpempty:active{ background:var(--sunk); }
 .jpempty:disabled{ opacity:.6; cursor:default; }
 .jpwrap{ position:relative; }
 .jpwrap img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
-             border-radius:var(--r-sm); background:var(--parchment); }
+             border-radius:0; background:var(--parchment); }
 /* 지우기. 사진 위에 얹히므로 흰 원이라야 어떤 사진에서도 보입니다.
    ⚠ 크기는 **CSS 로** 줍니다 — 속성만 두면 flex 안에서 0×0 이 됩니다(b561). */
 .jpdel{ position:absolute; right:8px; top:8px; width:30px; height:30px;
@@ -3872,7 +3876,7 @@ body.pvon{ overflow:hidden; }
 .jpgrid:empty{ display:none; }
 .jpcell{ position:relative; }
 .jpcell img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
-             border-radius:var(--r-sm); background:var(--parchment); }
+             border-radius:0; background:var(--parchment); }
 .jpcell .jpdel{ position:absolute; top:6px; right:6px; }
 
 /* 일기장 장 안의 사진 — **인화지에 붙인 것처럼**(b571).
