@@ -225,7 +225,10 @@ body{
   /* ⚠ 위쪽 안전영역만큼 밀어 둡니다(b432) — `black-translucent` 로 앱이
      시계 뒤까지 넓어졌기 때문입니다. 상단바만 아래에서 음수 마진으로
      다시 그 위로 올라가 시계 뒤를 덮습니다. */
-  padding:var(--sat) var(--s-sm) calc(48px + var(--kb) + var(--sab));
+  /* ⚠ 좌우 12 → 17(b593). 카드가 갖고 있던 안쪽 여백을 걷었으므로
+     이제 **글과 화면 끝 사이는 이 값 하나**가 정합니다. 12 는 종이의
+     여백치고 좁습니다. */
+  padding:var(--sat) var(--s-md) calc(48px + var(--kb) + var(--sab));
   overflow-x:hidden;              /* 어디 하나 삐져나와도 화면이 옆으로 밀리지 않게 */
   /* ── 종이 (b584) ──────────────────────────────────────────────────
    * 겹이 넷입니다: 종이 «결» 둘 + 원래 있던 밝기 차이 둘 + 종이색.
@@ -401,7 +404,12 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
         ⚠ 시트(.assheet/.aisheet)는 뒤에서 제 둥글기를 다시 줍니다 —
           거기는 화면을 덮는 판이라 위 모서리가 둥글어야 합니다. */
        border-radius:0;
-       padding:var(--s-md); margin-bottom:var(--s-sm); min-width:0;
+       /* ⚠⚠ **좌우 안쪽 여백을 걷습니다(b593, 사용자 지적).**
+          상자를 없앴는데 안쪽 여백이 남아 있으면 «보이지 않는 상자»가
+          됩니다 — 내용이 몸통 여백 위에 «한 번 더» 들여써지고, 구역을
+          나누는 선도 그만큼 짧아져 화면 끝까지 안 갑니다.
+          이제 좌우 여백은 **몸통 하나만** 줍니다. 위아래만 여기서. */
+       padding:var(--s-md) 0; margin-bottom:var(--s-sm); min-width:0;
        box-shadow:var(--lift-1); }
 
 /* ── 카드가 사라진 자리에 «선»을 긋습니다 (b590) ───────────────────────
@@ -419,9 +427,12 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
  *
  * ⚠ **`border-bottom` 입니다.** `+ .card` 로 위에 그으면, 앞 형제가 숨어
  *   있을 때(이 앱에는 숨은 카드가 많습니다) **판 맨 위에 줄이 하나 뜹니다.**
- * ⚠ **마지막 카드의 선을 «걷지» 않습니다.** `:last-child` 로 걷어봤더니
- *   숨은 카드가 마지막 자식일 때가 잦아, 정작 «보이는» 마지막 카드에는
- *   선이 남았습니다 — **들쭉날쭉한 것이 늘 있는 것보다 나쁩니다.**
+ * ⚠ **마지막 «보이는» 카드의 선은 걷습니다(b593).** 끝났는데 선이 남으면
+ *   아래가 허전하고 «더 있나» 싶습니다(사용자 지적).
+ *   `:last-child` 로는 안 됩니다 — 숨은 카드가 마지막 자식일 때가 잦아
+ *   정작 보이는 마지막 카드에 선이 남습니다. **뒤에 «보이는» 카드가 있는지**
+ *   를 물어야 합니다: `:not(:has(~ .card:not(.hide)))`.
+ *   ⚠ `.hide` 로 숨기는 것이 이 앱의 규칙이라 그것만 봅니다.
  * ⚠ 선과 글이 붙으면 답답합니다 — 아래 여백을 그만큼 더 줍니다. */
 .card{
   border-bottom:1px solid var(--line);
@@ -437,6 +448,8 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
 .card.hello, .card.hero,
 .card.assheet, .card.aisheet,
 .card .card{ border-bottom:0; padding-bottom:var(--s-md); margin-bottom:var(--s-sm); }
+/* 뒤에 «보이는» 카드가 없으면 = 마지막입니다. 선을 걷습니다. */
+.card:not(:has(~ .card:not(.hide))){ border-bottom:0; }
 
 /* 흰 카드 + 같은 모서리 + 같은 그림자가 계속 쌓이면 뭐가 중요한지 눈이
    못 고릅니다. **뜨는 카드(그림자)는 지금 할 일**, **묻힌 카드(테두리만)는
