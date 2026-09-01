@@ -2091,9 +2091,17 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 
 /* 평가 안 한 여행 알림 띠. 히어로 아래에 얇게 붙습니다 —
    앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */
+/* ⚠ **둥근 노란 상자를 걷었습니다(b611).** 첫 화면 맨 위에 있어서, 앱을
+     열면 «칠해진 상자»가 제일 먼저 보였습니다 — 종이에는 그런 것이 없습니다.
+   ⚠ 글자색(`--warn-2`)은 남깁니다. 「해야 할 것」이라는 뜻은 색이 나르는
+     것이고, 걷어야 할 것은 «칠»과 «모서리»였습니다.
+   ⚠ 위아래 실선으로 감쌉니다. 이 줄은 목록의 한 줄이 아니라 **끼워 넣은
+     안내**라, 위에도 선이 있어야 앞 내용과 안 붙습니다. */
 .rvbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
-        margin:-4px 0 12px; padding:11px 14px; border-radius:var(--r-sm);
-        background:var(--warn-bg); border:1px solid var(--warn-line-2); }
+        margin:0 0 var(--s-md); padding:11px 0; border-radius:0;
+        background:none; border:0;
+        border-top:1px solid var(--line);
+        border-bottom:1px solid var(--line); }
 .rvbar .t{ flex:1; min-width:0 }
 .rvbar .t b{ display:block; font-size:var(--f-md); font-weight:600;
              color:var(--warn-2); word-break:keep-all }
@@ -2596,14 +2604,28 @@ body.noreorder .ev .grip{ display:none; }
  * ⚠ **`saturate` 가 청량함을 만듭니다.** 애플 유리가 시원해 보이는 것은
  *   흐림이 아니라 **뒤 색을 진하게 살려서**입니다. 200% 로 둡니다. */
 .tabbar{
-  position:fixed; bottom:calc(12px + var(--sab)); z-index:1150;
+  position:fixed; bottom:0; z-index:1150;
   /* transform 대신 좌우 0 + auto 마진 — 위 경고 참고 */
   left:0; right:0; margin-inline:auto;
   /* ⚠ **탭이 다섯이라 넓혔습니다(b439).** 330px 에 다섯이면 한 칸이 66px 이라
      「프로필」 네 글자가 안 들어갑니다. 폰(390px)에서 358px · 한 칸 71px.
      그래도 화면에 꽉 차지는 않아 「떠 있는」 느낌은 남습니다. */
-  width:min(calc(100% - 32px), 420px);
-  display:flex; gap:2px; padding:6px; border-radius:var(--r-pill);
+  /* ⚠⚠ **떠 있는 유리 알약을 걷었습니다(b611, 사용자 지적).** ⚠⚠
+   * 「첫 화면에서 여권이나 엽서 느낌이 안 난다」 — 화면에서 제일 「앱스러운」
+   * 물건이 이것이었습니다. 종이 위에 **유리판이 떠 있으면** 아무리 종이색을
+   * 칠해도 종이로 안 읽힙니다. 그리고 이건 모든 화면에 있습니다.
+   * 바닥에 붙은 **종이 띠**로 바꿉니다 — 폭을 다 쓰고, 각지고, 위에 실선.
+   * ⚠ 유리 세 요소(흐림·테두리·그림자)를 **셋 다** 걷어야 합니다. 하나라도
+   *   남으면 「각진 유리」가 됩니다(b443~b460 의 여덟 판이 그 기록입니다).
+   *   흐림은 종이 위에서 할 일이 아예 없습니다 — [[glass-blur-lesson]].
+   * ⚠ **`--sab`(아이폰 아래 여백)을 여기 안쪽으로 들입니다.** 전에는 바가
+   *   바닥에서 12px 떠 있어서 몸통 쪽에서만 셌는데, 이제 바닥에 붙으므로
+   *   바 «안»에 없으면 글자가 홈 인디케이터에 깔립니다.
+   *   그만큼 몸통의 `+ var(--sab)` 는 걷습니다 — 안 걷으면 두 번 셉니다
+   *   (ui.js 가 재는 `--tabh` 에 이제 이 여백이 들어 있습니다). */
+  width:100%;
+  display:flex; gap:2px; border-radius:0;
+  padding:6px var(--s-sm) calc(6px + var(--sab));
   /* ── 유리의 세 요소(b443) ─────────────────────────────────────────────
      ① **투명 배경** — 뒤가 비쳐야 유리입니다. .60 은 너무 두꺼웠습니다.
      ② **굴절(흐림)** — backdrop-filter. 뒤 형체가 번져야 유리판 너머로
@@ -2631,17 +2653,19 @@ body.noreorder .ev .grip{ display:none; }
      ⚠ 막이 없으니 **테두리와 그림자가 유일한 형태**입니다(위 ③).
        그 둘을 지우면 탭바가 화면에서 사라집니다.
      ⚠ 앞뒤 분리도 같이 셌습니다 — 아래 글자색 참고. */
-  background:rgba(255,255,255,0);
-  backdrop-filter:blur(2px);
-  -webkit-backdrop-filter:blur(2px);
-  border:1px solid rgba(255,255,255,.42);
-  box-shadow:0 8px 32px rgba(16,20,35,.12),
-             0 2px 8px rgba(16,20,35,.06);
+  /* ⚠ 위 유리 주석(b443~b460)은 **내력으로 남겨둡니다.** 흐림을 여덟 판
+     동안 만졌고 범인이 흰 막이었다는 것은 다시 겪지 말아야 할 기록입니다.
+     다만 종이로 오면서 유리 자체를 걷었으므로 값은 아래가 전부입니다. */
+  background:var(--canvas);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  border:0; border-top:1px solid var(--line);
+  box-shadow:none;
 }
 .tabbar button{
   flex:1; display:flex; flex-direction:column; align-items:center; gap:1px;
   padding:5px 0 4px; min-height:40px; color:var(--ink-48);
-  border:0; background:none; border-radius:var(--r-pill);
+  border:0; background:none; border-radius:0;
   /* ⚠ **transform 은 전환 목록에 없습니다(b428).** 탭바는 움직이지
      않습니다 — 위 .is-on 주석 참고. 넣으면 다시 튑니다. */
   transition:background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
@@ -2695,9 +2719,15 @@ body.noreorder .ev .grip{ display:none; }
  * 아이콘·글자만 파랑입니다 — 바탕과 **다른 색**이라야 눌린 것이 보입니다.
  * 회색은 iOS 의 fill 계열(120,120,128)에서 가져옵니다. 흰 배경에서는
  * 옅은 회색으로, 사진 위에서는 살짝 어두운 판으로 읽혀 양쪽 다 삽니다. */
+/* ⚠ **회색 알약을 걷고 «위에 그은 먹선»으로 바꿉니다(b611).** 채운 판은
+     떠 있는 유리 시절의 문법입니다. 종이에서 「지금 이 장」을 가리키는
+     것은 색칠이 아니라 **선**입니다 — 책의 색인 탭이 그렇습니다.
+   ⚠ 선은 `box-shadow: inset` 으로 긋습니다. `border-top` 은 자리를 2px
+     먹어서 고른 칸만 아래로 내려앉습니다. */
 .tabbar button.is-on{
-  color:var(--primary); font-weight:600;
-  background:var(--sep-ios);
+  color:var(--ink); font-weight:600;
+  background:none;
+  box-shadow:inset 0 2px 0 var(--ink);
 }
 /* 고른 칸의 그림도 굵게 — 색만 바꾸면 옆 칸과 무게가 같아 덜 갈립니다. */
 .tabbar button.is-on svg{ stroke-width:2.2; }
@@ -2718,7 +2748,12 @@ body.noreorder .ev .grip{ display:none; }
      크게 보기에서 여유가 8px 밖에 안 남았습니다. ui.js 가 진짜 높이를
      재서 --tabh 로 넣습니다. 12 는 탭바가 바닥에서 뜬 만큼(.tabbar 의
      bottom), 24 는 마지막 줄이 탭바에 닿아 보이지 않게 두는 숨쉴 자리. */
-body.hastab{ padding-bottom:calc(var(--tabh, 58px) + 36px + var(--kb) + var(--sab)); }
+/* ⚠ **`+ var(--sab)` 를 걷었습니다(b611).** 탭바가 바닥에 붙으면서 그
+     여백이 바 «안»으로 들어갔고, ui.js 가 재는 `--tabh` 에 이미 포함돼
+     있습니다. 두면 두 번 셉니다.
+   ⚠ 36 → 20. 36 은 12(떠 있던 만큼) + 24(숨쉴 자리)였습니다.
+     이제 뜨지 않으므로 숨쉴 자리만 남깁니다. */
+body.hastab{ padding-bottom:calc(var(--tabh, 58px) + 20px + var(--kb)); }
 
 /* ── 여행 안 구역 (일정·지출·준비·일행) ──────────────────────────────
  * 예전에는 이것이 하단바를 통째로 갈아치웠습니다. 같은 자리가 다른 일을
@@ -3163,7 +3198,12 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      결과를 내지만, 다르게 적어 두면 언젠가 한쪽만 고칩니다. */
 .swcard{ flex:0 0 100%; scroll-snap-align:start; text-align:center;
          padding:8px 0 4px; }
-.swtitle{ font-size:calc(13px * var(--ts)); font-weight:600; color:var(--dim);
+/* ⚠ 대륙 이름은 수의 «이름표»입니다(b611) — 도시 화면의 사실 줄과 같은
+     타자기 글씨·벌린 자간으로 맞춥니다. 두 화면이 한 문서로 읽히는 것은
+     이런 «말투»가 같아서입니다. 굵기는 뺍니다 — 이름표가 조용해야
+     아래 큰 수가 삽니다. */
+.swtitle{ font-family:var(--mono); font-size:var(--f-sm); font-weight:400;
+          letter-spacing:.12em; color:var(--ink-48);
           margin-bottom:6px; }
 .swdots{ display:flex; justify-content:center; gap:5px; margin-top:8px; }
 .swdots i{ width:5px; height:5px; border-radius:50%; background:var(--line);
@@ -3234,7 +3274,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      (`body.hastab` 이 문서에 주던 여백과 같은 뜻입니다.) */
   height:calc(var(--vvh, 100dvh) - var(--deck-top, 64px));
   /* ⚠ 값은 ui.js 가 잰 --tabh 에서 옵니다(b502) — body.hastab 참고. */
-  padding-bottom:calc(var(--tabh, 58px) + 36px + var(--sab));
+  padding-bottom:calc(var(--tabh, 58px) + 20px);
   overflow-y:auto;
   overscroll-behavior-y:contain;
   -webkit-overflow-scrolling:touch;
@@ -3706,7 +3746,7 @@ body.pvon{ overflow:hidden; }
      아니라 브라우저 알림처럼 보였습니다. `main` 의 max-width 를 바꾸면
      여기도 같이 고쳐야 합니다. */
 .gswrap{ pointer-events:auto; width:100%; max-width:480px; margin:0 auto;
-         padding-bottom:calc(var(--tabh, 58px) + 22px + var(--sab));
+         padding-bottom:calc(var(--tabh, 58px) + 14px);
          animation:gsup .22s var(--ease); }
 @keyframes gsup{ from{ transform:translateY(16px); opacity:0 } to{ transform:none; opacity:1 } }
 
@@ -3779,12 +3819,18 @@ body.pvon{ overflow:hidden; }
 /* ⚠ **왼쪽입니다(b557, 사용자 결정).** 「자세히」와 자리를 맞바꿨습니다 —
    보는 방식을 고르는 것이 «먼저»고, 다른 화면으로 나가는 것이 «나중»이라
    왼쪽에서 오른쪽으로 읽는 순서와 맞습니다. */
+/* ⚠ **알약을 각지게(b611).** 그림자도 걷습니다 — 종이 위에 떠 있을 것이
+     없습니다. 고른 칸을 먹으로 채우는 것은 그대로 둡니다: 이건 「둘 중
+     하나」를 고르는 칸이라, 인쇄물에서도 채워서 표시합니다.
+   ⚠ 칸 사이 틈(gap)도 걷고 가운데에 선 하나를 둡니다 — 두 칸이 한 물건
+     이라는 것이 그래야 보입니다. */
 .gswitch{ position:absolute; left:2px; top:2px; z-index:2;
-          display:flex; padding:2px; gap:2px; border-radius:999px;
-          background:var(--panel); border:1px solid var(--line);
-          box-shadow:0 1px 3px rgba(0,0,0,.06); }
+          display:flex; padding:0; gap:0; border-radius:0;
+          background:var(--canvas); border:1px solid var(--line);
+          box-shadow:none; }
+.gswitch button + button{ border-left:1px solid var(--line); }
 .gswitch button{ appearance:none; border:0; cursor:pointer;
-                 padding:4px 11px; border-radius:999px; background:none;
+                 padding:5px 12px; border-radius:0; background:none;
                  font-size:var(--f-sm); font-weight:600; color:var(--ink-48);
                  transition:background var(--t) var(--ease), color var(--t) var(--ease); }
 .gswitch button.on{ background:var(--ink); color:var(--canvas); }
