@@ -2371,6 +2371,9 @@ body.bigmap .tabbar{ display:none; }
  * ⚠ **새 클래스 이름은 붙이기 «전에» 저장소를 훑어야 합니다.**
  *   b583 에서 `--bad` 토큰으로 똑같은 일을 겪었습니다. 짧은 이름일수록
  *   이미 있습니다. 한 줄이면 됩니다: `grep -c '\.이름' app.css *.js`. */
+/* ⚠ 도시 화면은 사진이 맨 위라, 위 띠(머리글)와 사진이 맞붙으면 사진이
+     잘린 것처럼 보입니다. 숨을 조금 줍니다(b603, 사용자 지적). */
+#cityview{ padding-top:var(--s-sm); }
 .postc{ padding:0; }
 .postcap{ padding:var(--s-md) 0 0; }
 .postname{ font-size:calc(26px * var(--ts)); font-weight:650; letter-spacing:-.01em; }
