@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b575';
+import { $ } from './dom.js?v=b576';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -344,12 +344,27 @@ if (window.visualViewport){
        덮개도 똑같이 만듭니다. 문서 전체를 깔면 어디가 막대 뒤인지 알 필요가
        없습니다. 그 자리가 문서 안이라는 것은 파랑 자가 이미 증명했습니다. */
     kbCover.style.height =
-      Math.max(document.documentElement.scrollHeight, window.innerHeight) + 'px';
+      Math.max(document.documentElement.scrollHeight, 레이아웃높이()) + 'px';
   };
 
   /* ⚠ **같은 값이면 안 씁니다(b575).** `setProperty` 는 값이 같아도 그
      아래를 전부 다시 따지게 만듭니다. 아래에서 `fit` 을 여러 번 부르게
      되었으므로, 안 바뀐 값을 거르지 않으면 그만큼 낭비가 쌓입니다. */
+  /* ⚠⚠ **`window.innerHeight` 를 «레이아웃 높이»로 쓰지 마십시오(b576).** ⚠⚠
+   *   눈금자 실측(아이폰 홈 화면 앱, 2026-08-31, b575):
+   *       키보드 없음 : inner 793 · client 793
+   *       키보드 올림 : **inner 424** · client 793 · vv.h 424 · off 369
+   *   즉 이 iOS 는 `innerHeight` 를 **보이는 창**에 맞춰 줄입니다. 이 파일의
+   *   셈은 전부 「inner = 레이아웃 높이」를 전제로 쓰였는데 그 전제가
+   *   깨졌습니다. 그래서 「키보드 올라왔나」가 `424 − 424 = 0` 이 되어
+   *   **늘 거짓**이었고, 시트 여백도 덮개도 안 걸렸습니다.
+   *   ⚠ 이 파일 위쪽의 옛 표(inner 793 · vv.h 424)는 **그때의 iOS** 값입니다.
+   *     숫자를 규칙으로 적으면 언젠가 조용히 틀립니다 — 세 번째입니다.
+   *   `clientHeight`(레이아웃 뷰포트)와 큰 쪽을 씁니다. 어느 쪽이 무엇을
+   *   따라가든 «레이아웃 높이»는 둘 중 큰 값입니다. */
+  const 레이아웃높이 = () =>
+    Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+
   const 지난값 = {};
   const 넣기 = (k, v) => {
     if (지난값[k] === v) return;
@@ -379,7 +394,7 @@ if (window.visualViewport){
        b165 에서 이 값을 높이 제한에 쓰려다 0 이 나와 지운 것이 실수였습니다 —
        높이는 --vvh(보이는 높이)가 맡고, 이 값은 여백이 맡습니다. */
     const kb = typing()
-      ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+      ? Math.max(0, 레이아웃높이() - vv.offsetTop - vv.height) : 0;
     /* ⚠ **숫자가 아니면 안 넣습니다(b502).** `--kb` 가 'NaNpx' 가 되면
        그것을 쓰는 calc 가 통째로 무효가 되어 **아래 여백이 0 이 됩니다** —
        실험으로 재현했습니다(body padding-bottom 84px → 0px). 죽은 var 는
@@ -414,7 +429,7 @@ if (window.visualViewport){
        고무줄 스크롤이 나는 순간에도 offsetTop 이 잠깐 흔들리는데, 그때마다
        시트가 튀면 안 됩니다. 키보드가 없으면 어차피 두 바닥이 같습니다. */
     const vvbot = typing()
-      ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
+      ? Math.max(0, 레이아웃높이() - vv.offsetTop - vv.height) : 0;
     넣기('--vvbot', Math.round(vvbot) + 'px');
 
     /* ── 레이아웃 바깥에 그려지는 자리 ──
@@ -432,7 +447,7 @@ if (window.visualViewport){
        그걸 모르고 시트 아래를 59 칠하고 있었습니다 — 없는 자리를 칠한 것입니다.
        standalone 이면 아래에 덮을 것이 없습니다. */
     const below = STANDALONE ? 0
-      : Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
+      : Math.max(0, Math.round((screen.height || 0) - 레이아웃높이()));
     넣기('--below', below + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
@@ -442,7 +457,9 @@ if (window.visualViewport){
     /* **키보드가 올라왔는지는 --kb 로 알 수 없습니다.** 두 환경 다 0 입니다
        (사파리 695−303−392, 홈화면앱 793−369−424). 레이아웃이 줄지 않고
        보이는 창만 작아지므로, 판정은 그 차이로 합니다. */
-    const kbUp = typing() && (window.innerHeight - vv.height) > 60;
+    /* ⚠ **여기가 `innerHeight` 때문에 늘 거짓이었습니다(b576).** 실측
+       inner 424 · vv.h 424 → 차이 0. 레이아웃 높이로는 793 − 424 = 369 입니다. */
+    const kbUp = typing() && (레이아웃높이() - vv.height) > 60;
     coverBelow(kbUp);
     /* body.kbon 은 --kb 로 판정하는데 그 값이 두 환경 다 0 이라 안 켜집니다.
        **키보드가 떠 있는지를 물어야 하는 CSS 는 이쪽을 봐야 합니다.** */
@@ -623,13 +640,15 @@ if (window.visualViewport){
              : '없음'}\n` +
           /* 덮개가 없으면 **왜** 없는지가 갈려야 합니다. 조건이 둘입니다. */
           `덮개조건  시트 ${document.body.classList.contains('sheeton') ? 'Y' : 'N'}` +
-          `  키보드차 ${Math.round(window.innerHeight - vv.height)} (>60이어야)\n` +
+          `  키보드차 ${Math.round(Math.max(document.documentElement.clientHeight,
+                                          window.innerHeight) - vv.height)} (>60이어야)\n` +
           /* b175 가 안 먹은 것이 자리 계산 때문인지 보려면 두 기준을 견줘야
              합니다. 같으면 계산은 죄가 없고 다른 곳이 원인입니다. */
           `좌표기준  scrollY ${Math.round(window.scrollY)}` +
           `  rect ${Math.round(-document.documentElement.getBoundingClientRect().top)}\n` +
           `--kb      ${kb}\n` +
-          `inner     ${window.innerHeight}   outer ${window.outerHeight}\n` +
+          `inner     ${window.innerHeight}   outer ${window.outerHeight}` +
+          `   (레이아웃 ${Math.max(cliH, window.innerHeight)})\n` +
           `client    ${cliH}   screen ${scrH}   dpr ${dpr}\n` +
           `vv.h      ${Math.round(vv.height)}  off ${Math.round(vv.offsetTop)}` +
           `  합 ${Math.round(vv.height + vv.offsetTop)}\n` +
