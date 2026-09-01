@@ -32,7 +32,7 @@
   /* 여권 도장의 인주(b604). 붉되 삭지 않은 색이라야 종이 위에서
      장식이 아니라 «찍힌 것»으로 보입니다. 투명도를 색 안에 넣어
      사진 위에 얹혀도 사진이 비칩니다. */
-  --stamp:rgba(152, 76, 52, .66);
+  --stamp:rgba(163, 78, 51, .88);
   --canvas:#F3F0E8;   --parchment:#F3F0E8;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
                         상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#EDE9DF;
 
@@ -3928,7 +3928,14 @@ body.pvon{ overflow:hidden; }
         justify-content:center; gap:1px;
         color:var(--stamp); border:2.5px solid currentColor;
         font-family:var(--mono); pointer-events:none;
-        transform:rotate(-11deg); position:absolute; }
+        transform:rotate(-11deg); position:absolute;
+        /* ⚠ 사진 위에 얹히는데 사진 밝기를 알 수가 없습니다(b606).
+           도쿄 야경 위에서는 붉은 인주가 묻혀 안 읽혔습니다.
+           **얇은 그림자 하나로 양쪽을 다 삽니다** — 밝은 사진에서는
+           거의 안 보이고, 어두운 사진에서는 도장을 띄웁니다.
+           `drop-shadow` 라야 «그린 모양»을 따라갑니다. `box-shadow` 는
+           네모난 상자에 그려서 원 밖에 네모 그늘이 집니다. */
+        filter:drop-shadow(0 1px 2px rgba(0,0,0,.38)); }
 .stamp::before{ content:''; position:absolute; inset:4px;
                 border:1px solid currentColor; border-radius:50%; }
 .stamp b{ font-size:19px; font-weight:700; letter-spacing:.08em; line-height:1; }
