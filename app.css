@@ -22,7 +22,13 @@
   --brand:#F25E26;    --brand-dark:#D94E1B;   --brand-ink:#11141A;
   --primary:#1B1B1F;  --primary-focus:#000000;
   --ink:#1B1B1F;      --ink-80:#3A3630;   --ink-48:#807C74;
-  --divider-soft:#EDE9E1; --hairline:#DFDAD0;
+  /* ⚠⚠ **옅은 선을 한 칸 진하게 했습니다(b598).** #EDE9E1 은 흰 바탕에서
+     쓰던 값입니다. 종이 바탕(#F3F0E8)에서는 차이가 6밖에 안 나 **사실상
+     안 보였습니다** — 보관함·장부에서 선이 없어 보이던 것을 그때마다
+     한 곳씩 `--line` 으로 올려 막고 있었는데, 원인은 토큰 쪽이었습니다.
+     이제 24곳이 한꺼번에 고쳐집니다. `--line`(#DFDAD0)보다는 여전히
+     옅어서 «약한 선 / 진한 선»의 층은 그대로입니다. */
+  --divider-soft:#E6E1D6; --hairline:#DFDAD0;
   --canvas:#F3F0E8;   --parchment:#F3F0E8;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
                         상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#EDE9DF;
 
@@ -2301,10 +2307,16 @@ body.bigmap .tabbar{ display:none; }
                   border-radius:var(--r-pill); padding:4px 10px; cursor:pointer;
                   font-size:var(--f-sm); color:var(--ink) }
 /* 도시 페이지의 사실 줄 — 대륙 · 통화 · 시간대 · 이동 */
-.facts{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:14px; }
+/* ⚠ 두 칸 격자였습니다(b598 에서 줄로). 격자는 세로선을 하나 더 그리는
+     셈이고, 값이 셋일 때는 마지막 칸이 비어 이가 빠집니다. */
+.facts{ margin-top:var(--s-md); border-top:1px solid var(--line); }
 .facts div{ display:flex; justify-content:space-between; gap:8px;
-            font-size:var(--f-md); }
-.facts span{ color:var(--ink-48); }
+            font-size:var(--f-md); padding:9px 0;
+            border-bottom:1px solid var(--line); }
+/* 이름표는 주소란과 같은 글씨입니다 — 여권의 «성 / 이름 / 국적» 칸. */
+.facts span{ color:var(--ink-48); font-family:var(--mono);
+             font-size:var(--f-sm); letter-spacing:.06em; }
+.facts b{ font-weight:600; }
 /* 후기 — 별과 한 줄을 나란히 */
 .rvme{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .rvme input{ flex:1; min-width:180px; }
@@ -2328,8 +2340,32 @@ body.bigmap .tabbar{ display:none; }
    그래서 `min` 을 172 로 잡아 **작은 폰에서는 지금과 똑같이** 두고,
    여유 있는 화면에서만 24vh 까지 자라게 합니다(844px 폰에서 203px).
    홈(236)보다는 늘 작습니다 — 홈이 그날의 주인공이고 여기는 자료 화면입니다. */
+/* ── 도시는 «엽서»입니다 (b598, 4단계) ────────────────────────────────
+ * 엽서는 **앞면이 사진 한 장, 뒷면이 글씨 칸**입니다. 도시 화면이 원래
+ * 그 짜임이었습니다 — 위에 사진, 아래에 이름·설명·사실·별점.
+ * **엽서처럼 «보이게»만 합니다. 칸도 글도 그대로입니다.**
+ *
+ * 세 가지만 손댑니다.
+ *  ① 사진은 «붙인 인화지»입니다 — 둘레에 얇은 먹선을 두릅니다.
+ *  ② 이름 아래 설명 줄은 «엽서 뒷면의 주소란»입니다 — 타자기 글씨로,
+ *     자간을 벌려 씁니다. 여권의 정보란도 같은 글씨입니다.
+ *  ③ 사실 넷(대륙·통화·시각)은 **두 칸 격자 → 줄**로 바꿉니다.
+ *     격자는 화면 안에 격자를 하나 더 그립니다. 줄은 종이의 문법이고,
+ *     일정 장부(b596)와 같은 말을 씁니다.
+ *
+ * ⚠ 테두리는 `box-shadow: inset` 으로 «안쪽»에 긋습니다. 바깥으로 그으면
+ *   사진이 좌우로 1px 씩 넓어져 다른 것들과 안 맞습니다. `border` 는
+ *   높이를 2px 밀어 `clamp` 로 잡아둔 키가 어긋납니다. */
 #cv_hero{ height:clamp(172px, 24vh, 220px);
-          background:var(--parchment) center/cover no-repeat; }
+          background:var(--parchment) center/cover no-repeat;
+          box-shadow:inset 0 0 0 1px var(--line); }
+/* 인화지에는 여백이 없습니다. 글씨 칸에만 위아래로 숨을 줍니다. */
+.pcard{ padding:0; }
+.pcap{ padding:var(--s-md) 0 0; }
+.pcname{ font-size:calc(26px * var(--ts)); font-weight:650; letter-spacing:-.01em; }
+/* 주소란 — 타자기 글씨, 벌린 자간. 이게 «엽서»라고 말하는 한 줄입니다. */
+#cv_sub{ font-family:var(--mono); letter-spacing:.06em; font-size:var(--f-sm);
+         margin-top:3px; }
 #cv_hero.ph{ display:flex; align-items:center; justify-content:center;
              font-size:var(--f-mega); font-weight:700; color:var(--hairline); }
 /* **손가락 자리를 44px 로 넓힙니다.** 재보니 22×38 이었습니다. 도시 목록에서
