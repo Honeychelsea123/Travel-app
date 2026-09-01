@@ -392,7 +392,15 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
       flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis;
       white-space:nowrap; }
 
-.card{ background:var(--canvas); border:0; border-radius:var(--r-lg);
+.card{ background:var(--canvas); border:0;
+       /* ⚠⚠ **선을 긋는 요소는 «각져야» 합니다(b592).** 모서리 둥글기가
+          있으면 `border-bottom` 이 그 모서리를 따라가 **양 끝이 위로 말립니다** —
+          곧은 선이 아니라 «괄호»가 됩니다(b589 에서 줄 단추로 한 번 겪고도
+          카드에서 또 걸렸습니다, 사용자 지적 두 번).
+          카드는 b588 이후 «상자»가 아니므로 둥글기가 하는 일이 없습니다.
+        ⚠ 시트(.assheet/.aisheet)는 뒤에서 제 둥글기를 다시 줍니다 —
+          거기는 화면을 덮는 판이라 위 모서리가 둥글어야 합니다. */
+       border-radius:0;
        padding:var(--s-md); margin-bottom:var(--s-sm); min-width:0;
        box-shadow:var(--lift-1); }
 
