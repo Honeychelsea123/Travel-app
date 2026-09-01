@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b577';
+import { $ } from './dom.js?v=b578';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -476,17 +476,54 @@ if (window.visualViewport){
 
      **이미 보이면 아무것도 안 합니다.** 그 조건이 없으면, 손으로 조금
      내려볼 때마다 도로 끌어올려서 화면을 못 움직이게 됩니다. */
+  /* ⚠⚠ **「안쪽이 따로 구르는 곳」은 새 여행 화면만이 아닙니다(b578).** ⚠⚠
+   *   b473 에 이 함수를 만들 때는 `.wizbody` 만 봤습니다. 그 뒤로 탭 다섯과
+   *   여행 구역 넷이 **전부 제 스크롤러**가 되었는데(b474·b479) 여기는
+   *   그대로였습니다. 세어 보니 그런 칸이 일곱 있습니다 —
+   *   설정 탭(이름·신고 사유·계정 삭제 확인) · 평가 탭 검색 · 관리자 셋.
+   *   iOS 는 칸을 보이게 하려고 **페이지**를 굴리지 육안 스크롤러는 안
+   *   건드리므로, 거기서는 쓰던 칸이 밖으로 밀립니다.
+   * · 그래서 **가장 가까운 스크롤러**를 찾아서 그것을 굴립니다.
+   * · 문서가 스크롤러면 아무것도 안 합니다 — 그건 브라우저가 잘합니다.
+   * ⚠ **이미 보이면 아무것도 안 합니다.** 그 조건이 없으면 손으로 조금
+   *   내려볼 때마다 도로 끌어올려서 화면을 못 움직이게 됩니다. */
+  const 굴릴칸 = el => {
+    let p = el?.parentElement;
+    while (p && p !== document.body && p !== document.documentElement){
+      const cs = getComputedStyle(p);
+      if (/(auto|scroll)/.test(cs.overflowY) && p.scrollHeight > p.clientHeight + 4)
+        return p;
+      p = p.parentElement;
+    }
+    return null;
+  };
+
   function keepInView(){
     const el = document.activeElement;
-    const body = el && el.closest && el.closest('.wizbody');
+    if (!el || !el.closest) return;
+    const body = 굴릴칸(el);
     if (!body) return;
     const er = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+    /* ⚠ **크기가 0 이면 손대지 않습니다.** 접혀 있는 칸(이름 바꾸기·신고·
+       계정 삭제)은 rect 가 0,0 이라 그대로 셈하면 판을 엉뚱한 데로 굴립니다 —
+       실측으로 75px 이 나왔습니다. 숨은 칸에 커서가 갈 일은 없지만, 재 보고
+       0 이 나오는 길이 있으면 막아 둡니다. */
+    if (!er.height || !br.height) return;
+
     /* **아래 SAFE 만큼은 없는 자리로 칩니다.** iOS 는 키보드 위에 ∧ ∨ ✓
        막대를 그리는데, 그건 브라우저가 그린 것이 아니라 visualViewport 에
        안 잡힙니다 — 잴 방법이 없습니다. 그래서 좌표로 딱 맞추려 하지 않고
        넉넉히 비워둡니다. 남으면 그냥 여백이고, 모자라면 쓰던 칸이 가려집니다.
-       한쪽 실패만 아픈 상황에서는 안 아픈 쪽으로 넉넉히 갑니다. */
-    const SAFE = 120;
+       한쪽 실패만 아픈 상황에서는 안 아픈 쪽으로 넉넉히 갑니다.
+       ⚠ **시트는 이미 키보드 «위»에 앉아 있습니다**(bottom:var(--vvbot)).
+         거기까지 120 을 비우면 짧은 폼이 위로 붕 뜹니다. 떠 있는 판인지
+         (position:fixed) 보고 가릅니다.
+       ⚠ 페이지 안쪽 스크롤러는 바닥이 키보드 뒤까지 뻗어 있습니다. 그때는
+         **잰 키보드 높이**를 씁니다 — 예전의 못 박은 120 은 이번에 iOS 가
+         값을 바꾸면서 뜻이 달라졌습니다(b576). */
+    const 떠있나 = getComputedStyle(body).position === 'fixed';
+    const 가린높이 = Math.max(0, 레이아웃높이() - vv.height);
+    const SAFE = 떠있나 ? 24 : (가린높이 ? 가린높이 + 60 : 120);
     const top = br.top + 16, bottom = br.bottom - SAFE;
     if (er.top >= top && er.bottom <= bottom) return;
     /* 가운데가 아니라 **위쪽으로** 데려옵니다. 가운데로 두면 칸이 아래
