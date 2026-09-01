@@ -14,7 +14,7 @@
  *   그것부터 닫아야 합니다. `tripview.js` 의 popstate 사슬 **맨 위**에
  *   있어야 합니다 — 나중에 열린 것이 화면 위에 있으니까요.
  */
-import { $, esc } from './dom.js?v=b581';
+import { $, esc } from './dom.js?v=b582';
 
 let 목록 = [], 지금 = 0, 판 = null;
 
@@ -25,7 +25,10 @@ function 만들기(){
   판.className = 'hide';
   판.innerHTML =
     '<div class="pvtop">' +
-      '<span class="pvnum"></span>' +
+      /* ⚠ 숫자와 ✕ 사이를 «빈 칸»이 밉니다(b582). 전에는 숫자에
+         `flex:1` 을 줬는데, 이제 숫자가 제 바탕(알약)을 지고 다녀서
+         늘이면 그 알약이 화면 폭만큼 길어집니다. */
+      '<span class="pvnum"></span><span class="pvgap"></span>' +
       '<button type="button" class="pvx" aria-label="닫기">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
              'stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
