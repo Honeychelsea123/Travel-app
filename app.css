@@ -3519,13 +3519,26 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      그냥 얹으면 앱 화면이지 일기장이 아닙니다.
    ⚠ 비틀기는 **1.2도**입니다. 더 주면 글줄과 싸워서 어지럽습니다.
    ⚠ 비율은 고정합니다 — 사진이 늦게 와도 줄기 키가 덜 흔들립니다. */
-/* ⚠ 여러 장이면 **번갈아** 기웁니다(--k 는 diary.js 가 1 / -1 로 넣습니다).
-     다 같은 쪽으로 기울면 쌓아 놓은 것이 아니라 «비뚤어진 판»으로 보입니다. */
-.dgimg{ margin:14px 0 4px; padding:8px 8px 10px; background:#fff;
-        border-radius:4px; box-shadow:0 2px 8px rgba(60,48,30,.16);
-        transform:rotate(calc(var(--k, -1) * 1.2deg)); }
-.dgimg + .dgimg{ margin-top:10px; }
-.dgimg img{ width:100%; aspect-ratio:4/3; object-fit:cover; display:block;
+/* ── 사진 자리 ── 한 장은 크게, 여러 장은 격자(b579) ──────────────────
+ * ⚠ **세로로 쭉 쌓지 않습니다.** 넉 장이면 글이 저 아래로 밀려 「사진첩에
+ *   글이 딸린 것」처럼 보입니다. 일기는 반대라야 합니다.
+ * ⚠ **가로 캐러셀도 안 씁니다.** 이 화면은 이미 좌우로 장을 넘깁니다 —
+ *   그 안에 또 가로 제스처를 넣으면 서로 잡아먹습니다(이 저장소에 이미
+ *   「가로 제스처가 다섯」이라 적어둔 그 문제입니다).
+ * ⚠ 홀수면 **첫 장이 한 줄 통째로**. 안 그러면 마지막 한 장이 반쪽으로
+ *   남아 실수처럼 보입니다. */
+.dgshots{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:14px 0 4px; }
+.dgshots.one{ grid-template-columns:1fr; }
+.dgshots.odd > .dgimg:first-child{ grid-column:1 / -1; }
+.dgimg{ margin:0; padding:7px 7px 9px; background:#fff;
+        border-radius:4px; box-shadow:0 2px 8px rgba(60,48,30,.16); }
+.dgimg img{ aspect-ratio:1/1; }
+/* ⚠ **기울이는 것은 «한 장일 때»뿐입니다.** 격자에서 기울이면 줄이 어긋나
+     보이고 모서리끼리 겹칩니다. 한 장은 붙여 놓은 인화지라 기울어야 삽니다. */
+.dgshots.one .dgimg{ transform:rotate(-1.2deg); }
+.dgshots.one .dgimg img,
+.dgshots.odd > .dgimg:first-child img{ aspect-ratio:4/3; }
+.dgimg img{ width:100%; object-fit:cover; display:block;
             border-radius:2px; background:var(--dg-rule); }
 
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);

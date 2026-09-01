@@ -21,10 +21,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b578';
-import { sb } from './db.js?v=b578';
-import { cities, countryName } from './cities.js?v=b578';
-import { starHtml } from './stars.js?v=b578';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b579';
+import { sb } from './db.js?v=b579';
+import { cities, countryName } from './cities.js?v=b579';
+import { starHtml } from './stars.js?v=b579';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -102,10 +102,24 @@ export async function openDiary(){
               <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
             </header>
             <div class="dgdate">${적은날칸(x.updated_at)}</div>
-            ${(사진들[x.city_id] || (x.journal_photo ? [x.journal_photo] : []))
-              .map((u, k) => `<div class="dgimg" style="--k:${k % 2 ? 1 : -1}">
-                   <img src="${esc(u)}" alt="" loading="lazy"
-                        onerror="this.closest('.dgimg').remove()"></div>`).join('')}
+            ${(() => {
+              /* ── 사진 여러 장은 «격자»입니다(b579) ─────────────────────
+               * 사용자 물음: 「4장이면 한 장씩 세로로 쭉 있던데 이게 맞아?」
+               * 아닙니다. 일기 앱들은 대개 **한 장은 크게, 여러 장은 격자**로
+               * 둡니다. 세로로 쭉 쌓으면 사진 넉 장에 글이 저 아래로 밀려서
+               * 「사진첩에 글이 딸린 것」처럼 보입니다 — 일기는 반대라야 합니다.
+               * ⚠ **가로 캐러셀은 안 씁니다.** 이 화면은 이미 좌우로 장을
+               *   넘깁니다. 그 안에 또 가로 제스처를 넣으면 서로 잡아먹습니다.
+               * ⚠ **홀수면 첫 장을 한 줄 통째로** 씁니다. 안 그러면 마지막
+               *   한 장이 반쪽으로 남아 실수처럼 보입니다.
+               *     1장 → 큰 한 장 · 3장 → 큰 것 + 2 · 5장 → 큰 것 + 4 … */
+              const 목록 = 사진들[x.city_id] || (x.journal_photo ? [x.journal_photo] : []);
+              if (!목록.length) return '';
+              const 꼴 = 목록.length === 1 ? 'one' : (목록.length % 2 ? 'odd' : '');
+              return `<div class="dgshots ${꼴}">${목록.map(u =>
+                `<div class="dgimg"><img src="${esc(u)}" alt="" loading="lazy"
+                   onerror="this.closest('.dgimg').remove()"></div>`).join('')}</div>`;
+            })()}
             ${x.comment ? `<p class="dgone">${esc(x.comment)}</p>` : ''}
             <p class="dgtext">${esc(x.journal)}</p>
             <footer class="dgfoot">
