@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>키보드 자 — 기로</title>
+<!--
+  ── 왜 이 파일이 따로 있나 ──────────────────────────────────────────
+  키보드가 화면을 얼마나 가리는지 알려주는 API 는 없습니다. 숫자 셋
+  (innerHeight · visualViewport.height · offsetTop)에서 빼서 만들어야 하는데,
+  iOS 는 그 숫자의 «뜻»을 조용히 바꿉니다(b576 에서 innerHeight 가 레이아웃
+  대신 보이는 창을 따라가게 바뀐 것을 여기서 잡았습니다).
+
+  그동안은 앱 안의 눈금자(admin.js → startRuler)를 켰다 껐다 했습니다.
+  그건 **관리자로 로그인해야 보이고**, 켜고 끄느라 판을 두 번씩 냈습니다.
+  ⚠ **이 페이지는 로그인이 필요 없습니다.** 주소만 열면 됩니다:
+      https://honeychelsea123.github.io/Travel-app/kbtest.html
+
+  ⚠ **앱과 아무것도 안 나눕니다.** 여기서 뭘 고쳐도 앱은 안 바뀌고,
+    앱을 고쳐도 여기는 안 바뀝니다. 재는 자가 재려는 것을 흔들면 안 됩니다.
+  ⚠ 그래서 셈은 **app 의 ui.js 와 같은 식을 손으로 옮겨 적었습니다.**
+    ui.js 의 식을 바꾸면 여기도 같이 바꾸십시오. 안 맞으면 이 페이지가
+    거짓말을 합니다.
+-->
+<style>
+  :root{
+    --kb:0px; --vvh:100dvh; --vvtop:0px; --vvbot:0px;
+    --ink:#12151b; --dim:#6b7280; --line:#e5e7eb; --paper:#fff; --bg:#f2f2f7;
+    --ok:#0a7c3a; --bad:#b42318;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    font:15px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+    color:var(--ink); background:var(--bg);
+    padding:env(safe-area-inset-top) 0 0;
+  }
+  h1{ font-size:17px; margin:14px 16px 4px; }
+  p.hint{ margin:0 16px 12px; color:var(--dim); font-size:13px; }
+
+  /* ── 숫자판 ── 화면 맨 위에 «보이는 창을 따라» 붙습니다.
+       ⚠ position:fixed 는 «레이아웃» 기준이라 키보드가 화면을 밀면 위로
+         사라집니다 — 정작 봐야 할 순간에 안 보입니다. top 을 매 프레임
+         vv.offsetTop 으로 잡아 줍니다(앱 눈금자에서 배운 것). */
+  #num{
+    position:fixed; left:8px; right:8px; top:0; z-index:50;
+    background:rgba(10,12,16,.92); color:#7CFF9E; border-radius:12px;
+    padding:10px 12px; font:12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space:pre; overflow-x:auto;
+  }
+  #num b{ color:#fff; }
+  #num .ok{ color:#7CFF9E; } #num .bad{ color:#FF8A80; }
+
+  .pad{ height:210px; }               /* 숫자판에 가리지 않게 */
+
+  .card{ background:var(--paper); border:1px solid var(--line);
+         border-radius:14px; margin:12px 16px; padding:14px; }
+  .card h2{ font-size:14px; margin:0 0 4px; }
+  .card .why{ color:var(--dim); font-size:12px; margin:0 0 10px; }
+  label{ display:block; font-size:12px; color:var(--dim); margin:10px 0 4px; }
+  input, textarea{
+    width:100%; padding:11px 12px; font:inherit; color:var(--ink);
+    background:#fafafc; border:1px solid var(--line); border-radius:10px;
+  }
+  input:focus, textarea:focus{ outline:none; border-color:#0066cc; background:#fff; }
+
+  /* ── ① 안쪽이 따로 구르는 판 (앱의 탭 화면과 같은 꼴) ── */
+  #inner{ height:240px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+          border:1px dashed #c7cbd3; border-radius:10px; padding:10px; }
+  #inner .filler{ height:300px; }
+
+  /* ── ② 아래 시트 (앱의 .assheet 과 «같은 식») ── */
+  #sheetbg{ position:fixed; inset:0; z-index:80; background:rgba(15,18,24,.42); }
+  #sheet{
+    position:fixed; left:0; right:0; bottom:var(--vvbot, 0px); z-index:90;
+    margin:0 auto; max-width:480px;
+    background:var(--paper); border-radius:18px 18px 0 0;
+    max-height:min(82vh, calc(var(--vvh, 100dvh) - 24px)); overflow-y:auto;
+    padding:14px 14px 18px;
+    /* 아래로 색을 복사해 칠합니다 — 시트 바닥과 키보드 사이가 비칠 때를 대비.
+       맞으면 키보드에 가려 안 보이고, 틀리면 그 틈을 메웁니다. */
+    box-shadow:0 -12px 40px rgba(0,0,0,.22),
+               0 calc(var(--vvbot, 0px) + 40px) 0 var(--paper);
+  }
+  /* ── ③ AI식 시트 (bottom:0 + 높이를 --kb 만큼 키움) ── */
+  #ai{
+    position:fixed; left:0; right:0; bottom:0; z-index:90;
+    margin:0 auto; max-width:480px; background:#FDF8EE;
+    border-radius:18px 18px 0 0;
+    height:calc(min(86vh, 720px, calc(var(--vvh, 100dvh) - 24px)) + var(--kb, 0px));
+    padding:14px 14px calc(14px + var(--kb, 0px));
+    display:flex; flex-direction:column;
+    box-shadow:0 -12px 40px rgba(0,0,0,.22);
+  }
+  #ai .grow{ flex:1; min-height:0; overflow-y:auto; }
+  .hide{ display:none !important; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  button{ appearance:none; border:1px solid var(--line); background:#fff;
+          color:var(--ink); font:inherit; padding:10px 14px; border-radius:10px; }
+  button.p{ background:#0066cc; border-color:#0066cc; color:#fff; }
+</style>
+</head>
+<body>
+
+<div id="num">재는 중…</div>
+<div class="pad"></div>
+
+<h1>키보드 자</h1>
+<p class="hint">칸을 눌러 키보드를 올린 뒤, <b>위 숫자판이 같이 보이는 상태로</b> 사진 한 장만 찍어 주세요.
+아래 「값 복사」를 눌러 붙여넣어도 됩니다(사진보다 정확합니다).</p>
+
+<div class="card">
+  <h2>① 그냥 폼 — 문서가 굴러가는 화면</h2>
+  <p class="why">도시·후기 화면과 같은 꼴입니다. 브라우저가 알아서 칸을 보이게 해야 합니다.</p>
+  <label for="a1">아무 글자나</label>
+  <input id="a1" placeholder="여기를 눌러 보세요">
+</div>
+
+<div class="card">
+  <h2>② 안쪽이 따로 구르는 판</h2>
+  <p class="why">앱의 탭 화면·여행 구역과 같은 꼴입니다. iOS 는 <b>페이지</b>를 굴리지 이 판은 안 건드립니다 —
+  아래쪽 칸이 키보드 뒤로 숨는지 보는 자리입니다.</p>
+  <div id="inner">
+    <div class="filler"></div>
+    <label for="a2">판 «맨 아래»에 있는 칸</label>
+    <input id="a2" placeholder="이 칸이 가려지나요?">
+    <div style="height:40px"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>③ 아래 시트 — 앱의 지출·예약 추가와 같은 식</h2>
+  <p class="why"><code>bottom: var(--vvbot)</code>. 시트 바닥과 키보드 사이가 <b>비치는지</b> 보는 자리입니다.</p>
+  <div class="row">
+    <button class="p" onclick="열기('sheet')">시트 열기</button>
+    <button class="p" onclick="열기('ai')">AI식 시트 열기</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>값 보내기</h2>
+  <div class="row">
+    <button onclick="복사()">값 복사</button>
+    <button onclick="기록비우기()">기록 비우기</button>
+  </div>
+  <p class="why" style="margin-top:10px">복사하면 <b>지금 값 + 방금까지 달라졌던 값들</b>이 같이 담깁니다.
+  iOS 는 키보드가 올라오는 동안 값이 몇 번 바뀌는데, 마지막 한 장만 보면 그 중간을 놓칩니다.</p>
+</div>
+
+<div style="height:120px"></div>
+
+<div id="sheetbg" class="hide" onclick="닫기()"></div>
+<div id="sheet" class="hide">
+  <h2 style="margin:0 0 2px">시트 안의 칸</h2>
+  <p class="why" style="margin:0">이 칸이 키보드에 가리면 안 됩니다.</p>
+  <label for="s1">제목</label><input id="s1" placeholder="눌러 보세요">
+  <label for="s2">메모</label><textarea id="s2" rows="2" placeholder="여러 줄"></textarea>
+  <div class="row"><button onclick="닫기()">닫기</button></div>
+</div>
+<div id="ai" class="hide">
+  <div class="grow">
+    <h2 style="margin:0 0 2px">AI식 시트</h2>
+    <p class="why" style="margin:0">높이를 <code>--kb</code> 만큼 키워 키보드 뒤까지 덮고, 안쪽 여백으로 내용만 올립니다.</p>
+  </div>
+  <label for="m1">보낼 말</label><input id="m1" placeholder="여기가 늘 보여야 합니다">
+  <div class="row"><button onclick="닫기()">닫기</button></div>
+</div>
+
+<script>
+/* ⚠⚠ **아래 식은 앱 ui.js 의 fit() 과 «같아야» 합니다.** 손으로 옮겨 적은
+   것이라, ui.js 를 고치면 여기도 고치십시오. 안 맞으면 이 자가 거짓말합니다. */
+const R = document.documentElement;
+const vv = window.visualViewport;
+
+/* b576 에서 배운 것: `innerHeight` 를 레이아웃 높이로 믿으면 안 됩니다.
+   실측(아이폰 홈앱, 2026-08-31): 키보드 없음 793 · 793, 키보드 올림 424 · 793.
+   ⚠ 주석 안에서 별 두 개를 슬래시 바로 앞에 두지 마십시오 — 그 자리에서
+     주석이 «닫힙니다». 이 페이지가 실제로 그것 하나로 안 떴습니다.
+   어느 쪽이 무엇을 따라가든 레이아웃 높이는 «둘 중 큰 값»입니다. */
+const 레이아웃높이 = () => Math.max(R.clientHeight || 0, window.innerHeight || 0);
+
+const 재는중 = () => {
+  const el = document.activeElement; if (!el) return false;
+  const t = el.tagName;
+  return t === 'TEXTAREA' || el.isContentEditable ||
+         (t === 'INPUT' && !/^(button|submit|checkbox|radio|file|range|color)$/i.test(el.type || 'text'));
+};
+
+const 본것 = [];                     /* 달라진 값만 쌓아 둡니다 */
+let 지난줄 = '';
+
+function fit(){
+  if (!vv) return;
+  const L   = 레이아웃높이();
+  const off = Math.round(vv.offsetTop);
+  const vh  = Math.round(vv.height);
+  const kb  = 재는중() ? Math.max(0, L - off - vh) : 0;
+  const 키보드차 = L - vh;
+
+  R.style.setProperty('--kb',    kb + 'px');
+  R.style.setProperty('--vvh',   vh + 'px');
+  R.style.setProperty('--vvtop', off + 'px');
+  R.style.setProperty('--vvbot', kb + 'px');   /* 앱과 같은 식입니다 */
+
+  /* 숫자판을 «보이는 창»에 붙여 둡니다 — 안 그러면 키보드가 밀 때 사라집니다. */
+  const 판 = document.getElementById('num');
+  판.style.top = (off + 6) + 'px';
+
+  const 시트 = document.getElementById('sheet');
+  const 에이 = document.getElementById('ai');
+  const 열린것 = !시트.classList.contains('hide') ? 시트
+               : !에이.classList.contains('hide') ? 에이 : null;
+  /* 시트 바닥이 «보이는 창 바닥»과 얼마나 어긋나는지. 0 이라야 맞습니다.
+     ⚠ fixed 요소의 rect 는 뷰포트 기준이라 믿을 수 있습니다(문서 기준
+       요소의 rect 는 iOS 가 키보드 중에 부풀린 scrollY 를 타서 틀립니다). */
+  let 틈 = null;
+  if (열린것){
+    const r = 열린것.getBoundingClientRect();
+    틈 = Math.round((off + vh) - r.bottom);
+  }
+
+  const 줄 =
+`<b>기로 키보드 자</b>
+inner   ${window.innerHeight}   client ${R.clientHeight}   screen ${Math.round(screen.height)}
+레이아웃 ${L}   dpr ${window.devicePixelRatio}
+vv.h    ${vh}   off ${off}   합 ${off + vh}
+키보드차 ${키보드차}  ${키보드차 > 60 ? '<span class="ok">(키보드 올라옴)</span>' : '<span class="bad">(없음)</span>'}
+--kb ${kb}   --vvbot ${kb}   --vvh ${vh}   --vvtop ${off}
+재는중  ${재는중() ? 'Y' : 'N'} &lt;${(document.activeElement?.tagName || '-').toLowerCase()}&gt;  ${
+  window.navigator.standalone ? '홈앱' : '사파리'}
+시트 바닥 어긋남  ${틈 === null ? '(시트 닫힘)'
+   : (Math.abs(틈) <= 1 ? '<span class="ok">' + 틈 + ' — 맞음</span>'
+                        : '<span class="bad">' + 틈 + ' ← 이만큼 비칩니다</span>')}`;
+
+  판.innerHTML = 줄;
+
+  const 요약 = `${window.innerHeight}/${R.clientHeight}/${vh}/${off}/${kb}/${틈}`;
+  if (요약 !== 지난줄){
+    지난줄 = 요약;
+    본것.push({ inner:window.innerHeight, client:R.clientHeight, vvh:vh, off, kb, 틈,
+                재는중:재는중(), 때:Math.round(performance.now()) });
+    if (본것.length > 60) 본것.shift();
+  }
+}
+
+/* ⚠ 한 번 재고 끝내면 값이 낡습니다(b575 에서 겪음). iOS 는 off 를 0 ↔ 369 로
+   뒤집는데 그때 resize 가 늘 오지 않습니다. 여기서는 재는 것이 목적이므로
+   아예 매 프레임 봅니다. 앱에서 그러면 안 됩니다 — 여기는 자입니다. */
+(function 돌기(){ fit(); requestAnimationFrame(돌기); })();
+vv?.addEventListener('resize', fit);
+vv?.addEventListener('scroll', fit);
+addEventListener('focusin', fit);
+addEventListener('focusout', () => setTimeout(fit, 60));
+
+function 열기(id){
+  닫기();
+  document.getElementById(id).classList.remove('hide');
+  document.getElementById('sheetbg').classList.remove('hide');
+  document.body.style.overflow = 'hidden';
+}
+function 닫기(){
+  document.getElementById('sheet').classList.add('hide');
+  document.getElementById('ai').classList.add('hide');
+  document.getElementById('sheetbg').classList.add('hide');
+  document.body.style.overflow = '';
+}
+function 기록비우기(){ 본것.length = 0; 지난줄 = ''; }
+
+async function 복사(){
+  const 글 = '기로 키보드 자\n' +
+    'UA: ' + navigator.userAgent + '\n' +
+    (navigator.standalone ? '홈앱' : '사파리') + '\n\n' +
+    '지금\n' + document.getElementById('num').textContent + '\n\n' +
+    '달라진 값들 (' + 본것.length + '개)\n' +
+    본것.map(x => `t${x.때}  inner ${x.inner}  client ${x.client}  vv ${x.vvh}  off ${x.off}  kb ${x.kb}  틈 ${x.틈}  재는중 ${x.재는중?'Y':'N'}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(글);
+    alert('복사했어요. 붙여넣어 주세요.');
+  } catch {
+    /* 클립보드가 막히는 경우가 있습니다 — 그때는 골라서 복사할 수 있게 띄웁니다. */
+    const t = document.createElement('textarea');
+    t.value = 글;
+    t.style.cssText = 'position:fixed;inset:10px;z-index:999;font-size:12px';
+    document.body.appendChild(t); t.select();
+    alert('자동 복사가 막혔어요. 글을 길게 눌러 복사한 뒤, 화면을 새로 고쳐 주세요.');
+  }
+}
+</script>
+</body>
+</html>
