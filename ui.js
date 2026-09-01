@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b574';
+import { $ } from './dom.js?v=b575';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -347,6 +347,16 @@ if (window.visualViewport){
       Math.max(document.documentElement.scrollHeight, window.innerHeight) + 'px';
   };
 
+  /* ⚠ **같은 값이면 안 씁니다(b575).** `setProperty` 는 값이 같아도 그
+     아래를 전부 다시 따지게 만듭니다. 아래에서 `fit` 을 여러 번 부르게
+     되었으므로, 안 바뀐 값을 거르지 않으면 그만큼 낭비가 쌓입니다. */
+  const 지난값 = {};
+  const 넣기 = (k, v) => {
+    if (지난값[k] === v) return;
+    지난값[k] = v;
+    document.documentElement.style.setProperty(k, v);
+  };
+
   const fit = () => {
     /* **offsetTop 을 빼면 안 됩니다.** iOS 는 키보드가 올라올 때 레이아웃을
        줄이는 게 아니라 보이는 화면을 밀어 올립니다. 그러면 offsetTop 이 딱
@@ -374,13 +384,12 @@ if (window.visualViewport){
        그것을 쓰는 calc 가 통째로 무효가 되어 **아래 여백이 0 이 됩니다** —
        실험으로 재현했습니다(body padding-bottom 84px → 0px). 죽은 var 는
        조용히 무시되는 게 아니라 그 줄을 통째로 죽입니다. */
-    document.documentElement.style.setProperty(
-      '--kb', (Number.isFinite(kb) ? Math.round(kb) : 0) + 'px');
+    넣기('--kb', (Number.isFinite(kb) ? Math.round(kb) : 0) + 'px');
     /* 시트는 --kb 를 안 씁니다. iOS 는 키보드가 뜨면 **화면을 스크롤**하기 때문에
        레이아웃 바닥이 곧 보이는 화면의 바닥입니다(off 303 → 보이는 영역 303~695).
        거기서 bottom 을 또 올리면 그만큼 떠버립니다 — 실측 bot 89, 보이는 높이 392.
        시트는 bottom:0 에 두고, 높이만 "지금 보이는 높이"로 잡습니다. */
-    document.documentElement.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+    넣기('--vvh', Math.round(vv.height) + 'px');
     /* **보이는 창이 레이아웃의 어디서 시작하는가.** 이것이 없어서 새 여행 시트가
        키보드 뒤에 앉았습니다. 홈 화면 앱에서 잰 값(b240):
          inner 793 · vv.h 424 · off 0
@@ -389,7 +398,7 @@ if (window.visualViewport){
        정확히 키보드 자리입니다. 진행 막대만 55px 보였습니다.
        사파리는 off 303 이라 bottom:0 이 우연히 맞아서 여태 안 보였습니다.
        위에 붙이면 둘 다 맞습니다: 홈앱 0~424, 사파리 303~695(=바닥). */
-    document.documentElement.style.setProperty('--vvtop', Math.round(vv.offsetTop) + 'px');
+    넣기('--vvtop', Math.round(vv.offsetTop) + 'px');
 
     /* **보이는 창의 바닥이 레이아웃의 어디인가.**
        위 주석이 "레이아웃 바닥이 곧 보이는 화면의 바닥"이라고 적어둔 것은
@@ -406,7 +415,7 @@ if (window.visualViewport){
        시트가 튀면 안 됩니다. 키보드가 없으면 어차피 두 바닥이 같습니다. */
     const vvbot = typing()
       ? Math.max(0, window.innerHeight - vv.offsetTop - vv.height) : 0;
-    document.documentElement.style.setProperty('--vvbot', Math.round(vvbot) + 'px');
+    넣기('--vvbot', Math.round(vvbot) + 'px');
 
     /* ── 레이아웃 바깥에 그려지는 자리 ──
        사파리는 화면(screen 852) 중 아래쪽을 레이아웃 밖에 두면서(inner 695)
@@ -424,7 +433,7 @@ if (window.visualViewport){
        standalone 이면 아래에 덮을 것이 없습니다. */
     const below = STANDALONE ? 0
       : Math.max(0, Math.round((screen.height || 0) - window.innerHeight));
-    document.documentElement.style.setProperty('--below', below + 'px');
+    넣기('--below', below + 'px');
     /* 시트가 키보드 위에 얹히면 아래 탭바는 키보드 뒤로 숨습니다.
        그 자리를 비워두던 여백을 걷으라고 알려줍니다. 60px 은 주소창이 접히고
        펴질 때 생기는 잔떨림을 키보드로 오해하지 않으려고 둔 선입니다. */
@@ -468,13 +477,32 @@ if (window.visualViewport){
      올라오기 전 크기로 계산하게 됩니다. 몇 박자 나눠 다시 봅니다. */
   const keepSoon = () => [0, 150, 350].forEach(t => setTimeout(keepInView, t));
 
-  vv.addEventListener('resize', () => { fit(); keepSoon(); });
+  /* ⚠⚠ **한 번 재고 끝내면 값이 낡습니다(b575).** ⚠⚠
+   *   실측(아이폰 홈 화면 앱, 눈금자 사진 2026-08-31, b574):
+   *       inner 793 · vv.h 424 · off 0 → 키보드가 가린 높이 **369**
+   *       그런데 저장돼 있던 `--kb` 는 **0px**
+   *   같은 프레임에 살아 있는 값은 369 인데 저장된 값이 0 이었습니다.
+   *   **왜 낡았는지와 상관없이, 낡았다는 것 자체가 증거입니다.**
+   *   (짚이는 것: iOS 는 키보드를 올리며 `offsetTop` 을 0 ↔ 369 로 뒤집는데,
+   *    그 뒤집히는 순간에 `resize` 가 늘 오지는 않습니다. 이 파일 위쪽에
+   *    「off 는 규칙으로 적을 수 있는 값이 아니다」라고 적어둔 그 문제입니다.)
+   *   그래서 **키보드가 올라오는 동안 여러 박자로 다시 잽니다.** 위의 `넣기`
+   *   가 안 바뀐 값을 거르므로 여러 번 불러도 값이 같으면 공짜입니다.
+   * ⚠ 시트가 열려 있는 동안에는 느린 파수꾼도 하나 둡니다 — 위 셋(resize ·
+   *   scroll · focusin)이 다 안 오는 경우가 실제로 있었기 때문입니다.
+   *   시트가 없으면 아무 일도 안 합니다. */
+  const fitSoon = () => [0, 60, 150, 300, 500, 800].forEach(t => setTimeout(fit, t));
+
+  vv.addEventListener('resize', () => { fitSoon(); keepSoon(); });
   vv.addEventListener('scroll', fit);   /* 구를 때는 안 붙잡습니다 — 손을 이겨버립니다 */
   /* 커서가 어디 있는지로 판단하므로 커서가 옮겨갈 때도 다시 재야 합니다.
      focusout 은 다음 칸으로 옮겨가는 중에도 한 번 뜨므로 한 박자 늦춥니다 —
      안 그러면 칸을 옮길 때마다 여백이 깜빡입니다. */
-  addEventListener('focusin',  () => { fit(); keepSoon(); });
+  addEventListener('focusin',  () => { fitSoon(); keepSoon(); });
   addEventListener('focusout', () => setTimeout(fit, 60));
+  setInterval(() => {
+    if (document.body.classList.contains('sheeton')) fit();
+  }, 400);
   fit();
 
   /* ── 키보드 눈금자 (개발용) ───────────────────────────────────────

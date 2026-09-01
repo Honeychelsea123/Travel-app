@@ -178,7 +178,11 @@ body{
      주석 참고). `manipulation` 은 두 번 두드리기만 뺍니다 — 밀기도
      스크롤도 그대로입니다.
    ⚠ 지구본 캔버스는 제 `touch-action:none` 이 이깁니다(더 구체적). */
-html{ touch-action:manipulation; }
+/* ⚠ **문서가 튕기지 않게 여기서 막습니다(b575).** b567 은 스크롤이 올
+     때마다 자바스크립트로 0 으로 되돌렸는데, 그게 손가락과 싸워서
+     화면이 덜덜거렸습니다. CSS 로 막으면 **스크롤이 도는 동안 아무 일도
+     안 합니다** — 애초에 굴러갈 여지를 안 줍니다. */
+html{ touch-action:manipulation; overscroll-behavior-y:none; }
 main{ max-width:480px; margin:0 auto; min-width:0; }
 .hide{ display:none !important; }
 
