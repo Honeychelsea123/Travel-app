@@ -1038,14 +1038,27 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
                background:rgba(255,255,255,.92); color:var(--ink-80);
                box-shadow:var(--lift-1); border-radius:var(--r-pill); }
 
-.plan{ display:flex; gap:var(--s-sm); padding:var(--s-sm) 0; align-items:flex-start; }
-.plan + .plan{ border-top:1px solid var(--divider-soft); }
+/* ── 일정은 «장부»입니다 (b596, 4단계) ────────────────────────────────
+ * 왼쪽에 시각 칸, **세로선**, 오른쪽에 내용. 참고한 일력의 목록 뷰가
+ * 이 짜임이고, 여행 일정에 그대로 맞습니다 — 시각으로 훑고 내용으로 읽습니다.
+ * ⚠ **짜임은 이미 이랬습니다.** 시각 칸(50px)도 내용 칸도 그대로입니다 —
+ *   **가르는 선 하나**를 안 그었을 뿐이었습니다. 마크업은 안 건드립니다.
+ * ⚠ 줄 사이 선을 `--divider-soft` 에서 `--line` 으로 올립니다. 종이색
+ *   위에서는 앞엣것이 거의 안 보입니다(보관함에서 같은 것을 겪었습니다). */
+.plan{ display:flex; gap:0; padding:var(--s-sm) 0; align-items:flex-start; }
+.plan + .plan{ border-top:1px solid var(--line); }
 /* 시각은 일정을 훑는 기준점입니다. 흐린 회색 400 이라 안 보였습니다 —
    크기는 그대로 두고 굵기와 진하기만 올립니다(자리를 안 뺏습니다). */
 .plan .when{ flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
              font-weight:600;
-             font-variant-numeric:tabular-nums; padding-top:2px; }
-.plan .body{ flex:1; min-width:0; }
+             font-variant-numeric:tabular-nums; padding-top:2px;
+             /* ⚠ 세로선은 «칸»에 붙입니다. 줄 전체에 그으면 시각이 없는
+                줄(이동 안내 등)에서 선이 끊깁니다 — 장부는 선이 죽 이어져야
+                합니다. 그래서 `align-self:stretch` 로 칸을 줄 높이만큼 늘립니다. */
+             align-self:stretch;
+             border-right:1px solid var(--line);
+             padding-right:var(--s-sm); }
+.plan .body{ flex:1; min-width:0; padding-left:var(--s-sm); }
 /* **`b` 에 아무것도 안 적어 본문 기본값(17px/700)을 받고 있었습니다.**
    b268 에서 홈의 `.rrow .t b` 가 똑같았습니다.
    계단: 카드 제목 21/700 › 항목 17/600 › 설명 13/400.
@@ -1081,10 +1094,13 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    아무것도 안 적으면 본문 기본값(17px)을 받는 항목 쪽이 이깁니다.
    → 15/700 검정. 위에 실선을 하나 그어 하루의 시작을 눈으로 끊습니다.
    `.daysep` 은 **일정과 지출이 같이 씁니다** — 한 곳만 고치면 둘 다 바뀝니다. */
+/* ⚠ **날과 날 사이는 «절취선»입니다(b596).** 실선과 뜻이 다릅니다 —
+     실선은 «나눔», 절취선은 «여기서 떼어진다»입니다. 하루가 한 장인
+     탑승권·일력의 문법이고, 줄 사이의 실선과도 눈에 확실히 갈립니다. */
 .daysep{ margin:var(--s-lg) 0 4px; color:var(--ink); font-size:var(--f-lg);
          display:flex; align-items:baseline; gap:8px;
-         font-weight:700; padding-top:var(--s-sm);
-         border-top:1px solid var(--divider-soft); }
+         font-weight:700; padding-top:var(--s-md);
+         border-top:1px dashed var(--hairline); }
 /* 목록 맨 위의 첫 날은 카드 제목 바로 아래라 선도 여백도 필요 없습니다. */
 .daysep:first-child{ margin-top:2px; padding-top:0; border-top:0; }
 /* 하루 요약 — 곳 수와 이동. 날짜 오른쪽 끝에 붙입니다. */
