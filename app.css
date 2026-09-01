@@ -1002,12 +1002,24 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    시작했습니다. 옆으로 굴리면 한 줄(36px)입니다.
    초안 화면의 취향 칩(#d_focus 등)은 일곱 개가 다 보여야 고르므로
    그쪽은 그대로 두고, 이 클래스를 붙인 곳만 바꿉니다. */
+/* ⚠⚠ **«카드 여백을 넘어가는» 음수 여백은 전부 걷었습니다(b597).** ⚠⚠
+ * 사용자 지적: 「일정 탭 스크롤 아래로 내리니까 좌우로 흔들리는데?」
+ * 잰 것: 판 폭 390 인데 **속이 407** — 정확히 17px(카드 여백)만큼 넘쳤습니다.
+ *
+ * 이 음수 여백들은 «카드 안쪽 여백»을 상쇄하려고 있던 것입니다. b593 에서
+ * 그 여백을 걷었으므로 **상쇄할 것이 없어졌고, 그대로 판 밖으로 삐져나옵니다.**
+ * 판(.tabpane · .trippane)은 스크롤 칸이라 그만큼 **가로로 굴러 흔들립니다.**
+ *
+ * ⚠ 화면 끝까지 빼는 것은 이 구조에서는 안 됩니다 — 몸통 여백이 판 «밖»에
+ *   있어서, 판 안에서 아무리 빼도 판을 넘으면 곧 가로 스크롤입니다.
+ *   하려면 몸통 여백을 판 안으로 옮기는 큰 수술이 필요합니다.
+ * ⚠ **여백을 고칠 때는 그 여백을 «상쇄하던» 것이 있는지 먼저 보십시오.**
+ *   이번에 넷이 걸렸습니다: Day 칩 · 미니맵 · 일기장 줄기 · 지구본. */
 .days.oneline{ flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden;
   scrollbar-width:none; -webkit-overflow-scrolling:touch;
-  /* 카드 안쪽 여백만큼 넘겨서 굴려야 끝 칩이 모서리에 딱 붙지 않습니다. */
-  margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md));
-  padding-left:var(--s-md); padding-right:var(--s-md); }
-.days.oneline::-webkit-scrollbar{ display:none; }
+  /* 끝 칩이 모서리에 붙지 않게 안쪽에만 숨을 줍니다(b597 — 밖으로
+     빼던 음수 여백은 걷었습니다. 위 머리말 참고). */
+  padding-left:2px; padding-right:2px; }.days.oneline::-webkit-scrollbar{ display:none; }
 .days.oneline > *{ flex:0 0 auto; }
 .day{ flex:none; padding:7px 14px; border-radius:var(--r-pill); border:1px solid transparent;
       background:var(--parchment); color:var(--ink-80); cursor:pointer;
@@ -1993,7 +2005,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 /* ⚠ **아래 마진은 음수가 아닙니다(b423).** 지도가 카드 맨 아래에서
      **발자국 줄 바로 아래**로 올라왔습니다 — 음수로 두면 다음 줄(내 성향)을
      덮습니다. 좌우만 넓혀 been 처럼 끝까지 갑니다. */
-.minimap{ margin:12px calc(-1 * var(--s-md)) 14px;
+.minimap{ margin:12px 0 14px;
           background:none; border-radius:0; overflow:hidden; }
 /* ⚠ **`pointer-events:none` 을 걷어냈습니다(b423).** 옛 주석이 "보기만 하는
    것이라 손가락은 안 받습니다" 였는데, b419 에서 지도에 직접 onclick 을
@@ -3518,8 +3530,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   (b587 에 줄마다 줬다가 계단이 된 것과 다릅니다).
  * ⚠ 위에 얹힌 단추 둘(3D/2D · 자세히)은 화면 끝에 붙으면 안 됩니다 —
  *   그만큼 안으로 다시 넣습니다. */
-.gwrap{ position:relative;
-        margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md)); }
+.gwrap{ position:relative; }
 /* ── 「자세히」 ── 지도 화면으로 가는 이름표(b554) ─────────────────────
  * 지구/평면 단추 맞은편(왼쪽 위)입니다. 지구본 위에 얹히므로 **글자만**
  * 둡니다 — 여기에 배경이나 테두리를 주면 단추가 둘이 되어 어느 쪽이
@@ -3538,7 +3549,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 /* ⚠ `.gzoom`(＋/− 단추)을 걷었습니다(b561) — 확대는 손가락으로만.
    되살리려거든 home.js 의 그 자리 주석부터 보십시오. */
 
-.gmore{ position:absolute; right:var(--s-md); top:2px; z-index:2;
+.gmore{ position:absolute; right:2px; top:2px; z-index:2;
         appearance:none; border:0; background:none; cursor:pointer;
         padding:8px 10px; font-size:var(--f-sm); font-weight:600;
         color:var(--primary); }
@@ -3689,7 +3700,7 @@ body.pvon{ overflow:hidden; }
 /* ⚠ **왼쪽입니다(b557, 사용자 결정).** 「자세히」와 자리를 맞바꿨습니다 —
    보는 방식을 고르는 것이 «먼저»고, 다른 화면으로 나가는 것이 «나중»이라
    왼쪽에서 오른쪽으로 읽는 순서와 맞습니다. */
-.gswitch{ position:absolute; left:var(--s-md); top:2px; z-index:2;
+.gswitch{ position:absolute; left:2px; top:2px; z-index:2;
           display:flex; padding:2px; gap:2px; border-radius:999px;
           background:var(--panel); border:1px solid var(--line);
           box-shadow:0 1px 3px rgba(0,0,0,.06); }
@@ -3846,7 +3857,7 @@ body.pvon{ overflow:hidden; }
      **삼킵니다**(b492 에서 탭 덱이 같은 것으로 멎었습니다. 실측: 500 을
      넣었는데 0, auto 로 바꾸니 458). */
   scrollbar-width:none; -ms-overflow-style:none;
-  margin:0 calc(-1 * var(--s-md)); padding:0 var(--s-md); gap:12px;
+  margin:0; padding:0; gap:12px;
   /* ⚠ **장이 저마다 다른 키로 자랍니다(b570).** `stretch` 로 두면 제일 긴
      장이 나머지를 다 늘려서 짧은 일기가 허공에 뜹니다. */
   align-items:flex-start;
