@@ -2360,9 +2360,17 @@ body.bigmap .tabbar{ display:none; }
           background:var(--parchment) center/cover no-repeat;
           box-shadow:inset 0 0 0 1px var(--line); }
 /* 인화지에는 여백이 없습니다. 글씨 칸에만 위아래로 숨을 줍니다. */
-.pcard{ padding:0; }
-.pcap{ padding:var(--s-md) 0 0; }
-.pcname{ font-size:calc(26px * var(--ts)); font-weight:650; letter-spacing:-.01em; }
+/* ⚠⚠ **이름이 `.pcard` 였습니다(b598). 이미 있는 이름이었습니다.** ⚠⚠
+ *   `.pcard` 는 **성향 공유 카드**입니다(app.css 674줄) — 검은 바탕에
+ *   흰 글씨, 가운데 정렬, `display:flex`. 그 규칙을 그대로 뒤집어써서
+ *   도시 화면 글씨가 **흰색으로 가운데 정렬**되고 사진 칸은 폭 0 이
+ *   됐습니다. net.js 도 `.pcard` 로 「내용이 있나」를 봅니다.
+ * ⚠ **새 클래스 이름은 붙이기 «전에» 저장소를 훑어야 합니다.**
+ *   b583 에서 `--bad` 토큰으로 똑같은 일을 겪었습니다. 짧은 이름일수록
+ *   이미 있습니다. 한 줄이면 됩니다: `grep -c '\.이름' app.css *.js`. */
+.postc{ padding:0; }
+.postcap{ padding:var(--s-md) 0 0; }
+.postname{ font-size:calc(26px * var(--ts)); font-weight:650; letter-spacing:-.01em; }
 /* 주소란 — 타자기 글씨, 벌린 자간. 이게 «엽서»라고 말하는 한 줄입니다. */
 #cv_sub{ font-family:var(--mono); letter-spacing:.06em; font-size:var(--f-sm);
          margin-top:3px; }

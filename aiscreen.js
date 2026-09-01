@@ -15,14 +15,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     ai.js · aiui.js · cards.js · plancheck.js 를 씁니다. */
-import { $, esc, toast, md } from './dom.js?v=b598';
-import { sb } from './db.js?v=b598';
-import { fail, netTimeout, netIsDown } from './net.js?v=b598';
-import { trip, plans } from './trip.js?v=b598';
-import { arm, disarm, syncSheets } from './ui.js?v=b598';
-import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b598';
-import { loadAi } from './plancheck.js?v=b598';
-import { clearLastTake } from './cards.js?v=b598';
+import { $, esc, toast, md } from './dom.js?v=b599';
+import { sb } from './db.js?v=b599';
+import { fail, netTimeout, netIsDown } from './net.js?v=b599';
+import { trip, plans } from './trip.js?v=b599';
+import { arm, disarm, syncSheets } from './ui.js?v=b599';
+import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b599';
+import { loadAi } from './plancheck.js?v=b599';
+import { clearLastTake } from './cards.js?v=b599';
 
 let ctx = { me: () => null };
 export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
