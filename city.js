@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b603';
-import { sb } from './db.js?v=b603';
-import { cities, countryName, continentOf } from './cities.js?v=b603';
-import { myRates, cityStat, visited } from './rate.js?v=b603';
-import { starHtml, starValue } from './stars.js?v=b603';
-import { localTime } from './calc.js?v=b603';
-import { fail } from './net.js?v=b603';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b604';
+import { sb } from './db.js?v=b604';
+import { cities, countryName, continentOf } from './cities.js?v=b604';
+import { myRates, cityStat, visited } from './rate.js?v=b604';
+import { starHtml, starValue } from './stars.js?v=b604';
+import { localTime } from './calc.js?v=b604';
+import { fail } from './net.js?v=b604';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -58,6 +58,16 @@ export async function openCity(id){
   $('cv_name').textContent = c.name;
   $('cv_sub').textContent = [countryName[c.country] || c.country, c.name_local,
                              visited.has(id) ? '다녀옴' : null].filter(Boolean).join(' · ');
+  /* 다녀온 곳이면 도장을 찍습니다(b604). 나라 코드 두 자는 여권 도장의
+     문법이고, 우리가 이미 갖고 있는 값이라 새로 받아올 것이 없습니다.
+     ⚠ 없을 때 «비우지» 않고 `hide` 로 숨깁니다 — 다음 도시가 다녀온
+       곳이면 다시 채우는데, 비워두면 그새 한 번 빈 원이 보입니다. */
+  {
+    const 갔다 = visited.has(id);
+    $('cv_stamp').classList.toggle('hide', !갔다);
+    if (갔다) $('cv_stamp').innerHTML =
+      `<b>${esc(String(c.country || '').toUpperCase())}</b><i>다녀옴</i>`;
+  }
   $('cv_avg').textContent  = s?.n_rated ? Number(s.avg_stars).toFixed(1) : '–';
   $('cv_avgn').textContent = s?.n_rated ? `${s.n_rated}명이 매김` : '아직 아무도 안 매김';
   $('cv_stars').innerHTML  = starHtml(r.stars);

@@ -29,6 +29,10 @@
      이제 24곳이 한꺼번에 고쳐집니다. `--line`(#DFDAD0)보다는 여전히
      옅어서 «약한 선 / 진한 선»의 층은 그대로입니다. */
   --divider-soft:#E6E1D6; --hairline:#DFDAD0;
+  /* 여권 도장의 인주(b604). 붉되 삭지 않은 색이라야 종이 위에서
+     장식이 아니라 «찍힌 것»으로 보입니다. 투명도를 색 안에 넣어
+     사진 위에 얹혀도 사진이 비칩니다. */
+  --stamp:rgba(152, 76, 52, .66);
   --canvas:#F3F0E8;   --parchment:#F3F0E8;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
                         상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#EDE9DF;
 
@@ -3908,6 +3912,65 @@ body.pvon{ overflow:hidden; }
 .dgshots.odd > .dgimg:first-child img{ aspect-ratio:4/3; }
 .dgimg img{ width:100%; object-fit:cover; display:block;
             border-radius:2px; background:var(--dg-rule); cursor:zoom-in; }
+
+/* ── 여권 도장 (b604, 5단계) ──────────────────────────────────────────
+ * 다녀온 도시에만 찍힙니다. 안쪽은 나라 코드 두 자 + 「다녀옴」.
+ * ⚠ **여기만 동그랗습니다.** 다른 데는 다 각지게 갔는데(b588~b602),
+ *   도장은 «담는 상자»가 아니라 **찍힌 자국**이라 규칙이 다릅니다.
+ *   소인은 원래 원입니다 — 네모로 만들면 그냥 딱지가 됩니다.
+ * ⚠ 겹줄은 가짜 요소로 긋습니다. `box-shadow: inset` 으로는 «두꺼운 띠»
+ *   밖에 안 나와서 겹줄이 아니라 굵은 테가 됩니다.
+ * ⚠ `pointer-events:none` — 사진 위에 얹히므로, 안 끄면 도장이 도시를
+ *   여는 손가락을 가로챕니다.
+ * ⚠ 조금 비뚤어야 «찍은 것»으로 보입니다. 반듯하면 인쇄된 딱지입니다. */
+.stamp{ width:74px; height:74px; border-radius:50%;
+        display:flex; flex-direction:column; align-items:center;
+        justify-content:center; gap:1px;
+        color:var(--stamp); border:2.5px solid currentColor;
+        font-family:var(--mono); pointer-events:none;
+        transform:rotate(-11deg); position:absolute; }
+.stamp::before{ content:''; position:absolute; inset:4px;
+                border:1px solid currentColor; border-radius:50%; }
+.stamp b{ font-size:19px; font-weight:700; letter-spacing:.08em; line-height:1; }
+.stamp i{ font-style:normal; font-size:9px; letter-spacing:.16em; line-height:1;
+          border-top:1px solid currentColor; padding-top:3px; }
+/* 도시 화면 — 엽서 오른쪽 위. `.postc` 를 기준 칸으로 삼습니다. */
+.postc{ position:relative; }
+#cv_stamp{ top:14px; right:14px; }
+
+/* ── 도시 벽 (b604, 5단계) ────────────────────────────────────────────
+ * 사진 있는 보관함 셋은 줄이 아니라 **두 칸 격자에 붙인 엽서**입니다.
+ * ⚠⚠ **마크업은 그대로입니다.** `.rrow` 안의 손잡이를 그대로 쓰려고
+ *   겉모양만 여기서 바꿉니다(shelf.js 주석 참고).
+ * ⚠ `.rrow:has(> .stars)` 가 이미 격자라, 그것보다 «자릿수가 높은»
+ *   선택자로 덮어야 합니다 — `.wall` 을 앞에 붙여 그렇게 만듭니다.
+ * ⚠ 줄 사이 선은 걷습니다. 벽에서는 선이 격자를 한 겹 더 그립니다. */
+.wall{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
+       gap:var(--s-lg) var(--s-sm); }
+.wall .rrow, .wall .rrow:has(> .stars){ display:block; padding:0;
+                                        position:relative; }
+.wall .rrow + .rrow{ border-top:0; }
+.wall .rrow > .thumb,
+.wall .rrow:has(> .stars) > .thumb{ width:100%; height:auto; aspect-ratio:4/3;
+                                    border-radius:0; display:block; }
+.wall .rrow > .t{ margin-top:8px; }
+.wall .rrow > .stars{ display:block; margin-left:0; margin-top:3px; }
+/* 별은 타일 폭에 맞춥니다 — 줄에서 쓰던 크기는 두 칸 격자에서 넘칩니다. */
+.wall .rrow .st{ font-size:min(var(--f-2xl), 5.4vw); }
+/* ♡ 는 사진 오른쪽 위. 사진 위에 얹히니 어떤 사진에서도 보이게 흰 원. */
+.wall .rrow > .want{ position:absolute; top:5px; right:5px;
+                     min-width:32px; min-height:32px; border-radius:50%;
+                     background:rgba(255,255,255,.9); font-size:var(--f-lg); }
+/* 도장은 사진 «왼쪽 위» — ♡ 가 오른쪽 위를 쓰고 있어서입니다.
+   ⚠ 사진 «아래» 모서리에 붙이고 싶었지만 못 붙입니다: 타일 높이는
+     사진 + 글인데 글 줄 수가 도시마다 달라, `top` 을 셈해서 사진의
+     밑선에 맞출 수가 없습니다(감싸는 칸을 새로 두면 마크업이 바뀝니다).
+     **위쪽은 언제나 사진의 위쪽**이라 셈이 필요 없습니다. */
+.rrow > .stamp{ display:none; }
+.wall .rrow > .stamp{ display:flex; width:46px; height:46px;
+                      left:6px; top:6px; }
+.wall .rrow > .stamp b{ font-size:13px; }
+.wall .rrow > .stamp i{ display:none; }   /* 46px 안에서는 못 읽습니다 */
 
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);

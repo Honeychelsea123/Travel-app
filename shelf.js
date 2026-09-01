@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b603';
-import { openCity } from './city.js?v=b603';
-import { sb } from './db.js?v=b603';
-import { cities, countryName } from './cities.js?v=b603';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b603';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b603';
-import { fail } from './net.js?v=b603';
-import { arm } from './ui.js?v=b603';
-import { todayYmd } from './calc.js?v=b603';
-import { loadCities } from './citysearch.js?v=b603';
-import { loadRateData, saveRate } from './rating.js?v=b603';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b604';
+import { openCity } from './city.js?v=b604';
+import { sb } from './db.js?v=b604';
+import { cities, countryName } from './cities.js?v=b604';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b604';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b604';
+import { fail } from './net.js?v=b604';
+import { arm } from './ui.js?v=b604';
+import { todayYmd } from './calc.js?v=b604';
+import { loadCities } from './citysearch.js?v=b604';
+import { loadRateData, saveRate } from './rating.js?v=b604';
 
 let ctx = {
   me: () => null,
@@ -298,6 +298,24 @@ export async function openShelf(kind){
         ? `${list.length}곳 · 평균 ★${avg.toFixed(1)}`
         : `${list.length}곳`;
   }
+  /* ── 도시 벽(b604, 5단계) ─────────────────────────────────────────
+   * 사진이 있는 보관함 셋은 **줄이 아니라 벽**입니다 — 두 칸 격자에
+   * 엽서를 붙여 놓은 모양. 「내가 어디를 갔었나」는 이름을 읽는 것보다
+   * **사진을 훑는 쪽**이 훨씬 빠릅니다.
+   *
+   * ⚠⚠ **마크업은 그대로 두고 겉모양만 CSS 로 바꿉니다.** 별점 누르기
+   *   (`.stars[data-city]`) · ♡(`data-want`) · 도시 열기(`data-cityopen`)
+   *   에다 `closest('.rrow')` 까지 전부 **속성·클래스 위임**이라,
+   *   `.rrow` 를 그대로 두면 손잡이를 하나도 다시 안 이어도 됩니다.
+   *   (b513 주석의 경고가 이 뜻이었습니다 — 새로 짜면 셋 다 다시 이어야
+   *    한다. 그래서 새로 짜지 않았습니다.)
+   * ⚠ 한줄평 목록은 벽으로 안 만듭니다 — 거기선 **문장이 주인공**이라
+   *   사진을 키우면 정작 읽을 것이 밀립니다(b513·b514 에서 정한 것).
+   * ⚠ 맛집·관광지·후기·배지는 애초에 도시 사진이 없습니다.
+   * ⚠ 비었을 때는 벽을 안 씌웁니다 — 안내문 한 줄이 격자 반 칸에
+   *   갇혀 가운데가 아니라 왼쪽에 붙습니다. */
+  $('shelflist').classList.toggle(
+    'wall', list.length > 0 && (kind === 'mine' || kind === 'been' || kind === 'want'));
   $('shelflist').innerHTML = list.length
     ? list.map(c => {
         const r = myRates[c.id] || {};
@@ -305,6 +323,9 @@ export async function openShelf(kind){
           ${c.image_url
             ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy">`
             : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
+          ${visited.has(c.id)
+            ? `<span class="stamp"><b>${esc(String(c.country || '').toUpperCase())}</b><i>다녀옴</i></span>`
+            : ''}
           <div class="t"><b>${esc(c.name)}</b>
             <span class="memo">${esc(countryName[c.country] || c.country)}${
               avgTail(cityStat[c.id], r)}</span></div>
