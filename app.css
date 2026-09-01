@@ -23,8 +23,8 @@
   --primary:#1B1B1F;  --primary-focus:#000000;
   --ink:#1B1B1F;      --ink-80:#3A3630;   --ink-48:#807C74;
   --divider-soft:#EDE9E1; --hairline:#DFDAD0;
-  --canvas:#FCFAF5;   --parchment:#F1EEE6;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
-                        상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#FAF8F3;
+  --canvas:#F3F0E8;   --parchment:#F3F0E8;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
+                        상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#EDE9DF;
 
   /* 분류 색 — 목록의 점과 딱지에만 씁니다. 버튼과 링크는 여전히 파랑 하나입니다. */
   --k-food:#8C5A34; --k-move:#4A5766; --k-stay:#5E5468; --k-see:#4A6152;
@@ -41,9 +41,17 @@
      `box-shadow` 는 자리를 안 먹으므로 배치가 그대로입니다.
      ⚠ 시트(lift-2)만 진짜로 떠 있어야 합니다. 화면을 덮는 것이라
        선만으로는 「위에 있다」가 안 읽힙니다. */
-  --lift-0:0 0 0 1px var(--divider-soft);
-  --lift-1:0 0 0 1px var(--hairline);
-  --lift-2:0 0 0 1px var(--hairline), 0 12px 32px rgba(40,34,24,.13);
+  /* ⚠⚠ **카드 «상자»를 없앴습니다(b588, 사용자 결정).**
+     참고한 두 앱은 바탕과 카드가 **한 색**이고, 나누는 것은 «선»과 «여백»
+     뿐입니다. 상자를 그리면 그 순간 종이가 아니라 «화면»이 됩니다.
+     b584 에 그림자를 1px 테두리로 바꿨는데, 카드색이 바탕색과 같아진
+     지금은 그 테두리가 **상자만 잔뜩 남깁니다.** 그래서 없앱니다.
+     ⚠ 카드 사이는 `margin-bottom`(여백)이 갈라 줍니다 — 이미 있습니다.
+     ⚠ **시트(lift-2)만 진짜로 떠 있어야 합니다.** 화면을 덮는 것이라
+       여백만으로는 「위에 있다」가 안 읽힙니다. */
+  --lift-0:none;
+  --lift-1:none;
+  --lift-2:0 -1px 0 var(--line), 0 12px 32px rgba(40,34,24,.16);
 
   /* ── 모서리도 뜻이 있습니다 ── **세 개뿐입니다.**
      lg **덩어리**(카드·히어로) / sm **덩어리 안의 모든 것**(줄·띠·썸네일·
@@ -100,7 +108,7 @@
 
   /* ⚠ `--card` 는 **정의가 없는 채로** 세 군데서 `var(--card, #fff)` 로
      쓰이고 있었습니다. 예비값 덕에 안 깨졌을 뿐입니다. 이제 정의합니다. */
-  --card:#FCFAF5;
+  --card:#F3F0E8;
   /* 지구본의 «땅». ⚠ `--line`(테두리용)을 쓰면 바다와 구별이 안 됩니다 —
      b587 에서 실제로 그렇게 되어 지구가 투명해 보였습니다. */
   --globe-land:#DDD5C4;
@@ -1114,12 +1122,12 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .shelf button{ display:flex; align-items:center; gap:12px; width:100%;
                padding:13px 2px; border:0; border-radius:var(--r-sm);
                background:none; font-size:var(--f-lg); }
-.shelf button + button{
-  border-top:1px solid var(--line);
-  margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md));
-  padding-left:calc(2px + var(--s-md)); padding-right:calc(2px + var(--s-md));
-  width:auto;
-}
+/* ⚠⚠ **음수 여백으로 «카드 끝까지» 빼려다 layout 을 부쉈습니다(b587 → b588).**
+ *   줄마다 여백이 겹쳐 계단처럼 좁아졌습니다(사용자 사진).
+ *   `width:100%` 인 flex 항목에 좌우 음수 여백을 주면 폭 셈이 어긋납니다.
+ *   **선을 끝까지 빼는 일은 여기서 하지 않습니다** — 줄이 아니라 «통»이
+ *   할 일입니다. 지금은 안쪽 선으로 두고, 색만 보이게 합니다. */
+.shelf button + button{ border-top:1px solid var(--line); }
 .shelf svg{ flex:none; color:var(--ink-48); }
 .shelf span{ flex:1; text-align:left; color:var(--ink-80); min-width:0; }
 .shelf b{ font-variant-numeric:tabular-nums; color:var(--ink); flex:none; }
@@ -2765,11 +2773,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * 벗었습니다. 위 넘김 카드와 갈라 보이게 **머리카락 한 올**만 긋습니다 —
  * 카드를 또 만들면 모서리가 두 겹이 됩니다.
  * ⚠ `.shelf` 의 줄 사이 선은 그대로 씁니다. 여기서 또 그으면 두 벌입니다. */
-.fpshelf{ margin-top:12px; padding-top:2px; border-top:1px solid var(--line);
-  /* 줄 사이 선과 «같은 폭»으로 내보냅니다(b587) — 하나만 짧으면
-     그 줄만 어긋나 보입니다. */
-  margin-left:calc(-1 * var(--s-md)); margin-right:calc(-1 * var(--s-md));
-  padding-left:var(--s-md); padding-right:var(--s-md); }
+.fpshelf{ margin-top:12px; padding-top:2px; border-top:1px solid var(--line); }
 
 /* ── 분석 탭의 「이름 + 값」 줄 크기를 한 벌로(b460) ──────────────────
  * 한 탭 안에 같은 꼴의 줄이 세 벌 있었는데 크기가 다 달랐습니다:
