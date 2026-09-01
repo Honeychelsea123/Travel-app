@@ -3555,10 +3555,11 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
   /* ⚠ **장이 저마다 다른 키로 자랍니다(b570).** `stretch` 로 두면 제일 긴
      장이 나머지를 다 늘려서 짧은 일기가 허공에 뜹니다. */
   align-items:flex-start;
-  /* 줄기 키는 «보고 있는 장»에 맞춥니다(diary.js 의 `키맞추기`). 넘길 때
-     털썩 바뀌지 않게 짧게 이어줍니다.
-     ⚠ **키를 매 프레임 고치면 이 이음이 계속 새로 시작돼 「팍팍」 튑니다**
-       (b573 에서 겪음). 그래서 diary.js 는 **장이 바뀔 때만** 고칩니다. */
+  /* 줄기 키는 «보고 있는 장»에 맞춥니다(diary.js 의 `키맞추기`).
+     ⚠⚠ **넘기는 «동안»에는 절대 안 고칩니다(b574).** 스크롤 칸의 높이가
+       바뀌면 브라우저가 **스냅 자리를 다시 계산**해서, 손을 뗀 뒤의 관성이
+       어긋나 한가운데 걸쳐 멈춥니다. diary.js 는 스크롤이 **멎은 뒤**에만
+       고칩니다. b573 의 「장이 바뀔 때만」으로도 모자랐습니다. */
   transition:height .28s cubic-bezier(.22,.61,.36,1);
 }
 @media (prefers-reduced-motion: reduce){ .dgrow{ transition:none; } }
@@ -3596,15 +3597,16 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
      으로 세는데 그 셈은 **start 기준**입니다. */
   flex:0 0 100%; scroll-snap-align:start; min-width:0;
   position:relative;
-  /* ── 넘어가는 시늉(b571) ────────────────────────────────────────────
-   * `--t` 는 **부호 있는** 거리(-1 지나감 … 0 지금 … +1 다음),
-   * `--a` 는 그 절대값입니다. 둘 다 diary.js 가 «스크롤을 읽어» 넣습니다.
+  /* ── 넘어가는 시늉(b571 → b574 에서 값 쓰는 법을 바꿈) ─────────────────
+   * 기울기는 **diary.js 가 `style.transform` 에 직접 씁니다.**
+   * ⚠⚠ **CSS 변수(`--t`)를 거치지 마십시오(b574 에 걷음).** ⚠⚠
+   *   변수를 바꾸면 그 값을 쓸지도 모르는 **아래 것들까지 전부 다시 따집니다**
+   *   (style invalidation). 장 하나가 1500px 이 넘는데 그걸 초당 예순 번
+   *   하니 폰에서 버벅이고 반짝였습니다. `transform` 을 직접 쓰면 그 일이
+   *   아예 안 일어납니다.
    * ⚠ **transition 을 걸지 마십시오.** 손가락과 같이 움직여야 하는 값입니다.
-   *   0.2초라도 이어 붙이면 손가락보다 늦게 따라와 미끄러져 보입니다.
-   * ⚠ 축(transform-origin)은 diary.js 가 넘어가는 쪽으로 세웁니다. */
-  transform:rotateY(calc(var(--t, 0) * -26deg))
-            scale(calc(1 - var(--a, 0) * .06));
-  backface-visibility:hidden;
+   * ⚠ `backface-visibility:hidden` 도 걷었습니다 — 뒷면을 볼 일이 없는데
+   *   장마다 «따로 그리는 겹»만 만듭니다. */
   /* ⚠⚠ **장은 «제 키»대로 자랍니다(b570).** ⚠⚠
    *   b538 에는 `height:min(58vh,460px)` + `overflow-y:auto` 였습니다.
    *   이유는 「제일 긴 일기가 나머지 장을 다 늘린다」였는데, 그 대가로
@@ -3625,12 +3627,13 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
   color:var(--dg-ink);
 }
 /* 묶인 쪽으로 갈수록 어둡습니다 — 종이가 안으로 말려 들어가는 자리입니다.
-   넘길수록 짙어져서(`--a`) 「들리는」 느낌을 냅니다. */
+   ⚠⚠ **투명도를 `--a` 로 흔들지 마십시오(b574 에 걷음).** 넘기는 동안 매
+     프레임 투명도가 바뀌면 **장 전체를 다시 칠합니다** — 1500px 짜리 그림을
+     초당 예순 번입니다. 들리는 느낌은 기울기만으로 충분합니다. */
 .dgpage::after{
   content:''; position:absolute; inset:0; pointer-events:none;
   border-radius:inherit;
   background:linear-gradient(to right, rgba(60,48,30,.13), transparent 22%);
-  opacity:calc(.45 + var(--a, 0) * .55);
 }
 /* ── 스프링 ── 요소가 아니라 배경입니다(장이 스물이면 고리도 스무 벌). */
 .dgcoil{

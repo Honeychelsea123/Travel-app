@@ -21,10 +21,10 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b573';
-import { sb } from './db.js?v=b573';
-import { cities, countryName } from './cities.js?v=b573';
-import { starHtml } from './stars.js?v=b573';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b574';
+import { sb } from './db.js?v=b574';
+import { cities, countryName } from './cities.js?v=b574';
+import { starHtml } from './stars.js?v=b574';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -161,14 +161,22 @@ export async function openDiary(){
    *   축을 하나로 두면 한쪽이 «뒤집히는» 것처럼 보입니다. */
   const 기울이기 = () => {
     const 폭 = 칸폭(), 현재 = 줄기.scrollLeft / 폭;
-    [...줄기.children].forEach((p, i) => {
-      const d = i - 현재;
-      if (Math.abs(d) > 2){ p.style.removeProperty('--t'); p.style.removeProperty('--a'); return; }
+    const 장 = 줄기.children;
+    for (let i = 0; i < 장.length; i++){
+      const p = 장[i], d = i - 현재;
+      /* 보이지도 않는 장은 손대지 않고, 손댔던 흔적은 지웁니다. */
+      if (Math.abs(d) > 1.05){
+        if (p.style.transform){ p.style.transform = ''; p.style.willChange = ''; }
+        continue;
+      }
       const t = Math.max(-1, Math.min(1, d));
-      p.style.setProperty('--t', t.toFixed(3));
-      p.style.setProperty('--a', Math.abs(t).toFixed(3));
+      /* ⚠ **미리 「이건 움직일 것」이라고 알려 둡니다.** 이게 없으면 브라우저가
+         매 프레임 장을 통째로 다시 그립니다 — 장이 1500px 이 넘습니다. */
+      p.style.willChange = 'transform';
       p.style.transformOrigin = (t >= 0 ? 'left' : 'right') + ' center';
-    });
+      p.style.transform =
+        `rotateY(${(-t * 18).toFixed(2)}deg) scale(${(1 - Math.abs(t) * 0.05).toFixed(4)})`;
+    }
   };
 
   /* ⚠⚠ **키는 «장이 바뀔 때만» 고칩니다(b573).** ⚠⚠
@@ -180,8 +188,20 @@ export async function openDiary(){
    * ⚠ **한 프레임에 한 번만** 합니다(rAF). 스크롤은 프레임보다 자주 옵니다.
    * ⚠ `몇째()` 는 반올림이라 넘기는 도중 **한가운데를 지날 때 한 번** 바뀝니다.
    *   그 한 번이 키를 바꾸기 딱 좋은 때입니다. */
-  let 마지막장 = 0, 대기 = 0;
+  /* ⚠⚠ **넘기는 «동안»에는 판을 다시 짜는 일을 하나도 안 합니다(b574).** ⚠⚠
+   *   b573 에서 「장이 바뀔 때만」으로 줄였는데도 여전히 튀었습니다
+   *   (사용자: 「반짝거리면서 튀는 현상 그대로… 다시 좌측으로 스와이프하면
+   *   제대로 안 넘어가 중간에 걸쳐지네」).
+   *   높이를 바꾸는 **그 한 번**이 원인입니다 — 스크롤 칸의 높이가 바뀌면
+   *   브라우저가 **스냅 자리를 다시 계산**해서, 손을 뗀 뒤의 관성이 어긋나
+   *   한가운데 걸쳐 멈춥니다. 장 높이가 914 대 1542 로 크게 달라 더 심했습니다.
+   * · 이제 **멎은 뒤에**(스크롤이 160ms 동안 안 오면) 한 번만 잽니다.
+   * · 넘기는 동안 하는 일은 **기울기(transform)뿐**입니다.
+   * ⚠ 숫자(1/2)는 바로 바꿉니다 — 폭이 안 변하는 글자라 판이 안 흔들립니다. */
+  let 마지막장 = 0, 대기 = 0, 멎음 = 0;
   const 세기 = () => {
+    clearTimeout(멎음);
+    멎음 = setTimeout(키맞추기, 160);      /* 멎은 뒤에만 판을 건드립니다 */
     if (대기) return;
     대기 = requestAnimationFrame(() => {
       대기 = 0;
@@ -190,7 +210,6 @@ export async function openDiary(){
       if (i === 마지막장) return;
       마지막장 = i;
       $('diarycount').textContent = `${i} / ${장들.length}`;
-      키맞추기();
     });
   };
   마지막장 = 몇째();

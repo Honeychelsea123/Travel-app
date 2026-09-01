@@ -11,11 +11,11 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b573';
-import { sb } from './db.js?v=b573';
-import { fail, netTimeout } from './net.js?v=b573';
+import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b574';
+import { sb } from './db.js?v=b574';
+import { fail, netTimeout } from './net.js?v=b574';
 /* 기능 스위치를 바꾸면 그 자리에서 화면에 먹입니다(b491) — flags.js 머리말. */
-import { reapplyFeatures } from './flags.js?v=b573';
+import { reapplyFeatures } from './flags.js?v=b574';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -34,10 +34,18 @@ export async function loadAdmin(){
      결과를 기다릴 이유는 없습니다 — 화면과 상관없는 뒷일입니다. */
   sb.rpc('sweep_retention').then(() => {}, () => {});
   show(true);
-  /* **눈금자는 자동으로 안 켭니다.** b240 에서 잠깐 켰다가 b242 에서 다시 껐습니다 —
+  /* ⚠⚠ **b574 에서 다시 켰습니다.** 지출 추가 시트가 키보드 뒤에 앉는다는
+     신고를 받았는데, 저는 아이폰 키보드를 띄워 볼 수가 없습니다.
+     이 파일이 남긴 기록: **짐작으로 고친 판 여섯(b165·b170·b171·b173·b175·
+     b176)이 전부 틀렸고, 맞은 것은 전부 재고 나서 나왔습니다.** 또 짐작하지
+     않습니다. 값을 읽고 나면 **이 한 줄을 다시 지우십시오.**
+     ⚠ 홈 화면 앱은 사파리와 저장 공간이 달라 `?kb=1` 이 안 넘어갑니다 —
+       거기서 재는 길은 이 한 줄뿐입니다. */
+  window.startRuler?.();
+  /* (아래는 껐던 때의 기록입니다) b240 에서 잠깐 켰다가 b242 에서 다시 껐습니다 —
      재려던 것(새 여행 시트가 키보드 뒤에 앉던 것)을 b241 에서 잡았습니다.
      평소에 초록 글씨가 떠 있을 이유가 없습니다.
-     **다시 재야 할 때는 이 한 줄을 되살리면 됩니다:** `window.startRuler?.();`
+     **다시 끌 때는 위 한 줄을 지우면 됩니다.**
      사파리에서는 주소 끝에 `?kb=1` 로도 켜지지만, **홈 화면 앱은 저장 공간이
      달라 그 길이 없습니다** — 거기서 재려면 반드시 여기를 켜야 합니다.
      켠 뒤 초록 상자를 손가락으로 누르면 빨강(fixed)·파랑(absolute) 자가 켜집니다. */
