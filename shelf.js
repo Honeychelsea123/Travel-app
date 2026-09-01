@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b604';
-import { openCity } from './city.js?v=b604';
-import { sb } from './db.js?v=b604';
-import { cities, countryName } from './cities.js?v=b604';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b604';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b604';
-import { fail } from './net.js?v=b604';
-import { arm } from './ui.js?v=b604';
-import { todayYmd } from './calc.js?v=b604';
-import { loadCities } from './citysearch.js?v=b604';
-import { loadRateData, saveRate } from './rating.js?v=b604';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b605';
+import { openCity } from './city.js?v=b605';
+import { sb } from './db.js?v=b605';
+import { cities, countryName } from './cities.js?v=b605';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b605';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b605';
+import { fail } from './net.js?v=b605';
+import { arm } from './ui.js?v=b605';
+import { todayYmd } from './calc.js?v=b605';
+import { loadCities } from './citysearch.js?v=b605';
+import { loadRateData, saveRate } from './rating.js?v=b605';
 
 let ctx = {
   me: () => null,
@@ -323,9 +323,15 @@ export async function openShelf(kind){
           ${c.image_url
             ? `<img class="thumb" src="${esc(c.image_url)}" alt="" loading="lazy">`
             : `<span class="thumb ph">${esc(c.name.slice(0,1))}</span>`}
-          ${visited.has(c.id)
-            ? `<span class="stamp"><b>${esc(String(c.country || '').toUpperCase())}</b><i>다녀옴</i></span>`
-            : ''}
+          ${/* ⚠⚠ **여기에 도장을 찍었다가 걷었습니다(b604 → b605).**
+               재보니 **74곳 중 74곳에 찍혔습니다.** `visited` 는 「별점을
+               매긴 곳」을 포함하므로(rate.js `applyRate`), 「내가 매긴 곳」
+               에서는 예외 없이 전부 다녀온 곳입니다. 「다녀온 도시」도
+               정의상 전부입니다.
+               **모두에게 붙는 표는 아무것도 안 알려줍니다.** 나라 코드도
+               바로 밑줄에 나라 이름으로 이미 적혀 있습니다.
+               도장은 **도시 화면 한 곳**에만 둡니다 — 거기서는 다녀온
+               곳과 아닌 곳이 갈리고, 그래야 찍힌 뜻이 있습니다. */''}
           <div class="t"><b>${esc(c.name)}</b>
             <span class="memo">${esc(countryName[c.country] || c.country)}${
               avgTail(cityStat[c.id], r)}</span></div>

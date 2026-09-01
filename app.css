@@ -3954,23 +3954,20 @@ body.pvon{ overflow:hidden; }
 .wall .rrow:has(> .stars) > .thumb{ width:100%; height:auto; aspect-ratio:4/3;
                                     border-radius:0; display:block; }
 .wall .rrow > .t{ margin-top:8px; }
-.wall .rrow > .stars{ display:block; margin-left:0; margin-top:3px; }
+/* ⚠⚠ **`display:block` 이면 안 됩니다(b605).** `.st` 는 `width:1.1em`
+ *   으로 크기를 잡는데, 그건 **flex 아이템이라 먹히는 것**입니다
+ *   (`.stars{ display:inline-flex }`). block 으로 바꾸자 `.st` 가 다시
+ *   inline 이 되어 **0×0** 이 됐고, 별 다섯이 한자리에 겹쳐 하나처럼
+ *   보였습니다. 재보고 알았습니다 — 화면으로는 「별이 작네」 였습니다.
+ * ⚠ **틀을 바꿀 때는 그 틀에 기대던 자식을 봐야 합니다.**
+ *   `width`·`height` 는 inline 요소에서 조용히 무시됩니다. */
+.wall .rrow > .stars{ display:flex; margin-left:0; margin-top:3px; }
 /* 별은 타일 폭에 맞춥니다 — 줄에서 쓰던 크기는 두 칸 격자에서 넘칩니다. */
 .wall .rrow .st{ font-size:min(var(--f-2xl), 5.4vw); }
 /* ♡ 는 사진 오른쪽 위. 사진 위에 얹히니 어떤 사진에서도 보이게 흰 원. */
 .wall .rrow > .want{ position:absolute; top:5px; right:5px;
                      min-width:32px; min-height:32px; border-radius:50%;
                      background:rgba(255,255,255,.9); font-size:var(--f-lg); }
-/* 도장은 사진 «왼쪽 위» — ♡ 가 오른쪽 위를 쓰고 있어서입니다.
-   ⚠ 사진 «아래» 모서리에 붙이고 싶었지만 못 붙입니다: 타일 높이는
-     사진 + 글인데 글 줄 수가 도시마다 달라, `top` 을 셈해서 사진의
-     밑선에 맞출 수가 없습니다(감싸는 칸을 새로 두면 마크업이 바뀝니다).
-     **위쪽은 언제나 사진의 위쪽**이라 셈이 필요 없습니다. */
-.rrow > .stamp{ display:none; }
-.wall .rrow > .stamp{ display:flex; width:46px; height:46px;
-                      left:6px; top:6px; }
-.wall .rrow > .stamp b{ font-size:13px; }
-.wall .rrow > .stamp i{ display:none; }   /* 46px 안에서는 못 읽습니다 */
 
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);
