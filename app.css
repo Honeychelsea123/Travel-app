@@ -52,6 +52,51 @@
        새 화면을 만들 때 고민할 것이 없습니다.
        34(--r-xl)는 **쓰는 데가 한 곳도 없었습니다.** 걷었습니다. */
   --r-sm:12px; --r-lg:26px; --r-pill:9999px;
+
+  /* ══ 1단계에서 모아온 색(b583) ═══════════════════════════════════════
+   * ⚠⚠ **값은 하나도 안 바꿨습니다.** 여기저기 박혀 있던 것을 «정하는 자리»만
+   *   한곳으로 옮긴 것입니다. 겉모습은 이전과 완전히 같아야 합니다.
+   * ⚠ 이 블록이 있는 이유: 종이 디자인으로 갈 때 **여기만 고치면** 앱 전체가
+   *   따라옵니다. 박아 놓은 채로 두면 «반만 바뀐 앱»이 됩니다.
+   * ⚠ 그림자용 `rgba(0,0,0,…)` 는 일부러 안 옮겼습니다 — 다음 판에서 그림자
+   *   자체를 걷을 것이라 옮겨봐야 곧 지워집니다. */
+
+  /* 어두운 바탕 «위»에 얹는 흰 것. 면(--canvas)과 뜻이 다릅니다 —
+     지금은 값이 같지만 종이로 갈 때 갈립니다. */
+  --on-dark:#fff;
+
+  /* 회색 층 — 지금은 아이폰 값입니다 */
+  --switch-off:#d9d9de;   /* 꺼진 스위치 트랙 */
+  --gray-mid:#888;        /* 회색 딱지 */
+  --gray-tint:#e8e8ec;    /* 첫 화면 그라데이션 */
+  --gray-tint-0:rgba(232,232,236,0);
+  --sep-ios:rgba(120,120,128,.20);
+  --panel-dark:#2b2f36;   /* 어두운 판(첫 화면 단추) */
+  --ink-hard:#1f1f1f;
+  --line-hard:#dadce0;
+
+  /* 파랑에서 나온 것 */
+  --primary-13:rgba(0,102,204,.13);
+  --primary-10:rgba(0,102,204,.10);
+  --primary-06:rgba(0,102,204,.055);
+  --primary-soft:#e8f1fb;
+  --sat-blue:#2f6fd0;     /* 달력 토요일 */
+  --sun-red:#d0413b;      /* 달력 일요일 */
+
+  /* 뜻이 있는 색 — 좋음 · 나쁨 · 주의 · 위험 · 별 */
+  --mate-good:#5c8a4a;   --mate-good-bg:#f1f7ee;   --mate-good-line:#cbe0c0;
+  --mate-bad:#c4626b;    --mate-bad-bg:#fceff0;    --mate-bad-line:#f5d3d3;
+  --warn:#8a5a12;   --warn-2:#8a5a00;
+  --warn-bg:#fff6e5; --warn-line:#f0dcb8; --warn-line-2:#f6e0b5;
+  --danger:#c0392b; --danger-bg:#fdf3f2; --danger-line:#f3d6d3;
+  --danger-28:rgba(192,57,43,.28); --danger-09:rgba(192,57,43,.09);
+  --star:#f5a623;   --star-hi:#ffc93c;   --star-dim:#e0a02a;
+  --star-90:rgba(245,166,35,.9); --star-10:rgba(245,166,35,.10);
+
+  /* ⚠ `--card` 는 **정의가 없는 채로** 세 군데서 `var(--card, #fff)` 로
+     쓰이고 있었습니다. 예비값 덕에 안 깨졌을 뿐입니다. 이제 정의합니다. */
+  --card:#ffffff;
+
   /* 사이 간격: 종류가 다르면 sm(12), 같은 것끼리 이어지면 xs(8). */
   --s-xs:8px; --s-sm:12px; --s-md:17px; --s-lg:24px;
 
@@ -146,7 +191,7 @@
   --bg:var(--parchment); --panel:var(--canvas); --line:var(--hairline);
   --sunk:var(--parchment); --fg:var(--ink); --dim:var(--ink-48);
   --accent:var(--primary); --r:var(--r-lg);
-  --ok:#2C7D58; --bad:#c0392b;
+  --ok:#2C7D58; --bad:var(--danger);
 }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -169,7 +214,7 @@ body{
   /* 유리가 굴절할 대상. 색조 없이 밝기 차이만 줍니다. */
   background:
     radial-gradient(1200px 620px at 8% -8%,  #ffffff 0%, rgba(255,255,255,0) 58%),
-    radial-gradient(900px 640px at 92% 106%, #e8e8ec 0%, rgba(232,232,236,0) 56%),
+    radial-gradient(900px 640px at 92% 106%, var(--gray-tint) 0%, var(--gray-tint-0) 56%),
     var(--parchment);
   background-attachment:fixed;
 }
@@ -347,10 +392,10 @@ button:disabled{ opacity:.45; cursor:default; transform:none; }
    3px 떨어져 두 겹으로 보입니다 — 알약 하나면 충분합니다.
    단추와 링크는 그대로 둡니다. 거기는 이 고리 말고는 표시가 없습니다. */
 input:focus-visible, textarea:focus-visible, select:focus-visible{ outline:none; }
-.primary{ flex:1; background:var(--primary); color:#fff; border-color:transparent;
+.primary{ flex:1; background:var(--primary); color:var(--on-dark); border-color:transparent;
           font-weight:600; box-shadow:var(--lift-1); }
 .google{ width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
-         background:#fff; color:#1f1f1f; border-color:#dadce0; font-weight:600; padding:13px 16px; }
+         background:var(--canvas); color:var(--ink-hard); border-color:var(--line-hard); font-weight:600; padding:13px 16px; }
 .google svg{ width:18px; height:18px; flex:none; }
 .ghost{ background:transparent; color:var(--dim); border-color:transparent; padding:6px 10px;
         font-size:var(--f-md); }
@@ -383,7 +428,7 @@ a.btn:active{ transform:scale(.96); }
               overflow:hidden; margin-top:6px; }
 .abar .track i{ display:block; height:100%; border-radius:var(--r-pill);
                 background:var(--primary); transition:width var(--t-slow) var(--ease); }
-.abar.warn .track i{ background:#e0a02a; }
+.abar.warn .track i{ background:var(--star-dim); }
 .abar.bad  .track i{ background:var(--bad); }
 .abar .f{ font-size:var(--f-xs); color:var(--ink-48); margin-top:5px; }
 
@@ -423,7 +468,7 @@ a.btn:active{ transform:scale(.96); }
 /* 한도에 막힌 사람이 있을 때만 나옵니다. 표 안에 묻으면 안 봅니다. */
 /* color-mix 는 옛 iOS 에서 통째로 무시돼 배경이 사라집니다. 값을 그대로 씁니다. */
 .awarn{ margin-top:12px; padding:10px 13px; border-radius:var(--r-sm);
-        background:rgba(192,57,43,.09); border:1px solid rgba(192,57,43,.28);
+        background:var(--danger-09); border:1px solid var(--danger-28);
         font-size:var(--f-sm); line-height:1.55; }
 
 /* 로그인 단추 아래 동의 문구. 읽히긴 해야 하고 겁을 주면 안 됩니다. */
@@ -459,9 +504,9 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
    이게 고장이 아니라 상태이기 때문입니다 — 여행지에서는 자주 있는 일입니다. */
 .offbar{
   margin:0 0 var(--s-sm); padding:9px var(--s-md);
-  border-radius:var(--r-pill); background:#fff6e5; color:#8a5a12;
+  border-radius:var(--r-pill); background:var(--warn-bg); color:var(--warn);
   font-size:var(--f-sm); text-align:center;
-  border:1px solid #f0dcb8;
+  border:1px solid var(--warn-line);
 }
 
 /* ── 보낼 사진 미리보기 ── 여러 장을 나란히 둡니다 */
@@ -472,7 +517,7 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 /* 빼기 단추는 사진 위 모서리에. 아래 줄에 두면 사진마다 줄이 늘어납니다. */
 .shot1 .x{
   position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0;
-  border-radius:50%; background:var(--ink); color:#fff; border:0;
+  border-radius:50%; background:var(--ink); color:var(--on-dark); border:0;
   /* 여기 × 는 글자가 아니라 아이콘입니다. 크기 토큰(--f-*)을 쓰면 배율을
      타는데 동그라미는 20px 로 고정이라, "아주 크게"에서 밖으로 삐져나가고
      line-height 로 맞춰둔 가운데 정렬도 깨집니다. 상자에 맞춘 px 로 둡니다. */
@@ -485,7 +530,7 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
         margin:0 0 8px; font-size:var(--f-xs); color:var(--ink-48); }
 .srcchip{ padding:3px 9px; border-radius:var(--r-pill);
           background:var(--pearl); border:1px solid var(--hairline); }
-.srcchip.warn{ background:#fff6e5; border-color:#f0dcb8; color:#8a5a12; }
+.srcchip.warn{ background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn); }
 /* 검색 출처. 눌러서 직접 확인할 수 있게 링크로 둡니다.
    주소가 길어도 한 줄로 자릅니다 — 두 줄이 되면 답변보다 출처가 커 보입니다. */
 .weblinks{ width:100%; margin-top:2px; }
@@ -509,7 +554,7 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .pcardwrap img{ width:100%; height:100%; object-fit:cover; display:block; }
 
 .pcard{
-  position:relative; border-radius:var(--r-lg); color:#fff;
+  position:relative; border-radius:var(--r-lg); color:var(--on-dark);
   padding:34px 24px 22px; margin-bottom:var(--s-sm);
   box-shadow:var(--lift-2); overflow:hidden; text-align:center;
   min-height:min(92vw, 440px);
@@ -568,7 +613,7 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 .tdrow.is-done{ opacity:.42; }
 .tdrow.is-cur .tb, .tdrow.is-next .tb{ font-weight:600; }
 .tdrow .tg{ margin-left:5px; padding:1px 6px; border-radius:var(--r-pill);
-            background:var(--primary); color:#fff; font-weight:600;
+            background:var(--primary); color:var(--on-dark); font-weight:600;
             font-size:var(--f-2xs); }
 .tdrow.is-cur .tg{ background:var(--ok); }
 /* 이동 안내는 지금·다음 구간에만. 하루 전체에 달면 소음입니다. */
@@ -631,11 +676,11 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
            cursor:pointer; z-index:1; }
 .sw span{
   position:absolute; inset:0; border-radius:var(--r-pill);
-  background:#d9d9de; transition:background var(--t-fast) var(--ease);
+  background:var(--switch-off); transition:background var(--t-fast) var(--ease);
 }
 .sw span::after{
   content:''; position:absolute; top:3px; left:3px; width:24px; height:24px;
-  border-radius:50%; background:#fff; transition:transform var(--t) var(--ease);
+  border-radius:50%; background:var(--canvas); transition:transform var(--t) var(--ease);
   box-shadow:0 1px 3px rgba(0,0,0,.28);
 }
 .sw input:checked + span{ background:var(--ok); }
@@ -741,14 +786,14 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 /* × 는 아이콘이라 30px 상자에 맞춘 px 로 둡니다 (.shot1 .x 와 같은 이유). */
 .citycard .x{ position:absolute; top:16px; right:16px; z-index:1;
               width:30px; height:30px; padding:0; border:0; border-radius:50%;
-              background:rgba(0,0,0,.45); color:#fff; font-size:17px; line-height:30px; }
+              background:rgba(0,0,0,.45); color:var(--on-dark); font-size:17px; line-height:30px; }
 
 /* ── 달력 ────────────────────────────────────────────────────────────
  * 시작을 누르고 끝을 누릅니다. 사이는 띠로 이어 며칠짜리인지 보이게 합니다. */
 .calweek{ display:grid; grid-template-columns:repeat(7,1fr); position:sticky; top:0;
           z-index:2; background:var(--canvas); padding:2px 0 8px;
           font-size:var(--f-xs); color:var(--ink-48); text-align:center; }
-.calweek .sun{ color:#d0413b; } .calweek .sat{ color:#2f6fd0; }
+.calweek .sun{ color:var(--sun-red); } .calweek .sat{ color:var(--sat-blue); }
 .calmon{ margin-bottom:10px; }
 .calmon h3{ margin:8px 0 6px; font-size:var(--f-md); font-weight:700; }
 .calgrid{ display:grid; grid-template-columns:repeat(7,1fr); }
@@ -760,12 +805,12 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 /* 띠는 칸 배경으로 그립니다. 양 끝은 반만 칠해 동그라미에서 시작·끝나게 합니다.
    --pearl 로 칠했더니 흰 바탕과 거의 구별이 안 돼서 기간이 안 보였습니다.
    파랑을 옅게 섞습니다. color-mix 를 못 읽는 브라우저는 위 값이 남습니다. */
-.calgrid{ --band:#e8f1fb; --band:color-mix(in srgb, var(--primary) 11%, var(--canvas)); }
+.calgrid{ --band:var(--primary-soft); --band:color-mix(in srgb, var(--primary) 11%, var(--canvas)); }
 .cd.in{ background:var(--band); }
 .cd.s{ background:linear-gradient(90deg,transparent 50%,var(--band) 50%); }
 .cd.e{ background:linear-gradient(90deg,var(--band) 50%,transparent 50%); }
 .cd.s.e{ background:transparent; }        /* 하루짜리는 띠가 없습니다 */
-.cd.s i, .cd.e i{ background:var(--primary); color:#fff; font-weight:700; }
+.cd.s i, .cd.e i{ background:var(--primary); color:var(--on-dark); font-weight:700; }
 .cd.today i{ box-shadow:0 0 0 1px var(--primary) inset; }
 .cd.today.s i, .cd.today.e i{ box-shadow:none; }
 
@@ -777,7 +822,7 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 
 /* 홈에서 방금 별점을 준 줄. 사라지지 않고 남아 있어서 다시 눌러 고칠 수 있습니다.
    남은 줄과 구분은 되어야 하니 아주 옅게만 깔아둡니다. */
-.rrow.rated{ background:linear-gradient(90deg, rgba(245,166,35,.10), transparent 70%);
+.rrow.rated{ background:linear-gradient(90deg, var(--star-10), transparent 70%);
              border-radius:var(--r-sm); }
 
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
@@ -855,7 +900,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .day{ flex:none; padding:7px 14px; border-radius:var(--r-pill); border:1px solid transparent;
       background:var(--parchment); color:var(--ink-80); cursor:pointer;
       font-size:var(--f-lg); white-space:nowrap; }
-.day.on{ background:var(--primary); color:#fff; font-weight:600; box-shadow:var(--lift-1); }
+.day.on{ background:var(--primary); color:var(--on-dark); font-weight:600; box-shadow:var(--lift-1); }
 /* 긴 여행에서는 칩 대신 이 칸으로 고릅니다 */
 .days select{ width:auto; flex:1; min-width:180px; padding:7px 14px;
               border-radius:var(--r-pill); }
@@ -938,7 +983,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 핀 안 번호도 26px 상자에 맞춘 px 입니다 (.shot1 .x 와 같은 이유). */
 .pmk span{ display:flex; align-items:center; justify-content:center;
            width:26px; height:26px; border-radius:50%; background:var(--primary);
-           color:#fff; font-size:12px; font-weight:700; border:2px solid #fff;
+           color:var(--on-dark); font-size:12px; font-weight:700; border:2px solid var(--on-dark);
            box-shadow:0 2px 6px rgba(0,0,0,.28); }
 .leaflet-container{ font:inherit }
 /* 일정 사이 이동. 왼쪽 세로선으로 이어져 보이게 합니다.
@@ -1047,7 +1092,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
      font-size:var(--f-2xl); color:var(--hairline); }
 .st::before{ content:'★'; position:absolute; left:0; top:0; }
 .st i{ position:absolute; left:0; top:0; overflow:hidden; white-space:nowrap;
-       color:#f5a623; font-style:normal; }
+       color:var(--star); font-style:normal; }
 .st i::before{ content:'★'; }
 
 /* ── 빈 화면 ── 무엇을 하면 되는지 그 자리에 둡니다 */
@@ -1147,7 +1192,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 왼쪽부터 차례로 톡 튀며 반짝입니다. 채운 별에만 겁니다. */
 @keyframes starpop{
   0%   { transform:scale(1);    filter:none; }
-  35%  { transform:scale(1.36); filter:drop-shadow(0 0 7px rgba(245,166,35,.9)); }
+  35%  { transform:scale(1.36); filter:drop-shadow(0 0 7px var(--star-90)); }
   100% { transform:scale(1);    filter:none; }
 }
 .st.pop{ animation:starpop var(--t-slow) var(--ease-out) both; }
@@ -1187,7 +1232,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
             사진을 채우면 이 갈래를 안 타게 됩니다. 아래는 그때까지의 모습이자,
             목록에 없는 곳을 직접 쳐서 만든 여행의 모습이기도 합니다. */
        display:flex; flex-direction:column; justify-content:flex-end;
-       padding:18px; color:#fff; cursor:pointer; background:#2b2f36;
+       padding:18px; color:var(--on-dark); cursor:pointer; background:var(--panel-dark);
        box-shadow:var(--lift-1); margin-bottom:var(--s-sm); }
 /* ⚠ **`z-index` 를 세 층 다 적어야 합니다.** 아래 `.hero > *` 가 `img` 에도
    걸려서(자식이니까) 사진이 `z-index:1` 을 받고, `::after` 는 `auto` 라
@@ -1232,7 +1277,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    먹습니다. 글자 크기를 '아주 크게' 로 해도 둘이 한 줄에 들어갑니다(재봄). */
 .hero .hrow{ display:flex; align-items:center; gap:10px; margin-top:3px; }
 .hero .hrow .hm{ flex:1; min-width:0; }
-.hero .hbtn{ flex:none; background:#fff; color:var(--ink);
+.hero .hbtn{ flex:none; background:var(--canvas); color:var(--ink);
              border:0; border-radius:var(--r-pill); padding:9px 15px; font-weight:600;
              font-size:var(--f-md); cursor:pointer; }
 /* 사진이 없을 때 — 글자만큼만 씁니다(위 `.hero` 주석 참고).
@@ -1263,12 +1308,12 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    **주인공 별(21px)이 목록 별(25px)보다 작았습니다.** 재보고 알았습니다.
    새로 별을 놓는 자리를 만들면 **여기에도 선택자를 더하십시오.** */
 .hero .herostars{ font-size:calc(26px * var(--ts)); gap:6px;
-                  color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.55); }
+                  color:var(--on-dark); text-shadow:0 1px 3px rgba(0,0,0,.55); }
 /* 목록(25px)보다 크게 — 홈에서 제일 먼저 눌러야 하는 것입니다.
    `vw` 로 위를 막는 것은 위 규칙과 같은 뜻입니다(좁은 화면에서 줄 넘김 방지). */
 .hero .herostars .st{ font-size:min(calc(32px * var(--ts)), 9vw); }
 /* 매긴 만큼 차는 부분은 별색 그대로 둡니다 — 흰 별과 갈려야 몇 점인지 보입니다. */
-.hero .herostars .st i{ color:var(--star, #ffc93c); }
+.hero .herostars .st i{ color:var(--star-hi); }
 /* 도시 이름이 주인공이라 나라는 한 줄 아래에서 조용히. 별에 자리를 내줍니다. */
 .hero.rateh .hm{ opacity:.8; }
 /* ── 도시(나라) 한 줄(b422) ───────────────────────────────────────────
@@ -1299,8 +1344,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 색은 성향 카드의 궁합 상자에서 그대로 빌립니다 — 같은 뜻이 앱 안에서
  * 두 색이면 안 됩니다. 점수가 60 이상이면 초록, 아니면 붉은색. */
 .matecard{ border:1.5px solid var(--line); }
-.matecard.good{ border-color:#CBE0C0; background:#F1F7EE; }
-.matecard.bad { border-color:#F5D3D3; background:#FCEFF0; }
+.matecard.good{ border-color:var(--mate-good-line); background:var(--mate-good-bg); }
+.matecard.bad { border-color:var(--mate-bad-line); background:var(--mate-bad-bg); }
 @media (prefers-color-scheme: dark){
   .matecard.good{ border-color:#2E4326; background:#18210F; }
   .matecard.bad { border-color:#4A2A2E; background:#241416; }
@@ -1317,8 +1362,8 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
             line-height:1; font-variant-numeric:tabular-nums; }
 .matescore i{ font-size:calc(14px * var(--ts)); font-style:normal; font-weight:700;
               margin-left:1px; opacity:.7; }
-.matecard.good .matescore{ color:#5C8A4A; }
-.matecard.bad  .matescore{ color:#C4626B; }
+.matecard.good .matescore{ color:var(--mate-good); }
+.matecard.bad  .matescore{ color:var(--mate-bad); }
 /* ⚠ **점수만 내놓으면 아무 말도 안 한 것입니다.** 어느 축이 맞고 어긋나는지
    한 줄이 반드시 같이 있어야 합니다(mate.js 의 personaMateLine). */
 .mateline{ margin-top:10px; padding-top:9px; border-top:1px dashed var(--line);
@@ -1364,7 +1409,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .rateq .herostars{ font-size:calc(26px * var(--ts)); gap:8px;
                    color:var(--hairline); }
 .rateq .herostars .st{ font-size:min(calc(34px * var(--ts)), 10vw); }
-.rateq .herostars .st i{ color:var(--star, #ffc93c); }
+.rateq .herostars .st i{ color:var(--star-hi); }
 
 /* 「안 가봤어요 ›」의 화살표. 문구보다 흐리게 — **넘어간다는 것만** 알리면
    되고, 화살표가 문구만큼 진하면 그게 주인공처럼 보입니다. */
@@ -1529,7 +1574,7 @@ button.fprow{ border:0; background:none; width:100%; font:inherit;
 /* 아이콘 자리만 색을 씁니다. 카드 전체를 칠하는 것과 눈에 띄는 정도는
    비슷한데 화면은 훨씬 조용합니다. */
 .aicard .ic{ flex:none; width:38px; height:38px; border-radius:var(--r-sm);
-             background:var(--primary); color:#fff; display:flex;
+             background:var(--primary); color:var(--on-dark); display:flex;
              align-items:center; justify-content:center; }
 .aicard .tx{ flex:1; min-width:0 }
 /* 한 줄로 묶고 말줄임표를 걸었더니 제목이 잘렸습니다.
@@ -1541,7 +1586,7 @@ button.fprow{ border:0; background:none; width:100%; font:inherit;
 .aicard .tx span{ display:block; font-size:min(var(--f-sm), 3.6vw);
                   color:var(--ink-48); margin-top:3px; line-height:1.4;
                   word-break:keep-all; }
-.aicard .go{ flex:none; background:var(--primary); color:#fff; border-radius:var(--r-pill);
+.aicard .go{ flex:none; background:var(--primary); color:var(--on-dark); border-radius:var(--r-pill);
              padding:9px 15px; font-weight:700; white-space:nowrap;
              font-size:min(var(--f-md), 3.6vw); }
 /* 아주 좁으면 아이콘을 줄여 글자 자리를 내줍니다. */
@@ -1753,8 +1798,8 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
            보여주려고 잡았던 자리라, 글만 남으면 아래가 휑합니다. */
         min-height:0; 
         display:flex; flex-direction:column; justify-content:flex-end;
-        padding:26px 22px 24px; margin-bottom:var(--s-sm); color:#fff;
-        background:#2b2f36; box-shadow:var(--lift-1); }
+        padding:26px 22px 24px; margin-bottom:var(--s-sm); color:var(--on-dark);
+        background:var(--panel-dark); box-shadow:var(--lift-1); }
 /* ⚠ **사진·덮개·「어디 사진」 표시를 걷었습니다(b475).** 첫 화면에서 큰
    사진을 없앴으니 그 위에 얹던 것들도 함께 지웁니다.
    짙은 바탕(위 background:#2b2f36) 하나로 충분합니다 — 사진이 없으면
@@ -1813,7 +1858,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
         bottom:calc(96px + env(safe-area-inset-bottom)); z-index:1300;
         max-width:min(88vw, 440px); padding:12px 16px; border-radius:var(--r-sm);
-        background:rgba(29,29,31,.94); color:#fff; word-break:break-all;
+        background:rgba(29,29,31,.94); color:var(--on-dark); word-break:break-all;
         font-size:var(--f-md); line-height:1.5; text-align:center;
         opacity:0; pointer-events:none; transition:opacity var(--t) var(--ease), transform var(--t) var(--ease); }
 #toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
@@ -1834,7 +1879,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
  *   `tabular-nums` 를 같이 걸어 폭이 좁은 글꼴에서도 자리가 맞게 합니다. */
 .receipt{
   --rc-ink:#1a1a1a; --rc-dim:#6f6f6f; --rc-line:#1a1a1a; --rc-dash:#c9c9c9;
-  background:#fff; color:var(--rc-ink);
+  background:var(--canvas); color:var(--rc-ink);
   font-family:var(--mono);
   font-variant-numeric:tabular-nums;
   font-size:calc(13px * var(--ts)); line-height:1.9;
@@ -1876,13 +1921,13 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
    앞으로 갈 여행이 먼저고, 이건 잊지 말라는 표시입니다. */
 .rvbar{ display:flex; align-items:center; gap:10px; cursor:pointer;
         margin:-4px 0 12px; padding:11px 14px; border-radius:var(--r-sm);
-        background:#fff6e5; border:1px solid #f6e0b5; }
+        background:var(--warn-bg); border:1px solid var(--warn-line-2); }
 .rvbar .t{ flex:1; min-width:0 }
 .rvbar .t b{ display:block; font-size:var(--f-md); font-weight:600;
-             color:#8a5a00; word-break:keep-all }
+             color:var(--warn-2); word-break:keep-all }
 .rvbar .t span{ display:block; font-size:var(--f-xs); color:#a2762a;
                 margin-top:1px; word-break:keep-all }
-.rvbar .go{ flex:none; font-size:var(--f-sm); font-weight:600; color:#8a5a00 }
+.rvbar .go{ flex:none; font-size:var(--f-sm); font-weight:600; color:var(--warn-2) }
 
 /* 새 여행으로 가는 줄. **홈에서 새 여행을 만들 길은 늘 있어야 합니다** —
    그 길이 사라져서 한 번 고친 자리고, b377 에서 제가 또 없앴다가 b378 에
@@ -1985,7 +2030,7 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
 .ev .memo{ display:block; }
 /* 노선 딱지 — 색은 그 도시 노선의 공식 색입니다 */
 .ln{ display:inline-block; margin-left:5px; padding:1px 7px; border-radius:var(--r-pill);
-     background:#888; color:#fff; font-size:var(--f-xs); font-weight:600;
+     background:var(--gray-mid); color:var(--on-dark); font-size:var(--f-xs); font-weight:600;
      vertical-align:middle; white-space:nowrap; }
 
 .ev .detail{ display:none; padding:0 0 var(--s-sm) calc(50px + var(--s-sm)); }
@@ -2137,7 +2182,7 @@ body.bigmap .tabbar{ display:none; }
 
 /* 만든 사람이 띄우는 공지. 오프라인 띠와 같은 자리·같은 모양이라
    "지금 상태를 알리는 줄"로 한 벌처럼 읽힙니다. */
-#noticebar.warn{ background:var(--bad, #c0392b); color:#fff; }
+#noticebar.warn{ background:var(--bad, var(--danger)); color:var(--on-dark); }
 /* 기능 스위치로 끈 것들. 화면에서 감추기만 합니다 — 진짜로 막는 것은
    서버 쪽입니다. */
 body.noreorder .ev .grip{ display:none; }
@@ -2207,11 +2252,11 @@ body.noreorder .ev .grip{ display:none; }
       font-size:var(--f-lg); line-height:1.6; word-break:break-word; }
 .msg b{ font-weight:600; }
 /* 내 말은 오른쪽에 파랑. 꼬리 쪽 모서리만 죽여 방향을 만듭니다. */
-.msg.me{ align-self:flex-end; background:var(--primary); color:#fff;
+.msg.me{ align-self:flex-end; background:var(--primary); color:var(--on-dark);
          border-bottom-right-radius:7px; }
 .msg.ai{ align-self:flex-start; background:var(--pearl); color:var(--ink);
          border:1px solid var(--divider-soft); border-bottom-left-radius:7px; }
-.msg.me a{ color:#fff; }
+.msg.me a{ color:var(--on-dark); }
 /* 대화가 없을 때 안내문은 풍선이 아니라 가운데에 그대로 둡니다. */
 /* 안내와 예시를 한 덩어리로 가운데 세웁니다. 예전에는 안내만 `margin:auto 0`
    으로 가운데 떠 있었는데, 아래에 예시가 붙으면 둘이 갈라져 섭니다. */
@@ -2279,7 +2324,7 @@ body.noreorder .ev .grip{ display:none; }
    margin-top 은 필요 없고, 글자 앞에 살짝 띄웁니다. */
 #cats .day i{ display:inline-block; width:8px; height:8px; border-radius:50%;
               margin-right:5px; background:var(--kc, var(--k-etc)); }
-#cats .day.on i{ background:#fff; }   /* 고른 칩은 배경이 진해서 점도 흰색으로 */
+#cats .day.on i{ background:var(--canvas); }   /* 고른 칩은 배경이 진해서 점도 흰색으로 */
 .ktag{ font-size:var(--f-md); font-weight:600; margin-right:6px;
        color:var(--kc, var(--k-etc)); }
 
@@ -2411,7 +2456,7 @@ body.noreorder .ev .grip{ display:none; }
  * 옅은 회색으로, 사진 위에서는 살짝 어두운 판으로 읽혀 양쪽 다 삽니다. */
 .tabbar button.is-on{
   color:var(--primary); font-weight:600;
-  background:rgba(120,120,128,.20);
+  background:var(--sep-ios);
 }
 /* 고른 칸의 그림도 굵게 — 색만 바꾸면 옆 칸과 무게가 같아 덜 갈립니다. */
 .tabbar button.is-on svg{ stroke-width:2.2; }
@@ -2455,7 +2500,7 @@ body.hastab{ padding-bottom:calc(var(--tabh, 58px) + 36px + var(--kb) + var(--sa
 .tstrip button:active{ transform:none; }
 /* 고른 것만 색을 채웁니다. 알약 넷을 다 칠하면 상단바가 다시 탭바처럼
    무거워집니다 — 여기서는 지금 어디인지만 알면 됩니다. */
-.tstrip button.is-on{ background:var(--primary); color:#fff; }
+.tstrip button.is-on{ background:var(--primary); color:var(--on-dark); }
 /* 여행 안에서는 앱 이름이 자리를 내줍니다. 어느 앱인지는 이미 알고,
    지금 궁금한 것은 이 여행의 어디를 보고 있느냐입니다. */
 body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
@@ -2483,7 +2528,7 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
    × 는 아이콘이라 22px 상자에 맞춘 px 입니다 (.shot1 .x 와 같은 이유). */
 .rvshot .x{ position:absolute; top:3px; right:3px; width:22px; height:22px;
             padding:0; border:0; border-radius:50%; line-height:22px;
-            background:rgba(0,0,0,.5); color:#fff; font-size:14px; }
+            background:rgba(0,0,0,.5); color:var(--on-dark); font-size:14px; }
 .rvshot .x[data-armed="1"]{ width:auto; padding:0 8px; border-radius:var(--r-pill);
                             font-size:var(--f-xs); }
 /* 사진 넣기 — 파일 고르개는 못생겨서 라벨로 감싸 단추처럼 씁니다. */
@@ -2557,8 +2602,8 @@ button .load::before{ border-color:currentColor; border-top-color:transparent; o
   .load::before{ animation:blink 1.1s ease-in-out infinite; }
   @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:.3} }
 }
-pre{ margin:var(--s-xs) 0 0; padding:12px; background:#fdf3f2;
-     border:1px solid #f3d6d3; border-radius:var(--r-sm);
+pre{ margin:var(--s-xs) 0 0; padding:12px; background:var(--danger-bg);
+     border:1px solid var(--danger-line); border-radius:var(--r-sm);
      font-size:var(--f-md); overflow-x:auto;
      white-space:pre-wrap; word-break:break-word; color:var(--bad);
      font-family:var(--sf); }
@@ -2626,9 +2671,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   큰 사진 카드가 주인공으로 남게 띠 하나 높이만 씁니다(home.js 주석). */
 .tripbar{ display:flex; align-items:center; gap:11px; cursor:pointer;
           padding:12px 14px; border-radius:16px;
-          background:rgba(0,102,204,.055);
-          border:1px solid rgba(0,102,204,.13); }
-.tripbar:active{ background:rgba(0,102,204,.10); }
+          background:var(--primary-06);
+          border:1px solid var(--primary-13); }
+.tripbar:active{ background:var(--primary-10); }
 .tripbar .ic{ flex:none; display:flex; color:var(--primary); }
 .tripbar .t{ flex:1; min-width:0; }
 .tripbar .t b{ display:block; font-size:var(--f-md); font-weight:600;
@@ -2734,10 +2779,10 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .mates{ display:flex; gap:8px; margin-top:14px; }
 .mate{ flex:1; min-width:0; padding:10px 12px; border-radius:var(--r-sm);
        border:1px solid; }
-.mate.good{ background:#F1F7EE; border-color:#CBE0C0; }
-.mate.bad { background:#FCEFF0; border-color:#F5D3D3; }
+.mate.good{ background:var(--mate-good-bg); border-color:var(--mate-good-line); }
+.mate.bad { background:var(--mate-bad-bg); border-color:var(--mate-bad-line); }
 .mate .ml{ display:block; font-size:calc(11px * var(--ts)); font-weight:600; }
-.mate.good .ml{ color:#5C8A4A; } .mate.bad .ml{ color:#C4626B; }
+.mate.good .ml{ color:var(--mate-good); } .mate.bad .ml{ color:var(--mate-bad); }
 .mate b{ display:block; font-size:calc(14px * var(--ts)); font-weight:700;
          margin-top:3px; word-break:keep-all; }
 .mate .mc{ display:block; font-size:calc(11px * var(--ts)); color:var(--ink-48);
@@ -3358,7 +3403,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 #pvview.hide{ display:none; }
 body.pvon{ overflow:hidden; }
 .pvtop{ flex:none; display:flex; align-items:center; gap:10px;
-        padding:calc(10px + var(--sat)) 14px 10px; color:#fff; }
+        padding:calc(10px + var(--sat)) 14px 10px; color:var(--on-dark); }
 /* 숫자도 제 바탕을 집니다 — 뒤가 흰 화면이면 그냥은 안 읽힙니다. */
 .pvnum{ font-size:var(--f-md); font-variant-numeric:tabular-nums;
         line-height:1; }
@@ -3369,7 +3414,7 @@ body.pvon{ overflow:hidden; }
      `.gsx` 에서 겪은 것처럼 svg 를 속성으로만 재면 0×0 이 됩니다. */
 .pvx{ flex:none; width:44px; height:44px; display:flex; align-items:center;
       justify-content:center; padding:0; border:0; border-radius:50%;
-      background:rgba(10,12,16,.55); color:#fff; cursor:pointer; }
+      background:rgba(10,12,16,.55); color:var(--on-dark); cursor:pointer; }
 .pvx svg{ width:20px; height:20px; display:block; }
 .pvrow{ flex:1; min-height:0; display:flex; overflow-x:auto; overflow-y:hidden;
         scroll-snap-type:x mandatory; overscroll-behavior:contain;
@@ -3438,12 +3483,12 @@ body.pvon{ overflow:hidden; }
    (`.tabbar button svg` · `.shelf svg` 참고). 새 아이콘을 flex 안에 넣을
    때마다 같은 함정입니다. */
 .gsx svg{ width:16px; height:16px; flex:none; display:block; }
-.gsx:active{ background:#fff; }
+.gsx:active{ background:var(--canvas); }
 /* 몇 곳 중 몇 번째인가 — 사진 «안» 아래 가운데. 보여주기만 합니다. */
 .gsdot{ position:absolute; left:0; right:0; bottom:9px; display:flex;
         gap:5px; justify-content:center; }
 .gsdot i{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.5); }
-.gsdot i.on{ background:#fff; }
+.gsdot i.on{ background:var(--canvas); }
 
 .gsbody{ padding:12px 15px 15px; }
 /* 제목 줄: 도시 이름과 **평균 별점**을 양끝으로. 남들 점수라 내 것과
@@ -3593,7 +3638,7 @@ body.pvon{ overflow:hidden; }
 .dgshots{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:14px 0 4px; }
 .dgshots.one{ grid-template-columns:1fr; }
 .dgshots.odd > .dgimg:first-child{ grid-column:1 / -1; }
-.dgimg{ margin:0; padding:7px 7px 9px; background:#fff;
+.dgimg{ margin:0; padding:7px 7px 9px; background:var(--canvas);
         border-radius:4px; box-shadow:0 2px 8px rgba(60,48,30,.16); }
 .dgimg img{ aspect-ratio:1/1; }
 /* ⚠ **기울이는 것은 «한 장일 때»뿐입니다.** 격자에서 기울이면 줄이 어긋나
