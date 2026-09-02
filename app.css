@@ -3100,9 +3100,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * ⚠ 이모지 깃발은 글자 크기의 1.2배쯤 넓습니다. 한 칸 25.5px 에
  *   19.5px 글자면 23.4px — 들어갑니다. */
 .fgrid{ display:grid; gap:2px; grid-template-columns:repeat(13, 1fr); }
+/* ⚠ `.fg` 는 두 가지입니다(b624): 그림판을 실었으면 `<svg>`, 못 실었으면
+     이모지 `<span>`. 크기 규칙은 둘이 같아야 칸이 안 흔들립니다.
+   ⚠ twemoji 는 36×36 자리 안에 둥근 네모 깃발이 들어 있습니다 — 칸을
+     정사각형으로 두면 깃발 둘레에 숨이 남아 참고 화면과 같아집니다. */
 .fg{ font-size:min(calc(20px * var(--ts)), 5vw); line-height:1.34;
      text-align:center; min-width:0; overflow:hidden;
      filter:grayscale(1) opacity(.22); transition:filter var(--t) var(--ease); }
+svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
+/* 출처 한 줄. 조용히, 벽 아래에. */
+.fgcredit{ margin-top:var(--s-md); padding-top:var(--s-sm);
+           border-top:1px solid var(--line);
+           font-size:var(--f-xs); color:var(--ink-48); text-align:center; }
 .fg.on{ filter:none; }
 /* 깃발을 못 그리는 기기에서는 코드 두 글자가 옵니다 — 그때는 글자로 읽혀야
    하므로 크기를 줄이고 타자기 글씨로 둡니다. */

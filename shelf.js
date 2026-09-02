@@ -15,22 +15,22 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk } from './dom.js?v=b623';
-import { openCity } from './city.js?v=b623';
-import { sb } from './db.js?v=b623';
-import { cities, countryName } from './cities.js?v=b623';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b623';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b623';
-import { fail } from './net.js?v=b623';
-import { arm } from './ui.js?v=b623';
-import { todayYmd } from './calc.js?v=b623';
+         flagOf, flagOk } from './dom.js?v=b624';
+import { openCity } from './city.js?v=b624';
+import { sb } from './db.js?v=b624';
+import { cities, countryName } from './cities.js?v=b624';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b624';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b624';
+import { fail } from './net.js?v=b624';
+import { arm } from './ui.js?v=b624';
+import { todayYmd } from './calc.js?v=b624';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b623';
-import { loadCities } from './citysearch.js?v=b623';
-import { loadRateData, saveRate } from './rating.js?v=b623';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b624';
+import { loadCities } from './citysearch.js?v=b624';
+import { loadRateData, saveRate } from './rating.js?v=b624';
 
 let ctx = {
   me: () => null,
@@ -213,11 +213,43 @@ $('shelflist').addEventListener('click', e => {
  * ⚠ **깃발을 못 그리는 기기가 있습니다**(윈도우는 `KR` 두 글자).
  *   `flagOk()` 가 재서 알려줍니다 — 그때는 코드 두 글자로 깝니다.
  *   map.js 가 이미 같은 판단을 하고 있어서 그것을 그대로 씁니다. */
+/* ── 깃발 그림판 (b624, 사용자 요청) ─────────────────────────────────
+ * 「아이폰 자체 말고 내가 첨부한 이미지 같은 깃발은 못 구해?」
+ * 이모지 깃발은 **기기가 그립니다** — 아이폰은 애플 것, 안드로이드는
+ * 구글 것, 윈도우는 아예 못 그리고 `KR` 두 글자로 나옵니다. 우리가
+ * 크기도 모서리도 못 정합니다.
+ * → 그림 195개를 **한 파일(`flags.svg`, 356KB)** 로 묶어 들고 다닙니다.
+ *   어느 기기에서나 같게 보이고, 한 번 받으면 오프라인에서도 뜹니다.
+ *
+ * ⚠ **깃발 화면을 열 때만 받습니다.** 356KB 를 앱 첫 실행에 얹으면
+ *   이 한 화면 때문에 모두가 느려집니다.
+ * ⚠ **한 번만 받습니다.** 두 번째부터는 이미 문서에 들어 있습니다.
+ * ⚠ 못 받으면(첫 실행 + 비행기모드) **이모지로 떨어집니다.** 그 길을
+ *   지우지 마십시오 — 없으면 그때 빈 화면이 됩니다.
+ * ⚠ 그림은 Twemoji, **CC BY 4.0** 입니다. 출처를 밝혀야 해서 화면
+ *   아래에 한 줄 답니다. 그 줄을 지우면 라이선스 위반입니다. */
+let 깃발판 = false;
+async function 깃발싣기(){
+  if (깃발판) return true;
+  try {
+    const r = await fetch('./flags.svg?v=b624');
+    if (!r.ok) return false;
+    const 통 = document.createElement('div');
+    통.id = 'flagsprite';
+    통.innerHTML = await r.text();
+    document.body.appendChild(통);
+    깃발판 = true;
+    return true;
+  } catch { return false; }
+}
+
 async function openFlagShelf(){
   await loadCities();
   const 갔다 = new Set((cities || []).filter(c => visited.has(c.id))
                        .map(c => c.country).filter(Boolean));
   const 센것 = UN_CODES.filter(c => 갔다.has(c)).length;
+  /* 그림판을 먼저 싣습니다. 실패하면 예전처럼 이모지로 갑니다. */
+  const 그림 = await 깃발싣기();
   const 기ok = flagOk();
   $('shelfcount').textContent =
     `${센것}개국 · ${(센것 / UN_TOTAL * 100).toFixed(1)}%`;
@@ -236,11 +268,21 @@ async function openFlagShelf(){
        한 판이어도 대륙 덩어리로 보입니다 — 베낀 것이 아니라 «세계 전부»로
        보이려면 섞여 있어야 합니다. 원본은 안 건드리고 사본을 늘어놓습니다
        (`UN_CODES` 의 순서를 여기서 바꾸면 세는 쪽이 같이 흔들립니다). */
+  $('shelflist').classList.toggle('nofl', !그림 && !기ok);
   $('shelflist').innerHTML =
-    `<div class="fgrid">${[...UN_CODES].sort().map(코드 =>
-      `<span class="fg${갔다.has(코드) ? ' on' : ''}"
-             title="${esc(countryName[코드] || 코드)}">${
-        기ok ? flagOf(코드) : esc(코드)}</span>`).join('')}</div>`;
+    `<div class="fgrid">${[...UN_CODES].sort().map(코드 => {
+      const 켬 = 갔다.has(코드) ? ' on' : '';
+      const 이름 = esc(countryName[코드] || 코드);
+      /* 그림판이 있으면 <use> 하나로 부릅니다. `#f-kr` 처럼 나라 코드가
+         곧 이름표입니다(tools/flagsprite.pl 이 그렇게 굽습니다). */
+      return 그림
+        ? `<svg class="fg${켬}" aria-label="${이름}"><use href="#f-${
+             코드.toLowerCase()}"/></svg>`
+        : `<span class="fg${켬}" title="${이름}">${
+             기ok ? flagOf(코드) : esc(코드)}</span>`;
+    }).join('')}</div>` +
+    /* CC BY 4.0 — 지우면 라이선스 위반입니다. */
+    (그림 ? `<div class="fgcredit">국기 그림 Twemoji · CC BY 4.0</div>` : '');
 }
 
 async function openBadgeShelf(){
