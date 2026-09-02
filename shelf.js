@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b614';
-import { openCity } from './city.js?v=b614';
-import { sb } from './db.js?v=b614';
-import { cities, countryName } from './cities.js?v=b614';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b614';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b614';
-import { fail } from './net.js?v=b614';
-import { arm } from './ui.js?v=b614';
-import { todayYmd } from './calc.js?v=b614';
-import { loadCities } from './citysearch.js?v=b614';
-import { loadRateData, saveRate } from './rating.js?v=b614';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b615';
+import { openCity } from './city.js?v=b615';
+import { sb } from './db.js?v=b615';
+import { cities, countryName } from './cities.js?v=b615';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b615';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b615';
+import { fail } from './net.js?v=b615';
+import { arm } from './ui.js?v=b615';
+import { todayYmd } from './calc.js?v=b615';
+import { loadCities } from './citysearch.js?v=b615';
+import { loadRateData, saveRate } from './rating.js?v=b615';
 
 let ctx = {
   me: () => null,
@@ -311,14 +311,26 @@ export async function openShelf(kind){
      짜게 주는 편인지가 거기서 드러납니다.
      ⚠ **별점이 있는 목록에만 답니다.** '가보고 싶은 곳'은 별점이 없어서
        평균이 NaN 이 되거나 0점으로 보입니다. */
+  /* ⚠ **한줄평 수도 같이 답니다(b615, 사용자 요청).** 「평균 별점 옆에
+       한줄평 몇 개 있는지 넣어주면 될듯」.
+     별을 몇 개 줬는지 옆에 말 몇 개를 남겼는지가 붙으면 「별은 많이
+     줬는데 말은 거의 안 남겼구나」가 한 줄에서 읽힙니다.
+     ⚠ **이 목록 안에서** 셉니다. 옆의 「곳」·「평균」이 둘 다 이 목록의
+       것이라, 한줄평만 내 기록 전체를 세면 셋이 서로 다른 것을 말합니다.
+     ⚠ 빈 한줄평은 안 셉니다 — 지우면 빈 글자로 남는 자리가 있어서,
+       있는지만 보면 지운 것까지 셉니다.
+     ⚠ **0 이면 아예 안 적습니다.** 「한줄평 0」은 알려주는 것이 없고
+       줄만 길어집니다. 남긴 것이 있을 때만 자랑할 자리입니다. */
   {
     const st = list.map(c => myRates[c.id]?.stars).filter(s => s != null);
     const avg = st.length ? (st.reduce((a, b) => a + b, 0) / st.length) : null;
+    const 한줄 = list.filter(c => (myRates[c.id]?.comment || '').trim()).length;
+    const 꼬리 = 한줄 ? ` · 한줄평 ${한줄}` : '';
     $('shelfcount').textContent =
       !list.length ? '' :
       (HAS_STARS(kind) && avg != null)
-        ? `${list.length}곳 · 평균 ★${avg.toFixed(1)}`
-        : `${list.length}곳`;
+        ? `${list.length}곳 · 평균 ★${avg.toFixed(1)}${꼬리}`
+        : `${list.length}곳${꼬리}`;
   }
   /* ── 도시 벽(b604, 5단계) ─────────────────────────────────────────
    * 사진이 있는 보관함 셋은 **줄이 아니라 벽**입니다 — 두 칸 격자에
