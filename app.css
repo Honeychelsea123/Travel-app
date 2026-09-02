@@ -519,6 +519,22 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
  *   그 뜻은 이제 **아래 선 하나**가 냅니다(모든 카드가 그렇습니다) —
  *   따로 표시할 것이 없어 클래스만 남기고 꾸밈은 비웁니다. */
 .card.quiet{ box-shadow:none; border:0; }
+/* ── 떼어 건네는 조각 (b634) ─────────────────────────────────────────
+ * ⚠ `.card.quiet` 가 `border:0` 이라 자릿수를 이겨야 합니다 —
+ *   `.card.quiet.tearoff` 로 씁니다. `.tearoff` 만으로는 집니다.
+ * ⚠ 점선은 `--hairline` 입니다. 일정의 날짜 절취선(`.daysep`)과 같은
+ *   값이라야 「같은 뜻」으로 읽힙니다.
+ * ⚠ 가위는 점선 «위»에 앉고 뒤를 종이색으로 덮습니다. 그래야 선이
+ *   가위를 지나가는 것처럼 보입니다 — 그게 절취선 표시의 생김새입니다. */
+.card.quiet.tearoff{ position:relative;
+  border-top:1px dashed var(--hairline);
+  border-bottom:1px dashed var(--hairline);
+  padding:var(--s-md) 0; margin:var(--s-lg) 0 var(--s-md); }
+.tearoff .tearmark{ position:absolute; left:0; top:-8px;
+  display:flex; padding-right:7px; background:var(--canvas);
+  color:var(--ink-48); }
+/* 한 줄뿐이라 위 여백이 필요 없습니다 — 조각이 여백을 갖고 있습니다. */
+.tearoff .fprow{ margin-top:0; padding-top:0; border-top:0; }
 
 /* ── 글자 위계는 계단이어야 합니다 ──
    재보니 **뒤집혀 있었습니다.** 섹션 제목 `.card h2` 가 15px/600 인데
