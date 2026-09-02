@@ -17,31 +17,31 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b646';
-import { photosOpen, closePhotos } from './photoview.js?v=b646';
-import { sb } from './db.js?v=b646';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b646';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b646';
+import { $, esc, toast } from './dom.js?v=b647';
+import { photosOpen, closePhotos } from './photoview.js?v=b647';
+import { sb } from './db.js?v=b647';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b647';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b647';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b646';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b646';
-import { drawPlanMap } from './planmap.js?v=b646';
-import { drawPlans } from './planview.js?v=b646';
-import { legIn, fillCityList } from './legs.js?v=b646';
-import { inTrip } from './tabs.js?v=b646';
-import { closeAi } from './aiscreen.js?v=b646';
-import { closeDraft } from './draft.js?v=b646';
-import { closeReview } from './home.js?v=b646';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b647';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b647';
+import { drawPlanMap } from './planmap.js?v=b647';
+import { drawPlans } from './planview.js?v=b647';
+import { legIn, fillCityList } from './legs.js?v=b647';
+import { inTrip } from './tabs.js?v=b647';
+import { closeAi } from './aiscreen.js?v=b647';
+import { closeDraft } from './draft.js?v=b647';
+import { closeReview } from './home.js?v=b647';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b646';
-import { closeCity, isCityOpen } from './city.js?v=b646';
-import { closeMap, closeCountries } from './map.js?v=b646';
-import { closePersona } from './persona.js?v=b646';
+import { closeSpree } from './spree.js?v=b647';
+import { closeCity, isCityOpen } from './city.js?v=b647';
+import { closeMap, closeCountries } from './map.js?v=b647';
+import { closePersona } from './persona.js?v=b647';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b646';
-import { closeShelf } from './shelf.js?v=b646';
-import { closeDiary } from './diary.js?v=b646';
-import { closeDocs } from './prep.js?v=b646';
+import { 시트닫기 } from './home.js?v=b647';
+import { closeShelf } from './shelf.js?v=b647';
+import { closeDiary } from './diary.js?v=b647';
+import { closeDocs } from './prep.js?v=b647';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
@@ -163,7 +163,21 @@ window.addEventListener('popstate', () => {
   /* 1) 화면 위에 떠 있는 것 */
   /* 지구본에서 나라를 눌러 뜬 카드가 제일 위입니다(b555) — 다른 무엇보다
      늦게 열리고 화면 아래에 얹힙니다. */
-  if (!$('gsheet')?.classList.contains('hide')) return 시트닫기(true);
+  /* ⚠⚠ **이 줄 하나가 뒤로가기를 통째로 죽이고 있었습니다(b647).**
+     예전엔 `if (!$('gsheet')?.classList.contains('hide'))` 였습니다.
+     `#gsheet` 는 **마크업에 없고** 지구본에서 나라를 누를 때야
+     home.js 가 만듭니다. 그 전까지는 `$('gsheet')` 가 null 이므로
+       null?.classList.contains('hide')  →  undefined
+       !undefined                        →  **true**
+     가 되어 **모든 뒤로가기가 여기서 멈췄습니다.** 시트닫기는
+     판이 없으면 조용히 돌아오고, `return` 이 사슬을 끊습니다 —
+     도시도 보관함도 일기도 여행도 뒤로가기로 안 닫혔습니다.
+     사용자 신고 「화면이 짬뽕」「위아래가 잘리는 스크롤 오류」가
+     상당 부분 이것입니다 — 닫힐 줄 알았던 판이 계속 서 있었습니다.
+     ⚠ **`?.` 는 「없을 때 터지는 것」만 막습니다 — 그 값을 부정하면
+       없는 것이 「있고 열려 있다」로 변합니다.** 없는 것을 물을 때는
+       있는지를 먼저 묻고, 그 뒤에 상태를 묻습니다. */
+  if ($('gsheet') && !$('gsheet').classList.contains('hide')) return 시트닫기(true);
   if (!$('aiview').classList.contains('hide')) return closeAi(true);
   /* 2) 통째로 덮는 화면 */
   /* 서류가 제일 위입니다 — 여행 안에서 열리고 그 위를 다 덮습니다. */
