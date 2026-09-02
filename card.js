@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b649';
+import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b650';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b649';
+import { distKm, pScale, SEOUL } from './calc.js?v=b650';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -313,7 +313,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b649`;
+    img.src = `./persona/${code}.png?v=b650`;
   });
 }
 
@@ -930,11 +930,13 @@ async function drawStamps(s, W, H, F){
     /* ② 곁수 — 도시와 대륙 */
     { h:.058, draw:(y, U) => {
         const 단 = F(600, U * .032), N = F(800, U * .038);
+        /* ⚠ 성향 카드와 **같은 말투**입니다(`27 개국 · 74 도시`). 「개 도시」
+           라고 쓰면 위 큰 수의 「개국」과 단위 세는 법이 갈립니다. */
         runs(g, [{ t:String(s.cities), f:N, c:P16.잉크 },
-                 { t:' 개 도시',        f:단, c:P16.흐림 },
+                 { t:' 도시',           f:단, c:P16.흐림 },
                  { t:'   ·   ',        f:단, c:P16.아주흐림 },
                  { t:String(s.conts),  f:N, c:P16.잉크 },
-                 { t:' 개 대륙',        f:단, c:P16.흐림 }], cx, y + U * .038);
+                 { t:' 대륙',           f:단, c:P16.흐림 }], cx, y + U * .038);
       } },
     /* ③ 막대 — 195 중 얼마인지. 수보다 막대가 빨리 읽힙니다. */
     { h:.078, draw:(y, U) => {
@@ -943,8 +945,10 @@ async function drawStamps(s, W, H, F){
         g.fillStyle = P16.주황;
         /* 한 나라만 가도 보이게 최소 폭을 둡니다 — 0.5% 는 선이 안 그려집니다. */
         rrect(g, L, by, Math.max((R - L) * s.pct / 100, th), th, th / 2); g.fill();
+        /* ⚠ 왼쪽에 「0」 을 적었다가 뺐습니다 — 아무것도 안 알려주면서
+           막대를 자(ruler)처럼 보이게 합니다. 오른쪽 하나면 「이 막대의
+           끝이 195개국」 이라는 뜻이 다 전해집니다. */
         g.font = F(600, U * .026); g.fillStyle = P16.아주흐림;
-        g.textAlign = 'left';  g.fillText('0', L, by + U * .052);
         g.textAlign = 'right'; g.fillText(`${s.total}개국`, R, by + U * .052);
       } },
     /* ④ 세계지도 — 이 앱에서 제일 보기 좋은 그림입니다 */
@@ -995,12 +999,20 @@ async function drawStamps(s, W, H, F){
       } }] : []),
   ];
 
-  /* ── 자 정하기 ── drawP16 과 **같은 셈**입니다 ── */
+  /* ── 자 정하기 ── drawP16 과 같은 셈입니다. **다만 남는 자리를 나눕니다.**
+     ⚠ 성향 카드는 블록이 많아 span 을 거의 다 씁니다. 이 카드는 블록이
+       일곱뿐이라 스토리(1080×1920)에서 U 가 W 에 걸리고, 남는 316px 가
+       **위아래 두 덩어리로** 갈라져 가운데만 뭉쳐 보였습니다(실측).
+     → 사이사이로 고루 나눕니다. 한 틈에 U*.05 까지만 — 더 주면 이번엔
+       조각들이 서로 남남처럼 흩어집니다. 남은 것은 위아래로 반씩. */
   const 총높이 = blocks.reduce((a, b) => a + b.h, 0);
   const 위 = W * .150, 아래 = H - W * .160;
   const U = Math.min(W, (아래 - 위) / 총높이);
-  let y = 위 + ((아래 - 위) - U * 총높이) / 2;
-  for (const b of blocks){ b.draw(y, U); y += U * b.h; }
+  const 남음 = (아래 - 위) - U * 총높이;
+  const 틈 = blocks.length > 1
+    ? Math.min(U * .05, Math.max(0, 남음) / (blocks.length - 1)) : 0;
+  let y = 위 + (남음 - 틈 * (blocks.length - 1)) / 2;
+  blocks.forEach((b, i) => { b.draw(y, U); y += U * b.h + (i < blocks.length - 1 ? 틈 : 0); });
 
   /* ── 바닥 ── 성향 카드와 **한 글자도 다르지 않게** ── */
   const fy = H - W * .060;
