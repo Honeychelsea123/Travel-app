@@ -2736,18 +2736,24 @@ body.noreorder .ev .grip{ display:none; }
  * 아이콘·글자만 파랑입니다 — 바탕과 **다른 색**이라야 눌린 것이 보입니다.
  * 회색은 iOS 의 fill 계열(120,120,128)에서 가져옵니다. 흰 배경에서는
  * 옅은 회색으로, 사진 위에서는 살짝 어두운 판으로 읽혀 양쪽 다 삽니다. */
-/* ⚠ **회색 알약을 걷고 «위에 그은 먹선»으로 바꿉니다(b611).** 채운 판은
-     떠 있는 유리 시절의 문법입니다. 종이에서 「지금 이 장」을 가리키는
-     것은 색칠이 아니라 **선**입니다 — 책의 색인 탭이 그렇습니다.
-   ⚠ 선은 `box-shadow: inset` 으로 긋습니다. `border-top` 은 자리를 2px
-     먹어서 고른 칸만 아래로 내려앉습니다. */
+/* ── 고른 칸은 «그림을 칠해서» 알립니다 (b613, 사용자 결정) ────────────
+ * b611 에 위에 먹선을 그었는데 사용자가 「그렇게 하지 말고」 — 왓챠피디아
+ * 하단바처럼 **그림 자체가 칠해지는** 쪽으로. 골라 놓은 곳이 위에 붙은
+ * 선이 아니라 **아이콘**이라, 눈이 이름과 그림을 보는 김에 같이 읽습니다.
+ *
+ * ⚠ **그림을 새로 그리지 않았습니다.** 다섯 아이콘은 다 선으로만 된
+ *   것(`fill:none; stroke:currentColor`)인데, 칠을 켜고 **선을 종이색으로
+ *   뒤집으면** 채워진 그림이 됩니다 — 지구본은 먹빛 원에 종이색 경위선,
+ *   별·비행기·사람은 속이 찬 모양. 채운 변형을 다섯 개 새로 그릴 필요가
+ *   없고, 두 상태가 «같은 그림»이라 자리도 안 흔들립니다.
+ * ⚠ 선 굵기는 조금 올립니다(1.6). 칠 위에 얹히는 선이라 얇으면 묻힙니다.
+ * ⚠ 위에 긋던 먹선(`box-shadow:inset`)은 걷습니다. 둘 다 두면 무엇으로
+ *   고른 것인지 두 번 말합니다. */
 .tabbar button.is-on{
   color:var(--ink); font-weight:600;
   background:none;
-  box-shadow:inset 0 2px 0 var(--ink);
 }
-/* 고른 칸의 그림도 굵게 — 색만 바꾸면 옆 칸과 무게가 같아 덜 갈립니다. */
-.tabbar button.is-on svg{ stroke-width:2.2; }
+.tabbar button.is-on svg{ fill:currentColor; stroke:var(--canvas); stroke-width:1.6; }
 /* ── 안 고른 칸 글자(b460) ───────────────────────────────────────────
    ⚠ **같은 선택자가 두 줄 있었습니다**(#33333a 뒤에 #3c3c43). 뒤엣것만
      먹으므로 앞 줄은 아무 일도 안 하고 있었습니다 — b443 에 한 줄 넣고
@@ -3013,6 +3019,13 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  * 벗었습니다. 위 넘김 카드와 갈라 보이게 **머리카락 한 올**만 긋습니다 —
  * 카드를 또 만들면 모서리가 두 겹이 됩니다.
  * ⚠ `.shelf` 의 줄 사이 선은 그대로 씁니다. 여기서 또 그으면 두 벌입니다. */
+/* 발자국을 못 받았을 때 그 자리에 놓는 줄(b613). 조용히, 줄 하나로.
+   ⚠ 「0 / 195」를 적지 않는 이유는 home.js 쪽 주석에 있습니다 — 그건
+     거짓말이고, 보는 사람은 제 기록이 날아간 줄 압니다. */
+.fpretry{ width:100%; margin:var(--s-sm) 0; padding:12px 0;
+          border:0; border-top:1px solid var(--line);
+          border-bottom:1px solid var(--line);
+          background:none; color:var(--ink-48); font-size:var(--f-md); }
 .fpshelf{ margin-top:12px; padding-top:2px; border-top:1px solid var(--line); }
 
 /* ── 분석 탭의 「이름 + 값」 줄 크기를 한 벌로(b460) ──────────────────

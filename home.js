@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b612';
-import { sb } from './db.js?v=b612';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b612';
-import { hm, todayYmd } from './calc.js?v=b612';
-import { starHtml, paintStars } from './stars.js?v=b612';
+import { $, esc } from './dom.js?v=b613';
+import { sb } from './db.js?v=b613';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b613';
+import { hm, todayYmd } from './calc.js?v=b613';
+import { starHtml, paintStars } from './stars.js?v=b613';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b612';
-import { cities, countryName } from './cities.js?v=b612';
-import { myRates, cityStat, visited } from './rate.js?v=b612';
-import { plans } from './trip.js?v=b612';
-import { loadCities } from './citysearch.js?v=b612';
+import { starValue } from './rateui.js?v=b613';
+import { cities, countryName } from './cities.js?v=b613';
+import { myRates, cityStat, visited } from './rate.js?v=b613';
+import { plans } from './trip.js?v=b613';
+import { loadCities } from './citysearch.js?v=b613';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b612';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b612';
+import { openCity } from './city.js?v=b613';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b613';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b612';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b613';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b612';
+import { drawReport } from './report.js?v=b613';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b612';
+import { PERSONA_BG } from './card.js?v=b613';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b612';
+import { checkPersonaShift } from './pshift.js?v=b613';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b612';
+import { diaryBackTo } from './diary.js?v=b613';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b612';
+import { mountGlobe } from './globe.js?v=b613';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -815,7 +815,7 @@ $('rv_done').addEventListener('click', () => drawReport(rvTrip));
  * ⚠ 지도는 남깁니다. been 도 홈에 지도를 크게 둡니다 — 칠해진 면적이
  *   늘어나는 것이 이 화면의 재미입니다. */
 async function renderFoot(통){
-  const [{ data: f }, , 별점] = await Promise.all([
+  let [{ data: f }, , 별점] = await Promise.all([
     netTimeout(sb.rpc('my_footprint')),
     refreshVisited(),              /* 작은 지도를 칠하려면 어디를 갔는지 알아야 합니다 */
     /* ⚠ **성향은 `myRates` 로 세면 안 됩니다(b399에서 겪음).** 홈을 처음 열면
@@ -827,7 +827,24 @@ async function renderFoot(통){
     netTimeout(sb.from('city_ratings').select('city_id,stars')
       .eq('user_id', ctx.me().id).not('stars', 'is', null)),
   ]);
-  if (!f) return;
+  /* ⚠⚠ **여기서 `return` 하면 첫 화면이 통째로 빕니다(b613, 사용자 신고).** ⚠⚠
+   * 사용자: 「한번씩 버그인지 첫화면에서 지구본이 안뜨네」.
+   * 원인: `netTimeout` 은 **2.5초**만 기다립니다(net.js). 서버가 자다 깨거나
+   * 5G 가 느린 날 `my_footprint` 가 그 안에 못 오면 `f` 가 비고, 예전에는
+   * 바로 여기서 나갔습니다. 그러면 **지구본·3D/2D·대륙 숫자가 통째로**
+   * 안 그려집니다. 보관함 다섯 줄만 남는 것이 그 증상입니다
+   * (그건 buildHome 이 붙이는 것이라 살아남습니다).
+   *
+   * ⚠ 게다가 **다시 열어도 안 돌아왔습니다.** buildHome 이 표식(`sig`)을
+   *   그리기 «전»에 적어두므로, 다음번엔 「이미 그렸다」며 건너뜁니다.
+   *   → 실패했으면 표식을 지웁니다.
+   *
+   * ⚠ **지구본은 이 자료가 없어도 그릴 수 있습니다.** 칠할 나라(`gone`)는
+   *   `cities` + `visited` 에서 나오고, 그건 다른 질의입니다. 못 받은 것은
+   *   «대륙별 수»뿐입니다. 그래서 못 받았다고 지구본까지 지우는 것은
+   *   처음부터 과했습니다 — 없는 것만 빼고 나머지는 그립니다. */
+  const 못받음 = !f;
+  if (못받음){ f = { countries:0, by_continent:{} }; lastHomeSig = ''; }
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   /* ⚠ **제 카드를 안 만듭니다(b419).** 위 buildHome 이 만든 통에 줄만
      보탭니다 — 쭉 매기기·새 여행과 **한 덩이**여야 합니다. */
@@ -1163,7 +1180,25 @@ async function renderFoot(통){
   맞추기();
 
   box.prepend(감쌈);
-  box.appendChild(넘김);
+  /* ⚠ 못 받았을 때는 **0 을 적지 않습니다.** 「0 / 195」는 거짓말이고,
+     보는 사람은 제 기록이 날아간 줄 압니다. 못 받았다고 말하고 다시
+     받아옵니다 — 대개 첫 질의가 느렸을 뿐이라 두 번째는 옵니다. */
+  if (못받음){
+    const 안내 = document.createElement('button');
+    안내.className = 'ghost fpretry';
+    안내.type = 'button';
+    안내.textContent = '기록을 못 불러왔어요 · 다시';
+    안내.onclick = () => { lastHomeSig = ''; buildHome(); };
+    box.appendChild(안내);
+    /* 한 번은 저절로 다시 해봅니다. 이번엔 넉넉히 기다립니다 — 화면은
+       이미 그려져 있으므로 오래 기다려도 아무도 안 막습니다. */
+    setTimeout(async () => {
+      const r = await netTimeout(sb.rpc('my_footprint'), 8000);
+      if (r?.data){ lastHomeSig = ''; buildHome(); }
+    }, 900);
+  } else {
+    box.appendChild(넘김);
+  }
 
   /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
      붙은 뒤에 폭이 생기므로 한 박자 미루는 것은 맞는데, 그 한 박자를
