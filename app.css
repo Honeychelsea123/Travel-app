@@ -3704,7 +3704,8 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *   것보다 조용하고, 문장이 길어져도 흐트러지지 않습니다.
  * ⚠ 덩이 사이는 `--line` 으로 올립니다. `--divider-soft` 는 여기서
  *   한 사람의 한마디와 다음 한마디를 못 갈라줍니다. */
-.cmt{ padding:var(--s-md) 0; }
+/* 사진이 커진 만큼 덩이 사이도 벌립니다 — 안 벌리면 사진끼리 붙습니다. */
+.cmt{ padding:var(--s-lg) 0; }
 .cmt:first-child{ padding-top:6px; }
 .cmt + .cmt{ border-top:1px solid var(--line); }
 .cq{
@@ -3716,8 +3717,23 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 }
 /* 덩이 안이라 위아래 여백과 실선을 걷습니다 — 덩이가 이미 갖고 있습니다. */
 .cmt .rrow, .cmt .rrow + .rrow{ padding:0; border-top:0; }
-/* 사진은 **가로로 넣은 작은 인화지**입니다. 늘어나지 않게 못박습니다. */
-.cmt .rrow:has(> .stars) > .thumb{ width:64px; height:48px; align-self:start; }
+/* ⚠⚠ **사진은 정사각형이고, 별점 줄까지 내려옵니다(b622, 사용자 결정).**
+ * b616 에 64×48(4:3) 로 못박았는데 「정방형으로 비율 잡고 별점 부분까지도
+ * 채울 수 있고 사이즈 더 키우자」 —
+ *
+ * `.rrow` 는 두 줄짜리 격자입니다(윗줄 이름·나라, 아랫줄 별점). 사진은
+ * `grid-row:1 / span 2` 로 **이미 두 줄을 걸치고** 있습니다. 그러니 키를
+ * 두 줄 높이만큼 주면 저절로 별점 줄까지 내려옵니다 — 반대로 키를 키우면
+ * 두 줄이 그만큼 벌어져 «사진이 정하는 높이»가 됩니다.
+ *
+ * ⚠ **`align-self:stretch` 로는 정사각형이 안 됩니다.** 그건 「줄 높이를
+ *   따라가라」는 뜻이라, 글이 한 줄이냐 두 줄이냐에 따라 키가 달라지고
+ *   폭은 그대로라 비율이 그때그때 바뀝니다 — b616 이전에 56×73 세로
+ *   사진이 나온 이유가 정확히 이것이었습니다.
+ *   **비율을 지키려면 두 변을 다 못박아야 합니다.**
+ * ⚠ 88은 두 줄(이름 37 + 별점 39 + 사이 4 = 80)보다 조금 큽니다.
+ *   그래서 사진이 아래로 남지 않고 두 줄을 «꽉» 채웁니다. */
+.cmt .rrow:has(> .stars) > .thumb{ width:88px; height:88px; align-self:start; }
 /* 도시·나라·별은 문장에 딸린 «서명»입니다. 문장보다 커지면 안 됩니다. */
 .cmt .rrow .t b{ font-size:var(--f-lg); font-weight:600; color:var(--ink-48); }
 .cmt .rrow .st{ font-size:min(var(--f-2xl), 5.2vw); }

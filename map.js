@@ -13,12 +13,12 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b621';
-import { openCity } from './city.js?v=b621';
-import { distKm } from './calc.js?v=b621';
-import { sb } from './db.js?v=b621';
-import { cities, countryName, continentOf } from './cities.js?v=b621';
-import { PERSONA_ICON, shareCard } from './card.js?v=b621';
+         coverDeck } from './dom.js?v=b622';
+import { openCity } from './city.js?v=b622';
+import { distKm } from './calc.js?v=b622';
+import { sb } from './db.js?v=b622';
+import { cities, countryName, continentOf } from './cities.js?v=b622';
+import { PERSONA_ICON, shareCard } from './card.js?v=b622';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
