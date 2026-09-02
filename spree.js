@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b644';
-import { sb } from './db.js?v=b644';
-import { cities } from './cities.js?v=b644';
-import { loadCities } from './citysearch.js?v=b644';
-import { paintStars } from './stars.js?v=b644';
-import { rateHero, starValue } from './rateui.js?v=b644';
-import { saveRate } from './rating.js?v=b644';
-import { resetHomeSig } from './home.js?v=b644';
+import { $, esc } from './dom.js?v=b645';
+import { sb } from './db.js?v=b645';
+import { cities } from './cities.js?v=b645';
+import { loadCities } from './citysearch.js?v=b645';
+import { paintStars } from './stars.js?v=b645';
+import { rateHero, starValue } from './rateui.js?v=b645';
+import { saveRate } from './rating.js?v=b645';
+import { resetHomeSig } from './home.js?v=b645';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -188,7 +188,13 @@ $('spreeclose')?.addEventListener('click', () => closeSpree());
   };
 
   통?.addEventListener('pointerdown', e => {
-    if (!지금 || 도는중) return;
+    /* ⚠⚠ **`도는중` 은 「불러오는 중」이 아니라 「쭉 매기기가 열려 있다」
+       입니다**(96·137줄). 처음에 `if (도는중) return` 으로 막았다가,
+       화면이 열려 있는 «동안 내내» 스와이프가 죽었습니다 — 가드가 정확히
+       거꾸로였습니다. 화면에서 밀어보고 잡았습니다(transform 이 계속 none).
+       ⚠ **이름만 보고 뜻을 짐작하면 안 됩니다.** 「-는 중」이라고 다
+         「바쁘다」가 아닙니다. 세우는 곳과 내리는 곳을 보고 쓸 것. */
+    if (!지금) return;
     if (e.target.closest('.stars, button, a, select, input')) return;
     잡음 = true; 가로냐 = null; dx = 0;
     x0 = e.clientX; y0 = e.clientY; 시작id = 지금.id;

@@ -16,11 +16,11 @@
  * 고치는 날이 옵니다). 그래서 내보냅니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · citysearch.js 만 씁니다. */
-import { $ } from './dom.js?v=b644';
-import { sb } from './db.js?v=b644';
-import { fail } from './net.js?v=b644';
-import { todayYmd } from './calc.js?v=b644';
-import { loadCities, drawHits, drawPop, picked, resetPick } from './citysearch.js?v=b644';
+import { $ } from './dom.js?v=b645';
+import { sb } from './db.js?v=b645';
+import { fail } from './net.js?v=b645';
+import { todayYmd } from './calc.js?v=b645';
+import { loadCities, drawHits, drawPop, picked, resetPick } from './citysearch.js?v=b645';
 
 /* app.js 만 아는 것 넷. **`me` 는 값이 아니라 함수로** — 로그인할 때마다
    바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
