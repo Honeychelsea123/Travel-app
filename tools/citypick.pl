@@ -113,14 +113,18 @@ my %있는나라;
 { open my $h, '<', "$G/have-cty.txt" or die $!;
   while (<$h>){ chomp; s/\r$//; $있는나라{$_} = 1 if /^[A-Z]{2}$/ } close $h; }
 
-# GeoNames countryInfo: 통화·공용어
-my (%통화, %말);
+# GeoNames countryInfo: 영문 이름·통화·공용어
+# ⚠ **`name_en` 은 NOT NULL 입니다.** 처음에 빼먹고 넣었다가 첫 줄에서
+#   막혔습니다(23502). 표를 만들 때는 «있는 칸»이 아니라 «비면 안 되는
+#   칸»을 봐야 합니다.
+my (%영문, %통화, %말);
 {
   open my $h, '<:encoding(UTF-8)', "$G/countryInfo.txt" or die $!;
   while (<$h>){
     next if /^#/; chomp;
     my @f = split /\t/, $_, -1;
     next unless ($f[0] // '') =~ /^[A-Z]{2}$/;
+    $영문{$f[0]} = $f[4] if $f[4];
     $통화{$f[0]} = $f[10] if $f[10];
     my $l = (split /,/, ($f[15] // ''))[0] // '';
     $l =~ s/-.*//;
@@ -269,14 +273,41 @@ my @빠진나라 = grep { !$있는나라{$_} } sort keys %ko나라;
 -- 만든 것: tools/citypick.pl — 손으로 고치지 말고 그쪽을 고치십시오.
 -- =====================================================================
 
-insert into public.countries (code, name, currency, local_lang, continent, default_timezone)
+insert into public.countries (code, name, name_en, currency, local_lang, continent, default_timezone)
 values
 H
   print $o join(",\n", map {
-    sprintf("  (%s, %s, %s, %s, %s, %s)", 따옴($_), 따옴($ko나라{$_}),
-            따옴($통화{$_} // ''), 따옴($말{$_} // ''),
+    sprintf("  (%s, %s, %s, %s, %s, %s, %s)", 따옴($_), 따옴($ko나라{$_}),
+            따옴($영문{$_} // $_), 따옴($통화{$_} // ''), 따옴($말{$_} // ''),
             따옴($대륙{$_} // ''), 따옴($기본tz{$_} // ''))
   } @빠진나라), "\non conflict (code) do nothing;\n\n";
+
+  # ── 이미 있던 줄의 빈 칸 메우기 ────────────────────────────────────
+  # ⚠ **기존 88개국에도 빈 칸이 있습니다.** 키르기스스탄은 `continent` 도
+  #   `default_timezone` 도 null 이었습니다(050 에서 급히 넣은 줄).
+  #   대륙이 비면 **홈의 대륙 캐러셀에서 그 나라가 사라집니다** — 도시는
+  #   있는데 어느 대륙에도 안 세어집니다. 여기서 같이 메웁니다.
+  # ⚠ **덮어쓰지 않습니다**(`where ... is null`). 이미 적힌 값은 사람이
+  #   손본 것일 수 있습니다.
+  print $o "-- ── 이미 있던 줄의 빈 칸만 메웁니다 (덮어쓰지 않습니다) ──────────────\n";
+  # ⚠ **양쪽 다 `nullif` 를 걸어야 합니다.** 새 값이 빈 문자열일 수 있는데
+  #   (풀에 도시가 없는 섬나라는 시간대를 못 구합니다) 그대로 넣으면
+  #   null 이던 칸이 «빈 문자열»로 바뀝니다 — 나중에 `is null` 로 찾는
+  #   검사가 그 줄을 못 잡습니다. 모르면 null 로 두는 편이 낫습니다.
+  print $o "update public.countries c set\n",
+           "  continent        = coalesce(nullif(c.continent, ''),        nullif(v.continent, '')),\n",
+           "  default_timezone = coalesce(nullif(c.default_timezone, ''), nullif(v.tz, '')),\n",
+           "  currency         = coalesce(nullif(c.currency, ''),         nullif(v.currency, ''))\n",
+           "from (values\n";
+  print $o join(",\n", map {
+    sprintf("  (%s, %s, %s, %s)", 따옴($_), 따옴($대륙{$_} // ''),
+            따옴($기본tz{$_} // ''), 따옴($통화{$_} // ''))
+  } sort keys %ko나라), "\n) as v(code, continent, tz, currency)\n",
+           "where c.code = v.code\n",
+           "  and (c.continent is null or c.continent = ''\n",
+           "    or c.default_timezone is null or c.default_timezone = ''\n",
+           "    or c.currency is null or c.currency = '');\n\n";
+
   print $o <<'V';
 -- ── 확인 ─────────────────────────────────────────────────────────────
 -- 1번이 195 이상이어야 합니다(괌·홍콩·마카오처럼 UN 회원국이 아닌 것도
