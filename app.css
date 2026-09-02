@@ -476,10 +476,21 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
  *   를 물어야 합니다: `:not(:has(~ .card:not(.hide)))`.
  *   ⚠ `.hide` 로 숨기는 것이 이 앱의 규칙이라 그것만 봅니다.
  * ⚠ 선과 글이 붙으면 답답합니다 — 아래 여백을 그만큼 더 줍니다. */
+/* ⚠⚠ **구역 사이가 65px 이었습니다(b635, 사용자 지적 두 번).** ⚠⚠
+ * 「프로필 설정 사이 간격이 꽤 넓다」 · 「분석탭도 간격이 넓어」.
+ * 세어 보니 아래 24(padding) + 24(margin) + 다음 카드 위 17 = **65px**.
+ * 구역을 나누는 선 하나에 그만큼을 쓰고 있었습니다.
+ *
+ * ⚠ **탭마다 따로 좁히지 않습니다.** 두 탭에서 같은 말이 나왔다는 건
+ *   원인이 여기 한 줄이라는 뜻입니다 — 탭별로 기우면 화면마다 여백이
+ *   달라지고, 다음에 세 번째 탭에서 또 같은 말이 나옵니다.
+ * ⚠ **선 위아래를 같게** 만듭니다. `margin-bottom:0` 이면 선 위 17,
+ *   선 아래는 다음 카드의 `padding-top`(17) 이라 정확히 대칭입니다.
+ *   65 → 34. 선이 「구역을 나누는 것」으로 또렷하게 읽힙니다. */
 .card{
   border-bottom:1px solid var(--line);
-  padding-bottom:var(--s-lg);
-  margin-bottom:var(--s-lg);
+  padding-bottom:var(--s-md);
+  margin-bottom:0;
 }
 /* ── 선을 «안» 긋는 카드 ───────────────────────────────────────────────
  * ⚠ **제 바탕을 가진 것**은 바탕이 이미 경계라 선이 겹칩니다 —
@@ -874,7 +885,10 @@ input:focus, select:focus, textarea:focus{ font-size:max(16px, var(--f-lg)); }
 /* 설정 카드는 줄만 늘어놓는 자리라 안팎 여백을 다른 카드보다 줄입니다.
    같은 여백을 쓰니 항목 넷에 화면 한 장이 다 갔습니다. */
 #setpane .card{ padding:13px var(--s-md); margin-bottom:9px; }
+/* ⚠ 프로필은 한 칸 더 촘촘합니다 — **설정을 «찾는» 화면**이라 한 화면에
+     많이 보이는 쪽이 낫습니다. 줄 안쪽은 안 좁힙니다(누를 자리가 줄어듭니다). */
 #setpane .card h2{ margin-bottom:9px; }
+#setpane .srow{ padding:6px 0; }
 /* ⚠⚠ **여기에 padding-bottom 을 주지 마십시오(b502).** ⚠⚠
    `#setpane` 은 app.js 가 `.tabpane` 을 달아주는 **제 스크롤러**입니다.
    그런데 `#setpane`(ID)이 `.tabpane`(클래스)을 **명시도로 이깁니다** —
