@@ -3615,22 +3615,43 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ 줄 사이는 실선으로 끊습니다 — 한 덩이가 한 사람의 한마디입니다.
  *   안쪽 `.rrow` 의 제 실선은 지웁니다(덩이 안에서 또 끊기면 두 줄로
  *   읽힙니다). */
-.cmt{ padding:14px 0 12px; }
-.cmt:first-child{ padding-top:4px; }
-.cmt + .cmt{ border-top:1px solid var(--divider-soft); }
+/* ── 한줄평 한 덩이 = «인용» (b616, 사용자 지적) ──────────────────────
+ * 「한줄평 옆에 사진 비율도 이상해, 디자인이 안 이쁘고 감성이 하나도 없어」.
+ *
+ * ⚠⚠ **잰 것: 사진이 56 × 73 이었습니다.** 세로로 긴 틀에 가로 사진을
+ *   담으니 하늘과 땅이 잘려 무엇을 찍은 것인지도 안 보였습니다.
+ *   원인은 두 규칙이 서로 다른 말을 한 것입니다 —
+ *   `.rrow:has(> .stars) > .thumb` 가 「높이는 줄만큼 늘려라(stretch)」
+ *   라고 하고, 여기서 폭만 56 으로 줄였습니다. **폭을 줄이면 비율이
+ *   따라옵니다.** 높이도 같이 정해야 했습니다.
+ *   → 64 × 48 (4:3) 로 못박고 `align-self:start` 로 늘어나지 않게 합니다.
+ *
+ * ⚠ 순서는 **안 바꿉니다**(b514, 사용자 결정) — 줄이 먼저, 문장이 아래.
+ *   「어느 도시 이야기인지 먼저 보고 그 사람 말을 읽는」 순서입니다.
+ *   바꾼 것은 «무게»입니다: 문장을 키우고, 줄을 낮췄습니다.
+ *
+ * ⚠ 문장에 **왼쪽 세로선**을 답니다. 인쇄물에서 인용을 표시하는 방법이고,
+ *   이 앱이 이미 쓰는 문법입니다(일정 장부의 세로선). 따옴표를 붙이는
+ *   것보다 조용하고, 문장이 길어져도 흐트러지지 않습니다.
+ * ⚠ 덩이 사이는 `--line` 으로 올립니다. `--divider-soft` 는 여기서
+ *   한 사람의 한마디와 다음 한마디를 못 갈라줍니다. */
+.cmt{ padding:var(--s-md) 0; }
+.cmt:first-child{ padding-top:6px; }
+.cmt + .cmt{ border-top:1px solid var(--line); }
 .cq{
-  font-size:calc(17px * var(--ts)); font-weight:600; color:var(--ink);
-  line-height:1.55; letter-spacing:calc(-.2px * var(--ts));
+  font-size:calc(19px * var(--ts)); font-weight:500; color:var(--ink);
+  line-height:1.6; letter-spacing:calc(-.2px * var(--ts));
   word-break:keep-all;
-  /* 자리는 **줄 밑**입니다(b514). b513 에 위로 올려봤다가 내렸습니다 —
-     어느 도시 이야기인지 먼저 보고 그 사람 말을 읽는 순서입니다. */
-  margin:10px 0 0;
+  margin:12px 0 0; padding-left:14px;
+  border-left:2px solid var(--line);
 }
 /* 덩이 안이라 위아래 여백과 실선을 걷습니다 — 덩이가 이미 갖고 있습니다. */
 .cmt .rrow, .cmt .rrow + .rrow{ padding:0; border-top:0; }
-/* 사진과 이름은 딸린 정보라 한 계단 내립니다. 문장보다 크면 안 됩니다. */
-.cmt .rrow:has(> .stars) > .thumb{ width:56px; }
+/* 사진은 **가로로 넣은 작은 인화지**입니다. 늘어나지 않게 못박습니다. */
+.cmt .rrow:has(> .stars) > .thumb{ width:64px; height:48px; align-self:start; }
+/* 도시·나라·별은 문장에 딸린 «서명»입니다. 문장보다 커지면 안 됩니다. */
 .cmt .rrow .t b{ font-size:var(--f-lg); font-weight:600; color:var(--ink-48); }
+.cmt .rrow .st{ font-size:min(var(--f-2xl), 5.2vw); }
 
 
 /* ── 지구본(b516 → b519 에 분석 탭 발자국 카드로 옮김) ─────────────────
