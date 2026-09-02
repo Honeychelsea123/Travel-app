@@ -107,8 +107,12 @@
   --sun-red:#C2542A;      /* 달력 일요일 */
 
   /* 뜻이 있는 색 — 좋음 · 나쁨 · 주의 · 위험 · 별 */
-  --mate-good:#5A7A46;   --mate-good-bg:#EFF1E7;   --mate-good-line:#D2D6C0;
-  --mate-bad:#B0574E;    --mate-bad-bg:#F6EBE5;    --mate-bad-line:#E4CFC5;
+  /* ⚠ 칠·테두리 색 넷(`-bg`·`-line`)을 걷었습니다(b627). 궁합 칸이
+     칠한 상자에서 «왼쪽 색 세로선»으로 바뀌면서 쓰는 곳이 0 이 됐습니다.
+     **안 쓰는 토큰은 남겨두면 「이 색이 어딘가 쓰인다」는 거짓말**이
+     됩니다 — 다음에 읽는 사람이 그 색을 찾아 헤맵니다. */
+  --mate-good:#5A7A46;
+  --mate-bad:#B0574E;
   --warn:#7A5A1E;   --warn-2:#7A5A1E;
   --warn-bg:#F7EFDD; --warn-line:#E4D5B4; --warn-line-2:#EADBB6;
   --danger:#A8402F; --danger-bg:#F7ECE7; --danger-line:#E6CFC6;
@@ -1448,7 +1452,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    **사진보다 글줄이 더 넓은 자리를 먹고 있었습니다.**
    화면의 3분의 1을 줍니다. 작은 폰(667px)에서도 227px 는 나오고,
    큰 화면에서 끝없이 자라지 않게 위를 막습니다. */
-.hero{ position:relative; overflow:hidden; border-radius:var(--r-lg);
+.hero{ position:relative; overflow:hidden; border-radius:0;
        /* **34vh 는 컸습니다** (b270, 실기기에서 봄 — 844px 화면에서 287px).
           사진이 있는 여행은 그럭저럭이었지만, 사진이 없어 색만 깔리는 여행은
           (삼척처럼) 빈 초록 덩어리가 화면 3분의 1을 먹어서 제일 먼저 눈에
@@ -1577,13 +1581,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 곳도 mate.js 한 군데입니다.
  * 색은 성향 카드의 궁합 상자에서 그대로 빌립니다 — 같은 뜻이 앱 안에서
  * 두 색이면 안 됩니다. 점수가 60 이상이면 초록, 아니면 붉은색. */
-.matecard{ border:1.5px solid var(--line); }
-.matecard.good{ border-color:var(--mate-good-line); background:var(--mate-good-bg); }
-.matecard.bad { border-color:var(--mate-bad-line); background:var(--mate-bad-bg); }
-@media (prefers-color-scheme: dark){
-  .matecard.good{ border-color:#2E4326; background:#18210F; }
-  .matecard.bad { border-color:#4A2A2E; background:#241416; }
-}
+/* 큰 궁합 카드도 같은 문법입니다 — 칠 대신 왼쪽 색 세로선. */
+.matecard{ border:0; border-left:2px solid var(--line); padding-left:var(--s-md); }
+.matecard.good{ border-left-color:var(--mate-good); background:none; }
+.matecard.bad { border-left-color:var(--mate-bad); background:none; }
 .matetop{ display:flex; align-items:center; gap:10px; }
 /* 양쪽 이름은 같은 폭을 차지해야 점수가 **가운데**에 옵니다.
    `flex:1` 을 빼면 이름이 긴 쪽으로 점수가 밀립니다. */
@@ -1928,6 +1929,9 @@ body.intrip #backbtn{ display:block; }
 .cdc{ background:var(--pearl); border:1px solid var(--hairline);
       border-radius:var(--r-sm); padding:12px 14px; margin-bottom:8px; }
 .cdc .t{ font-size:var(--f-lg); }
+/* 위 「빈 시간에 넣기 좋은 곳」에 이 곳이 올라와 있다는 표(b627). */
+.cdc .fitmark{ font-size:var(--f-sm); font-weight:600; color:var(--primary);
+               white-space:nowrap; }
 .cdc .s{ color:var(--ink-48); font-size:var(--f-sm); margin-top:2px; }
 .cdc .m{ font-size:var(--f-md); margin-top:6px; line-height:1.5;
          word-break:keep-all; }
@@ -3212,14 +3216,16 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    (persona/{코드}.png) — 두 벌로 두면 카드와 화면의 그림이 갈라집니다.
    ⚠ 세로 자리를 미리 잡습니다(aspect-ratio). 그림이 늦게 와도 옆 글이
      밀리지 않습니다. */
+/* ⚠ 분석 탭이 마지막으로 종이로 넘어옵니다(b627). 훑어보니 둥근 것이
+     여기 넷뿐이었습니다 — 성향 그림·배지 줄·궁합 두 칸·히어로 사진. */
 .part{ flex:none; width:min(34%, 112px); margin:0; aspect-ratio:1;
-       border-radius:var(--r-lg); overflow:hidden; }
+       border-radius:0; overflow:hidden; }
 .part img{ width:100%; height:100%; object-fit:contain; display:block; }
 .pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:var(--primary);
         letter-spacing:calc(1px * var(--ts)); line-height:1.1; }
 .pname{ font-size:calc(17px * var(--ts)); font-weight:700; margin-top:3px; }
 .prank{ display:inline-block; margin-top:8px; padding:3px 10px;
-        border-radius:var(--r-pill); background:var(--line);
+        border-radius:0; background:var(--line);
         font-size:calc(12px * var(--ts)); font-weight:600; color:var(--ink-48); }
 
 /* ── 궁합 두 칸 ───────────────────────────────────────────────────────
@@ -3228,10 +3234,15 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * ⚠ 색이 좋고 나쁨을 말합니다. 카드 그림(card.js 의 P16)과 **같은 계열**로
  *   맞춥니다 — 두 곳의 색이 다르면 같은 뜻인지 알 수 없습니다. */
 .mates{ display:flex; gap:8px; margin-top:14px; }
-.mate{ flex:1; min-width:0; padding:10px 12px; border-radius:var(--r-sm);
-       border:1px solid; }
-.mate.good{ background:var(--mate-good-bg); border-color:var(--mate-good-line); }
-.mate.bad { background:var(--mate-bad-bg); border-color:var(--mate-bad-line); }
+/* ⚠⚠ **색 상자 → 왼쪽 색 세로선**(b627). 초록·분홍으로 칠한 두 칸이
+     종이 화면에서 제일 튀었습니다. 뜻(잘 맞음 / 안 맞음)은 **색이**
+     나르므로 색은 남기고 **칠만** 걷습니다 — 인쇄물에서 곁줄을 색으로
+     긋는 것과 같습니다(한줄평 인용선과 같은 문법).
+   ⚠ 왼쪽 선은 2px 라야 색으로 읽힙니다. 1px 면 그냥 경계선입니다. */
+.mate{ flex:1; min-width:0; padding:6px 0 6px 12px; border-radius:0;
+       background:none; border:0; border-left:2px solid var(--line); }
+.mate.good{ border-left-color:var(--mate-good); }
+.mate.bad { border-left-color:var(--mate-bad); }
 .mate .ml{ display:block; font-size:calc(11px * var(--ts)); font-weight:600; }
 .mate.good .ml{ color:var(--mate-good); } .mate.bad .ml{ color:var(--mate-bad); }
 .mate b{ display:block; font-size:calc(14px * var(--ts)); font-weight:700;
@@ -3277,9 +3288,11 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .axn{ flex:none; width:66px; display:flex; flex-direction:column; gap:1px; }
 .axn b{ font-size:var(--f-md); font-weight:600; color:var(--ink); }
 .axn span{ font-size:var(--f-xs); color:var(--ink-48); word-break:keep-all; }
-.axbar{ flex:1; height:8px; border-radius:var(--r-pill);
+/* ⚠ 막대도 각지게(b627). 8px 짜리라 둥글면 양끝이 뭉툭해서 값이
+     실제보다 커 보입니다 — 인쇄된 막대는 각집니다. */
+.axbar{ flex:1; height:8px; border-radius:0;
         background:var(--line); overflow:hidden; }
-.axbar > i{ display:block; height:100%; border-radius:var(--r-pill);
+.axbar > i{ display:block; height:100%; border-radius:0;
             background:var(--primary); }
 .axv{ flex:none; width:34px; text-align:right; font-size:var(--f-md);
       font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600; }
@@ -3300,9 +3313,13 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    읽는 사람이 그것부터 해석해야 합니다.
    ⚠ 알약(pill)에서 사각 모서리로 바꿉니다. 두 줄이 되면 알약은 위아래가
      뚱뚱해 보입니다. */
+/* ⚠ 칠한 상자 → **위아래 실선**(b627). 앱의 다른 「끼워 넣은 안내」와
+     같은 모양입니다(`.rvbar`·`.tripbar`). 칠은 종이에 없습니다. */
 .pbadge{ display:flex; flex-direction:column; align-items:center; gap:2px;
-         margin:2px 0 12px; padding:9px 12px; border-radius:var(--r-sm);
-         background:var(--pearl); border:1px solid var(--line); }
+         margin:2px 0 12px; padding:10px 0; border-radius:0;
+         background:none; border:0;
+         border-top:1px solid var(--line);
+         border-bottom:1px solid var(--line); }
 .pbadge .why{ font-size:var(--f-md); font-weight:600; color:var(--ink);
               text-align:center; word-break:keep-all; }
 /* ⚠ 이름을 `.pcd` 로 짓습니다 — `.cd` 는 **달력이 이미 쓰는 이름**이라

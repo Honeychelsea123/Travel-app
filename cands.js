@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b626';
-import { sb } from './db.js?v=b626';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b626';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b626';
-import { trip, plans, legs } from './trip.js?v=b626';
-import { search } from './cities.js?v=b626';
-import { picked } from './citysearch.js?v=b626';
-import { mapLinks } from './planmap.js?v=b626';
-import { openPlanForm } from './cards.js?v=b626';
-import { syncSheets } from './ui.js?v=b626';
+import { $, esc, emptyDo } from './dom.js?v=b627';
+import { sb } from './db.js?v=b627';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b627';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b627';
+import { trip, plans, legs } from './trip.js?v=b627';
+import { search } from './cities.js?v=b627';
+import { picked } from './citysearch.js?v=b627';
+import { mapLinks } from './planmap.js?v=b627';
+import { openPlanForm } from './cards.js?v=b627';
+import { syncSheets } from './ui.js?v=b627';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -127,8 +127,17 @@ function drawCands(){
            같아서 "삼고정문 / 식사 · 삼고정문"처럼 이름이 두 번 나왔습니다. */
         const loc = c.title_local && c.title_local !== c.title ? c.title_local : null;
         const sub = [c.category, loc].filter(Boolean);
+        /* ⚠⚠ **위에 제안으로 올라온 곳에는 표를 답니다(b627, 사용자 지적).**
+           사용자: 「일정 후보 탭에서 아사쿠사 2개인데 이 차이가 뭐야?」
+           둘은 다른 것입니다 — 위는 **앱이 찾아준 자리**(Day 4 · 10:29쯤,
+           이동 29분), 아래는 **내가 담아둔 것 그 자체**(지도·삭제).
+           그런데 이름만 두 번 보이니 「왜 두 개지」가 됩니다.
+           지우면 안 됩니다 — 아래 줄에만 지도·삭제가 있습니다.
+           **둘을 이어주는 표 한 줄**이면 됩니다. */
+        const 제안됨 = fitList.some(f => f.cand.id === c.id);
         return `<div class="cdc">
           <div class="t"><b>${esc(c.title)}</b>${
+            제안됨 ? ' <span class="fitmark">↑ 넣을 자리 있어요</span>' : ''}${
             c.lat == null ? ' <span class="val">지도에 아직 안 떠요</span>' : ''}</div>
           ${sub.length ? `<div class="s">${sub.map(esc).join(' · ')}</div>` : ''}
           ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
