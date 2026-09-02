@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b650';
-import { sb } from './db.js?v=b650';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b651';
+import { sb } from './db.js?v=b651';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b650';
-import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b650';
+         cacheGet, cacheSet } from './net.js?v=b651';
+import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b651';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던
@@ -86,23 +86,49 @@ async function refreshCities(){
   /* pop_rank 는 새 여행 첫 화면의 추천 순서입니다 (051). 아직 없는 DB 가
      있을 수 있어 한 칸 따로 둡니다 — 같이 묶으면 이게 없다는 이유로
      fame 까지 떨어져 나가서 성향 카드가 조용히 망가집니다. */
-  let cs = await netTimeout(sb.from('cities')
-    /* `tags` 는 추천 계산이 씁니다(rec.js). **제일 앞 시도에만 넣습니다** —
-       아직 db/068 을 안 돌린 곳에서는 이 줄이 실패하고 아래 단계별 후퇴가
-       tags 없이 받아옵니다. 그러면 추천만 조용히 비고 앱은 그대로 돕니다. */
-    .select(BASE + ',image_url,summary,summary_url,fame,pop_rank,tags').order('name'));
-  if (cs.error && !isOffline(cs.error)) cs = await sb.from('cities')
-    .select(BASE + ',image_url,summary,summary_url,fame').order('name');
+  /* ⚠⚠ **한 번에 1000행까지만 옵니다(b651).** PostgREST 의 `db-max-rows`
+     이고 **서버가 정한 값이라 `limit` 으로 못 넘깁니다.** 도시가 1,151곳이
+     된 날 앱은 **1,000곳만 받았습니다** — 151곳이 검색에서도 지도에서도
+     통째로 사라졌습니다. **오류가 안 납니다. 그냥 덜 옵니다.**
+     (재보고 알았습니다: `limit=5000` 도 `Range: 0-4999` 도 1000 이 옵니다.)
+     → `range()` 로 쪽을 나눠 받습니다. 마지막 쪽은 1000보다 적게 옵니다.
+   ⚠ **차례가 흔들리면 안 됩니다.** `name` 하나로 정렬하면 같은 이름이
+     있을 때 쪽 경계에서 순서가 바뀌어 **어떤 줄은 두 번 오고 어떤 줄은
+     아예 안 옵니다.** `id` 를 뒤에 붙여 «완전한 차례»로 만듭니다.
+   ⚠ 첫 쪽만 `netTimeout` 을 씌웁니다 — 거기서 끊기면 어차피 캐시로
+     갑니다. 뒤쪽까지 매번 재면 느린 회선에서 오히려 잘 끊깁니다. */
+  const 쪽크기 = 1000;
+  const 도시받기 = async (sel) => {
+    let 다 = [], 부터 = 0;
+    for (;;){
+      const q = sb.from('cities').select(sel).order('name').order('id')
+                  .range(부터, 부터 + 쪽크기 - 1);
+      const r = 부터 === 0 ? await netTimeout(q) : await q;
+      if (r.error) return r;
+      const 온것 = r.data || [];
+      다 = 다.concat(온것);
+      if (온것.length < 쪽크기) break;
+      부터 += 쪽크기;
+      if (부터 >= 20000) break;   /* 만일을 대비한 멈춤 */
+    }
+    return { data: 다, error: null };
+  };
+
+  /* `tags` 는 추천 계산이 씁니다(rec.js). **제일 앞 시도에만 넣습니다** —
+     아직 db/068 을 안 돌린 곳에서는 이 줄이 실패하고 아래 단계별 후퇴가
+     tags 없이 받아옵니다. 그러면 추천만 조용히 비고 앱은 그대로 돕니다. */
+  let cs = await 도시받기(BASE + ',image_url,summary,summary_url,fame,pop_rank,tags');
+  if (cs.error && !isOffline(cs.error))
+    cs = await 도시받기(BASE + ',image_url,summary,summary_url,fame');
   /* 연결 문제로 실패한 것이면 아래 단계별 후퇴를 돌 이유가 없습니다.
      세 번을 더 기다리면 그만큼 화면이 늦게 뜹니다. 바로 캐시로 갑니다. */
   if (cs.error && isOffline(cs.error)){
     const old = cacheGet('cities');
     if (old){ applyCities(old.cities, old.countries); drawOffbar(); return; }
   }
-  if (cs.error) cs = await sb.from('cities')
-    .select(BASE + ',image_url,summary,summary_url').order('name');
-  if (cs.error) cs = await sb.from('cities').select(BASE + ',image_url').order('name');
-  if (cs.error) cs = await sb.from('cities').select(BASE).order('name');
+  if (cs.error) cs = await 도시받기(BASE + ',image_url,summary,summary_url');
+  if (cs.error) cs = await 도시받기(BASE + ',image_url');
+  if (cs.error) cs = await 도시받기(BASE);
 
   let ns = await sb.from('countries')
     .select('code,name,currency,local_lang,default_timezone,continent').order('name');

@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b650';
-import { sb } from './db.js?v=b650';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b650';
-import { hm, todayYmd } from './calc.js?v=b650';
-import { starHtml, paintStars } from './stars.js?v=b650';
+import { $, esc } from './dom.js?v=b651';
+import { sb } from './db.js?v=b651';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b651';
+import { hm, todayYmd } from './calc.js?v=b651';
+import { starHtml, paintStars } from './stars.js?v=b651';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b650';
-import { cities, countryName } from './cities.js?v=b650';
-import { UN_CODES } from './un.js?v=b650';
-import { myRates, cityStat, visited } from './rate.js?v=b650';
-import { plans } from './trip.js?v=b650';
-import { loadCities } from './citysearch.js?v=b650';
+import { starValue } from './rateui.js?v=b651';
+import { cities, countryName } from './cities.js?v=b651';
+import { UN_CODES } from './un.js?v=b651';
+import { myRates, cityStat, visited } from './rate.js?v=b651';
+import { plans } from './trip.js?v=b651';
+import { loadCities } from './citysearch.js?v=b651';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b650';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b650';
+import { openCity } from './city.js?v=b651';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b651';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b650';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b651';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b650';
+import { drawReport } from './report.js?v=b651';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b650';
+import { PERSONA_BG } from './card.js?v=b651';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b650';
+import { checkPersonaShift } from './pshift.js?v=b651';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b650';
+import { diaryBackTo } from './diary.js?v=b651';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b650';
+import { mountGlobe } from './globe.js?v=b651';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -205,7 +205,20 @@ async function 나라카드(코드){
       /* ⚠ 별을 누른 것은 «매기는 것»입니다 — 도시 화면으로 가면 안 됩니다.
          아래 별 처리기가 따로 맡습니다. */
       if (e.target.closest('.stars')) return;
-      시트닫기(); openCity(b.dataset.go);
+      /* ⚠⚠ **시트를 «뒤로가기로» 닫으면서 도시를 열면 기록이 꼬입니다(b651).**
+         `시트닫기()` 는 기록에 gsheet 가 있으면 `history.back()` 을 부르고
+         **바로 돌아옵니다**(화면도 아직 안 닫습니다). 그런데 `history.back()`
+         은 **비동기**라, 그 사이에 `openCity` 가 `{t2:'city'}` 를 얹고
+         **그 뒤에** back 이 와서 도시 기록을 도로 삼킵니다.
+         결과: 도시 화면은 열렸는데 기록에 도시가 없어 **밀어서 뒤로가기가
+         먹통**이 됩니다(사용자 신고).
+         → 화면만 닫고(`true`), 시트가 쓰던 기록 «자리»를 도시가 물려받습니다.
+           새로 얹지 않으므로 뒤로 한 번이면 도시가 닫힙니다.
+         ⚠ `openCity` 는 `state.t2 === 'city'` 면 제 pushState 를 건너뜁니다 —
+           그래서 여기서 미리 바꿔 두면 기록이 하나로 유지됩니다. */
+      시트닫기(true);
+      if (history.state?.t2 === 'gsheet') history.replaceState({ t2:'city' }, '');
+      openCity(b.dataset.go);
     };
   });
   /* ── 카드에서 바로 매기기(b560) ─────────────────────────────────────
