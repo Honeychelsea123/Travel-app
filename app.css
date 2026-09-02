@@ -3085,15 +3085,26 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   깃발도 커지는데, 한 줄에 몇 개라고 적어두면 그때 넘칩니다. */
 .flagwall .daysep{ margin-top:var(--s-lg); }
 .flagwall .daysep:first-child{ margin-top:4px; }
+/* ⚠ 칸을 글자보다 **넉넉히** 잡습니다. 이모지 깃발은 글자 크기의 1.2배쯤
+     넓어서, 칸을 글자 크기에 딱 맞추면 마지막 칸이 삐져나옵니다
+     (재보니 7px 넘쳤습니다). `min-width:0` 과 `overflow:hidden` 은
+     그래도 넘칠 때의 마지막 방어입니다 — 벽이 가로로 구르면 안 됩니다. */
 .fgrid{ display:grid; gap:6px;
-        grid-template-columns:repeat(auto-fill, minmax(calc(30px * var(--ts)), 1fr)); }
-.fg{ font-size:calc(26px * var(--ts)); line-height:1.15; text-align:center;
+        grid-template-columns:repeat(auto-fill, minmax(calc(36px * var(--ts)), 1fr)); }
+.fg{ font-size:calc(27px * var(--ts)); line-height:1.15; text-align:center;
+     min-width:0; overflow:hidden;
      filter:grayscale(1) opacity(.22); transition:filter var(--t) var(--ease); }
 .fg.on{ filter:none; }
 /* 깃발을 못 그리는 기기에서는 코드 두 글자가 옵니다 — 그때는 글자로 읽혀야
    하므로 크기를 줄이고 타자기 글씨로 둡니다. */
+/* 깃발을 못 그리는 기기(윈도우 등)에서는 코드 두 글자가 옵니다.
+   그때는 «글자»로 읽혀야 하므로 작은 타자기 글씨로 두고, 흐리게 하는
+   방식도 바꿉니다 — 글자에는 `grayscale` 이 할 일이 없습니다(원래
+   회색입니다). 옅기만 씁니다. */
 .flagwall.nofl .fg{ font-family:var(--mono); font-size:var(--f-md);
-                    letter-spacing:.04em; }
+                    letter-spacing:.04em; line-height:1.9;
+                    filter:none; color:var(--ink-48); opacity:.35; }
+.flagwall.nofl .fg.on{ opacity:1; color:var(--ink); font-weight:700; }
 
 .fpretry{ width:100%; margin:var(--s-sm) 0; padding:12px 0;
           border:0; border-top:1px solid var(--line);
