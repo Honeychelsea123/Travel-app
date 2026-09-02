@@ -458,6 +458,17 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
 .card.hello, .card.hero,
 .card.assheet, .card.aisheet,
 .card .card{ border-bottom:0; padding-bottom:var(--s-md); margin-bottom:var(--s-sm); }
+/* ⚠⚠ **시트는 좌우 여백을 «스스로» 가져야 합니다(b614, 사용자 신고).** ⚠⚠
+ * b593 에서 `.card` 의 좌우 안쪽 여백을 걷었습니다. 그때 든 근거는
+ * 「좌우 여백은 몸통 하나가 정한다」였는데, **시트는 몸통 안에 없습니다** —
+ * `position:fixed` 로 화면에 바로 붙는 판이라 몸통 여백이 안 걸립니다.
+ * 그래서 제목도 입력칸도 **화면 끝에 딱 붙었습니다**(사용자 사진 둘:
+ * 「예약 추가」·「일정 후보」).
+ * ⚠ 교훈: **「여백은 몸통이 준다」는 몸통 안에 있는 것에만 참입니다.**
+ *   떠 있는 판(시트·덮개·전체화면)은 언제나 제 여백을 챙겨야 합니다.
+ *   `position:fixed` 를 쓰는 자리를 다 훑어 확인했습니다 — 여백이
+ *   필요한데 없던 것은 이 둘뿐입니다(나머지는 제 값을 갖고 있습니다). */
+.card.assheet, .card.aisheet{ padding-left:var(--s-md); padding-right:var(--s-md); }
 /* 뒤에 «보이는» 카드가 없으면 = 마지막입니다. 선을 걷습니다. */
 .card:not(:has(~ .card:not(.hide))){ border-bottom:0; }
 
@@ -2753,7 +2764,25 @@ body.noreorder .ev .grip{ display:none; }
   color:var(--ink); font-weight:600;
   background:none;
 }
-.tabbar button.is-on svg{ fill:currentColor; stroke:var(--canvas); stroke-width:1.6; }
+/* ⚠⚠ **b613 의 「칠 켜고 선 뒤집기」는 실패였습니다(b614, 사용자 지적).**
+ *   「선택된 아이콘이 오히려 줄어들거나, 분석 같은 건 동그라미만 남고
+ *    작아져서 너무 허접해 보여」 — 맞습니다. 채운 모양 «밖»으로 나가는
+ *   선(돋보기 손잡이·비행기 자락)까지 종이색이 되어 **사라졌습니다.**
+ *   테두리를 종이색으로 두르니 모양도 그만큼 깎여 작아 보였습니다.
+ * ⚠ **한 그림으로 두 상태를 내려던 것이 무리였습니다.** 채운 그림을
+ *   따로 그려 바꿔 끼웁니다(index.html 탭바).
+ * ⚠ 크기는 **양쪽 다 18px 그대로**입니다. 고를 때마다 그림이 커지면
+ *   그 아래 글자가 밀려 탭바가 들썩입니다. 대신 채운 그림이 뷰박스를
+ *   더 채우게 그려서, 자리를 안 밀고도 도톰해 보이게 했습니다. */
+/* ⚠ 선 그림에는 이름표를 안 답니다 — `:not(.icon-on)` 로 고릅니다.
+     이름표를 달려고 했더니 같은 모양으로 적힌 «탭바 밖» 그림 다섯에도
+     같이 붙었습니다. 쓰이지도 않는 이름표는 나중에 읽는 사람을
+     헷갈리게 합니다. */
+.tabbar .icon-on{ display:none; }
+.tabbar button.is-on svg:not(.icon-on){ display:none; }
+.tabbar button.is-on .icon-on{ display:block; }
+/* 채운 모양 «안»을 파내는 선만 종이색입니다(지구의 경위선, 돋보기의 막대). */
+.tabbar .icon-on .cut{ stroke:var(--canvas); }
 /* ── 안 고른 칸 글자(b460) ───────────────────────────────────────────
    ⚠ **같은 선택자가 두 줄 있었습니다**(#33333a 뒤에 #3c3c43). 뒤엣것만
      먹으므로 앞 줄은 아무 일도 안 하고 있었습니다 — b443 에 한 줄 넣고
@@ -3218,7 +3247,15 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
           color:var(--primary); letter-spacing:calc(-1px * var(--ts)); }
 .bnrow span{ font-size:calc(19px * var(--ts)); font-weight:700;
              color:var(--ink-48); }
+/* ⚠ **퍼센트를 수 «옆»으로 올렸습니다(b614, 사용자 제안).** 아래 줄에
+     따로 두면 눈이 한 번 더 내려가야 하는데, 「27 / 195」와 「13.8%」는
+     **같은 말을 두 가지로 하는 것**이라 한 줄에 있는 편이 맞습니다.
+     `.bnsub` 는 이제 홈에서 안 씁니다 — 규칙만 남겨둡니다(다른 데서
+     쓸까 봐가 아니라, 지웠다가 되살리는 일을 안 만들려고).
+   ⚠ 자리를 조금 띄웁니다. 「/ 195」에 바로 붙으면 195의 일부로 읽힙니다. */
 .bnsub{ margin-top:5px; font-size:calc(12px * var(--ts)); color:var(--ink-48); }
+.bnrow .bnpct{ font-style:normal; margin-left:8px;
+               font-size:calc(13px * var(--ts)); color:var(--ink-48); }
 
 /* ── 좌우로 넘기는 통계 카드(b451) ────────────────────────────────────
  * been 의 「In Total / 대륙별」 자리. **scroll-snap 만으로** 만듭니다 —

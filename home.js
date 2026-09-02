@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b613';
-import { sb } from './db.js?v=b613';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b613';
-import { hm, todayYmd } from './calc.js?v=b613';
-import { starHtml, paintStars } from './stars.js?v=b613';
+import { $, esc } from './dom.js?v=b614';
+import { sb } from './db.js?v=b614';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b614';
+import { hm, todayYmd } from './calc.js?v=b614';
+import { starHtml, paintStars } from './stars.js?v=b614';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b613';
-import { cities, countryName } from './cities.js?v=b613';
-import { myRates, cityStat, visited } from './rate.js?v=b613';
-import { plans } from './trip.js?v=b613';
-import { loadCities } from './citysearch.js?v=b613';
+import { starValue } from './rateui.js?v=b614';
+import { cities, countryName } from './cities.js?v=b614';
+import { myRates, cityStat, visited } from './rate.js?v=b614';
+import { plans } from './trip.js?v=b614';
+import { loadCities } from './citysearch.js?v=b614';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b613';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b613';
+import { openCity } from './city.js?v=b614';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b614';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b613';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b614';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b613';
+import { drawReport } from './report.js?v=b614';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b613';
+import { PERSONA_BG } from './card.js?v=b614';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b613';
+import { checkPersonaShift } from './pshift.js?v=b614';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b613';
+import { diaryBackTo } from './diary.js?v=b614';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b613';
+import { mountGlobe } from './globe.js?v=b614';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -881,7 +881,12 @@ async function renderFoot(통){
    ⚠ 아래 `지도맞추기` 가 **이 글자로 판정합니다**(첫 장이면 지구본을
      처음 자리로). 한쪽만 고치면 첫 장에서 지도가 안 돌아옵니다 —
      그래서 이름을 여기 한 곳에 두고 둘이 같이 씁니다. */
-  const 첫장 = '국가';
+  /* ⚠ **b550 에 「전체」 → 「국가」였다가 b614 에 도로 「전체」입니다**
+     (둘 다 사용자 결정). b550 의 근거는 「전체만 보고는 무엇의 전체인지
+     모른다」였는데, 그 사이에 퍼센트가 수 옆으로 붙어 한 줄이
+     「전체 27 / 195 13.8%」로 읽히게 됐습니다. 세 번째로 바꾸려거든
+     **무엇이 달라졌는지부터** 적으십시오. */
+  const 첫장 = '전체';
   const 장 = [[첫장, f.countries || 0, UN_COUNTRIES],
               ...CONT.map(([이름, 전체]) => [이름, by[이름] || 0, 전체])];
   /* ⚠ **양끝에 복제를 답니다(b455).** [마지막] 실제일곱장 [첫장].
@@ -891,8 +896,8 @@ async function renderFoot(통){
   const 칸 = ([이름, n, 전체]) => `
       <div class="swcard">
         <div class="swtitle">${esc(이름)}</div>
-        <div class="bnrow"><b>${n}</b><span>/ ${전체}</span></div>
-        <div class="bnsub">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</div>
+        <div class="bnrow"><b>${n}</b><span>/ ${전체}</span><i
+          class="bnpct">${전체 ? (n / 전체 * 100).toFixed(1) : '0'}%</i></div>
       </div>`;
   /* ⚠ **먼저 비워서 선언합니다(b500).** 아래 넘김 블록이 이걸 부르는데,
      지도(`mm`)는 그보다 **뒤에** 만들어집니다. 지금 순서로는 스크롤이

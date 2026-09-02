@@ -14,17 +14,17 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b613';
-import { openCity } from './city.js?v=b613';
-import { sb } from './db.js?v=b613';
-import { cities, countryName } from './cities.js?v=b613';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b613';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b613';
-import { fail } from './net.js?v=b613';
-import { arm } from './ui.js?v=b613';
-import { todayYmd } from './calc.js?v=b613';
-import { loadCities } from './citysearch.js?v=b613';
-import { loadRateData, saveRate } from './rating.js?v=b613';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b614';
+import { openCity } from './city.js?v=b614';
+import { sb } from './db.js?v=b614';
+import { cities, countryName } from './cities.js?v=b614';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b614';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b614';
+import { fail } from './net.js?v=b614';
+import { arm } from './ui.js?v=b614';
+import { todayYmd } from './calc.js?v=b614';
+import { loadCities } from './citysearch.js?v=b614';
+import { loadRateData, saveRate } from './rating.js?v=b614';
 
 let ctx = {
   me: () => null,
@@ -247,6 +247,20 @@ export async function openShelf(kind){
   toTop($('shelfpane'));   /* 프로필 안이라 문서가 아니라 setview 를 올립니다(b471) */
   if (history.state?.t2 !== 'shelf') history.pushState({ t2:'shelf' }, '');
   $('shelfhead').textContent = SHELF[kind] || '보관함';
+  /* ⚠⚠ **먼저 비웁니다(b614, 사용자 신고).** ⚠⚠
+   * 「내가 매긴 곳이나 한줄평 남긴 곳에 들어가면 처음에 다른 화면이 아주
+   *  잠깐 보이고 넘어간다」 — 맞습니다. 이 함수는 판을 **먼저 보여주고**
+   *  그 다음에 `loadCities()` · `loadRateData()` 를 «기다립니다».
+   *  그 사이에 화면에는 **직전에 보던 보관함의 목록**이 그대로 남아
+   *  있었습니다. 제목만 새것이라 더 어긋나 보입니다.
+   * ⚠ 개수도 같이 지웁니다 — 제목은 「한줄평 남긴 곳」인데 개수가 「74곳」
+   *   이면 그 한순간이 제일 크게 틀려 보입니다.
+   * ⚠ 벽(`wall`)도 여기서 벗깁니다. 아래에서도 벗기지만, 그건 이 아래
+   *   `await` 다음이라 늦습니다 — 그 사이에 옛 벽이 그대로 보입니다. */
+  $('shelfcount').textContent = '';
+  $('shelflist').classList.remove('wall');
+  $('shelflist').innerHTML =
+    '<div class="empty"><span class="load">보관함을 여는 중…</span></div>';
   /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.
      넘어올 때 걸려 있던 조건도 풀어둡니다 — 다른 보관함의 조건이 남아 있으면
      왜 목록이 짧은지 알 수가 없습니다. */
