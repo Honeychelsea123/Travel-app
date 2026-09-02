@@ -33,15 +33,20 @@
      장식이 아니라 «찍힌 것»으로 보입니다. 투명도를 색 안에 넣어
      사진 위에 얹혀도 사진이 비칩니다. */
   --stamp:rgba(163, 78, 51, .88);
-  /* ⚠⚠ **앱 안의 강조색은 인주색 하나입니다(b630, 제안 6).**
-     오렌지(`--brand`)가 지구본의 다녀온 나라와 별점 두 군데에 남아
-     있었는데, 종이 팔레트 위에서 그 오렌지만 튀었습니다.
-     도장에 이미 쓰고 있는 인주색이 이 앱의 색으로 맞습니다.
-     ⚠ **`--brand` 는 로고에만 남깁니다.** 아이콘·워드마크는 정체성이라
-       바꾸면 다른 앱이 됩니다(맨 위 색 주석 참고).
-     ⚠ 도장은 반투명(`--stamp`), 이건 **불투명**입니다. 사진 위에 얹는
-       것과 종이 위에 칠하는 것은 값이 달라야 합니다. */
-  --ink-red:#A34E33;
+  /* ⚠⚠ **강조색은 브랜드 오렌지입니다(b632, 사용자 결정).** ⚠⚠
+   * b630 에 인주색(#A34E33)으로 다 바꿨다가 되돌렸습니다.
+   * 세 색을 실제 지구본에 그려 견주고 사용자가 「로고 주황으로 가자」.
+   *
+   * ⚠ **인주로 바꿨을 때의 잘못**: 브랜드 색이 앱 전체에서 로고 한 번
+   *   나오고 다시는 안 나옵니다. **색이 반복되지 않으면 정체성이 안
+   *   쌓입니다.** 팔레트 조화만 보고 그 값을 덜 쳤습니다.
+   * ⚠ 잰 것은 적어둡니다 — 주황은 눈에 띄어 보이지만 **대비는 셋 중
+   *   제일 낮습니다**(종이 2.88 · 지구본 땅 2.25). 밝기가 베이지와
+   *   비슷해 **색상으로만** 튀기 때문입니다. 인주 4.99/3.89,
+   *   탄 주황(#C2542A) 4.01/3.13.
+   *   → 작은 화면에서 모양이 덜 또렷하다는 뜻입니다. **알고 고른 값**
+   *     이라 그대로 둡니다. 나중에 「지구본 나라가 잘 안 보인다」는 말이
+   *     나오면 원인은 여기고, 탄 주황이 절충안입니다. */
   --canvas:#F3F0E8;   --parchment:#F3F0E8;   /* ⚠ 아이폰 기본 배경(systemGroupedBackground)과 **같은 값**입니다(b435).
                         상단바가 이 색이라, 시계 뒤와 앱 배경이 한 색으로 이어집니다. */ --pearl:#EDE9DF;
 
@@ -139,10 +144,8 @@
   --warn-bg:#F7EFDD; --warn-line:#E4D5B4; --warn-line-2:#EADBB6;
   --danger:#A8402F; --danger-bg:#F7ECE7; --danger-line:#E6CFC6;
   --danger-28:rgba(168,64,47,.28); --danger-09:rgba(168,64,47,.09);
-  /* ⚠ 별도 인주색 계열로(b630). 금색 별은 이 종이 위에서 세 번째 색이
-     됩니다 — 먹 · 인주 둘로 끝내는 것이 이 화면의 규칙입니다.
-     `-hi` 는 사진 위에 얹히는 별이라 조금 밝게, `-dim` 은 막대용. */
-  --star:#A34E33;   --star-hi:#BE6046;   --star-dim:#8C4028;
+  /* ⚠ b630 에 인주색으로 바꿨다가 되돌렸습니다(b632) — 위 색 주석 참고. */
+  --star:#E08A2B;   --star-hi:#EFA53A;   --star-dim:#C8791F;
   --star-90:rgba(224,138,43,.9); --star-10:rgba(224,138,43,.10);
 
   /* ⚠ `--card` 는 **정의가 없는 채로** 세 군데서 `var(--card, #fff)` 로
@@ -372,7 +375,6 @@ h1{ font-size:var(--f-2xl); margin:0; font-weight:700;
    사람에게 마크만 작게 남으면 짝이 안 맞습니다. */
 /* 기본(글꼴이 아직/영영 안 온 상태) — 앱 글꼴로 멀쩡히 보입니다. */
 h1.brand{ display:flex; align-items:center; gap:.32em; }
-/* ⚠ 여기가 이제 `--brand`(오렌지)를 쓰는 **유일한 자리**입니다(b630). */
 h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
                 align-self:center; }
 
@@ -2133,7 +2135,7 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 #homefp{ overflow:hidden; }
 .minimap svg{ width:100%; height:auto; display:block; }
 .minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
-.minimap path.been{ fill:var(--ink-red); opacity:.9; }
+.minimap path.been{ fill:var(--brand); opacity:.9; }
 
 /* 잠깐 뜨는 알림 */
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
@@ -2408,7 +2410,7 @@ body.bigmap .tabbar{ display:none; }
    **이 화면에 남은 것은 이 칠 하나입니다(b415)** — 도시 깃발을 걷어냈습니다.
    깃발이 74개나 꽂혀서 유럽처럼 몰린 곳은 칠을 오히려 가렸습니다.
    자세한 것은 map.js 의 「도시 깃발은 안 그립니다」. */
-#worldsvg path.been{ fill:var(--ink-red); opacity:.9; }
+#worldsvg path.been{ fill:var(--brand); opacity:.9; }
 
 /* 대륙 줄 — 이름 · 진행바 · 숫자 */
 .crow{ display:flex; align-items:center; gap:10px; padding:9px 0;
@@ -3757,7 +3759,7 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 .cbmap svg{ width:100%; height:100%; display:block; }
 /* 색은 작은 지도(.minimap)와 같습니다 — 같은 지도가 두 색이면 안 됩니다. */
 .cbmap path{ fill:var(--line); stroke:none; }
-.cbmap path.been{ fill:var(--ink-red); }
+.cbmap path.been{ fill:var(--brand); }
 .cbtext{ min-width:0; display:flex; flex-direction:column; gap:1px; }
 .cbtext b{ font-size:var(--f-md); font-weight:600; color:var(--ink);
            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
