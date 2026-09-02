@@ -12,14 +12,14 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b624';
-import { sb } from './db.js?v=b624';
-import { fail } from './net.js?v=b624';
-import { todayYmd } from './calc.js?v=b624';
-import { starHtml, starValue } from './stars.js?v=b624';
-import { trip, legs, nameOf } from './trip.js?v=b624';
-import { arm, disarm } from './ui.js?v=b624';
-import { openPhotos } from './photoview.js?v=b624';
+import { $, esc, toast } from './dom.js?v=b625';
+import { sb } from './db.js?v=b625';
+import { fail } from './net.js?v=b625';
+import { todayYmd } from './calc.js?v=b625';
+import { starHtml, starValue } from './stars.js?v=b625';
+import { trip, legs, nameOf } from './trip.js?v=b625';
+import { arm, disarm } from './ui.js?v=b625';
+import { openPhotos } from './photoview.js?v=b625';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }

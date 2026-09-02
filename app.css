@@ -1394,8 +1394,18 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* ⚠ **한줄평은 이제 `.rcmt` 가 아닙니다(b513).** 줄 밖에 붙는 딸린 글로
    두었더니 화면에서 제일 작고 흐린 글씨가 됐습니다 — 정작 그 화면의
    주인공인데요. 아래쪽 `.cmt`·`.cq` 로 옮겼습니다(문장이 위, 도시가 밑). */
-.rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:stretch;
-                              width:76px; height:auto; }
+/* ⚠⚠ **76 × «키는 줄에 맡김» 이었습니다 → 76×76 으로 못박습니다(b625).**
+     `align-self:stretch` 는 「줄 높이를 따라가라」는 뜻이라 글이 한 줄이냐
+     두 줄이냐에 따라 키가 달라지고 폭은 그대로라 **비율이 그때그때
+     바뀝니다** — 재보니 76×73 이었습니다. 한줄평 사진에서 겪은 것과
+     **같은 병**입니다(b616·b622). 그때는 거기만 고쳤는데 원인은 이 줄이라
+     목록 전체가 같은 상태였습니다.
+     ⚠ 두 줄(이름 + 별점)이 73 이라 76이면 사진이 조금 더 큽니다 —
+       격자가 그만큼 벌어지므로 **아래에 빈 자리가 안 남습니다**
+       (b269 에서 `stretch` 를 쓴 이유가 그것이었는데, 크기를 못박아도
+        같은 결과가 나옵니다). */
+.rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:start;
+                              width:76px; height:76px; }
 .rrow:has(> .stars) > .t{ grid-column:2; grid-row:1; }
 .rrow:has(> .stars) > .stars{ grid-column:2 / -1; grid-row:2; margin-left:0;
                               line-height:1; /* 25px 글자의 줄 높이까지 따라오면 12px 이 놉니다 */ }
@@ -2388,7 +2398,11 @@ body.bigmap .tabbar{ display:none; }
 .rvme{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .rvme input{ flex:1; min-width:180px; }
 /* 왓챠의 포스터 자리. 사진이 없으면 첫 글자로 대신합니다. */
-.thumb{ width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; flex:none;
+/* ⚠ **목록 사진도 각집니다(b625).** 종이로 넘어오면서 카드·단추·입력칸을
+     다 각지게 했는데 사진만 10px 로 둥글었습니다 — 훑어보니 **150곳**
+     이었습니다. 앱에서 제일 많이 보이는 물건이 혼자 다른 규칙을
+     따르고 있었습니다(도시 화면·일기·엽서 사진은 이미 각졌습니다). */
+.thumb{ width:56px; height:56px; border-radius:0; object-fit:cover; flex:none;
         background:var(--parchment); }
 .thumb.ph{ display:flex; align-items:center; justify-content:center;
            font-size:var(--f-2xl); font-weight:700; color:var(--ink-48); }
@@ -3109,6 +3123,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      filter:grayscale(1) opacity(.22); transition:filter var(--t) var(--ease); }
 svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 /* 출처 한 줄. 조용히, 벽 아래에. */
+/* ── 지도 타일을 종이색으로 (b625) ───────────────────────────────────
+ * OSM 본가 타일은 키가 없는 대신 색이 알록달록합니다(초록 공원·노란 길).
+ * 색을 빼고 살짝 누렇게 해서 이 앱의 종이와 같은 결로 맞춥니다.
+ * ⚠ 타일 그림을 고치는 게 아니라 **화면에서 걸러내는 것**이라 OSM
+ *   이용 규칙에 안 걸립니다. 출처 표시는 지도 안에 그대로 둡니다.
+ * ⚠ 표식(핀)과 팝업에는 걸리면 안 됩니다 — `.leaflet-tile` 만 집습니다. */
+.leaflet-tile{ filter:grayscale(1) sepia(.24) brightness(1.06) contrast(.9); }
+
 .fgcredit{ margin-top:var(--s-md); padding-top:var(--s-sm);
            border-top:1px solid var(--line);
            font-size:var(--f-xs); color:var(--ink-48); text-align:center; }

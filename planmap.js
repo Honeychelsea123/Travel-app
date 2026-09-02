@@ -14,9 +14,9 @@
  *
  * 층: dom.js · calc.js · trip.js 만 씁니다. 네트워크도 DB 도 안 씁니다 —
  * Leaflet 을 받아오는 것 하나뿐입니다. */
-import { $, esc } from './dom.js?v=b624';
-import { hm } from './calc.js?v=b624';
-import { plans, pickedDay, catFilter } from './trip.js?v=b624';
+import { $, esc } from './dom.js?v=b625';
+import { hm } from './calc.js?v=b625';
+import { plans, pickedDay, catFilter } from './trip.js?v=b625';
 
 /* ── 일정 지도 ───────────────────────────────────────────────────────
  * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.
@@ -103,10 +103,21 @@ export function drawPlanMap(){
 
   if (!lmap){
     lmap = L.map(box, { zoomControl:false, attributionControl:false });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      { maxZoom:19, subdomains:'abcd' }).addTo(lmap);
+    /* ⚠⚠ **CARTO 를 걷었습니다(b625).** 어느 날부터 키 없는 요청에
+       타일마다 「API KEY REQUIRED」를 대각선으로 찍어 보냅니다 —
+       지도가 통째로 그렇게 나옵니다(사용자 사진, 픽셀로 확인).
+       무료로 열려 있던 것이 닫힌 것이라 우리가 고칠 수 있는 것이 아닙니다.
+       ⚠ OSM 본가 타일은 키가 없습니다. 대신 색이 알록달록해서 종이
+         디자인과 안 맞습니다 — **CSS 로 색을 빼서** 맞춥니다
+         (app.css 의 `.leaflet-tile`). 타일을 고치는 게 아니라
+         화면에서 걸러내는 것이라 정책에도 안 걸립니다.
+       ⚠ `{r}`(고해상도)와 `subdomains` 를 뺍니다 — OSM 본가는 @2x 를
+         안 주고, 하위 도메인도 안 씁니다. 두면 404 가 납니다.
+       ⚠ 출처 표시는 **의무**입니다. 지우지 마십시오. */
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { maxZoom:19 }).addTo(lmap);
     L.control.attribution({ prefix:false })
-      .addAttribution('&copy; OpenStreetMap &copy; CARTO').addTo(lmap);
+      .addAttribution('&copy; OpenStreetMap').addTo(lmap);
     lmarks = L.layerGroup().addTo(lmap);
   }
   lmarks.clearLayers();
