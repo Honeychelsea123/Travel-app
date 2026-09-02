@@ -13,18 +13,40 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b645';
-import { sb } from './db.js?v=b645';
-import { cities, countryName, continentOf } from './cities.js?v=b645';
-import { myRates, cityStat, visited } from './rate.js?v=b645';
-import { starHtml, starValue } from './stars.js?v=b645';
-import { localTime } from './calc.js?v=b645';
-import { fail } from './net.js?v=b645';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b646';
+import { sb } from './db.js?v=b646';
+import { cities, countryName, continentOf } from './cities.js?v=b646';
+import { myRates, cityStat, visited } from './rate.js?v=b646';
+import { starHtml, starValue } from './stars.js?v=b646';
+import { localTime } from './calc.js?v=b646';
+import { fail } from './net.js?v=b646';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
    'cityOpen is not defined' 로 도시 화면이 빈 채로 열렸습니다.
    app.js 는 읽고 비우는 길만 씁니다(아래 둘). */
+/* ── 덱 밖 판 일곱 (b646) ─────────────────────────────────────────────
+ * `personapane`·`shelfpane`·`mappane`·`ctrypane`·`diarypane`·`setpane`·
+ * `admpane` 은 app.js 가 부팅 때 **덱 밖으로 꺼내** `#signedin` 의 형제로
+ * 만듭니다(app.js 550줄 근처). 마크업에는 `#setview` 안에 적혀 있어서
+ * 파일만 읽으면 「덱 안」으로 보입니다 — **실제 자리는 실행 뒤에 다릅니다.**
+ *
+ * ⚠⚠ **그래서 `#tabdeck` 만 숨기면 이 일곱은 그대로 남습니다.**
+ *   사용자 신고: 「매긴 곳에서 도시로 들어가니까 하단에 매긴 곳 리스트가
+ *   그대로 살아 있어서 화면이 짬뽕」 — 정확히 이것입니다.
+ *   재보니 `#shelfpane` 이 1244px 로 서 있는 채 도시 화면이 그 위에
+ *   얹혀 있었습니다.
+ * ⚠ **문서가 두 화면만큼 길어지므로 스크롤도 어긋납니다** — 「위아래가
+ *   잘린다」가 여기서 나옵니다(app.js b502 주석에 같은 병의 기록이
+ *   있습니다: 설정이 홈 아래에 매달려 1218px 더 굴렀다).
+ * ⚠ **판을 늘리면 이 목록도 늘려야 합니다.** app.js 에 두 곳, 여기 한 곳
+ *   — 셋이 같은 일곱을 압니다. */
+const 덱밖판 = ['personapane', 'shelfpane', 'mappane', 'ctrypane',
+                'diarypane', 'setpane', 'admpane'];
+/* 도시를 열면서 «내가» 가린 판. 닫을 때 그대로 되돌립니다 — 어디서
+   들어왔든 그 자리로 돌아가야 합니다. */
+let 가린판 = [];
+
 let cityOpen = null;
 export const isCityOpen = () => cityOpen != null;
 export function clearCityOpen(){ cityOpen = null; }
@@ -47,6 +69,10 @@ export async function openCity(id){
      setview 안쪽(프로필/지도/설정) 상태는 건드리지 않아서 닫으면 그대로 돌아옵니다. */
   /* 탭 화면 다섯은 덱 한 덩어리입니다(b474) — 낱개로 숨기면 덱 안에서
      가로 위치가 밀립니다. */
+  /* ⚠ 덱«과» 덱 밖 판 일곱을 같이 가립니다(위 주석). 지금 보이는 것만
+     적어 두었다가 닫을 때 그것만 되살립니다. */
+  가린판 = 덱밖판.filter(id => $(id) && !$(id).classList.contains('hide'));
+  가린판.forEach(id => $(id).classList.add('hide'));
   $('tabdeck').classList.add('hide');
   $('cityview').classList.remove('hide');
   window.scrollTo({ top:0 });
@@ -138,6 +164,13 @@ export function closeCity(fromPop){
   if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
   cityOpen = null;
   $('cityview').classList.add('hide');
+  /* ⚠ **판에서 들어왔으면 그 판으로 돌아갑니다(b646).** 덱을 되살리면
+     안 됩니다 — 그 판이 이미 덱을 덮고 있었고, 둘 다 보이면 또 겹칩니다. */
+  if (가린판.length){
+    가린판.forEach(id => $(id)?.classList.remove('hide'));
+    가린판 = [];
+    return;
+  }
   /* 열었던 탭으로 돌아갑니다 — 덱은 그 칸에 그대로 서 있으므로 되살리기만
      하면 됩니다(b474). 내용 갱신은 탭마다 다르니 그것만 나눕니다. */
   $('tabdeck').classList.remove('hide');
