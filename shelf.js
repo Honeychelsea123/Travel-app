@@ -15,22 +15,22 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk } from './dom.js?v=b642';
-import { openCity } from './city.js?v=b642';
-import { sb } from './db.js?v=b642';
-import { cities, countryName } from './cities.js?v=b642';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b642';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b642';
-import { fail } from './net.js?v=b642';
-import { arm } from './ui.js?v=b642';
-import { todayYmd } from './calc.js?v=b642';
+         flagOf, flagOk } from './dom.js?v=b643';
+import { openCity } from './city.js?v=b643';
+import { sb } from './db.js?v=b643';
+import { cities, countryName } from './cities.js?v=b643';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b643';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b643';
+import { fail } from './net.js?v=b643';
+import { arm } from './ui.js?v=b643';
+import { todayYmd } from './calc.js?v=b643';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b642';
-import { loadCities } from './citysearch.js?v=b642';
-import { loadRateData, saveRate } from './rating.js?v=b642';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b643';
+import { loadCities } from './citysearch.js?v=b643';
+import { loadRateData, saveRate } from './rating.js?v=b643';
 
 let ctx = {
   me: () => null,
@@ -232,7 +232,7 @@ let 깃발판 = false;
 async function 깃발싣기(){
   if (깃발판) return true;
   try {
-    const r = await fetch('./flags.svg?v=b642');
+    const r = await fetch('./flags.svg?v=b643');
     if (!r.ok) return false;
     const 통 = document.createElement('div');
     통.id = 'flagsprite';

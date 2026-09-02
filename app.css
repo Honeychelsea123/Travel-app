@@ -1761,6 +1761,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    그런데 `#spreebox` 가 `justify-content:center` 라 **넘치면 위가 잘리고
    스크롤로도 못 갑니다** — flex 가운데 정렬의 오래된 함정입니다.
    폭을 화면 높이로도 막아 넘침 자체를 안 만듭니다. */
+/* ⚠ **가로는 우리가, 세로는 브라우저가(b643).** 손가락으로 카드를 넘기려면
+     가로 손짓이 자바스크립트까지 와야 합니다. `pan-y` 는 세로만 브라우저에
+     남기고 가로를 우리에게 줍니다 — `none` 으로 두면 화면이 안 굴러가고,
+     안 두면 가로 손짓을 브라우저가 먼저 가져갈 수 있습니다.
+   ⚠ 안쪽 별(`.stars`)도 `pan-y` 라 값이 같습니다 — 별 끌기는 spree.js 가
+     손짓 «시작점»을 보고 비켜 줍니다. */
+#spreebox{ touch-action:pan-y; }
+
 .rateq .rqimg{ width:min(100%, 52vh); aspect-ratio:1; border-radius:var(--r-lg);
                overflow:hidden; background:var(--line); }
 .rateq .rqimg img{ width:100%; height:100%; object-fit:cover; display:block; }

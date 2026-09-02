@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b642';
-import { sb } from './db.js?v=b642';
-import { cities } from './cities.js?v=b642';
-import { loadCities } from './citysearch.js?v=b642';
-import { paintStars } from './stars.js?v=b642';
-import { rateHero, starValue } from './rateui.js?v=b642';
-import { saveRate } from './rating.js?v=b642';
-import { resetHomeSig } from './home.js?v=b642';
+import { $, esc } from './dom.js?v=b643';
+import { sb } from './db.js?v=b643';
+import { cities } from './cities.js?v=b643';
+import { loadCities } from './citysearch.js?v=b643';
+import { paintStars } from './stars.js?v=b643';
+import { rateHero, starValue } from './rateui.js?v=b643';
+import { saveRate } from './rating.js?v=b643';
+import { resetHomeSig } from './home.js?v=b643';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -149,6 +149,85 @@ export function closeSpree(fromPop){
 }
 
 $('spreeclose')?.addEventListener('click', () => closeSpree());
+
+/* ── 손가락으로 넘기기 (b643, 사용자 요청 「틴더처럼」) ────────────────
+ * 옆으로 밀면 카드가 손가락을 따라가다 날아가고 다음 도시가 옵니다.
+ * 뜻은 **「다른 여행지」 단추와 똑같습니다** — `stars:null` 을 남겨
+ * 다시 안 묻게 합니다. 두 길이 다른 일을 하면 어느 쪽을 썼는지에 따라
+ * 기록이 갈립니다.
+ * ⚠ **단추는 그대로 둡니다**(사용자 지시). 스와이프는 «더한» 길입니다 —
+ *   미는 것을 모르는 사람에게 화면이 막다른 곳이 되면 안 됩니다.
+ *
+ * ⚠⚠ **별 위에서 시작한 손짓은 가로채면 안 됩니다.** 별점은 좌우로 끌어
+ *   반 칸을 고르는 물건입니다(stars.js). 여기서 카드를 끌면 별을 못 매깁니다.
+ *   단추도 같습니다 — 눌러야 할 것을 끌어버리면 안 눌립니다.
+ * ⚠⚠ **세로로 시작한 손짓은 화면 스크롤에 넘깁니다.** 처음 몇 px 로
+ *   방향을 정하고, 세로면 그 손짓은 통째로 놓아 줍니다. `touch-action:pan-y`
+ *   가 그 절반을 하고(세로는 브라우저가 가져감), 나머지 절반이 이 판단입니다.
+ * ⚠ 움직이는 것은 `transform` 과 `opacity` 뿐입니다 — 손가락을 따라가는
+ *   동안 자리(layout)를 건드리면 폰에서 덜덜거립니다(b567 에서 겪은 것).
+ * ⚠ 날아간 뒤 **씻어내는 것을 잊으면** 다음 카드가 화면 밖에서 시작합니다.
+ *   `다음()` 으로 안쪽을 갈아끼운 «뒤» 통의 transform 을 지웁니다. */
+{
+  const 통 = $('spreebox');
+  let 잡음 = false, 가로냐 = null, x0 = 0, y0 = 0, dx = 0, 시작id = null;
+
+  /* 애니메이션 없이 즉시 제자리로. 카드를 갈아끼운 뒤에 씁니다. */
+  const 씻기 = () => {
+    if (!통) return;
+    통.style.transition = 'none';
+    통.style.transform = ''; 통.style.opacity = '';
+    void 통.offsetWidth;                 /* 지운 값을 지금 반영시킵니다 */
+    통.style.transition = '';
+  };
+  /* 덜 밀었을 때 스르르 돌아옵니다. */
+  const 되돌리기 = () => {
+    if (!통) return;
+    통.style.transition = 'transform .22s ease-out, opacity .22s ease-out';
+    통.style.transform = ''; 통.style.opacity = '';
+  };
+
+  통?.addEventListener('pointerdown', e => {
+    if (!지금 || 도는중) return;
+    if (e.target.closest('.stars, button, a, select, input')) return;
+    잡음 = true; 가로냐 = null; dx = 0;
+    x0 = e.clientX; y0 = e.clientY; 시작id = 지금.id;
+  });
+
+  통?.addEventListener('pointermove', e => {
+    if (!잡음) return;
+    const ax = e.clientX - x0, ay = e.clientY - y0;
+    if (가로냐 === null){
+      if (Math.abs(ax) < 8 && Math.abs(ay) < 8) return;   /* 아직 방향을 모릅니다 */
+      가로냐 = Math.abs(ax) > Math.abs(ay);
+      if (!가로냐){ 잡음 = false; return; }                /* 세로 — 스크롤에 넘깁니다 */
+      통.setPointerCapture?.(e.pointerId);
+      통.style.transition = 'none';
+    }
+    dx = ax;
+    통.style.transform = `translateX(${dx}px) rotate(${dx / 26}deg)`;
+    통.style.opacity = String(Math.max(.4, 1 - Math.abs(dx) / 560));
+  });
+
+  const 끝내기 = () => {
+    if (!잡음) return;
+    잡음 = false;
+    /* 화면 폭의 4분의 1이나 110px 중 작은 쪽. 좁은 폰에서 너무 멀면
+       한 손으로 못 밉니다. */
+    const 넘길까 = Math.abs(dx) > Math.min(110, window.innerWidth * .25);
+    if (!넘길까 || !지금 || 지금.id !== 시작id){ 되돌리기(); return; }
+    const 끝점 = dx > 0 ? window.innerWidth : -window.innerWidth;
+    통.style.transition = 'transform .2s ease-out, opacity .2s ease-out';
+    통.style.transform = `translateX(${끝점}px) rotate(${끝점 / 26}deg)`;
+    통.style.opacity = '0';
+    /* 「다른 여행지」와 **같은 뜻**입니다 — 기다리지 않습니다(위 누르기 주석). */
+    saveRate(시작id, { stars: null }, true);
+    건드림 = true;
+    setTimeout(() => { 다음(); 씻기(); }, 190);
+  };
+  통?.addEventListener('pointerup', 끝내기);
+  통?.addEventListener('pointercancel', () => { 잡음 = false; 되돌리기(); });
+}
 
 /* ── 누르기 ──────────────────────────────────────────────────────────
  * 상자 하나에만 답니다. 안쪽은 매번 갈아끼웁니다. */
