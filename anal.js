@@ -14,24 +14,24 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b636';
-import { sb } from './db.js?v=b636';
-import { cities } from './cities.js?v=b636';
+import { $, esc } from './dom.js?v=b637';
+import { sb } from './db.js?v=b637';
+import { cities } from './cities.js?v=b637';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b636';
+import { renderPersona } from './persona.js?v=b637';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b636';
+import { similarPicks } from './rec.js?v=b637';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b636';
-import { pickCity } from './citysearch.js?v=b636';
+import { openNew } from './newtrip.js?v=b637';
+import { pickCity } from './citysearch.js?v=b637';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
