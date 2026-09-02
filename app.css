@@ -1390,15 +1390,28 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * ⚠ 같은 함정: **선을 긋는 요소는 각져야 합니다.** 그림자를 테두리로 바꾼
  *   b584 뒤로는 이 조합이 앱 곳곳에서 생길 수 있습니다 — 선이 휘어 보이면
  *   그 요소의 `border-radius` 부터 보십시오. */
-.shelf button{ display:flex; align-items:center; gap:12px; width:100%;
-               padding:13px 2px; border:0; border-radius:0;
+/* ── 보관함은 두 칸 × 세 줄 (b638, 사용자 결정) ───────────────────────
+ * 한 줄에 하나씩 여섯 줄이면 화면을 다 먹는데, 하는 일은 「어느 보관함
+ * 으로 갈까」 하나뿐입니다. 두 칸으로 접으면 여섯이 한눈에 들어옵니다.
+ * ⚠ 칸 사이 선을 «격자»로 긋습니다 — 줄이 아니라 표가 되었으므로
+ *   위(가로선)와 옆(세로선)이 둘 다 필요합니다.
+ *   `button + button{ border-top }` 은 이제 못 씁니다. 그건 세로로
+ *   늘어선 줄의 규칙이라, 격자에서는 오른쪽 칸에도 선이 붙습니다.
+ * ⚠ 이름이 짧아진 만큼 그림이 뜻을 나릅니다 — 그림을 지우면 안 됩니다. */
+.shelf{ display:grid; grid-template-columns:1fr 1fr; }
+.shelf button{ display:flex; align-items:center; gap:10px; width:100%;
+               padding:14px 2px; border:0; border-radius:0;
                background:none; font-size:var(--f-lg); }
 /* ⚠⚠ **음수 여백으로 «카드 끝까지» 빼려다 layout 을 부쉈습니다(b587 → b588).**
  *   줄마다 여백이 겹쳐 계단처럼 좁아졌습니다(사용자 사진).
  *   `width:100%` 인 flex 항목에 좌우 음수 여백을 주면 폭 셈이 어긋납니다.
  *   **선을 끝까지 빼는 일은 여기서 하지 않습니다** — 줄이 아니라 «통»이
  *   할 일입니다. 지금은 안쪽 선으로 두고, 색만 보이게 합니다. */
-.shelf button + button{ border-top:1px solid var(--line); }
+/* 둘째·셋째 줄 위에만 가로선. 첫 줄(1·2번째 칸) 위에는 안 긋습니다. */
+.shelf button:nth-child(n+3){ border-top:1px solid var(--line); }
+/* 오른쪽 칸 왼쪽에 세로선. 짝수 번째가 곧 오른쪽 칸입니다. */
+.shelf button:nth-child(2n){ border-left:1px solid var(--line);
+                             padding-left:14px; }
 .shelf svg{ flex:none; color:var(--ink-48); }
 .shelf span{ flex:1; text-align:left; color:var(--ink-80); min-width:0; }
 .shelf b{ font-variant-numeric:tabular-nums; color:var(--ink); flex:none; }
