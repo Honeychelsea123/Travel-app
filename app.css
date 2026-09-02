@@ -3075,6 +3075,26 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* 발자국을 못 받았을 때 그 자리에 놓는 줄(b613). 조용히, 줄 하나로.
    ⚠ 「0 / 195」를 적지 않는 이유는 home.js 쪽 주석에 있습니다 — 그건
      거짓말이고, 보는 사람은 제 기록이 날아간 줄 압니다. */
+/* ── 나라 깃발 벽 (b618) ──────────────────────────────────────────────
+ * ⚠ 안 가본 나라를 **지우지 않고 흐리게** 둡니다. 그게 이 화면의 전부
+ *   입니다 — 빈칸이 보여야 「어디를 더 갈까」가 생깁니다.
+ * ⚠ 흐리게는 `filter` 로 합니다. 이모지는 글자라 `color` 가 안 먹습니다.
+ *   회색으로 만들고(grayscale) 옅게(opacity) 두 겹을 겹칩니다 —
+ *   하나만 쓰면 색만 빠지거나(여전히 또렷함) 형태가 남아 어른거립니다.
+ * ⚠ 칸 수를 못박지 않습니다(`auto-fill`). 글자 배율을 키운 사람은
+ *   깃발도 커지는데, 한 줄에 몇 개라고 적어두면 그때 넘칩니다. */
+.flagwall .daysep{ margin-top:var(--s-lg); }
+.flagwall .daysep:first-child{ margin-top:4px; }
+.fgrid{ display:grid; gap:6px;
+        grid-template-columns:repeat(auto-fill, minmax(calc(30px * var(--ts)), 1fr)); }
+.fg{ font-size:calc(26px * var(--ts)); line-height:1.15; text-align:center;
+     filter:grayscale(1) opacity(.22); transition:filter var(--t) var(--ease); }
+.fg.on{ filter:none; }
+/* 깃발을 못 그리는 기기에서는 코드 두 글자가 옵니다 — 그때는 글자로 읽혀야
+   하므로 크기를 줄이고 타자기 글씨로 둡니다. */
+.flagwall.nofl .fg{ font-family:var(--mono); font-size:var(--f-md);
+                    letter-spacing:.04em; }
+
 .fpretry{ width:100%; margin:var(--s-sm) 0; padding:12px 0;
           border:0; border-top:1px solid var(--line);
           border-bottom:1px solid var(--line);

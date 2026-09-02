@@ -14,17 +14,23 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck } from './dom.js?v=b617';
-import { openCity } from './city.js?v=b617';
-import { sb } from './db.js?v=b617';
-import { cities, countryName } from './cities.js?v=b617';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b617';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b617';
-import { fail } from './net.js?v=b617';
-import { arm } from './ui.js?v=b617';
-import { todayYmd } from './calc.js?v=b617';
-import { loadCities } from './citysearch.js?v=b617';
-import { loadRateData, saveRate } from './rating.js?v=b617';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
+         flagOf, flagOk } from './dom.js?v=b618';
+import { openCity } from './city.js?v=b618';
+import { sb } from './db.js?v=b618';
+import { cities, countryName } from './cities.js?v=b618';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b618';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b618';
+import { fail } from './net.js?v=b618';
+import { arm } from './ui.js?v=b618';
+import { todayYmd } from './calc.js?v=b618';
+/* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
+     걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
+     끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
+     언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
+import { UN_BY_CONT, UN_CODES, UN_CONT, UN_TOTAL } from './un.js?v=b618';
+import { loadCities } from './citysearch.js?v=b618';
+import { loadRateData, saveRate } from './rating.js?v=b618';
 
 let ctx = {
   me: () => null,
@@ -44,7 +50,7 @@ export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
    도시는 '다녀온 도시', 관광지는 '다녀온 관광지'로 갈랐습니다. */
 const SHELF = { been:'다녀온 도시', want:'가보고 싶은 곳', mine:'내가 매긴 곳',
                 comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 관광지',
-                review:'여행 후기', badge:'여행 배지' };
+                review:'여행 후기', badge:'여행 배지', flag:'나라 깃발' };
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
 const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
 
@@ -193,6 +199,44 @@ $('shelflist').addEventListener('click', e => {
  *
  * **못 받은 것도 보여줍니다.** 받은 것만 늘어놓으면 다음에 뭘 하면
  * 되는지 알 수가 없습니다 — 배지는 받은 자랑이자 다음 목표입니다. */
+/* ── 나라 깃발 벽 (b618, 사용자 요청) ─────────────────────────────────
+ * 195칸을 다 깔고 **가본 나라만 색이 돕니다.** 나머지는 흐리게 남습니다 —
+ * 「얼마나 갔나」보다 **「얼마나 남았나」**가 보이는 것이 이 화면의 값입니다.
+ * 다녀온 도시 목록은 이미 있는데 이건 다른 것을 말합니다.
+ *
+ * ⚠ **자료를 새로 안 받아옵니다.** 칠할 나라는 `cities` + `visited` 로
+ *   내는데, 그건 지구본이 칠하는 바로 그 집합입니다(home.js 의 `gone`).
+ *   서버에 또 물으면 지구본과 이 벽이 다른 말을 할 수 있습니다.
+ * ⚠ **UN 195 안에 없는 코드는 안 셉니다.** 우리 자료에는 괌(GU) 같은
+ *   속령도 있습니다. 분모가 195 이므로 분자도 195 안에서 세야 합니다 —
+ *   안 그러면 100%를 넘거나 홈의 「27 / 195」와 어긋납니다.
+ * ⚠ **깃발을 못 그리는 기기가 있습니다**(윈도우는 `KR` 두 글자).
+ *   `flagOk()` 가 재서 알려줍니다 — 그때는 코드 두 글자로 깝니다.
+ *   map.js 가 이미 같은 판단을 하고 있어서 그것을 그대로 씁니다. */
+async function openFlagShelf(){
+  await loadCities();
+  const 갔다 = new Set((cities || []).filter(c => visited.has(c.id))
+                       .map(c => c.country).filter(Boolean));
+  const 센것 = UN_CODES.filter(c => 갔다.has(c)).length;
+  const 기ok = flagOk();
+  $('shelfcount').textContent =
+    `${센것}개국 · ${(센것 / UN_TOTAL * 100).toFixed(1)}%`;
+  $('shelflist').classList.add('flagwall');
+  $('shelflist').innerHTML = UN_CONT.map(([이름, 전체]) => {
+    const 목록 = UN_BY_CONT[이름] || [];
+    const 이 = 목록.filter(c => 갔다.has(c)).length;
+    /* 대륙 이름 옆에 그 대륙의 몫을 답니다. 195칸을 한 판에 깔면
+       어디가 비었는지 «덩어리»로만 보입니다 — 수가 있어야 어디를
+       더 갈지 생각하게 됩니다(홈 캐러셀과 같은 수입니다). */
+    return `<div class="daysep">${esc(이름)}
+              <span class="memo">${이} / ${전체}</span></div>
+            <div class="fgrid">${목록.map(코드 =>
+              `<span class="fg${갔다.has(코드) ? ' on' : ''}"
+                     title="${esc(countryName[코드] || 코드)}">${
+                기ok ? flagOf(코드) : esc(코드)}</span>`).join('')}</div>`;
+  }).join('');
+}
+
 async function openBadgeShelf(){
   const { data, error } = await sb.rpc('my_badges');
   if (error) return fail(error, 'trip');
@@ -259,6 +303,7 @@ export async function openShelf(kind){
    *   `await` 다음이라 늦습니다 — 그 사이에 옛 벽이 그대로 보입니다. */
   $('shelfcount').textContent = '';
   $('shelflist').classList.remove('wall');
+  $('shelflist').classList.remove('flagwall');
   $('shelflist').innerHTML =
     '<div class="empty"><span class="load">보관함을 여는 중…</span></div>';
   /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.
@@ -277,6 +322,8 @@ export async function openShelf(kind){
        끄는 것은 맨 위, 켜는 것은 정해진 뒤 — 이 순서라야 어느 길로
        나가도 남는 것이 없습니다. */
   $('shelflist').classList.remove('wall');
+  $('shelflist').classList.remove('flagwall');
+  if (kind === 'flag')   return openFlagShelf();
   if (kind === 'place' || kind === 'spot') return openPlaceShelf(kind);
   if (kind === 'review') return openReviewShelf();
   if (kind === 'badge')  return openBadgeShelf();
