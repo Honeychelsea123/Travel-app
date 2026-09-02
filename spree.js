@@ -17,14 +17,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b643';
-import { sb } from './db.js?v=b643';
-import { cities } from './cities.js?v=b643';
-import { loadCities } from './citysearch.js?v=b643';
-import { paintStars } from './stars.js?v=b643';
-import { rateHero, starValue } from './rateui.js?v=b643';
-import { saveRate } from './rating.js?v=b643';
-import { resetHomeSig } from './home.js?v=b643';
+import { $, esc } from './dom.js?v=b644';
+import { sb } from './db.js?v=b644';
+import { cities } from './cities.js?v=b644';
+import { loadCities } from './citysearch.js?v=b644';
+import { paintStars } from './stars.js?v=b644';
+import { rateHero, starValue } from './rateui.js?v=b644';
+import { saveRate } from './rating.js?v=b644';
+import { resetHomeSig } from './home.js?v=b644';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -201,8 +201,16 @@ $('spreeclose')?.addEventListener('click', () => closeSpree());
       if (Math.abs(ax) < 8 && Math.abs(ay) < 8) return;   /* 아직 방향을 모릅니다 */
       가로냐 = Math.abs(ax) > Math.abs(ay);
       if (!가로냐){ 잡음 = false; return; }                /* 세로 — 스크롤에 넘깁니다 */
-      통.setPointerCapture?.(e.pointerId);
       통.style.transition = 'none';
+      /* ⚠⚠ **`setPointerCapture` 는 던질 수 있습니다.** 그 손가락이 이미
+         놓였거나 다른 요소가 잡고 있으면 `NotFoundError` 가 납니다.
+         그러면 **이 아래가 통째로 안 돌아** 카드가 손가락을 안 따라옵니다
+         — 오류도 화면에 안 뜨고 그냥 «안 되는» 상태가 됩니다.
+         잡는 것은 «있으면 좋은 것»이지 없으면 못 하는 일이 아닙니다
+         (손가락이 카드 밖으로 나가도 따라오게 해줄 뿐입니다).
+         ⚠ 옵셔널 체이닝(`?.`)은 **없을 때만** 막아줍니다. 던지는 것은
+           못 막습니다 — try 로 감싸야 합니다. */
+      try { 통.setPointerCapture?.(e.pointerId); } catch {}
     }
     dx = ax;
     통.style.transform = `translateX(${dx}px) rotate(${dx / 26}deg)`;
