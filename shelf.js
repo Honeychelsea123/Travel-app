@@ -15,22 +15,22 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk } from './dom.js?v=b619';
-import { openCity } from './city.js?v=b619';
-import { sb } from './db.js?v=b619';
-import { cities, countryName } from './cities.js?v=b619';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b619';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b619';
-import { fail } from './net.js?v=b619';
-import { arm } from './ui.js?v=b619';
-import { todayYmd } from './calc.js?v=b619';
+         flagOf, flagOk } from './dom.js?v=b620';
+import { openCity } from './city.js?v=b620';
+import { sb } from './db.js?v=b620';
+import { cities, countryName } from './cities.js?v=b620';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b620';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b620';
+import { fail } from './net.js?v=b620';
+import { arm } from './ui.js?v=b620';
+import { todayYmd } from './calc.js?v=b620';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_BY_CONT, UN_CODES, UN_CONT, UN_TOTAL } from './un.js?v=b619';
-import { loadCities } from './citysearch.js?v=b619';
-import { loadRateData, saveRate } from './rating.js?v=b619';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b620';
+import { loadCities } from './citysearch.js?v=b620';
+import { loadRateData, saveRate } from './rating.js?v=b620';
 
 let ctx = {
   me: () => null,
@@ -227,19 +227,20 @@ async function openFlagShelf(){
      깔렸습니다 — 칸을 넘치고 읽기도 나빴습니다.
      **규칙을 쓰면 그 클래스를 다는 자리도 같이 만들어야 합니다.** */
   $('shelflist').classList.toggle('nofl', !기ok);
-  $('shelflist').innerHTML = UN_CONT.map(([이름, 전체]) => {
-    const 목록 = UN_BY_CONT[이름] || [];
-    const 이 = 목록.filter(c => 갔다.has(c)).length;
-    /* 대륙 이름 옆에 그 대륙의 몫을 답니다. 195칸을 한 판에 깔면
-       어디가 비었는지 «덩어리»로만 보입니다 — 수가 있어야 어디를
-       더 갈지 생각하게 됩니다(홈 캐러셀과 같은 수입니다). */
-    return `<div class="daysep">${esc(이름)}
-              <span class="memo">${이} / ${전체}</span></div>
-            <div class="fgrid">${목록.map(코드 =>
-              `<span class="fg${갔다.has(코드) ? ' on' : ''}"
-                     title="${esc(countryName[코드] || 코드)}">${
-                기ok ? flagOf(코드) : esc(코드)}</span>`).join('')}</div>`;
-  }).join('');
+  /* ⚠ **대륙으로 안 나눕니다(b620, 사용자 결정).** 처음에 대륙마다 머리글과
+       몫(유럽 19/44)을 달았는데 「그냥 한방에 다 넣어」 — 맞습니다.
+       머리글 여섯이 들어가면 벽이 여섯 토막으로 잘려서, 이 화면의 값인
+       **「한 판을 보는 것」**이 사라집니다. 대륙별 수는 홈 캐러셀이 이미
+       말하고 있어서 여기서 또 말할 일도 아닙니다.
+     ⚠ 순서는 **코드 차례**입니다. `UN_CODES` 는 대륙 순서라 그대로 깔면
+       한 판이어도 대륙 덩어리로 보입니다 — 베낀 것이 아니라 «세계 전부»로
+       보이려면 섞여 있어야 합니다. 원본은 안 건드리고 사본을 늘어놓습니다
+       (`UN_CODES` 의 순서를 여기서 바꾸면 세는 쪽이 같이 흔들립니다). */
+  $('shelflist').innerHTML =
+    `<div class="fgrid">${[...UN_CODES].sort().map(코드 =>
+      `<span class="fg${갔다.has(코드) ? ' on' : ''}"
+             title="${esc(countryName[코드] || 코드)}">${
+        기ok ? flagOf(코드) : esc(코드)}</span>`).join('')}</div>`;
 }
 
 async function openBadgeShelf(){
