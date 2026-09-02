@@ -74,7 +74,20 @@
        12로 합쳤습니다 — 덩어리는 26, 그 안은 전부 12. 규칙이 하나면
        새 화면을 만들 때 고민할 것이 없습니다.
        34(--r-xl)는 **쓰는 데가 한 곳도 없었습니다.** 걷었습니다. */
-  --r-sm:10px; --r-lg:14px; --r-pill:9999px;
+  /* ⚠⚠ **모서리를 토큰째 0 으로 둡니다(b628).** ⚠⚠
+   * b588 부터 카드·단추·입력칸·사진을 한 곳씩 각지게 해 왔는데, 화면에
+   * 안 떠 있는 것들(AI 카드·검색 결과·토스트·시트 속)이 계속 남아
+   * 있었습니다. **런타임으로 훑으면 «지금 보이는 것»만 잡힙니다.**
+   * 파일을 세어 보니 `--r-sm` 39곳 · `--r-lg` 14곳이었고, 그 전부가
+   * 각져야 할 것이었습니다. 한 곳씩 덮는 것을 그만두고 **토큰을 0 으로**
+   * 둡니다 — 되돌리고 싶으면 여기 두 값만 되돌리면 됩니다.
+   *
+   * ⚠ **`--r-pill` 은 그대로 둡니다.** 스위치·얼굴 사진·작은 딱지가
+   *   씁니다 — 그것들은 «원래» 둥근 물건입니다(b612 에 적어둔 그 이유).
+   * ⚠ 값을 0 으로 두고 이름을 남기는 이유: 39+14 곳을 다시 고치지 않고
+   *   **한 줄로 되돌릴 수 있게** 하려는 것입니다. 이름을 지우면 그때
+   *   53곳을 손봐야 합니다. */
+  --r-sm:0; --r-lg:0; --r-pill:9999px;
 
   /* ══ 1단계에서 모아온 색(b583) ═══════════════════════════════════════
    * ⚠⚠ **값은 하나도 안 바꿨습니다.** 여기저기 박혀 있던 것을 «정하는 자리»만
@@ -596,9 +609,11 @@ a.btn:active{ transform:scale(.96); }
           font-size:var(--f-md); font-weight:600; }
 .abar .t .p{ margin-left:auto; font-weight:400; color:var(--ink-48);
              font-size:var(--f-sm); }
-.abar .track{ height:7px; border-radius:var(--r-pill); background:var(--divider-soft);
+/* ⚠ 진행 막대는 «칸»이지 알약이 아닙니다(b628). `.axbar` 를 b627 에
+     각지게 했는데 이 둘이 남아 있었습니다 — 같은 물건은 같은 모양으로. */
+.abar .track{ height:7px; border-radius:0; background:var(--divider-soft);
               overflow:hidden; margin-top:6px; }
-.abar .track i{ display:block; height:100%; border-radius:var(--r-pill);
+.abar .track i{ display:block; height:100%; border-radius:0;
                 background:var(--primary); transition:width var(--t-slow) var(--ease); }
 .abar.warn .track i{ background:var(--star-dim); }
 .abar.bad  .track i{ background:var(--bad); }
@@ -949,7 +964,10 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 .citycard{ position:relative; margin-top:10px; padding:8px 8px 12px;
            border-radius:var(--r-lg); background:var(--pearl);
            border:1px solid var(--hairline); }
-.citycard .ph{ aspect-ratio:1/1; border-radius:calc(var(--r-lg) - 4px);
+/* ⚠ `calc(var(--r-lg) - 4px)` 였습니다. 이제 0 - 4px = **-4px** 이고
+     음수 모서리는 «못 쓰는 값»이라 그 줄이 통째로 버려집니다 — 결과는
+     같지만 조용히 죽는 줄을 남기지 않습니다. */
+.citycard .ph{ aspect-ratio:1/1; border-radius:0;
                background:var(--parchment) center/cover no-repeat;
                display:grid; place-items:center;
                font-size:var(--f-hero); font-weight:700; color:var(--ink-48); }
@@ -1234,9 +1252,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
          letter-spacing:-.02em; margin-left:2px; }
 
 /* 채워지는 게 보이면 채우고 싶어집니다 */
-.bar{ height:10px; border-radius:var(--r-pill); background:var(--parchment); overflow:hidden;
+.bar{ height:10px; border-radius:0; background:var(--parchment); overflow:hidden;
       margin-top:10px; }
-.bar i{ display:block; height:100%; border-radius:var(--r-pill); background:var(--primary); }
+.bar i{ display:block; height:100%; border-radius:0; background:var(--primary); }
 
 /* ── 보관함 (b370 에서 목록으로 갔다가 b371 에 격자로 되돌아옴) ──────────
  * "카드 안에 카드가 여섯"이라고 진단해 놓고, 고칠 때 **테두리와 배치를 같이**
