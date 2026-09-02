@@ -3437,7 +3437,13 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
         font-variant-numeric:tabular-nums; }
 .bnrow b{ font-size:calc(46px * var(--ts)); font-weight:800; line-height:1;
           color:var(--primary); letter-spacing:calc(-1px * var(--ts)); }
-.bnrow span{ font-size:calc(19px * var(--ts)); font-weight:700;
+/* ⚠ 분모(「/ 195」)를 19 → 26 으로 키웁니다(b633, 사용자 요청).
+     46 대 19 는 2.4배라 분모가 «딸린 글씨»로 읽혔습니다 — 그런데 이 줄은
+     **27과 195를 견주라는 줄**입니다. 분모가 안 읽히면 견줄 것이 없습니다.
+     46 대 26(1.8배)이면 27이 여전히 주인공이면서 195도 수로 읽힙니다.
+   ⚠ 퍼센트(`.bnpct`)는 그대로 둡니다 — 그건 견줄 값이 아니라 «셈한
+     결과»라 곁말입니다. 셋 다 키우면 셋 다 안 읽힙니다. */
+.bnrow span{ font-size:calc(26px * var(--ts)); font-weight:700;
              color:var(--ink-48); }
 /* ⚠ **퍼센트를 수 «옆»으로 올렸습니다(b614, 사용자 제안).** 아래 줄에
      따로 두면 눈이 한 번 더 내려가야 하는데, 「27 / 195」와 「13.8%」는
