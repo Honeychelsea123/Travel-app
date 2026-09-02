@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b651';
-import { sb } from './db.js?v=b651';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b652';
+import { sb } from './db.js?v=b652';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b651';
-import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b651';
+         cacheGet, cacheSet } from './net.js?v=b652';
+import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b652';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던
@@ -130,7 +130,12 @@ async function refreshCities(){
   if (cs.error) cs = await 도시받기(BASE + ',image_url');
   if (cs.error) cs = await 도시받기(BASE);
 
+  /* ⚠ `parent_code` 는 속령을 모국으로 접는 칸입니다(db/076). **제일 앞
+     시도에만 넣습니다** — 아직 076 을 안 돌린 곳에서는 이 줄이 실패하고
+     아래로 떨어집니다. 그러면 괌이 다시 제 나라로 세어질 뿐, 앱은 돕니다. */
   let ns = await sb.from('countries')
+    .select('code,name,currency,local_lang,default_timezone,continent,parent_code').order('name');
+  if (ns.error) ns = await sb.from('countries')
     .select('code,name,currency,local_lang,default_timezone,continent').order('name');
   if (ns.error) ns = await sb.from('countries')
     .select('code,name,currency,local_lang,default_timezone').order('name');

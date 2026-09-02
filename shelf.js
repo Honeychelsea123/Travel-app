@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b651';
-import { openCity } from './city.js?v=b651';
-import { sb } from './db.js?v=b651';
-import { cities, countryName } from './cities.js?v=b651';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b651';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b651';
-import { fail } from './net.js?v=b651';
-import { arm } from './ui.js?v=b651';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b652';
+import { openCity } from './city.js?v=b652';
+import { sb } from './db.js?v=b652';
+import { cities, countryName } from './cities.js?v=b652';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b652';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b652';
+import { fail } from './net.js?v=b652';
+import { arm } from './ui.js?v=b652';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b651';
-import { shareCard } from './card.js?v=b651';
-import { todayYmd } from './calc.js?v=b651';
+import { 발자국스펙 } from './map.js?v=b652';
+import { shareCard } from './card.js?v=b652';
+import { todayYmd } from './calc.js?v=b652';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b651';
-import { loadCities } from './citysearch.js?v=b651';
-import { loadRateData, saveRate } from './rating.js?v=b651';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b652';
+import { loadCities } from './citysearch.js?v=b652';
+import { loadRateData, saveRate } from './rating.js?v=b652';
 
 let ctx = {
   me: () => null,
@@ -238,8 +238,11 @@ $('shelflist').addEventListener('click', e => {
 
 async function openFlagShelf(){
   await loadCities();
+  /* ⚠ `c.cc` — 속령은 모국으로 셉니다(cities.js·db/076). 홍콩을 다녀오면
+     중국 깃발이 켜집니다. 전에는 `c.country` 라 홍콩·마카오·괌·사이판·
+     타히티가 **어느 깃발도 못 켰습니다**(UN 195 에 없는 코드라서). */
   const 갔다 = new Set((cities || []).filter(c => visited.has(c.id))
-                       .map(c => c.country).filter(Boolean));
+                       .map(c => c.cc).filter(Boolean));
   const 센것 = UN_CODES.filter(c => 갔다.has(c)).length;
   /* 그림판을 먼저 싣습니다. 실패하면 예전처럼 이모지로 갑니다. */
   const 그림 = await flagSprite();

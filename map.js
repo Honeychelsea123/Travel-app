@@ -13,15 +13,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b651';
-import { openCity } from './city.js?v=b651';
-import { distKm } from './calc.js?v=b651';
-import { sb } from './db.js?v=b651';
-import { cities, countryName, continentOf } from './cities.js?v=b651';
+         coverDeck } from './dom.js?v=b652';
+import { openCity } from './city.js?v=b652';
+import { distKm } from './calc.js?v=b652';
+import { sb } from './db.js?v=b652';
+import { cities, countryName, continentOf } from './cities.js?v=b652';
 /* ⚠ `PERSONA_ICON` 은 b649 에 안 쓰게 됐습니다 — 발자국 카드가 여권 스탬프
    면으로 바뀌면서 선 아이콘 자리가 없어졌습니다(큰 수와 지도가 그 일을
    합니다). 안 쓰는 것을 가져오면 나중에 "여기도 쓰나" 하고 헷갈립니다. */
-import { shareCard } from './card.js?v=b651';
+import { shareCard } from './card.js?v=b652';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -275,7 +275,7 @@ export async function openCountries(어디서){
     .filter(r => r.stars != null).map(r => [r.city_id, Number(r.stars)]));
 
   const byC = {};
-  list.forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  list.forEach(c => (byC[c.cc] = byC[c.cc] || []).push(c));
   const codes = Object.keys(byC);
   $('ctrysum').textContent = `${codes.length}개국 · ${list.length}도시`;
 
@@ -448,13 +448,13 @@ $('ctrypane').addEventListener('click', e => {
  * ⚠ **밖에서도 씁니다**(shelf.js 의 깃발 벽). export 를 떼지 마십시오. */
 export function 발자국스펙(도시들){
   const byC = {};
-  (도시들 || []).forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  (도시들 || []).forEach(c => (byC[c.cc] = byC[c.cc] || []).push(c));
   /* 많이 간 나라부터. 깃발 격자도 이 순서라 앞줄이 그 사람다운 줄이 됩니다. */
   const codes = Object.keys(byC).sort((a, b) => byC[b].length - byC[a].length);
   const conts = new Set(codes.map(c => continentOf[c]).filter(Boolean));
   const pct = codes.length / UN_COUNTRIES * 100;
 
-  const 갔다 = new Set(codes);
+  const 갔다 = new Set(codes);   /* codes 는 이미 모국으로 접힌 것입니다(c.cc) */
   document.querySelectorAll('#worldland path').forEach(p =>
     p.classList.toggle('been', 갔다.has(p.dataset.c)));
   const land = $('worldland')?.innerHTML || '';
@@ -496,13 +496,16 @@ export async function openMap(){
 
   /* 다녀온 나라를 칠합니다. 싱가포르나 홍콩처럼 이 축척에서 면이 없는 곳은
      칠할 자리가 없어 핀으로만 보입니다. */
-  const gone = new Set(mapCities.map(c => c.country));
+  /* ⚠ `c.cc` 는 속령을 모국으로 접은 나라입니다(cities.js) — 괌을 칠하면
+     미국이 칠해집니다. `c.country` 로 칠하면 `#worldland` 에 GU 면이 없어
+     **아무 데도 안 칠해집니다.** */
+  const gone = new Set(mapCities.map(c => c.cc));
   document.querySelectorAll('#worldland path').forEach(p =>
     p.classList.toggle('been', gone.has(p.dataset.c)));
   setMapView('전체');
 
   /* ── 전체 ── */
-  const conts = new Set(mapCities.map(c => continentOf[c.country]).filter(Boolean));
+  const conts = new Set(mapCities.map(c => continentOf[c.cc]).filter(Boolean));
   const pct = gone.size / UN_COUNTRIES * 100;
   $('m_total').innerHTML =
     /* ⚠ **누를 수 있어야 합니다(b452).** 여기 숫자 셋이 `cursor:default` 에
@@ -546,8 +549,8 @@ export async function openMap(){
      줄을 누르면 그 대륙의 국가 이름이 펴집니다 — 한 겹 안에 두는 이유는
      여섯 대륙을 다 펴두면 그 카드가 화면 몇 개가 되기 때문입니다. */
   $('m_cont').innerHTML = CONT.map(([k, total]) => {
-    const cs = mapCities.filter(c => continentOf[c.country] === k);
-    const ns = [...new Set(cs.map(c => c.country))]
+    const cs = mapCities.filter(c => continentOf[c.cc] === k);
+    const ns = [...new Set(cs.map(c => c.cc))]
       .sort((a, b) => (countryName[a] || a).localeCompare(countryName[b] || b, 'ko'));
     const p = ns.length / total * 100;
     return `<div class="crow" data-cont="${esc(k)}" data-zoom="${esc(k)}">
@@ -558,13 +561,13 @@ export async function openMap(){
             style="padding:0 0 10px">${
         ns.length ? ns.map(code => `<button data-czoom="${esc(code)}">${
             esc(countryName[code] || code)} ${
-            cs.filter(c => c.country === code).length}</button>`).join('')
+            cs.filter(c => c.cc === code).length}</button>`).join('')
           : '<span class="memo">아직 없어요</span>'}</div>`;
   }).join('');
 
   /* ── 국가별 ── 많이 간 나라부터 ── */
   const byC = {};
-  mapCities.forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  mapCities.forEach(c => (byC[c.cc] = byC[c.cc] || []).push(c));
   const order = Object.entries(byC).sort((a, b) => b[1].length - a[1].length);
   $('m_country').innerHTML = order.length
     ? order.map(([code, cs]) => `<div style="padding:9px 0; border-top:1px solid var(--line)">
@@ -652,7 +655,7 @@ export function funRows(도시들, 별점표){
       if (!far || d > far.d) far = { d, a: withPos[i], b: withPos[j] };
     }
   const byC = {};
-  도시들.forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
+  도시들.forEach(c => (byC[c.cc] = byC[c.cc] || []).push(c));
   const order = Object.entries(byC).sort((a, b) => b[1].length - a[1].length);
   const sv = 도시들.map(c => 별점표[c.id]).filter(v => v != null);
   const avg = sv.length ? sv.reduce((a, b) => a + b, 0) / sv.length : null;

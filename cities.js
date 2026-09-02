@@ -39,6 +39,17 @@ export const onlyCho = s => /^[ㄱ-ㅎ]+$/.test(s);
  *   _cho 는 한글 이름의 초성만 */
 function indexCity(c){
   return { ...c,
+    /* ── 세고 묶을 때 쓰는 나라 (b652, 사용자 지적: 「괌은 국가가 미국이잖아」)
+     * 괌·사이판은 미국, 홍콩·마카오는 중국, 타히티는 프랑스입니다.
+     * ⚠ **`country` 는 그대로 둡니다** — 도시 화면에는 「괌」이라고 나와야
+     *   합니다. 바뀌는 것은 «세는 법»뿐이라 칸을 따로 둡니다.
+     * ⚠ **앞가림 표를 여기 적지 않습니다.** `countries.parent_code`(db/076)
+     *   가 유일한 자리입니다 — 코드에도 적어두면 언젠가 한쪽만 고칩니다.
+     * ⚠ 안 고치면 앱이 **두 가지 수**를 말합니다: 홍콩만 다녀온 사람이
+     *   홈에서는 「1개국」인데 깃발 벽은 0개(벽은 UN 195 안만 셉니다).
+     * ⚠ `countryInfo` 가 **먼저** 세워져야 합니다 — useCities 가 나라 표를
+     *   먼저 만들고 도시를 훑습니다. 그 차례를 바꾸면 여기가 조용히 빕니다. */
+    cc: countryInfo[c.country]?.parent_code || c.country,
     _hay: [c.name, c.name_en, c.name_local, countryName[c.country]]
             .filter(Boolean).join(' ').toLowerCase(),
     _cho: chosung(c.name) };
