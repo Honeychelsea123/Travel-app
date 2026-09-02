@@ -1,0 +1,37 @@
+# 손으로 고른 여행지. 「나라코드|영문이름=한국어이름|…」
+#
+# ⚠ 영문 이름은 GeoNames 에서 찾는 «열쇠»입니다. 좌표·시간대·인구는 거기서
+#   그대로 옵니다. 한국어 이름만 우리가 적습니다 — 049 에서 세운 규칙과
+#   같습니다(「한국어 이름이 GeoNames 에 없던 32곳만 음역했습니다. 그 경우에도
+#   좌표는 GeoNames 것입니다」).
+# ⚠ 못 찾은 이름은 스크립트가 끝에 알려줍니다. 반드시 보십시오.
+# ⚠ 이미 DB 에 있는 곳은 저절로 걸러집니다.
+
+JP|Kusatsu=구사쓰|Karuizawa=가루이자와|Hakuba=하쿠바|Toyama=도야마|Fukui=후쿠이|Ise=이세|Toba=도바|Wakayama=와카야마|Koya=고야산|Onomichi=오노미치|Hatsukaichi=미야지마|Kochi=고치|Tokushima=도쿠시마|Niseko=니세코|Noboribetsu=노보리베쓰|Kushiro=구시로|Abashiri=아바시리|Wakkanai=왓카나이|Obihiro=오비히로|Morioka=모리오카|Akita=아키타|Yamagata=야마가타|Aizuwakamatsu=아이즈와카마쓰|Kawagoe=가와고에|Atami=아타미|Ito=이토|Shimoda=시모다|Numazu=누마즈|Gifu=기후|Inuyama=이누야마|Otsu=오쓰|Hikone=히코네|Yonago=요나고|Hagi=하기|Iwakuni=이와쿠니|Fukuyama=후쿠야마|Miyazaki=미야자키|Saga=사가|Karatsu=가라쓰|Kurume=구루메
+TW|Hualien=화롄|Taitung=타이둥|Nantou=난터우|Yilan=이란|Chiayi=자이|Pingtung=핑둥|Miaoli=먀오리|Changhua=장화
+TH|Sukhothai=수코타이|Lopburi=롭부리|Trat=뜨랏|Ranong=라농|Surat Thani=수랏타니|Udon Thani=우돈타니|Nakhon Ratchasima=나콘랏차시마|Hat Yai=핫야이|Nan=난
+VN|Ninh Binh=닌빈|Can Tho=껀터|Vinh=빈|Buon Ma Thuot=부온마투옷|Ha Giang=하장|Cao Bang=까오방|Hoa Binh=호아빈|Cam Ranh=깜라인
+CN|Lijiang=리장|Dali=다리|Zhangjiajie=장자제|Guiyang=구이양|Kunming=쿤밍|Urumqi=우루무치|Lhasa=라싸|Yangshuo=양숴|Wuzhen=우전|Huangshan=황산
+ID|Yogyakarta=욕야카르타|Ubud=우붓|Bandung=반둥|Malang=말랑|Makassar=마카사르|Medan=메단|Manado=마나도
+PH|Tagbilaran=보홀|Puerto Princesa=푸에르토프린세사|Bacolod=바콜로드|Iloilo=일로일로|Dumaguete=두마게테|Legazpi=레가스피
+MY|Ipoh=이포|Kuching=쿠칭|Kota Kinabalu=코타키나발루|Langkawi=랑카위|Malacca=말라카|Johor Bahru=조호르바루
+IN|Udaipur=우다이푸르|Jodhpur=조드푸르|Amritsar=암리차르|Varanasi=바라나시|Kochi=코치|Rishikesh=리시케시|Leh=레|Darjeeling=다르질링
+IT|Siena=시에나|Assisi=아시시|Lucca=루카|Bergamo=베르가모|Ravenna=라벤나|Parma=파르마|Perugia=페루자|Trieste=트리에스테|Lecce=레체|Matera=마테라|Sorrento=소렌토|Positano=포지타노|Taormina=타오르미나|Alberobello=알베로벨로|Portofino=포르토피노
+FR|Annecy=안시|Colmar=콜마르|Chamonix=샤모니|Avignon=아비뇽|Carcassonne=카르카손|Biarritz=비아리츠|Dijon=디종|Rouen=루앙|Nimes=님|Aix-en-Provence=엑상프로방스
+ES|Ronda=론다|Segovia=세고비아|Salamanca=살라망카|Cordoba=코르도바|Cadiz=카디스|Girona=지로나|San Sebastian=산세바스티안|Santiago de Compostela=산티아고데콤포스텔라|Palma=팔마|Ibiza=이비사
+DE|Rothenburg ob der Tauber=로텐부르크|Heidelberg=하이델베르크|Bamberg=밤베르크|Regensburg=레겐스부르크|Trier=트리어|Lubeck=뤼베크|Baden-Baden=바덴바덴|Fuessen=퓌센
+CH|Lauterbrunnen=라우터브루넨|Montreux=몽트뢰|Ascona=아스코나|Locarno=로카르노|Chur=쿠어|Appenzell=아펜첼
+AT|Hallstatt=할슈타트|Bad Ischl=바트이슐|Zell am See=첼암제|Kitzbuehel=키츠뷔엘
+GB|Bath=바스|York=요크|Cambridge=케임브리지|Oxford=옥스퍼드|Inverness=인버네스|Brighton=브라이턴|Canterbury=캔터베리
+PT|Sintra=신트라|Nazare=나자레|Obidos=오비두스|Evora=에보라|Braga=브라가|Coimbra=코임브라|Faro=파루|Funchal=푼샬
+GR|Chania=하니아|Rethymno=레팀노|Nafplio=나프플리오|Delphi=델포이|Kalambaka=칼람바카|Corfu=코르푸
+HR|Rovinj=로빈|Trogir=트로기르|Sibenik=시베니크|Hvar=흐바르|Pula=풀라
+US|Sedona=세도나|Savannah=서배너|Charleston=찰스턴|Asheville=애슈빌|Aspen=아스펜|Napa=나파|Monterey=몬터레이|Key West=키웨스트|Anchorage=앵커리지|Jackson=잭슨
+CA|Banff=밴프|Jasper=재스퍼|Whistler=휘슬러|Kelowna=켈로나|Halifax=핼리팩스|Charlottetown=샬럿타운
+TR|Goereme=괴레메|Pamukkale=파묵칼레|Fethiye=페티예|Bodrum=보드룸|Kas=카쉬|Sanliurfa=샨르우르파|Trabzon=트라브존
+CZ|Cesky Krumlov=체스키크룸로프|Karlovy Vary=카를로비바리|Kutna Hora=쿠트나호라|Olomouc=올로모우츠
+PL|Zakopane=자코파네|Torun=토룬|Malbork=말보르크|Sopot=소포트
+NO|Alesund=올레순|Bodo=보되
+IS|Vik=비크|Akureyri=아쿠레이리|Hofn=호픈|Selfoss=셀포스
+NZ|Wanaka=와나카|Te Anau=테아나우|Kaikoura=카이코우라|Napier=네이피어|Rotorua=로토루아
+AU|Broome=브룸|Darwin=다윈|Alice Springs=앨리스스프링스|Byron Bay=바이런베이|Port Douglas=포트더글러스
