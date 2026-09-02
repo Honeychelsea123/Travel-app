@@ -1070,6 +1070,16 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    b268(홈 `.rrow`) · b270(`.ev`·`.plan`) 에 이어 세 번째입니다 —
    **새 목록을 만들 때 `b` 에 크기·굵기를 적는 것이 규칙입니다.** */
 .trip .t b{ display:block; font-size:var(--f-xl); font-weight:600; }
+/* ⚠ **날짜 줄은 「적어 넣은 자료」입니다(b629, 4번).** 「9월 12일 – 15일 ·
+     4일 · JPY」는 문장이 아니라 표에 적힌 값입니다 — 여권 정보란·탑승권이
+     그렇듯 타자기 글씨가 맞습니다. 도시 화면의 부제(`#cv_sub`)에서 이미
+     쓰고 있는 말투를 여행 쪽으로 넓히는 것뿐입니다.
+   ⚠ `.meta` 는 이 둘에서만 씁니다(여행 목록 줄 · 여행 머리줄). 일반적인
+     작은 회색 글씨는 `.memo` 입니다 — 거기까지 타자기로 바꾸면 설명
+     문장이 전부 딱딱해집니다.
+   ⚠ 자간은 조금만(.03em). 도시 부제(.06em)만큼 벌리면 날짜가 길어져
+     좁은 화면에서 줄이 넘어갑니다. */
+.trip .meta, .thead .meta{ font-family:var(--mono); letter-spacing:.03em; }
 .trip .meta{ color:var(--ink-48); font-size:var(--f-md); }
 .badge{ font-size:var(--f-sm); padding:3px 10px; border-radius:var(--r-pill);
         background:var(--parchment); color:var(--ink-48); flex:none; }
@@ -1145,7 +1155,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .plan + .plan{ border-top:1px solid var(--line); }
 /* 시각은 일정을 훑는 기준점입니다. 흐린 회색 400 이라 안 보였습니다 —
    크기는 그대로 두고 굵기와 진하기만 올립니다(자리를 안 뺏습니다). */
-.plan .when{ flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
+/* 장부의 시각도 같은 말투입니다 — 표에 적힌 값입니다. */
+.plan .when{ font-family:var(--mono); letter-spacing:0;
+             flex:none; width:50px; color:var(--ink-80); font-size:var(--f-md);
              font-weight:600;
              font-variant-numeric:tabular-nums; padding-top:2px;
              /* ⚠ 세로선은 «칸»에 붙입니다. 줄 전체에 그으면 시각이 없는
@@ -4229,7 +4241,10 @@ body.pvon{ overflow:hidden; }
         justify-content:center; gap:1px;
         color:var(--stamp); border:2.5px solid currentColor;
         font-family:var(--mono); pointer-events:none;
-        transform:rotate(-11deg); position:absolute;
+        /* 각도·농도는 도시마다 다릅니다(b629) — city.js 가 도시 id 에서
+           뽑아 넣습니다. 값이 없으면 예전 그대로입니다. */
+        transform:rotate(var(--rot, -11deg)); opacity:var(--ink, 1);
+        position:absolute;
         /* ⚠ 사진 위에 얹히는데 사진 밝기를 알 수가 없습니다(b606).
            도쿄 야경 위에서는 붉은 인주가 묻혀 안 읽혔습니다.
            **얇은 그림자 하나로 양쪽을 다 삽니다** — 밝은 사진에서는

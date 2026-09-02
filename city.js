@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b628';
-import { sb } from './db.js?v=b628';
-import { cities, countryName, continentOf } from './cities.js?v=b628';
-import { myRates, cityStat, visited } from './rate.js?v=b628';
-import { starHtml, starValue } from './stars.js?v=b628';
-import { localTime } from './calc.js?v=b628';
-import { fail } from './net.js?v=b628';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b629';
+import { sb } from './db.js?v=b629';
+import { cities, countryName, continentOf } from './cities.js?v=b629';
+import { myRates, cityStat, visited } from './rate.js?v=b629';
+import { starHtml, starValue } from './stars.js?v=b629';
+import { localTime } from './calc.js?v=b629';
+import { fail } from './net.js?v=b629';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -65,8 +65,23 @@ export async function openCity(id){
   {
     const 갔다 = visited.has(id);
     $('cv_stamp').classList.toggle('hide', !갔다);
-    if (갔다) $('cv_stamp').innerHTML =
-      `<b>${esc(String(c.country || '').toUpperCase())}</b><i>다녀옴</i>`;
+    if (갔다){
+      $('cv_stamp').innerHTML =
+        `<b>${esc(String(c.country || '').toUpperCase())}</b><i>다녀옴</i>`;
+      /* ⚠⚠ **도장은 매번 다르게 찍힙니다(b629).** 여태 모든 도시가
+         -11°·같은 농도였습니다 — 그러면 「찍은 것」이 아니라 「인쇄된
+         딱지」로 보입니다. 사람이 손으로 찍으면 각도도 힘도 매번 다릅니다.
+         ⚠ **아무 값이나(random) 쓰면 안 됩니다.** 화면을 다시 그릴 때마다
+           같은 도시의 도장이 달라지면 그건 불규칙이 아니라 «고장»입니다.
+           도시 id 에서 수를 뽑아 씁니다 — **도시마다 다르고, 같은 도시는
+           언제나 같습니다.**
+         ⚠ 농도는 좁게(.86~1.0)만 흔듭니다. 더 넓히면 어두운 사진 위에서
+           옅은 쪽이 안 읽힙니다(b606 에서 겪은 것). */
+      let 씨 = 0;
+      for (const ch of String(id)) 씨 = (씨 * 31 + ch.charCodeAt(0)) >>> 0;
+      $('cv_stamp').style.setProperty('--rot', (-15 + (씨 % 11)) + 'deg');
+      $('cv_stamp').style.setProperty('--ink', (86 + ((씨 >> 5) % 15)) / 100);
+    }
   }
   $('cv_avg').textContent  = s?.n_rated ? Number(s.avg_stars).toFixed(1) : '–';
   $('cv_avgn').textContent = s?.n_rated ? `${s.n_rated}명이 매김` : '아직 아무도 안 매김';
