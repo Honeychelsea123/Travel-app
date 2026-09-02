@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b629';
-import { sb } from './db.js?v=b629';
-import { cities, countryName, continentOf } from './cities.js?v=b629';
-import { myRates, cityStat, visited } from './rate.js?v=b629';
-import { starHtml, starValue } from './stars.js?v=b629';
-import { localTime } from './calc.js?v=b629';
-import { fail } from './net.js?v=b629';
+import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b630';
+import { sb } from './db.js?v=b630';
+import { cities, countryName, continentOf } from './cities.js?v=b630';
+import { myRates, cityStat, visited } from './rate.js?v=b630';
+import { starHtml, starValue } from './stars.js?v=b630';
+import { localTime } from './calc.js?v=b630';
+import { fail } from './net.js?v=b630';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -80,7 +80,14 @@ export async function openCity(id){
       let 씨 = 0;
       for (const ch of String(id)) 씨 = (씨 * 31 + ch.charCodeAt(0)) >>> 0;
       $('cv_stamp').style.setProperty('--rot', (-15 + (씨 % 11)) + 'deg');
-      $('cv_stamp').style.setProperty('--ink', (86 + ((씨 >> 5) % 15)) / 100);
+      /* ⚠⚠ **`>>` 가 아니라 `>>>` 입니다(b630).** `씨` 는 `>>> 0` 이라
+         2^31 을 넘을 수 있는데, `>>` 는 그걸 **음수**로 읽습니다. 그러면
+         `% 15` 도 음수가 되어 86 - 12 = **74** 가 나옵니다 — 제가 정한
+         하한(.86)을 뚫고 어두운 사진 위에서 안 읽히는 도장이 생깁니다.
+         실제로 가평이 0.74 였습니다(재보고 잡음).
+         ⚠ 자바스크립트에서 «부호 없는 수»를 다룰 때는 자리 옮기기도
+           `>>>` 로 맞춰야 합니다. 한쪽만 부호 없이 두면 이렇게 샙니다. */
+      $('cv_stamp').style.setProperty('--ink', (86 + ((씨 >>> 5) % 15)) / 100);
     }
   }
   $('cv_avg').textContent  = s?.n_rated ? Number(s.avg_stars).toFixed(1) : '–';
