@@ -172,7 +172,7 @@ from (values
   ('pilsen', '플젠', 'Pilsen', 'CZ', 49.74747, 13.37759, 'Europe/Prague', 'limited', 1),
   ('liberec', '리베레츠', 'Liberec', 'CZ', 50.76711, 15.05619, 'Europe/Prague', 'limited', 1),
   ('olomouc', '올로모우츠', 'Olomouc', 'CZ', 49.59552, 17.25175, 'Europe/Prague', 'limited', 1),
-  ('olomouc-cz', '올로모우츠', 'Olomouc', 'CZ', 49.59552, 17.25175, 'Europe/Prague', 'limited', 1),
+  ('hradec-kralove', '흐라데츠크랄로베', 'Hradec Kralove', 'CZ', 50.20923, 15.83277, 'Europe/Prague', 'limited', 1),
   ('kutna-hora', '쿠트나호라', 'Kutna Hora', 'CZ', 49.94839, 15.26816, 'Europe/Prague', 'limited', 1),
   ('luebeck', '뤼베크', 'Luebeck', 'DE', 53.86893, 10.68729, 'Europe/Berlin', 'normal', 1),
   ('regensburg', '레겐스부르크', 'Regensburg', 'DE', 49.01513, 12.10161, 'Europe/Berlin', 'limited', 1),
@@ -312,7 +312,7 @@ from (values
   ('kopavogur', '코파보귀르', 'Kopavogur', 'IS', 64.11234, -21.91298, 'Atlantic/Reykjavik', 'car', 1),
   ('hafnarfjoerdur', '하프나르피외르뒤르', 'Hafnarfjoerdur', 'IS', 64.06710, -21.93774, 'Atlantic/Reykjavik', 'car', 1),
   ('akureyri', '아쿠레이리', 'Akureyri', 'IS', 65.68353, -18.08780, 'Atlantic/Reykjavik', 'car', 1),
-  ('akureyri-is', '아쿠레이리', 'Akureyri', 'IS', 65.68353, -18.08780, 'Atlantic/Reykjavik', 'car', 1),
+  ('keflavik', '케플라비크', 'Keflavik', 'IS', 64.00492, -22.56242, 'Atlantic/Reykjavik', 'car', 1),
   ('selfoss', '셀포스', 'Selfoss', 'IS', 63.93311, -20.99712, 'Atlantic/Reykjavik', 'car', 1),
   ('hoefn', '호픈', 'Hoefn', 'IS', 64.25388, -15.21212, 'Atlantic/Reykjavik', 'car', 1),
   ('trieste', '트리에스테', 'Trieste', 'IT', 45.64953, 13.77678, 'Europe/Rome', 'normal', 1),
@@ -727,7 +727,7 @@ from (values
   ('mutare', '무타레', 'Mutare', 'ZW', -18.97070, 32.67086, 'Africa/Harare', 'normal', 1)
 ) as v(id, name, name_en, country, lat, lng, tz, grade, fame)
 join public.countries c on c.code = v.country
-on conflict (id) do nothing;
+on conflict do nothing;
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
 -- 1번이 1151 이어야 합니다. 모자라면 3번이 어느 나라가 빠졌는지 알려줍니다.

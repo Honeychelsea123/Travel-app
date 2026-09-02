@@ -175,7 +175,7 @@ sub 등급 {
 sub 이름값 { my $p = shift; $p >= 2_000_000 ? 3 : $p >= 300_000 ? 2 : 1 }
 
 # ── 담기 ─────────────────────────────────────────────────────────────
-my (%뽑은id, @새도시, %모자람, @못찾음, @이름없음);
+my (%뽑은id, %뽑은도시, @새도시, %모자람, @못찾음, @이름없음);
 
 sub 넣기 {
   my ($c) = @_;                       # {cc, en, ko, pop, lat, lng, tz}
@@ -188,14 +188,32 @@ sub 넣기 {
   $en =~ s/-(?:si|gun|do|shi)$//i if $cc eq 'KR';
   my $ko = $바로잡기{$키} // $c->{ko};
   $ko =~ s/시$// if $cc eq 'KR' && length($ko) > 2;      # 「김해시」→「김해」
+
+  # ── ① 이미 DB 에 있나 ──
   return 0 if $있는도시{"$cc|" . lc $c->{en}};
   return 0 if $있는도시{"$cc|" . lc $en};
   return 0 if $있는도시{"$cc|$ko"};
+
+  # ── ② **이번 판에서 이미 뽑았나** ──────────────────────────────────
+  # ⚠⚠ **id 만 보고 있었습니다(b651 에서 터진 것).** 올로모우츠가 손으로
+  #   고른 목록(①)과 모자란 나라 채우기(③)에 **둘 다** 걸렸는데, 아래
+  #   `-cc` 꼬리표 규칙이 두 번째를 `olomouc-cz` 로 «이름만 바꿔» 통과시켜
+  #   같은 도시가 두 줄 들어갔습니다. DB 의
+  #     create unique index cities_country_name_uniq on cities (country, lower(name))
+  #   이 잡아내 **insert 전체가 실패**했습니다(23505).
+  # ⚠ `-cc` 꼬리표는 «다른 나라의 같은 이름»을 위한 것입니다(칠레 산티아고 ·
+  #   스페인 산티아고). **같은 도시를 가르는 데 쓰면 안 됩니다.**
+  #   그러니 꼬리표를 붙이기 «전에» 도시로 먼저 걸러야 합니다.
+  return 0 if $뽑은도시{"$cc|" . lc $en} || $뽑은도시{"$cc|$ko"};
+
   my $id = 슬러그($en);
   return 0 unless length $id;
   $id .= '-' . lc $cc if $있는id{$id} || $뽑은id{$id};
   return 0 if $있는id{$id} || $뽑은id{$id};
+
   $뽑은id{$id} = 1;
+  $뽑은도시{"$cc|" . lc $en} = 1;
+  $뽑은도시{"$cc|$ko"} = 1;
   push @새도시, { %$c, id=>$id, ko=>$ko, en=>$en };
   1;
 }
@@ -247,7 +265,13 @@ for my $cc (sort keys %ko나라){
 
 # ── SQL ① 나라 ───────────────────────────────────────────────────────
 my @빠진나라 = grep { !$있는나라{$_} } sort keys %ko나라;
-{
+# ⚠⚠ **다 들어간 뒤에 다시 돌리면 074 를 빈 껍데기로 덮어씁니다.**
+#   `insert ... values` 다음에 아무것도 없는 SQL 이 나옵니다 — 실제로 그랬고,
+#   git 에서 되돌려야 했습니다. **이미 적용한 마이그레이션은 안 건드립니다.**
+if (!@빠진나라){
+  print STDERR "   074 는 손대지 않습니다 — 빠진 나라가 없습니다(이미 넣으셨군요).\n";
+}
+elsif (1){
   open my $o, '>:encoding(UTF-8)', 'db/074_countries_all.sql' or die $!;
   my $n = scalar @빠진나라;
   print $o <<"H";
@@ -389,7 +413,13 @@ H
   } sort { $a->{cc} cmp $b->{cc} or $b->{pop} <=> $a->{pop} or $a->{en} cmp $b->{en} } @새도시),
     "\n) as v(id, name, name_en, country, lat, lng, tz, grade, fame)\n",
     "join public.countries c on c.code = v.country\n",
-    "on conflict (id) do nothing;\n\n";
+    # ⚠⚠ **갈래를 안 적습니다(`on conflict do nothing`).** `on conflict (id)`
+    #   는 «기본키»만 봐줍니다 — `cities_country_name_uniq (country, lower(name))`
+    #   에 걸리면 그건 다른 제약이라 **insert 가 통째로 실패**합니다(23505).
+    #   갈래를 안 적으면 어느 제약에 걸리든 그 «한 줄만» 조용히 넘어갑니다.
+    #   680줄짜리 한 문장이라, 한 줄 때문에 전부 못 들어가면 안 됩니다.
+    #   ⚠ 대신 몇 줄이 넘어갔는지 안 보이므로 **아래 확인 쿼리로 세야 합니다.**
+    "on conflict do nothing;\n\n";
   print $o <<"V";
 -- ── 확인 ─────────────────────────────────────────────────────────────
 -- 1번이 $합 이어야 합니다. 모자라면 3번이 어느 나라가 빠졌는지 알려줍니다.
