@@ -3128,8 +3128,17 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * 색을 빼고 살짝 누렇게 해서 이 앱의 종이와 같은 결로 맞춥니다.
  * ⚠ 타일 그림을 고치는 게 아니라 **화면에서 걸러내는 것**이라 OSM
  *   이용 규칙에 안 걸립니다. 출처 표시는 지도 안에 그대로 둡니다.
- * ⚠ 표식(핀)과 팝업에는 걸리면 안 됩니다 — `.leaflet-tile` 만 집습니다. */
-.leaflet-tile{ filter:grayscale(1) sepia(.24) brightness(1.06) contrast(.9); }
+ * ⚠ 표식(핀)과 팝업에는 걸리면 안 됩니다 — 타일만 집습니다.
+ * ⚠⚠ **`.leaflet-tile` 만으로는 안 먹습니다(b626).** Leaflet 제 CSS 에
+ *   `.leaflet-tile{ filter:inherit }` 가 있고, 그 파일은 지도를 열 때
+ *   **나중에** 실립니다 — 자릿수가 같으면 뒤엣것이 이깁니다.
+ *   b625 에 이 줄을 넣고 「고쳤다」고 했는데 화면에서 재보니
+ *   `filter: none` 이었습니다. 자릿수를 올려야 합니다.
+ *   (b601 의 `#cv_journal` 과 같은 병 — **뒤에 오는 규칙을 봐야 합니다.**
+ *    거기는 우리 파일이었고 여기는 남의 파일이라 `tools/dupsel.pl` 로도
+ *    안 잡힙니다. 남의 CSS 를 덮을 때는 화면에서 재는 수밖에 없습니다.) */
+.leaflet-container img.leaflet-tile{
+  filter:grayscale(1) sepia(.24) brightness(1.06) contrast(.9); }
 
 .fgcredit{ margin-top:var(--s-md); padding-top:var(--s-sm);
            border-top:1px solid var(--line);
