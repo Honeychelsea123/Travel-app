@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b630';
-import { sb } from './db.js?v=b630';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b630';
-import { hm, todayYmd } from './calc.js?v=b630';
-import { starHtml, paintStars } from './stars.js?v=b630';
+import { $, esc } from './dom.js?v=b631';
+import { sb } from './db.js?v=b631';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b631';
+import { hm, todayYmd } from './calc.js?v=b631';
+import { starHtml, paintStars } from './stars.js?v=b631';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b630';
-import { cities, countryName } from './cities.js?v=b630';
-import { UN_CODES } from './un.js?v=b630';
-import { myRates, cityStat, visited } from './rate.js?v=b630';
-import { plans } from './trip.js?v=b630';
-import { loadCities } from './citysearch.js?v=b630';
+import { starValue } from './rateui.js?v=b631';
+import { cities, countryName } from './cities.js?v=b631';
+import { UN_CODES } from './un.js?v=b631';
+import { myRates, cityStat, visited } from './rate.js?v=b631';
+import { plans } from './trip.js?v=b631';
+import { loadCities } from './citysearch.js?v=b631';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b630';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b630';
+import { openCity } from './city.js?v=b631';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b631';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b630';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b631';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b630';
+import { drawReport } from './report.js?v=b631';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b630';
+import { PERSONA_BG } from './card.js?v=b631';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b630';
+import { checkPersonaShift } from './pshift.js?v=b631';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b630';
+import { diaryBackTo } from './diary.js?v=b631';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b630';
+import { mountGlobe } from './globe.js?v=b631';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -502,6 +502,9 @@ async function buildHome(){
   const 서랍 = $('shelfbox');
 
   $('home').innerHTML = '';
+  /* ⚠ **기다리지 않습니다.** 인사는 있으면 좋은 것이지 홈이 뜨는 조건이
+     아닙니다 — `await` 를 걸면 질의 둘만큼 첫 화면이 늦어집니다. */
+  인사그리기();
 
   /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
    * **① 평가하는 자리** — 사진 · 별점 · 두 단추가 한 카드(.ratecard).
@@ -627,6 +630,84 @@ function 남은말(pend){
   if (pend.cities.length) 조각.push(`${pend.cities.length}곳`);
   return 조각.length ? ` · ${조각.join(' · ')}` : '';
 }
+/* ── 오늘의 인사 (b631, 사용자 결정 「1번」) ──────────────────────────
+ * 앱을 열면 맨 위가 「평가를 남기면 지도가 칠해져요」였습니다 — 할 일을
+ * 시키는 말입니다. 감성 있는 앱의 첫 줄은 **인사**입니다.
+ *
+ *   「1년 전 오늘 · 오사카에 있었어요」   ← 있으면 이것
+ *   「다음 여행 · 도쿄까지 10일」        ← 없으면 이것
+ *   (둘 다 없으면 아무것도 안 붙습니다 — 예전 화면 그대로)
+ *
+ * ⚠⚠ **홈을 기다리게 하지 않습니다.** 질의 둘이 붙지만 홈은 이미 다
+ *   그려진 뒤에 «나중에» 얹습니다. 못 받아오면 그냥 안 뜹니다 —
+ *   b613 에서 배운 것입니다(하나가 늦다고 화면을 비우면 안 됩니다).
+ * ⚠ 날짜는 **글자로 견줍니다.** `new Date('2025-09-02')` 는 UTC 자정으로
+ *   읽혀서 우리 시각과 하루가 어긋날 수 있습니다. `YYYY-MM-DD` 는
+ *   사전순이 곧 날짜순이라 글자 비교가 맞고 빠릅니다.
+ * ⚠ 해를 여행의 «시작 연도»로 셉니다. 연말연시를 낀 여행(12월→1월)은
+ *   한 해가 밀릴 수 있는데, 그 경우 인사가 안 뜰 뿐 틀린 말은 안 합니다. */
+async function 오늘의인사(){
+  const 오늘 = new Date();
+  const mmdd = `${String(오늘.getMonth() + 1).padStart(2, '0')}-${
+                 String(오늘.getDate()).padStart(2, '0')}`;
+  const 올해 = 오늘.getFullYear();
+  const today = todayYmd();
+
+  const 지난 = (await netTimeout(sb.from('trips')
+    .select('id,title,destination,start_date,end_date')
+    .lt('start_date', today)
+    .order('start_date', { ascending:false }).limit(80)))?.data || [];
+  for (const t of 지난){
+    const 해 = 올해 - Number(String(t.start_date).slice(0, 4));
+    if (해 < 1) continue;
+    const 그날 = `${올해 - 해}-${mmdd}`;
+    if (t.start_date <= 그날 && 그날 <= (t.end_date || t.start_date))
+      return { 앞:`${해}년 전 오늘`,
+               뒤:`${t.destination || t.title}에 있었어요`, 여행:t };
+  }
+
+  const 앞으로 = (await netTimeout(sb.from('trips')
+    .select('id,title,destination,start_date')
+    .gte('start_date', today).order('start_date').limit(1)))?.data?.[0];
+  if (앞으로){
+    const 날 = Math.round(
+      (Date.parse(앞으로.start_date) - Date.parse(today)) / 86400000);
+    return { 앞:'다음 여행',
+             뒤: 날 <= 0 ? `${앞으로.destination || 앞으로.title}, 오늘부터예요`
+                         : `${앞으로.destination || 앞으로.title}까지 ${날}일`,
+             여행:앞으로 };
+  }
+  return null;
+}
+
+/* ⚠ **두 번 붙지 않게 id 로 막습니다.** 홈은 여러 길로 다시 그려지는데
+     그때마다 얹으면 인사가 쌓입니다. */
+async function 인사그리기(){
+  if ($('greet')) return;
+  const g = await 오늘의인사();
+  if (!g || !$('home') || $('greet')) return;
+
+  /* 사진은 그 여행이 지난 도시 중 **사진이 있는 첫 곳**입니다.
+     ⚠ 없으면 글만 나옵니다 — 사진 때문에 인사가 안 뜨면 안 됩니다. */
+  let 사진 = '';
+  const lg = (await netTimeout(sb.from('trip_legs').select('city_id')
+    .eq('trip_id', g.여행.id).not('city_id', 'is', null).limit(8)))?.data || [];
+  for (const l of lg){
+    const c = (cities || []).find(x => x.id === l.city_id);
+    if (c?.image_url){ 사진 = c.image_url; break; }
+  }
+
+  const el = document.createElement('div');
+  el.className = 'greet';
+  el.id = 'greet';
+  el.innerHTML =
+    (사진 ? `<img class="gp" src="${esc(사진)}" alt="" loading="lazy">` : '') +
+    `<span class="gt"><span class="gd">${esc(g.앞)}</span>
+       <b>${esc(g.뒤)}</b></span><span class="go">›</span>`;
+  el.onclick = () => ctx.openTrip(g.여행.id);
+  $('home').prepend(el);
+}
+
 export async function reviewBar(){
   const pend = await pendingTrip();
   if (!pend) return null;
