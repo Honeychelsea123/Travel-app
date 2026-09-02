@@ -15,22 +15,22 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk } from './dom.js?v=b640';
-import { openCity } from './city.js?v=b640';
-import { sb } from './db.js?v=b640';
-import { cities, countryName } from './cities.js?v=b640';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b640';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b640';
-import { fail } from './net.js?v=b640';
-import { arm } from './ui.js?v=b640';
-import { todayYmd } from './calc.js?v=b640';
+         flagOf, flagOk } from './dom.js?v=b641';
+import { openCity } from './city.js?v=b641';
+import { sb } from './db.js?v=b641';
+import { cities, countryName } from './cities.js?v=b641';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b641';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b641';
+import { fail } from './net.js?v=b641';
+import { arm } from './ui.js?v=b641';
+import { todayYmd } from './calc.js?v=b641';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b640';
-import { loadCities } from './citysearch.js?v=b640';
-import { loadRateData, saveRate } from './rating.js?v=b640';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b641';
+import { loadCities } from './citysearch.js?v=b641';
+import { loadRateData, saveRate } from './rating.js?v=b641';
 
 let ctx = {
   me: () => null,
@@ -232,7 +232,7 @@ let 깃발판 = false;
 async function 깃발싣기(){
   if (깃발판) return true;
   try {
-    const r = await fetch('./flags.svg?v=b640');
+    const r = await fetch('./flags.svg?v=b641');
     if (!r.ok) return false;
     const 통 = document.createElement('div');
     통.id = 'flagsprite';
@@ -253,6 +253,11 @@ async function openFlagShelf(){
   const 기ok = flagOk();
   $('shelfcount').textContent =
     `${센것}개국 · ${(센것 / UN_TOTAL * 100).toFixed(1)}%`;
+  /* ⚠ 제목(「나라 깃발」)은 안 답니다(b641, 사용자 결정). 깃발 195개가
+     깔린 화면에서 그 이름은 아무것도 더 말해주지 않습니다 — 들어온
+     사람은 이미 무엇을 눌렀는지 압니다. 오른쪽 「27개국 · 13.8%」만 남깁니다.
+     ⚠ `openShelf` 가 위에서 제목을 이미 넣었으므로 여기서 지웁니다. */
+  $('shelfhead').textContent = '';
   $('shelflist').classList.add('flagwall');
   /* ⚠⚠ **깃발을 못 그리는 기기에는 표를 답니다(b619).** CSS 에 `nofl`
      규칙을 써 놓고 클래스를 안 달아서, 코드 두 글자가 26px 로 커다랗게

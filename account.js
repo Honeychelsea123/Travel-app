@@ -16,10 +16,10 @@
  * 층: dom.js · db.js · net.js · trip.js 만 씁니다. 프로필 화면의 '보관함·지도
  *     열기' 손잡이는 **두고 왔습니다** — 바로 아랫줄에 있었지만 그건 화면
  *     넘기기지 내 계정이 아닙니다. */
-import { $, esc, toast } from './dom.js?v=b640';
-import { sb } from './db.js?v=b640';
-import { fail, netTimeout } from './net.js?v=b640';
-import { plans, expenses, bookings } from './trip.js?v=b640';
+import { $, esc, toast } from './dom.js?v=b641';
+import { sb } from './db.js?v=b641';
+import { fail, netTimeout } from './net.js?v=b641';
+import { plans, expenses, bookings } from './trip.js?v=b641';
 
 
 let ctx = { me: () => null, logError: () => {} };
@@ -210,13 +210,21 @@ $('dumpbtn').addEventListener('click', async () => {
   /* 총합만 보면 맞는지 알 수가 없습니다. 표마다 몇 개인지 늘어놓습니다 —
      "일정 0" 같은 것이 눈에 띄어야 빈 백업을 붙들고 있지 않습니다. */
   $('dumplist').classList.remove('hide');
+  /* ⚠⚠ **닫을 길이 없었습니다(b641, 사용자 신고).** 한 번 받고 나면
+     이 표가 프로필에 영영 남았습니다 — 다른 데로 갔다 와도 그대로입니다.
+     **띄우는 것을 만들면 내리는 길도 같이 만들어야 합니다.** */
   $('dumplist').innerHTML =
-    `<div class="daysep">받은 것 · 모두 ${n.toLocaleString()}개</div>` +
+    `<div class="daysep"><span class="grow">받은 것 · 모두 ${
+        n.toLocaleString()}개</span>` +
+    `<button class="ghost" id="dumpclose">닫기</button></div>` +
     TABLES.map(t => `<div class="row" style="padding:5px 0">
         <span class="label memo">${esc(NAME[t] || t)}</span>
         <span class="val"${(out.data[t]?.length ? '' : ' style="color:var(--ink-48)"')}>${
           out.data[t] == null ? '못 읽었어요' : out.data[t].length.toLocaleString()}</span>
       </div>`).join('');
+  /* 새로 그릴 때마다 단추도 새것이라 여기서 답니다. */
+  $('dumplist').querySelector('#dumpclose').onclick =
+    () => $('dumplist').classList.add('hide');
   toast(`${n.toLocaleString()}개를 저장했어요`);
   if (failed.length)
     fail('일부는 못 받았어요: ' + failed.join(', ') + '. 잠시 뒤 다시 받아주세요.', 'dump');

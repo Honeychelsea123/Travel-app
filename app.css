@@ -568,6 +568,10 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
           letter-spacing:calc(-0.4px * var(--ts));
           display:flex; align-items:center; gap:var(--s-xs); }
 .card h2 .grow{ flex:1; }
+/* ⚠ `.grow` 는 `.card h2` 안에서만 늘어나고 있었습니다(b641). 날짜 머리줄
+     (`.daysep`)도 flex 인데 거기서는 안 늘어나, 오른쪽에 단추를 달아도
+     제목 옆에 붙어 버립니다. **같은 이름이면 같은 일을 해야 합니다.** */
+.daysep .grow{ flex:1; }
 
 /* ⚠⚠ **알약을 걷었습니다(b612, 사용자 지적).** ⚠⚠
  * 「첫 화면에서 여권이나 엽서 느낌이 안 난다 — 디자인을 말이야」.
