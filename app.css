@@ -1399,8 +1399,10 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *   늘어선 줄의 규칙이라, 격자에서는 오른쪽 칸에도 선이 붙습니다.
  * ⚠ 이름이 짧아진 만큼 그림이 뜻을 나릅니다 — 그림을 지우면 안 됩니다. */
 .shelf{ display:grid; grid-template-columns:1fr 1fr; }
+/* ⚠ 안쪽 여백은 «칸마다» 다릅니다(아래 nth-child) — 왼쪽 칸은 오른쪽에,
+     오른쪽 칸은 왼쪽에 홈을 둡니다. 여기서는 위아래만 정합니다. */
 .shelf button{ display:flex; align-items:center; gap:10px; width:100%;
-               padding:14px 2px; border:0; border-radius:0;
+               padding:14px 0; border:0; border-radius:0;
                background:none; font-size:var(--f-lg); }
 /* ⚠⚠ **음수 여백으로 «카드 끝까지» 빼려다 layout 을 부쉈습니다(b587 → b588).**
  *   줄마다 여백이 겹쳐 계단처럼 좁아졌습니다(사용자 사진).
@@ -1409,9 +1411,18 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  *   할 일입니다. 지금은 안쪽 선으로 두고, 색만 보이게 합니다. */
 /* 둘째·셋째 줄 위에만 가로선. 첫 줄(1·2번째 칸) 위에는 안 긋습니다. */
 .shelf button:nth-child(n+3){ border-top:1px solid var(--line); }
-/* 오른쪽 칸 왼쪽에 세로선. 짝수 번째가 곧 오른쪽 칸입니다. */
+/* ⚠ 세로선 양쪽에 숨을 줍니다(b640, 사용자 지적). 왼쪽 칸의 «수»와
+     오른쪽 칸의 «그림»이 선에 딱 붙어 두 칸이 한 덩어리로 뭉쳐 보였습니다.
+     선은 나누라고 있는 것인데 붙어 있으면 나뉘지 않습니다.
+   ⚠ 양쪽을 **같게** 줍니다 — 한쪽만 주면 선이 가운데가 아니라 한쪽으로
+     치우쳐 보입니다. 16 + 16 = 32px 홈. */
+.shelf button:nth-child(2n+1){ padding-right:16px; }
 .shelf button:nth-child(2n){ border-left:1px solid var(--line);
-                             padding-left:14px; }
+                             padding-left:16px; padding-right:6px; }
+/* ⚠ 수가 오른쪽 끝에 딱 붙어 보였습니다(b640, 사용자 지적). 글자 자체는
+     다른 화면의 값들과 같은 선에 있었는데, **뒤에 아무것도 없는 수**라
+     더 붙어 보입니다(다른 줄은 뒤에 단추나 › 가 옵니다).
+     6px 만 안으로 들입니다 — 더 주면 왼쪽 칸과 눈에 띄게 어긋납니다. */
 .shelf svg{ flex:none; color:var(--ink-48); }
 .shelf span{ flex:1; text-align:left; color:var(--ink-80); min-width:0; }
 .shelf b{ font-variant-numeric:tabular-nums; color:var(--ink); flex:none; }
