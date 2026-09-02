@@ -15,22 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk } from './dom.js?v=b648';
-import { openCity } from './city.js?v=b648';
-import { sb } from './db.js?v=b648';
-import { cities, countryName } from './cities.js?v=b648';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b648';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b648';
-import { fail } from './net.js?v=b648';
-import { arm } from './ui.js?v=b648';
-import { todayYmd } from './calc.js?v=b648';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b649';
+import { openCity } from './city.js?v=b649';
+import { sb } from './db.js?v=b649';
+import { cities, countryName } from './cities.js?v=b649';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b649';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b649';
+import { fail } from './net.js?v=b649';
+import { arm } from './ui.js?v=b649';
+/* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
+   「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
+   합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
+import { 발자국스펙 } from './map.js?v=b649';
+import { shareCard } from './card.js?v=b649';
+import { todayYmd } from './calc.js?v=b649';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b648';
-import { loadCities } from './citysearch.js?v=b648';
-import { loadRateData, saveRate } from './rating.js?v=b648';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b649';
+import { loadCities } from './citysearch.js?v=b649';
+import { loadRateData, saveRate } from './rating.js?v=b649';
 
 let ctx = {
   me: () => null,
@@ -228,20 +233,8 @@ $('shelflist').addEventListener('click', e => {
  *   지우지 마십시오 — 없으면 그때 빈 화면이 됩니다.
  * ⚠ 그림은 Twemoji, **CC BY 4.0** 입니다. 출처를 밝혀야 해서 화면
  *   아래에 한 줄 답니다. 그 줄을 지우면 라이선스 위반입니다. */
-let 깃발판 = false;
-async function 깃발싣기(){
-  if (깃발판) return true;
-  try {
-    const r = await fetch('./flags.svg?v=b648');
-    if (!r.ok) return false;
-    const 통 = document.createElement('div');
-    통.id = 'flagsprite';
-    통.innerHTML = await r.text();
-    document.body.appendChild(통);
-    깃발판 = true;
-    return true;
-  } catch { return false; }
-}
+/* ⚠ **싣는 일은 dom.js 로 내려갔습니다(b649).** 공유 카드도 같은 그림판을
+   쓰기 때문입니다 — 두 벌로 두면 한쪽만 고치는 사고가 납니다. */
 
 async function openFlagShelf(){
   await loadCities();
@@ -249,7 +242,7 @@ async function openFlagShelf(){
                        .map(c => c.country).filter(Boolean));
   const 센것 = UN_CODES.filter(c => 갔다.has(c)).length;
   /* 그림판을 먼저 싣습니다. 실패하면 예전처럼 이모지로 갑니다. */
-  const 그림 = await 깃발싣기();
+  const 그림 = await flagSprite();
   const 기ok = flagOk();
   $('shelfcount').textContent =
     `${센것}개국 · ${(센것 / UN_TOTAL * 100).toFixed(1)}%`;
@@ -288,6 +281,17 @@ async function openFlagShelf(){
     }).join('')}</div>` +
     /* CC BY 4.0 — 지우면 라이선스 위반입니다. */
     (그림 ? `<div class="fgcredit">국기 그림 Twemoji · CC BY 4.0</div>` : '');
+
+  /* ── 공유 (b649, 사용자 요청) ────────────────────────────────────
+     ⚠ **세는 자료는 이 화면이 쓰는 것 그대로**입니다(`visited`). 카드가
+       제 나름대로 다시 세면 벽에는 27개국인데 카드에는 28개국이 나옵니다.
+     ⚠ `발자국스펙` 은 **도시 목록**을 받습니다(나라가 아니라). 나라 수는
+       거기서 도시의 country 로 셉니다 — 그래야 「가장 많이 간 곳」도
+       같이 나옵니다. */
+  $('shelfshare').hidden = false;
+  $('shelfshare').onclick = () =>
+    shareCard(발자국스펙((cities || []).filter(c => visited.has(c.id))),
+              'keyro-발자국');
 }
 
 async function openBadgeShelf(){
@@ -357,6 +361,11 @@ export async function openShelf(kind){
   $('shelfcount').textContent = '';
   $('shelflist').classList.remove('wall');
   $('shelflist').classList.remove('flagwall');
+  /* ⚠ 공유 단추도 **맨 위에서 끕니다**(b649) — 깃발 벽만 켜는 것이라,
+     안 끄면 깃발을 보고 배지로 넘어갔을 때 단추가 그대로 남습니다.
+     아래 갈래마다 일찍 나가는 길이 있어서 켜는 쪽에서는 못 끕니다
+     (b607 에 벽으로 똑같이 겪었습니다). */
+  $('shelfshare').hidden = true;
   $('shelflist').innerHTML =
     '<div class="empty"><span class="load">보관함을 여는 중…</span></div>';
   /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.

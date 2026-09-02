@@ -2466,6 +2466,15 @@ body.reordering{ user-select:none; -webkit-user-select:none; }
      안 남아 가운데 정렬이 오른쪽 아래로 밀렸습니다. 재보니 왼쪽 18px ·
      위 11px 어긋나 있었습니다. padding 을 0 으로 못 박습니다 —
      크기를 고정한 아이콘 단추는 늘 이래야 합니다. */
+/* 보관함 제목 줄의 공유 단추(b649). 제목 줄에 사는 단추라 **줄 키를
+   안 늘려야 합니다** — 여백을 세로로 거의 안 줍니다. */
+.shbtn{ display:inline-flex; align-items:center; gap:5px; flex:none;
+        padding:3px 9px 3px 7px; margin-left:8px;
+        border:1px solid var(--hairline); border-radius:var(--r-pill);
+        background:none; color:var(--ink-80);
+        font-size:var(--f-sm); font-weight:600; cursor:pointer; }
+.shbtn:active{ background:var(--pearl); }
+
 .mapicons{ position:absolute; right:10px; bottom:10px; display:flex; gap:6px; z-index:2; }
 .mapicon{ width:36px; height:36px; padding:0; display:grid; place-items:center;
           color:var(--ink-80); background:var(--canvas);

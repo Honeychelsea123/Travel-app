@@ -13,12 +13,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b648';
-import { openCity } from './city.js?v=b648';
-import { distKm } from './calc.js?v=b648';
-import { sb } from './db.js?v=b648';
-import { cities, countryName, continentOf } from './cities.js?v=b648';
-import { PERSONA_ICON, shareCard } from './card.js?v=b648';
+         coverDeck } from './dom.js?v=b649';
+import { openCity } from './city.js?v=b649';
+import { distKm } from './calc.js?v=b649';
+import { sb } from './db.js?v=b649';
+import { cities, countryName, continentOf } from './cities.js?v=b649';
+/* ⚠ `PERSONA_ICON` 은 b649 에 안 쓰게 됐습니다 — 발자국 카드가 여권 스탬프
+   면으로 바뀌면서 선 아이콘 자리가 없어졌습니다(큰 수와 지도가 그 일을
+   합니다). 안 쓰는 것을 가져오면 나중에 "여기도 쓰나" 하고 헷갈립니다. */
+import { shareCard } from './card.js?v=b649';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -425,25 +428,31 @@ $('ctrypane').addEventListener('click', e => {
  * 지도 화면의 공유와 나라 목록의 공유가 **거의 같은 카드를 따로** 만들고
  * 있었습니다. 하나는 「내 발자국 28개국」, 하나는 「다녀온 나라 28개국」 —
  * 같은 숫자를 다른 이름으로 두 번 말합니다. 사용자 지적.
+ * b649 에 **깃발 벽**까지 이 하나를 씁니다. 셋 다 같은 것을 말합니다.
  *
- * 국기와 「가장 많이 간 곳」이 있는 쪽이 나아서 그쪽으로 맞췄습니다.
- * 큰 숫자(big)도 그쪽 것입니다 — 훑는 눈에 남는 것은 숫자 하나입니다.
+ * ⚠⚠ **여권 스탬프 면으로 다시 그렸습니다(b649, 사용자 요청).**
+ *   전에는 이 카드만 어두운 남보라 그러데이션(`g:'rare'`)이었습니다.
+ *   앱이 종이(여권·엽서)로 갈아입은 뒤에도 여기만 옛 톤이라, 성향 카드와
+ *   나란히 올리면 **다른 앱에서 나온 것**으로 보였습니다.
+ *   → `kind:'stamps'` 로 넘겨 `card.js` 의 `drawStamps` 가 크림 종이에
+ *     그립니다. 내용은 그대로고 그림만 바뀝니다.
  *
  * ⚠ **세는 자료를 받아서 씁니다.** 여기서 다시 받아오면 부르는 쪽이 이미
  *   가진 것을 한 번 더 묻는 셈이고, 두 화면의 숫자가 갈릴 수 있습니다.
  * ⚠ 지도 칠(.been)도 여기서 합니다. 예전에는 지도 화면이 칠해둔 것을
  *   빌려 썼는데, 프로필에서 나라 목록으로 바로 들어오면 지도를 한 번도
  *   안 연 상태라 **전부 회색인 카드**가 나왔습니다.
- * ⚠ 국기를 못 그리는 기기에서는 뺍니다 — 캔버스에도 못 그려서 네모가
- *   그림 파일로 저장됩니다. 화면보다 티가 납니다. */
-function 발자국스펙(도시들){
+ * ⚠ **국기는 이제 이모지가 아닙니다.** `flagOk()` 로 기기를 재던 줄을
+ *   걷었습니다 — 카드는 `flags.svg` 의 그림을 캔버스에 그리므로 기기가
+ *   이모지를 못 그려도 상관없습니다. 나라 코드만 넘깁니다.
+ * ⚠ **밖에서도 씁니다**(shelf.js 의 깃발 벽). export 를 떼지 마십시오. */
+export function 발자국스펙(도시들){
   const byC = {};
   (도시들 || []).forEach(c => (byC[c.country] = byC[c.country] || []).push(c));
-  /* 많이 간 나라부터. 국기 줄도 이 순서라 앞쪽이 그 사람다운 줄이 됩니다. */
+  /* 많이 간 나라부터. 깃발 격자도 이 순서라 앞줄이 그 사람다운 줄이 됩니다. */
   const codes = Object.keys(byC).sort((a, b) => byC[b].length - byC[a].length);
   const conts = new Set(codes.map(c => continentOf[c]).filter(Boolean));
   const pct = codes.length / UN_COUNTRIES * 100;
-  const top = codes.slice(0, 3);
 
   const 갔다 = new Set(codes);
   document.querySelectorAll('#worldland path').forEach(p =>
@@ -451,23 +460,20 @@ function 발자국스펙(도시들){
   const land = $('worldland')?.innerHTML || '';
 
   return {
-    g:'rare', icon: PERSONA_ICON.globe, sub:'내 발자국',
-    big: String(codes.length), bigUnit:'개국',
-    title:`${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
-    nums:`${(도시들 || []).length}개 도시 · ${conts.size}개 대륙`,
-    /* ⚠⚠ **여기서 `flag(...)` 를 쓰면 안 됩니다(b512).** ⚠⚠
-       그건 openCountries **안에서만** 사는 지역 변수입니다(위 316줄).
-       b510 에 카드 만드는 코드를 그 함수 밖으로 꺼내면서 이름을 그대로
-       들고 나왔고, 공유 단추가 눌러도 **아무 일도 안 하는 채**로 나갔습니다
-       (ReferenceError 는 핸들러 안에서 조용히 죽습니다).
-       바깥에서 쓸 것은 dom.js 의 flagOf 입니다. */
-    note: flagOk() ? codes.map(c => flagOf(c)).join(' ') : '',
-    listTitle: top.length ? '가장 많이 간 곳' : '',
-    list: top.map(c => `${countryName[c] || c} ${byC[c].length}곳`),
-    artRatio: 387 / 1000,
-    art: land ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 19 1000 387">
-            <style>path{fill:rgba(255,255,255,.16)} path.been{fill:#fff}</style>
-            ${land}</svg>` : '',
+    kind: 'stamps',
+    /* 공유 글에 실리는 한 줄입니다(sendCardBlob). */
+    title: `${UN_COUNTRIES}개국 중 ${pct.toFixed(1)}%`,
+    codes,
+    countries: codes.length,
+    cities: (도시들 || []).length,
+    conts: conts.size,
+    total: UN_COUNTRIES,
+    pct,
+    top: codes.slice(0, 3).map(c => [countryName[c] || c, byC[c].length]),
+    land,
+    /* 여권 아래 기계판독 줄. **장식입니다** — 진짜 정보는 위에 다 있습니다.
+       44칸은 실제 여권 MRZ 의 한 줄 길이입니다. 짧으면 `<` 로 채웁니다. */
+    mrz: ('P<KEYRO<' + codes.join('<')).toUpperCase().slice(0, 44).padEnd(44, '<'),
   };
 }
 

@@ -187,6 +187,48 @@ export function flagOk(){
   return flagCan;
 }
 
+/* ── 깃발 그림판 (b649) ──────────────────────────────────────────────
+ * 그림 195개를 묶은 `flags.svg` 를 문서에 한 번 심습니다.
+ * ⚠ **b624 에 shelf.js 안에 있던 것을 여기로 내렸습니다.** 이제 «두 곳»이
+ *   씁니다 — 깃발 벽(화면)과 공유 카드(캔버스). 두 벌로 두면 한쪽만
+ *   고치는 사고가 납니다. 여기는 브라우저만 있으면 되는 잎이라 자격이
+ *   됩니다(flagOf·flagOk 와 같은 이유).
+ * ⚠ **깃발이 필요할 때만 받습니다.** 356KB 를 첫 실행에 얹으면 이 화면
+ *   하나 때문에 모두가 느려집니다.
+ * ⚠ 못 받으면(첫 실행 + 비행기모드) 부르는 쪽이 **이모지로 떨어집니다.**
+ *   그 길을 지우지 마십시오.
+ * ⚠ 그림은 Twemoji, **CC BY 4.0**. 출처를 밝혀야 합니다 — 깃발 벽 아래에
+ *   한 줄 답니다(shelf.js). 그 줄을 지우면 라이선스 위반입니다. */
+let 깃발판 = null;                 /* null 아직 · false 실패 · true 됨 */
+export async function flagSprite(){
+  if (깃발판 != null) return 깃발판;
+  try {
+    const r = await fetch('./flags.svg?v=b649');
+    if (!r.ok) return (깃발판 = false);
+    const 통 = document.createElement('div');
+    통.id = 'flagsprite';
+    통.innerHTML = await r.text();
+    document.body.appendChild(통);
+    return (깃발판 = true);
+  } catch { return (깃발판 = false); }
+}
+
+/* 깃발 하나를 **혼자 서는 SVG** 로 꺼냅니다 — 캔버스에 그리려면 `<use>`
+   로는 안 되고 제 문서가 있어야 하기 때문입니다.
+   ⚠ `flags.svg` 를 구울 때 **심볼 안의 id 를 나라 코드로 앞가림**해
+     두었습니다(tools/flagsprite.pl). 그래서 잘라내도 안쪽 참조가 안
+     엉킵니다 — 그 규칙을 깨면 여기가 조용히 깨집니다.
+   ⚠ `data:` 로 넣으므로 캔버스가 안 더러워집니다(toBlob 이 삽니다). */
+export function flagSvgOf(code){
+  const 판 = document.getElementById('flagsprite');
+  if (!판) return '';
+  const 심 = 판.querySelector(`#f-${String(code || '').toLowerCase()}`);
+  if (!심) return '';
+  return `<svg xmlns="http://www.w3.org/2000/svg"
+               xmlns:xlink="http://www.w3.org/1999/xlink"
+               viewBox="0 0 36 36" width="72" height="72">${심.innerHTML}</svg>`;
+}
+
 /* ── 같은 것을 다시 그리지 않습니다 ──────────────────────────────────
  * **탭을 누를 때마다 목록을 통째로 갈아끼우고 있었습니다.** 글자는 똑같이
  * 다시 그려도 티가 안 나는데 **사진은 요소가 버려졌다 새로 만들어져서**
