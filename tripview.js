@@ -17,31 +17,31 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b641';
-import { photosOpen, closePhotos } from './photoview.js?v=b641';
-import { sb } from './db.js?v=b641';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b641';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b641';
+import { $, esc, toast } from './dom.js?v=b642';
+import { photosOpen, closePhotos } from './photoview.js?v=b642';
+import { sb } from './db.js?v=b642';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b642';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b642';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b641';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b641';
-import { drawPlanMap } from './planmap.js?v=b641';
-import { drawPlans } from './planview.js?v=b641';
-import { legIn, fillCityList } from './legs.js?v=b641';
-import { inTrip } from './tabs.js?v=b641';
-import { closeAi } from './aiscreen.js?v=b641';
-import { closeDraft } from './draft.js?v=b641';
-import { closeReview } from './home.js?v=b641';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b642';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b642';
+import { drawPlanMap } from './planmap.js?v=b642';
+import { drawPlans } from './planview.js?v=b642';
+import { legIn, fillCityList } from './legs.js?v=b642';
+import { inTrip } from './tabs.js?v=b642';
+import { closeAi } from './aiscreen.js?v=b642';
+import { closeDraft } from './draft.js?v=b642';
+import { closeReview } from './home.js?v=b642';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b641';
-import { closeCity, isCityOpen } from './city.js?v=b641';
-import { closeMap, closeCountries } from './map.js?v=b641';
-import { closePersona } from './persona.js?v=b641';
+import { closeSpree } from './spree.js?v=b642';
+import { closeCity, isCityOpen } from './city.js?v=b642';
+import { closeMap, closeCountries } from './map.js?v=b642';
+import { closePersona } from './persona.js?v=b642';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b641';
-import { closeShelf } from './shelf.js?v=b641';
-import { closeDiary } from './diary.js?v=b641';
-import { closeDocs } from './prep.js?v=b641';
+import { 시트닫기 } from './home.js?v=b642';
+import { closeShelf } from './shelf.js?v=b642';
+import { closeDiary } from './diary.js?v=b642';
+import { closeDocs } from './prep.js?v=b642';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
@@ -240,25 +240,34 @@ export function drawDays(){
   /* 짧은 여행은 칩이 한눈에 들어와서 낫습니다.
      길어지면 칩이 벽이 됩니다 — 29일짜리는 세 줄을 잡아먹었습니다.
      그때는 고르는 칸 하나로 바꿉니다. */
-  /* **분류 칩은 접어둡니다.** 늘 펼쳐 두면 한 줄(36px)을 늘 먹는데,
-     실제로 거르는 일은 가끔입니다. 대신 상태를 숨기지는 않습니다 —
-     거르는 중이면 칩에 그 분류 이름이 적히고 켜진 채로 남습니다.
-     여기에 다는 이유는 날짜 칩 줄이 이미 옆으로 굴러가서 자리가 공짜라서입니다. */
+  /* ⚠⚠ **「분류」를 날짜 줄에서 «제목 줄»로 옮겼습니다(b642).**
+     전에는 이 줄 맨 끝에 칩으로 붙였고, 그 근거가 「날짜 줄이 이미
+     옆으로 굴러가서 자리가 공짜」였습니다. **그게 틀렸습니다** —
+     굴러가는 줄의 끝은 «공짜 자리»가 아니라 **안 보이는 자리**입니다.
+     날이 많은 여행에서 분류가 오른쪽 밖으로 밀려 아예 안 보였습니다
+     (사용자 지적). 제목 줄은 안 굴러가므로 언제나 같은 자리입니다.
+     ⚠ 상태(거르는 중인 분류 이름·켜짐)는 그대로 나릅니다 — 자리만
+       옮긴 것이지 뜻을 줄인 것이 아닙니다. */
   const used = new Set(plans.map(p => p.category).filter(Boolean));
-  const catChip = used.size < 2 ? '' :
-    `<button class="day${catFilter || catsOpen ? ' on' : ''}" data-catstoggle="1">` +
-    `${catFilter ? esc(catFilter) : '분류'}</button>`;
+  {
+    const cb = $('catbtn');
+    if (cb){
+      cb.classList.toggle('hide', used.size < 2);
+      cb.classList.toggle('on', !!(catFilter || catsOpen));
+      cb.textContent = catFilter || '분류';
+    }
+  }
 
   if (list.length <= 12){
     $('days').innerHTML = all + list.map(d =>
       `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">` +
-      `${esc(shortLabel(d))}</button>`).join('') + catChip;
+      `${esc(shortLabel(d))}</button>`).join('');
   } else {
     $('days').innerHTML = all +
       `<select id="daysel"><option value="">날짜 고르기…</option>` +
       list.map(d => `<option value="${esc(d)}"${pickedDay === d ? ' selected' : ''}>` +
                     `${esc(dayLabel(d, trip))}</option>`).join('') +
-      `</select>` + catChip;
+      `</select>`;
   }
   /* 옆으로 굴러가는 줄이라, 고른 날이 화면 밖이면 안 보입니다.
      Day 9 를 골라두고 돌아왔을 때 어디가 켜져 있는지 알 수가 없습니다. */
@@ -270,8 +279,10 @@ export function drawDays(){
    왜 목록이 짧은지 알 길이 없습니다. */
 /* catsOpen 은 planline.js 로 갔습니다(b353) — 읽는 곳이 거기 drawCats
    뿐입니다. 누르는 손잡이는 여기 남아 setCatsOpen 으로 넣습니다. */
-$('days').addEventListener('click', e => {
-  if (!e.target.closest('[data-catstoggle]')) return;
+/* ⚠ 손잡이도 제목 줄로 따라갑니다. `#catbtn` 은 «다시 안 만들어지는»
+   단추라 위임할 필요 없이 한 번만 답니다(칩은 매번 새로 그려져서
+   `#days` 에 위임하고 있었습니다). */
+$('catbtn').addEventListener('click', () => {
   setCatsOpen(!catsOpen);
   if (!catsOpen && catFilter) setCatFilter('');
   drawDays(); drawCats(); drawPlans(); drawPlanMap();

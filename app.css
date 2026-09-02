@@ -1866,6 +1866,11 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 .fprow .t span{ font-size:calc(13px * var(--ts)); color:var(--dim); }
 .fprow .go{ flex:none; font-size:calc(13px * var(--ts)); color:var(--primary);
             font-weight:600; }
+/* 제목 줄의 「분류」가 켜졌을 때. 칩이 아니라 글자라 «채우지» 않고
+   먹빛과 굵기로만 말합니다 — 제목 줄에 검은 알약이 앉으면 제목보다
+   그것이 먼저 읽힙니다. */
+#catbtn.on{ color:var(--ink); font-weight:700; }
+
 /* ── 카드 제목 줄 오른쪽의 「자세히 보기 ›」(b503) ─────────────────────
  * 분석 탭의 단추들이 카드 **맨 아래**에 있었습니다. 카드마다 길이가
  * 다르니 단추 자리도 매번 달라서, 다 읽고 내려가 봐야 그게 있는지
