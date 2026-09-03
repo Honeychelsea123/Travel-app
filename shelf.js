@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b659';
-import { openCity } from './city.js?v=b659';
-import { sb } from './db.js?v=b659';
-import { cities, countryName } from './cities.js?v=b659';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b659';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b659';
-import { fail } from './net.js?v=b659';
-import { arm } from './ui.js?v=b659';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b660';
+import { openCity } from './city.js?v=b660';
+import { sb } from './db.js?v=b660';
+import { cities, countryName } from './cities.js?v=b660';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b660';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b660';
+import { fail } from './net.js?v=b660';
+import { arm } from './ui.js?v=b660';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b659';
-import { shareCard } from './card.js?v=b659';
-import { todayYmd } from './calc.js?v=b659';
+import { 발자국스펙 } from './map.js?v=b660';
+import { shareCard } from './card.js?v=b660';
+import { todayYmd } from './calc.js?v=b660';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b659';
-import { loadCities } from './citysearch.js?v=b659';
-import { loadRateData, saveRate } from './rating.js?v=b659';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b660';
+import { loadCities } from './citysearch.js?v=b660';
+import { loadRateData, saveRate } from './rating.js?v=b660';
 
 let ctx = {
   me: () => null,
@@ -276,14 +276,42 @@ async function openFlagShelf(){
       const 이름 = esc(countryName[코드] || 코드);
       /* 그림판이 있으면 <use> 하나로 부릅니다. `#f-kr` 처럼 나라 코드가
          곧 이름표입니다(tools/flagsprite.pl 이 그렇게 굽습니다). */
+      /* ⚠ `data-cc` 는 **누르면 이름을 띄우기 위한 것**입니다(b660, 사용자
+         요청: 「깃발 누르면 어떤 나라인지 알 수 있게 이름 뜨는거도
+         할 수 있어?」). `aria-label` 로는 손가락으로 못 읽습니다 —
+         그것은 화면 낭독기용입니다. */
       return 그림
-        ? `<svg class="fg${켬}" aria-label="${이름}"><use href="#f-${
+        ? `<svg class="fg${켬}" data-cc="${코드}" aria-label="${이름}"><use href="#f-${
              코드.toLowerCase()}"/></svg>`
-        : `<span class="fg${켬}" title="${이름}">${
+        : `<span class="fg${켬}" data-cc="${코드}" title="${이름}">${
              기ok ? flagOf(코드) : esc(코드)}</span>`;
     }).join('')}</div>` +
     /* CC BY 4.0 — 지우면 라이선스 위반입니다. */
     (그림 ? `<div class="fgcredit">국기 그림 Twemoji · CC BY 4.0</div>` : '');
+
+  /* ── 누르면 나라 이름 (b660, 사용자 요청) ─────────────────────────
+     ⚠ **이름을 넣을 자리는 이미 비어 있습니다.** b641 에 「나라 깃발」
+       이라는 제목을 걷었습니다(깃발 195개가 깔린 화면에서 그 이름은
+       아무것도 더 말해주지 않아서). 그 빈 자리에 «누른 나라»를 적습니다 —
+       줄이 안 늘고, 눈이 이미 가는 자리입니다.
+     ⚠ 안 가본 나라에는 「· 아직」을 붙입니다. 이름만 띄우면 회색 깃발을
+       누른 사람이 「내가 갔었나?」 하고 헷갈립니다.
+     ⚠ 처리기는 **격자에** 답니다. `#shelflist` 에는 이미 처리기가 둘
+       걸려 있고(별점·도시 열기), 거기 또 얹으면 갈래가 셋이 됩니다.
+       격자는 그릴 때마다 새로 만들어지므로 겹쳐 붙을 일도 없습니다. */
+  {
+    const 격자 = $('shelflist').querySelector('.fgrid');
+    격자?.addEventListener('click', e => {
+      const 칸 = e.target.closest('.fg');
+      if (!칸) return;
+      const 코드 = 칸.dataset.cc;
+      if (!코드) return;
+      격자.querySelectorAll('.fg.tapped').forEach(x => x.classList.remove('tapped'));
+      칸.classList.add('tapped');
+      $('shelfhead').textContent =
+        (countryName[코드] || 코드) + (갔다.has(코드) ? '' : ' · 아직');
+    });
+  }
 
   /* ── 공유 (b649, 사용자 요청) ────────────────────────────────────
      ⚠ **세는 자료는 이 화면이 쓰는 것 그대로**입니다(`visited`). 카드가
@@ -291,7 +319,7 @@ async function openFlagShelf(){
      ⚠ `발자국스펙` 은 **도시 목록**을 받습니다(나라가 아니라). 나라 수는
        거기서 도시의 country 로 셉니다 — 그래야 「가장 많이 간 곳」도
        같이 나옵니다. */
-  $('shelfshare').hidden = false;
+  $('shelfshare').classList.remove('hide');
   $('shelfshare').onclick = () =>
     shareCard(발자국스펙((cities || []).filter(c => visited.has(c.id))),
               'keyro-발자국');
@@ -368,7 +396,7 @@ export async function openShelf(kind){
      안 끄면 깃발을 보고 배지로 넘어갔을 때 단추가 그대로 남습니다.
      아래 갈래마다 일찍 나가는 길이 있어서 켜는 쪽에서는 못 끕니다
      (b607 에 벽으로 똑같이 겪었습니다). */
-  $('shelfshare').hidden = true;
+  $('shelfshare').classList.add('hide');
   $('shelflist').innerHTML =
     '<div class="empty"><span class="load">보관함을 여는 중…</span></div>';
   /* 별점이 없는 보관함에서는 정렬 칸을 숨깁니다. 거를 것이 없습니다.

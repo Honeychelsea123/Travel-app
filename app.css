@@ -321,6 +321,12 @@ html{ touch-action:manipulation; overscroll-behavior-y:none; }
 
 main{ max-width:480px; margin:0 auto; min-width:0; }
 .hide{ display:none !important; }
+/* ⚠⚠ **`hidden` 속성만으로는 안 감춰집니다(b660).** 그것은 UA 스타일이라
+     `display` 를 적은 «작성자 규칙»에 집니다 — `.shbtn{display:inline-flex}`
+     가 실제로 그것을 덮어서, 깃발 벽에서만 켜려던 공유 단추가 보관함
+     넷에 다 보였습니다. 이 앱의 감추기는 위 `.hide` 하나이지만, 남의
+     코드나 습관으로 `hidden` 이 들어올 수 있으니 여기서 막아 둡니다. */
+[hidden]{ display:none !important; }
 
 /* ── 상단바 ── 화면 폭을 꽉 채우는 직각 바(b420 → b427 → b429) ────────
  * 처음엔 `--r-pill` 알약이었습니다. **떠 있는 알약**처럼 보인다는 지적을
@@ -3370,6 +3376,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      text-align:center; min-width:0; overflow:hidden;
      filter:grayscale(1) opacity(.22); transition:filter var(--t) var(--ease); }
 svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
+/* 누른 깃발에 테를 두릅니다(b660). 이름은 제목 줄에 뜨는데, 어느 칸을
+   눌렀는지 표시가 없으면 195칸 중 어디를 눌렀는지 잃어버립니다.
+   ⚠ `outline` 을 씁니다 — `border` 는 칸 크기를 바꿔 **격자가 통째로
+     흔들립니다**(칸이 195개라 한 칸만 커져도 줄이 밀립니다). */
+.fg.tapped{ outline:2px solid var(--primary); outline-offset:1px; }
+/* ⚠ 안 가본 깃발은 흐리게 두는 것이 이 벽의 규칙인데(위 opacity .22),
+     **누른 것은 보여야 합니다** — 그대로 두면 테만 있고 안이 안 보입니다. */
+.fg.tapped:not(.on){ filter:grayscale(.4) opacity(.75); }
 /* 출처 한 줄. 조용히, 벽 아래에. */
 /* ── 지도 타일을 종이색으로 (b625) ───────────────────────────────────
  * OSM 본가 타일은 키가 없는 대신 색이 알록달록합니다(초록 공원·노란 길).

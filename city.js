@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage } from './dom.js?v=b659';
-import { sb } from './db.js?v=b659';
-import { cities, countryName, continentOf } from './cities.js?v=b659';
-import { myRates, cityStat, visited } from './rate.js?v=b659';
-import { starHtml, starValue } from './stars.js?v=b659';
-import { localTime } from './calc.js?v=b659';
-import { fail } from './net.js?v=b659';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b660';
+import { sb } from './db.js?v=b660';
+import { cities, countryName, continentOf } from './cities.js?v=b660';
+import { myRates, cityStat, visited } from './rate.js?v=b660';
+import { starHtml, starValue } from './stars.js?v=b660';
+import { localTime } from './calc.js?v=b660';
+import { fail } from './net.js?v=b660';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -206,7 +206,17 @@ $('cv_save').addEventListener('click', async () => {
   const v = $('cv_note').value.trim() || null;
   $('cv_save').disabled = true;
   await ctx.saveRate(cityOpen.id, { comment: v });
-  $('cv_save').textContent = v ? '등록했어요' : '지웠어요';
+  /* ⚠⚠ **단추 글자만 바꾸던 것을 토스트로 옮깁니다(b660, 사용자 신고:
+     「저장 누르면 저장 됐다는 피드백이 없어서 저장된지 안된지 모르겠어」).**
+     글자는 «바뀌고 있었습니다** — 다만 그 단추가 `.ghost` 라 **잠기면
+     회색 글자**가 되고, 자리도 안 움직여서 폰에서는 눈에 안 걸립니다.
+     실측: 눌러도 4.3초 뒤까지 「등록했어요」가 잠긴 채 그대로 있었습니다 —
+     즉 **동작은 맞고 «알림»이 약한 것**이었습니다.
+   ⚠ 단추 글자는 **쉬는 모양으로 되돌립니다.** 단추는 「무슨 일이
+     일어났나」가 아니라 「누르면 무엇을 하나」를 적는 자리입니다.
+     일어난 일은 토스트가 말합니다. */
+  toast(v ? '한줄평을 등록했어요' : '한줄평을 지웠어요');
+  cvNoteDirty();
   /* 남들 한줄평 목록에 내 것이 바로 끼어들어야 남긴 느낌이 납니다. */
   await openCity(cityOpen.id);
 });
@@ -384,6 +394,8 @@ $('cv_jsave')?.addEventListener('click', async () => {
   const v = $('cv_journal').value.trim() || null;
   $('cv_jsave').disabled = true;
   await ctx.saveRate(cityOpen.id, { journal: v }, true);
-  $('cv_jsave').textContent = v ? '저장했어요' : '지웠어요';
-  $('cv_jnote').textContent = '';
+  /* 한줄평과 **같은 규칙**입니다(위 cv_save 주석) — 일어난 일은 토스트가,
+     단추는 쉬는 모양으로. `일기바뀜` 이 잠금·글자·쪽지를 한 번에 맞춥니다. */
+  toast(v ? '일기를 저장했어요' : '일기를 지웠어요');
+  일기바뀜();
 });
