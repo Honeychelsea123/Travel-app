@@ -3273,12 +3273,43 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* ⚠ **`button` 입니다(b545).** 처음엔 `div` 로 그렸는데, 숫자 상자처럼
    생겨서 눌러보게 되는데 아무 일도 안 일어났습니다(사용자 지적).
    눌리는 것은 눌리게 생겨야 하고, 눌러지면 반응이 있어야 합니다. */
+/* ── 분석 탭 「내 별점」 카드 (b657) ─────────────────────────────────
+ * ⚠ 부품을 새로 만들지 않았습니다 — 숫자 셋은 `.fpnums`, 막대는 `.fp`,
+ *   줄 제목은 `.picks .label` 을 그대로 씁니다. 여기 있는 둘은 «줄 모양»
+ *   뿐입니다(이름 + 막대 + % / 이름 + 두 값).
+ * ⚠ `.fp` 는 `margin-top:8px` 을 갖고 있습니다. 줄 안에서는 가운데로
+ *   맞춰야 하므로 여기서 0 으로 되돌립니다. */
+.famerow{ display:flex; align-items:center; gap:8px; padding:5px 0; }
+.famerow > span{ flex:none; width:104px; font-size:var(--f-sm); color:var(--ink-80); }
+.famerow > .fp{ flex:1; margin-top:0; }
+.famerow > b{ flex:none; width:34px; text-align:right;
+              font-size:var(--f-sm); font-variant-numeric:tabular-nums; }
+
+.gaprow{ display:flex; align-items:baseline; gap:8px; padding:5px 0; }
+.gaprow > b{ flex:1; min-width:0; font-weight:600;
+              overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gaprow > span{ flex:none; font-size:var(--f-sm); color:var(--ink-48);
+                font-variant-numeric:tabular-nums; }
+/* 내 별점이 남들보다 높으면 주황, 낮으면 파랑 — **어느 쪽으로 갈렸는지**가
+   이 줄의 요점입니다. 숫자만 두면 어느 쪽인지 읽는 데 한 박자 걸립니다.
+   ⚠ 「좋다/나쁘다」가 아니라 「위/아래」입니다. 초록·빨강을 쓰면 내 별점이
+     틀렸다는 뜻으로 읽힙니다. */
+.gaprow > .up{ color:var(--star); font-weight:600; }
+.gaprow > .down{ color:var(--primary); font-weight:600; }
+
 .fpnums{ display:flex; gap:8px; margin:10px 0 2px; }
 .fpnums > button{ flex:1 1 0; min-width:0; text-align:center; cursor:pointer;
                   appearance:none; border:0; font:inherit;
                   padding:10px 4px; border-radius:12px; background:var(--sunk);
                   transition:background var(--t) var(--ease); }
 .fpnums > button:active{ background:var(--line); }
+/* ⚠ **누를 수 없는 칸도 있습니다(b657).** `.fpnums` 는 기록 탭에서 «누르는»
+     타일로 태어나 `> button` 에만 폭·바탕이 걸려 있었습니다. 분석 탭의
+     「내 별점」은 갈 곳이 없어 `<div>` 라서, 그대로 두면 **폭이 안 나뉘고
+     바탕도 없습니다.** 안 눌리는 것에 `cursor:pointer` 를 주면 안 되므로
+     칸 모양만 나눠 적습니다. */
+.fpnums > div{ flex:1 1 0; min-width:0; text-align:center;
+               padding:10px 4px; border-radius:12px; background:var(--sunk); }
 .fpnums b{ display:block; font-size:var(--f-2xl); font-weight:700;
            color:var(--ink); font-variant-numeric:tabular-nums; }
 .fpnums span{ display:block; font-size:var(--f-sm); color:var(--ink-48); margin-top:1px; }

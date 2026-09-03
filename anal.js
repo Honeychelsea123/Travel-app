@@ -14,24 +14,30 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b656';
-import { sb } from './db.js?v=b656';
-import { cities } from './cities.js?v=b656';
+import { $, esc } from './dom.js?v=b657';
+import { sb } from './db.js?v=b657';
+import { cities } from './cities.js?v=b657';
+/* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
+   들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
+import { cityStat } from './rate.js?v=b657';
+/* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
+   anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
+import { loadRateData } from './rating.js?v=b657';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b656';
+import { renderPersona } from './persona.js?v=b657';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b656';
+import { similarPicks } from './rec.js?v=b657';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b656';
-import { pickCity } from './citysearch.js?v=b656';
+import { openNew } from './newtrip.js?v=b657';
+import { pickCity } from './citysearch.js?v=b657';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -117,6 +123,118 @@ export async function loadAnal(){
   if (리포트){
     box.appendChild(리포트);
     renderPersona();
+  }
+
+  /* ══ ② 내 별점 ═══════════════════════════════════════════════════════
+   * 사용자: 「분석탭에 컨텐츠가 적은 것 같은데」. 맞습니다 — 카드 넷이
+   * **전부 유형 이야기**였고 **나에 대한 숫자가 하나도 없었습니다.**
+   * 발자국 숫자는 b542, 진기록은 b546 에 기록 탭으로 옮겼으니 그것을
+   * 되돌리면 안 됩니다. 대신 「나는 어떤 여행자인가」에 답하는 숫자를 놓습니다.
+   *
+   * 셋을 한 카드에 담습니다 — 다 「내 별점」을 재료로 쓰는 이야기입니다:
+   *   ① 내 평균 vs 남들 평균 (짜게 주나 후하게 주나)
+   *   ② 얼마나 알려진 곳에 갔나 (fame 분포)
+   *   ③ 남들과 갈리는 곳
+   *
+   * ⚠⚠ **`n_rated` 에는 내가 들어 있습니다**(rate.js 의 `avgTail` 주석).
+   *   그대로 비교하면 «내 별점이 섞인 평균»과 내 별점을 견주는 셈이라
+   *   늘 「남들과 비슷하다」쪽으로 기웁니다. 나를 빼고 다시 냅니다:
+   *       남들평균 = (avg_stars × n_rated − 내별점) ÷ (n_rated − 1)
+   * ⚠⚠ **두 평균은 «같은 집합»에서 내야 합니다.** 내 평균을 전부에서
+   *   내고 남들 평균을 「비교 가능한 곳」에서 내면, 차이가 취향이 아니라
+   *   **집합 차이**에서 옵니다. 그래서 둘 다 짝이 맞는 곳만 씁니다.
+   * ⚠ 표본이 적으면 안 그립니다 — 세 곳으로 「짜게 준다」고 말할 수 없습니다.
+   * ⚠ `cityStat` 은 평가 탭을 열어야 채워집니다. 비어 있으면 여기서 한 번
+   *   싣습니다(홈 깃발 줄에서 겪은 것과 같은 함정, b652). */
+  {
+    if (!Object.keys(cityStat).length) { try { await loadRateData(); } catch {} }
+
+    const 매긴 = 전부.filter(r => r.stars != null);
+    /* 남이 한 명이라도 매긴 곳만 비교에 씁니다 — 나 혼자면 견줄 것이 없습니다. */
+    const 짝 = 매긴.map(r => {
+      const s = cityStat[r.city_id];
+      const 남수 = (s?.n_rated || 0) - 1;
+      if (!s || 남수 < 1) return null;
+      const 남평 = (Number(s.avg_stars) * s.n_rated - Number(r.stars)) / 남수;
+      return { id: r.city_id, 내: Number(r.stars), 남: 남평, 남수,
+               차: Number(r.stars) - 남평 };
+    }).filter(Boolean);
+
+    const 카드 = document.createElement('div');
+    카드.className = 'card quiet';
+    카드.innerHTML = '<h2>내 별점</h2>';
+    let 뭔가 = false;
+
+    /* ── ① 평균 견주기 ── */
+    if (짝.length >= 5){
+      const 내평 = 짝.reduce((a, x) => a + x.내, 0) / 짝.length;
+      const 남평 = 짝.reduce((a, x) => a + x.남, 0) / 짝.length;
+      const 차 = 내평 - 남평;
+      /* 0.3 은 별 반 칸보다 작습니다. 그 아래를 「짜다/후하다」고 말하면
+         다음에 한 곳 더 매길 때 말이 뒤집힙니다. */
+      const 말 = 차 >= 0.3 ? '남들보다 후하게 줍니다'
+               : 차 <= -0.3 ? '남들보다 짜게 줍니다'
+               : '남들과 비슷하게 줍니다';
+      const 부호 = 차 > 0 ? '+' : '';
+      카드.insertAdjacentHTML('beforeend', `
+        <div class="fpnums">
+          <div><b>${내평.toFixed(1)}</b><span>내 평균</span></div>
+          <div><b>${남평.toFixed(1)}</b><span>남들 평균</span></div>
+          <div><b>${부호}${차.toFixed(1)}</b><span>차이</span></div>
+        </div>
+        <div class="memo">${esc(말)} · 견준 곳 ${짝.length}곳</div>`);
+      뭔가 = true;
+    }
+
+    /* ── ② 얼마나 알려진 곳에 갔나 ──
+       ⚠ **`fame` 은 작을수록 유명합니다**(db/033: 1 도쿄·파리 / 3 할슈타트).
+         이름 때문에 반대로 읽기 쉽습니다 — b656 에 여기 옆 탭이 거꾸로
+         정렬하고 있었습니다. 쓰기 전에 정의를 보십시오. */
+    {
+      const 칸 = [0, 0, 0];
+      let 셈 = 0;
+      for (const r of 매긴){
+        const c = (cities || []).find(x => x.id === r.city_id);
+        const f = c?.fame;
+        if (f >= 1 && f <= 3){ 칸[f - 1]++; 셈++ }
+      }
+      if (셈 >= 5){
+        const 이름 = ['누구나 아는 곳', '좀 다니면 아는 곳', '덜 알려진 곳'];
+        카드.insertAdjacentHTML('beforeend',
+          `<div class="picks"><span class="label">얼마나 알려진 곳에 갔나</span></div>` +
+          칸.map((n, i) => {
+            const p = Math.round(n / 셈 * 100);
+            return `<div class="famerow"><span>${이름[i]}</span>
+              <div class="fp"><i style="width:${p}%"></i></div>
+              <b>${p}%</b></div>`;
+          }).join(''));
+        뭔가 = true;
+      }
+    }
+
+    /* ── ③ 남들과 갈리는 곳 ──
+       ⚠ **남이 둘 이상인 곳만** 씁니다. 한 명이면 「남들」이 아니라 그 한
+         사람이고, 별점 하나로 「갈린다」고 말할 수 없습니다.
+       ⚠ 1.0(별 한 칸) 미만은 안 넣습니다 — 반 칸 차이를 「갈린다」고 하면
+         거의 모든 도시가 걸립니다. */
+    {
+      const 갈림 = 짝.filter(x => x.남수 >= 2 && Math.abs(x.차) >= 1.0)
+        .sort((a, b) => Math.abs(b.차) - Math.abs(a.차)).slice(0, 4);
+      if (갈림.length){
+        카드.insertAdjacentHTML('beforeend',
+          `<div class="picks"><span class="label">남들과 갈리는 곳</span></div>` +
+          갈림.map(x => {
+            const c = (cities || []).find(y => y.id === x.id);
+            const 위 = x.차 > 0 ? 'up' : 'down';
+            return `<div class="gaprow"><b>${esc(c?.name || x.id)}</b>
+              <span class="${위}">내 ${x.내.toFixed(1)}</span>
+              <span>남들 ${x.남.toFixed(1)}</span></div>`;
+          }).join(''));
+        뭔가 = true;
+      }
+    }
+
+    if (뭔가) box.appendChild(카드);
   }
 
   /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
