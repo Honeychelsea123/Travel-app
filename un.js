@@ -22,12 +22,25 @@
  *   또 만들었다가 걷었습니다 — 같은 일을 두 곳에서 하면 언젠가 갈라집니다.
  *   **새 함수를 쓰기 전에 `grep` 부터.**
  * ⚠ 코드는 ISO 3166-1 alpha-2 입니다 — `cities` 의 `country` 와 같은 체계라
- *   그대로 맞대볼 수 있습니다. 실제로 맞는지는 아래 `검산()` 이 봅니다. */
+ *   그대로 맞대볼 수 있습니다. 실제로 맞는지는 아래 `검산()` 이 봅니다.
+ *
+ * ── 목록을 둘 고쳤습니다 (b653, 사용자 결정) ─────────────────────────
+ * ⚠⚠ **대만(TW)을 넣고 북한(KP)을 뺐습니다.** 그래서 아시아는 여전히 48,
+ *   합계도 여전히 195입니다 — **분모를 쓰는 여섯 군데를 안 건드려도
+ *   됩니다**(map.js 의 `UN_COUNTRIES`·`CONT` 포함). 우연히 맞은 것이므로
+ *   다음에 목록을 고칠 때는 반드시 `검산(CONT)` 을 돌리십시오.
+ *
+ * **대만** — UN 회원국은 아니지만 여행앱은 거의 다 별개로 셉니다
+ *   (NomadMania · Been · Polarsteps · TripIt 은 ISO 3166-1 을 그대로
+ *   씁니다). 한국인 방문 5위 나라(연 110만)가 깃발 벽에서 빠지면
+ *   실사용에서 손해가 큽니다. 우리 목록은 **「UN 195」가 아니라 「여행앱이
+ *   세는 나라」**입니다 — 이름만 UN 을 빌려 쓴 것으로 읽지 마십시오.
+ * **북한** — 사용자 결정으로 뺐습니다. 도시도 같이 지웁니다(db/077). */
 
 export const UN_BY_CONT = {
   '아시아': [
     'AF','AM','AZ','BH','BD','BT','BN','KH','CN','CY','GE','IN','ID','IR','IQ',
-    'IL','JP','JO','KZ','KW','KG','LA','LB','MY','MV','MN','MM','NP','KP','OM',
+    'IL','JP','JO','KZ','KW','KG','LA','LB','MY','MV','MN','MM','NP','TW','OM',
     'PK','PS','PH','QA','SA','SG','KR','LK','SY','TJ','TH','TL','TR','TM','AE',
     'UZ','VN','YE',
   ],
@@ -72,6 +85,9 @@ export const UN_CONT = Object.entries(UN_BY_CONT).map(([k, v]) => [k, v.length])
 export function 검산(CONT){
   const 말 = [];
   if (UN_CODES.length !== 195) 말.push(`전체가 195가 아니라 ${UN_CODES.length}`);
+  /* ⚠ 넣고 뺀 것이 맞는지도 봅니다 — 목록이 길어 눈으로는 안 보입니다. */
+  if (!UN_CODES.includes('TW')) 말.push('대만(TW)이 빠졌습니다');
+  if (UN_CODES.includes('KP'))  말.push('북한(KP)이 남아 있습니다');
   const 겹침 = UN_CODES.filter((c, i) => UN_CODES.indexOf(c) !== i);
   if (겹침.length) 말.push(`두 번 나오는 코드: ${겹침.join(' ')}`);
   const 이상 = UN_CODES.filter(c => !/^[A-Z]{2}$/.test(c));
