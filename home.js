@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b663';
-import { sb } from './db.js?v=b663';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b663';
-import { hm, todayYmd } from './calc.js?v=b663';
-import { starHtml, paintStars } from './stars.js?v=b663';
+import { $, esc } from './dom.js?v=b664';
+import { sb } from './db.js?v=b664';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b664';
+import { hm, todayYmd } from './calc.js?v=b664';
+import { starHtml, paintStars } from './stars.js?v=b664';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b663';
-import { cities, countryName } from './cities.js?v=b663';
-import { UN_CODES } from './un.js?v=b663';
-import { myRates, cityStat, visited } from './rate.js?v=b663';
-import { plans } from './trip.js?v=b663';
-import { loadCities } from './citysearch.js?v=b663';
+import { starValue } from './rateui.js?v=b664';
+import { cities, countryName } from './cities.js?v=b664';
+import { UN_CODES } from './un.js?v=b664';
+import { myRates, cityStat, visited } from './rate.js?v=b664';
+import { plans } from './trip.js?v=b664';
+import { loadCities } from './citysearch.js?v=b664';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b663';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b663';
+import { openCity } from './city.js?v=b664';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b664';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b663';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b664';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b663';
+import { drawReport } from './report.js?v=b664';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b663';
+import { PERSONA_BG } from './card.js?v=b664';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b663';
+import { checkPersonaShift } from './pshift.js?v=b664';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b663';
+import { diaryBackTo } from './diary.js?v=b664';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b663';
+import { mountGlobe } from './globe.js?v=b664';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -596,6 +596,7 @@ async function buildHome(){
   통.className = 'card quiet';
   통.id = 'homefp';
   $('home').appendChild(통);
+  홈정렬();
 
   await renderFoot(통);
 
@@ -640,7 +641,10 @@ async function buildHome(){
      맨 위에 있으면 안 굴려도 보입니다.
    ⚠ 카드 안에 두면 안 됩니다 — 아래 한 판은 전부 «보는 것»이고 이 띠만
      «하는 것»입니다. 옷이 달라야 그 차이가 읽힙니다(b438 과 같은 이유). */
-  $('home').prepend(매기러);
+  /* ⚠ **prepend 가 아니라 맨 아래입니다(b664).** 여는 순간 제일 먼저
+     읽는 것이 「평가하세요」이면 안 됩니다 — 이 탭은 보는 탭입니다. */
+  $('home').appendChild(매기러);
+  홈정렬();
 
   /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
      가져올 때는 제 카드였는데, 지구본·숫자와 «한 판»이어야 한 화면이
@@ -738,12 +742,41 @@ async function 오늘의인사(){
   if (앞으로){
     const 날 = Math.round(
       (Date.parse(앞으로.start_date) - Date.parse(today)) / 86400000);
-    return { 앞:'다음 여행',
+    /* ⚠ **「급한가」를 같이 냅니다(b664, 사용자 결정).** 홈에서 무엇이
+       맨 위에 서는지가 이 값으로 갈립니다 — 평소에는 지구본이 먼저지만
+       **여행이 7일 안으로 들어오면 이 줄만 위로 올라옵니다.**
+       「D-1 에도 스크롤해야 보이는 카운트다운」은 카운트다운이 아닙니다.
+     ⚠ 「N년 전 오늘」은 급한 것이 아닙니다 — 그 갈래는 `급` 이 없어
+       아래에 섭니다. 추억은 서두를 일이 아닙니다. */
+    return { 앞:'다음 여행', 급: 날 <= 7,
              뒤: 날 <= 0 ? `${앞으로.destination || 앞으로.title}, 오늘부터예요`
                          : `${앞으로.destination || 앞으로.title}까지 ${날}일`,
              여행:앞으로 };
   }
   return null;
+}
+
+/* ── 홈 줄 세우기(b664) ───────────────────────────────────────────────
+ * ⚠⚠ **도착 «순서»에 기대면 안 됩니다.** 셋(`#homefp` · `#greet` ·
+ *   `.tripbar`)이 서로 다른 비동기 길로 따로 옵니다. 전에는 붙이는
+ *   차례(prepend/appendChild)로 자리를 맞췄는데, 그러면 어느 하나가
+ *   늦게 오는 날 순서가 뒤집힙니다.
+ * → 붙일 때마다 여기서 **다시 세웁니다.** `appendChild` 는 이미 붙어
+ *   있는 것에는 «옮기기»라서, 원하는 차례로 부르기만 하면 정렬됩니다.
+ *
+ * 차례(사용자 결정, b664):
+ *   평소        지구본 → 인사 → 평가 재촉
+ *   여행 7일 안  인사 → 지구본 → 평가 재촉
+ * ⚠ 평가 재촉은 «언제나 맨 아래»입니다. 이 화면에서 유일한 잡일이라
+ *   가장 늦게 읽혀도 됩니다. */
+function 홈정렬(){
+  const 집 = $('home');
+  if (!집) return;
+  const 인사 = $('greet'), 판 = $('homefp');
+  const 재촉 = 집.querySelector(':scope > .tripbar');
+  const 급 = 인사?.dataset.soon === '1';
+  for (const el of (급 ? [인사, 판, 재촉] : [판, 인사, 재촉]))
+    if (el) 집.appendChild(el);
 }
 
 /* ⚠ **두 번 붙지 않게 id 로 막습니다.** 홈은 여러 길로 다시 그려지는데
@@ -771,7 +804,10 @@ async function 인사그리기(){
     `<span class="gt"><span class="gd">${esc(g.앞)}</span>
        <b>${esc(g.뒤)}</b></span><span class="go">›</span>`;
   el.onclick = () => ctx.openTrip(g.여행.id);
-  $('home').prepend(el);
+  /* 자리는 `홈정렬` 이 정합니다 — 여기서 prepend 하지 «않습니다»(b664). */
+  el.dataset.soon = g.급 ? '1' : '0';
+  $('home').appendChild(el);
+  홈정렬();
 }
 
 export async function reviewBar(){
@@ -1340,7 +1376,11 @@ async function renderFoot(통){
   자세히.type = 'button';
   자세히.textContent = '자세히 ›';
   자세히.onclick = 지도열기;
-  감쌈.appendChild(자세히);
+  /* ⚠⚠ **지구본 «위»가 아니라 대륙 숫자 «아래»입니다(b664).**
+     지구본 위에 글자를 얹으면 그것이 첫 화면의 유일한 «글»이 되어
+     눈이 거기로 갑니다 — 주인공은 지구본인데 이름표가 시선을 가져갑니다.
+     숫자 아래로 내리면 「이 숫자를 더 보기」라는 뜻이 되어 **말이
+     오히려 맞습니다.** 붙이는 곳은 아래 `box.appendChild(넘김)` 뒤입니다. */
 
   /* ⚠ ＋/− 단추가 여기 있었습니다(b560 → b561 에 걷음, 사용자 결정).
      확대는 손가락 둘로 집기와 마우스 휠 둘입니다. */
@@ -1384,6 +1424,7 @@ async function renderFoot(통){
     }, 900);
   } else {
     box.appendChild(넘김);
+    box.appendChild(자세히);   /* 넘김 «뒤»에 옵니다(b664, 위 주석) */
   }
 
   /* ⚠⚠ **rAF 로 붙이지 마십시오(b524).** ⚠⚠
