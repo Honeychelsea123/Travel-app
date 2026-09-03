@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b662';
-import { sb } from './db.js?v=b662';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b662';
-import { hm, todayYmd } from './calc.js?v=b662';
-import { starHtml, paintStars } from './stars.js?v=b662';
+import { $, esc } from './dom.js?v=b663';
+import { sb } from './db.js?v=b663';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b663';
+import { hm, todayYmd } from './calc.js?v=b663';
+import { starHtml, paintStars } from './stars.js?v=b663';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b662';
-import { cities, countryName } from './cities.js?v=b662';
-import { UN_CODES } from './un.js?v=b662';
-import { myRates, cityStat, visited } from './rate.js?v=b662';
-import { plans } from './trip.js?v=b662';
-import { loadCities } from './citysearch.js?v=b662';
+import { starValue } from './rateui.js?v=b663';
+import { cities, countryName } from './cities.js?v=b663';
+import { UN_CODES } from './un.js?v=b663';
+import { myRates, cityStat, visited } from './rate.js?v=b663';
+import { plans } from './trip.js?v=b663';
+import { loadCities } from './citysearch.js?v=b663';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b662';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b662';
+import { openCity } from './city.js?v=b663';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b663';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b662';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b663';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b662';
+import { drawReport } from './report.js?v=b663';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b662';
+import { PERSONA_BG } from './card.js?v=b663';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b662';
+import { checkPersonaShift } from './pshift.js?v=b663';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b662';
+import { diaryBackTo } from './diary.js?v=b663';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b662';
+import { mountGlobe } from './globe.js?v=b663';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -1107,6 +1107,11 @@ async function renderFoot(통){
 
     const 폭 = () => 줄기.clientWidth || 1;
 
+    /* 점은 **한 함수에서만** 찍습니다. 전에는 처음 박아둔 HTML(`i ? '' : 'on'`)
+       과 scroll 안의 계산, 두 곳이 각자 찍었습니다. 그래서 스크롤이 한 번도
+       안 일어나면 **점은 「전체」인데 화면은 다른 장**인 상태가 남았습니다. */
+    const 점찍기 = 실제 => 점들.forEach((d, k) => d.classList.toggle('on', k === 실제));
+
     /* ⚠⚠ **관성이 멎기 전에 옮기면 안 됩니다(b468).** ⚠⚠
        b455 는 복제 자리에 **닿는 즉시** 옮겼습니다. 아이폰에서는 손을 뗀
        뒤에도 관성 스크롤이 한동안 굴러가는데, 그 도중에 scrollLeft 를
@@ -1128,8 +1133,36 @@ async function renderFoot(통){
       옮기는중 = false;
     };
 
-    /* 카드가 폭을 가지려면 화면에 붙은 뒤여야 합니다 — 다음 프레임에 놓습니다. */
-    requestAnimationFrame(() => 옮기기(폭()));
+    /* ⚠⚠ **첫 자리를 rAF 에 맡기면 안 됩니다(b663, 사용자 신고: 「처음은
+       전체로 시작이야 오세아니아가 아니라」).**
+       전에는 `requestAnimationFrame(() => 옮기기(폭()))` 였습니다. 두 가지로
+       깨졌습니다:
+         ① `폭()` 은 `clientWidth || 1` 입니다. 그 프레임에 아직 폭이 0 이면
+            **`scrollLeft = 1`** 이 되어, 1px 밀린 «앞 복제 칸»에 그대로
+            앉습니다. 앞 복제는 **마지막 장**이라 홈을 열면 「오세아니아
+            0 / 14 · 0.0%」가 첫 화면이었습니다. 하필 한 곳도 안 간 대륙입니다.
+         ② 옮기지 못했으니 scroll 도 안 일어나고, 점은 처음 박아둔 대로
+            1번(전체)이 켜진 채 남습니다 → **점과 화면이 서로 다른 말**을
+            합니다. 그래서 「그냥 차례가 이상한가」로 보여서 오래 못 잡았습니다.
+     ⚠ **안 보이는 창에서는 rAF 가 아예 오지 않습니다**(기록: raf-hidden-window).
+       홈이 첫 탭이라 보통은 오지만, 폰에서 다른 탭으로 복귀하거나 백그라운드
+       에서 되살아난 판에서는 «영원히» 안 옵니다.
+     → 규칙: **폭을 재서 있으면 그 자리에서 바로 놓고, 없으면 아무것도 하지
+       않습니다.** 1px 같은 «가짜 폭»으로는 절대 옮기지 않습니다. 폭이
+       생기는 순간 ResizeObserver 가 알려주므로 그때 놓습니다. */
+    const 첫자리 = () => {
+      const w = 줄기.clientWidth;
+      if (!w) return false;      /* 가짜 폭으로 옮기지 않습니다 */
+      옮기기(w);                 /* 앞 복제 다음 = 진짜 첫 장 「전체」 */
+      점찍기(0);
+      return true;
+    };
+    if (!첫자리()){
+      /* ⚠ 성공하면 **끊습니다.** 안 끊으면 화면을 돌릴 때마다 「전체」로
+         되감겨서, 보고 있던 대륙이 사라집니다. */
+      const 지켜보기 = new ResizeObserver(() => { if (첫자리()) 지켜보기.disconnect(); });
+      지켜보기.observe(줄기);
+    }
 
     /* 스크롤이 멎었을 때만 자리를 고칩니다. `scrollend` 가 있으면 그것이
        제일 정확하고, 없는 기기에서는 마지막 scroll 로부터 140ms 로 봅니다. */
@@ -1151,7 +1184,7 @@ async function renderFoot(통){
          손가락을 따라 움직여야 넘기는 느낌이 납니다. */
       const i = Math.round(줄기.scrollLeft / 폭());
       const 실제 = ((i - 1) % 수 + 수) % 수;
-      점들.forEach((d, k) => d.classList.toggle('on', k === 실제));
+      점찍기(실제);
       /* 지도도 같이 옮깁니다(b500). 점과 **같은 자리**에서 정합니다 —
          따로 세면 점은 아시아인데 지도는 유럽인 순간이 생깁니다. */
       지도맞추기(장[실제]?.[0]);
