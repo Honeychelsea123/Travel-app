@@ -3279,6 +3279,16 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   뿐입니다(이름 + 막대 + % / 이름 + 두 값).
  * ⚠ `.fp` 는 `margin-top:8px` 을 갖고 있습니다. 줄 안에서는 가운데로
  *   맞춰야 하므로 여기서 0 으로 되돌립니다. */
+/* ⚠ **`.picks + .picks` 로는 안 나뉩니다.** 그 규칙은 두 줄이 «서로 붙어»
+     있을 때만 걸리는데, 이 카드는 사이에 막대(`.famerow`)와 갈림 줄
+     (`.gaprow`)이 끼어 있습니다. 그래서 여기서 따로 나눕니다 —
+     생김새는 `.picks + .picks` 와 **같은 값**으로 맞춥니다(선 하나, 10px). */
+.starcard .memo{ margin-top:6px; }
+.starcard .picks{ margin-top:12px; padding-top:10px;
+                  border-top:1px solid var(--divider-soft); }
+/* 마지막 줄이 카드 바닥에 붙지 않게. */
+.starcard > .gaprow:last-child, .starcard > .famerow:last-child{ padding-bottom:2px; }
+
 .famerow{ display:flex; align-items:center; gap:8px; padding:5px 0; }
 .famerow > span{ flex:none; width:104px; font-size:var(--f-sm); color:var(--ink-80); }
 .famerow > .fp{ flex:1; margin-top:0; }
