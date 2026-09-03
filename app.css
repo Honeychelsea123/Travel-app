@@ -3241,6 +3241,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   줄·도시 부제와 같은 말투여야 합니다.
  * ⚠ 사진은 정사각형입니다. 목록 사진과 같은 규칙(b625) — 비율이
  *   그때그때 달라지지 않게 두 변을 다 못박습니다. */
+/* ⚠ **홈만 위 여백을 뺍니다(b667, 사용자 요청: 「상단에 딱 붙이자」).**
+     `.tabpane` 의 `padding-top:var(--s-md)`(17px)가 상단바와 첫 줄 사이에
+     빈 띠를 만들고 있었습니다.
+   ⚠ **ID 라 클래스를 이깁니다** — 규칙 «차례»에 안 기댑니다.
+   ⚠ 다른 탭은 그대로 둡니다. 홈만 맨 위가 «줄»이라 붙어야 맞고,
+     다른 탭은 맨 위가 제목이라 여백이 있어야 합니다. */
+#homeview{ padding-top:0; }
+
 .greet{ display:flex; align-items:center; gap:var(--s-sm); cursor:pointer;
         padding:var(--s-sm) 0 var(--s-md);
         border-bottom:1px solid var(--line); margin-bottom:var(--s-md); }
@@ -3254,10 +3262,13 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .greet .go{ flex:none; color:var(--ink-48); font-size:var(--f-xl); }
 .greet:active{ opacity:.6; }
 
+/* ⚠ **위쪽 줄을 뺐습니다(b667, 사용자 결정: 「둘 다 위쪽 직선은 없애고
+     본문 아래쪽 직선만 유지하자」).** 바로 위에 있는 `.greet` 이 이미
+     `border-bottom` 을 갖고 있어서 **줄이 두 겹**으로 그어졌습니다.
+     맨 위에 설 때도 `.topbar` 가 제 밑줄을 갖고 있어 안 허전합니다. */
 .tripbar{ display:flex; align-items:center; gap:11px; cursor:pointer;
           padding:12px 0; border-radius:0;
           background:none; border:0;
-          border-top:1px solid var(--line);
           border-bottom:1px solid var(--line); }
 .tripbar:active{ background:var(--primary-06); }
 .tripbar .ic{ flex:none; display:flex; color:var(--primary); }

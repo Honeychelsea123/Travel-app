@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b666';
-import { sb } from './db.js?v=b666';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b666';
-import { hm, todayYmd } from './calc.js?v=b666';
-import { starHtml, paintStars } from './stars.js?v=b666';
+import { $, esc } from './dom.js?v=b667';
+import { sb } from './db.js?v=b667';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b667';
+import { hm, todayYmd } from './calc.js?v=b667';
+import { starHtml, paintStars } from './stars.js?v=b667';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b666';
-import { cities, countryName } from './cities.js?v=b666';
-import { UN_CODES } from './un.js?v=b666';
-import { myRates, cityStat, visited } from './rate.js?v=b666';
-import { plans } from './trip.js?v=b666';
-import { loadCities } from './citysearch.js?v=b666';
+import { starValue } from './rateui.js?v=b667';
+import { cities, countryName } from './cities.js?v=b667';
+import { UN_CODES } from './un.js?v=b667';
+import { myRates, cityStat, visited } from './rate.js?v=b667';
+import { plans } from './trip.js?v=b667';
+import { loadCities } from './citysearch.js?v=b667';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b666';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b666';
+import { openCity } from './city.js?v=b667';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b667';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b666';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b667';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b666';
+import { drawReport } from './report.js?v=b667';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b666';
+import { PERSONA_BG } from './card.js?v=b667';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b666';
+import { checkPersonaShift } from './pshift.js?v=b667';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b666';
+import { diaryBackTo } from './diary.js?v=b667';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b666';
+import { mountGlobe } from './globe.js?v=b667';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -596,6 +596,7 @@ async function buildHome(){
   통.className = 'card quiet';
   통.id = 'homefp';
   $('home').appendChild(통);
+  홈정렬();
 
   await renderFoot(통);
 
@@ -640,7 +641,8 @@ async function buildHome(){
      맨 위에 있으면 안 굴려도 보입니다.
    ⚠ 카드 안에 두면 안 됩니다 — 아래 한 판은 전부 «보는 것»이고 이 띠만
      «하는 것»입니다. 옷이 달라야 그 차이가 읽힙니다(b438 과 같은 이유). */
-  $('home').prepend(매기러);
+  $('home').appendChild(매기러);
+  홈정렬();
 
   /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
      가져올 때는 제 카드였는데, 지구본·숫자와 «한 판»이어야 한 화면이
@@ -746,6 +748,24 @@ async function 오늘의인사(){
   return null;
 }
 
+/* ── 홈 줄 세우기(b667, 사용자 신고) ─────────────────────────────────
+ * ⚠⚠ **`prepend` 두 번으로는 차례가 안 정해집니다.** 「다음 여행」과
+ *   「평가 재촉」이 둘 다 `prepend` 인데 **서로 다른 비동기 길로** 옵니다.
+ *   나중에 붙는 쪽이 위로 갑니다 — 즉 **누가 먼저 도착하느냐에 따라
+ *   차례가 뒤집힙니다.** 실측으로 잡혔습니다: 화면에는
+ *   `.tripbar` → `#greet` 순으로 떠 있었습니다(사용자 신고와 일치).
+ * → 붙일 때마다 여기서 **다시 세웁니다.** `appendChild` 는 이미 붙어
+ *   있는 것에는 «옮기기»라, 원하는 차례로 부르기만 하면 정렬됩니다.
+ *
+ * 차례(사용자 결정): **다음 여행 → 평가 재촉 → 지구본**
+ * ⚠ 「다음 여행」이 맨 위입니다. 잡일(평가 재촉)이 그 위에 서면 안 됩니다. */
+function 홈정렬(){
+  const 집 = $('home');
+  if (!집) return;
+  for (const el of [$('greet'), 집.querySelector(':scope > .tripbar'), $('homefp')])
+    if (el) 집.appendChild(el);
+}
+
 /* ⚠ **두 번 붙지 않게 id 로 막습니다.** 홈은 여러 길로 다시 그려지는데
      그때마다 얹으면 인사가 쌓입니다. */
 async function 인사그리기(){
@@ -771,7 +791,9 @@ async function 인사그리기(){
     `<span class="gt"><span class="gd">${esc(g.앞)}</span>
        <b>${esc(g.뒤)}</b></span><span class="go">›</span>`;
   el.onclick = () => ctx.openTrip(g.여행.id);
-  $('home').prepend(el);
+  /* 자리는 `홈정렬` 이 정합니다 — `prepend` 로는 못 정합니다(위 주석). */
+  $('home').appendChild(el);
+  홈정렬();
 }
 
 export async function reviewBar(){
