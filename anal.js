@@ -14,30 +14,30 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b657';
-import { sb } from './db.js?v=b657';
-import { cities } from './cities.js?v=b657';
+import { $, esc } from './dom.js?v=b658';
+import { sb } from './db.js?v=b658';
+import { cities } from './cities.js?v=b658';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b657';
+import { cityStat } from './rate.js?v=b658';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b657';
+import { loadRateData } from './rating.js?v=b658';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b657';
+import { renderPersona } from './persona.js?v=b658';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b657';
+import { similarPicks } from './rec.js?v=b658';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b657';
-import { pickCity } from './citysearch.js?v=b657';
+import { openNew } from './newtrip.js?v=b658';
+import { pickCity } from './citysearch.js?v=b658';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -212,23 +212,31 @@ export async function loadAnal(){
       }
     }
 
-    /* ── ③ 남들과 갈리는 곳 ──
-       ⚠ **남이 둘 이상인 곳만** 씁니다. 한 명이면 「남들」이 아니라 그 한
-         사람이고, 별점 하나로 「갈린다」고 말할 수 없습니다.
+    /* ── ③ 별점이 갈린 곳 ──
+       ⚠⚠ **「남이 둘 이상」으로 걸렀다가 되돌렸습니다(b658).** 실기기에서
+         재보니 그 조건에 맞는 도시가 **0곳**이었습니다 — 지금 이 앱은 쓰는
+         사람이 사실상 둘이라 거의 모든 도시가 `n_rated = 2`(나 + 한 명)
+         입니다. 그러면 이 줄은 **영구히 안 보입니다.**
+         「통계적으로 더 옳은 문턱」이 「아무것도 안 보이는 화면」이 되면
+         그건 옳은 문턱이 아닙니다.
+       → 한 명이어도 보여주고, **인원을 함께 적습니다.** `avgTail` 이 이미
+         같은 판단을 합니다(rate.js) — 숫자를 숨기지 말고 근거를 밝힌다.
+       ⚠ 그래서 제목이 「남들과 갈리는 곳」이 아니라 「별점이 갈린 곳」입니다.
+         한 명일 때 「남들」은 거짓입니다.
        ⚠ 1.0(별 한 칸) 미만은 안 넣습니다 — 반 칸 차이를 「갈린다」고 하면
          거의 모든 도시가 걸립니다. */
     {
-      const 갈림 = 짝.filter(x => x.남수 >= 2 && Math.abs(x.차) >= 1.0)
+      const 갈림 = 짝.filter(x => Math.abs(x.차) >= 1.0)
         .sort((a, b) => Math.abs(b.차) - Math.abs(a.차)).slice(0, 4);
       if (갈림.length){
         카드.insertAdjacentHTML('beforeend',
-          `<div class="picks"><span class="label">남들과 갈리는 곳</span></div>` +
+          `<div class="picks"><span class="label">별점이 갈린 곳</span></div>` +
           갈림.map(x => {
             const c = (cities || []).find(y => y.id === x.id);
             const 위 = x.차 > 0 ? 'up' : 'down';
             return `<div class="gaprow"><b>${esc(c?.name || x.id)}</b>
               <span class="${위}">내 ${x.내.toFixed(1)}</span>
-              <span>남들 ${x.남.toFixed(1)}</span></div>`;
+              <span>남 ${x.남.toFixed(1)} (${x.남수}명)</span></div>`;
           }).join(''));
         뭔가 = true;
       }
