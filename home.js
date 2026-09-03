@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b654';
-import { sb } from './db.js?v=b654';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b654';
-import { hm, todayYmd } from './calc.js?v=b654';
-import { starHtml, paintStars } from './stars.js?v=b654';
+import { $, esc } from './dom.js?v=b655';
+import { sb } from './db.js?v=b655';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b655';
+import { hm, todayYmd } from './calc.js?v=b655';
+import { starHtml, paintStars } from './stars.js?v=b655';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b654';
-import { cities, countryName } from './cities.js?v=b654';
-import { UN_CODES } from './un.js?v=b654';
-import { myRates, cityStat, visited } from './rate.js?v=b654';
-import { plans } from './trip.js?v=b654';
-import { loadCities } from './citysearch.js?v=b654';
+import { starValue } from './rateui.js?v=b655';
+import { cities, countryName } from './cities.js?v=b655';
+import { UN_CODES } from './un.js?v=b655';
+import { myRates, cityStat, visited } from './rate.js?v=b655';
+import { plans } from './trip.js?v=b655';
+import { loadCities } from './citysearch.js?v=b655';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b654';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b654';
+import { openCity } from './city.js?v=b655';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b655';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b654';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b655';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b654';
+import { drawReport } from './report.js?v=b655';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b654';
+import { PERSONA_BG } from './card.js?v=b655';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b654';
+import { checkPersonaShift } from './pshift.js?v=b655';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b654';
+import { diaryBackTo } from './diary.js?v=b655';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b654';
+import { mountGlobe } from './globe.js?v=b655';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -141,19 +141,36 @@ async function 나라카드(코드){
      눌렀을 때 **괌이 목록에 없어** 빈 카드가 뜹니다. 칠하는 기준과 고르는
      기준은 같아야 합니다. */
   const 이나라 = (cities || []).filter(c => c.cc === 코드);
-  /* ── 차례는 **유명한 순 하나**입니다 (b654, 사용자 지시) ─────────────
-   * 전에는 「매긴 곳(별점 순) → 안 매긴 곳(유명한 순)」 두 덩어리였습니다.
-   * 그래서 **첫 카드가 사람마다 달랐고**, 별 하나 준 소도시가 그 나라
-   * 대표 도시보다 앞에 섰습니다 — 밖에서 보면 차례가 없어 보입니다.
-   * ⚠ 이 자리는 「이 나라에서 뭐가 있더라」를 훑는 곳입니다. 내가 매긴
-   *   것을 다시 보는 자리가 아닙니다(그건 평가 탭이 합니다).
+  /* ── 차례 (b655, 사용자 지시) ────────────────────────────────────────
+   * 「내가 매긴게 제일 첫번째로 뜨게 하고, 우측으로 슬라이드할 때 내가
+   *  간 도시들 나오고, 안 매긴 거 중에 제일 유명한 것만 나오게」
+   *
+   * 규칙 둘, 그게 전부입니다 — **말로 설명되는 차례**여야 합니다.
+   *   ① 내가 매긴 곳 **전부** (별점 높은 순)
+   *   ② 그 뒤에 안 매긴 곳 중 **제일 유명한 칸만** (fame 최고값인 것들)
+   *
+   * ⚠ b654 에 「유명한 순 하나」로 폈다가 되돌립니다. 그때는 첫 카드가
+   *   사람마다 다른 것을 고치려던 것인데, 사용자가 원한 것은 그 반대
+   *   였습니다 — **내 기록이 먼저**. 밖에서 보기에 규칙이 없어 보였던
+   *   진짜 원인은 차례가 아니라 `scrollLeft` 였습니다(아래 주석).
+   * ⚠ **안 매긴 곳을 fame 최고값으로 «자릅니다».** 개수로 자르지 않는
+   *   이유는, 개수는 나라마다 뜻이 달라지기 때문입니다 — 도시가 셋뿐인
+   *   나라에서 「넷까지」는 전부와 같습니다. 「제일 유명한 칸」은 어디서나
+   *   같은 뜻입니다.
    * ⚠ `fame` 이 같으면 `pop_rank`, 그것도 같으면 이름순 — **끝까지
-   *   갈리는 차례**여야 합니다. 안 그러면 정렬이 기기마다 달라집니다
-   *   (자바스크립트 정렬은 같은 값의 순서를 보장하지 않습니다). */
-  const 목록 = 이나라.slice().sort((a, b) =>
-      (b.fame || 0) - (a.fame || 0) ||
-      ((a.pop_rank ?? 9999) - (b.pop_rank ?? 9999)) ||
-      a.name.localeCompare(b.name, 'ko')).slice(0, 12);
+   *   갈리는 차례**여야 합니다. 안 그러면 같은 값끼리의 앞뒤가 기기마다
+   *   달라집니다(자바스크립트 정렬은 그것을 보장하지 않습니다). */
+  const 매김 = c => myRates[c.id]?.stars != null;
+  const 나머지순 = (a, b) =>
+        (b.fame || 0) - (a.fame || 0) ||
+        ((a.pop_rank ?? 9999) - (b.pop_rank ?? 9999)) ||
+        a.name.localeCompare(b.name, 'ko');
+  const 매긴 = 이나라.filter(매김)
+    .sort((a, b) => (myRates[b.id].stars - myRates[a.id].stars) || 나머지순(a, b));
+  const 안매긴 = 이나라.filter(c => !매김(c));
+  const 최고 = 안매긴.reduce((m, c) => Math.max(m, c.fame || 0), 0);
+  const 유명한것 = 안매긴.filter(c => (c.fame || 0) === 최고).sort(나머지순);
+  const 목록 = [...매긴, ...유명한것].slice(0, 12);
   if (!목록.length) return;
   const 판 = 시트만들기();
   const 나라 = countryName[코드] || 코드;
