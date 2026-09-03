@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b661';
-import { openCity } from './city.js?v=b661';
-import { sb } from './db.js?v=b661';
-import { cities, countryName } from './cities.js?v=b661';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b661';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b661';
-import { fail } from './net.js?v=b661';
-import { arm } from './ui.js?v=b661';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b662';
+import { openCity } from './city.js?v=b662';
+import { sb } from './db.js?v=b662';
+import { cities, countryName } from './cities.js?v=b662';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b662';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b662';
+import { fail } from './net.js?v=b662';
+import { arm } from './ui.js?v=b662';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b661';
-import { shareCard } from './card.js?v=b661';
-import { todayYmd } from './calc.js?v=b661';
+import { 발자국스펙 } from './map.js?v=b662';
+import { shareCard } from './card.js?v=b662';
+import { todayYmd } from './calc.js?v=b662';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b661';
-import { loadCities } from './citysearch.js?v=b661';
-import { loadRateData, saveRate } from './rating.js?v=b661';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b662';
+import { loadCities } from './citysearch.js?v=b662';
+import { loadRateData, saveRate } from './rating.js?v=b662';
 
 let ctx = {
   me: () => null,
@@ -308,8 +308,12 @@ async function openFlagShelf(){
       if (!코드) return;
       격자.querySelectorAll('.fg.tapped').forEach(x => x.classList.remove('tapped'));
       칸.classList.add('tapped');
-      $('shelfhead').textContent =
-        (countryName[코드] || 코드) + (갔다.has(코드) ? '' : ' · 아직');
+      /* ⚠ 「· 아직」을 붙이지 «않습니다»(b662, 사용자: 「안간 곳 굳이
+         아직이라고 적지말고 나라만 알려줘」). 갔는지 안 갔는지는 **칸의
+         색이 이미 말하고 있습니다** — 회색이면 안 간 곳입니다. 같은 것을
+         글자로 또 적으면 새로 알려 주는 것 없이 제목만 길어집니다.
+         여기서 답할 것은 «어느 나라인가» 하나입니다. */
+      $('shelfhead').textContent = countryName[코드] || 코드;
     });
   }
 
