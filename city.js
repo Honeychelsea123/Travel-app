@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b660';
-import { sb } from './db.js?v=b660';
-import { cities, countryName, continentOf } from './cities.js?v=b660';
-import { myRates, cityStat, visited } from './rate.js?v=b660';
-import { starHtml, starValue } from './stars.js?v=b660';
-import { localTime } from './calc.js?v=b660';
-import { fail } from './net.js?v=b660';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b661';
+import { sb } from './db.js?v=b661';
+import { cities, countryName, continentOf } from './cities.js?v=b661';
+import { myRates, cityStat, visited } from './rate.js?v=b661';
+import { starHtml, starValue } from './stars.js?v=b661';
+import { localTime } from './calc.js?v=b661';
+import { fail } from './net.js?v=b661';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -199,7 +199,14 @@ function cvNoteDirty(){
   const saved = (myRates[cityOpen?.id]?.comment || '').trim();
   const b = $('cv_save');
   b.disabled = now === saved;
-  b.textContent = now ? '등록' : '지우기';
+  /* ⚠⚠ **「지우기」는 «지울 것이 있을 때»만 적습니다(b661).** 빈 칸이면
+     저장된 것이 없어도 「지우기」라고 적고 있었습니다 — 아무것도 없는데
+     「지우기」를 내미는 셈입니다. b660 까지는 저장 뒤에 글자가
+     「…했어요」로 «남아» 있어서 이 덫이 안 보였고, 단추를 쉬는 모양으로
+     되돌리게 만든 뒤에 드러났습니다.
+     ⚠ 잠겨 있어 누를 수는 없지만, **단추는 못 눌러도 글자를 읽힙니다.**
+     「막혀 있으니 아무 글자나 괜찮다」가 아닙니다. */
+  b.textContent = now ? '등록' : (saved ? '지우기' : '등록');
 }
 $('cv_note').addEventListener('input', cvNoteDirty);
 $('cv_save').addEventListener('click', async () => {
@@ -242,7 +249,8 @@ function 일기바뀜(){
   const 지금 = 칸.value.trim();
   const 적힌 = (myRates[cityOpen?.id]?.journal || '').trim();
   b.disabled = 지금 === 적힌;
-  b.textContent = 지금 ? '저장' : '지우기';
+  /* 위 `cvNoteDirty` 와 **같은 규칙**입니다(b661 주석). */
+  b.textContent = 지금 ? '저장' : (적힌 ? '지우기' : '저장');
   /* 남은 글자는 **끝이 가까울 때만** 말합니다. 늘 세고 있으면 일기가
      아니라 원고지가 됩니다. */
   const 남음 = 4000 - 칸.value.length;
