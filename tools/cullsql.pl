@@ -10,6 +10,12 @@ open my $n, '<:encoding(UTF-8)', "$G/new682.tsv" or die $!;
 while (<$n>){ chomp; my ($id,$ko,$en,$cc) = split /\t/; $이름{$id} = [$ko,$cc] if $id }
 close $n;
 
+# ⚠⚠ **그 나라의 마지막 도시는 안 지웁니다(b656 에서 겪은 것).**
+#   077 을 넣고 나서 바하마·세인트키츠·세이셸에 도시가 0 이 됐습니다.
+#   도시가 0 이면 그 나라는 앱에서 «없는 나라»입니다 — 깃발도 못 켜고
+#   평가도 못 합니다. **애초에 도시를 늘린 이유가 그것이었는데**
+#   정리하다 목적을 깎아먹었습니다(db/079 로 되살렸습니다).
+#   → 아래에서 나라별로 세어, 다 지워질 나라는 제일 유명한 하나를 남깁니다.
 my @del;
 open my $d, '<:encoding(UTF-8)', "$G/ALLDEL2.txt" or die $!;
 while (<$d>){ chomp; s/\r$//; push @del, $_ if /^[a-z0-9-]+$/ }
