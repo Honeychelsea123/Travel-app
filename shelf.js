@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b672';
-import { openCity } from './city.js?v=b672';
-import { sb } from './db.js?v=b672';
-import { cities, countryName, cityCountry } from './cities.js?v=b672';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b672';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b672';
-import { fail } from './net.js?v=b672';
-import { arm } from './ui.js?v=b672';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b673';
+import { openCity } from './city.js?v=b673';
+import { sb } from './db.js?v=b673';
+import { cities, countryName, cityCountry } from './cities.js?v=b673';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b673';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b673';
+import { fail } from './net.js?v=b673';
+import { arm } from './ui.js?v=b673';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b672';
-import { shareCard } from './card.js?v=b672';
-import { todayYmd } from './calc.js?v=b672';
+import { 발자국스펙 } from './map.js?v=b673';
+import { shareCard } from './card.js?v=b673';
+import { todayYmd } from './calc.js?v=b673';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b672';
-import { loadCities } from './citysearch.js?v=b672';
-import { loadRateData, saveRate } from './rating.js?v=b672';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b673';
+import { loadCities } from './citysearch.js?v=b673';
+import { loadRateData, saveRate } from './rating.js?v=b673';
 
 let ctx = {
   me: () => null,
@@ -67,6 +67,8 @@ const SHELF_CAT = { place:['식사','카페'], spot:['관광','쇼핑'] };
    로 보관함이 통째로 안 열렸습니다. 한 곳에서만 쓰는 것은 그 곳에 둡니다. */
 let shelfKind = 'mine';
 let shelfSort = 'new';
+/* 'all' 이면 안 거릅니다. 값은 별갈래() 가 내는 것과 같습니다. */
+let shelfStar = 'all';
 
 /* ── 빈 보관함 (b363) ────────────────────────────────────────────────
  * 전에는 두 곳 다 그냥 **'아직 없어요.'** 였습니다. 무엇이 없는지가 안
@@ -97,22 +99,97 @@ const shelfEmpty = () =>
 const HAS_STARS = k => k === 'been' || k === 'mine' || k === 'comment'
                     || k === 'place' || k === 'spot';
 
-/* 목록을 정렬 규칙에 맞게 세웁니다.
-   at 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다.
-   별점 칸(★5 · ★4점대 …)도 만들어 봤는데 줄이 둘이 되면서 답답했습니다.
-   목록이 짧아서 정렬만으로 충분합니다. */
+/* ── 정렬과 거르기(b673) ──────────────────────────────────────────────
+ * ⚠⚠ **예전에 별점 칸을 «칩 줄»로 만들었다가 걷어냈습니다** — 그때
+ *   주석: 「줄이 둘이 되면서 답답했습니다」. 이번에는 줄을 안 늘리고
+ *   **시트**로 갑니다(index.html 의 `#shsheet`). 같은 기능을 다시
+ *   넣는 것이니, 걷어낸 이유를 피했는지부터 보십시오.
+ * ⚠ `at` 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다.
+ * ⚠ `fame` 은 **작을수록 유명합니다**(db/033). 이름 때문에 거꾸로 읽기
+ *   쉬운 자리라 b656 에 한 번 데었습니다. */
 function shelfArrange(list){
   const by = {
     new:  (a, b) => String(b.at || '').localeCompare(String(a.at || '')),
     high: (a, b) => (b.stars ?? -1) - (a.stars ?? -1),
     low:  (a, b) => (a.stars ?? 99) - (b.stars ?? 99),
-  }[shelfSort];
+    avg:  (a, b) => (Number(cityStat[b.id]?.avg_stars) || -1)
+                  - (Number(cityStat[a.id]?.avg_stars) || -1),
+    fame: (a, b) => (a.fame ?? 9) - (b.fame ?? 9),
+    name: () => 0,
+  }[shelfSort] || (() => 0);
   return [...list].sort((a, b) => by(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
 }
 
+/* 별점 한 칸이 어느 갈래인가. `null` 은 아직 안 매긴 것입니다.
+ * ⚠ 4.5 는 「★4점대」입니다 — 반 칸을 올려 ★5 에 넣으면 ★5 가 부풀고,
+ *   정작 5.0 을 준 곳이 묻힙니다. */
+const 별갈래 = s => s == null ? 'none'
+                  : s >= 5    ? '5'
+                  : s >= 4    ? '4'
+                  : s >= 3    ? '3'
+                  : s >= 2    ? '2' : '1';
+const shelfSift = list =>
+  shelfStar === 'all' ? list : list.filter(c => 별갈래(c.stars) === shelfStar);
+
+/* 시트의 개수·표식과 위 컨트롤 두 개의 글자를 한 번에 맞춥니다.
+ * ⚠ **한 함수에서만 칠합니다.** 표식을 여기저기서 켜면 시트와 컨트롤이
+ *   다른 말을 하는 날이 옵니다(b663 에 점과 화면이 갈렸던 그 부류). */
+function 거르개칸채우기(all){
+  const 셈 = { all: all.length, '5':0, '4':0, '3':0, '2':0, '1':0, none:0 };
+  for (const c of all) 셈[별갈래(c.stars)]++;
+
+  $('shsheet').querySelectorAll('[data-sstar]').forEach(b => {
+    const k = b.dataset.sstar, n = 셈[k] || 0;
+    const 칸 = b.querySelector('i');
+    if (칸) 칸.textContent = n;
+    /* ⚠ 0 곳은 **감추지 않고 흐리게** 둡니다 — 「없다」도 정보입니다.
+       다만 지금 고른 것이 0 이 되는 일은 없습니다(고를 수가 없으므로). */
+    b.disabled = n === 0 && k !== 'all';
+    b.classList.toggle('on', k === shelfStar);
+  });
+  $('shsheet').querySelectorAll('[data-ssort]').forEach(b =>
+    b.classList.toggle('on', b.dataset.ssort === shelfSort));
+
+  $('sh_star').textContent = STAR_NAME[shelfStar] || '별점 전체';
+  $('sh_sort').textContent = SORT_NAME[shelfSort] || '최근에 매긴 순';
+  /* 거르개가 걸려 있으면 컨트롤이 «걸려 있다»고 말해야 합니다 —
+     목록이 왜 짧은지 모르는 것이 이 화면에서 제일 나쁜 일입니다. */
+  $('sh_star').classList.toggle('on', shelfStar !== 'all');
+}
+
+/* ── 시트(b673) ───────────────────────────────────────────────────────
+ * ⚠ 고르면 **바로 반영하되 시트는 안 닫습니다** — 정렬과 별점을 이어서
+ *   고를 수 있어야 합니다. 닫는 것은 「완료」·바깥 누르기·뒤로가기 셋.
+ * ⚠ 기록에 자리를 남깁니다(`t2:'shsheet'`). 안 남기면 뒤로가기가 시트를
+ *   건너뛰고 그 아래 보관함을 닫습니다. 닫는 쪽은 tripview.js 의 사슬. */
+const SORT_NAME = { new:'최근에 매긴 순', high:'내 별점 높은 순',
+                    low:'내 별점 낮은 순', avg:'다른 사람 평균 높은 순',
+                    fame:'유명한 순', name:'가나다 순' };
+const STAR_NAME = { all:'별점 전체', '5':'★5', '4':'★4점대', '3':'★3점대',
+                    '2':'★2점대', '1':'★1점대 이하', none:'아직 안 매김' };
+
+export function 거르개열기(){
+  $('shsheet').classList.remove('hide');
+  if (history.state?.t2 !== 'shsheet') history.pushState({ t2:'shsheet' }, '');
+}
+export function 거르개닫기(뒤로온것){
+  const 판 = $('shsheet');
+  if (!판 || 판.classList.contains('hide')) return;
+  if (!뒤로온것 && history.state?.t2 === 'shsheet'){ history.back(); return; }
+  판.classList.add('hide');
+}
+
 $('shelffilter').addEventListener('click', e => {
+  if (e.target.closest('#sh_star') || e.target.closest('#sh_sort')) 거르개열기();
+});
+$('shsheet').addEventListener('click', e => {
+  if (e.target.closest('[data-shclose]')) return 거르개닫기();
   const s = e.target.closest('[data-ssort]');
-  if (s){ shelfSort = s.dataset.ssort; openShelf(shelfKind); }
+  if (s){ shelfSort = s.dataset.ssort; openShelf(shelfKind); return; }
+  const t = e.target.closest('[data-sstar]');
+  /* ⚠ 0 곳인 것은 `disabled` 라 여기까지 안 옵니다. 그래도 한 번 더
+     막습니다 — 브라우저마다 disabled 요소의 이벤트가 다릅니다. */
+  if (t && !t.disabled){ shelfStar = t.dataset.sstar; openShelf(shelfKind); }
 });
 
 /* 도시가 아니라 일정 줄에 답니다. 일정 짤 때 이미 넣은 것이라
@@ -414,9 +491,10 @@ export async function openShelf(kind){
      넘어올 때 걸려 있던 조건도 풀어둡니다 — 다른 보관함의 조건이 남아 있으면
      왜 목록이 짧은지 알 수가 없습니다. */
   $('shelffilter').classList.toggle('hide', !HAS_STARS(kind));
-  if (!HAS_STARS(kind)) shelfSort = 'new';
-  $('shelffilter').querySelectorAll('[data-ssort]').forEach(b =>
-    b.classList.toggle('on', b.dataset.ssort === shelfSort));
+  /* ⚠ 별점이 없는 보관함으로 넘어가면 **정렬도 거르개도 풀어둡니다.**
+     남겨두면 다음에 별점 보관함을 열었을 때 왜 목록이 짧은지 알 수가
+     없습니다(b649 에 공유 단추로 겪은 것과 같은 부류). */
+  if (!HAS_STARS(kind)){ shelfSort = 'new'; shelfStar = 'all'; }
 
   /* ⚠⚠ **벽은 여기서 먼저 벗깁니다(b607).** 아래 세 갈래(맛집·관광지·
      후기·배지)는 여기서 «일찍 나가»서, 벽을 씌우고 벗기는 줄을 지나가지
@@ -454,7 +532,11 @@ export async function openShelf(kind){
   }).map(c => ({ ...c, stars: myRates[c.id]?.stars ?? null,
                         at: myRates[c.id]?.updated_at || '' }));
 
-  const list = HAS_STARS(kind) ? shelfArrange(all)
+  /* ⚠ **세는 것은 «거르기 전»입니다.** 시트의 개수는 「★4 를 고르면 몇
+     곳이 남나」를 말해야 하는데, 거른 뒤에 세면 고른 칸만 숫자가 남고
+     나머지가 전부 0 이 됩니다. */
+  거르개칸채우기(all);
+  const list = HAS_STARS(kind) ? shelfArrange(shelfSift(all))
     : [...all].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
   /* **개수만 있고 평균이 없었습니다.** 74곳을 매겼다는 것보다 "평균 몇 점을
@@ -551,6 +633,10 @@ export async function openShelf(kind){
 
 export function closeShelf(fromPop){
   if (!fromPop && history.state?.t2 === 'shelf'){ history.back(); return; }
+  /* ⚠ 시트를 «먼저» 닫습니다(b673). 안 닫으면 보관함이 사라진 자리에
+     시트만 떠 있게 됩니다 — 그 아래는 프로필인데 시트는 보관함 것입니다.
+     기록은 이미 되감긴 참이라 `true` 로 부릅니다. */
+  거르개닫기(true);
   $('shelfpane').classList.add('hide');
   $('profpane').classList.remove('hide');
   coverDeck(false);

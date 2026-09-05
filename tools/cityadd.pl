@@ -17,7 +17,8 @@
 # ⚠ 그래도 안 되면 **그 줄은 못 넣습니다.** 억지로 채우지 않고 표에
 #   표시만 합니다 — 사람이 보고 정할 일입니다.
 #
-# 쓰는 법: perl tools/cityadd.pl
+# 쓰는 법: perl tools/cityadd.pl tools/citydata/add-b673.tsv
+#          (안 주면 add-b671.tsv 를 읽습니다)
 
 use strict; use warnings; use utf8;
 binmode(STDOUT, ':encoding(UTF-8)');
@@ -63,9 +64,15 @@ my %범위 = (
   BR => [-33.8,   5.3,  -74.0, -34.7],
   CA => [ 41.6,  83.2, -141.0, -52.6],
   RU => [ 41.1,  82.0,   19.6, 190.0],
+  # 미국은 하와이(경도 -156)와 알래스카까지 넣어야 합니다 —
+  # 본토만 잡으면 하와이가 「나라 밖」으로 걸립니다.
+  US => [ 18.0,  72.0, -180.0, -66.0],
 );
 
-open my $h, '<:encoding(UTF-8)', 'tools/citydata/add-b671.tsv' or die $!;
+my $입력 = $ARGV[0] || 'tools/citydata/add-b671.tsv';
+(my $출력 = $입력) =~ s/.tsv$/-ok.tsv/;
+
+open my $h, '<:encoding(UTF-8)', $입력 or die "$입력: $!";
 my (@좋음, @나쁨);
 while (<$h>){
   chomp; s/\r$//;
@@ -124,7 +131,7 @@ if (@나쁨){
   printf("   %-22s %-14s %s\n", @$_) for @나쁨;
 }
 
-open my $o, '>:encoding(UTF-8)', 'tools/citydata/add-b671-ok.tsv' or die $!;
+open my $o, '>:encoding(UTF-8)', $출력 or die "$출력: $!";
 print $o join("\t", @$_), "\n" for @좋음;
 close $o;
-print "\n→ tools/citydata/add-b671-ok.tsv\n";
+print "\n→ $출력\n";

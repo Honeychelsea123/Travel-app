@@ -328,6 +328,69 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
      코드나 습관으로 `hidden` 이 들어올 수 있으니 여기서 막아 둡니다. */
 [hidden]{ display:none !important; }
 
+/* ── 보관함 정렬·거르기(b673) ─────────────────────────────────────────
+ * 칩 세 개가 있던 자리에 컨트롤 둘. **줄 수는 그대로 하나**입니다 —
+ * 예전에 별점 칸을 칩 줄로 만들었다가 「줄이 둘이 되면서 답답하다」고
+ * 걷어낸 적이 있어서, 그걸 피하는 것이 이 설계의 핵심입니다. */
+.shbar{ display:flex; gap:8px; align-items:center; margin:0 0 8px; }
+.shpill{ appearance:none; cursor:pointer; font:inherit;
+         font-size:var(--f-sm); font-weight:600; color:var(--ink);
+         background:var(--canvas); border:1px solid var(--line);
+         border-radius:var(--r-pill); padding:5px 12px; }
+/* 누를 수 있다는 것을 알리는 것은 ▾ 하나면 됩니다. 화살표를 글자로
+   적으면 줄바꿈에 딸려가므로 가짜 요소로 붙입니다. */
+.shpill::after{ content:'▾'; margin-left:5px; color:var(--ink-48);
+                font-size:.9em; }
+.shpill:active{ background:var(--pearl); }
+/* 거르개가 걸려 있으면 «걸려 있다»가 보여야 합니다 — 목록이 왜 짧은지
+   모르는 것이 이 화면에서 제일 나쁜 일입니다. */
+.shpill.on{ background:var(--ink); border-color:var(--ink); color:var(--canvas); }
+.shpill.on::after{ color:var(--canvas); opacity:.7; }
+
+/* ── 시트 ── `#gsheet` 와 «같은 문법»입니다(그쪽 주석 참고).
+ * ⚠ 어두운 막은 화면 «전체»를 덮습니다 — 카드 위만 덮으면 아래 여백으로
+ *   목록이 비쳐서 시트가 떠 있는 게 아니라 끼어 있는 것처럼 보입니다.
+ * ⚠ 폭은 앱 본문과 같은 480px 입니다. `main` 의 max-width 를 바꾸면
+ *   여기도 같이 고쳐야 합니다. */
+#shsheet{ position:fixed; inset:0; z-index:1200; display:flex;
+          flex-direction:column; justify-content:flex-end;
+          pointer-events:none; }
+.shdim{ position:absolute; inset:0; background:rgba(0,0,0,.32);
+        pointer-events:auto; animation:gsfade var(--t) var(--ease); }
+.shwrap{ pointer-events:auto; width:100%; max-width:480px; margin:0 auto;
+         padding:0 10px calc(var(--tabh, 58px) + 14px);
+         animation:gsup .22s var(--ease); }
+.shcard{ background:var(--canvas); border:1px solid var(--line);
+         border-radius:16px; overflow:hidden;
+         max-height:76vh; overflow-y:auto; }
+.shhead{ display:flex; align-items:center; justify-content:space-between;
+         padding:14px 16px 10px; font-weight:700; font-size:var(--f-lg);
+         position:sticky; top:0; background:var(--canvas);
+         border-bottom:1px solid var(--divider-soft); }
+.shdone{ appearance:none; border:0; background:none; cursor:pointer;
+         font:inherit; font-size:var(--f-sm); font-weight:700;
+         color:var(--primary); padding:4px 2px; }
+.shgrp{ padding:10px 8px 12px; }
+.shgrp + .shgrp{ border-top:1px solid var(--divider-soft); }
+.shgrp > .label{ display:block; padding:0 8px 4px; font-size:var(--f-xs);
+                 letter-spacing:.1em; color:var(--ink-48); }
+/* 한 줄에 하나. 고르는 자리라 손가락이 넉넉해야 합니다(44px). */
+.shopt{ appearance:none; border:0; background:none; cursor:pointer;
+        font:inherit; font-size:var(--f-md); color:var(--ink);
+        display:flex; align-items:center; width:100%; gap:8px;
+        padding:11px 10px; border-radius:10px; text-align:left; }
+.shopt > i{ margin-left:auto; font-style:normal; font-size:var(--f-sm);
+            color:var(--ink-48); font-variant-numeric:tabular-nums; }
+.shopt:active{ background:var(--pearl); }
+.shopt.on{ font-weight:700; color:var(--primary); }
+/* ⚠ 고른 것은 **글자만 굵게** 하지 않고 표식을 답니다 — 굵기만으로는
+   「이게 골라진 것」인지 「그냥 진한 글씨」인지 못 가릅니다. */
+.shopt.on::before{ content:'✓'; color:var(--primary); font-weight:700; }
+.shopt:not(.on)::before{ content:''; width:1em; }
+/* 0 곳인 항목. **감추지 않고 흐리게** 둡니다 — 없다는 것도 정보입니다. */
+.shopt[disabled]{ opacity:.38; cursor:default; }
+.shopt[disabled]:active{ background:none; }
+
 /* ── 상단바 ── 화면 폭을 꽉 채우는 직각 바(b420 → b427 → b429) ────────
  * 처음엔 `--r-pill` 알약이었습니다. **떠 있는 알약**처럼 보인다는 지적을
  * 받고 b427 에서 16px 로 낮췄는데 그것도 아니었습니다.

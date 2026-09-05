@@ -14,30 +14,30 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b672';
-import { sb } from './db.js?v=b672';
-import { cities } from './cities.js?v=b672';
+import { $, esc } from './dom.js?v=b673';
+import { sb } from './db.js?v=b673';
+import { cities } from './cities.js?v=b673';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b672';
+import { cityStat } from './rate.js?v=b673';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b672';
+import { loadRateData } from './rating.js?v=b673';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b672';
+import { renderPersona } from './persona.js?v=b673';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b672';
+import { similarPicks } from './rec.js?v=b673';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b672';
-import { pickCity } from './citysearch.js?v=b672';
+import { openNew } from './newtrip.js?v=b673';
+import { pickCity } from './citysearch.js?v=b673';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -175,14 +175,17 @@ export async function loadAnal(){
       const 차 = 내평 - 남평;
       /* 0.3 은 별 반 칸보다 작습니다. 그 아래를 「짜다/후하다」고 말하면
          다음에 한 곳 더 매길 때 말이 뒤집힙니다. */
-      const 말 = 차 >= 0.3 ? '남들보다 후하게 줍니다'
-               : 차 <= -0.3 ? '남들보다 짜게 줍니다'
-               : '남들과 비슷하게 줍니다';
+      /* ⚠ 「남들」이 아니라 「다른 사람」입니다(b673) — 아래 칸 이름과
+         같은 말을 써야 합니다. 한 카드 안에서 「남들」과 「다른 사람」이
+         섞이면 둘이 다른 것인 줄 압니다. */
+      const 말 = 차 >= 0.3 ? '다른 사람보다 후하게 줍니다'
+               : 차 <= -0.3 ? '다른 사람보다 짜게 줍니다'
+               : '다른 사람과 비슷하게 줍니다';
       const 부호 = 차 > 0 ? '+' : '';
       카드.insertAdjacentHTML('beforeend', `
         <div class="fpnums">
           <div><b>${내평.toFixed(1)}</b><span>내 평균</span></div>
-          <div><b>${남평.toFixed(1)}</b><span>남들 평균</span></div>
+          <div><b>${남평.toFixed(1)}</b><span>다른 사람 평균</span></div>
           <div><b>${부호}${차.toFixed(1)}</b><span>차이</span></div>
         </div>
         <div class="memo">${esc(말)} · 견준 곳 ${짝.length}곳</div>`);
@@ -237,9 +240,15 @@ export async function loadAnal(){
           갈림.map(x => {
             const c = (cities || []).find(y => y.id === x.id);
             const 위 = x.차 > 0 ? 'up' : 'down';
+            /* ⚠ **「내 / 남」이 아니라 「나 / 다른 사람」입니다(b673,
+               사용자 결정).** 한 글자 라벨은 짧아서 좋은 게 아니라
+               **말 같지 않습니다** — 「남 3.0」은 읽히지 않고 해독됩니다.
+             ⚠ 사람 수 괄호는 남겨 둡니다. 이 앱은 아직 쓰는 사람이
+               둘이라 대부분 「(1명)」인데, 그걸 감추면 「다른 사람들이
+               이렇게 매겼다」로 읽혀 **여러 명인 척**하게 됩니다. */
             return `<div class="gaprow"><b>${esc(c?.name || x.id)}</b>
-              <span class="${위}">내 ${x.내.toFixed(1)}</span>
-              <span>남 ${x.남.toFixed(1)} (${x.남수}명)</span></div>`;
+              <span class="${위}">나 ${x.내.toFixed(1)}</span>
+              <span>다른 사람 ${x.남.toFixed(1)} (${x.남수}명)</span></div>`;
           }).join(''));
         뭔가 = true;
       }
