@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b668';
-import { sb } from './db.js?v=b668';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b668';
-import { hm, todayYmd } from './calc.js?v=b668';
-import { starHtml, paintStars } from './stars.js?v=b668';
+import { $, esc } from './dom.js?v=b669';
+import { sb } from './db.js?v=b669';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b669';
+import { hm, todayYmd } from './calc.js?v=b669';
+import { starHtml, paintStars } from './stars.js?v=b669';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b668';
-import { cities, countryName } from './cities.js?v=b668';
-import { UN_CODES } from './un.js?v=b668';
-import { myRates, cityStat, visited } from './rate.js?v=b668';
-import { plans } from './trip.js?v=b668';
-import { loadCities } from './citysearch.js?v=b668';
+import { starValue } from './rateui.js?v=b669';
+import { cities, countryName } from './cities.js?v=b669';
+import { UN_CODES } from './un.js?v=b669';
+import { myRates, cityStat, visited } from './rate.js?v=b669';
+import { plans } from './trip.js?v=b669';
+import { loadCities } from './citysearch.js?v=b669';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b668';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b668';
+import { openCity } from './city.js?v=b669';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b669';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b668';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b669';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b668';
+import { drawReport } from './report.js?v=b669';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b668';
+import { PERSONA_BG } from './card.js?v=b669';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b668';
+import { checkPersonaShift } from './pshift.js?v=b669';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b668';
+import { diaryBackTo } from './diary.js?v=b669';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b668';
+import { mountGlobe } from './globe.js?v=b669';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -1059,10 +1059,24 @@ async function renderFoot(통){
   const 첫장 = '전체';
   const 장 = [[첫장, f.countries || 0, UN_COUNTRIES],
               ...CONT.map(([이름, 전체]) => [이름, by[이름] || 0, 전체])];
-  /* ⚠ **양끝에 복제를 답니다(b455).** [마지막] 실제일곱장 [첫장].
-     끝에서 되감는 방식은 옮기는 순간이 눈에 보여 **툭 끊겨** 보였습니다.
-     복제가 있으면 왼쪽 끝까지 밀었을 때 **마지막 장과 똑같은 그림**이
-     이미 보이고, 그 뒤에 진짜 자리로 옮기므로 옮긴 것이 안 보입니다. */
+  /* ⚠⚠ **뒤에만 복제를 답니다 — 앞 복제를 걷었습니다(b669).**
+     b455 는 양끝에 달았습니다: [마지막] 실제일곱장 [첫장]. 그러면
+     **`scrollLeft = 0` 이 「오세아니아」(앞 복제)** 가 됩니다. 즉
+     **쉬는 자리가 틀린 자리**입니다.
+   ⚠⚠ 그래서 브라우저가 무슨 이유로든 스크롤을 0 으로 되돌리면
+     — 숨어 있던 판이 보이게 될 때 «먼저 보던 자리»를 되살리는 것이
+     대표적입니다(b654) — **무조건 오세아니아로 열렸습니다.**
+     b663 과 b666 에서 두 번 고쳤는데 둘 다 「0 에서 480 으로 옮기기」를
+     더 확실히 하려는 것이었지, **0 이 틀린 자리라는 것 자체**를
+     안 건드렸습니다. 사용자가 세 번째로 신고했습니다.
+   → 앞 복제를 빼면 **`0` 이 곧 「전체」** 입니다. 되돌아가도 맞는
+     자리이므로 **옮길 일이 아예 없어집니다**(`첫자리`·`놓을때까지`를
+     통째로 걷었습니다). 시점에 기대는 코드가 하나도 안 남습니다.
+   ⚠ 잃는 것: 「전체」에서 **왼쪽으로** 밀어 오세아니아로 가는 되감기.
+     오른쪽 되감기는 뒤 복제로 그대로 삽니다. 「전체」는 첫 장이라
+     왼쪽 끝에서 멈추는 것이 오히려 자연스럽습니다.
+   ⚠ **되돌리려거든 세 곳을 같이 보십시오** — 여기(복제) · `멎으면`의
+     복제 판정 · 점 계산(`실제`). 하나만 되돌리면 차례가 한 칸 밀립니다. */
   const 칸 = ([이름, n, 전체]) => `
       <div class="swcard">
         <div class="swtitle">${esc(이름)}</div>
@@ -1085,7 +1099,7 @@ async function renderFoot(통){
   const 넘김 = document.createElement('div');
   넘김.className = 'swipe';
   넘김.innerHTML =
-    `<div class="swrow">${칸(장[장.length - 1])}${장.map(칸).join('')}${칸(장[0])}</div>
+    `<div class="swrow">${장.map(칸).join('')}${칸(장[0])}</div>
      <div class="swdots">${장.map((_, i) =>
        `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>`;
   /* ⚠ **밑줄이 비어 있었습니다(b542 에서 채움).** 성향 탭의 발자국 카드에는
@@ -1172,34 +1186,17 @@ async function renderFoot(통){
      → 규칙: **폭을 재서 있으면 그 자리에서 바로 놓고, 없으면 아무것도 하지
        않습니다.** 1px 같은 «가짜 폭»으로는 절대 옮기지 않습니다. 폭이
        생기는 순간 ResizeObserver 가 알려주므로 그때 놓습니다. */
-    /* ⚠⚠ **b663 의 고침이 덜 됐습니다(b666 에 마저).** 폭만 보고
-       옮겼는데, 폭이 있어도 **카드가 아직 안 깔렸으면** `scrollWidth`
-       가 `clientWidth` 와 같아서 **480 을 넣어도 0 으로 잘립니다.**
-       실측: 소스에는 이 고침이 들어 있는데 `scrollLeft` 는 0 이고
-       화면은 앞 복제(오세아니아)였습니다.
-     → 규칙: **넣고 나서 «들어갔는지» 확인합니다.** 대입은 요청이지
-       약속이 아닙니다 — 스크롤 값은 브라우저가 잘라낼 수 있습니다.
-     ⚠ 다시 부르는 것은 `setTimeout` 입니다. rAF 로 하면 창이 숨어
-       있을 때 아예 안 옵니다(메모리 `raf-hidden-window`). globe.js 의
-       `헛걸음` 과 **같은 모양**으로 돌립니다.
-     ⚠ 무한히 기다리지 않습니다 — 40번(약 5초)이면 그만둡니다. */
-    const 첫자리 = () => {
-      const w = 줄기.clientWidth;
-      if (!w) return false;                    /* 가짜 폭으로 옮기지 않습니다 */
-      if (줄기.scrollWidth <= w) return false;  /* 카드가 아직 안 깔렸습니다 */
-      옮기기(w);                               /* 앞 복제 다음 = 진짜 첫 장 「전체」 */
-      if (Math.abs(줄기.scrollLeft - w) > 2) return false;   /* 안 들어갔습니다 */
-      점찍기(0);
-      return true;
-    };
-    {
-      let 헛걸음 = 0;
-      const 놓을때까지 = () => {
-        if (첫자리()) return;
-        if (헛걸음++ < 40) setTimeout(놓을때까지, 120);
-      };
-      놓을때까지();
-    }
+    /* ⚠⚠ **여기 있던 `첫자리`·`놓을때까지` 를 통째로 걷었습니다(b669).**
+       b663·b666 에 두 판에 걸쳐 「0 에서 480 으로 옮기기」를 점점 더
+       단단하게 만들었습니다 — 폭을 확인하고, `scrollWidth` 를 확인하고,
+       넣은 뒤 들어갔는지 확인하고, 40번까지 다시 시도하고.
+       **그런데도 사용자가 세 번째로 같은 신고를 했습니다.**
+     → 고칠 곳이 «옮기는 방법»이 아니었습니다. **`0` 이 틀린 자리라는
+       것**이 문제였습니다. 앞 복제를 없애 `0` 을 곧 「전체」로 만드니
+       (위 복제 주석) **옮길 일이 아예 없어집니다.**
+     ⚠ 배운 것: 같은 자리를 두 번 고쳤는데 또 나면, **고침을 더
+       단단하게 만들지 말고 «왜 고쳐야만 하는가»를 없애라.**
+       시점에 기대는 코드는 아무리 단단하게 만들어도 시점에 기댑니다. */
 
     /* 스크롤이 멎었을 때만 자리를 고칩니다. `scrollend` 가 있으면 그것이
        제일 정확하고, 없는 기기에서는 마지막 scroll 로부터 140ms 로 봅니다. */
@@ -1207,8 +1204,8 @@ async function renderFoot(통){
       if (옮기는중) return;
       const w = 폭();
       const i = Math.round(줄기.scrollLeft / w);
-      if (i === 0)            옮기기(수 * w);   /* 앞 복제 → 진짜 마지막 */
-      else if (i === 수 + 1)  옮기기(w);        /* 뒤 복제 → 진짜 첫 장 */
+      /* 뒤 복제(맨 끝) → 진짜 첫 장(0). 앞 복제는 b669 에 없앴습니다. */
+      if (i === 수) 옮기기(0);
       /* ⚠ 복제가 아니어도 어긋나 있으면 맞춰 둡니다 — 관성이 스냅을
          못 잡고 멎는 경우가 드물게 있습니다. */
       else if (줄기.scrollLeft % w) 옮기기(i * w);
@@ -1220,7 +1217,9 @@ async function renderFoot(통){
       /* 점은 **즉시** 갱신합니다 — 이건 자리를 안 건드리므로 안전하고,
          손가락을 따라 움직여야 넘기는 느낌이 납니다. */
       const i = Math.round(줄기.scrollLeft / 폭());
-      const 실제 = ((i - 1) % 수 + 수) % 수;
+      /* 앞 복제가 없으므로 «칸 번호 = 장 번호»입니다(b669). 뒤 복제만
+         `% 수` 로 첫 장에 접힙니다. */
+      const 실제 = i % 수;
       점찍기(실제);
       /* 지도도 같이 옮깁니다(b500). 점과 **같은 자리**에서 정합니다 —
          따로 세면 점은 아시아인데 지도는 유럽인 순간이 생깁니다. */
