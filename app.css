@@ -2964,7 +2964,13 @@ body.noreorder .ev .grip{ display:none; }
   background:var(--canvas);
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
-  border:0; border-top:1px solid var(--line);
+  /* ⚠⚠ **위 선을 걷었습니다(b678, 사용자 신고: 「같은색으로 통일해달랬는데
+     왜 경계선이 보이는거야」).** 배경은 이미 본문과 «같은 색»이었는데
+     (둘 다 #F3F0E8, 실측) `border-top:1px solid var(--line)` 이 따로
+     남아 있었습니다. **색을 맞추는 것과 선을 없애는 것은 다른 일입니다.**
+   ⚠ 선이 없어도 내용이 탭바 밑으로 비치지는 않습니다 — 배경이 불투명
+     하고, 판마다 `padding-bottom` 으로 탭바 높이를 비워 둡니다. */
+  border:0;
   box-shadow:none;
 }
 .tabbar button{
