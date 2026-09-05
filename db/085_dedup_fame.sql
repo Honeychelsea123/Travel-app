@@ -44,7 +44,12 @@ update public.city_ratings r
 -- (나) 둘 다 매긴 사람은 «센 쪽»으로 합칩니다. 남은 죽는 쪽 줄은 아래
 --      delete 의 cascade 로 사라집니다.
 update public.city_ratings k
-   set stars         = greatest(coalesce(k.stars, 0), coalesce(d.stars, 0)),
+   -- ⚠⚠ **`nullif` 없이 `greatest` 만 쓰면 터집니다.** 둘 다 별점이 없으면
+   --   0.0 이 되는데 stars 는 0.5~5.0 만 받습니다(db/012 의 체크 제약).
+   --   처음엔 «뒤에서 null 로 되돌리기»로 막으려 했는데, **제약은 그 자리에서
+   --   걸립니다** — 실제로 `23514 city_ratings_stars_check` 로 터졌습니다
+   --   (okinawa, 0.0). 나중에 고치는 것으로는 못 막습니다.
+   set stars         = nullif(greatest(coalesce(k.stars, 0), coalesce(d.stars, 0)), 0),
        been          = k.been or d.been,
        want          = k.want or d.want,
        comment       = coalesce(k.comment, d.comment),
@@ -60,10 +65,6 @@ update public.city_ratings k
     on d.city_id = m.dead
  where k.city_id = m.keep
    and k.user_id = d.user_id;
--- ⚠ `greatest` 는 0 을 돌려줄 수 있는데 stars 는 0 을 못 받습니다(체크 제약).
---   0 이 되는 경우는 «둘 다 별점이 없던 것»이므로 null 로 되돌립니다.
-update public.city_ratings set stars = null where stars = 0;
-
 -- (다) 일정의 도시 연결도 옮깁니다.
 update public.trip_legs l
    set city_id = m.keep
