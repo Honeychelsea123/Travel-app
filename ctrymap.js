@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc } from './dom.js?v=b683';
-import { cities, countryName } from './cities.js?v=b683';
-import { myRates, visited } from './rate.js?v=b683';
+import { $, esc } from './dom.js?v=b684';
+import { cities, countryName } from './cities.js?v=b684';
+import { myRates, visited } from './rate.js?v=b684';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -58,6 +58,16 @@ export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
    world.js 와 같은 칸입니다: x = (경도+180)/360*1000 · y = (90-위도)/180*500 */
 const PX = 경도 => (Number(경도) + 180) / 360 * 1000;
 const PY = 위도 => (90 - Number(위도)) / 180 * 500;
+
+/* ⚠⚠ **도시 좌표 칸은 `center_lat`·`center_lng` 입니다**(citysearch.js 의 BASE).
+   `lat`/`lng` 로 읽으면 **한 곳도 안 잡혀** 나라 지도가 통째로 안 열립니다 —
+   b683 이 그렇게 나갔습니다(사용자 신고: 「러시아를 눌렀는데 바로 카드가 나온다」).
+   ⚠ 내가 만든 시험 자료는 `lat`/`lng` 였고 그래서 검사를 통과했습니다.
+     **자료 이름은 지어내지 말고 실물에서 확인할 것.**
+   ⚠ `lat`/`lng` 도 받쳐 둡니다 — 일정·후보처럼 다른 칸 이름을 쓰는 곳에서
+     넘어온 줄이 섞일 수 있습니다. */
+const 위 = c => c?.center_lat ?? c?.lat;
+const 경 = c => c?.center_lng ?? c?.lng;
 
 /* ── 나라 땅 ──────────────────────────────────────────────────────────
    한 번 받으면 안 버립니다. null 은 「받아봤는데 없더라」입니다 — 그래야
@@ -184,7 +194,7 @@ let 지금 = null;               /* { cc, 점들, 배, 판 } — 누를 때 씁�
 const 문턱 = 3;   /* 3u ≈ 120km. 제 나라 해안에서 이보다 멀면 「그 땅이 아니다」 */
 
 function 그리기(cc, 조각0, 도시들, 폭px, 높px){
-  let 점들 = 도시들.map(c => ({ c, x: PX(c.lng), y: PY(c.lat) }));
+  let 점들 = 도시들.map(c => ({ c, x: PX(경(c)), y: PY(위(c)) }));
 
   /* ① **날짜변경선을 폅니다.** 안 하면 러시아 상자가 «지도 한 바퀴»(1000)가
        되고, 미국은 알류샨 열도 때문에 -62~1076 이 됩니다(실측). 그러면 본토
@@ -401,7 +411,7 @@ window.addEventListener('resize', () => {
 
 /* ── 열기 ─────────────────────────────────────────────────────────────*/
 export async function openCountryMap(cc){
-  const 도시들 = (cities || []).filter(c => c.cc === cc && c.lat != null && c.lng != null);
+  const 도시들 = (cities || []).filter(c => c.cc === cc && 위(c) != null && 경(c) != null);
   if (도시들.length < CMAP_MIN) return false;
 
   const 판 = 판만들기();
