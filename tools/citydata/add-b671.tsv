@@ -1,0 +1,26 @@
+# 넣을 도시 — b671
+# 칸: id <tab> 한글이름 <tab> 한국어위키_문서제목 <tab> 나라코드 <tab> 영문이름
+#
+# ⚠ 「위키 문서제목」은 이름과 «다를 수 있습니다» — 동음이의 꼬리표가 붙습니다
+#   (이카 → 「이카 (페루)」). 좌표는 그 문서에서 받아 «확인»합니다.
+# ⚠ 이름을 지어내지 않습니다(메모리 city-list-expansion). 좌표가 안 맞거나
+#   문서가 없으면 그 줄은 «안 넣습니다».
+selcuk	셀축	셀축	TR	Selcuk
+fethiye	페티예	페티예	TR	Fethiye
+zaanse-schans	잔세스칸스	잔세스칸스	NL	Zaanse Schans
+arles	아를	아를	FR	Arles
+ica	이카	이카 (페루)	PE	Ica, Peru
+pucon	푸콘	푸콘	CL	Pucon
+san-pedro-de-atacama	산페드로데아타카마	산페드로데아타카마	CL	San Pedro de Atacama
+valdivia	발디비아	발디비아	CL	Valdivia
+salta	살타	살타	AR	Salta
+el-calafate	엘칼라파테	엘칼라파테	AR	El Calafate
+asuncion	아순시온	아순시온	PY	Asuncion
+copacabana-bo	코파카바나	코파카바나 (볼리비아)	BO	Copacabana, Bolivia
+sucre	수크레	수크레	BO	Sucre
+positano	포지타노	포지타노	IT	Positano
+mont-saint-michel	몽생미셸	몽생미셸	FR	Mont-Saint-Michel
+foz-do-iguacu	포스두이구아수	포스두이구아수	BR	Foz do Iguacu
+niagara-falls	나이아가라폴스	나이아가라폴스 (온타리오주)	CA	Niagara Falls
+vladivostok	블라디보스토크	블라디보스토크	RU	Vladivostok
+irkutsk	이르쿠츠크	이르쿠츠크	RU	Irkutsk
