@@ -44,14 +44,14 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b687';
-import { cities, countryName, countryInfo } from './cities.js?v=b687';
-import { myRates, visited } from './rate.js?v=b687';
+import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b688';
+import { cities, countryName, countryInfo } from './cities.js?v=b688';
+import { myRates, visited } from './rate.js?v=b688';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
 
-let ctx = { 나라카드: async () => {} };
+let ctx = { 나라카드: async () => {}, 지구덮기: () => {} };
 export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 좌표 ─────────────────────────────────────────────────────────────
@@ -97,6 +97,30 @@ function 조각내기(d){
    다시 파싱할 필요가 없으니 거기서 꺼내 씁니다. */
 const 성긴땅 = cc => 조각내기(
   $('worldland')?.querySelector(`path[data-c="${cc}"]`)?.getAttribute('d'));
+
+/* ── 이웃 나라 상자를 «한 번만» 잰다(b688) ────────────────────────────
+   배경으로 깔 이웃을 고르려면 나라마다 상자가 필요한데, 그릴 때마다 175개를
+   다시 파싱할 이유가 없습니다. 한 번 재서 들고 있습니다(9,879점, 몇 ms).
+   ⚠ `#worldland` 가 아직 안 채워졌으면 **캐시하지 않습니다** — 빈 목록을
+     들고 있으면 그 뒤로 영영 이웃이 안 그려집니다. */
+let 이웃표 = null;
+function 이웃목록(){
+  if (이웃표) return 이웃표;
+  const 밭 = $('worldland');
+  const 것들 = [];
+  if (!밭) return 것들;
+  for (const p of 밭.querySelectorAll('path[data-c]')){
+    const d = p.getAttribute('d'); if (!d) continue;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const q of 조각내기(d)){
+      if (q.x0 < x0) x0 = q.x0; if (q.x1 > x1) x1 = q.x1;
+      if (q.y0 < y0) y0 = q.y0; if (q.y1 > y1) y1 = q.y1;
+    }
+    것들.push({ cc: p.getAttribute('data-c'), d, x0, x1, y0, y1 });
+  }
+  if (것들.length) 이웃표 = 것들;
+  return 것들;
+}
 
 async function 나라땅(cc){
   if (땅캐시[cc] !== undefined) return 땅캐시[cc];
@@ -366,14 +390,24 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
   const 배 = 폭px / vw;                     /* 지도 한 칸이 화면 몇 px 인가 */
   const 선 = 0.4 / 배;
 
-  /* ⑤ 이웃 나라를 흐리게. 나라 하나만 그리면 허공에 뜬 것처럼 보입니다.
+  /* ⑦ 이웃 나라를 흐리게. 나라 하나만 그리면 허공에 뜬 것처럼 보입니다.
      ⚠ 110m 을 그대로 씁니다 — 배경이라 정밀할 필요가 없고, 이미 화면에
-       들어 있어 파싱이 공짜입니다. */
+       들어 있어 파싱이 공짜입니다.
+     ⚠⚠ **보이는 것만 넣습니다(b688).** 전에는 그릴 때마다 175개를 통째로
+       넣었습니다 — 미국·러시아에서는 날짜변경선 때문에 한 벌 더 그려 **348개**
+       였습니다. 아프리카·남미까지 다 넣고 화면 밖에서 잘라내던 셈입니다.
+     ⚠ 날짜변경선을 넘은 나라(러시아·미국)는 창이 0 또는 1000 을 넘어가므로
+       이웃을 ±1000 옮겨 한 벌 더 그립니다. 그 벌도 상자로 거릅니다. */
   let 이웃 = '';
-  const 밭 = $('worldland');
-  if (밭) for (const p of 밭.querySelectorAll('path[data-c]')){
-    if (p.getAttribute('data-c') === cc) continue;
-    이웃 += `<path d="${p.getAttribute('d')}" class="cm-far2"/>`;
+  for (const s of [0, ...(vx < 0 ? [-1000] : []), ...(vx + vw > 1000 ? [1000] : [])]){
+    let 안것들 = '';
+    for (const n of 이웃목록()){
+      if (n.cc === cc) continue;
+      if (n.x1 + s < vx || n.x0 + s > vx + vw || n.y1 < vy || n.y0 > vy + vh) continue;
+      안것들 += `<path d="${n.d}"/>`;
+    }
+    if (안것들) 이웃 += `<g class="cm-far" stroke-width="${선.toFixed(3)}"` +
+      (s ? ` transform="translate(${s} 0)"` : '') + `>${안것들}</g>`;
   }
 
   const 길 = q => 'M' + q.점.map(([x, y]) => x.toFixed(2) + ' ' + y.toFixed(2)).join('L') + 'Z';
@@ -445,11 +479,7 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
     `<svg viewBox="${vx.toFixed(2)} ${vy.toFixed(2)} ${vw.toFixed(2)} ${vh.toFixed(2)}" ` +
     `preserveAspectRatio="xMidYMid meet">` +
     `<defs><clipPath id="${cid}"><path d="${나라길}"/></clipPath></defs>` +
-    /* ⚠ 날짜변경선을 편 나라(러시아·미국)는 창이 0 또는 1000 을 넘어갑니다.
-       이웃은 0~1000 자리에 있으므로 한 벌 더 옮겨 그려야 그쪽이 안 빕니다. */
-    [0, ...(vx < 0 ? [-1000] : []), ...(vx + vw > 1000 ? [1000] : [])].map(s =>
-      `<g class="cm-far" stroke-width="${선.toFixed(3)}"` +
-      (s ? ` transform="translate(${s} 0)"` : '') + `>${이웃}</g>`).join('') +
+    이웃 +
     `<g clip-path="url(#${cid})">` +
       `<path d="${나라길}" class="cm-land"/>${칠.join('')}</g>` +
     `<path d="${나라길}" class="cm-edge" stroke-width="${(선 * 1.8).toFixed(3)}"/>` +
@@ -652,6 +682,10 @@ export async function openCountryMap(cc){
   판.querySelector('.cmbox').innerHTML = '';
   판.classList.remove('hide');
   document.body.classList.add('cmapopen');
+  /* ⚠ 지구본을 세웁니다(b688). 이 판이 화면을 다 덮지만 지구본은 그것을
+     스스로 모릅니다 — IntersectionObserver 는 «창 안에 있나»만 봅니다.
+     안 세우면 덮인 채로 30fps 로 9,918개 점을 계속 다시 그립니다. */
+  ctx.지구덮기(true);
 
   /* ⚠ **자료를 기다리기 «전»에 판을 띄웁니다.** 처음 여는 나라는 파일을
      받아야 하는데(한국 2.2KB), 그 사이 아무 일도 안 일어나면 눌러도 안
@@ -691,6 +725,7 @@ function 닫기(뒤로){
   if (!판 || 판.classList.contains('hide')) return;
   판.classList.add('hide');
   document.body.classList.remove('cmapopen');
+  ctx.지구덮기(false);
   지금 = null;
   if (!뒤로 && history.state?.t2 === 'cmap') history.back();
 }
