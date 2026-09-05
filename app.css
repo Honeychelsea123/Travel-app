@@ -4848,3 +4848,56 @@ body.pvon{ overflow:hidden; }
 .dgfoot{ display:flex; align-items:center; gap:10px; margin-top:18px;
          padding-top:12px; border-top:1px dashed var(--dg-edge); }
 .dgfoot button{ margin-left:auto; }
+
+/* ── 나라 지도 화면(b682) ───────────────────────────────────────────
+ * 지구본에서 나라를 누르면 그 나라만 크게 펴고, 도시를 «영역»으로 나눠
+ * 보여줍니다(ctrymap.js). 사용자 결정: 「영역으로 하고 도시있는 조각으로」
+ *
+ * ⚠ **z-index 1180 입니다 — 카드 시트(#gsheet 1200)보다 «아래».**
+ *   도시를 누르면 시트가 이 판 «위»에 얹혀야 합니다.
+ * ⚠ 판을 #tabdeck 밖(body)에 붙입니다(ctrymap.js) — 안에 두면 탭 덱의
+ *   가로 스크롤에 딸려갑니다.
+ */
+#cmappane{ position:fixed; inset:0; z-index:1180; background:var(--canvas);
+           display:flex; flex-direction:column; }
+#cmappane.hide{ display:none; }
+.cmhead{ flex:none; display:flex; align-items:center; gap:9px;
+         padding:calc(7px + env(safe-area-inset-top)) 13px 7px; }
+.cmback{ width:34px; height:34px; padding:0; flex:none; border-radius:50%;
+         border:1px solid var(--line); background:var(--canvas); color:var(--ink);
+         display:flex; align-items:center; justify-content:center; }
+.cmname{ font-size:17px; font-weight:700; }
+.cmcount{ margin-left:auto; font-size:12.5px; color:var(--ink-48);
+          font-variant-numeric:tabular-nums; }
+
+.cmbox{ flex:1; min-height:0; position:relative; }
+.cmbox svg{ display:block; width:100%; height:100%; }
+/* 이웃 나라 — 흐리게. 나라 하나만 그리면 허공에 뜬 것처럼 보입니다. */
+.cm-far path{ fill:var(--globe-land); opacity:.5; stroke:var(--canvas); }
+.cm-land{ fill:#EFE7DB; }
+/* ⚠ 색은 **두 단계만** 씁니다. 도시마다 다른 색을 주면 지도가 아니라
+   모자이크가 됩니다. 진한 쪽이 「다녀온 곳」입니다. */
+.cm-on{  fill:rgba(242,94,38,.52); stroke:var(--canvas); }
+.cm-off{ fill:rgba(242,94,38,.09); stroke:var(--canvas); }
+.cm-edge{ fill:none; stroke:var(--brand); stroke-linejoin:round; }
+/* ⚠ 이름에 종이색 테두리를 두릅니다(paint-order:stroke) — 안 그러면
+   영역 경계선 위에서 글자가 안 읽힙니다. */
+/* ⚠⚠ **글자 크기는 «화면 px 그대로»입니다.** 이름은 지도 칸이 아니라 화면
+   자로 그린 뒤 무리째 줄입니다(ctrymap.js 의 scale(1/배) 무리) — 지도 칸으로
+   적으면 font-size 가 0.43px 이 되고, 그 크기에서 크롬이 자간을 0 으로
+   반올림해 「서귀포」 석 자가 한 자리에 겹쳐 찍힙니다(실측). */
+.cm-nm{ fill:var(--ink); stroke:var(--canvas); paint-order:stroke; stroke-width:2.6;
+        font-size:10px; font-weight:600; text-anchor:middle; }
+.cm-dot{ fill:var(--ink); opacity:.5; }
+
+/* 상자 밖으로 떼어낸 먼 곳(괌·사이판·타히티). 없애면 «사라진» 것이 됩니다. */
+.cmfar{ flex:none; display:flex; gap:6px; align-items:center; overflow-x:auto;
+        padding:9px 13px calc(9px + env(safe-area-inset-bottom)); }
+.cmfar.hide{ display:none; }
+.cmfar::-webkit-scrollbar{ display:none; }
+.cmfarlab{ flex:none; font-size:11px; letter-spacing:.06em; color:var(--ink-48); }
+.cmchip{ flex:none; font:inherit; font-size:13px; padding:5px 11px; color:var(--ink);
+         border:1px solid var(--line); background:var(--canvas); border-radius:999px; }
+/* 지도가 화면을 다 덮습니다 — 하단바가 지도를 가리면 안 됩니다
+   (큰 지도의 body.bigmap 과 같은 수법). */
+body.cmapopen .tabbar{ display:none; }
