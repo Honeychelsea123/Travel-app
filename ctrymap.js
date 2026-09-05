@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b689';
-import { cities, countryName, countryInfo } from './cities.js?v=b689';
-import { myRates, visited } from './rate.js?v=b689';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b690';
+import { cities, countryName, countryInfo } from './cities.js?v=b690';
+import { myRates, visited } from './rate.js?v=b690';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -422,32 +422,47 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
           이것이 점의 절반을 걷어냅니다.
      ⚠ 확대하면(배율이 커지면) 자릿수가 늘어 다시 정밀해집니다 — 크게 볼수록
        정확해야 하므로 그 방향이 맞습니다. */
-  const 자 = 배 >= 3 ? 2 : 1;
-  const 짧게 = v => {
-    let s = v.toFixed(자);
-    if (s.indexOf('.') > 0) s = s.replace(/\.?0+$/, '');
-    if (s === '' || s === '-' || s === '-0') s = '0';
-    return s.replace(/^(-?)0\./, '$1.');
+  /* ⚠⚠ **정수로 셉니다 — `toFixed` 도 정규식도 안 씁니다(b690).**
+     b689 는 마크업을 60% 줄였지만 «큰 나라에서 그리는 시간을 두 배»로
+     늘렸습니다(실측: 미국 9.9 → 19.3ms · 러시아 15.0 → 30.5). 점마다
+     toFixed 두 번 + 정규식 두 번이었기 때문입니다. 줄이려던 innerHTML 쪽
+     값은 1ms 남짓이라 **바꿔서 손해였습니다.**
+     → 좌표를 «배수 곱한 정수»로 한 번만 만들고 문자열은 이어 붙이기만 합니다. */
+  const 배수 = 배 >= 3 ? 100 : 10;          /* 화면 0.1px 보다 잘게 적을 이유가 없다 */
+  const 짧게 = n => {
+    if (n === 0) return '0';
+    const 음 = n < 0; if (음) n = -n;
+    const 정 = (n / 배수) | 0, 소 = n - 정 * 배수;
+    let s;
+    if (소 === 0) s = '' + 정;
+    else if (배수 === 100) s = (정 || '') + (소 < 10 ? '.0' + 소 : (소 % 10 ? '.' + 소 : '.' + 소 / 10));
+    else s = (정 || '') + '.' + 소;
+    return 음 ? '-' + s : s;
   };
-  const 이어 = (s, a, b) => s + (s === '' || a.startsWith('-') ? '' : ' ') + a +
-                            (b.startsWith('-') ? '' : ' ') + b;
   const 그리길 = 점들 => {
     if (!점들 || 점들.length < 3) return '';
-    const r = v => +v.toFixed(자);
-    let px = r(점들[0][0]), py = r(점들[0][1]);
+    let px = Math.round(점들[0][0] * 배수), py = Math.round(점들[0][1] * 배수);
+    const sx = px, sy = py;
     let seg = '';
     for (let i = 1; i < 점들.length; i++){
-      const x = r(점들[i][0]), y = r(점들[i][1]);
+      const x = Math.round(점들[i][0] * 배수), y = Math.round(점들[i][1] * 배수);
       if (x === px && y === py) continue;      /* 반올림해서 같은 자리가 된 점 */
-      seg = 이어(seg, 짧게(x - px), 짧게(y - py));
+      const a = 짧게(x - px), b = 짧게(y - py);
+      seg += (seg === '' || a.charCodeAt(0) === 45 ? '' : ' ') + a +
+             (b.charCodeAt(0) === 45 ? '' : ' ') + b;
       px = x; py = y;
     }
-    return 'M' + 짧게(r(점들[0][0])) + ' ' + 짧게(r(점들[0][1])) +
-           (seg ? 'l' + seg : '') + 'Z';
+    return 'M' + 짧게(sx) + ' ' + 짧게(sy) + (seg ? 'l' + seg : '') + 'Z';
   };
   const 길 = q => 그리길(q.점);
   const 다각 = poly => 그리길(poly);
-  const 나라길 = 조각.map(길).join(' ');
+  /* ⚠ **화면에 걸친 조각만 그립니다.** 크게 보면(줌) 나머지는 어차피 안
+     보이는데 문자열에는 다 들어갑니다.
+   ⚠ `쓸것`(도시가 있는 조각)이 아니라 `조각`(전부)에서 거릅니다 — 도시가
+     없는 작은 섬도 화면 안에 있으면 그려야 «지도»가 됩니다. */
+  const 나라길 = 조각
+    .filter(q => !(q.x1 < vx || q.x0 > vx + vw || q.y1 < vy || q.y0 > vy + vh))
+    .map(길).join(' ');
 
   /* ⑥ 영역. 사이트에는 **화면 밖 도시도** 넣습니다 — 안 넣으면 가장자리
      도시의 땅이 이웃 몫까지 집어삼킵니다. */
@@ -513,11 +528,15 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
   const svg =
     `<svg viewBox="${vx.toFixed(2)} ${vy.toFixed(2)} ${vw.toFixed(2)} ${vh.toFixed(2)}" ` +
     `preserveAspectRatio="xMidYMid meet">` +
-    `<defs><clipPath id="${cid}"><path d="${나라길}"/></clipPath></defs>` +
+    /* ⚠ **나라 경로를 «한 번만» 적습니다(b690).** 자르개·바탕칠·테두리 셋이
+       같은 경로를 쓰는데 전에는 문자열을 세 벌 넣었습니다 — 미국이면
+       32,000자짜리가 세 번, 그것만 95KB 였습니다. */
+    `<defs><path id="cmland" d="${나라길}"/>` +
+      `<clipPath id="${cid}"><use href="#cmland"/></clipPath></defs>` +
     이웃 +
     `<g clip-path="url(#${cid})">` +
-      `<path d="${나라길}" class="cm-land"/>${칠.join('')}</g>` +
-    `<path d="${나라길}" class="cm-edge" stroke-width="${(선 * 1.8).toFixed(3)}"/>` +
+      `<use href="#cmland" class="cm-land"/>${칠.join('')}</g>` +
+    `<use href="#cmland" class="cm-edge" stroke-width="${(선 * 1.8).toFixed(3)}"/>` +
     `<g transform="translate(${vx.toFixed(2)} ${vy.toFixed(2)}) scale(${(1 / 배).toFixed(6)})">` +
       글.join('') + `</g></svg>`;
 
@@ -717,6 +736,18 @@ export async function openCountryMap(cc){
   판.querySelector('.cmbox').innerHTML = '';
   판.classList.remove('hide');
   document.body.classList.add('cmapopen');
+  /* ⚠⚠ **덱을 덮습니다(b690).** 안 덮으면 «닫을 때 아무도 안 되살립니다» —
+     도시 화면(city.js)이 덱을 숨기고 이 판을 「가린판」에 적는데, 닫을 때
+     `closeCity` 는 가린판만 되살리고 **덱 되살리는 줄에 못 가고 return**
+     합니다(그 판이 덱을 덮고 있다고 보기 때문). 그러고 이 판을 닫으면
+     덱이 숨은 채로 남아 **기록 탭이 빈 화면**이 됩니다(실측으로 재현).
+     덮는 판은 다 이렇게 합니다 — shelf.js·map.js·persona.js·diary.js·admin.js.
+   ⚠ **기록도 여기서 얹습니다.** 전에는 자료를 받은 «뒤»에 얹었는데,
+     처음 여는 나라는 그 사이가 260~330ms 라 그 안에 뒤로를 누르면
+     ① 사슬이 판을 닫고 ② 자료가 와서 안 보이는 판에 다 그리고
+     ③ 화면 없는 기록이 한 칸 얹혔습니다. 다음 뒤로가 씹히던 이유입니다. */
+  coverDeck(true);
+  if (history.state?.t2 !== 'cmap') history.pushState({ t2:'cmap' }, '');
   /* ⚠ 지구본을 세웁니다(b688). 이 판이 화면을 다 덮지만 지구본은 그것을
      스스로 모릅니다 — IntersectionObserver 는 «창 안에 있나»만 봅니다.
      안 세우면 덮인 채로 30fps 로 9,918개 점을 계속 다시 그립니다. */
@@ -729,10 +760,15 @@ export async function openCountryMap(cc){
   if (!조각 || !조각.length){
     조각 = 성긴땅(cc);            /* 50m 이 없으면 110m 이라도 */
   }
+  /* ⚠ 기다리는 동안 사용자가 뒤로를 눌렀을 수 있습니다. 그러면 여기서
+     멈춥니다 — 안 그러면 닫힌 판에 지도를 다 그립니다. */
+  if (!isCountryMapOpen()) return true;
   if (!조각.length){
     /* 지도가 아예 없는 나라입니다. 판을 닫고 카드로 넘깁니다 —
-       빈 화면을 띄우느니 하던 대로 하는 편이 낫습니다. */
-    닫기(true);
+       빈 화면을 띄우느니 하던 대로 하는 편이 낫습니다.
+       ⚠ `닫기()` 입니다(`닫기(true)` 아님) — 위에서 기록을 이미 얹었으므로
+         그 칸을 «되감아야» 합니다. */
+    닫기();
     return false;
   }
 
@@ -740,8 +776,6 @@ export async function openCountryMap(cc){
      상자를 그대로 쓰면 엉뚱한 곳이 잡힙니다. */
   지금 = null;
   칠하기(cc, 조각, 도시들);
-
-  if (history.state?.t2 !== 'cmap') history.pushState({ t2:'cmap' }, '');
   return true;
 }
 
@@ -760,6 +794,7 @@ function 닫기(뒤로){
   if (!판 || 판.classList.contains('hide')) return;
   판.classList.add('hide');
   document.body.classList.remove('cmapopen');
+  coverDeck(false);
   ctx.지구덮기(false);
   지금 = null;
   if (!뒤로 && history.state?.t2 === 'cmap') history.back();

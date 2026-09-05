@@ -25,7 +25,7 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b689';
+import { $ } from './dom.js?v=b690';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -508,7 +508,9 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(46,38,26,.22)'; ctx.stroke();
   };
-  const 다시 = () => { if (!예약) 예약 = requestAnimationFrame(그리기); };
+  /* ⚠ 덮여 있으면 한 판도 안 그립니다(b690). 안 그러면 앱이 앞으로 올 때
+     안 보이는 지구본을 통째로 한 번 그립니다(9,900점). */
+  const 다시 = () => { if (!예약 && !가려짐) 예약 = requestAnimationFrame(그리기); };
 
   /* ── 스스로 도는 것과 미끄러지는 것(b541) ───────────────────────────
    * ⚠⚠ **안 보이면 멈춥니다.** 이 앱에서 네 번 데인 자리입니다 — 크롬은
@@ -596,10 +598,16 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       }, { threshold: 0 })
     : null;
   눈?.observe(canvas);
-  document.addEventListener('visibilitychange', () => {
+  /* ⚠ **뗄 수 있게 이름을 답니다(b690).** 홈을 다시 그리면 지구본을 새로
+     붙이는데(home.js 의 `innerHTML=''` → `mountGlobe`), 옛 지구본이 이
+     처리기를 문서에 걸어 둔 채 남아 있었습니다. 별점을 매길 때마다 홈이
+     다시 그려지므로 **왕복할수록 하나씩 쌓입니다** — 앱이 앞으로 올 때마다
+     이미 떨어져 나간 캔버스에 한 판씩 그립니다. `끝()` 이 뗍니다. */
+  const 앞으로올때 = () => {
     if (document.visibilityState !== 'visible') return;
     마지막 = 0; 다시(); 깨우기();
-  });
+  };
+  document.addEventListener('visibilitychange', 앞으로올때);
 
   /* ── 돌리기 ─────────────────────────────────────────────────────────
    * ⚠⚠ **손가락도 두 축 다 돌립니다(b545, 사용자 요청).** ⚠⚠
@@ -864,7 +872,13 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     되살리기: () => { 마지막 = 0; 다시(); 깨우기(); },
     /* 무엇이 위를 덮었다/치웠다(b688). 덮이면 그리기를 아예 멈춥니다. */
     덮임: (b) => { 가려짐 = !!b; if (!가려짐){ 마지막 = 0; 다시(); 깨우기(); } },
-    끝: () => { 세우기(); 보임 = false; 눈?.disconnect(); },
+    끝: () => {
+      세우기(); 보임 = false; 가려짐 = true;
+      눈?.disconnect();
+      document.removeEventListener('visibilitychange', 앞으로올때);
+      if (루프){ cancelAnimationFrame(루프); 루프 = 0; }
+      if (예약){ cancelAnimationFrame(예약); 예약 = 0; }
+    },
     /* 한 번 물으면 지워집니다 — 그 다음 누름은 진짜 누름입니다. */
     민적있나: () => { const v = 민적; 민적 = false; return v; },
   };

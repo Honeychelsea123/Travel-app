@@ -17,33 +17,33 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b689';
-import { photosOpen, closePhotos } from './photoview.js?v=b689';
-import { sb } from './db.js?v=b689';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b689';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b689';
+import { $, esc, toast } from './dom.js?v=b690';
+import { photosOpen, closePhotos } from './photoview.js?v=b690';
+import { sb } from './db.js?v=b690';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b690';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b690';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b689';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b689';
-import { drawPlanMap } from './planmap.js?v=b689';
-import { drawPlans } from './planview.js?v=b689';
-import { legIn, fillCityList } from './legs.js?v=b689';
-import { inTrip } from './tabs.js?v=b689';
-import { closeAi } from './aiscreen.js?v=b689';
-import { closeDraft } from './draft.js?v=b689';
-import { closeReview } from './home.js?v=b689';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b690';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b690';
+import { drawPlanMap } from './planmap.js?v=b690';
+import { drawPlans } from './planview.js?v=b690';
+import { legIn, fillCityList } from './legs.js?v=b690';
+import { inTrip } from './tabs.js?v=b690';
+import { closeAi } from './aiscreen.js?v=b690';
+import { closeDraft } from './draft.js?v=b690';
+import { closeReview } from './home.js?v=b690';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b689';
-import { closeCity, isCityOpen } from './city.js?v=b689';
-import { closeMap, closeCountries } from './map.js?v=b689';
-import { closePersona } from './persona.js?v=b689';
+import { closeSpree } from './spree.js?v=b690';
+import { closeCity, isCityOpen } from './city.js?v=b690';
+import { closeMap, closeCountries } from './map.js?v=b690';
+import { closePersona } from './persona.js?v=b690';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b689';
-import { closeShelf, 거르개닫기 } from './shelf.js?v=b689';
-import { 나라거르개닫기 } from './rating.js?v=b689';
-import { closeDiary } from './diary.js?v=b689';
-import { closeCountryMap } from './ctrymap.js?v=b689';
-import { closeDocs } from './prep.js?v=b689';
+import { 시트닫기 } from './home.js?v=b690';
+import { closeShelf, 거르개닫기 } from './shelf.js?v=b690';
+import { 나라거르개닫기 } from './rating.js?v=b690';
+import { closeDiary } from './diary.js?v=b690';
+import { closeCountryMap } from './ctrymap.js?v=b690';
+import { closeDocs } from './prep.js?v=b690';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
