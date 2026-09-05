@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b671';
-import { sb } from './db.js?v=b671';
-import { cities, countryName, countryInfo, continentOf } from './cities.js?v=b671';
-import { myRates, cityStat, visited } from './rate.js?v=b671';
-import { starHtml, starValue } from './stars.js?v=b671';
-import { localTime } from './calc.js?v=b671';
-import { fail } from './net.js?v=b671';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b672';
+import { sb } from './db.js?v=b672';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b672';
+import { myRates, cityStat, visited } from './rate.js?v=b672';
+import { starHtml, starValue } from './stars.js?v=b672';
+import { localTime } from './calc.js?v=b672';
+import { fail } from './net.js?v=b672';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -82,7 +82,7 @@ export async function openCity(id){
   $('cv_hero').classList.toggle('ph', !c.image_url);
   $('cv_hero').textContent = c.image_url ? '' : c.name.slice(0, 1);
   $('cv_name').textContent = c.name;
-  $('cv_sub').textContent = [countryName[c.country] || c.country, c.name_local,
+  $('cv_sub').textContent = [cityCountry(c), c.name_local,
                              visited.has(id) ? '다녀옴' : null].filter(Boolean).join(' · ');
   /* 다녀온 곳이면 도장을 찍습니다(b604). 나라 코드 두 자는 여권 도장의
      문법이고, 우리가 이미 갖고 있는 값이라 새로 받아올 것이 없습니다.

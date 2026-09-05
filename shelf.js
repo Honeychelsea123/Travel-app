@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b671';
-import { openCity } from './city.js?v=b671';
-import { sb } from './db.js?v=b671';
-import { cities, countryName } from './cities.js?v=b671';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b671';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b671';
-import { fail } from './net.js?v=b671';
-import { arm } from './ui.js?v=b671';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b672';
+import { openCity } from './city.js?v=b672';
+import { sb } from './db.js?v=b672';
+import { cities, countryName, cityCountry } from './cities.js?v=b672';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b672';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b672';
+import { fail } from './net.js?v=b672';
+import { arm } from './ui.js?v=b672';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b671';
-import { shareCard } from './card.js?v=b671';
-import { todayYmd } from './calc.js?v=b671';
+import { 발자국스펙 } from './map.js?v=b672';
+import { shareCard } from './card.js?v=b672';
+import { todayYmd } from './calc.js?v=b672';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b671';
-import { loadCities } from './citysearch.js?v=b671';
-import { loadRateData, saveRate } from './rating.js?v=b671';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b672';
+import { loadCities } from './citysearch.js?v=b672';
+import { loadRateData, saveRate } from './rating.js?v=b672';
 
 let ctx = {
   me: () => null,
@@ -519,7 +519,7 @@ export async function openShelf(kind){
                도장은 **도시 화면 한 곳**에만 둡니다 — 거기서는 다녀온
                곳과 아닌 곳이 갈리고, 그래야 찍힌 뜻이 있습니다. */''}
           <div class="t"><b>${esc(c.name)}</b>
-            <span class="memo">${esc(countryName[c.country] || c.country)}${
+            <span class="memo">${esc(cityCountry(c))}${
               avgTail(cityStat[c.id], r)}</span></div>
           <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
           <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}">♡</button>

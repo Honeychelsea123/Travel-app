@@ -41,8 +41,11 @@ function indexCity(c){
   return { ...c,
     /* ── 세고 묶을 때 쓰는 나라 (b652, 사용자 지적: 「괌은 국가가 미국이잖아」)
      * 괌·사이판은 미국, 홍콩·마카오는 중국, 타히티는 프랑스입니다.
-     * ⚠ **`country` 는 그대로 둡니다** — 도시 화면에는 「괌」이라고 나와야
-     *   합니다. 바뀌는 것은 «세는 법»뿐이라 칸을 따로 둡니다.
+     * ⚠⚠ **b672 에 바뀌었습니다(사용자: 「아직도 괌인데」).** b652 에는
+     *   「도시 화면에는 괌이라고 나와야 한다」고 적어 뒀는데, 사용자가
+     *   그 결정을 뒤집었습니다 — 화면에도 **모국**을 씁니다.
+     *   `country` 칸 자체는 그대로 둡니다(자료는 사실대로). 보여줄 때만
+     *   아래 `cityCountry()` 를 거칩니다.
      * ⚠ **앞가림 표를 여기 적지 않습니다.** `countries.parent_code`(db/076)
      *   가 유일한 자리입니다 — 코드에도 적어두면 언젠가 한쪽만 고칩니다.
      * ⚠ 안 고치면 앱이 **두 가지 수**를 말합니다: 홍콩만 다녀온 사람이
@@ -50,10 +53,29 @@ function indexCity(c){
      * ⚠ `countryInfo` 가 **먼저** 세워져야 합니다 — useCities 가 나라 표를
      *   먼저 만들고 도시를 훑습니다. 그 차례를 바꾸면 여기가 조용히 빕니다. */
     cc: countryInfo[c.country]?.parent_code || c.country,
-    _hay: [c.name, c.name_en, c.name_local, countryName[c.country]]
+    /* ⚠ 찾기 색인에는 **둘 다** 넣습니다 — 그 땅의 이름(괌)과 모국
+       이름(미국). 「미국」으로 찾아도 괌이 나오고, 「괌」으로 찾아도
+       나와야 합니다. 화면에는 모국만 적지만(cityCountry) 찾기는
+       넓을수록 좋습니다. */
+    _hay: [c.name, c.name_en, c.name_local, countryName[c.country],
+           countryName[countryInfo[c.country]?.parent_code]]
             .filter(Boolean).join(' ').toLowerCase(),
     _cho: chosung(c.name) };
 }
+
+/* ── 도시가 «어느 나라인가»를 화면에 적을 때 ─────────────────────────
+ * ⚠⚠ **이 함수를 거치지 않고 `countryName[c.country]` 를 쓰면 안 됩니다.**
+ *   그러면 괌이 「괌」, 홍콩이 「홍콩」으로 나옵니다. 앱은 「괌의 나라는
+ *   미국」이라고 정했고(db/076), 세는 것도 그렇게 셉니다 — 화면만
+ *   다르게 말하면 같은 앱이 두 가지 말을 합니다.
+ * ⚠ b670·b672 에 **한 곳씩 고치다 두 번 놓쳤습니다.** 도시 페이지를
+ *   고쳤더니 목록에 남아 있었습니다. 그래서 함수 하나로 모읍니다 —
+ *   다음에 바꿀 일이 생기면 **여기 한 줄**입니다.
+ * ⚠ `cc` 는 `indexCity` 가 붙입니다. 색인을 안 거친 날것이 올 수도
+ *   있으니 `countryInfo` 로 한 번 더 받칩니다. */
+export const cityCountry = c =>
+  countryName[c?.cc || countryInfo[c?.country]?.parent_code || c?.country]
+  || c?.country || '';
 
 /* 받아온 것이든 캐시에서 꺼낸 것이든 여기서 한 번에 세웁니다.
    **나라 표를 먼저 세웁니다** — 색인이 나라 이름을 쓰기 때문입니다.

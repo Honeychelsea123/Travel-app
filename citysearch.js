@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b671';
-import { sb } from './db.js?v=b671';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b672';
+import { sb } from './db.js?v=b672';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b671';
-import { cities, countryName, countryInfo, search, useCities } from './cities.js?v=b671';
+         cacheGet, cacheSet } from './net.js?v=b672';
+import { cities, countryName, countryInfo, search, useCities, cityCountry } from './cities.js?v=b672';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던
@@ -214,7 +214,7 @@ export function drawPop(){
   box.innerHTML = top.map(c =>
     `<button type="button" class="poprow" data-cid="${esc(c.id)}">
        ${fl ? `<span class="fl">${flagOf(c.country)}</span>` : ''}<b>${esc(c.name)}</b>
-       <span class="c">${esc(countryName[c.country] || c.country)}</span></button>`).join('');
+       <span class="c">${esc(cityCountry(c))}</span></button>`).join('');
   box.dataset.done = '1';
 }
 $('wizpop').addEventListener('click', e => {
@@ -231,7 +231,7 @@ export function drawHits(){
   box.classList.remove('hide');
   box.innerHTML = hitList.map((c, i) =>
     `<div class="hit${i === cursor ? ' on' : ''}" data-i="${i}">
-       <b>${esc(c.name)}</b><span class="c">${esc(countryName[c.country] || c.country)}</span>
+       <b>${esc(c.name)}</b><span class="c">${esc(cityCountry(c))}</span>
        <span class="r">${flagOf(c.country)}</span></div>`
   ).join('')
   + `<div class="hit${cursor === hitList.length ? ' on' : ''}" data-i="${hitList.length}">
@@ -272,7 +272,7 @@ export function pickCity(c){
   im.textContent = c.image_url ? '' : c.name.slice(0, 1);
   $('p_name').textContent = c.name;
   $('p_country').textContent =
-    `${flagOf(c.country)} ${countryName[c.country] || c.country}`.trim();
+    `${flagOf(c.country)} ${cityCountry(c)}`.trim();
   $('p_note').textContent = c.currency || '';
 }
 

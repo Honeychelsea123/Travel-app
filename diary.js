@@ -21,11 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b671';
-import { sb } from './db.js?v=b671';
-import { cities, countryName } from './cities.js?v=b671';
-import { starHtml } from './stars.js?v=b671';
-import { openPhotos } from './photoview.js?v=b671';
+import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b672';
+import { sb } from './db.js?v=b672';
+import { cities, countryName, cityCountry } from './cities.js?v=b672';
+import { starHtml } from './stars.js?v=b672';
+import { openPhotos } from './photoview.js?v=b672';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -99,7 +99,7 @@ export async function openDiary(){
           <div class="dgsheet">
             <header class="dghead">
               <b>${esc(c?.name || x.city_id)}</b>
-              <span class="dgland">${esc(countryName[c?.country] || c?.country || '')}</span>
+              <span class="dgland">${esc(cityCountry(c))}</span>
               <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span>
             </header>
             <div class="dgdate">${적은날칸(x.updated_at)}</div>
