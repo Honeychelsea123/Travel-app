@@ -14,17 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b675';
-import { sb } from './db.js?v=b675';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b675';
-import { dateRange } from './calc.js?v=b675';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b675';
-import { cities, countryName, cityCountry } from './cities.js?v=b675';
+import { $, esc } from './dom.js?v=b676';
+import { sb } from './db.js?v=b676';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b676';
+import { dateRange } from './calc.js?v=b676';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b676';
+import { cities, countryName, cityCountry, continentOf,
+         countryInfo } from './cities.js?v=b676';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b675';
-import { openCity } from './city.js?v=b675';
-import { loadCities } from './citysearch.js?v=b675';
+         removeRate } from './rate.js?v=b676';
+import { openCity } from './city.js?v=b676';
+import { loadCities } from './citysearch.js?v=b676';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -131,6 +132,21 @@ export const tripSub = (t, days) =>
    들어온다」는 길은 b550 에 보관함이 제 화면을 갖게 되면서 없어졌는데,
    주석과 코드만 남아 있었습니다. 지우기 전에 부르는 곳을 세어 보십시오. */
 
+/* ── 대륙·국가로 거르기(b676, 사용자 요청) ────────────────────────────
+ * 안 매긴 곳이 650 인데 대부분은 «갈 일이 없는 나라»입니다. 하나씩
+ * 내려가며 매기는 것이 오래 걸리는 진짜 이유는 정렬이 아니라 **목록의
+ * 크기**였습니다.
+ * ⚠ 기본 정렬은 **이미 유명한 순**입니다(아래 `rank` 다음이 `fame`).
+ *   다만 `fame` 이 1 인 곳이 80곳이라 그 안에서는 가나다순이 되어
+ *   「괌·나라·나트랑·나하」로 시작합니다 — 그래서 유명한 순으로
+ *   안 보였던 것입니다. 정렬을 고칠 일이 아니었습니다.
+ * ⚠ 도시의 나라·대륙은 **모국을 씁니다**(`cc`) — 괌은 미국,
+ *   홍콩은 중국(b672 의 `cityCountry` 와 같은 규칙). */
+let rtCont  = 'all';   /* 대륙 이름 그대로 */
+let rtCtry  = 'all';   /* 나라 «코드» */
+const 모국 = c => c.cc || countryInfo[c.country]?.parent_code || c.country;
+const 대륙of = c => continentOf[모국(c)] || '기타';
+
 export function drawRatings(){
   const q = $('r_q').value.trim().toLowerCase();
   const cho = /^[ㄱ-ㅎ]+$/.test(q);
@@ -143,6 +159,8 @@ export function drawRatings(){
     /* 기본 목록에는 아직 안 매긴 곳만 둡니다. 매긴 것이 계속 쌓여 있으면
        남은 게 안 보여서 더 안 매기게 됩니다. 매긴 것은 프로필에서 봅니다.
        방금 매긴 것은 남겨둡니다 — 잘못 눌렀을 때 그 자리에서 고쳐야 합니다. */
+    if (rtCont !== 'all' && 대륙of(c) !== rtCont) return false;
+    if (rtCtry !== 'all' && 모국(c) !== rtCtry) return false;
     return r?.stars == null || justRated.has(c.id);
   });
   /* 아직 안 매긴 다녀온 곳을 맨 위로, 그다음 높은 별점 순.
@@ -162,6 +180,9 @@ export function drawRatings(){
                    || a.name.localeCompare(b.name, 'ko'));
 
   $('r_head').textContent = '도시';
+  /* ⚠ 여기서 한 번 부릅니다 — 시트를 «안 열어도» 컨트롤 글자와 개수가
+     맞아야 합니다. 시트 여는 쪽에서만 채우면 처음엔 늘 「전체」로 보입니다. */
+  거르개채우기();
 
   /* ⚠ 「직접 넣기」 안내를 걷었습니다(b670) — index.html 의 주석 참고. */
   if (!list.length){
@@ -229,6 +250,83 @@ export function drawRatings(){
  ⚠ **화면과 코드만 지우면 문은 열려 있습니다** — RLS 정책도 같이
    닫았습니다(db/082). 되살리려거든 셋을 다 되살려야 합니다:
    index.html 의 `#addcity` · 여기 · db 정책. */
+
+/* ── 시트(b676) ───────────────────────────────────────────────────────
+ * ⚠ 항목은 **자료에서 만듭니다.** 대륙·국가 목록을 코드에 적으면
+ *   도시를 넣고 뺄 때마다 여기도 고쳐야 합니다.
+ * ⚠ 세는 것은 **거르기 «전»**입니다 — 거른 뒤에 세면 고른 칸만 숫자가
+ *   남고 나머지가 전부 0 이 됩니다(보관함 시트에서 겪은 것과 같음).
+ * ⚠ 국가는 **도시 많은 순**입니다. 192개국 중 114개는 도시가 한 곳뿐이라
+ *   가나다순이면 쓸모없는 것이 위로 옵니다. */
+function 거르개채우기(){
+  const 안매긴 = (cities || []).filter(c =>
+    myRates[c.id]?.stars == null || justRated.has(c.id));
+
+  const 대륙셈 = {}, 나라셈 = {};
+  for (const c of 안매긴){
+    const k = 대륙of(c);
+    대륙셈[k] = (대륙셈[k] || 0) + 1;
+    /* 국가 칸은 «고른 대륙 안»만 셉니다 — 아시아를 골랐는데 프랑스가
+       목록에 남아 있으면 누를 때마다 0곳이 됩니다. */
+    if (rtCont === 'all' || k === rtCont){
+      const cc = 모국(c);
+      나라셈[cc] = (나라셈[cc] || 0) + 1;
+    }
+  }
+
+  const 칸 = (그룹, 값, 글, 수, 켬) =>
+    `<button type="button" class="shopt${켬 ? ' on' : ''}" data-${그룹}="${
+      esc(값)}"${수 === 0 ? ' disabled' : ''}>${esc(글)}<i>${수}</i></button>`;
+
+  $('rt_conts').innerHTML = '<span class="label">대륙</span>' +
+    칸('rtcont', 'all', '전체', 안매긴.length, rtCont === 'all') +
+    Object.entries(대륙셈).sort((a, b) => b[1] - a[1])
+      .map(([k, n]) => 칸('rtcont', k, k, n, rtCont === k)).join('');
+
+  const 나라합 = Object.values(나라셈).reduce((a, b) => a + b, 0);
+  $('rt_ctrys').innerHTML = '<span class="label">국가</span>' +
+    칸('rtctry', 'all', '전체', 나라합, rtCtry === 'all') +
+    Object.entries(나라셈)
+      .sort((a, b) => b[1] - a[1]
+                   || (countryName[a[0]] || a[0]).localeCompare(countryName[b[0]] || b[0], 'ko'))
+      .map(([cc, n]) => 칸('rtctry', cc, countryName[cc] || cc, n, rtCtry === cc)).join('');
+
+  $('rt_cont').textContent = rtCont === 'all' ? '대륙 전체' : rtCont;
+  $('rt_ctry').textContent = rtCtry === 'all' ? '국가 전체'
+                                              : (countryName[rtCtry] || rtCtry);
+  /* 거르개가 걸리면 컨트롤이 «걸려 있다»고 말해야 합니다 — 목록이 왜
+     짧은지 모르는 것이 이 화면에서 제일 나쁜 일입니다. */
+  $('rt_cont').classList.toggle('on', rtCont !== 'all');
+  $('rt_ctry').classList.toggle('on', rtCtry !== 'all');
+}
+
+export function 나라거르개열기(){
+  거르개채우기();
+  $('rtsheet').classList.remove('hide');
+  if (history.state?.t2 !== 'rtsheet') history.pushState({ t2:'rtsheet' }, '');
+}
+export function 나라거르개닫기(뒤로온것){
+  const 판 = $('rtsheet');
+  if (!판 || 판.classList.contains('hide')) return;
+  if (!뒤로온것 && history.state?.t2 === 'rtsheet'){ history.back(); return; }
+  판.classList.add('hide');
+}
+
+$('r_filter').addEventListener('click', () => 나라거르개열기());
+$('rtsheet').addEventListener('click', e => {
+  if (e.target.closest('[data-rtclose]')) return 나라거르개닫기();
+  const a = e.target.closest('[data-rtcont]');
+  if (a && !a.disabled){
+    rtCont = a.dataset.rtcont;
+    /* ⚠ 대륙을 바꾸면 «고른 나라»가 그 안에 없을 수 있습니다. 안 풀면
+       목록이 0곳이 되고 왜 그런지 알 수가 없습니다. */
+    if (rtCtry !== 'all' && rtCont !== 'all'
+        && (continentOf[rtCtry] || '기타') !== rtCont) rtCtry = 'all';
+    거르개채우기(); drawRatings(); return;
+  }
+  const b = e.target.closest('[data-rtctry]');
+  if (b && !b.disabled){ rtCtry = b.dataset.rtctry; 거르개채우기(); drawRatings(); }
+});
 
 $('r_q').addEventListener('input', drawRatings);
 
