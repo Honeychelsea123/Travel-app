@@ -5,7 +5,7 @@
  *
  * ⚠⚠ **b542 에 이 화면에서 평가를 통째로 걷어냈습니다.** ⚠⚠
  *   b398 부터 맨 위가 「평가 히어로」(사진 위에서 바로 별을 누르는 것)
- *   였고, 그 아래에 「쭉 매기기」 줄이 있었습니다. 별을 누르는 자리가
+ *   였고, 그 아래에 「넘기며 매기기」 줄이 있었습니다. 별을 누르는 자리가
  *   기록·평가 두 탭에 있었고, 발자국은 기록·성향 두 탭에 있었습니다.
  *   **한 탭이 한 가지**로 정리하면서(사용자 결정) 이렇게 갈랐습니다:
  *       기록  내 발자국 — 여기
@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b679';
-import { sb } from './db.js?v=b679';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b679';
-import { hm, todayYmd } from './calc.js?v=b679';
-import { starHtml, paintStars } from './stars.js?v=b679';
+import { $, esc } from './dom.js?v=b680';
+import { sb } from './db.js?v=b680';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b680';
+import { hm, todayYmd } from './calc.js?v=b680';
+import { starHtml, paintStars } from './stars.js?v=b680';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b679';
-import { cities, countryName, cityCountry } from './cities.js?v=b679';
-import { UN_CODES } from './un.js?v=b679';
-import { myRates, cityStat, visited } from './rate.js?v=b679';
-import { plans } from './trip.js?v=b679';
-import { loadCities } from './citysearch.js?v=b679';
+import { starValue } from './rateui.js?v=b680';
+import { cities, countryName, cityCountry } from './cities.js?v=b680';
+import { UN_CODES } from './un.js?v=b680';
+import { myRates, cityStat, visited } from './rate.js?v=b680';
+import { plans } from './trip.js?v=b680';
+import { loadCities } from './citysearch.js?v=b680';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b679';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b679';
+import { openCity } from './city.js?v=b680';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b680';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b679';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b680';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b679';
+import { drawReport } from './report.js?v=b680';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b679';
+import { PERSONA_BG } from './card.js?v=b680';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b679';
+import { checkPersonaShift } from './pshift.js?v=b680';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b679';
+import { diaryBackTo } from './diary.js?v=b680';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b679';
+import { mountGlobe } from './globe.js?v=b680';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -576,7 +576,7 @@ async function buildHome(){
   /* ── 홈은 크게 두 덩이입니다(b419) ───────────────────────────────────
    * **① 평가하는 자리** — 사진 · 별점 · 두 단추가 한 카드(.ratecard).
    *    같은 물음의 답 셋이 흩어져 보이지 않게 묶었습니다(rateui.js).
-   *    **「쭉 매기기」도 이 카드 안**입니다(b420) — 「이 도시 말고 더
+   *    **「넘기며 매기기」도 이 카드 안**입니다(b420) — 「이 도시 말고 더
    *    매기고 싶으면」이라 **평가 자리에 속합니다.** 밖에 두었더니
    *    떨어져 보였습니다.
    * **② 나머지 전부** — 새 여행 · 발자국 · 성향 · 지도가
@@ -979,7 +979,7 @@ $('rv_done').addEventListener('click', () => drawReport(rvTrip));
  *   아래 지도가 그 일을 더 잘합니다. 같은 말을 세 번 하고 있었습니다.
  *
  * ⚠ **「내가 매긴 곳」·「가보고 싶은 곳」 줄은 여기 안 답니다.** 매긴 수는
- *   위 「쭉 매기기」 줄에 있고, 둘 다 **프로필 보관함에 이미 있습니다.**
+ *   위 「넘기며 매기기」 줄에 있고, 둘 다 **프로필 보관함에 이미 있습니다.**
  *   홈에 넣으면 같은 숫자가 앱 안에 세 번 나옵니다.
  *
  * ⚠ 지도는 남깁니다. been 도 홈에 지도를 크게 둡니다 — 칠해진 면적이
@@ -1017,7 +1017,7 @@ async function renderFoot(통){
   if (못받음){ f = { countries:0, by_continent:{} }; lastHomeSig = ''; }
   const pct = Math.min(100, f.countries / UN_COUNTRIES * 100);
   /* ⚠ **제 카드를 안 만듭니다(b419).** 위 buildHome 이 만든 통에 줄만
-     보탭니다 — 쭉 매기기·새 여행과 **한 덩이**여야 합니다. */
+     보탭니다 — 넘기며 매기기·새 여행과 **한 덩이**여야 합니다. */
   const box = 통;
 
   /* 줄 하나를 만드는 틀. 넷이 아니라 둘뿐이라도 **틀을 통해 만듭니다** —

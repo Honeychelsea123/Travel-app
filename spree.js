@@ -1,4 +1,7 @@
-/* ── 연속 평가 — 쭉 매기기 ────────────────────────────────────────────
+/* ── 연속 평가 — 넘기며 매기기 ────────────────────────────────────────
+ * ⚠ **b680 에 「쭉 매기기」에서 이름을 바꿨습니다**(사용자: 「뭔말인지도
+ *   모르겠고」). 화면 글자는 index.html 의 `#spreego` 에 있습니다.
+ *   옛 이름으로 적힌 자료를 찾을 때를 위해 여기 한 번 남겨 둡니다.────
  * **한 화면에서 계속 넘기며 매깁니다(b409).** 사진 한 장 · 별 다섯 · 넘기기,
  * 매기면 바로 다음 도시가 올라옵니다.
  *
@@ -17,14 +20,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b679';
-import { sb } from './db.js?v=b679';
-import { cities } from './cities.js?v=b679';
-import { loadCities } from './citysearch.js?v=b679';
-import { paintStars } from './stars.js?v=b679';
-import { rateHero, starValue } from './rateui.js?v=b679';
-import { saveRate } from './rating.js?v=b679';
-import { resetHomeSig } from './home.js?v=b679';
+import { $, esc } from './dom.js?v=b680';
+import { sb } from './db.js?v=b680';
+import { cities } from './cities.js?v=b680';
+import { loadCities } from './citysearch.js?v=b680';
+import { paintStars } from './stars.js?v=b680';
+import { rateHero, starValue } from './rateui.js?v=b680';
+import { saveRate } from './rating.js?v=b680';
+import { resetHomeSig } from './home.js?v=b680';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -115,7 +118,7 @@ export async function openSpree(){
 }
 
 /* ── 나가면 **들어온 자리**로 돌아갑니다(b423) ────────────────────────
- * 홈의 「쭉 매기기」 줄로 들어와서 「그만」 을 누르면 **기록 탭에 떨어졌습니다.**
+ * 홈의 「넘기며 매기기」 줄로 들어와서 「그만」 을 누르면 **기록 탭에 떨어졌습니다.**
  * 홈에서 여는 길이 `ctx.showApp('rate')` 로 기록 탭에 간 뒤 거기 있는 시작
  * 단추를 누르는 방식이라, 닫을 때는 이미 기록 탭이 제자리였기 때문입니다.
  * 들어온 사람 입장에서는 **엉뚱한 화면으로 떨어진** 것입니다.
@@ -188,7 +191,7 @@ $('spreeclose')?.addEventListener('click', () => closeSpree());
   };
 
   통?.addEventListener('pointerdown', e => {
-    /* ⚠⚠ **`도는중` 은 「불러오는 중」이 아니라 「쭉 매기기가 열려 있다」
+    /* ⚠⚠ **`도는중` 은 「불러오는 중」이 아니라 「넘기며 매기기가 열려 있다」
        입니다**(96·137줄). 처음에 `if (도는중) return` 으로 막았다가,
        화면이 열려 있는 «동안 내내» 스와이프가 죽었습니다 — 가드가 정확히
        거꾸로였습니다. 화면에서 밀어보고 잡았습니다(transform 이 계속 none).

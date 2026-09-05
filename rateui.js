@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b679';
-import { countryName, cityCountry } from './cities.js?v=b679';
-import { starHtml } from './stars.js?v=b679';
+import { esc } from './dom.js?v=b680';
+import { countryName, cityCountry } from './cities.js?v=b680';
+import { starHtml } from './stars.js?v=b680';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -35,7 +35,7 @@ import { starHtml } from './stars.js?v=b679';
  * **wide** — 홈·맛보기. 위아래로 다른 것들이 붙는 자리라 납작해야 합니다.
  *   글자를 사진 위에 얹고 아래를 어둡게 덮습니다.
  *
- * **square** — 쭉 매기기. 그 화면은 **이것 하나뿐**이라 세로가 통째로
+ * **square** — 넘기며 매기기. 그 화면은 **이것 하나뿐**이라 세로가 통째로
  *   남습니다. 실기기에서 재보니 위 542px · 아래 447px 이 비어 있는데
  *   사진은 480×260 으로 납작했습니다.
  *   ⚠ 더 큰 문제는 **덮개였습니다.** 글자를 얹으려면 사진 아래 절반을
@@ -45,7 +45,7 @@ import { starHtml } from './stars.js?v=b679';
  *   그래서 사진은 정방형으로 키우고 **글자와 별을 사진 밖으로** 뺍니다.
  *
  * ⚠ **찾는 이름은 두 모양이 똑같습니다**(`.stars[data-city]`,
- *   `[data-rate]`). 위 머리말의 약속이고, 다르게 두면 쭉 매기기만
+ *   `[data-rate]`). 위 머리말의 약속이고, 다르게 두면 넘기며 매기기만
  *   조용히 멈춥니다.
  */
 export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
@@ -112,4 +112,4 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
      있었습니다 — 그 셋은 rateui 를 import 하지 않기 때문입니다. 별을 쓰는
      여섯 화면이 다 닿는 아래층은 stars.js 입니다.
      이름은 여기서도 그대로 나갑니다(home·spree·try 가 여기서 가져갑니다). */
-export { starValue } from './stars.js?v=b679';
+export { starValue } from './stars.js?v=b680';
