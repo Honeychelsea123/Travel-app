@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b669';
-import { sb } from './db.js?v=b669';
-import { cities, countryName, continentOf } from './cities.js?v=b669';
-import { myRates, cityStat, visited } from './rate.js?v=b669';
-import { starHtml, starValue } from './stars.js?v=b669';
-import { localTime } from './calc.js?v=b669';
-import { fail } from './net.js?v=b669';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b670';
+import { sb } from './db.js?v=b670';
+import { cities, countryName, countryInfo, continentOf } from './cities.js?v=b670';
+import { myRates, cityStat, visited } from './rate.js?v=b670';
+import { starHtml, starValue } from './stars.js?v=b670';
+import { localTime } from './calc.js?v=b670';
+import { fail } from './net.js?v=b670';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -139,7 +139,18 @@ export async function openCity(id){
      없고, 정작 필요한 것은 이동 시간인데 그건 일정 화면이 따로 말해줍니다.
      transit_grade 자체는 그 계산에 계속 쓰이므로 DB 에는 그대로 둡니다. */
   $('cv_facts').innerHTML = [
-    ['대륙', continentOf[c.country]],
+    /* ⚠⚠ **속령은 모국의 대륙을 씁니다(b670, 사용자: 「괌은 미국으로
+       가야지」).** 여기만 `c.country`(GU) 를 그대로 써서 「오세아니아」가
+       나왔습니다. 앱의 다른 곳은 전부 모국을 씁니다 —
+       깃발·지구본은 `c.cc`(cities.js), 대륙 합계는 서버가
+       `coalesce(np.continent, n.continent)`(db/076). **이 한 줄만
+       빠져 있어서**, 괌이 깃발에서는 미국인데 도시 페이지에서는
+       오세아니아였습니다.
+     ⚠ 지리로는 괌이 오세아니아가 맞습니다. 그래도 앱이 「괌의 나라는
+       미국」이라고 말하기로 정한 이상(db/076), 대륙도 거기 따라야
+       **합이 맞습니다** — 안 그러면 「미국 = 북아메리카」인데 괌만
+       오세아니아로 세어져 대륙 숫자가 안 맞습니다. */
+    ['대륙', continentOf[countryInfo[c.country]?.parent_code || c.country]],
     ['통화', c.currency],
     ['현지 시각', (localTime(c.timezone) || '').replace('현지 ', '')],
   ].filter(([, v]) => v).map(([k, v]) =>

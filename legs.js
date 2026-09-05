@@ -18,17 +18,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 planline.js · planmap.js · planview.js · review.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b669';
-import { sb } from './db.js?v=b669';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b669';
-import { dateRange, travel, legAt, legNear } from './calc.js?v=b669';
-import { cities, countryName } from './cities.js?v=b669';
-import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b669';
-import { arm } from './ui.js?v=b669';
-import { drawCats } from './planline.js?v=b669';
-import { drawPlanMap } from './planmap.js?v=b669';
-import { drawPlans } from './planview.js?v=b669';
-import { loadReview } from './review.js?v=b669';
+import { $, esc } from './dom.js?v=b670';
+import { sb } from './db.js?v=b670';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b670';
+import { dateRange, travel, legAt, legNear } from './calc.js?v=b670';
+import { cities, countryName } from './cities.js?v=b670';
+import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b670';
+import { arm } from './ui.js?v=b670';
+import { drawCats } from './planline.js?v=b670';
+import { drawPlanMap } from './planmap.js?v=b670';
+import { drawPlans } from './planview.js?v=b670';
+import { loadReview } from './review.js?v=b670';
 
 let ctx = { drawDays: () => {}, drawTripHeader: () => {}, fetchTrip: async () => {} };
 export function setLegsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -112,7 +112,6 @@ export function fillCityList(){
     .sort((a,b) => a[1].localeCompare(b[1], 'ko'))
     .map(([code, nm]) => `<option value="${esc(code)}">${esc(nm)}</option>`).join('');
   $('g_country').innerHTML = opts;
-  $('ac_country').innerHTML = opts;    /* 도시를 직접 넣을 때 고르는 나라 */
 }
 
 /* 목록에 없는 도시를 치면 나라를 물어봅니다. */

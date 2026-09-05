@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b669';
-import { sb } from './db.js?v=b669';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b669';
-import { dateRange } from './calc.js?v=b669';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b669';
-import { cities, countryName, addCity } from './cities.js?v=b669';
+import { $, esc } from './dom.js?v=b670';
+import { sb } from './db.js?v=b670';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b670';
+import { dateRange } from './calc.js?v=b670';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b670';
+import { cities, countryName } from './cities.js?v=b670';
 import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b669';
-import { openCity } from './city.js?v=b669';
-import { loadCities } from './citysearch.js?v=b669';
+         putRateFilter, removeRate } from './rate.js?v=b670';
+import { openCity } from './city.js?v=b670';
+import { loadCities } from './citysearch.js?v=b670';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -89,7 +89,6 @@ export async function loadRatings(){
          <span class="memo">별점과 평가는 서버에 저장됩니다.</span></div>`;
     lastRateHtml = '';          /* 안내로 갈아끼웠으니 다음엔 반드시 다시 그립니다 */
     $('r_head').textContent = '도시';
-    $('addcity').classList.add('hide');
     drawOffbar(); return;
   }
   $('rateerr').classList.add('hide');
@@ -173,14 +172,8 @@ export function drawRatings(){
                               mine:'내가 매긴 곳', comment:'한줄평 남긴 곳',
                               todo:'매길 곳' }[rateFilter] || '도시';
 
-  /* 찾는 이름이 목록에 없으면 직접 넣을 수 있게 안내합니다. */
-  const exact = q && (cities || []).some(c => c.name.toLowerCase() === q);
-  const canAdd = q.length >= 2 && !cho && !exact;
-  $('addcity').classList.toggle('hide', !canAdd);
-  if (canAdd) $('ac_hint').textContent =
-    `"${$('r_q').value.trim()}" 을(를) 이 국가의 도시로 넣어요.`;
-
-  if (!list.length && !canAdd){
+  /* ⚠ 「직접 넣기」 안내를 걷었습니다(b670) — index.html 의 주석 참고. */
+  if (!list.length){
     $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없어요.</div>';
     lastRateHtml = '';
     return;
@@ -237,34 +230,14 @@ export function drawRatings(){
   }
 }
 
-$('ac_add').addEventListener('click', async () => {
-  const name = $('r_q').value.trim();
-  if (name.length < 2) return;
-  $('rateerr').classList.add('hide');
-  $('ac_add').disabled = true;
-
-  /* 나라만 넘기면 통화·언어·시간대는 004 의 트리거가 채웁니다.
-     좌표와 이동 등급은 비워 둡니다 — 나중에 채우면 이동시간 검사가 좋아집니다. */
-  const { data, error } = await sb.from('cities')
-    .insert({ name, country: $('ac_country').value, created_by: ctx.me().id })
-    .select('id,name,name_en,name_local,country,currency,timezone,transit_grade,image_url')
-    .maybeSingle();
-  $('ac_add').disabled = false;
-
-  if (error){
-    return fail(/duplicate|unique/i.test(error.message)
-      ? '그 나라에 같은 이름의 도시가 이미 있어요.' : error, 'rate');
-  }
-  if (!data) return fail(NOROW.save, 'rate');
-
-  /* 목록 뭉치에 바로 끼워 넣습니다. 다시 받아오면 화면이 한 번 껌뻑입니다. */
-  /* **색인 만드는 식을 여기 다시 적지 않습니다.** 전에는 useCities 의 식을
-     그대로 베껴 적어 두 벌이었습니다 — 규칙을 바꿀 때 한쪽만 고치면 새로 만든
-     도시만 검색에서 사라집니다. cities.js 가 같은 식으로 색인해 끼웁니다. */
-  addCity(data);
-  $('r_q').value = data.name;
-  drawRatings();
-});
+/* ⚠⚠ **여기 있던 「직접 넣기」 처리기를 걷었습니다(b670).**
+   `sb.from('cities').insert(...)` 로 사용자가 도시를 만들 수 있었습니다
+   (db/017 이 열어둔 것). 목록은 «남들과 같이 보는 것»이라 한 사람이 넣은
+   이상한 이름을 모두가 봅니다. 도시가 701곳이 된 지금은 「없으면 직접」의
+   필요도 거의 없습니다.
+ ⚠ **화면과 코드만 지우면 문은 열려 있습니다** — RLS 정책도 같이
+   닫았습니다(db/082). 되살리려거든 셋을 다 되살려야 합니다:
+   index.html 의 `#addcity` · 여기 · db 정책. */
 
 $('r_q').addEventListener('input', drawRatings);
 for (const id of ['r_filter', 'r_narrow'])
