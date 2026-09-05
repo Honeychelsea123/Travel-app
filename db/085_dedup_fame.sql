@@ -16,6 +16,60 @@
 -- 084 다음에 실행합니다. 여러 번 실행해도 안전합니다.
 -- =====================================================================
 
+-- ── ⓪ 별점·찜·일기를 «살아남는 도시»로 옮깁니다 (b687 에 더함) ───────
+-- ⚠⚠ **`city_ratings.city_id` 는 `on delete cascade` 입니다**(db/012).
+--   도시를 그냥 지우면 그 도시에 매긴 **별점·찜·한줄평·일기·다녀온 날짜가
+--   말없이 같이 사라집니다.**
+--   이 파일을 처음 쓴 날(2026-09-05)에는 여섯 곳 다 0건이었지만, 그 뒤로
+--   나하를 매기셨을 수 있습니다. 그래서 **옮기고 나서 지웁니다.**
+-- ⚠ `trip_legs.city_id` 는 `on delete set null` 이라 일정은 안 지워지지만
+--   도시 연결이 끊깁니다. 그것도 옮깁니다.
+create temporary table _merge(dead text, keep text) on commit drop;
+insert into _merge values
+  ('naha',         'okinawa'),
+  ('ulan-bator',   'ulaanbaatar'),
+  ('buda',         'budapest'),
+  ('pest',         'budapest'),
+  ('marina-bay',   'singapore'),
+  ('south-dublin', 'dublin');
+
+-- (가) 살아남는 쪽에 아직 줄이 없으면 통째로 옮깁니다.
+update public.city_ratings r
+   set city_id = m.keep
+  from _merge m
+ where r.city_id = m.dead
+   and not exists (select 1 from public.city_ratings x
+                    where x.user_id = r.user_id and x.city_id = m.keep);
+
+-- (나) 둘 다 매긴 사람은 «센 쪽»으로 합칩니다. 남은 죽는 쪽 줄은 아래
+--      delete 의 cascade 로 사라집니다.
+update public.city_ratings k
+   set stars         = greatest(coalesce(k.stars, 0), coalesce(d.stars, 0)),
+       been          = k.been or d.been,
+       want          = k.want or d.want,
+       comment       = coalesce(k.comment, d.comment),
+       journal       = coalesce(k.journal, d.journal),
+       journal_photo = coalesce(k.journal_photo, d.journal_photo),
+       visited_on    = least(k.visited_on, d.visited_on),
+       updated_at    = now()
+  from _merge m
+  join public.city_ratings d
+    on d.city_id = m.dead
+ where k.city_id = m.keep
+   and k.user_id = d.user_id;
+-- ⚠ `greatest` 는 0 을 돌려줄 수 있는데 stars 는 0 을 못 받습니다(체크 제약).
+--   0 이 되는 경우는 «둘 다 별점이 없던 것»이므로 null 로 되돌립니다.
+update public.city_ratings set stars = null where stars = 0;
+
+-- (다) 일정의 도시 연결도 옮깁니다.
+update public.trip_legs l set city_id = m.keep from _merge m where l.city_id = m.dead;
+
+-- 옮긴 것을 눈으로 확인하십시오(0 이면 애초에 쓰인 적이 없던 것입니다).
+select m.dead, m.keep,
+       (select count(*) from public.city_ratings r where r.city_id = m.dead) as 남은별점,
+       (select count(*) from public.trip_legs   l where l.city_id = m.dead) as 남은일정
+  from _merge m;
+
 -- ── ① 같은 곳이 두 번 ────────────────────────────────────────────────
 delete from public.cities where id in (
   'naha',          -- 오키나와와 0.25km. 한국에서는 「오키나와」로 부릅니다.
