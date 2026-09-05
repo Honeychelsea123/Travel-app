@@ -16,10 +16,10 @@
  * 층: dom.js · db.js · net.js · trip.js 만 씁니다. 프로필 화면의 '보관함·지도
  *     열기' 손잡이는 **두고 왔습니다** — 바로 아랫줄에 있었지만 그건 화면
  *     넘기기지 내 계정이 아닙니다. */
-import { $, esc, toast } from './dom.js?v=b688';
-import { sb } from './db.js?v=b688';
-import { fail, netTimeout } from './net.js?v=b688';
-import { plans, expenses, bookings } from './trip.js?v=b688';
+import { $, esc, toast } from './dom.js?v=b689';
+import { sb } from './db.js?v=b689';
+import { fail, netTimeout } from './net.js?v=b689';
+import { plans, expenses, bookings } from './trip.js?v=b689';
 
 
 let ctx = { me: () => null, logError: () => {} };

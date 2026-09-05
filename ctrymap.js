@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b688';
-import { cities, countryName, countryInfo } from './cities.js?v=b688';
-import { myRates, visited } from './rate.js?v=b688';
+import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b689';
+import { cities, countryName, countryInfo } from './cities.js?v=b689';
+import { myRates, visited } from './rate.js?v=b689';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -410,8 +410,43 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
       (s ? ` transform="translate(${s} 0)"` : '') + `>${안것들}</g>`;
   }
 
-  const 길 = q => 'M' + q.점.map(([x, y]) => x.toFixed(2) + ' ' + y.toFixed(2)).join('L') + 'Z';
-  const 다각 = poly => 'M' + poly.map(([x, y]) => x.toFixed(2) + ' ' + y.toFixed(2)).join('L') + 'Z';
+  /* ── 경로를 «화면에 보이는 만큼만» 적습니다(b688) ──────────────────
+     실측: 러시아 나라 지도 한 장의 SVG 문자열이 429KB 였습니다. 이웃을
+     걸러 320KB 로 줄었는데, 남은 것은 **러시아 제 경로**입니다 —
+     50m 러시아는 점이 수만 개인데 그것을 「L863.21 128.43」처럼 절대좌표
+     소수 두 자리로 적고 있었습니다(점당 15자).
+     → ① 소수 자릿수를 배율에서 냅니다. 화면 0.1px 보다 잘게 적을 이유가
+          없습니다 — 러시아는 1u 가 0.7px 이라 한 자리면 0.07px 입니다.
+        ② 상대(l)로 적습니다. 이웃한 점의 차이는 대개 0.1~0.3 이라 훨씬 짧습니다.
+        ③ 반올림해서 «같은 자리»가 된 점은 버립니다. 멀리서 보는 해안선에서
+          이것이 점의 절반을 걷어냅니다.
+     ⚠ 확대하면(배율이 커지면) 자릿수가 늘어 다시 정밀해집니다 — 크게 볼수록
+       정확해야 하므로 그 방향이 맞습니다. */
+  const 자 = 배 >= 3 ? 2 : 1;
+  const 짧게 = v => {
+    let s = v.toFixed(자);
+    if (s.indexOf('.') > 0) s = s.replace(/\.?0+$/, '');
+    if (s === '' || s === '-' || s === '-0') s = '0';
+    return s.replace(/^(-?)0\./, '$1.');
+  };
+  const 이어 = (s, a, b) => s + (s === '' || a.startsWith('-') ? '' : ' ') + a +
+                            (b.startsWith('-') ? '' : ' ') + b;
+  const 그리길 = 점들 => {
+    if (!점들 || 점들.length < 3) return '';
+    const r = v => +v.toFixed(자);
+    let px = r(점들[0][0]), py = r(점들[0][1]);
+    let seg = '';
+    for (let i = 1; i < 점들.length; i++){
+      const x = r(점들[i][0]), y = r(점들[i][1]);
+      if (x === px && y === py) continue;      /* 반올림해서 같은 자리가 된 점 */
+      seg = 이어(seg, 짧게(x - px), 짧게(y - py));
+      px = x; py = y;
+    }
+    return 'M' + 짧게(r(점들[0][0])) + ' ' + 짧게(r(점들[0][1])) +
+           (seg ? 'l' + seg : '') + 'Z';
+  };
+  const 길 = q => 그리길(q.점);
+  const 다각 = poly => 그리길(poly);
   const 나라길 = 조각.map(길).join(' ');
 
   /* ⑥ 영역. 사이트에는 **화면 밖 도시도** 넣습니다 — 안 넣으면 가장자리

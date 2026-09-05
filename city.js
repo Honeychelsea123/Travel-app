@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b688';
-import { sb } from './db.js?v=b688';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b688';
-import { myRates, cityStat, visited } from './rate.js?v=b688';
-import { starHtml, starValue } from './stars.js?v=b688';
-import { localTime } from './calc.js?v=b688';
-import { fail } from './net.js?v=b688';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b689';
+import { sb } from './db.js?v=b689';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b689';
+import { myRates, cityStat, visited } from './rate.js?v=b689';
+import { starHtml, starValue } from './stars.js?v=b689';
+import { localTime } from './calc.js?v=b689';
+import { fail } from './net.js?v=b689';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
