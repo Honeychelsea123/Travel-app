@@ -357,7 +357,17 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
           pointer-events:none; }
 .shdim{ position:absolute; inset:0; background:rgba(0,0,0,.32);
         pointer-events:auto; animation:gsfade var(--t) var(--ease); }
-.shwrap{ pointer-events:auto; width:100%; max-width:480px; margin:0 auto;
+/* ⚠⚠ **`position:relative` 가 없으면 카드가 어두워집니다(b674, 사용자
+     신고: 「여긴 왜 어두운거야」).** `.shdim` 은 `position:absolute` 라
+     «자리 잡힌» 요소이고, 자리 잡힌 요소는 **자리 안 잡힌 형제 위에**
+     그려집니다. 그래서 어두운 막이 카드 «위»를 덮었습니다.
+   ⚠ 증상이 원인을 그대로 가리켰습니다 — **머리줄만 멀쩡했습니다.**
+     그것만 `position:sticky`(=자리 잡힘)라 막보다 위였기 때문입니다.
+     한 카드 안에서 일부만 멀쩡하면 «그 일부가 무엇이 다른가»를 보십시오.
+   ⚠ `z-index` 는 안 씁니다. 자리만 잡으면 문서 차례상 뒤에 있으므로
+     위로 올라옵니다 — 층수를 매기기 시작하면 끝이 없습니다. */
+.shwrap{ position:relative; pointer-events:auto;
+         width:100%; max-width:480px; margin:0 auto;
          padding:0 10px calc(var(--tabh, 58px) + 14px);
          animation:gsup .22s var(--ease); }
 .shcard{ background:var(--canvas); border:1px solid var(--line);
