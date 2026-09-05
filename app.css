@@ -333,6 +333,16 @@ main{ max-width:480px; margin:0 auto; min-width:0; }
  * 예전에 별점 칸을 칩 줄로 만들었다가 「줄이 둘이 되면서 답답하다」고
  * 걷어낸 적이 있어서, 그걸 피하는 것이 이 설계의 핵심입니다. */
 .shbar{ display:flex; gap:8px; align-items:center; margin:0 0 8px; }
+/* ── 찾기 칸 + 거르개 한 줄(b679) ─────────────────────────────────────
+ * ⚠ 거르개는 **안 줄어듭니다**(`flex:none`). 나라 이름이 길어져도
+ *   («보스니아 헤르체고비나») 글자가 접히면 안 되고, 줄어드는 쪽은
+ *   찾기 칸이어야 합니다.
+ * ⚠ `min-width:0` 이 없으면 input 이 제 기본 폭을 고집해서 거르개를
+ *   줄 밖으로 밀어냅니다 — flex 안의 input 에서 늘 걸리는 자리입니다. */
+.rqbar{ display:flex; gap:8px; align-items:center; }
+.rqbar > input{ flex:1 1 auto; min-width:0; margin:0; }
+.rqbar > .shpill{ flex:none; max-width:46%; overflow:hidden;
+                  text-overflow:ellipsis; white-space:nowrap; }
 .shpill{ appearance:none; cursor:pointer; font:inherit;
          font-size:var(--f-sm); font-weight:600; color:var(--ink);
          background:var(--canvas); border:1px solid var(--line);

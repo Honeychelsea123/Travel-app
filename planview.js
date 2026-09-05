@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b678';
-import { featOn, flags } from './flags.js?v=b678';
-import { fail, write } from './net.js?v=b678';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b678';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b678';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b678';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b678';
-import { STAY_MIN, mins } from './plancheck.js?v=b678';
+import { $, esc, emptyDo } from './dom.js?v=b679';
+import { featOn, flags } from './flags.js?v=b679';
+import { fail, write } from './net.js?v=b679';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b679';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b679';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b679';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b679';
+import { STAY_MIN, mins } from './plancheck.js?v=b679';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b678';
+import { fillOnePlan } from './cands.js?v=b679';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
