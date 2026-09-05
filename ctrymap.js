@@ -35,16 +35,21 @@
  *   `?v=bNNN` 을 달면 빌드마다 199개가 새로 내려갑니다(bump.sh 가 다 바꿉니다).
  *
  * ── 이 화면을 여는 조건 ──────────────────────────────────────────────
- * 도시가 **3곳 이상**인 나라만 지도를 엽니다. 1~2곳이면 점 한둘짜리 지도라
- * 볼 것이 없어 지금처럼 카드를 바로 띄웁니다(나라카드).
+ * **도시가 하나라도 있으면 지도를 먼저 폅니다**(b683, 사용자 결정:
+ * 「도시 1~2곳인 나라도 무조건 지도가 먼저 뜨게해줘」).
+ * ⚠ b682 에는 「셋 이상만」이었습니다. 그때 든 이유는 「점 한둘짜리 지도는
+ *   볼 것이 없다」였는데, **영역 방식에서는 틀린 말이었습니다** — 도시가
+ *   하나면 그 나라 «전체»가 그 도시의 땅으로 칠해집니다. 싱가포르·홍콩·
+ *   마카오·괌처럼 나라가 곧 도시인 곳에서는 그 편이 오히려 맞습니다.
+ * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc } from './dom.js?v=b682';
-import { cities, countryName } from './cities.js?v=b682';
-import { myRates, visited } from './rate.js?v=b682';
+import { $, esc } from './dom.js?v=b683';
+import { cities, countryName } from './cities.js?v=b683';
+import { myRates, visited } from './rate.js?v=b683';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
-export const CMAP_MIN = 3;     /* 이 수보다 적으면 지도를 안 엽니다 */
+export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
 
 let ctx = { 나라카드: async () => {} };
 export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
