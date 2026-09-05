@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b685';
-import { cities, countryName, countryInfo } from './cities.js?v=b685';
-import { myRates, visited } from './rate.js?v=b685';
+import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b686';
+import { cities, countryName, countryInfo } from './cities.js?v=b686';
+import { myRates, visited } from './rate.js?v=b686';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -202,6 +202,25 @@ function 판만들기(){
   판.querySelector('.cmback').onclick = () => 닫기();
   판.querySelector('.cmgo').onclick = () => { if (지금) ctx.나라카드(지금.cc); };
   return 판;
+}
+
+/* 「한국보다 −6시간」. 시간대 이름(Europe/Moscow)은 여행자에게 아무 것도
+   안 알려 줍니다 — 우리에게 쓸모 있는 것은 **한국과의 차이**입니다.
+   ⚠ 서머타임이 들어간 «오늘» 기준입니다. 여행 날짜 기준이 아닙니다. */
+function 시차(tz){
+  if (!tz) return '';
+  try {
+    const 오프셋 = t => {
+      const s = new Intl.DateTimeFormat('en-US', { timeZone: t, timeZoneName: 'longOffset' })
+        .formatToParts(new Date()).find(p => p.type === 'timeZoneName')?.value || '';
+      const m = s.match(/([+-])(\d{1,2}):(\d{2})/);
+      return m ? (m[1] === '-' ? -1 : 1) * (+m[2] + +m[3] / 60) : 0;
+    };
+    const d = Math.round((오프셋(tz) - 오프셋('Asia/Seoul')) * 10) / 10;
+    if (!d) return '한국과 같은 시간';
+    const 시 = Math.abs(d) % 1 ? Math.abs(d).toFixed(1) : String(Math.abs(d));
+    return `한국보다 ${d > 0 ? '+' : '−'}${시}시간`;
+  } catch { return ''; }
 }
 
 /* 깃발 하나. 기기가 이모지 깃발을 그리면 그것으로 끝내고(0바이트), 못 그리면
@@ -436,12 +455,15 @@ function 칠하기(cc, 조각, 도시들){
   판.querySelector('.cmcount').textContent = `${간것} / ${도시들.length}곳`;
   판.querySelector('.cmbar i').style.width =
     도시들.length ? `${Math.round(간것 / 도시들.length * 100)}%` : '0%';
-  /* 대륙 · 통화 · 언어 · 시차 — 이미 받아 둔 나라 표에 있는 것만 적습니다.
-     ⚠ 없는 칸을 빈칸으로 두면 「· ·」 가 남습니다. 있는 것만 이어 붙입니다. */
+  /* 대륙 · 통화 · 시차 — 이미 받아 둔 나라 표에 있는 것만 적습니다.
+     ⚠ 없는 칸을 빈칸으로 두면 「· ·」 가 남습니다. 있는 것만 이어 붙입니다.
+     ⚠ **날것을 그대로 적지 않습니다.** b685 는 「유럽 · RUB · ru ·
+       Europe/Moscow」로 나왔습니다 — `ru` 도 `Europe/Moscow` 도 여행자에게
+       아무 것도 안 알려 줍니다. 언어 코드는 빼고, 시간대는 **한국과의 차이**
+       로 바꿉니다. 우리 사용자에게 쓸모 있는 것은 그것입니다. */
   const 나라 = countryInfo[cc] || {};
   판.querySelector('.cmmeta').textContent =
-    [나라.continent, 나라.currency, 나라.local_lang, 나라.default_timezone]
-      .filter(Boolean).join(' · ');
+    [나라.continent, 나라.currency, 시차(나라.default_timezone)].filter(Boolean).join(' · ');
 
   /* 떼어낸 먼 곳은 카드 안 칩으로. 없애면 괌이 «사라진» 것이 됩니다. */
   const 먼칸 = 판.querySelector('.cmfar');
