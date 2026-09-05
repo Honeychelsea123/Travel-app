@@ -14,17 +14,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b670';
-import { sb } from './db.js?v=b670';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b670';
-import { dateRange } from './calc.js?v=b670';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b670';
-import { cities, countryName } from './cities.js?v=b670';
-import { myRates, cityStat, visited, justRated, rateFilter, avgTail,
+import { $, esc } from './dom.js?v=b671';
+import { sb } from './db.js?v=b671';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b671';
+import { dateRange } from './calc.js?v=b671';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b671';
+import { cities, countryName } from './cities.js?v=b671';
+import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         putRateFilter, removeRate } from './rate.js?v=b670';
-import { openCity } from './city.js?v=b670';
-import { loadCities } from './citysearch.js?v=b670';
+         removeRate } from './rate.js?v=b671';
+import { openCity } from './city.js?v=b671';
+import { loadCities } from './citysearch.js?v=b671';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -116,8 +116,6 @@ export async function loadRatings(){
 
 /* 칩으로 놔둔 것은 둘뿐입니다. 나머지는 프로필 보관함에서 걸러 들어옵니다.
    그때는 무엇으로 걸렀는지 알려주고 풀 길을 같이 줍니다. */
-const NARROW = { todo:'아직 안 매긴 다녀온 도시', been:'다녀온 도시', mine:'내가 매긴 곳' };
-
 /* 여행 카드·히어로의 밑줄. **여행 이름이 대표 도시와 같으면 도시를 뺍니다** —
    여행을 도시 이름으로 짓는 일이 흔한데, 그러면 "도쿄 / 도쿄 · 9월 12일 –
    15일 · 4일" 처럼 같은 말이 바로 위아래로 두 번 나옵니다.
@@ -126,15 +124,12 @@ export const tripSub = (t, days) =>
   (t.destination && t.destination !== t.title ? `${t.destination} · ` : '') +
   `${dateRange(t.start_date, t.end_date)} · ${days}일`;
 
-export function setRateFilter(f){
-  putRateFilter(f);
-  document.querySelectorAll('#r_filter button').forEach(x =>
-    x.classList.toggle('on', x.dataset.rf === f));
-  $('r_narrow').classList.toggle('hide', !NARROW[f]);
-  if (NARROW[f]) $('r_narrowtext').textContent = `${NARROW[f]}만 보는 중`;
-  drawRatings();
-  $('r_q').scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
+/* ⚠⚠ **`setRateFilter`·`NARROW` 를 걷었습니다(b671).** 갈래줄(도시 /
+   가보고 싶어요 / 다녀온 곳)을 통째로 없앴기 때문입니다 — 이유는
+   index.html 의 `#r_filter` 자리 주석에 있습니다.
+ ⚠ 부르던 곳이 **그 단추들 자신 하나뿐**이었습니다. 「보관함에서 걸러
+   들어온다」는 길은 b550 에 보관함이 제 화면을 갖게 되면서 없어졌는데,
+   주석과 코드만 남아 있었습니다. 지우기 전에 부르는 곳을 세어 보십시오. */
 
 export function drawRatings(){
   const q = $('r_q').value.trim().toLowerCase();
@@ -142,11 +137,9 @@ export function drawRatings(){
   let list = (cities || []).filter(c => {
     if (q && !(cho ? c._cho.includes(q) : c._hay.includes(q))) return false;
     const r = myRates[c.id];
-    if (rateFilter === 'todo') return visited.has(c.id) && r?.stars == null;
-    if (rateFilter === 'been') return visited.has(c.id);
-    if (rateFilter === 'want') return !!r?.want;
-    if (rateFilter === 'mine') return r?.stars != null;
-    if (rateFilter === 'comment') return !!r?.comment;
+    /* ⚠ 갈래(rateFilter)는 b671 에 없앴습니다. 이 탭은 이제 한 가지만
+       합니다 — **아직 안 매긴 곳을 보여준다.** 매긴 것을 다시 보는 자리는
+       기록 탭의 보관함입니다. */
     /* 기본 목록에는 아직 안 매긴 곳만 둡니다. 매긴 것이 계속 쌓여 있으면
        남은 게 안 보여서 더 안 매기게 됩니다. 매긴 것은 프로필에서 봅니다.
        방금 매긴 것은 남겨둡니다 — 잘못 눌렀을 때 그 자리에서 고쳐야 합니다. */
@@ -168,9 +161,7 @@ export function drawRatings(){
                    || (a.fame ?? 9) - (b.fame ?? 9)
                    || a.name.localeCompare(b.name, 'ko'));
 
-  $('r_head').textContent = { been:'다녀온 곳', want:'가보고 싶은 곳',
-                              mine:'내가 매긴 곳', comment:'한줄평 남긴 곳',
-                              todo:'매길 곳' }[rateFilter] || '도시';
+  $('r_head').textContent = '도시';
 
   /* ⚠ 「직접 넣기」 안내를 걷었습니다(b670) — index.html 의 주석 참고. */
   if (!list.length){
@@ -240,11 +231,6 @@ export function drawRatings(){
    index.html 의 `#addcity` · 여기 · db 정책. */
 
 $('r_q').addEventListener('input', drawRatings);
-for (const id of ['r_filter', 'r_narrow'])
-  $(id).addEventListener('click', e => {
-    const b = e.target.closest('button[data-rf]');
-    if (b) setRateFilter(b.dataset.rf);
-  });
 
 $('ratelist').addEventListener('click', async e => {
   /* 별 왼쪽 절반은 반 개, 오른쪽 절반은 한 개 — 왓챠피디아와 같은 방식입니다. */

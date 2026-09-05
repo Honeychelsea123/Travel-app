@@ -31,8 +31,9 @@ export let cityStat = {};
 export let visited = new Set();
 /* 방금 매긴 것. 이번 화면에서는 목록에 남겨둡니다 — 잘못 눌렀으면 바로 고쳐야 합니다. */
 export let justRated = new Set();
-/* 기록 화면에서 무엇만 보고 있나 */
-export let rateFilter = 'all';
+/* ⚠ `rateFilter` 를 걷었습니다(b671) — 평가 탭의 갈래줄을 없앴기
+   때문입니다(index.html 의 `#r_filter` 자리 주석). 값을 넣는 곳이
+   하나도 안 남아 「살아 있는 것처럼 보이는 죽은 값」이 됩니다. */
 
 /* ── 받아온 것을 넣기 ────────────────────────────────────────────────
  * 셋을 **한 번에** 받습니다. 하나씩 넣게 두면 별점만 새것이고 평균은 옛것인
@@ -103,16 +104,11 @@ export function putCityStat(cityId, row){
 /* 기록 화면에 다시 들어왔습니다. 방금 매긴 것은 이제 목록에서 빠집니다. */
 export function clearJustRated(){ justRated.clear(); }
 
-/* app.js 에도 `setRateFilter` 가 있습니다 — 그쪽은 화면까지 같이 고치는
-   함수라 이름이 겹치면 안 됩니다. 여기는 값만 넣습니다. */
-export function putRateFilter(f){ rateFilter = f || 'all'; }
-
 /* ── 사람이 바뀔 때 ──────────────────────────────────────────────────
  * 2번 규칙. 로그아웃·로그인 양쪽에서 이 한 곳을 부릅니다. */
 export function clearRates(){
   myRates = {}; cityStat = {};
   visited = new Set(); justRated = new Set();
-  rateFilter = 'all';
 }
 
 /* ── 자가검사 (개발용) ─────────────────────────────────────────────────
@@ -124,7 +120,7 @@ if (typeof window !== 'undefined') window.__rateCheck = () => {
   const bad = (name, msgs) =>
     out.push({ 항목:name, 결과: msgs.length ? '✗ ' + msgs.join(' / ') : '✓' });
 
-  const 원래 = { myRates, cityStat, visited, justRated, rateFilter };
+  const 원래 = { myRates, cityStat, visited, justRated };
 
   const 채우기 = () => {
     clearRates();
@@ -196,14 +192,12 @@ if (typeof window !== 'undefined') window.__rateCheck = () => {
   {
     채우기();
     applyRate('roma', { stars:5 }, { stars:5 });
-    putRateFilter('been');
     clearRates();
     const m = [];
     if (Object.keys(myRates).length)  m.push('별점이 남음');
     if (Object.keys(cityStat).length) m.push('평균이 남음');
     if (visited.size)                 m.push('다녀온 곳이 남음');
     if (justRated.size)               m.push('방금 매긴 것이 남음');
-    if (rateFilter !== 'all')         m.push('거르개가 안 돌아옴');
     bad('사람이 바뀌면 전부 비는가', m);
   }
 
@@ -218,7 +212,6 @@ if (typeof window !== 'undefined') window.__rateCheck = () => {
   /* 되돌려 놓기 */
   myRates = 원래.myRates; cityStat = 원래.cityStat;
   visited = 원래.visited; justRated = 원래.justRated;
-  rateFilter = 원래.rateFilter;
 
   console.table(out);
   const ng = out.filter(o => o.결과 !== '✓');
