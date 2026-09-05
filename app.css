@@ -4921,6 +4921,16 @@ body.pvon{ overflow:hidden; }
 .cmgo{ font:inherit; font-size:15px; font-weight:700; padding:13px 16px;
        border:0; border-radius:12px; background:var(--primary); color:#fff; }
 
+/* 손가락으로 크게 본 뒤 되돌리는 단추(b687). 확대했을 때만 나옵니다. */
+.cmzero{ position:absolute; top:calc(14px + env(safe-area-inset-top)); right:12px;
+         z-index:2; font:inherit; font-size:12.5px; padding:7px 12px;
+         border:1px solid var(--line); background:var(--canvas); color:var(--ink);
+         border-radius:999px; box-shadow:0 2px 10px rgba(70,58,40,.10); }
+.cmzero.hide{ display:none; }
+/* ⚠ 지도 칸에서 브라우저의 «당겨서 새로고침»과 가로 스크롤을 끕니다 —
+   안 끄면 손가락으로 미는 것이 지도가 아니라 페이지에 먹습니다. */
+.cmbox{ touch-action:none; }
+
 /* 지도가 화면을 다 덮습니다 — 하단바가 지도를 가리면 안 됩니다
    (큰 지도의 body.bigmap 과 같은 수법). */
 body.cmapopen .tabbar{ display:none; }

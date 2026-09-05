@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b686';
-import { cities, countryName, countryInfo } from './cities.js?v=b686';
-import { myRates, visited } from './rate.js?v=b686';
+import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b687';
+import { cities, countryName, countryInfo } from './cities.js?v=b687';
+import { myRates, visited } from './rate.js?v=b687';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -190,6 +190,7 @@ function 판만들기(){
       '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
       '<path d="M15 5l-7 7 7 7"/></svg></button>' +
+    '<button type="button" class="cmzero hide">처음 크기로</button>' +
     '<div class="cmcard">' +
       '<div class="cmtop"><span class="cmflag"></span><b class="cmname"></b>' +
         '<span class="cmcount"></span></div>' +
@@ -201,6 +202,11 @@ function 판만들기(){
   document.body.appendChild(판);
   판.querySelector('.cmback').onclick = () => 닫기();
   판.querySelector('.cmgo').onclick = () => { if (지금) ctx.나라카드(지금.cc); };
+  판.querySelector('.cmzero').onclick = () => {
+    if (!지금) return;
+    지금.보기 = null;
+    칠하기(지금.cc, 지금.조각, 지금.도시들);
+  };
   return 판;
 }
 
@@ -240,7 +246,7 @@ let 지금 = null;               /* { cc, 점들, 배, 판 } — 누를 때 씁�
 /* ── 그리기 ───────────────────────────────────────────────────────────*/
 const 문턱 = 3;   /* 3u ≈ 120km. 제 나라 해안에서 이보다 멀면 「그 땅이 아니다」 */
 
-function 그리기(cc, 조각0, 도시들, 폭px, 높px){
+function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
   let 점들 = 도시들.map(c => ({ c, x: PX(경(c)), y: PY(위(c)) }));
 
   /* ① **날짜변경선을 폅니다.** 안 하면 러시아 상자가 «지도 한 바퀴»(1000)가
@@ -331,21 +337,32 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px){
     x0 = Math.min(x0, q.x0); x1 = Math.max(x1, q.x1);
     y0 = Math.min(y0, q.y0); y1 = Math.max(y1, q.y1);
   }
-  /* ⑤ 남은 도시로 상자를 넓힙니다 — 안 넓히면 해안에서 살짝 벗어난 도시가
-     화면 가장자리에 걸립니다. */
-  for (const d of 안것){
-    x0 = Math.min(x0, d.x); x1 = Math.max(x1, d.x);
-    y0 = Math.min(y0, d.y); y1 = Math.max(y1, d.y);
-  }
+  /* ⑤ **본토를 한가운데 둡니다**(b687, 사용자 지시: 「지도 사이즈를 줄이더라도
+     한반도가 중앙정렬 하게 위치해주고 우측에 울릉도 독도 다 넣어줘」).
+     그냥 감싸면 울릉도·독도 때문에 상자가 오른쪽으로 늘어나 본토가 왼쪽으로
+     치우칩니다. → 씨앗 조각(본토)의 «가운데»를 잡고 좌우·위아래로 «같은 만큼»
+     벌려 다 담습니다. 지도는 조금 작아지지만 본토가 가운데 옵니다. */
+  const mx = (S.x0 + S.x1) / 2, my = (S.y0 + S.y1) / 2;
+  let hx = 0, hy = 0;
+  const 넓히기 = (x, y) => {
+    hx = Math.max(hx, Math.abs(x - mx));
+    hy = Math.max(hy, Math.abs(y - my));
+  };
+  for (const q of 쓸것){ 넓히기(q.x0, q.y0); 넓히기(q.x1, q.y1); }
+  for (const d of 안것) 넓히기(d.x, d.y);     /* 해안 밖 도시도 담습니다 */
+  x0 = mx - hx; x1 = mx + hx; y0 = my - hy; y1 = my + hy;
 
-  /* ④ 화면 비율에 맞춥니다. 안 맞추면 한쪽이 잘립니다. */
+  /* ⑥ 화면 비율에 맞춥니다. 안 맞추면 한쪽이 잘립니다. */
   const 폭 = Math.max(x1 - x0, 0.4), 높 = Math.max(y1 - y0, 0.4);
   const 여 = Math.max(폭, 높) * 0.10;
   const 비 = 높px / 폭px;
   let vw = 폭 + 여 * 2, vh = 높 + 여 * 2;
   if (vh / vw < 비) vh = vw * 비; else vw = vh / 비;
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const vx = cx - vw / 2, vy = cy - vh / 2;
+  const 기본보기 = { vx: mx - vw / 2, vy: my - vh / 2, vw, vh };
+  /* 손가락으로 크게 본 자리가 있으면 그것을 씁니다(b687). */
+  const 보 = 보기 && 보기.vw ? 보기 : 기본보기;
+  const vx = 보.vx, vy = 보.vy;
+  vw = 보.vw; vh = 보.vh;
   const 배 = 폭px / vw;                     /* 지도 한 칸이 화면 몇 px 인가 */
   const 선 = 0.4 / 배;
 
@@ -365,8 +382,11 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px){
 
   /* ⑥ 영역. 사이트에는 **화면 밖 도시도** 넣습니다 — 안 넣으면 가장자리
      도시의 땅이 이웃 몫까지 집어삼킵니다. */
+  /* ⚠ 자르는 상자는 «보기»가 아니라 나라 상자에서 냅니다 — 크게 보면(줌)
+     보기가 작아지는데, 그 작은 상자로 자르면 셀이 화면 밖에서 끊깁니다. */
+  const 큰 = Math.max(x1 - x0, y1 - y0) + 50;
   const 셀 = 보로노이(안것.map(d => [d.x, d.y]),
-                      [vx - vw * 2, vy - vh * 2, vx + vw * 3, vy + vh * 3]);
+                      [x0 - 큰, y0 - 큰, x1 + 큰, y1 + 큰]);
   const 갔나 = c => visited?.has?.(c.id) || myRates?.[c.id]?.stars != null;
 
   const 칠 = [], 그릴것 = [];
@@ -436,7 +456,7 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px){
     `<g transform="translate(${vx.toFixed(2)} ${vy.toFixed(2)}) scale(${(1 / 배).toFixed(6)})">` +
       글.join('') + `</g></svg>`;
 
-  return { svg, 배, vx, vy, vw, vh, 안것, 먼것 };
+  return { svg, 배, vx, vy, vw, vh, 안것, 먼것, 기본보기 };
 }
 
 /* ── 한 번 칠하기 ─────────────────────────────────────────────────────
@@ -447,8 +467,11 @@ function 칠하기(cc, 조각, 도시들){
   const 판 = 판만들기();
   const 칸 = 판.querySelector('.cmbox');
   const r = 칸.getBoundingClientRect();
-  const 결과 = 그리기(cc, 조각, 도시들, r.width || 360, r.height || 520);
+  const 결과 = 그리기(cc, 조각, 도시들, r.width || 360, r.height || 520, 지금?.보기);
   칸.innerHTML = 결과.svg;
+  손달기(칸);
+  판.querySelector('.cmzero').classList.toggle('hide',
+    !지금?.보기 || 지금.보기.vw >= 결과.기본보기.vw - 0.001);
 
   /* ── 국가 카드 ─────────────────────────────────────────────────── */
   const 간것 = 도시들.filter(c => visited?.has?.(c.id) || myRates?.[c.id]?.stars != null).length;
@@ -478,7 +501,133 @@ function 칠하기(cc, 조각, 도시들){
   } else {
     먼칸.innerHTML = ''; 먼칸.classList.add('hide');
   }
-  지금 = { cc, 결과, 칸, 조각, 도시들 };
+  지금 = { cc, 결과, 칸, 조각, 도시들, 보기: 지금?.보기 || null };
+}
+
+/* ── 손가락으로 크게 보기(b687) ───────────────────────────────────────
+ * 사용자: 「국가 페이지에서 줌인 줌아웃도 가능하면 좋겠어」
+ * ⚠ **누르기와 끌기를 갈라야 합니다.** 8px 안에서 짧게 끝난 것만 「누른 것」
+ *   입니다 — 안 가르면 지도를 밀 때마다 도시 카드가 뜹니다.
+ * ⚠ 미는 «동안»에는 viewBox 만 바꿉니다(속성 하나라 쌉니다). 손을 떼면
+ *   **다시 그립니다** — 그래야 이름 크기가 제자리로 오고(이름은 화면 자로
+ *   그리므로 viewBox 만 바꾸면 같이 커집니다), 확대한 만큼 이름이 더 붙습니다.
+ * ⚠ 두 번 두드리기는 «안» 씁니다. 한 번 누르면 바로 도시를 골라야 하는데,
+ *   두 번을 기다리면 그만큼 늦어집니다. 대신 「처음으로」 단추를 답니다. */
+function 손달기(칸){
+  if (칸.dataset.손) return;
+  칸.dataset.손 = '1';
+  const 손 = new Map();
+  let 처음 = null, 처음거리 = 0, 처음중심 = null;
+  let 움직인 = 0, 시작시각 = 0;
+
+  const 지금보기 = () => {
+    const r = 지금?.결과; if (!r) return null;
+    return { vx: r.vx, vy: r.vy, vw: r.vw, vh: r.vh };
+  };
+  /* 처음 크기보다 크게는 못 줄이고(빈 바다만 늘어남), 8배까지 키웁니다. */
+  const 맞추기 = v => {
+    const 기 = 지금?.결과?.기본보기; if (!기) return v;
+    const vw = Math.min(기.vw, Math.max(기.vw / 8, v.vw));
+    const vh = vw * (기.vh / 기.vw);
+    return {
+      vw, vh,
+      vx: Math.min(기.vx + 기.vw - vw, Math.max(기.vx, v.vx)),
+      vy: Math.min(기.vy + 기.vh - vh, Math.max(기.vy, v.vy)),
+    };
+  };
+  const 그려 = v => {
+    const s = 칸.querySelector('svg');
+    if (s) s.setAttribute('viewBox',
+      `${v.vx.toFixed(2)} ${v.vy.toFixed(2)} ${v.vw.toFixed(2)} ${v.vh.toFixed(2)}`);
+    if (지금?.결과) Object.assign(지금.결과, v);
+  };
+  const 다시 = () => {
+    if (!지금) return;
+    지금.보기 = 지금보기();
+    칠하기(지금.cc, 지금.조각, 지금.도시들);
+  };
+
+  칸.addEventListener('pointerdown', e => {
+    칸.setPointerCapture?.(e.pointerId);
+    손.set(e.pointerId, e);
+    처음 = 지금보기();
+    if (손.size === 1){ 움직인 = 0; 시작시각 = e.timeStamp; }
+    if (손.size === 2){
+      const [a, b] = [...손.values()];
+      처음거리 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      처음중심 = [(a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2];
+      움직인 = 999;                      /* 두 손가락이면 누르기가 아닙니다 */
+    }
+  });
+
+  칸.addEventListener('pointermove', e => {
+    if (!손.has(e.pointerId) || !처음) return;
+    const 옛 = 손.get(e.pointerId);
+    손.set(e.pointerId, e);
+    const b = 칸.getBoundingClientRect();
+    if (!b.width) return;
+    if (손.size === 1){
+      움직인 += Math.hypot(e.clientX - 옛.clientX, e.clientY - 옛.clientY);
+      if (움직인 < 8) return;             /* 아직 누르기일 수 있습니다 */
+      const v = 지금보기(); if (!v) return;
+      그려(맞추기({ ...v,
+        vx: v.vx - (e.clientX - 옛.clientX) / b.width * v.vw,
+        vy: v.vy - (e.clientY - 옛.clientY) / b.height * v.vh }));
+    } else if (손.size >= 2 && 처음거리){
+      const [p, q] = [...손.values()];
+      const 거리 = Math.hypot(p.clientX - q.clientX, p.clientY - q.clientY);
+      const 배수 = Math.max(0.2, Math.min(12, 거리 / 처음거리));
+      const nvw = 처음.vw / 배수, nvh = 처음.vh / 배수;
+      /* 두 손가락 «가운데»가 제자리에 머물게 */
+      const fx = (처음중심[0] - b.left) / b.width, fy = (처음중심[1] - b.top) / b.height;
+      const gx = 처음.vx + fx * 처음.vw, gy = 처음.vy + fy * 처음.vh;
+      그려(맞추기({ vx: gx - fx * nvw, vy: gy - fy * nvh, vw: nvw, vh: nvh }));
+    }
+  });
+
+  const 뗌 = e => {
+    if (!손.has(e.pointerId)) return;
+    손.delete(e.pointerId);
+    if (손.size){ 처음 = 지금보기(); return; }
+    if (움직인 < 8 && e.timeStamp - 시작시각 < 600){ 고르기(e); return; }
+    다시();
+  };
+  칸.addEventListener('pointerup', 뗌);
+  칸.addEventListener('pointercancel', 뗌);
+
+  /* 마우스 휠로도 — 노트북에서 보는 사람이 있습니다. */
+  칸.addEventListener('wheel', e => {
+    if (!지금?.결과) return;
+    e.preventDefault();
+    const b = 칸.getBoundingClientRect(); if (!b.width) return;
+    const v = 지금보기();
+    const 배수 = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+    const nvw = v.vw / 배수, nvh = v.vh / 배수;
+    const fx = (e.clientX - b.left) / b.width, fy = (e.clientY - b.top) / b.height;
+    const gx = v.vx + fx * v.vw, gy = v.vy + fy * v.vh;
+    그려(맞추기({ vx: gx - fx * nvw, vy: gy - fy * nvh, vw: nvw, vh: nvh }));
+    clearTimeout(칸.__휠);
+    칸.__휠 = setTimeout(다시, 200);
+  }, { passive: false });
+}
+
+/* 누른 자리에서 «가장 가까운 도시»를 고릅니다.
+   ⚠ **다각형을 맞히지 않습니다.** 50m 해안선도 2~3km 어긋나고, 영역이 한
+     손가락보다 좁은 도시도 있습니다. 「가장 가까운 도시」가 언제나 답이 있고
+     손가락에 관대합니다. 너무 먼 곳(90px 밖)만 무시합니다. */
+function 고르기(e){
+  if (!지금?.결과) return;
+  const box = 지금.칸.getBoundingClientRect();
+  if (!box.width) return;
+  const { vx, vy, vw, vh, 배 } = 지금.결과;
+  const mx = vx + (e.clientX - box.left) / box.width * vw;
+  const my = vy + (e.clientY - box.top) / box.height * vh;
+  let 고른것 = null, best = Infinity;
+  for (const d of 지금.결과.안것){
+    const v = Math.hypot(d.x - mx, d.y - my);
+    if (v < best){ best = v; 고른것 = d; }
+  }
+  if (고른것 && best * 배 <= 90) 도시열기(지금.cc, 고른것.c.id);
 }
 
 /* 창이 바뀌면 다시 그립니다(회전·키보드·주소창). 연달아 오므로 한 번만. */
@@ -518,26 +667,10 @@ export async function openCountryMap(cc){
     return false;
   }
 
+  /* ⚠ 새 나라를 열 때는 «크게 본 자리»를 버립니다 — 앞 나라에서 확대해 둔
+     상자를 그대로 쓰면 엉뚱한 곳이 잡힙니다. */
+  지금 = null;
   칠하기(cc, 조각, 도시들);
-
-  const 칸 = 판.querySelector('.cmbox');
-  칸.onclick = e => {
-    if (!지금) return;
-    const box = 칸.getBoundingClientRect();
-    const { vx, vy, vw, vh } = 지금.결과;
-    /* 화면 좌표 → 지도 좌표. viewBox 를 칸 비율에 맞춰 두었으므로 한 줄입니다. */
-    const mx = vx + (e.clientX - box.left) / box.width * vw;
-    const my = vy + (e.clientY - box.top) / box.height * vh;
-    let 고른것 = null, best = Infinity;
-    for (const d of 지금.결과.안것){
-      const v = Math.hypot(d.x - mx, d.y - my);
-      if (v < best){ best = v; 고른것 = d; }
-    }
-    /* ⚠ **다각형을 맞히지 않습니다.** 50m 해안선도 2~3km 어긋나고, 영역이
-       한 손가락보다 좁은 도시도 있습니다. 「가장 가까운 도시」가 언제나
-       답이 있고 손가락에 관대합니다. 너무 먼 곳(90px 밖)만 무시합니다. */
-    if (고른것 && best * 지금.결과.배 <= 90) 도시열기(지금.cc, 고른것.c.id);
-  };
 
   if (history.state?.t2 !== 'cmap') history.pushState({ t2:'cmap' }, '');
   return true;

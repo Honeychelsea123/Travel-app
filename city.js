@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b686';
-import { sb } from './db.js?v=b686';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b686';
-import { myRates, cityStat, visited } from './rate.js?v=b686';
-import { starHtml, starValue } from './stars.js?v=b686';
-import { localTime } from './calc.js?v=b686';
-import { fail } from './net.js?v=b686';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b687';
+import { sb } from './db.js?v=b687';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b687';
+import { myRates, cityStat, visited } from './rate.js?v=b687';
+import { starHtml, starValue } from './stars.js?v=b687';
+import { localTime } from './calc.js?v=b687';
+import { fail } from './net.js?v=b687';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -41,7 +41,13 @@ import { fail } from './net.js?v=b686';
  *   있습니다: 설정이 홈 아래에 매달려 1218px 더 굴렀다).
  * ⚠ **판을 늘리면 이 목록도 늘려야 합니다.** app.js 에 두 곳, 여기 한 곳
  *   — 셋이 같은 일곱을 압니다. */
-const 덱밖판 = ['personapane', 'shelfpane', 'mappane', 'ctrypane',
+/* ⚠⚠ **여기에 안 적으면 그 판이 도시 화면 «위»에 남습니다(b687).**
+   b682 에 `#cmappane`(나라 지도)을 만들고 이 목록에 안 넣었더니, 나라
+   지도에서 도시 카드를 눌러 도시로 들어가도 **도시 화면이 나라 지도 밑에
+   깔려** 안 보였습니다(사용자 신고). 뒤로가기도 그래서 이상해 보였습니다 —
+   한 번 눌러도 «안 보이던» 도시가 닫힐 뿐이라 아무 일도 안 한 것 같습니다.
+   ⚠ 판을 새로 만들면 **이 줄에 더하는 것까지가 그 일**입니다. */
+const 덱밖판 = ['personapane', 'shelfpane', 'mappane', 'ctrypane', 'cmappane',
                 'diarypane', 'setpane', 'admpane'];
 /* 도시를 열면서 «내가» 가린 판. 닫을 때 그대로 되돌립니다 — 어디서
    들어왔든 그 자리로 돌아가야 합니다. */
