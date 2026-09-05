@@ -24,19 +24,19 @@
 --   나하를 매기셨을 수 있습니다. 그래서 **옮기고 나서 지웁니다.**
 -- ⚠ `trip_legs.city_id` 는 `on delete set null` 이라 일정은 안 지워지지만
 --   도시 연결이 끊깁니다. 그것도 옮깁니다.
-create temporary table _merge(dead text, keep text) on commit drop;
-insert into _merge values
-  ('naha',         'okinawa'),
-  ('ulan-bator',   'ulaanbaatar'),
-  ('buda',         'budapest'),
-  ('pest',         'budapest'),
-  ('marina-bay',   'singapore'),
-  ('south-dublin', 'dublin');
+--
+-- ⚠⚠ **임시 표를 만들지 않습니다.** 처음엔 `create temporary table _merge`
+--   로 짰는데, Supabase SQL 편집기가 **「RLS 없이 표를 만든다」고 경고**합니다
+--   (임시 표는 그 세션에만 살아서 실제로는 위험하지 않지만, 경고를 넘기려고
+--   RLS 를 켜는 것도 이상합니다). 짝 목록을 **그 자리에서 values 로** 씁니다.
 
 -- (가) 살아남는 쪽에 아직 줄이 없으면 통째로 옮깁니다.
 update public.city_ratings r
    set city_id = m.keep
-  from _merge m
+  from (values ('naha','okinawa'), ('ulan-bator','ulaanbaatar'),
+               ('buda','budapest'), ('pest','budapest'),
+               ('marina-bay','singapore'), ('south-dublin','dublin')
+       ) as m(dead, keep)
  where r.city_id = m.dead
    and not exists (select 1 from public.city_ratings x
                     where x.user_id = r.user_id and x.city_id = m.keep);
@@ -52,7 +52,10 @@ update public.city_ratings k
        journal_photo = coalesce(k.journal_photo, d.journal_photo),
        visited_on    = least(k.visited_on, d.visited_on),
        updated_at    = now()
-  from _merge m
+  from (values ('naha','okinawa'), ('ulan-bator','ulaanbaatar'),
+               ('buda','budapest'), ('pest','budapest'),
+               ('marina-bay','singapore'), ('south-dublin','dublin')
+       ) as m(dead, keep)
   join public.city_ratings d
     on d.city_id = m.dead
  where k.city_id = m.keep
@@ -62,13 +65,22 @@ update public.city_ratings k
 update public.city_ratings set stars = null where stars = 0;
 
 -- (다) 일정의 도시 연결도 옮깁니다.
-update public.trip_legs l set city_id = m.keep from _merge m where l.city_id = m.dead;
+update public.trip_legs l
+   set city_id = m.keep
+  from (values ('naha','okinawa'), ('ulan-bator','ulaanbaatar'),
+               ('buda','budapest'), ('pest','budapest'),
+               ('marina-bay','singapore'), ('south-dublin','dublin')
+       ) as m(dead, keep)
+ where l.city_id = m.dead;
 
--- 옮긴 것을 눈으로 확인하십시오(0 이면 애초에 쓰인 적이 없던 것입니다).
+-- 옮긴 뒤 «남은 것»을 눈으로 확인하십시오. 다 0 이어야 합니다.
 select m.dead, m.keep,
        (select count(*) from public.city_ratings r where r.city_id = m.dead) as 남은별점,
        (select count(*) from public.trip_legs   l where l.city_id = m.dead) as 남은일정
-  from _merge m;
+  from (values ('naha','okinawa'), ('ulan-bator','ulaanbaatar'),
+               ('buda','budapest'), ('pest','budapest'),
+               ('marina-bay','singapore'), ('south-dublin','dublin')
+       ) as m(dead, keep);
 
 -- ── ① 같은 곳이 두 번 ────────────────────────────────────────────────
 delete from public.cities where id in (
