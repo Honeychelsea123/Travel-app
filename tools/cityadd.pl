@@ -83,10 +83,21 @@ while (<$h>){
   my $j = 받기('https://ko.wikipedia.org/api/rest_v1/page/summary/' . 인코딩($제목));
   select(undef, undef, undef, 0.2);
 
+  # ⚠⚠ **한국어 문서가 아예 없는 곳이 있습니다**(하와이 소도시 등).
+  #   그때는 영어 문서를 «좌표와 링크 둘 다»에 씁니다. 이 앱은 이미
+  #   영어 위키를 링크한 도시가 여럿입니다 — 새 규칙이 아닙니다.
+  #   ⚠ 그래도 나라 범위 검사는 «똑같이» 통과해야 합니다.
+  my $판 = 'ko';
   my $종류 = 값($j, 'type') // '';
   if ($종류 ne 'standard'){
-    push @나쁨, [$id, $ko, "한국어 문서가 없거나 동음이의($종류)"];
-    next;
+    $j = 받기('https://en.wikipedia.org/api/rest_v1/page/summary/' . 인코딩($en));
+    select(undef, undef, undef, 0.2);
+    $종류 = 값($j, 'type') // '';
+    if ($종류 ne 'standard'){
+      push @나쁨, [$id, $ko, "한국어·영어 문서 둘 다 없거나 동음이의($종류)"];
+      next;
+    }
+    $판 = 'en';
   }
 
   my $cb = 좌표뭉치($j);
@@ -117,7 +128,8 @@ while (<$h>){
   my ($ti) = $j =~ /"titles"\s*:\s*\{[^}]*?"canonical"\s*:\s*"((?:[^"\\]|\\.)*)"/;
   $ti =~ s/\\u([0-9a-fA-F]{4})/chr(hex $1)/ge if $ti;
 
-  push @좋음, [$id, $ko, $en, $cc, $lat, $lng, $ti // $제목, $빌림];
+  push @좋음, [$id, $ko, $en, $cc, $lat, $lng, $ti // $제목,
+               ($판 eq 'en' ? 'en 문서' : $빌림), $판];
 }
 close $h;
 

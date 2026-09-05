@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b674';
-import { openCity } from './city.js?v=b674';
-import { sb } from './db.js?v=b674';
-import { cities, countryName, cityCountry } from './cities.js?v=b674';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b674';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b674';
-import { fail } from './net.js?v=b674';
-import { arm } from './ui.js?v=b674';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b675';
+import { openCity } from './city.js?v=b675';
+import { sb } from './db.js?v=b675';
+import { cities, countryName, cityCountry } from './cities.js?v=b675';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b675';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b675';
+import { fail } from './net.js?v=b675';
+import { arm } from './ui.js?v=b675';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b674';
-import { shareCard } from './card.js?v=b674';
-import { todayYmd } from './calc.js?v=b674';
+import { 발자국스펙 } from './map.js?v=b675';
+import { shareCard } from './card.js?v=b675';
+import { todayYmd } from './calc.js?v=b675';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b674';
-import { loadCities } from './citysearch.js?v=b674';
-import { loadRateData, saveRate } from './rating.js?v=b674';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b675';
+import { loadCities } from './citysearch.js?v=b675';
+import { loadRateData, saveRate } from './rating.js?v=b675';
 
 let ctx = {
   me: () => null,
@@ -105,8 +105,9 @@ const HAS_STARS = k => k === 'been' || k === 'mine' || k === 'comment'
  *   **시트**로 갑니다(index.html 의 `#shsheet`). 같은 기능을 다시
  *   넣는 것이니, 걷어낸 이유를 피했는지부터 보십시오.
  * ⚠ `at` 은 마지막으로 손댄 시각입니다 — 없으면 최신순에서 뒤로 갑니다.
- * ⚠ `fame` 은 **작을수록 유명합니다**(db/033). 이름 때문에 거꾸로 읽기
- *   쉬운 자리라 b656 에 한 번 데었습니다. */
+ * ⚠ 「유명한 순」(`fame`)은 b675 에 걷었습니다(사용자 결정) — 정렬이
+ *   여섯이면 고르는 것 자체가 일이 됩니다. 되살리려거든 `fame` 은
+ *   **작을수록 유명하다**는 것을 기억하십시오(db/033, b656 에 데었음). */
 function shelfArrange(list){
   const by = {
     new:  (a, b) => String(b.at || '').localeCompare(String(a.at || '')),
@@ -114,7 +115,6 @@ function shelfArrange(list){
     low:  (a, b) => (a.stars ?? 99) - (b.stars ?? 99),
     avg:  (a, b) => (Number(cityStat[b.id]?.avg_stars) || -1)
                   - (Number(cityStat[a.id]?.avg_stars) || -1),
-    fame: (a, b) => (a.fame ?? 9) - (b.fame ?? 9),
     name: () => 0,
   }[shelfSort] || (() => 0);
   return [...list].sort((a, b) => by(a, b) || String(a.name).localeCompare(String(b.name), 'ko'));
@@ -164,7 +164,7 @@ function 거르개칸채우기(all){
  *   건너뛰고 그 아래 보관함을 닫습니다. 닫는 쪽은 tripview.js 의 사슬. */
 const SORT_NAME = { new:'최근에 매긴 순', high:'내 별점 높은 순',
                     low:'내 별점 낮은 순', avg:'다른 사람 평균 높은 순',
-                    fame:'유명한 순', name:'가나다 순' };
+                    name:'가나다 순' };
 const STAR_NAME = { all:'별점 전체', '5':'★5', '4':'★4점대', '3':'★3점대',
                     '2':'★2점대', '1':'★1점대 이하', none:'아직 안 매김' };
 
@@ -495,6 +495,10 @@ export async function openShelf(kind){
      남겨두면 다음에 별점 보관함을 열었을 때 왜 목록이 짧은지 알 수가
      없습니다(b649 에 공유 단추로 겪은 것과 같은 부류). */
   if (!HAS_STARS(kind)){ shelfSort = 'new'; shelfStar = 'all'; }
+  /* ⚠ 없앤 정렬이 걸린 채 남을 수 있습니다(b675 에 「유명한 순」을
+     걷었습니다). 모르는 값이면 기본으로 되돌립니다 — 안 그러면
+     `by` 가 «아무것도 안 하는 함수»라 이름순처럼 보입니다. */
+  if (!SORT_NAME[shelfSort]) shelfSort = 'new';
 
   /* ⚠⚠ **벽은 여기서 먼저 벗깁니다(b607).** 아래 세 갈래(맛집·관광지·
      후기·배지)는 여기서 «일찍 나가»서, 벽을 씌우고 벗기는 줄을 지나가지
