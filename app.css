@@ -4849,9 +4849,11 @@ body.pvon{ overflow:hidden; }
          padding-top:12px; border-top:1px dashed var(--dg-edge); }
 .dgfoot button{ margin-left:auto; }
 
-/* ── 나라 지도 화면(b682) ───────────────────────────────────────────
+/* ── 나라 지도 화면(b682 · b685) ────────────────────────────────────
  * 지구본에서 나라를 누르면 그 나라만 크게 펴고, 도시를 «영역»으로 나눠
  * 보여줍니다(ctrymap.js). 사용자 결정: 「영역으로 하고 도시있는 조각으로」
+ * b685 에 **국가 카드**를 아래에 답니다 — 「레퍼 이미지 같은 국가 카드가
+ * 다 있어야해」.
  *
  * ⚠ **z-index 1180 입니다 — 카드 시트(#gsheet 1200)보다 «아래».**
  *   도시를 누르면 시트가 이 판 «위»에 얹혀야 합니다.
@@ -4861,15 +4863,8 @@ body.pvon{ overflow:hidden; }
 #cmappane{ position:fixed; inset:0; z-index:1180; background:var(--canvas);
            display:flex; flex-direction:column; }
 #cmappane.hide{ display:none; }
-.cmhead{ flex:none; display:flex; align-items:center; gap:9px;
-         padding:calc(7px + env(safe-area-inset-top)) 13px 7px; }
-.cmback{ width:34px; height:34px; padding:0; flex:none; border-radius:50%;
-         border:1px solid var(--line); background:var(--canvas); color:var(--ink);
-         display:flex; align-items:center; justify-content:center; }
-.cmname{ font-size:17px; font-weight:700; }
-.cmcount{ margin-left:auto; font-size:12.5px; color:var(--ink-48);
-          font-variant-numeric:tabular-nums; }
 
+/* 지도 — 카드가 가져가고 남는 자리를 다 씁니다. */
 .cmbox{ flex:1; min-height:0; position:relative; }
 .cmbox svg{ display:block; width:100%; height:100%; }
 /* 이웃 나라 — 흐리게. 나라 하나만 그리면 허공에 뜬 것처럼 보입니다. */
@@ -4880,8 +4875,6 @@ body.pvon{ overflow:hidden; }
 .cm-on{  fill:rgba(242,94,38,.52); stroke:var(--canvas); }
 .cm-off{ fill:rgba(242,94,38,.09); stroke:var(--canvas); }
 .cm-edge{ fill:none; stroke:var(--brand); stroke-linejoin:round; }
-/* ⚠ 이름에 종이색 테두리를 두릅니다(paint-order:stroke) — 안 그러면
-   영역 경계선 위에서 글자가 안 읽힙니다. */
 /* ⚠⚠ **글자 크기는 «화면 px 그대로»입니다.** 이름은 지도 칸이 아니라 화면
    자로 그린 뒤 무리째 줄입니다(ctrymap.js 의 scale(1/배) 무리) — 지도 칸으로
    적으면 font-size 가 0.43px 이 되고, 그 크기에서 크롬이 자간을 0 으로
@@ -4890,14 +4883,44 @@ body.pvon{ overflow:hidden; }
         font-size:10px; font-weight:600; text-anchor:middle; }
 .cm-dot{ fill:var(--ink); opacity:.5; }
 
+/* 뒤로 — 지도 «위에» 얹습니다. 머리줄을 따로 두면 그만큼 지도가 줄어듭니다. */
+.cmback{ position:absolute; top:calc(10px + env(safe-area-inset-top)); left:12px;
+         width:38px; height:38px; padding:0; border-radius:50%; z-index:2;
+         border:1px solid var(--line); background:var(--canvas); color:var(--ink);
+         display:flex; align-items:center; justify-content:center;
+         box-shadow:0 2px 10px rgba(70,58,40,.10); }
+
+/* ── 국가 카드 ─────────────────────────────────────────────────────
+   ⚠ 카드가 «빈 자리»를 씁니다. 세로 폰에서 한국·일본처럼 네모난 나라는
+     지도가 화면의 절반도 안 차서 아래가 통째로 비었습니다(b682 에서 잼). */
+.cmcard{ flex:none; background:var(--card); border-radius:18px 18px 0 0;
+         border-top:1px solid var(--line); box-shadow:0 -6px 22px rgba(70,58,40,.10);
+         padding:16px 18px calc(14px + env(safe-area-inset-bottom));
+         display:flex; flex-direction:column; gap:10px; }
+.cmtop{ display:flex; align-items:center; gap:9px; }
+.cmflag{ font-size:23px; line-height:1; flex:none; }
+.cmfg{ width:26px; height:26px; display:block; }
+.cmname{ font-size:20px; font-weight:800; letter-spacing:-.01em; }
+.cmcount{ margin-left:auto; font-size:13.5px; color:var(--ink-48);
+          font-variant-numeric:tabular-nums; }
+.cmbar{ height:6px; border-radius:999px; background:var(--sunk, #EAE5DA);
+        overflow:hidden; }
+.cmbar i{ display:block; height:100%; width:0; border-radius:999px;
+          background:var(--brand); transition:width .3s ease; }
+.cmmeta{ font-size:12.5px; color:var(--ink-48); }
+.cmmeta:empty{ display:none; }
+
 /* 상자 밖으로 떼어낸 먼 곳(괌·사이판·타히티). 없애면 «사라진» 것이 됩니다. */
-.cmfar{ flex:none; display:flex; gap:6px; align-items:center; overflow-x:auto;
-        padding:9px 13px calc(9px + env(safe-area-inset-bottom)); }
+.cmfar{ display:flex; gap:6px; align-items:center; overflow-x:auto; }
 .cmfar.hide{ display:none; }
 .cmfar::-webkit-scrollbar{ display:none; }
 .cmfarlab{ flex:none; font-size:11px; letter-spacing:.06em; color:var(--ink-48); }
 .cmchip{ flex:none; font:inherit; font-size:13px; padding:5px 11px; color:var(--ink);
          border:1px solid var(--line); background:var(--canvas); border-radius:999px; }
+
+.cmgo{ font:inherit; font-size:15px; font-weight:700; padding:13px 16px;
+       border:0; border-radius:12px; background:var(--primary); color:#fff; }
+
 /* 지도가 화면을 다 덮습니다 — 하단바가 지도를 가리면 안 됩니다
    (큰 지도의 body.bigmap 과 같은 수법). */
 body.cmapopen .tabbar{ display:none; }

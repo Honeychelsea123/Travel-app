@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc } from './dom.js?v=b684';
-import { cities, countryName } from './cities.js?v=b684';
-import { myRates, visited } from './rate.js?v=b684';
+import { $, esc, flagOf, flagOk, flagSprite } from './dom.js?v=b685';
+import { cities, countryName, countryInfo } from './cities.js?v=b685';
+import { myRates, visited } from './rate.js?v=b685';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -174,18 +174,46 @@ function 판만들기(){
   판 = document.createElement('div');
   판.id = 'cmappane';
   판.className = 'hide';
+  /* ── 짜임새(b685) ────────────────────────────────────────────────
+   * 지도가 위, **국가 카드**가 아래입니다(사용자: 「레퍼 이미지 같은 국가
+   * 카드가 다 있어야해」).
+   * ⚠ 카드가 «빈 자리»를 씁니다. 세로 폰에서 한국·일본처럼 네모난 나라는
+   *   지도가 화면의 절반도 안 차서 아래가 통째로 비었습니다(b682 에서 잼).
+   * ⚠ 참고한 앱은 나라 단위로 been/lived/wish 를 찍지만 **우리는 도시
+   *   단위**입니다(별점·가보고 싶어요). 그래서 카드의 일은 「고르게 하는
+   *   것」입니다 — 얼마나 다녀왔는지 보여주고 도시 카드로 보냅니다.
+   * ⚠ 뒤로 단추는 지도 «위에» 얹습니다. 머리줄을 따로 두면 그만큼 지도가
+   *   줄어듭니다. */
   판.innerHTML =
-    '<div class="cmhead">' +
-      '<button type="button" class="cmback" aria-label="뒤로">' +
-        '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M15 5l-7 7 7 7"/></svg></button>' +
-      '<b class="cmname"></b><span class="cmcount"></span></div>' +
     '<div class="cmbox"></div>' +
-    '<div class="cmfar hide"></div>';
+    '<button type="button" class="cmback" aria-label="뒤로">' +
+      '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M15 5l-7 7 7 7"/></svg></button>' +
+    '<div class="cmcard">' +
+      '<div class="cmtop"><span class="cmflag"></span><b class="cmname"></b>' +
+        '<span class="cmcount"></span></div>' +
+      '<div class="cmbar"><i></i></div>' +
+      '<div class="cmmeta"></div>' +
+      '<div class="cmfar hide"></div>' +
+      '<button type="button" class="cmgo">도시 카드 보기</button>' +
+    '</div>';
   document.body.appendChild(판);
   판.querySelector('.cmback').onclick = () => 닫기();
+  판.querySelector('.cmgo').onclick = () => { if (지금) ctx.나라카드(지금.cc); };
   return 판;
+}
+
+/* 깃발 하나. 기기가 이모지 깃발을 그리면 그것으로 끝내고(0바이트), 못 그리면
+   (윈도우 크롬 등) 그림판을 받아 씁니다. 그것도 안 되면 나라 코드를 적습니다.
+   ⚠ 356KB 짜리 그림판을 «깃발 하나 때문에» 먼저 받지 않습니다. */
+async function 깃발넣기(칸, cc){
+  if (flagOk()){ 칸.textContent = flagOf(cc); return; }
+  칸.textContent = cc;
+  if (await flagSprite()){
+    칸.innerHTML = `<svg class="cmfg" aria-hidden="true"><use href="#f-${
+      String(cc).toLowerCase()}"/></svg>`;
+  }
 }
 
 let 지금 = null;               /* { cc, 점들, 배, 판 } — 누를 때 씁니다 */
@@ -208,9 +236,30 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px){
   const 밀기 = x => (x - 가운데 > 500 ? -1000 : (가운데 - x > 500 ? 1000 : 0));
   점들 = 점들.map(d => ({ ...d, x: d.x + 밀기(d.x) }));
   const 조각 = 조각0.map(q => {
-    const s = 밀기((q.x0 + q.x1) / 2);
-    return s ? { 점: q.점.map(([x, y]) => [x + s, y]),
-                 x0: q.x0 + s, x1: q.x1 + s, y0: q.y0, y1: q.y1, 넓이: q.넓이 } : q;
+    /* ⚠⚠ **고리 «자체»가 선을 넘습니다.** 러시아 50m 은 점 4,894개짜리 고리
+       하나가 x 0 에서 999.6 까지 갑니다(실측). 조각째 미는 것으로는 못 폅니다 —
+       b684 에서 러시아 화면에 «지도를 가로지르는 띠»가 나온 원인입니다.
+       → 고리를 따라 걸으며, 이웃한 두 점이 500 넘게 벌어지면 그 자리가
+         「넘은 자리」이므로 거기서부터 ±1000 을 «누적»해 이어 붙입니다.
+       ⚠ 500u = 180°입니다. 진짜 해안선에 그만큼 벌어진 이웃 점은 없습니다. */
+    let 누적 = 0, 이전 = null;
+    const 점 = [];
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of q.점){
+      if (이전 !== null){
+        const d = x + 누적 - 이전;
+        if (d > 500) 누적 -= 1000; else if (d < -500) 누적 += 1000;
+      }
+      const nx = x + 누적;
+      이전 = nx;
+      점.push([nx, y]);
+      if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    const s = 밀기((x0 + x1) / 2);          /* 편 고리를 도시 쪽으로 */
+    return s ? { 점: 점.map(([x, y]) => [x + s, y]),
+                 x0: x0 + s, x1: x1 + s, y0, y1, 넓이: (x1 - x0) * (y1 - y0) }
+             : { 점, x0, x1, y0, y1, 넓이: (x1 - x0) * (y1 - y0) };
   });
 
   /* ② 도시를 조각에 붙입니다.
@@ -381,10 +430,20 @@ function 칠하기(cc, 조각, 도시들){
   const r = 칸.getBoundingClientRect();
   const 결과 = 그리기(cc, 조각, 도시들, r.width || 360, r.height || 520);
   칸.innerHTML = 결과.svg;
-  판.querySelector('.cmcount').textContent =
-    `${도시들.filter(c => visited?.has?.(c.id) || myRates?.[c.id]?.stars != null).length}/${도시들.length}곳`;
 
-  /* 떼어낸 먼 곳은 지도 아래 칩으로. 없애면 괌이 «사라진» 것이 됩니다. */
+  /* ── 국가 카드 ─────────────────────────────────────────────────── */
+  const 간것 = 도시들.filter(c => visited?.has?.(c.id) || myRates?.[c.id]?.stars != null).length;
+  판.querySelector('.cmcount').textContent = `${간것} / ${도시들.length}곳`;
+  판.querySelector('.cmbar i').style.width =
+    도시들.length ? `${Math.round(간것 / 도시들.length * 100)}%` : '0%';
+  /* 대륙 · 통화 · 언어 · 시차 — 이미 받아 둔 나라 표에 있는 것만 적습니다.
+     ⚠ 없는 칸을 빈칸으로 두면 「· ·」 가 남습니다. 있는 것만 이어 붙입니다. */
+  const 나라 = countryInfo[cc] || {};
+  판.querySelector('.cmmeta').textContent =
+    [나라.continent, 나라.currency, 나라.local_lang, 나라.default_timezone]
+      .filter(Boolean).join(' · ');
+
+  /* 떼어낸 먼 곳은 카드 안 칩으로. 없애면 괌이 «사라진» 것이 됩니다. */
   const 먼칸 = 판.querySelector('.cmfar');
   if (결과.먼것.length){
     먼칸.innerHTML = '<span class="cmfarlab">먼 곳</span>' +
@@ -418,6 +477,7 @@ export async function openCountryMap(cc){
   const 이름 = countryName[cc] || cc;
   판.querySelector('.cmname').textContent = 이름;
   판.querySelector('.cmcount').textContent = '여는 중…';
+  깃발넣기(판.querySelector('.cmflag'), cc);
   판.querySelector('.cmbox').innerHTML = '';
   판.classList.remove('hide');
   document.body.classList.add('cmapopen');
