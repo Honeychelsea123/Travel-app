@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     citysearch.js · newtrip.js · plancheck.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b709';
-import { sb } from './db.js?v=b709';
-import { fail } from './net.js?v=b709';
-import { D1, asDate, todayYmd, dayLabel } from './calc.js?v=b709';
-import { plans, legs } from './trip.js?v=b709';
-import { loadCities } from './citysearch.js?v=b709';
-import { openNew, movePrefs } from './newtrip.js?v=b709';
-import { review } from './plancheck.js?v=b709';
+import { $, esc } from './dom.js?v=b710';
+import { sb } from './db.js?v=b710';
+import { fail } from './net.js?v=b710';
+import { D1, asDate, todayYmd, dayLabel } from './calc.js?v=b710';
+import { plans, legs } from './trip.js?v=b710';
+import { loadCities } from './citysearch.js?v=b710';
+import { openNew, movePrefs } from './newtrip.js?v=b710';
+import { review } from './plancheck.js?v=b710';
 
 let ctx = { me: () => null, fillCityList: () => {},
             showApp: () => {}, openTrip: async () => {} };

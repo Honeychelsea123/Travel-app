@@ -4273,21 +4273,27 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
 /* ⚠ 기록 탭에서만 뜹니다 — 덱이 가로 스크롤이라 fixed 짜리는 안 보이는
    탭에서도 화면에 남습니다(b709). `data-tab` 은 app.js 가 적습니다. */
 body:not([data-tab="home"]) .gchips{ display:none; }
+/* ⚠ **`body` 바로 밑에 삽니다(b710).** 스크롤 칸(#tabdeck·.tabpane) 안에
+   두면 웹킷이 `position:fixed` 를 그 칸 테두리로 잘라 냅니다 — 칩의 왼쪽이
+   잘려 보였습니다. home.js 의 `칩놓기` 주석에 자세히 적어 뒀습니다.
+   ⚠ 밖으로 났으므로 «어느 탭인가»는 아래 `body[data-tab]` 하나가 맡습니다. */
+/* ⚠ 크기는 b710 에 한 번 키웠습니다(사용자: 「크기도 조금만 더 키워줘」) —
+   사진 26 → 34, 글자 f-sm → f-md, 안쪽 여백 6/10/6/6 → 9/15/9/9. */
 .gchips{
-  position:fixed; left:8px; bottom:calc(var(--tabh, 56px) + 8px); z-index:900;
-  display:flex; flex-direction:column; align-items:flex-start; gap:8px;
-  max-width:calc(100% - 16px); pointer-events:none;
+  position:fixed; left:10px; bottom:calc(var(--tabh, 56px) + 10px); z-index:900;
+  display:flex; flex-direction:column; align-items:flex-start; gap:9px;
+  max-width:calc(100% - 20px); pointer-events:none;
 }
 .gchips > .gchip{
   pointer-events:auto; max-width:100%;
-  display:inline-flex; align-items:center; gap:8px;
-  margin:0; padding:6px 10px 6px 6px; border-radius:999px;
+  display:inline-flex; align-items:center; gap:10px;
+  margin:0; padding:9px 15px 9px 9px; border-radius:999px;
   background:var(--card); border:1px solid var(--hairline);
   box-shadow:0 2px 10px rgba(46,38,26,.10);
-  font-size:var(--f-sm); line-height:1.25; cursor:pointer;
+  font-size:var(--f-md); line-height:1.25; cursor:pointer;
 }
-.gchips .gp{ width:26px; height:26px; border-radius:50%; object-fit:cover; flex:none; }
-.gchips .ic{ width:22px; height:22px; display:grid; place-items:center; flex:none; }
+.gchips .gp{ width:34px; height:34px; border-radius:50%; object-fit:cover; flex:none; }
+.gchips .ic{ width:26px; height:26px; display:grid; place-items:center; flex:none; }
 .gchips .gt,
 .gchips .t{ display:flex; flex-direction:column; min-width:0; }
 /* 칩에서는 «앞말»(다음 여행)을 뺍니다 — 좁은 자리에 두 줄은 답답합니다. */
@@ -4298,12 +4304,12 @@ body:not([data-tab="home"]) .gchips{ display:none; }
 /* 끄는 단추. ⚠ 보이는 동그라미는 22px 이지만 «닿는 자리»는 44px 입니다 —
    작은 ×가 손가락에 안 맞는 것은 이 저장소가 여러 번 겪은 일입니다. */
 .gchips .gx{
-  position:relative; flex:none; width:22px; height:22px; padding:0;
+  position:relative; flex:none; width:26px; height:26px; padding:0;
   display:grid; place-items:center; border:0; border-radius:50%;
   background:var(--hairline); color:var(--ink-48);
-  font-size:15px; line-height:1; cursor:pointer;
+  font-size:17px; line-height:1; cursor:pointer;
 }
-.gchips .gx::before{ content:""; position:absolute; inset:-11px; }
+.gchips .gx::before{ content:""; position:absolute; inset:-9px; }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).

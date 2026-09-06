@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b709';
-import { sb } from './db.js?v=b709';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b709';
-import { hm, todayYmd } from './calc.js?v=b709';
-import { starHtml, paintStars } from './stars.js?v=b709';
+import { $, esc } from './dom.js?v=b710';
+import { sb } from './db.js?v=b710';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b710';
+import { hm, todayYmd } from './calc.js?v=b710';
+import { starHtml, paintStars } from './stars.js?v=b710';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b709';
-import { cities, countryName, cityCountry } from './cities.js?v=b709';
-import { UN_CODES } from './un.js?v=b709';
-import { myRates, cityStat, visited } from './rate.js?v=b709';
-import { plans } from './trip.js?v=b709';
-import { loadCities } from './citysearch.js?v=b709';
+import { starValue } from './rateui.js?v=b710';
+import { cities, countryName, cityCountry } from './cities.js?v=b710';
+import { UN_CODES } from './un.js?v=b710';
+import { myRates, cityStat, visited } from './rate.js?v=b710';
+import { plans } from './trip.js?v=b710';
+import { loadCities } from './citysearch.js?v=b710';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b709';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b709';
+import { openCity } from './city.js?v=b710';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b710';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b709';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b710';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b709';
+import { drawReport } from './report.js?v=b710';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b709';
+import { PERSONA_BG } from './card.js?v=b710';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b709';
+import { checkPersonaShift } from './pshift.js?v=b710';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b709';
+import { diaryBackTo } from './diary.js?v=b710';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b709';
+import { mountGlobe } from './globe.js?v=b710';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -692,7 +692,7 @@ async function buildHome(){
        못 받아오면 숨은 채로 남습니다 — 잘못 띄우는 것보다 낫습니다. */
   if (!껐나('rate')){
     매기러.classList.add('hide');
-    칩놓기(매기러, () => 끄기('rate'));
+    칩놓기(매기러, () => 끄기('rate'), 'rate');
   }
 
   /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
@@ -818,13 +818,22 @@ async function 오늘의인사(){
  *   그만큼 눌러 앉힙니다.** 칩으로 띄우면 지구본이 그 자리를 다 씁니다.
  * ⚠ 둘이 겹칠 일은 없습니다 — 여행이 있는 사람은 가입 직후가 아니고,
  *   가입 직후인 사람은 여행이 없습니다. 그래도 겹치면 CSS 가 세로로 쌓습니다.
- * ⚠ `.globebox` 가 아직 없으면(순서가 뒤집히면) 예전처럼 줄로 떨어집니다 —
- *   안 보이는 것보다 낫습니다. */
+ */
 /* ⚠ **통에 담습니다(b706).** 칩이 둘이면 겹칩니다 — 형제 선택자로 두 번째만
    올리려 했더니, 숨은 칩도 «형제»라 혼자 뜬 칩이 엉뚱하게 밀렸습니다.
    세로 통에 담으면 숨은 것은 자리를 안 먹고 알아서 쌓입니다.
- ⚠ 통은 `.globebox` 안에 두지만 **자리는 화면 기준**입니다(fixed) — 탭이
-   숨으면(`display:none`) 통도 같이 사라지게 하려고 안에 둡니다. */
+ ⚠⚠ **통은 `body` 바로 밑에 삽니다(b710).** ⚠⚠
+   b704부터 b709 까지 에는 `.globebox` 안에 뒀습니다. 그랬더니 **칩의 왼쪽이
+   잘렸습니다**(사용자 신고: 「플로팅 좌측 부분이 잘리고」). 자리는
+   화면 기준(fixed)으로 제대로 잡히는데 **그리는 것만 탭 판 안쪽으로
+   잘렸습니다** — 탭 덱(`#tabdeck`)과 탭 판(`.tabpane`)이 둘 다 스크롤
+   칸이고, 웹킷은 스크롤 칸 안의 `position:fixed` 를 그 칸 테두리로
+   잘라 냅니다. 나라 카드(`#gsheet`)를 `main` 밖에 둔 것과 같은 이유입니다.
+ ⚠ 밖으로 냈으므로 **탭이 숨어도 같이 안 사라집니다.** 대신 app.css 의
+   `body:not([data-tab="home"]) .gchips` 가 맡습니다(b709 부터 있던 규칙).
+ ⚠ 밖에 사니 홈을 다시 그려도 안 지워집니다 — 그래서 칩마다 «이름표»를
+   달고 같은 이름표가 있으면 갈아 끼웁니다. 안 그러면 홈을 다시 그릴
+   때마다 「평가를 남기면」이 한 줄씩 쌓입니다. */
 /* ── 칩 끄기(b706, 사용자 요청: 「끌 수도 있게 해야지」) ───────────────
  * ⚠ **평가 재촉은 아주 끕니다.** 한 번 「알겠다」 한 안내를 또 띄우면
  *   그때부터는 잔소리가 아니라 고장으로 읽힙니다.
@@ -845,9 +854,9 @@ const 끄기여행 = id => { try {
     localStorage.setItem('t2:chipoff:trip', String(id) + '|' + todayYmd());
   } catch {} };
 
-function 칩놓기(el, 끌때){
-  const 집 = $('home'); if (!집) return;
+function 칩놓기(el, 끌때, 이름표){
   el.classList.add('gchip');
+  if (이름표) el.dataset.chip = 이름표;
   /* ⚠ **`stopPropagation` 이 꼭 있어야 합니다.** 칩 자체가 누르면 열리는
      물건이라, 안 막으면 ×를 눌렀는데 여행이 열립니다. */
   if (끌때){
@@ -857,12 +866,14 @@ function 칩놓기(el, 끌때){
     x.onclick = e => { e.stopPropagation(); 끌때(); el.remove(); };
     el.appendChild(x);
   }
-  let 통 = 집.querySelector('.gchips');
+  let 통 = document.querySelector('body > .gchips');
   if (!통){
     통 = document.createElement('div');
     통.className = 'gchips';
-    (집.querySelector('.globebox') || 집).appendChild(통);
+    document.body.appendChild(통);
   }
+  /* 같은 이름표가 이미 있으면 갈아 끼웁니다(위 주석). */
+  if (이름표) 통.querySelector(`[data-chip="${이름표}"]`)?.remove();
   통.appendChild(el);
 }
 
@@ -901,7 +912,7 @@ async function 인사그리기(){
        <b>${esc(g.뒤)}</b></span><span class="go">›</span>`;
   if (껐나여행(g.여행.id)) return;
   el.onclick = () => ctx.openTrip(g.여행.id);
-  칩놓기(el, () => 끄기여행(g.여행.id));
+  칩놓기(el, () => 끄기여행(g.여행.id), 'trip');
 }
 
 export async function reviewBar(){
@@ -1689,7 +1700,7 @@ export async function loadFootprint(){
        **같은 함수 안에서 규칙이 반쪽만 지켜지고 있었습니다.** */
   { const el = $('s_been2'); if (el) el.textContent = f.cities; }
   /* 평가 재촉 칩은 «진짜 0곳»일 때만 켭니다(b705 — 위 매기러 주석). */
-  { const el = $('home')?.querySelector('.gchips > .tripbar');
+  { const el = document.querySelector('.gchips > [data-chip="rate"]');
     if (el) el.classList.toggle('hide', !!f.rated); }
   /* ⚠ **맛집 · 관광지 · 후기 수를 안 셉니다(b549).** 보관함에서 그 세 줄을
      걷었습니다(index.html 의 그 자리에 왜 그런지 적어뒀습니다). 칸이
