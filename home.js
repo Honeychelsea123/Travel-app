@@ -33,43 +33,43 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b704';
-import { sb } from './db.js?v=b704';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b704';
-import { hm, todayYmd } from './calc.js?v=b704';
-import { starHtml, paintStars } from './stars.js?v=b704';
+import { $, esc } from './dom.js?v=b705';
+import { sb } from './db.js?v=b705';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b705';
+import { hm, todayYmd } from './calc.js?v=b705';
+import { starHtml, paintStars } from './stars.js?v=b705';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b704';
-import { cities, countryName, cityCountry } from './cities.js?v=b704';
-import { UN_CODES } from './un.js?v=b704';
-import { myRates, cityStat, visited } from './rate.js?v=b704';
-import { plans } from './trip.js?v=b704';
-import { loadCities } from './citysearch.js?v=b704';
+import { starValue } from './rateui.js?v=b705';
+import { cities, countryName, cityCountry } from './cities.js?v=b705';
+import { UN_CODES } from './un.js?v=b705';
+import { myRates, cityStat, visited } from './rate.js?v=b705';
+import { plans } from './trip.js?v=b705';
+import { loadCities } from './citysearch.js?v=b705';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b704';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b704';
+import { openCity } from './city.js?v=b705';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b705';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b704';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b705';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b704';
+import { drawReport } from './report.js?v=b705';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b704';
+import { PERSONA_BG } from './card.js?v=b705';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b704';
+import { checkPersonaShift } from './pshift.js?v=b705';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b704';
+import { diaryBackTo } from './diary.js?v=b705';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b704';
+import { mountGlobe } from './globe.js?v=b705';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
-import { openCountryMap, setCtryMapCtx } from './ctrymap.js?v=b704';
+import { openCountryMap, setCtryMapCtx } from './ctrymap.js?v=b705';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -699,9 +699,14 @@ async function buildHome(){
      «하는 것»입니다. 옷이 달라야 그 차이가 읽힙니다(b438 과 같은 이유). */
   /* ⚠ **가입 직후인 사람에게만 보입니다(b704, 사용자 결정).** 한 곳이라도
      매긴 사람에게 「평가를 남기면 지도가 칠해져요」는 잔소리입니다.
-     0곳인 사람에게는 이것이 유일한 안내라 그때만 남깁니다. */
-  const 매긴곳 = Object.values(myRates || {}).filter(v => v?.stars != null).length;
-  if (!매긴곳) 칩놓기(매기러);
+     0곳인 사람에게는 이것이 유일한 안내라 그때만 남깁니다.
+   ⚠⚠ **여기서 «세지» 않습니다(b705).** 이 자리는 `myRates` 가 아직 안
+     실린 때라 76곳 매긴 사람에게도 0 으로 보입니다(실측으로 걸렸습니다).
+     「아직 모름」과 「진짜 0」이 같은 값이라 가릴 수가 없습니다.
+     → **숨겨서 붙여 두고**, 발자국이 오면 그때 `loadFootprint` 가 켭니다.
+       못 받아오면 숨은 채로 남습니다 — 잘못 띄우는 것보다 낫습니다. */
+  매기러.classList.add('hide');
+  칩놓기(매기러);
 
   /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
      가져올 때는 제 카드였는데, 지구본·숫자와 «한 판»이어야 한 화면이
@@ -1655,6 +1660,9 @@ export async function loadFootprint(){
      ⚠ 옆의 `s_comment`·`s_diary` 는 이미 `if (el)` 로 받치고 있었습니다 —
        **같은 함수 안에서 규칙이 반쪽만 지켜지고 있었습니다.** */
   { const el = $('s_been2'); if (el) el.textContent = f.cities; }
+  /* 평가 재촉 칩은 «진짜 0곳»일 때만 켭니다(b705 — 위 매기러 주석). */
+  { const el = $('home')?.querySelector('.globebox > .tripbar');
+    if (el) el.classList.toggle('hide', !!f.rated); }
   /* ⚠ **맛집 · 관광지 · 후기 수를 안 셉니다(b549).** 보관함에서 그 세 줄을
      걷었습니다(index.html 의 그 자리에 왜 그런지 적어뒀습니다). 칸이
      없어졌으므로 여기서 채우려 들면 **null 에 쓰다 던지고, 그 아래
