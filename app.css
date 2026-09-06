@@ -4877,7 +4877,8 @@ body.pvon{ overflow:hidden; }
   32%  { opacity:.12; }
   100% { opacity:1;   transform:none; }
 }
-#cmappane.cmin{ animation:cm-in .58s cubic-bezier(.2,.7,.2,1) both; }
+/* 길이는 ctrymap 이 지구본이 걸리는 시간에 맞춰 넣습니다(b701). */
+#cmappane.cmin{ animation:cm-in var(--cmin, .58s) cubic-bezier(.2,.7,.2,1) both; }
 @media (prefers-reduced-motion:reduce){
   #cmappane.cmin{ animation:none; }
 }

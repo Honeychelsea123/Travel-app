@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b700';
-import { cities, countryName, countryInfo } from './cities.js?v=b700';
-import { myRates, visited } from './rate.js?v=b700';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b701';
+import { cities, countryName, countryInfo } from './cities.js?v=b701';
+import { myRates, visited } from './rate.js?v=b701';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -737,7 +737,10 @@ function 손달기(칸){
   };
 
   칸.addEventListener('pointerdown', e => {
-    칸.setPointerCapture?.(e.pointerId);
+    /* ⚠ **캡처는 상태를 세운 «뒤»에 겁니다.** `setPointerCapture` 는 이미
+       사라진 손가락 id 로 부르면 던집니다(NotFoundError). 먼저 부르면
+       그 자리에서 핸들러가 끝나 `손` 에 아무것도 안 들어가고, 그 뒤의
+       `pointerup` 은 `손.has` 가 거짓이라 «누름»으로도 안 쳐집니다. */
     손.set(e.pointerId, e);
     처음 = 지금보기();
     if (손.size === 1){ 움직인 = 0; 시작시각 = e.timeStamp; }
@@ -747,6 +750,7 @@ function 손달기(칸){
       처음중심 = [(a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2];
       움직인 = 999;                      /* 두 손가락이면 누르기가 아닙니다 */
     }
+    try { 칸.setPointerCapture?.(e.pointerId); } catch {}
   });
 
   칸.addEventListener('pointermove', e => {
@@ -783,6 +787,25 @@ function 손달기(칸){
   };
   칸.addEventListener('pointerup', 뗌);
   칸.addEventListener('pointercancel', 뗌);
+  /* ⚠⚠ **캡처를 잃으면 그 손가락을 치웁니다(b701, 사용자 신고:
+     「도시카드 들어갔다가 뒤로 가기 스와이프하고 나면 잠깐 먹통이 되네」).** ⚠⚠
+     스와이프로 뒤로 가면 손가락이 지도 위에서 시작해 **브라우저가 몸짓을
+     가로챕니다** — 그때 `pointerup` 이 안 옵니다. 그러면 `손` 에 유령이
+     남아 다음 터치에서 `손.size === 2` 가 되어 **집기(핀치)로 읽히고**,
+     `움직인 = 999` 라 누름이 통째로 무시됩니다. 화면이 멎은 것처럼 보입니다.
+   ⚠ **`globe.js` 는 이 방어를 이미 갖고 있습니다**(거기 `lostpointercapture`
+     주석 참고 — b561 에 같은 일을 겪고 넣은 것입니다). 나라 지도만 빠져
+     있었습니다. 같은 덫은 같은 방법으로 막습니다.
+   ⚠ 여기서 `뗌` 을 부르면 «누른 것»으로 쳐서 도시가 열립니다. 캡처를
+     잃은 것은 누른 것이 아니므로 조용히 치우기만 합니다.
+   ⚠ 손을 떼면 `pointerup` 뒤에 이것도 옵니다 — 그때는 이미 지워졌으니
+     `손.has` 가 거짓이라 아무 일도 안 합니다. */
+  칸.addEventListener('lostpointercapture', e => {
+    if (!손.has(e.pointerId)) return;
+    손.delete(e.pointerId);
+    움직인 = 999;                      /* 이번 몸짓은 누르기가 아닙니다 */
+    if (!손.size) 처음 = null;
+  });
 
   /* 마우스 휠로도 — 노트북에서 보는 사람이 있습니다. */
   칸.addEventListener('wheel', e => {
@@ -849,13 +872,16 @@ export async function openCountryMap(cc){
    * ⚠ 판은 «지금 당장» 보이게 둡니다(투명해도 열린 것으로 칩니다) —
    *   그래야 애니메이션 도중에 뒤로를 눌러도 사슬이 이 판을 닫습니다. */
   const 움직임 = 부드럽게();
+  /* 지구본이 «얼마나 걸려» 그 나라에 닿는가(초). 판을 띄우는 시간도,
+     지구본을 덮는 시각도 전부 이 값에 맞춥니다(b701). */
+  let 걸림 = 0.62;
   if (움직임 && 도시들.length){
     /* ⚠ **자세한 윤곽을 «먼저» 넘깁니다(b696).** 이미 받아 둔 나라면 그
        순간부터 매끈하게 당겨집니다. 처음 여는 나라는 자료가 오는 대로
        아래에서 다시 넘깁니다 — 그때부터 매끈해집니다. */
     if (원문캐시[cc]) ctx.지구자세히(cc, 원문캐시[cc]);
     const 경들 = 도시들.map(경), 위들 = 도시들.map(위);
-    ctx.지구다가가기(가운데값(경들), 가운데값(위들), 채울배율(경들, 위들));
+    걸림 = ctx.지구다가가기(가운데값(경들), 가운데값(위들), 채울배율(경들, 위들)) || 걸림;
   }
   판.classList.remove('hide');
   /* ⚠⚠ **애니메이션이 «안 돌 수도» 있습니다(b694).** 숨은 탭에서는 CSS
@@ -867,11 +893,15 @@ export async function openCountryMap(cc){
      것만으로는 안 돕니다. 떼고, 한 번 재고(reflow), 다시 겁니다. */
   판.classList.remove('cmin');
   if (움직임){
+    /* 판이 떠오르는 시간을 «지구본이 걸리는 시간»에 맞춥니다(b701).
+       전에는 0.58초로 못 박혀 있어서, 한국처럼 많이 당기는 나라(1→14배)
+       에서는 지구본이 아직 가는 도중에 판이 이미 불투명했습니다. */
+    판.style.setProperty('--cmin', 걸림.toFixed(2) + 's');
     void 판.offsetWidth;
     판.classList.add('cmin');
     판.addEventListener('animationend', () => 판.classList.remove('cmin'), { once:true });
     clearTimeout(끝타이머);
-    끝타이머 = setTimeout(() => 판.classList.remove('cmin'), 700);
+    끝타이머 = setTimeout(() => 판.classList.remove('cmin'), 걸림 * 1000 + 200);
   }
   document.body.classList.add('cmapopen');
   /* ⚠⚠ **덱을 덮습니다(b690).** 안 덮으면 «닫을 때 아무도 안 되살립니다» —
@@ -896,7 +926,11 @@ export async function openCountryMap(cc){
     coverDeck(true);
     ctx.지구덮기(true);
   };
-  if (움직임) 덮기타이머 = setTimeout(덮자, 560); else 덮자();
+  /* ⚠⚠ **굴림이 «끝난 뒤»에 덮습니다(b701).** 전에는 560ms 로 못 박혀
+     있었는데 굴림은 620ms 였습니다 — 지구본이 목적지에 닿기 60ms 전에
+     얼어붙었고, 그래서 나올 때 되돌리기가 «덜 온 자리»에서 시작했습니다.
+     이제 걸리는 시간을 알고 있으니 그 뒤에 덮습니다. */
+  if (움직임) 덮기타이머 = setTimeout(덮자, 걸림 * 1000 + 60); else 덮자();
 
   /* ⚠ **자료를 기다리기 «전»에 판을 띄웁니다.** 처음 여는 나라는 파일을
      받아야 하는데(한국 2.2KB), 그 사이 아무 일도 안 일어나면 눌러도 안
@@ -941,13 +975,23 @@ function 닫기(뒤로){
   const 판 = $('cmappane');
   if (!판 || 판.classList.contains('hide')) return;
   clearTimeout(덮기타이머); clearTimeout(끝타이머);
-  판.classList.add('hide');
   판.classList.remove('cmin');
   document.body.classList.remove('cmapopen');
+  /* ⚠⚠ **차례가 중요합니다(b701, 사용자 지적: 「처음으로 돌아갔다가 다시
+     확대된 화면에서 줌 빠지는 게 이상해」).** ⚠⚠
+     전에는 **판을 먼저 걷고** 덱·지구본을 되살렸습니다. 그러면 판이 사라진
+     순간 드러나는 것은 «아직 아무도 손대지 않은» 캔버스이고, 그 뒤에야
+     지구본이 깨어나 굴러가기 시작합니다 — 그 틈이 끊김으로 보였습니다.
+     → ① 덱을 먼저 되살려 캔버스에 크기를 주고
+       ② 지구덮기(false) 가 «지금 자리»를 그 자리에서 한 프레임 그리고
+       ③ 되돌리기가 굴림을 걸어 이미 굴러가는 상태로 만든 다음
+       ④ **그제서야** 판을 걷습니다.
+     그러면 판이 사라지는 순간 지구본은 이미 «움직이는 중»입니다. */
   coverDeck(false);
   ctx.지구덮기(false);
   /* 들어가기 «전»에 보던 자리로 굴러 돌아갑니다(b693). */
   ctx.지구되돌리기();
+  판.classList.add('hide');
   지금 = null;
   if (!뒤로 && history.state?.t2 === 'cmap') history.back();
 }
