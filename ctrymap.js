@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b694';
-import { cities, countryName, countryInfo } from './cities.js?v=b694';
-import { myRates, visited } from './rate.js?v=b694';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b695';
+import { cities, countryName, countryInfo } from './cities.js?v=b695';
+import { myRates, visited } from './rate.js?v=b695';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -63,6 +63,32 @@ const 부드럽게 = () => {
 /* 카메라가 볼 자리 — 도시 좌표의 «가운데값»입니다.
    ⚠ 평균이 아닙니다. 미국은 괌·하와이 때문에 평균이 태평양으로 끌려갑니다. */
 const 가운데값 = a => { const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
+/* 10~90퍼센타일 폭. ⚠ 최대-최소가 아닙니다 — 미국은 괌·하와이가, 프랑스는
+   타히티가 폭을 지구 반대편까지 늘립니다. 양 끝을 잘라야 «그 나라»가 나옵니다. */
+const 폭재기 = a => {
+  if (a.length < 3) return 0;
+  const s = a.slice().sort((x, y) => x - y);
+  return s[Math.floor(s.length * 0.9)] - s[Math.floor(s.length * 0.1)];
+};
+
+/* ── 그 나라가 «화면을 채울» 배율 (b695) ──────────────────────────────
+ * 사용자: 「확대배율을 더 크게 가져가자. 실제 대륙이랑 비슷한 사이즈까지
+ *   가서 전환되는건 어때?」
+ * ⚠ **고정 배율은 안 맞습니다.** 러시아는 1배에서 이미 지구를 꽉 채우는데
+ *   더 당기면 잘리고, 싱가포르는 4배로도 점입니다. 나라 크기에서 냅니다.
+ * 지구본에서 나라의 «보이는 너비» ≈ 2·R·sin(Δ/2) 이고 R = R0·배율,
+ * 2·R0 = min(w,h)/1.11 이므로, 그 너비가 화면의 f 를 차지하려면
+ *   배율 = f · 1.11 / sin(Δ/2)
+ * ⚠ 화면 크기가 약분돼 사라집니다 — 폰 크기를 안 물어봐도 됩니다.
+ * ⚠ 1 아래로는 안 내려갑니다(러시아·캐나다는 그대로), 8 위로도 안 갑니다
+ *   (110m 지도가 그 위로는 각져 보입니다). */
+const 채울배율 = (경들, 위들) => {
+  const 위가운데 = 가운데값(위들) * Math.PI / 180;
+  const dλ = 폭재기(경들) * Math.cos(위가운데);       /* 위도가 높을수록 좁아집니다 */
+  const dφ = 폭재기(위들);
+  const Δ = Math.max(dλ, dφ, 0.8) * Math.PI / 180;    /* 0.8° = 도시 하나짜리 나라 */
+  return Math.max(1, Math.min(8, 0.55 * 1.11 / Math.sin(Math.min(Δ, Math.PI) / 2)));
+};
 export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 좌표 ─────────────────────────────────────────────────────────────
@@ -760,7 +786,8 @@ export async function openCountryMap(cc){
    *   그래야 애니메이션 도중에 뒤로를 눌러도 사슬이 이 판을 닫습니다. */
   const 움직임 = 부드럽게();
   if (움직임 && 도시들.length){
-    ctx.지구다가가기(가운데값(도시들.map(경)), 가운데값(도시들.map(위)));
+    const 경들 = 도시들.map(경), 위들 = 도시들.map(위);
+    ctx.지구다가가기(가운데값(경들), 가운데값(위들), 채울배율(경들, 위들));
   }
   판.classList.remove('hide');
   /* ⚠⚠ **애니메이션이 «안 돌 수도» 있습니다(b694).** 숨은 탭에서는 CSS
