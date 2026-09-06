@@ -44,15 +44,15 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b695';
-import { cities, countryName, countryInfo } from './cities.js?v=b695';
-import { myRates, visited } from './rate.js?v=b695';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b696';
+import { cities, countryName, countryInfo } from './cities.js?v=b696';
+import { myRates, visited } from './rate.js?v=b696';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
 
 let ctx = { 나라카드: async () => {}, 지구덮기: () => {},
-            지구다가가기: () => {}, 지구되돌리기: () => {} };
+            지구다가가기: () => {}, 지구되돌리기: () => {}, 지구자세히: () => {} };
 /* 판이 다 덮인 뒤에 덱·지구본을 끄는 타이머(b693). 열 때마다 다시 잡습니다. */
 let 덮기타이머 = 0, 끝타이머 = 0;
 /* 움직임을 싫어하는 기기에서는 애니메이션을 안 합니다. */
@@ -87,7 +87,7 @@ const 채울배율 = (경들, 위들) => {
   const dλ = 폭재기(경들) * Math.cos(위가운데);       /* 위도가 높을수록 좁아집니다 */
   const dφ = 폭재기(위들);
   const Δ = Math.max(dλ, dφ, 0.8) * Math.PI / 180;    /* 0.8° = 도시 하나짜리 나라 */
-  return Math.max(1, Math.min(8, 0.55 * 1.11 / Math.sin(Math.min(Δ, Math.PI) / 2)));
+  return Math.max(1, Math.min(14, 0.55 * 1.11 / Math.sin(Math.min(Δ, Math.PI) / 2)));
 };
 export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -110,6 +110,9 @@ const 경 = c => c?.center_lng ?? c?.lng;
    한 번 받으면 안 버립니다. null 은 「받아봤는데 없더라」입니다 — 그래야
    없는 나라(투발루)에서 매번 다시 시도하지 않습니다. */
 const 땅캐시 = {};
+/* map50 의 «날것 문자열»도 들고 있습니다 — 지구본이 그 나라를 자세히
+   그릴 때 그대로 넘겨 줍니다(b696). 파싱은 지구본이 제 식으로 합니다. */
+const 원문캐시 = {};
 
 function 조각내기(d){
   const 조각 = [];
@@ -163,6 +166,7 @@ async function 나라땅(cc){
   if (땅캐시[cc] !== undefined) return 땅캐시[cc];
   try {
     const m = await import(`./map50/${cc}.js${MAP_V}`);
+    원문캐시[cc] = m.default;
     땅캐시[cc] = 조각내기(m.default);
   } catch {
     /* 없는 나라(투발루)이거나, 비행기모드에서 «처음» 여는 나라입니다.
@@ -786,6 +790,10 @@ export async function openCountryMap(cc){
    *   그래야 애니메이션 도중에 뒤로를 눌러도 사슬이 이 판을 닫습니다. */
   const 움직임 = 부드럽게();
   if (움직임 && 도시들.length){
+    /* ⚠ **자세한 윤곽을 «먼저» 넘깁니다(b696).** 이미 받아 둔 나라면 그
+       순간부터 매끈하게 당겨집니다. 처음 여는 나라는 자료가 오는 대로
+       아래에서 다시 넘깁니다 — 그때부터 매끈해집니다. */
+    if (원문캐시[cc]) ctx.지구자세히(cc, 원문캐시[cc]);
     const 경들 = 도시들.map(경), 위들 = 도시들.map(위);
     ctx.지구다가가기(가운데값(경들), 가운데값(위들), 채울배율(경들, 위들));
   }
@@ -840,6 +848,9 @@ export async function openCountryMap(cc){
   /* ⚠ 기다리는 동안 사용자가 뒤로를 눌렀을 수 있습니다. 그러면 여기서
      멈춥니다 — 안 그러면 닫힌 판에 지도를 다 그립니다. */
   if (!isCountryMapOpen()) return true;
+  /* 자료가 왔으니 지구본도 이제 그 나라를 «자세히» 그립니다(b696).
+     처음 여는 나라는 여기서부터 매끈해집니다. */
+  if (움직임 && 원문캐시[cc]) ctx.지구자세히(cc, 원문캐시[cc]);
   if (!조각.length){
     /* 지도가 아예 없는 나라입니다. 판을 닫고 카드로 넘깁니다 —
        빈 화면을 띄우느니 하던 대로 하는 편이 낫습니다.
