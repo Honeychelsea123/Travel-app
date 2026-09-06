@@ -4265,24 +4265,42 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    ⚠ 칩은 «떠 있는 조각»이라 그 자리만 손가락을 받습니다 — 나머지 지구본은
      그대로 돌아갑니다. 칸을 덮는 판을 새로 만들지 «마십시오».
    ⚠ 세로로 쌓습니다 — 둘이 같이 뜨는 일은 없지만, 나면 겹치는 것보다 낫습니다. */
-.globebox > .gchip{
-  position:absolute; left:8px; bottom:8px; z-index:2; max-width:calc(100% - 16px);
+/* ⚠ **자리는 화면 기준입니다 — 하단바 «바로 위»**(b706, 사용자 요청).
+   `--tabh` 는 ui.js 가 실제로 잰 탭바 높이이고 안전영역(`--sab`)이 이미
+   그 안에 들어 있습니다. 그래서 여기서 `--sab` 를 또 더하면 안 됩니다.
+ ⚠ 통은 손가락을 안 받습니다 — 칩만 되받습니다. 안 그러면 지구본에서
+   이 네모만큼이 안 돌아갑니다. */
+.gchips{
+  position:fixed; left:8px; bottom:calc(var(--tabh, 56px) + 8px); z-index:900;
+  display:flex; flex-direction:column; align-items:flex-start; gap:8px;
+  max-width:calc(100% - 16px); pointer-events:none;
+}
+.gchips > .gchip{
+  pointer-events:auto; max-width:100%;
   display:inline-flex; align-items:center; gap:8px;
   margin:0; padding:6px 10px 6px 6px; border-radius:999px;
   background:var(--card); border:1px solid var(--hairline);
   box-shadow:0 2px 10px rgba(46,38,26,.10);
   font-size:var(--f-sm); line-height:1.25; cursor:pointer;
 }
-.globebox > .gchip + .gchip{ bottom:52px; }
-.globebox > .gchip .gp{ width:26px; height:26px; border-radius:50%; object-fit:cover; flex:none; }
-.globebox > .gchip .ic{ width:22px; height:22px; display:grid; place-items:center; flex:none; }
-.globebox > .gchip .gt,
-.globebox > .gchip .t{ display:flex; flex-direction:column; min-width:0; }
+.gchips .gp{ width:26px; height:26px; border-radius:50%; object-fit:cover; flex:none; }
+.gchips .ic{ width:22px; height:22px; display:grid; place-items:center; flex:none; }
+.gchips .gt,
+.gchips .t{ display:flex; flex-direction:column; min-width:0; }
 /* 칩에서는 «앞말»(다음 여행)을 뺍니다 — 좁은 자리에 두 줄은 답답합니다. */
-.globebox > .gchip .gd{ display:none; }
-.globebox > .gchip b{ font-weight:600; white-space:nowrap;
-                      overflow:hidden; text-overflow:ellipsis; }
-.globebox > .gchip .go{ flex:none; color:var(--ink-48); font-size:var(--f-xs); }
+.gchips .gd{ display:none; }
+.gchips b{ font-weight:600; white-space:nowrap;
+           overflow:hidden; text-overflow:ellipsis; }
+.gchips .go{ flex:none; color:var(--ink-48); font-size:var(--f-xs); }
+/* 끄는 단추. ⚠ 보이는 동그라미는 22px 이지만 «닿는 자리»는 44px 입니다 —
+   작은 ×가 손가락에 안 맞는 것은 이 저장소가 여러 번 겪은 일입니다. */
+.gchips .gx{
+  position:relative; flex:none; width:22px; height:22px; padding:0;
+  display:grid; place-items:center; border:0; border-radius:50%;
+  background:var(--hairline); color:var(--ink-48);
+  font-size:15px; line-height:1; cursor:pointer;
+}
+.gchips .gx::before{ content:""; position:absolute; inset:-11px; }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).
