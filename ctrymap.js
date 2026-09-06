@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b703';
-import { cities, countryName, countryInfo } from './cities.js?v=b703';
-import { myRates, visited } from './rate.js?v=b703';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b704';
+import { cities, countryName, countryInfo } from './cities.js?v=b704';
+import { myRates, visited } from './rate.js?v=b704';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */

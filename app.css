@@ -4256,8 +4256,33 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  *     맨 위에 잡을 자리가 128px 남아 있습니다.
  *   → 이 값을 또 올리려거든 **먼저 재십시오**:
  *     `pane.scrollHeight - pane.clientHeight` 가 크게 늘면 b594 재발입니다. */
+/* ⚠ 위 두 줄(다음 여행·평가 재촉)이 지구본 «위»로 올라가면서(b704) 세로가
+   남았습니다. 52 → 62vh. ⚠ 위 머리말대로 더 올리려거든 먼저 재십시오. */
 .globebox{ position:relative; aspect-ratio:1 / 1.08;
-           max-height:min(52vh, 520px); margin:6px auto 12px; }
+           max-height:min(62vh, 560px); margin:6px auto 12px; }
+
+/* ── 지구본 위에 뜨는 칩(b704) ────────────────────────────────────────
+   ⚠ 칩은 «떠 있는 조각»이라 그 자리만 손가락을 받습니다 — 나머지 지구본은
+     그대로 돌아갑니다. 칸을 덮는 판을 새로 만들지 «마십시오».
+   ⚠ 세로로 쌓습니다 — 둘이 같이 뜨는 일은 없지만, 나면 겹치는 것보다 낫습니다. */
+.globebox > .gchip{
+  position:absolute; left:8px; bottom:8px; z-index:2; max-width:calc(100% - 16px);
+  display:inline-flex; align-items:center; gap:8px;
+  margin:0; padding:6px 10px 6px 6px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hairline);
+  box-shadow:0 2px 10px rgba(46,38,26,.10);
+  font-size:var(--f-sm); line-height:1.25; cursor:pointer;
+}
+.globebox > .gchip + .gchip{ bottom:52px; }
+.globebox > .gchip .gp{ width:26px; height:26px; border-radius:50%; object-fit:cover; flex:none; }
+.globebox > .gchip .ic{ width:22px; height:22px; display:grid; place-items:center; flex:none; }
+.globebox > .gchip .gt,
+.globebox > .gchip .t{ display:flex; flex-direction:column; min-width:0; }
+/* 칩에서는 «앞말»(다음 여행)을 뺍니다 — 좁은 자리에 두 줄은 답답합니다. */
+.globebox > .gchip .gd{ display:none; }
+.globebox > .gchip b{ font-weight:600; white-space:nowrap;
+                      overflow:hidden; text-overflow:ellipsis; }
+.globebox > .gchip .go{ flex:none; color:var(--ink-48); font-size:var(--f-xs); }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).
