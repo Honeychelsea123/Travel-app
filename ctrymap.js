@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b702';
-import { cities, countryName, countryInfo } from './cities.js?v=b702';
-import { myRates, visited } from './rate.js?v=b702';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b703';
+import { cities, countryName, countryInfo } from './cities.js?v=b703';
+import { myRates, visited } from './rate.js?v=b703';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -915,6 +915,16 @@ function 카드올리기(판){
   판.classList.remove('cmup');
   void 판.offsetWidth;                 /* 표를 다시 걸어야 애니메이션이 돕니다 */
   판.classList.add('cmup');
+  /* ⚠⚠ **끝나면 «무슨 일이 있어도» 표를 뗍니다(b703, b694 와 같은 덫).**
+     숨은 탭·느린 기기에서는 CSS 애니메이션이 아예 «시작만 하고 안 갑니다».
+     그러면 카드가 첫 칸(`translateY(100%)`) 에 멈춰 **화면 밖에 남습니다** —
+     실측으로 재현했습니다(카드 top 1305 = 화면 높이, 곧 안 보임).
+     `both`/`forwards` 를 안 쓴 것만으로는 모자랍니다. 타이머는 숨은 탭에서도
+     옵니다(b524 에 배운 것). */
+  const 떼기 = () => 판.classList.remove('cmup');
+  판.addEventListener('animationend', 떼기, { once:true });
+  clearTimeout(끝타이머);
+  끝타이머 = setTimeout(떼기, 460);
 }
 
 /* 카드가 «지금 보여주는 그림»을 지구본 말로 옮깁니다(위 이음의 역).
