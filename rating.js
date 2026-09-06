@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b691';
-import { sb } from './db.js?v=b691';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b691';
-import { dateRange } from './calc.js?v=b691';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b691';
+import { $, esc } from './dom.js?v=b692';
+import { sb } from './db.js?v=b692';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b692';
+import { dateRange } from './calc.js?v=b692';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b692';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b691';
+         countryInfo } from './cities.js?v=b692';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b691';
-import { openCity } from './city.js?v=b691';
-import { loadCities } from './citysearch.js?v=b691';
+         removeRate } from './rate.js?v=b692';
+import { openCity } from './city.js?v=b692';
+import { loadCities } from './citysearch.js?v=b692';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -59,9 +59,19 @@ export function resetRateHtml(){ lastRateHtml = ''; }
  * 조용히 빈 값을 씁니다.
  * **실패하면 아무것도 안 바꿉니다.** 반쯤 지워진 자료가 빈 화면보다 나쁩니다. */
 export async function loadRateData(){
+  /* ⚠⚠ **로그인 정보가 아직 없으면 «터집니다»(b692).** `ctx.me()` 는 앱이
+     세션을 되살리기 전이나 로그아웃 상태에서 null 이라 `.id` 에서
+     TypeError 가 났고, **부르는 쪽이 통째로 죽었습니다.**
+     실제로 이렇게 났습니다 — 지도에서 도시를 눌렀는데 카드가 안 뜨고
+     오류도 «화면에 안 뜹니다»(unhandled rejection 이라 기록에만 남습니다).
+     b682 부터 있던 길인데 평가 탭을 먼저 열어 보면 안 걸려서 안 보였습니다.
+   ⚠ 던지지 말고 «못 받았다»고 돌려줍니다 — 부르는 쪽은 별점 없이도 화면을
+     띄울 수 있어야 합니다(카드는 별점을 «매기러» 여는 자리이기도 합니다). */
+  const 나 = ctx.me();
+  if (!나?.id) return { error: { message: '아직 로그인 정보가 없습니다' } };
   const [mine, stats, vis] = await Promise.all([
     sb.from('city_ratings').select('city_id,stars,want,comment,journal,journal_photo,updated_at')
-      .eq('user_id', ctx.me().id),
+      .eq('user_id', 나.id),
     sb.rpc('city_stats'),
     sb.rpc('my_visited'),
   ]);

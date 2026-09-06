@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b691';
-import { openCity } from './city.js?v=b691';
-import { sb } from './db.js?v=b691';
-import { cities, countryName, cityCountry } from './cities.js?v=b691';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b691';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b691';
-import { fail } from './net.js?v=b691';
-import { arm } from './ui.js?v=b691';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b692';
+import { openCity } from './city.js?v=b692';
+import { sb } from './db.js?v=b692';
+import { cities, countryName, cityCountry } from './cities.js?v=b692';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b692';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b692';
+import { fail } from './net.js?v=b692';
+import { arm } from './ui.js?v=b692';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b691';
-import { shareCard } from './card.js?v=b691';
-import { todayYmd } from './calc.js?v=b691';
+import { 발자국스펙 } from './map.js?v=b692';
+import { shareCard } from './card.js?v=b692';
+import { todayYmd } from './calc.js?v=b692';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b691';
-import { loadCities } from './citysearch.js?v=b691';
-import { loadRateData, saveRate } from './rating.js?v=b691';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b692';
+import { loadCities } from './citysearch.js?v=b692';
+import { loadRateData, saveRate } from './rating.js?v=b692';
 
 let ctx = {
   me: () => null,
