@@ -25,11 +25,11 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b707';
+import { $ } from './dom.js?v=b708';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
-import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b707';
-import { countryName } from './cities.js?v=b707';
-import { visited, myRates } from './rate.js?v=b707';
+import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b708';
+import { countryName } from './cities.js?v=b708';
+import { visited, myRates } from './rate.js?v=b708';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -495,6 +495,12 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     격자(ctx, R, cx, cy, λ0, φ0);
 
     /* ── ④ 땅 ──────────────────────────────────────────────────────── */
+    /* ⚠ **확대하면 나라 칠이 옅어집니다(b707, 사용자 결정: 「나라칠은 옅게
+       남기자」).** 그 자리를 도시 조각이 물려받습니다 — 멀리서는 「어느
+       나라를 갔나」, 가까이서는 「그 나라 안에서 어디를 갔나」입니다.
+       ⚠ **아주 지우지는 않습니다.** 확대해도 국경이 읽혀야 어디인지 압니다.
+       ⚠ 옅게 하는 것은 «칠»뿐입니다 — 경계선은 그대로 둡니다. */
+    const 섞 = Math.min(1, Math.max(0, (배율 - 도시시작) / (도시끝 - 도시시작)));
     ctx.lineWidth = 0.4;
     for (const 나라 of 목록){
       const 감 = 갔다.has(나라.code);
@@ -505,7 +511,12 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       /* 다가가는 나라는 «자세한» 윤곽으로 그립니다(b696). */
       const 고리들 = (자세한 && 자세한.code === 나라.code) ? 자세한.고리 : 나라.고리;
       for (const 고리 of 고리들){
-        if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){ ctx.fill(); ctx.stroke(); }
+        if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){
+          ctx.globalAlpha = 감 ? 1 - 0.62 * 섞 : 1;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.stroke();
+        }
       }
     }
 
@@ -522,7 +533,6 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     그린도시 = [];
     const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
     if (배율 > 도시시작){
-      const 섞 = Math.min(1, (배율 - 도시시작) / (도시끝 - 도시시작));
       /* 지도 단위 → 화면. 뒤로 넘어간 점은 null 입니다. */
       const 던져 = (mx, my) => {
         const λ = (mx / 1000 * 360 - 180) * RAD, φ = (90 - my / 500 * 180) * RAD;
@@ -661,7 +671,6 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         ctx.fillStyle = 'rgba(46,38,26,.82)';
         ctx.fillText(글, L, y + 크기 * 0.35);
       };
-      const 섞 = Math.min(1, Math.max(0, (배율 - 도시시작) / (도시끝 - 도시시작)));
       if (섞 > 0.55) for (const d of 그린도시) 쓰기(d.이름, d.x, d.y, 11, '600');
       if (섞 < 0.9) for (const 나라 of 목록){
         if (!나라.핀 || !나라.code) continue;
