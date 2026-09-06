@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b699';
-import { cities, countryName, countryInfo } from './cities.js?v=b699';
-import { myRates, visited } from './rate.js?v=b699';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b700';
+import { cities, countryName, countryInfo } from './cities.js?v=b700';
+import { myRates, visited } from './rate.js?v=b700';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -429,9 +429,17 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
        고쳐도 캐시(`땅캐시`)는 안 다칩니다. `S` 도 그 안의 한 조각이라
        같이 눌립니다.
      ⚠ `점들`·`안것`·`먼것` 은 «같은 객체»를 가리킵니다 — 한 번만 누릅니다. */
+  /* ⚠⚠ **`쓸것` 이 아니라 `조각` «전부»를 눌러야 합니다(b700 에 고침).**
+     아래 `나라길` 이 «도시가 없는 작은 섬도 그리려고» `쓸것` 이 아닌
+     `조각` 에서 거릅니다(그 자리 주석 참고). b699 는 `쓸것` 만 눌러서
+     **미국이 알래스카·하와이만 안 눌린 채** 그려졌습니다(실측: 폭이
+     334.8 → 331.5, 곧 거의 그대로였습니다). 한국은 쓸 조각이 대부분이라
+     맞아 보였을 뿐입니다.
+   ⚠ `쓸것`·`S` 는 `조각` 안의 «같은 객체»입니다 — 여기서 한 번만 누릅니다.
+     따로 또 누르면 두 번 눌립니다. */
   const 눌 = 눌림(도시들.map(위));
   if (눌 < 0.999){
-    for (const q of 쓸것){
+    for (const q of 조각){
       for (const p of q.점) p[0] *= 눌;
       q.x0 *= 눌; q.x1 *= 눌;
     }
