@@ -44,14 +44,25 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b692';
-import { cities, countryName, countryInfo } from './cities.js?v=b692';
-import { myRates, visited } from './rate.js?v=b692';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b693';
+import { cities, countryName, countryInfo } from './cities.js?v=b693';
+import { myRates, visited } from './rate.js?v=b693';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
 
-let ctx = { 나라카드: async () => {}, 지구덮기: () => {} };
+let ctx = { 나라카드: async () => {}, 지구덮기: () => {},
+            지구다가가기: () => {}, 지구되돌리기: () => {} };
+/* 판이 다 덮인 뒤에 덱·지구본을 끄는 타이머(b693). 열 때마다 다시 잡습니다. */
+let 덮기타이머 = 0;
+/* 움직임을 싫어하는 기기에서는 애니메이션을 안 합니다. */
+const 부드럽게 = () => {
+  try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  catch { return true; }
+};
+/* 카메라가 볼 자리 — 도시 좌표의 «가운데값»입니다.
+   ⚠ 평균이 아닙니다. 미국은 괌·하와이 때문에 평균이 태평양으로 끌려갑니다. */
+const 가운데값 = a => { const s = a.slice().sort((x, y) => x - y); return s[s.length >> 1]; };
 export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 좌표 ─────────────────────────────────────────────────────────────
@@ -550,8 +561,12 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
 function 칠하기(cc, 조각, 도시들){
   const 판 = 판만들기();
   const 칸 = 판.querySelector('.cmbox');
-  const r = 칸.getBoundingClientRect();
-  const 결과 = 그리기(cc, 조각, 도시들, r.width || 360, r.height || 520, 지금?.보기);
+  /* ⚠⚠ **`offsetWidth` 로 잽니다(b693).** 판이 들어오는 동안 `scale()` 이
+     걸려 있어서 `getBoundingClientRect()` 는 «확대된» 크기를 돌려줍니다 —
+     그 값으로 상자를 잡으면 지도가 6% 어긋납니다. `offset*` 는 변형을
+     안 봅니다(레이아웃 크기). */
+  const 결과 = 그리기(cc, 조각, 도시들,
+                     칸.offsetWidth || 360, 칸.offsetHeight || 520, 지금?.보기);
   칸.innerHTML = 결과.svg;
   손달기(칸);
   판.querySelector('.cmzero').classList.toggle('hide',
@@ -734,7 +749,21 @@ export async function openCountryMap(cc){
   판.querySelector('.cmcount').textContent = '여는 중…';
   깃발넣기(판.querySelector('.cmflag'), cc);
   판.querySelector('.cmbox').innerHTML = '';
+  /* ── 그 나라로 «다가가며» 엽니다(b693, 사용자 요청) ─────────────────
+   * 사용자: 「지구본이 그 국가로 줌 되는 것처럼 하면서 국가페이지가 뜨는
+   *   애니메이션 효과도 가능해?」
+   * ⚠ 지구본을 먼저 굴리고, 판은 그 «위로 겹쳐» 뜹니다(투명 → 불투명).
+   *   그래서 처음 0.2초쯤은 지구가 그 나라로 다가가는 것이 보입니다.
+   * ⚠ **덤으로 자료 받는 시간을 가려 줍니다** — 처음 여는 나라는 지도
+   *   파일을 받는 데 260~330ms 가 걸리는데, 그 사이가 애니메이션입니다.
+   * ⚠ 판은 «지금 당장» 보이게 둡니다(투명해도 열린 것으로 칩니다) —
+   *   그래야 애니메이션 도중에 뒤로를 눌러도 사슬이 이 판을 닫습니다. */
+  const 움직임 = 부드럽게();
+  if (움직임 && 도시들.length){
+    ctx.지구다가가기(가운데값(도시들.map(경)), 가운데값(도시들.map(위)));
+  }
   판.classList.remove('hide');
+  판.classList.toggle('cmin', 움직임);
   document.body.classList.add('cmapopen');
   /* ⚠⚠ **덱을 덮습니다(b690).** 안 덮으면 «닫을 때 아무도 안 되살립니다» —
      도시 화면(city.js)이 덱을 숨기고 이 판을 「가린판」에 적는데, 닫을 때
@@ -746,12 +775,19 @@ export async function openCountryMap(cc){
      처음 여는 나라는 그 사이가 260~330ms 라 그 안에 뒤로를 누르면
      ① 사슬이 판을 닫고 ② 자료가 와서 안 보이는 판에 다 그리고
      ③ 화면 없는 기록이 한 칸 얹혔습니다. 다음 뒤로가 씹히던 이유입니다. */
-  coverDeck(true);
   if (history.state?.t2 !== 'cmap') history.pushState({ t2:'cmap' }, '');
-  /* ⚠ 지구본을 세웁니다(b688). 이 판이 화면을 다 덮지만 지구본은 그것을
-     스스로 모릅니다 — IntersectionObserver 는 «창 안에 있나»만 봅니다.
-     안 세우면 덮인 채로 30fps 로 9,918개 점을 계속 다시 그립니다. */
-  ctx.지구덮기(true);
+  /* ⚠ 덱과 지구본은 판이 **다 덮은 뒤에** 끕니다(b693) — 애니메이션 동안
+     지구본이 보여야 「그 나라로 들어간다」로 읽힙니다.
+   ⚠ 지구본을 세우는 이유는 b688 참고: `보임` 은 IntersectionObserver 가
+     정하는데 그것은 «창 안에 있나»만 봅니다 — 위에 무엇이 덮였는지는
+     모릅니다. 안 세우면 덮인 채로 계속 그립니다. */
+  clearTimeout(덮기타이머);
+  const 덮자 = () => {
+    if (!isCountryMapOpen()) return;
+    coverDeck(true);
+    ctx.지구덮기(true);
+  };
+  if (움직임) 덮기타이머 = setTimeout(덮자, 560); else 덮자();
 
   /* ⚠ **자료를 기다리기 «전»에 판을 띄웁니다.** 처음 여는 나라는 파일을
      받아야 하는데(한국 2.2KB), 그 사이 아무 일도 안 일어나면 눌러도 안
@@ -792,10 +828,14 @@ export function closeCountryMap(뒤로){ 닫기(뒤로); }
 function 닫기(뒤로){
   const 판 = $('cmappane');
   if (!판 || 판.classList.contains('hide')) return;
+  clearTimeout(덮기타이머);
   판.classList.add('hide');
+  판.classList.remove('cmin');
   document.body.classList.remove('cmapopen');
   coverDeck(false);
   ctx.지구덮기(false);
+  /* 들어가기 «전»에 보던 자리로 굴러 돌아갑니다(b693). */
+  ctx.지구되돌리기();
   지금 = null;
   if (!뒤로 && history.state?.t2 === 'cmap') history.back();
 }

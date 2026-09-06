@@ -4864,6 +4864,24 @@ body.pvon{ overflow:hidden; }
            display:flex; flex-direction:column; }
 #cmappane.hide{ display:none; }
 
+/* ── 그 나라로 다가가며 열립니다(b693) ──────────────────────────────
+ * 지구본이 그 나라로 굴러가며 확대되고, 이 판이 «그 위로 겹쳐» 뜹니다.
+ * ⚠ 처음 3분의 1 은 거의 투명하게 둡니다 — 그 동안 지구가 다가가는 것이
+ *   보여야 「끊긴 것」이 아니라 「들어간 것」으로 읽힙니다.
+ * ⚠ 살짝 크게 시작해 제자리로 옵니다(1.06 → 1). 착지하는 느낌입니다.
+ * ⚠ **`scale` 이 걸린 동안 `getBoundingClientRect` 는 커집니다** —
+ *   지도 칸을 잴 때 `offsetWidth` 를 써야 합니다(ctrymap.js).
+ * ⚠ 움직임을 싫어하는 기기에서는 아예 안 합니다. */
+@keyframes cm-in{
+  0%   { opacity:0;   transform:scale(1.06); }
+  32%  { opacity:.12; }
+  100% { opacity:1;   transform:none; }
+}
+#cmappane.cmin{ animation:cm-in .58s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion:reduce){
+  #cmappane.cmin{ animation:none; }
+}
+
 /* 지도 — 카드가 가져가고 남는 자리를 다 씁니다. */
 .cmbox{ flex:1; min-height:0; position:relative; }
 .cmbox svg{ display:block; width:100%; height:100%; }
