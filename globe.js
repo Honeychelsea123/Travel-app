@@ -25,7 +25,11 @@
  *   그 안에서는 구멍이 지평선 너머에 있습니다. 이 값을 늘리려거든 남극
  *   좌표부터 넣으십시오.
  */
-import { $ } from './dom.js?v=b706';
+import { $ } from './dom.js?v=b707';
+/* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
+import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b707';
+import { countryName } from './cities.js?v=b707';
+import { visited, myRates } from './rate.js?v=b707';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -294,6 +298,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
   /* 마지막으로 그린 판(반지름·가운데). **눌린 자리를 나라로 되돌릴 때**
      씁니다 — 그때 다시 재면 그 사이에 창이 바뀌었을 수 있습니다. */
   let 판 = null;
+  /* ── 도시가 떠오르는 배율(b707, 사용자 결정) ────────────────────────
+   * 4배가 문턱입니다. 그 자리가 「손가락으로 갈 수 있던 끝」이자
+   * 「110m 이 각져 보이기 시작하는 곳」이라 이야기가 맞아떨어집니다.
+   * ⚠ **탁 바뀌지 않게 3.2 부터 서서히 섞습니다.** 나라 칠이 옅어지면서
+   *   도시 조각이 떠오릅니다 — 사용자 결정: 「나라칠은 옅게 남기자」. */
+  const 도시시작 = 3.2, 도시끝 = 4.5;
+  /* 이번 판에 실제로 그린 도시 — 누르기 판정에 씁니다(화면 좌표). */
+  let 그린도시 = [];
   /* ── 확대(b560, 사용자 요청) ─────────────────────────────────────
    * 1 이 「칸에 딱 맞는 크기」입니다. 키우면 지구가 칸보다 커지고,
    * 칸 밖으로 나간 부분은 잘립니다 — 그게 확대입니다.
@@ -302,7 +314,18 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
    * ⚠ 1 아래로는 안 내려갑니다. 칸보다 작아지면 지구 둘레에 빈 자리가
    *   생겨서 「덜 그려진 것」처럼 보입니다. */
   let 배율 = 1;
-  const 배율끝 = [1, 4];
+  /* ⚠⚠ **상한을 4 → 20 으로 열었습니다(b707).** ⚠⚠
+   * 4 였던 이유는 110m 지도가 그 위로는 각져 보여서였습니다. 이제 문턱
+   * (아래 `도시배`)을 넘으면 그 나라를 **50m 로 갈아끼우므로** 그 이유가
+   * 없어졌습니다. 20 인 근거는 재서 정한 것입니다 —
+   *   · 50m 선분 하나가 14배에서 3.0px, 20배면 4.3px 로 아직 매끈합니다.
+   *     30배면 6.4px 로 각이 보이기 시작하고 40배면 다각형으로 읽힙니다.
+   *   · 20배면 카드 한 칸에 보이는 폭이 약 6.3° — 한국(세로 5.6°)이 꽉 찹니다.
+   *     그보다 당기는 것은 «나라보다 작은 것»인데 우리에게는 보여줄 자료가
+   *     없습니다(도로도 시가지 경계도 없습니다).
+   * ⚠ 자르기(`clip-path`)는 20배에서 오히려 싸집니다(실측 0.208 → 0.02ms) —
+   *   잘라낼 것이 없어서입니다. 아래에서 아예 끕니다. */
+  const 배율끝 = [1, 20];
 
   const 그리기 = () => {
     예약 = 0;
@@ -486,6 +509,98 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       }
     }
 
+    /* ── ⑤ 도시 (b707) ──────────────────────────────────────────────
+     * 확대하면 나라 칠이 옅어지고 그 자리에 «도시 조각»이 떠오릅니다.
+     * ⚠⚠ **보이는 나라만 봅니다.** 실측: 한국 둘레 열 나라의 50m 를 다
+     *   합치면 14,148점인데, 화면에 걸친 조각만 고르면 **5,008점**입니다.
+     *   지금 이 지구본이 매 프레임 그리는 110m 세계가 9,879점이니
+     *   **확대할수록 오히려 싸집니다**(실측 1.53ms).
+     * ⚠ 50m 는 «도시를 그릴 나라»만 받습니다. 배경으로만 보이는 나라는
+     *   이미 화면에 있는 110m 그대로 둡니다 — 러시아 하나가 58KB 입니다.
+     * ⚠ 셀을 그리기 전에 «보이는 창»으로 자릅니다. 안 자르면 나라를 덮을
+     *   만큼 큰 셀의 꼭짓점이 지구 뒤로 넘어가 뒤집힙니다. */
+    그린도시 = [];
+    const sφ0 = Math.sin(φ0), cφ0 = Math.cos(φ0);
+    if (배율 > 도시시작){
+      const 섞 = Math.min(1, (배율 - 도시시작) / (도시끝 - 도시시작));
+      /* 지도 단위 → 화면. 뒤로 넘어간 점은 null 입니다. */
+      const 던져 = (mx, my) => {
+        const λ = (mx / 1000 * 360 - 180) * RAD, φ = (90 - my / 500 * 180) * RAD;
+        const cφ = Math.cos(φ), sφ = Math.sin(φ), cΔ = Math.cos(λ - λ0);
+        if (sφ0 * sφ + cφ0 * cφ * cΔ <= 0) return null;
+        return [cx + R * cφ * Math.sin(λ - λ0), cy - R * (cφ0 * sφ - sφ0 * cφ * cΔ)];
+      };
+      /* 화면 한가운데가 지도 단위로 어디인지 — 자를 창을 그 둘레로 잡습니다.
+         1 지도단위 ≈ R·π/500 px 이므로 창 반폭은 그 역수로 냅니다. */
+      const 단위px = R * Math.PI / 500;
+      const 창반 = (Math.max(w, h) / 2) / 단위px + 6;
+      const 가운데x = (λ0 / RAD + 180) / 360 * 1000;
+      const 가운데y = (90 - φ0 / RAD) / 180 * 500;
+      const 창 = [가운데x - 창반, 가운데y - 창반, 가운데x + 창반, 가운데y + 창반];
+
+      for (const 나라 of 목록){
+        if (!나라.code || !도시있나(나라.code)) continue;
+        /* 화면에 안 걸린 나라는 건너뜁니다 — 핀으로 거칠게 거릅니다. */
+        if (나라.핀){
+          const [pλ, pφ] = 나라.핀;
+          const 코 = sφ0 * Math.sin(pφ) + cφ0 * Math.cos(pφ) * Math.cos(pλ - λ0);
+          if (코 < Math.cos(Math.min(Math.PI / 2, Math.asin(Math.min(1, 1.11 / 배율)) * 3))) continue;
+        }
+        const 자세 = 가진땅(나라.code);        /* 없으면 다음 프레임부터 */
+        const { 도시, 셀 } = 나라셀(나라.code);
+        if (!도시.length) continue;
+
+        /* 해안선으로 자릅니다 — 셀이 바다로 새어 나가면 지도가 아닙니다. */
+        ctx.save();
+        ctx.beginPath();
+        let 길있나 = false;
+        if (자세) for (const q of 자세){
+          if (q.x1 < 창[0] || q.x0 > 창[2] || q.y1 < 창[1] || q.y0 > 창[3]) continue;
+          let 시작 = true;
+          for (const [mx, my] of q.점){
+            const p = 던져(mx, my);
+            if (!p){ 시작 = true; continue; }
+            if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
+          }
+          ctx.closePath(); 길있나 = true;
+        }
+        else for (const 고리 of 나라.고리){
+          if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)) 길있나 = true;
+        }
+        if (!길있나){ ctx.restore(); continue; }
+        ctx.clip();
+
+        for (let i = 0; i < 도시.length; i++){
+          const 잘림 = 상자자르기(셀[i] || [], 창[0], 창[1], 창[2], 창[3]);
+          if (잘림.length < 3) continue;
+          let 시작 = true, 그림 = false;
+          ctx.beginPath();
+          for (const [mx, my] of 잘림){
+            const p = 던져(mx, my);
+            if (!p){ 시작 = true; continue; }
+            if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
+            그림 = true;
+          }
+          if (!그림) continue;
+          ctx.closePath();
+          const d = 도시[i];
+          const 갔나 = visited?.has?.(d.c.id) || myRates?.[d.c.id]?.stars != null;
+          ctx.globalAlpha = 섞 * (갔나 ? 0.62 : 0.13);
+          ctx.fillStyle = 내것; ctx.fill();
+          ctx.globalAlpha = 섞 * 0.5;
+          ctx.strokeStyle = 바다; ctx.lineWidth = 0.7; ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+
+        /* 누르기 판정에 쓸 자리를 적어 둡니다(화면 좌표). */
+        for (const d of 도시){
+          const p = 던져(d.x, d.y);
+          if (p) 그린도시.push({ id: d.c.id, x: p[0], y: p[1], 이름: d.c.name || '' });
+        }
+      }
+    }
+
     /* ⚠ **핀(다녀온 나라마다 동그라미)을 걷었습니다(b545, 사용자 결정).**
        b541 에 「싱가포르·몰타는 칠해도 한 픽셀이 안 돼서 다녀온 티가 안
        난다」며 넣었던 것입니다. 실기기에서 보니 **칠한 색이 이미 충분히
@@ -519,6 +634,45 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     /* ── ⑦ 테두리 ── 머리카락 한 올. 구와 배경을 갈라 줍니다 ───────── */
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
     ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(46,38,26,.22)'; ctx.stroke();
+
+    /* ── ⑧ 이름 (b707) ───────────────────────────────────────────────
+     * 사용자: 「구글지도처럼 국가 이름도 뜨면 좋겠네」 · 「확대하고부터 이름이 뜨자」
+     * ⚠ **1배에는 안 씁니다.** 앱을 열자마자 보이는 그 깨끗한 지구본이
+     *   첫인상인데 나라 이름 스무 개로 덮으면 아깝습니다.
+     * ⚠ **미는 동안에는 건너뜁니다.** 이름이 매 프레임 자리를 다시 잡으면
+     *   글자가 떨립니다. 손을 떼면 그립니다(실측 130개 0.82ms).
+     * ⚠ 자리가 겹치면 버립니다 — 큰 것부터가 아니라 «먼저 온 것»이 이깁니다.
+     *   도시를 먼저 두는 이유가 그것입니다(확대했으면 도시가 주인공). */
+    if (배율 > 1.5 && !끌기 && !관성){
+      const 놓은 = [];
+      const 쓰기 = (글, x, y, 크기, 진하기) => {
+        if (!글) return;
+        ctx.font = 진하기 + ' ' + 크기 + 'px system-ui, -apple-system, sans-serif';
+        const W = ctx.measureText(글).width, H = 크기 + 2;
+        const L = x - W / 2, T = y - H / 2;
+        if (L < 2 || T < 2 || L + W > w - 2 || T + H > h - 2) return;
+        for (const r of 놓은)
+          if (L < r.L + r.W + 3 && L + W + 3 > r.L &&
+              T < r.T + r.H + 3 && T + H + 3 > r.T) return;
+        놓은.push({ L, T, W, H });
+        /* 글자 뒤에 종이색 테를 둘러 지도 위에서도 읽히게 합니다. */
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(243,240,232,.92)';
+        ctx.strokeText(글, L, y + 크기 * 0.35);
+        ctx.fillStyle = 'rgba(46,38,26,.82)';
+        ctx.fillText(글, L, y + 크기 * 0.35);
+      };
+      const 섞 = Math.min(1, Math.max(0, (배율 - 도시시작) / (도시끝 - 도시시작)));
+      if (섞 > 0.55) for (const d of 그린도시) 쓰기(d.이름, d.x, d.y, 11, '600');
+      if (섞 < 0.9) for (const 나라 of 목록){
+        if (!나라.핀 || !나라.code) continue;
+        const [pλ, pφ] = 나라.핀;
+        const cφ = Math.cos(pφ), sφ = Math.sin(pφ), cΔ = Math.cos(pλ - λ0);
+        if (sφ0 * sφ + cφ0 * cφ * cΔ <= 0.02) continue;
+        쓰기(countryName[나라.code] || '',
+             cx + R * cφ * Math.sin(pλ - λ0),
+             cy - R * (cφ0 * sφ - sφ0 * cφ * cΔ), 12, '500');
+      }
+    }
   };
   /* ⚠ 덮여 있으면 한 판도 안 그립니다(b690). 안 그러면 앱이 앞으로 올 때
      안 보이는 지구본을 통째로 한 번 그립니다(9,900점). */
@@ -739,6 +893,46 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
   let 민적 = false;
   let 끌기 = null;
+  let 지난탭 = 0, 지난자리 = null;
+
+  /* 누른 자리에서 «가장 가까운 도시». 44px 안만 봅니다 — 그보다 멀면
+     빈 자리를 누른 것으로 쳐서 두 번 두드리기가 살아납니다.
+     ⚠ 다각형을 맞히지 않습니다. 셀이 손가락보다 좁은 도시가 있습니다. */
+  function 어느도시(x, y){
+    let 고른 = null, best = 44;
+    for (const d of 그린도시){
+      const v = Math.hypot(d.x - x, d.y - y);
+      if (v < best){ best = v; 고른 = d; }
+    }
+    return 고른 ? 고른.id : null;
+  }
+
+  /* 누른 자리를 가운데로 두 배 확대(b707).
+     ⚠ 정사도법을 «거꾸로» 풀어 그 자리의 경위도를 냅니다. ρ>1 이면 지구
+       밖(모서리)이라 아무 일도 안 합니다. */
+  function 두배로(x, y){
+    if (!판) return;
+    const { R, cx, cy } = 판;
+    const dx = (x - cx) / R, dy = (cy - y) / R;
+    const ρ = Math.hypot(dx, dy);
+    if (ρ > 1) return;
+    const c = Math.asin(Math.min(1, ρ));
+    const sc = Math.sin(c), cc = Math.cos(c);
+    const s0 = Math.sin(φ0), c0 = Math.cos(φ0);
+    const φt0 = ρ < 1e-9 ? φ0 : Math.asin(cc * s0 + dy * sc * c0 / ρ);
+    const λt = λ0 + (ρ < 1e-9 ? 0
+                     : Math.atan2(dx * sc, ρ * cc * c0 - dy * sc * s0));
+    const 끝 = 52 * RAD;
+    const φt = Math.max(-끝, Math.min(끝, φt0));
+    let dλ = λt - λ0;
+    while (dλ >  Math.PI) dλ -= 2 * Math.PI;
+    while (dλ < -Math.PI) dλ += 2 * Math.PI;
+    세우기();
+    굴림 = { λ:λ0, φ:φ0, dλ, dφ: φt - φ0, 간:0, 동안:0.42,
+             배0: 배율, d배: Math.min(배율끝[1], 배율 * 2) - 배율 };
+    마지막 = 0;
+    깨우기();
+  }
   /* ── 손가락 둘로 집어 늘리기(b560) ───────────────────────────────────
    * ⚠ 손가락이 둘이면 **돌리기를 멈춥니다.** 둘 다 하면 집으면서 지구가
    *   같이 돌아 어지럽습니다.
@@ -846,10 +1040,23 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
        ⚠ `민적` 은 6px 을 넘겨 움직였는지입니다. 손가락은 가만히 눌러도
          한두 픽셀 흔들리므로, 그 정도는 누름으로 칩니다.
        ⚠ 누름이면 관성도 없습니다 — 아래로 안 내려갑니다. */
-    if (!민적 && 누름 && e){
+    /* ── 누른 것 (b707) ────────────────────────────────────────────────
+     * 사용자 결정: 「나라를 눌러도 반응이 없고, 도시까지 확대된 순간
+     *   도시를 누를 수 있으니 그때 도시 카드가 뜨면 되지 않아?」
+     * ⚠ **나라 누름은 없앴습니다.** 나라 페이지가 없어졌으니 갈 곳이 없습니다.
+     * ⚠ 빈 자리를 두 번 두드리면 그 자리로 두 배 확대합니다 — 구글 지도의
+     *   그 몸짓입니다. 도시를 맞혔으면 그건 «연 것»이라 두 번 세지 않습니다. */
+    if (!민적 && e){
       const r = canvas.getBoundingClientRect();
-      const 코드 = 어느나라(e.clientX - r.left, e.clientY - r.top);
-      if (코드){ 누름(코드); return; }
+      const px = e.clientX - r.left, py = e.clientY - r.top;
+      const 도시 = 어느도시(px, py);
+      if (도시){ 지난탭 = 0; 누름?.(도시); return; }
+      const 이제 = e.timeStamp;
+      if (지난탭 && 이제 - 지난탭 < 340 && 지난자리 &&
+          Math.hypot(px - 지난자리[0], py - 지난자리[1]) < 34){
+        지난탭 = 0; 두배로(px, py); return;
+      }
+      지난탭 = 이제; 지난자리 = [px, py];
       return;
     }
     if (e && e.timeStamp - 그거.때 > 90) return;

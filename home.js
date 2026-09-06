@@ -33,43 +33,44 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b706';
-import { sb } from './db.js?v=b706';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b706';
-import { hm, todayYmd } from './calc.js?v=b706';
-import { starHtml, paintStars } from './stars.js?v=b706';
+import { $, esc } from './dom.js?v=b707';
+import { sb } from './db.js?v=b707';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b707';
+import { hm, todayYmd } from './calc.js?v=b707';
+import { starHtml, paintStars } from './stars.js?v=b707';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b706';
-import { cities, countryName, cityCountry } from './cities.js?v=b706';
-import { UN_CODES } from './un.js?v=b706';
-import { myRates, cityStat, visited } from './rate.js?v=b706';
-import { plans } from './trip.js?v=b706';
-import { loadCities } from './citysearch.js?v=b706';
+import { starValue } from './rateui.js?v=b707';
+import { cities, countryName, cityCountry } from './cities.js?v=b707';
+import { UN_CODES } from './un.js?v=b707';
+import { myRates, cityStat, visited } from './rate.js?v=b707';
+import { plans } from './trip.js?v=b707';
+import { loadCities } from './citysearch.js?v=b707';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b706';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b706';
+import { openCity } from './city.js?v=b707';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b707';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b706';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b707';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b706';
+import { drawReport } from './report.js?v=b707';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b706';
+import { PERSONA_BG } from './card.js?v=b707';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b706';
+import { checkPersonaShift } from './pshift.js?v=b707';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b706';
+import { diaryBackTo } from './diary.js?v=b707';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b706';
+import { mountGlobe } from './globe.js?v=b707';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
-import { openCountryMap, setCtryMapCtx } from './ctrymap.js?v=b706';
+/* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
+   보여줍니다. 파일도 지웠습니다. */
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -133,29 +134,13 @@ export function 시트닫기(뒤로온것){
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  * ⚠ openCountryMap 이 «폈으면 true» 를 돌려줍니다 — 못 폈을 때만 카드로
  *   내려갑니다. 두 길이 «한 자리»에서 갈려야 뒤로가기가 안 꼬입니다. */
-async function 나라눌림(코드){
-  if (await openCountryMap(코드)) return;
-  return 나라카드(코드);
+/* ── 지구본에서 도시를 누르면(b707) ──────────────────────────────────
+ * 사용자 결정: 「나라를 눌러도 반응이 없고, 도시까지 확대된 순간 도시를
+ *   누를 수 있으니 그때 도시 카드가 뜨면 되지 않아?」
+ * ⚠ 나라 누름은 없어졌습니다 — 갈 나라 페이지가 없습니다. */
+function 도시눌림(id){
+  if (id) openCity(id);
 }
-/* 나라 지도가 도시를 누르면 이 카드를 부릅니다. 함수를 넘겨 순환 import
-   를 피합니다(앱의 ctx 주입 규약). */
-setCtryMapCtx({
-  나라카드: (코드, 먼저) => 나라카드(코드, 먼저),
-  /* 나라 지도가 화면을 다 덮는 동안 지구본을 세웁니다(b688).
-     ⚠ 지구본은 «덮였는지»를 스스로 못 압니다 — 덮는 쪽이 알려 줘야 합니다. */
-  지구덮기: (덮였나) => 지구?.덮임?.(덮였나),
-  /* 나라를 누르면 그 나라로 굴러가며 확대됩니다(b693). 화면을 닫으면 되돌아갑니다. */
-  /* 돌려주는 값은 «얼마나 걸리는가»(초)입니다 — ctrymap 이 그 시간에 맞춰
-     판을 띄우고 지구본을 덮습니다(b701). */
-  지구다가가기: (경도, 위도, 배) => 지구?.다가가기?.(경도, 위도, 배),
-  /* 지구본이 «지금 그리고 있는 자리»를 주고받습니다(b702) — 나라 지도와
-     디졸브 없이 이어 붙이는 데 씁니다. ⚠ 안 넘기면 조용히 죽습니다. */
-  지구상태: () => 지구?.상태?.() || null,
-  지구앉히기: (경도, 위도, 배) => 지구?.앉히기?.(경도, 위도, 배),
-  /* 다가가는 나라만 50m 윤곽으로 그립니다(b696). */
-  지구자세히: (코드, d) => 지구?.자세히?.(코드, d),
-  지구되돌리기: () => 지구?.되돌리기?.(),
-});
 
 async function 나라카드(코드, 먼저){
   /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말).
@@ -1566,7 +1551,7 @@ async function renderFoot(통){
     /* 처음 보이는 면은 globe.js 가 정합니다 — 대한민국이 한가운데(b525). */
     /* ⚠ 다섯째가 「나라를 눌렀을 때」입니다(b555). 돌린 뒤의 누름은
        globe.js 가 걸러서 안 옵니다. */
-    공 = mountGlobe(공판, gone, undefined, undefined, 나라눌림);
+    공 = mountGlobe(공판, gone, undefined, undefined, 도시눌림);
     지구 = 공; 지구갔다 = gone;
     /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
        한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
