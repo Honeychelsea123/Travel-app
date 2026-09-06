@@ -33,43 +33,43 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b690';
-import { sb } from './db.js?v=b690';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b690';
-import { hm, todayYmd } from './calc.js?v=b690';
-import { starHtml, paintStars } from './stars.js?v=b690';
+import { $, esc } from './dom.js?v=b691';
+import { sb } from './db.js?v=b691';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b691';
+import { hm, todayYmd } from './calc.js?v=b691';
+import { starHtml, paintStars } from './stars.js?v=b691';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b690';
-import { cities, countryName, cityCountry } from './cities.js?v=b690';
-import { UN_CODES } from './un.js?v=b690';
-import { myRates, cityStat, visited } from './rate.js?v=b690';
-import { plans } from './trip.js?v=b690';
-import { loadCities } from './citysearch.js?v=b690';
+import { starValue } from './rateui.js?v=b691';
+import { cities, countryName, cityCountry } from './cities.js?v=b691';
+import { UN_CODES } from './un.js?v=b691';
+import { myRates, cityStat, visited } from './rate.js?v=b691';
+import { plans } from './trip.js?v=b691';
+import { loadCities } from './citysearch.js?v=b691';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b690';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b690';
+import { openCity } from './city.js?v=b691';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b691';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b690';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b691';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b690';
+import { drawReport } from './report.js?v=b691';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b690';
+import { PERSONA_BG } from './card.js?v=b691';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b690';
+import { checkPersonaShift } from './pshift.js?v=b691';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b690';
+import { diaryBackTo } from './diary.js?v=b691';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b690';
+import { mountGlobe } from './globe.js?v=b691';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
-import { openCountryMap, setCtryMapCtx } from './ctrymap.js?v=b690';
+import { openCountryMap, setCtryMapCtx } from './ctrymap.js?v=b691';
 
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
@@ -147,8 +147,17 @@ setCtryMapCtx({
 });
 
 async function 나라카드(코드, 먼저){
-  /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말). */
-  if (!Object.keys(myRates || {}).length) await loadRateData();
+  /* 평가 탭을 한 번도 안 열었으면 여기서 받습니다(위 머리말).
+     ⚠⚠ **기다리는 동안 뒤로를 눌렀으면 그만둡니다(b691).** 이 await 는
+       평가 탭을 한 번도 안 연 계정에서만 도는데, 그 사이에 뒤로를 누르면
+       사슬이 뒤에 있던 판(나라 지도)을 대신 닫고, 그러고 나서 이 시트가
+       «닫힌 판 위에» 열립니다. `openCountryMap` 에서 겪은 것과 같은 병입니다
+       (b690). 들어올 때의 기록 자리를 적어 두고 달라졌으면 멈춥니다. */
+  if (!Object.keys(myRates || {}).length){
+    const 그때 = history.state?.t2 ?? null;
+    await loadRateData();
+    if ((history.state?.t2 ?? null) !== 그때) return;
+  }
   /* ── 무엇을 보여줄까(b560, 사용자 결정) ─────────────────────────────
    * ⚠ **안 가본 나라도 보여줍니다.** 「안 가본 나라를 누르면 카드가 뜨고
    *   거기서 별점을 매길 수 있게」 — 그러면 지구본이 곧 평가하는 자리가
@@ -1246,20 +1255,30 @@ async function renderFoot(통){
     const 있음 = 'onscrollend' in 줄기;
     let 타이머 = 0;
 
+    /* 마지막으로 맞춘 칸. -1 이면 아직 한 번도 안 맞췄다는 뜻입니다. */
+    let 지난칸 = -1;
     줄기.addEventListener('scroll', () => {
       /* 점은 **즉시** 갱신합니다 — 이건 자리를 안 건드리므로 안전하고,
          손가락을 따라 움직여야 넘기는 느낌이 납니다. */
       const i = Math.round(줄기.scrollLeft / 폭());
+      /* ⚠ 멎었는지 재는 타이머는 «칸이 안 바뀌어도» 걸어야 합니다 —
+         아래 가드보다 먼저 둡니다(b691). */
+      if (!있음){ clearTimeout(타이머); 타이머 = setTimeout(멎으면, 140); }
       /* 앞 복제가 없으므로 «칸 번호 = 장 번호»입니다(b669). 뒤 복제만
          `% 수` 로 첫 장에 접힙니다. */
       const 실제 = i % 수;
+      /* ⚠⚠ **칸이 바뀔 때만 합니다(b691).** `scroll` 은 관성 스크롤 동안
+         프레임마다 옵니다. 전에는 이벤트마다 `지도맞추기` 를 불렀고, 그것이
+         지구본에 **0.7초짜리 굴림을 매번 새로** 걸었습니다. 굴림은 30fps
+         상한 «밖»이라(globe.js) 미는 내내 매 프레임 9,900개 점을 다시
+         투영합니다 — 이 화면에서 제일 무거운 자리였습니다.
+         값도 `실제` 하나에서 나오므로 같은 값으로 다시 부를 이유가 없습니다. */
+      if (실제 === 지난칸) return;
+      지난칸 = 실제;
       점찍기(실제);
       /* 지도도 같이 옮깁니다(b500). 점과 **같은 자리**에서 정합니다 —
          따로 세면 점은 아시아인데 지도는 유럽인 순간이 생깁니다. */
       지도맞추기(장[실제]?.[0]);
-      if (있음) return;
-      clearTimeout(타이머);
-      타이머 = setTimeout(멎으면, 140);
     }, { passive:true });
 
     if (있음) 줄기.addEventListener('scrollend', 멎으면, { passive:true });

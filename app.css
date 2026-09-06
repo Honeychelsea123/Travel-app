@@ -4933,4 +4933,10 @@ body.pvon{ overflow:hidden; }
 
 /* 지도가 화면을 다 덮습니다 — 하단바가 지도를 가리면 안 됩니다
    (큰 지도의 body.bigmap 과 같은 수법). */
-body.cmapopen .tabbar{ display:none; }
+/* ⚠⚠ **판이 «실제로 보일 때»만 지웁니다(b691).** 전에는 `body.cmapopen`
+   으로만 걸었는데, 나라 지도에서 도시로 들어가면 도시 화면(city.js)이
+   판을 숨길 뿐 이 표는 그대로 남아 **도시 화면에서도 하단바가 없었습니다.**
+   아이폰 홈 앱에는 시스템 뒤로 단추가 없어서 «나갈 길이 사라집니다.**
+   `:has()` 로 판의 상태를 직접 봅니다 — 누가 숨기든 저절로 맞습니다.
+   (이 파일은 이미 `:has()` 를 열세 곳에서 씁니다.) */
+body:has(#cmappane:not(.hide)) .tabbar{ display:none; }
