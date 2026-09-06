@@ -44,15 +44,17 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b701';
-import { cities, countryName, countryInfo } from './cities.js?v=b701';
-import { myRates, visited } from './rate.js?v=b701';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b702';
+import { cities, countryName, countryInfo } from './cities.js?v=b702';
+import { myRates, visited } from './rate.js?v=b702';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
 
+/* ⚠ 기본값을 «전부» 적습니다 — 안 넘어온 것을 부르면 조용히 죽습니다. */
 let ctx = { 나라카드: async () => {}, 지구덮기: () => {},
-            지구다가가기: () => {}, 지구되돌리기: () => {}, 지구자세히: () => {} };
+            지구다가가기: () => {}, 지구되돌리기: () => {}, 지구자세히: () => {},
+            지구상태: () => null, 지구앉히기: () => {} };
 /* 판이 다 덮인 뒤에 덱·지구본을 끄는 타이머(b693). 열 때마다 다시 잡습니다. */
 let 덮기타이머 = 0, 끝타이머 = 0;
 /* 움직임을 싫어하는 기기에서는 애니메이션을 안 합니다. */
@@ -638,10 +640,10 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
     `<g clip-path="url(#${cid})">` +
       `<use href="#cmland" class="cm-land"/>${칠.join('')}</g>` +
     `<use href="#cmland" class="cm-edge" stroke-width="${(선 * 1.8).toFixed(3)}"/>` +
-    `<g transform="translate(${vx.toFixed(2)} ${vy.toFixed(2)}) scale(${(1 / 배).toFixed(6)})">` +
+    `<g class="cm-labels" transform="translate(${vx.toFixed(2)} ${vy.toFixed(2)}) scale(${(1 / 배).toFixed(6)})">` +
       글.join('') + `</g></svg>`;
 
-  return { svg, 배, vx, vy, vw, vh, 안것, 먼것, 기본보기 };
+  return { svg, 배, vx, vy, vw, vh, 안것, 먼것, 기본보기, 눌 };
 }
 
 /* ── 한 번 칠하기 ─────────────────────────────────────────────────────
@@ -851,6 +853,112 @@ window.addEventListener('resize', () => {
   다시타이머 = setTimeout(() => { if (isCountryMapOpen()) 칠하기(cc, 조각, 도시들); }, 150);
 });
 
+/* ── 지구본에서 «이어받기»(b702) ───────────────────────────────────────
+ * 사용자: 「실제 그 카드페이지 지도 크기까지 줌되고 자연스럽게 아래에서
+ *   정보가 올라오게 못해? 디졸브 없이.」
+ * ⚠⚠ **지구본만으로는 못 맞춥니다.** 카드 지도 크기까지 가려면 한국은
+ *   20.4배가 필요한데 손가락 배율 상한은 14 이고, 미국·러시아는 반대로
+ *   0.8·0.58배가 필요한데 하한이 1 입니다. → **남은 몫을 카드가 이어서
+ *   당깁니다.** 넘겨받는 순간 카드의 viewBox 를 «지구본이 지금 그리고 있는
+ *   바로 그 자리»로 잡고, 0.3초에 걸쳐 제 자리로 옮깁니다.
+ * ⚠ 그 자리를 계산할 수 있는 것은 b699 덕입니다 — 나라 지도에 cos(가운데
+ *   위도)를 곱한 뒤로 두 투영이 국소적으로 거의 같아졌습니다.
+ * ⚠ 배경색도 같습니다(`--parchment` = `--canvas`). 갈아끼우는 프레임이
+ *   같은 색의 균일한 면이라 이음매가 안 보입니다. */
+let 이음raf = 0, 이음끝 = null;
+
+/* viewBox 를 쓰고 «배»까지 같이 갱신합니다 — 안 그러면 이음 도중에 누를 때
+   `고르기` 의 90px 문턱이 옛 배율로 재집니다. */
+function 보기쓰기(v){
+  const s = 지금?.칸?.querySelector('svg');
+  if (!s || !지금?.결과) return;
+  s.setAttribute('viewBox',
+    `${v.vx.toFixed(2)} ${v.vy.toFixed(2)} ${v.vw.toFixed(2)} ${v.vh.toFixed(2)}`);
+  const 폭px = 지금.칸.offsetWidth || 360;
+  Object.assign(지금.결과, v, { 배: 폭px / v.vw });
+}
+
+/* 지구본이 지금 그리고 있는 자리를 «지도 단위»로 옮겨 적습니다.
+   못 내면 null — 그때는 이음을 건너뛰고 곧장 제 자리로 그립니다. */
+function 시작보기내기(){
+  const st = ctx.지구상태?.();
+  if (!st || st.굴림중 || !(st.R > 0)) return null;
+  /* 1배쯤이면 지구 전체가 보이는 것이라 이어 붙일 것이 없습니다. */
+  if (st.배율 < 1.6) return null;
+  const r = 지금?.결과, 칸 = 지금?.칸;
+  if (!r || !칸) return null;
+  const Br = 칸.getBoundingClientRect();
+  if (!Br.width || !st.rect?.width) return null;
+  const 배p = st.R * Math.PI / 500;            /* 지도 한 칸이 화면 몇 px 인가 */
+  if (!(배p > 0)) return null;
+  const 눌 = r.눌 || 1;
+  return {
+    vx: PX(st.경도) * 눌 - (st.rect.left + st.cx - Br.left) / 배p,
+    vy: PY(st.위도)      - (st.rect.top  + st.cy - Br.top ) / 배p,
+    vw: Br.width  / 배p,
+    vh: Br.height / 배p,
+  };
+}
+
+function 이음마무리(){
+  if (이음raf){ cancelAnimationFrame(이음raf); 이음raf = 0; }
+  clearTimeout(이음끝); 이음끝 = null;
+  const 판 = $('cmappane'); if (!판) return;
+  판.classList.remove('cmjoin');
+  /* ⚠ **무슨 일이 있어도 제 자리로 끝냅니다.** rAF 가 안 도는 창(숨은 탭)
+     에서는 위 루프가 한 번도 안 돌므로 여기가 유일한 도착점입니다. */
+  const 끝 = 지금?.결과?.기본보기;
+  if (끝 && !지금.보기) 보기쓰기(끝);
+}
+
+function 카드올리기(판){
+  판.classList.remove('cmup');
+  void 판.offsetWidth;                 /* 표를 다시 걸어야 애니메이션이 돕니다 */
+  판.classList.add('cmup');
+}
+
+/* 카드가 «지금 보여주는 그림»을 지구본 말로 옮깁니다(위 이음의 역).
+   나올 때 그 자리에 지구본을 앉히면, 판이 걷히는 순간이 이어집니다. */
+function 지구자리내기(){
+  const st = ctx.지구상태?.();
+  if (!st || !(st.R0 > 0)) return null;
+  const r = 지금?.결과, 칸 = 지금?.칸;
+  if (!r || !칸 || !(r.vw > 0)) return null;
+  const Br = 칸.getBoundingClientRect();
+  if (!Br.width || !st.rect?.width) return null;
+  const 배p = Br.width / r.vw;
+  const 눌 = r.눌 || 1;
+  const X = r.vx + (st.rect.left + st.cx - Br.left) / 배p;
+  const Y = r.vy + (st.rect.top  + st.cy - Br.top ) / 배p;
+  return { 경도: (X / 눌) / 1000 * 360 - 180,
+           위도: 90 - Y / 500 * 180,
+           배율: 배p * 500 / (Math.PI * st.R0) };
+}
+
+function 이음시작(){
+  const 판 = $('cmappane'); if (!판) return;
+  const 끝 = 지금?.결과?.기본보기;
+  const 시작 = 끝 ? 시작보기내기() : null;
+  판.classList.remove('cmwait');       /* 여기서 판이 «불투명»해집니다 */
+  /* 이어 붙일 것이 없으면(지구본이 멀리 있거나 상태를 못 읽으면) 그냥 엽니다. */
+  if (!시작 || !(시작.vw > 끝.vw * 1.02)){ 카드올리기(판); return; }
+  판.classList.add('cmjoin');          /* 이음 동안 이름표는 감춥니다 */
+  보기쓰기(시작);
+  카드올리기(판);
+  const 동안 = 300, t0 = performance.now();
+  const 눅 = t => 1 - Math.pow(1 - t, 3);
+  const 한걸음 = now => {
+    이음raf = 0;
+    const k = 눅(Math.min(1, (now - t0) / 동안));
+    보기쓰기({ vx: 시작.vx + (끝.vx - 시작.vx) * k, vy: 시작.vy + (끝.vy - 시작.vy) * k,
+              vw: 시작.vw + (끝.vw - 시작.vw) * k, vh: 시작.vh + (끝.vh - 시작.vh) * k });
+    if (k < 1) 이음raf = requestAnimationFrame(한걸음); else 이음마무리();
+  };
+  이음raf = requestAnimationFrame(한걸음);
+  clearTimeout(이음끝);
+  이음끝 = setTimeout(이음마무리, 동안 + 120);
+}
+
 /* ── 열기 ─────────────────────────────────────────────────────────────*/
 export async function openCountryMap(cc){
   const 도시들 = (cities || []).filter(c => c.cc === cc && 위(c) != null && 경(c) != null);
@@ -875,6 +983,7 @@ export async function openCountryMap(cc){
   /* 지구본이 «얼마나 걸려» 그 나라에 닿는가(초). 판을 띄우는 시간도,
      지구본을 덮는 시각도 전부 이 값에 맞춥니다(b701). */
   let 걸림 = 0.62;
+  let 넘김 = () => {};                 /* 아래에서 채웁니다 */
   if (움직임 && 도시들.length){
     /* ⚠ **자세한 윤곽을 «먼저» 넘깁니다(b696).** 이미 받아 둔 나라면 그
        순간부터 매끈하게 당겨집니다. 처음 여는 나라는 자료가 오는 대로
@@ -891,18 +1000,13 @@ export async function openCountryMap(cc){
        제 모습(불투명)으로 돌아옵니다. 타이머는 숨은 탭에서도 옵니다.
    ⚠ 표를 다시 «걸어야» 애니메이션이 다시 돕니다 — 같은 표를 또 더하는
      것만으로는 안 돕니다. 떼고, 한 번 재고(reflow), 다시 겁니다. */
-  판.classList.remove('cmin');
-  if (움직임){
-    /* 판이 떠오르는 시간을 «지구본이 걸리는 시간»에 맞춥니다(b701).
-       전에는 0.58초로 못 박혀 있어서, 한국처럼 많이 당기는 나라(1→14배)
-       에서는 지구본이 아직 가는 도중에 판이 이미 불투명했습니다. */
-    판.style.setProperty('--cmin', 걸림.toFixed(2) + 's');
-    void 판.offsetWidth;
-    판.classList.add('cmin');
-    판.addEventListener('animationend', () => 판.classList.remove('cmin'), { once:true });
-    clearTimeout(끝타이머);
-    끝타이머 = setTimeout(() => 판.classList.remove('cmin'), 걸림 * 1000 + 200);
-  }
+  /* ⚠⚠ **디졸브를 걷었습니다(b702, 사용자 지적: 「페이지카드로 디졸브
+     되는데 부자연스러워」).** 판은 «열려 있되 투명»합니다 — 그 동안 뒤의
+     지구본이 그 나라로 다가가는 것이 그대로 보입니다. 자료를 다 받고
+     지구본이 닿으면, 그때 판이 «한 번에» 불투명해지면서 카드가 아래에서
+     올라옵니다. 섞이는 구간이 없습니다. */
+  판.classList.remove('cmin', 'cmjoin', 'cmup');
+  if (움직임) 판.classList.add('cmwait');
   document.body.classList.add('cmapopen');
   /* ⚠⚠ **덱을 덮습니다(b690).** 안 덮으면 «닫을 때 아무도 안 되살립니다» —
      도시 화면(city.js)이 덱을 숨기고 이 판을 「가린판」에 적는데, 닫을 때
@@ -926,11 +1030,21 @@ export async function openCountryMap(cc){
     coverDeck(true);
     ctx.지구덮기(true);
   };
-  /* ⚠⚠ **굴림이 «끝난 뒤»에 덮습니다(b701).** 전에는 560ms 로 못 박혀
-     있었는데 굴림은 620ms 였습니다 — 지구본이 목적지에 닿기 60ms 전에
-     얼어붙었고, 그래서 나올 때 되돌리기가 «덜 온 자리»에서 시작했습니다.
-     이제 걸리는 시간을 알고 있으니 그 뒤에 덮습니다. */
-  if (움직임) 덮기타이머 = setTimeout(덮자, 걸림 * 1000 + 60); else 덮자();
+  /* ⚠⚠ **「지구본이 닿았나」와 「지도가 준비됐나」가 둘 다 모여야** 넘깁니다
+     (b702). 전에는 560ms 로 못 박혀 있었는데 굴림은 620ms 였습니다 —
+     지구본이 목적지에 닿기 60ms 전에 얼어붙었습니다. 그리고 처음 여는
+     나라는 지도 파일이 260~330ms 뒤에 오므로, 시간만 재면 아직 안 그린
+     지도를 띄우게 됩니다. */
+  let 모임 = 0;
+  const 준비됨 = () => {
+    if (++모임 < 2) return;
+    if (!isCountryMapOpen()) return;
+    이음시작();          /* 판이 불투명해지고, 지구본 자리에서 이어받습니다 */
+    덮자();              /* 덱·지구본은 판이 «다 덮은 뒤»에 끕니다(b693·b688) */
+  };
+  넘김 = 준비됨;
+  if (움직임) 덮기타이머 = setTimeout(준비됨, 걸림 * 1000 + 60);
+  else { 판.classList.remove('cmwait'); 덮자(); }
 
   /* ⚠ **자료를 기다리기 «전»에 판을 띄웁니다.** 처음 여는 나라는 파일을
      받아야 하는데(한국 2.2KB), 그 사이 아무 일도 안 일어나면 눌러도 안
@@ -958,6 +1072,7 @@ export async function openCountryMap(cc){
      상자를 그대로 쓰면 엉뚱한 곳이 잡힙니다. */
   지금 = null;
   칠하기(cc, 조각, 도시들);
+  if (움직임) 넘김(); else 이음마무리();
   return true;
 }
 
@@ -975,7 +1090,8 @@ function 닫기(뒤로){
   const 판 = $('cmappane');
   if (!판 || 판.classList.contains('hide')) return;
   clearTimeout(덮기타이머); clearTimeout(끝타이머);
-  판.classList.remove('cmin');
+  이음마무리();                        /* 이음이 돌던 중이면 세웁니다 */
+  판.classList.remove('cmin', 'cmwait', 'cmjoin', 'cmup');
   document.body.classList.remove('cmapopen');
   /* ⚠⚠ **차례가 중요합니다(b701, 사용자 지적: 「처음으로 돌아갔다가 다시
      확대된 화면에서 줌 빠지는 게 이상해」).** ⚠⚠
@@ -989,6 +1105,12 @@ function 닫기(뒤로){
      그러면 판이 사라지는 순간 지구본은 이미 «움직이는 중»입니다. */
   coverDeck(false);
   ctx.지구덮기(false);
+  /* ⚠ **카드가 보여주던 «바로 그 그림»에 지구본을 앉히고** 거기서
+     굴러 나갑니다(b702, 사용자 지적: 「그 도시 사이즈에서 빠져야 하는데」). */
+  {
+    const 자리 = 지구자리내기();
+    if (자리) ctx.지구앉히기(자리.경도, 자리.위도, 자리.배율);
+  }
   /* 들어가기 «전»에 보던 자리로 굴러 돌아갑니다(b693). */
   ctx.지구되돌리기();
   판.classList.add('hide');

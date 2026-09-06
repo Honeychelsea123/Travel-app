@@ -4861,6 +4861,7 @@ body.pvon{ overflow:hidden; }
  *   가로 스크롤에 딸려갑니다.
  */
 #cmappane{ position:fixed; inset:0; z-index:1180; background:var(--canvas);
+           overflow:hidden;                 /* 카드가 translateY(100%) 로 내려가 있어도 안 늘어나게(b702) */
            display:flex; flex-direction:column; }
 #cmappane.hide{ display:none; }
 
@@ -4877,8 +4878,29 @@ body.pvon{ overflow:hidden; }
   32%  { opacity:.12; }
   100% { opacity:1;   transform:none; }
 }
-/* 길이는 ctrymap 이 지구본이 걸리는 시간에 맞춰 넣습니다(b701). */
+/* ⚠ `cm-in`(디졸브)은 b702 에 걷었습니다 — 자리만 남겨 둡니다.
+   대신 아래 셋으로 나눕니다: 기다리는 동안 투명(cmwait) · 이어붙이는
+   동안 이름표 감춤(cmjoin) · 카드가 아래에서 올라옴(cmup). */
 #cmappane.cmin{ animation:cm-in var(--cmin, .58s) cubic-bezier(.2,.7,.2,1) both; }
+
+/* 자료를 기다리고 지구본이 다가가는 동안 — 판은 «열려 있되» 안 보입니다.
+   ⚠ `hide` 를 쓰면 안 됩니다: 뒤로가기 사슬이 이 판을 «열린 것»으로 봐야
+     애니메이션 도중에 뒤로를 눌러도 판이 닫힙니다(b693). */
+#cmappane.cmwait{ background:transparent; }
+#cmappane.cmwait .cmbox,
+#cmappane.cmwait .cmcard,
+#cmappane.cmwait .cmback,
+#cmappane.cmwait .cmzero{ visibility:hidden; }
+
+/* 이어붙이는 0.3초 동안 이름표는 감춥니다 — 지도가 줄어드는 내내 글자만
+   제자리 크기로 남아 떠다니면 그것이 제일 눈에 띕니다. */
+#cmappane.cmjoin .cm-labels{ visibility:hidden; }
+
+/* 정보는 «아래에서» 올라옵니다. 투명도를 안 씁니다 — 그것이 디졸브입니다.
+   ⚠ `both` 를 안 씁니다: 애니메이션이 안 도는 기기에서 카드가 화면 밖에
+     멈춰 있으면 안 됩니다. 안 돌면 그냥 제자리에 있습니다. */
+@keyframes cm-up{ from{ transform:translateY(100%) } to{ transform:none } }
+#cmappane.cmup .cmcard{ animation:cm-up .34s cubic-bezier(.2,.7,.2,1); }
 @media (prefers-reduced-motion:reduce){
   #cmappane.cmin{ animation:none; }
 }
