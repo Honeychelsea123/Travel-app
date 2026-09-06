@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b698';
-import { cities, countryName, countryInfo } from './cities.js?v=b698';
-import { myRates, visited } from './rate.js?v=b698';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b699';
+import { cities, countryName, countryInfo } from './cities.js?v=b699';
+import { myRates, visited } from './rate.js?v=b699';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -95,6 +95,29 @@ export function setCtryMapCtx(o){ ctx = { ...ctx, ...o }; }
    world.js 와 같은 칸입니다: x = (경도+180)/360*1000 · y = (90-위도)/180*500 */
 const PX = 경도 => (Number(경도) + 180) / 360 * 1000;
 const PY = 위도 => (90 - Number(위도)) / 180 * 500;
+
+/* ── 가로로 «눌러» 실제 비율로 만듭니다 (b699) ────────────────────────
+ * ⚠⚠ **여태 나라 모양이 위도에 비례해 옆으로 늘어나 있었습니다.**
+ *   위 PX·PY 는 경도 1° 와 위도 1° 에 **같은 폭**을 줍니다(둘 다 2.778u/°).
+ *   지구에서 경도 1° 의 실제 길이는 `cos(위도)` 배라, 북쪽 나라일수록
+ *   그만큼 옆으로 퍼져 그려졌습니다. 200개국을 재보면:
+ *     핀란드 2.37배 · 아이슬란드 2.29 · 노르웨이 2.02 · 스웨덴 1.96 ·
+ *     러시아 1.78 · 프랑스 1.43 · 한국·일본·미국 1.24 · 태국 1.03
+ *     (중앙값 1.08 — 대부분은 티가 안 나고, 1.4배 넘는 나라가 32개입니다)
+ *   핀란드를 띄워 보면 세로로 긴 나라가 가로로 퍼진 덩어리로 나옵니다.
+ * → 그 나라 «가운데 위도»의 cos 를 x 에 곱합니다. 곧 표준위선을 그 나라에
+ *   맞춘 등장방형도법입니다. 지구본(정사도법)과 국소적으로 거의 같아집니다.
+ * ⚠ **지구본과 모양이 맞아야 하는 이유가 하나 더 있습니다** — 나라 화면으로
+ *   넘어갈 때 디졸브 없이 이어 붙이려면 두 그림의 모양이 같아야 합니다.
+ * ⚠ 위도 폭이 넓은 나라(칠레·러시아)는 한 값으로 다 맞출 수 없습니다.
+ *   가운데를 맞추고 양 끝은 조금 어긋납니다 — 안 맞추는 것보다 낫습니다.
+ * ⚠ 0.30 아래로는 안 내려갑니다. 극지방에서 지도가 실 한 오라기가 됩니다. */
+const 눌림 = 위들 => {
+  if (!위들.length) return 1;
+  const s = 위들.slice().sort((a, b) => a - b);
+  const φ = s[s.length >> 1] * Math.PI / 180;
+  return Math.max(0.30, Math.min(1, Math.cos(φ)));
+};
 
 /* ⚠⚠ **도시 좌표 칸은 `center_lat`·`center_lng` 입니다**(citysearch.js 의 BASE).
    `lat`/`lng` 로 읽으면 **한 곳도 안 잡혀** 나라 지도가 통째로 안 열립니다 —
@@ -397,6 +420,25 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
   const 안것 = [], 먼것 = [];
   점들.forEach((d, i) => (씀.has(붙임[i]) ? 안것 : 먼것).push(d));
 
+  /* ④.5 **여기서 가로를 누릅니다**(b699 — 위 `눌림` 의 ⚠⚠ 참고).
+     ⚠⚠ **조각 배정·씨앗 고르기가 «다 끝난 뒤»에 누릅니다.** 앞에서 누르면
+       조각을 붙이는 문턱(3u)과 `한계` 가 x 쪽만 줄어들어 **어느 섬이 딸려
+       오는지가 나라마다 달라집니다.** 그 판단은 b687 에 맞춰 둔 것이라
+       건드리면 안 됩니다 — 누르는 것은 «그리는 일»이지 «고르는 일»이 아닙니다.
+     ⚠ `조각` 은 이 함수가 매번 새로 만든 것이라(위 `조각0.map`) 여기서
+       고쳐도 캐시(`땅캐시`)는 안 다칩니다. `S` 도 그 안의 한 조각이라
+       같이 눌립니다.
+     ⚠ `점들`·`안것`·`먼것` 은 «같은 객체»를 가리킵니다 — 한 번만 누릅니다. */
+  const 눌 = 눌림(도시들.map(위));
+  if (눌 < 0.999){
+    for (const q of 쓸것){
+      for (const p of q.점) p[0] *= 눌;
+      q.x0 *= 눌; q.x1 *= 눌;
+    }
+    for (const d of 안것) d.x *= 눌;
+    for (const d of 먼것) d.x *= 눌;
+  }
+
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (const q of 쓸것){
     x0 = Math.min(x0, q.x0); x1 = Math.max(x1, q.x1);
@@ -439,16 +481,26 @@ function 그리기(cc, 조각0, 도시들, 폭px, 높px, 보기){
        였습니다. 아프리카·남미까지 다 넣고 화면 밖에서 잘라내던 셈입니다.
      ⚠ 날짜변경선을 넘은 나라(러시아·미국)는 창이 0 또는 1000 을 넘어가므로
        이웃을 ±1000 옮겨 한 벌 더 그립니다. 그 벌도 상자로 거릅니다. */
+  /* ⚠⚠ **이웃도 «같이» 눌러야 합니다(b699).** 이웃은 110m 경로 문자열을
+     그대로 쓰므로 점을 만질 수 없습니다 — 대신 그리는 무리에 `scale` 을
+     겁니다. 순서가 중요합니다: `scale(눌 1) translate(s 0)` 이라야
+     최종 x 가 `(x + s) * 눌` 이 되어 나라 쪽과 맞습니다.
+   ⚠ 상자로 거르는 줄도 같은 공간에서 재야 합니다 — vx·vw 는 이미 눌린
+     값이므로 이웃 상자에도 `* 눌` 을 곱해 견줍니다.
+   ⚠ 날짜변경선 판정의 0·1000 도 눌린 세상 폭(1000*눌)으로 바뀝니다. */
   let 이웃 = '';
-  for (const s of [0, ...(vx < 0 ? [-1000] : []), ...(vx + vw > 1000 ? [1000] : [])]){
+  const 폭끝 = 1000 * 눌;
+  for (const s of [0, ...(vx < 0 ? [-1000] : []), ...(vx + vw > 폭끝 ? [1000] : [])]){
     let 안것들 = '';
     for (const n of 이웃목록()){
       if (n.cc === cc) continue;
-      if (n.x1 + s < vx || n.x0 + s > vx + vw || n.y1 < vy || n.y0 > vy + vh) continue;
+      const nx0 = (n.x0 + s) * 눌, nx1 = (n.x1 + s) * 눌;
+      if (nx1 < vx || nx0 > vx + vw || n.y1 < vy || n.y0 > vy + vh) continue;
       안것들 += `<path d="${n.d}"/>`;
     }
     if (안것들) 이웃 += `<g class="cm-far" stroke-width="${선.toFixed(3)}"` +
-      (s ? ` transform="translate(${s} 0)"` : '') + `>${안것들}</g>`;
+      ` transform="scale(${눌.toFixed(5)} 1)` + (s ? ` translate(${s} 0)` : '') + `"` +
+      `>${안것들}</g>`;
   }
 
   /* ── 경로를 «화면에 보이는 만큼만» 적습니다(b688) ──────────────────
