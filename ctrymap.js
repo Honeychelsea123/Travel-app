@@ -44,9 +44,9 @@
  * ⚠ 지도가 아예 없는 나라(투발루)만 카드로 내려갑니다.
  */
 
-import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b693';
-import { cities, countryName, countryInfo } from './cities.js?v=b693';
-import { myRates, visited } from './rate.js?v=b693';
+import { $, esc, flagOf, flagOk, flagSprite, coverDeck } from './dom.js?v=b694';
+import { cities, countryName, countryInfo } from './cities.js?v=b694';
+import { myRates, visited } from './rate.js?v=b694';
 
 const MAP_V = '?m=1';          /* map50 자료를 다시 구웠을 때만 올립니다 */
 export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니다(b683: 하나면 충분) */
@@ -54,7 +54,7 @@ export const CMAP_MIN = 1;     /* 이 수보다 적으면 지도를 안 엽니�
 let ctx = { 나라카드: async () => {}, 지구덮기: () => {},
             지구다가가기: () => {}, 지구되돌리기: () => {} };
 /* 판이 다 덮인 뒤에 덱·지구본을 끄는 타이머(b693). 열 때마다 다시 잡습니다. */
-let 덮기타이머 = 0;
+let 덮기타이머 = 0, 끝타이머 = 0;
 /* 움직임을 싫어하는 기기에서는 애니메이션을 안 합니다. */
 const 부드럽게 = () => {
   try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; }
@@ -763,7 +763,21 @@ export async function openCountryMap(cc){
     ctx.지구다가가기(가운데값(도시들.map(경)), 가운데값(도시들.map(위)));
   }
   판.classList.remove('hide');
-  판.classList.toggle('cmin', 움직임);
+  /* ⚠⚠ **애니메이션이 «안 돌 수도» 있습니다(b694).** 숨은 탭에서는 CSS
+     애니메이션이 멈추는데, `both` 로 채워 두면 첫 칸(투명)에 그대로 멈춰
+     **판이 안 보인 채로 남습니다**(실측: opacity 0 그대로).
+     → 끝나면(또는 0.7초 뒤에는 무슨 일이 있어도) 표를 뗍니다. 그러면 판은
+       제 모습(불투명)으로 돌아옵니다. 타이머는 숨은 탭에서도 옵니다.
+   ⚠ 표를 다시 «걸어야» 애니메이션이 다시 돕니다 — 같은 표를 또 더하는
+     것만으로는 안 돕니다. 떼고, 한 번 재고(reflow), 다시 겁니다. */
+  판.classList.remove('cmin');
+  if (움직임){
+    void 판.offsetWidth;
+    판.classList.add('cmin');
+    판.addEventListener('animationend', () => 판.classList.remove('cmin'), { once:true });
+    clearTimeout(끝타이머);
+    끝타이머 = setTimeout(() => 판.classList.remove('cmin'), 700);
+  }
   document.body.classList.add('cmapopen');
   /* ⚠⚠ **덱을 덮습니다(b690).** 안 덮으면 «닫을 때 아무도 안 되살립니다» —
      도시 화면(city.js)이 덱을 숨기고 이 판을 「가린판」에 적는데, 닫을 때
@@ -828,7 +842,7 @@ export function closeCountryMap(뒤로){ 닫기(뒤로); }
 function 닫기(뒤로){
   const 판 = $('cmappane');
   if (!판 || 판.classList.contains('hide')) return;
-  clearTimeout(덮기타이머);
+  clearTimeout(덮기타이머); clearTimeout(끝타이머);
   판.classList.add('hide');
   판.classList.remove('cmin');
   document.body.classList.remove('cmapopen');
