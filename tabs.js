@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b712';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b712';
-import { onSwipeX } from './ui.js?v=b712';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b712';
+import { $ } from './dom.js?v=b713';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b713';
+import { onSwipeX } from './ui.js?v=b713';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b713';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
