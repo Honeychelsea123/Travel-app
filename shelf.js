@@ -14,33 +14,35 @@
  *   하는 일로 자릅니다.**
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, toast, emptyDo, josa, toTop, coverDeck,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b696';
-import { openCity } from './city.js?v=b696';
-import { sb } from './db.js?v=b696';
-import { cities, countryName, cityCountry } from './cities.js?v=b696';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b696';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b696';
-import { fail } from './net.js?v=b696';
-import { arm } from './ui.js?v=b696';
+import { $, esc, toast, emptyDo, josa, toTop, coverDeck, backLabel,
+         flagOf, flagOk, flagSprite } from './dom.js?v=b697';
+import { openCity } from './city.js?v=b697';
+import { sb } from './db.js?v=b697';
+import { cities, countryName, cityCountry } from './cities.js?v=b697';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b697';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b697';
+import { fail } from './net.js?v=b697';
+import { arm } from './ui.js?v=b697';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b696';
-import { shareCard } from './card.js?v=b696';
-import { todayYmd } from './calc.js?v=b696';
+import { 발자국스펙 } from './map.js?v=b697';
+import { shareCard } from './card.js?v=b697';
+import { todayYmd } from './calc.js?v=b697';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b696';
-import { loadCities } from './citysearch.js?v=b696';
-import { loadRateData, saveRate } from './rating.js?v=b696';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b697';
+import { loadCities } from './citysearch.js?v=b697';
+import { loadRateData, saveRate } from './rating.js?v=b697';
 
 let ctx = {
   me: () => null,
   loadFootprint: () => {},
   openTrip: async () => {},
+  /* 어느 탭에서 열었나 — 뒤로 단추 글자에 씁니다(b697). */
+  appTab: () => null,
 };
 export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
 
@@ -460,6 +462,16 @@ async function openBadgeShelf(){
 
 export async function openShelf(kind){
   shelfKind = kind;
+  /* ⚠⚠ **뒤로 단추가 늘 「← 프로필」이었습니다(b697, 실제로 눌러보고 찾음).**
+     보관함 타일(다녀온 도시·가고 싶은 곳·깃발·한줄평·배지)은 b542 에
+     **기록 탭으로 옮겨졌는데** 단추 글자는 마크업에 박힌 채였습니다.
+     기록 탭에서 열고 뒤로 단추를 보면 「프로필」이라고 적혀 있습니다.
+     ⚠ 이 앱은 이미 `backLabel(tab)` 하나로 이것을 맞춥니다 — 지도·일기·
+       성향은 쓰는데 **보관함만 안 쓰고 있었습니다.** */
+  {
+    const b = $('shelfback');
+    if (b) b.textContent = backLabel(ctx.appTab?.());
+  }
   $('profpane').classList.add('hide');
   $('mappane').classList.add('hide');
   $('shelfpane').classList.remove('hide');
