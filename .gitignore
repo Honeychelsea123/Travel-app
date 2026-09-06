@@ -24,3 +24,4 @@ tools/fonts/
 # npm — 검사에만 씁니다. 앱은 빌드 없이 그대로 올라갑니다.
 node_modules/
 package-lock.json
+_*.html
