@@ -4270,6 +4270,9 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    그 안에 들어 있습니다. 그래서 여기서 `--sab` 를 또 더하면 안 됩니다.
  ⚠ 통은 손가락을 안 받습니다 — 칩만 되받습니다. 안 그러면 지구본에서
    이 네모만큼이 안 돌아갑니다. */
+/* ⚠ 기록 탭에서만 뜹니다 — 덱이 가로 스크롤이라 fixed 짜리는 안 보이는
+   탭에서도 화면에 남습니다(b709). `data-tab` 은 app.js 가 적습니다. */
+body:not([data-tab="home"]) .gchips{ display:none; }
 .gchips{
   position:fixed; left:8px; bottom:calc(var(--tabh, 56px) + 8px); z-index:900;
   display:flex; flex-direction:column; align-items:flex-start; gap:8px;
