@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b714';
-import { sb } from './db.js?v=b714';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b714';
-import { hm, todayYmd } from './calc.js?v=b714';
-import { starHtml, paintStars } from './stars.js?v=b714';
+import { $, esc } from './dom.js?v=b715';
+import { sb } from './db.js?v=b715';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b715';
+import { hm, todayYmd } from './calc.js?v=b715';
+import { starHtml, paintStars } from './stars.js?v=b715';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b714';
-import { cities, countryName, cityCountry } from './cities.js?v=b714';
-import { UN_CODES } from './un.js?v=b714';
-import { myRates, cityStat, visited } from './rate.js?v=b714';
-import { plans } from './trip.js?v=b714';
-import { loadCities } from './citysearch.js?v=b714';
+import { starValue } from './rateui.js?v=b715';
+import { cities, countryName, cityCountry } from './cities.js?v=b715';
+import { UN_CODES } from './un.js?v=b715';
+import { myRates, cityStat, visited } from './rate.js?v=b715';
+import { plans } from './trip.js?v=b715';
+import { loadCities } from './citysearch.js?v=b715';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b714';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b714';
+import { openCity } from './city.js?v=b715';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b715';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b714';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b715';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b714';
+import { drawReport } from './report.js?v=b715';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b714';
+import { PERSONA_BG } from './card.js?v=b715';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b714';
+import { checkPersonaShift } from './pshift.js?v=b715';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b714';
+import { diaryBackTo } from './diary.js?v=b715';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b714';
+import { mountGlobe } from './globe.js?v=b715';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -75,6 +75,13 @@ import { mountGlobe } from './globe.js?v=b714';
 /* 지금 붙어 있는 지구본과 그 「다녀온 나라」 뭉치(b560). 나라 카드에서
    별점을 매기면 여기를 통해 그 자리에서 칠합니다. */
 let 지구 = null, 지구갔다 = null;
+/* ── 지구본이 보던 자리(b715) ─────────────────────────────────────────
+ * ⚠ 홈은 별점 하나만 바뀌어도 통째로 다시 그려지고(`lastHomeSig`), 그때
+ *   캔버스가 새로 붙어 **지구본이 처음 자리(대한민국·1배)로 돌아갑니다.**
+ *   사용자 신고 「뒤로가기하면 제일 초기 화면으로 돌아간다」의 절반이
+ *   이것입니다 — 도시 화면을 닫으면 `closeCity` 가 `loadHome()` 을 부릅니다.
+ * ⚠ 끝내기 «전»에 붙잡아 둡니다. 캔버스가 사라진 뒤에는 못 묻습니다. */
+let 지구자리 = null;
 
 /* ══ 나라 카드 ══ 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ═══════
  * 사용자 요청. 「지구본을 돌리다 대한민국을 누르면 아래에 카드가 뜨고,
@@ -137,9 +144,27 @@ export function 시트닫기(뒤로온것){
 /* ── 지구본에서 도시를 누르면(b707) ──────────────────────────────────
  * 사용자 결정: 「나라를 눌러도 반응이 없고, 도시까지 확대된 순간 도시를
  *   누를 수 있으니 그때 도시 카드가 뜨면 되지 않아?」
- * ⚠ 나라 누름은 없어졌습니다 — 갈 나라 페이지가 없습니다. */
+ * ⚠ 나라 누름은 없어졌습니다 — 갈 나라 페이지가 없습니다.
+ * ⚠⚠ **도시 «화면»이 아니라 도시 «카드»입니다(b715, 사용자 요청:
+ *   「도시 이름 누르면 바로 도시 페이지로 이동하지 말고 도시 카드가
+ *   뜨게 해줘」).** 세 가지가 한꺼번에 낫습니다 —
+ *     ① 지구본이 그 자리에 그대로 있습니다. 도시 «화면»으로 가면
+ *        돌아올 때 홈이 다시 그려지면서 지구본이 처음 자리로 튑니다
+ *        (사용자 신고: 「뒤로가기하면 제일 초기 화면으로 돌아간다」).
+ *     ② **별점이 제대로 나옵니다.** 이 카드는 `myRates` 가 비어 있으면
+ *        `loadRateData()` 를 한 번 부릅니다 — 평가 탭을 안 열어 본
+ *        계정에서 도시 화면이 별을 빈 채로 띄우던 것이 그 때문이었습니다
+ *        (사용자 신고: 「별을 남겼던 도시인데도 별점이 안 매겨져 있어」).
+ *     ③ 카드에서 **바로 매길 수 있습니다.** 확대해 들어와 그 자리에서
+ *        별을 주는 것이 이 지구본이 하려던 일입니다.
+ *   더 볼 것이 있으면 카드를 눌러 도시 화면으로 들어갑니다.
+ * ⚠ `c.cc` 입니다 — 지구본은 속령을 모국으로 칠하고(괌 → US) 카드도
+ *   같은 기준으로 골라야 빈 카드가 안 뜹니다(아래 `나라카드` 주석). */
 function 도시눌림(id){
-  if (id) openCity(id);
+  if (!id) return;
+  const c = (cities || []).find(x => x.id === id);
+  if (!c) return;
+  나라카드(c.cc || c.country, id);
 }
 
 async function 나라카드(코드, 먼저){
@@ -608,6 +633,7 @@ async function buildHome(){
   /* ⚠⚠ **옛 지구본을 먼저 끝냅니다(b690).** 아래에서 통째로 지우면 캔버스는
      사라지지만 globe.js 가 문서에 걸어 둔 처리기와 관찰자는 남습니다.
      별점을 매길 때마다 홈이 다시 그려지므로 쓸수록 하나씩 쌓였습니다. */
+  try { 지구자리 = 지구?.상태?.() || 지구자리; } catch {}
   지구?.끝?.(); 지구 = null;
   $('home').innerHTML = '';
   /* ⚠ **기다리지 않습니다.** 인사는 있으면 좋은 것이지 홈이 뜨는 조건이
@@ -1564,6 +1590,9 @@ async function renderFoot(통){
        globe.js 가 걸러서 안 옵니다. */
     공 = mountGlobe(공판, gone, undefined, undefined, 도시눌림);
     지구 = 공; 지구갔다 = gone;
+    /* 보던 자리로 되돌립니다(위 `지구자리`). 처음 열 때는 없으므로
+       globe.js 가 정한 첫 면(대한민국)이 그대로 나옵니다. */
+    if (지구자리) 공.앉히기?.(지구자리.경도, 지구자리.위도, 지구자리.배율);
     /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
        한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
        쓰는 `밀림` 과 같은 수법입니다. */

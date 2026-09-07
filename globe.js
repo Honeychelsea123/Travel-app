@@ -27,11 +27,11 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b714';
+import { $ } from './dom.js?v=b715';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
-import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b714';
-import { countryName } from './cities.js?v=b714';
-import { visited, myRates } from './rate.js?v=b714';
+import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b715';
+import { countryName } from './cities.js?v=b715';
+import { visited, myRates } from './rate.js?v=b715';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -684,7 +684,11 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         /* 누르기 판정에 쓸 자리를 적어 둡니다(화면 좌표). */
         for (const d of 도시){
           const p = 던져(d.x, d.y);
-          if (p) 그린도시.push({ id: d.c.id, x: p[0], y: p[1], 이름: d.c.name || '' });
+          /* ⚠ `순` 은 이름표 자리다툼의 차례입니다(b715) — **작을수록 유명**
+             합니다(db/033 의 `fame`: 1 누구나 아는 곳 … 3 덜 알려진 곳).
+             없으면 9. 누르기 판정에는 안 쓰입니다. */
+          if (p) 그린도시.push({ id: d.c.id, x: p[0], y: p[1],
+                               이름: d.c.name || '', 순: d.c.fame || 9 });
         }
       }
     }
@@ -748,21 +752,44 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         if (!글 || 짙기 <= 0.02) return;
         ctx.font = 진하기 + ' ' + 크기 + 'px system-ui, -apple-system, sans-serif';
         const W = ctx.measureText(글).width, H = 크기 + 2;
-        const L = x - W / 2, T = y - H / 2;
-        if (L < 2 || T < 2 || L + W > w - 2 || T + H > h - 2) return;
-        for (const r of 놓은)
-          if (L < r.L + r.W + 3 && L + W + 3 > r.L &&
-              T < r.T + r.H + 3 && T + H + 3 > r.T) return;
-        놓은.push({ L, T, W, H });
-        /* 글자 뒤에 종이색 테를 둘러 지도 위에서도 읽히게 합니다. */
-        ctx.globalAlpha = 짙기;
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(243,240,232,.92)';
-        ctx.strokeText(글, L, y + 크기 * 0.35);
-        ctx.fillStyle = 'rgba(46,38,26,.82)';
-        ctx.fillText(글, L, y + 크기 * 0.35);
-        ctx.globalAlpha = 1;
+        const L = x - W / 2;
+        if (L < 2 || L + W > w - 2) return;
+        /* ⚠⚠ **겹치면 버리지 않고 «비켜» 봅니다(b715).** ⚠⚠
+           전에는 한 자리만 보고 안 되면 버렸습니다. 그래서 리가 옆의
+           **유르말라는 아무리 확대해도 안 나왔습니다**(사용자 신고) —
+           25km 라 40배에서도 27px 밖에 안 떨어지는데 이름표가 그보다
+           넓습니다. 위아래로 한두 칸 내려 보면 대개 자리가 납니다.
+           ⚠ 점에서 멀어지므로 **두 칸까지만** 봅니다. 더 가면 어느 칸의
+             이름인지 알 수 없어져서 없느니만 못합니다. */
+        const 칸 = 크기 + 4;
+        for (const dy of [0, 칸, -칸, 칸 * 2, -칸 * 2]){
+          const yy = y + dy, T = yy - H / 2;
+          if (T < 2 || T + H > h - 2) continue;
+          let 겹침 = false;
+          for (const r of 놓은)
+            if (L < r.L + r.W + 3 && L + W + 3 > r.L &&
+                T < r.T + r.H + 3 && T + H + 3 > r.T){ 겹침 = true; break; }
+          if (겹침) continue;
+          놓은.push({ L, T, W, H });
+          /* 글자 뒤에 종이색 테를 둘러 지도 위에서도 읽히게 합니다. */
+          ctx.globalAlpha = 짙기;
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(243,240,232,.92)';
+          ctx.strokeText(글, L, yy + 크기 * 0.35);
+          ctx.fillStyle = 'rgba(46,38,26,.82)';
+          ctx.fillText(글, L, yy + 크기 * 0.35);
+          ctx.globalAlpha = 1;
+          return;
+        }
       };
-      for (const d of 그린도시) 쓰기(d.이름, d.x, d.y, 11, '600', 도시짙기);
+      /* ⚠⚠ **유명한 곳부터 자리를 잡습니다(b715).** ⚠⚠
+         전에는 «사전에 적힌 차례»대로였습니다. 그래서 헬싱키 자리에
+         **반타**가 찍혔습니다(사용자 신고) — 두 곳이 15km 라 이름표가
+         겹치는데, 먼저 온 반타가 이겼기 때문입니다.
+         지금 지구본이 낼 수 있는 최대 배율(40배)에서도 1km 가 1.1px 이라
+         **15km 는 17px** 입니다 — 아무리 당겨도 두 이름표는 안 떨어집니다.
+         차례를 정해 주는 수밖에 없습니다. */
+      for (const d of [...그린도시].sort((a, b) => a.순 - b.순))
+        쓰기(d.이름, d.x, d.y, 11, '600', 도시짙기);
       for (const 나라 of 목록){
         if (!나라.핀 || !나라.code) continue;
         const [pλ, pφ] = 나라.핀;
