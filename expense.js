@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b716';
-import { sb } from './db.js?v=b716';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b716';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b716';
+import { $, esc, toast, emptyDo } from './dom.js?v=b717';
+import { sb } from './db.js?v=b717';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b717';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b717';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b716';
-import { arm } from './ui.js?v=b716';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b717';
+import { arm } from './ui.js?v=b717';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -371,8 +371,20 @@ $('x_date').addEventListener('change', drawExpPlans);
 function drawShareChips(){
   const active = members.filter(m => !m.left_at);
   $('x_sharebox').classList.toggle('hide', active.length < 2);
+  /* ⚠⚠ **고칠 때는 «저장된 몫»을 켭니다(b717, b698 점검 일곱째).** ⚠⚠
+   *   여태 무엇을 하든 **전원을 켜서** 그렸습니다. 그래서 「나랑 지훈만」
+   *   으로 넣어둔 지출을 고치려고 열면 넷이 다 켜져 있었습니다 — 화면이
+   *   「전원 균등」이라고 말하는데 자료는 둘이었습니다. 정산 숫자를 보고
+   *   따질 때 제일 헷갈리는 종류의 거짓말입니다.
+   * ⚠ 줄이 하나도 없으면 그것이 곧 균등이라 전원을 켜는 것이 «맞습니다».
+   * ⚠ 이미 나간 일행의 몫은 여기 안 나옵니다(칩은 남은 사람만 그립니다).
+   *   고쳐서 저장하면 그 줄은 빠집니다 — 나간 사람을 계속 끼워 두려면
+   *   칩을 남은 사람 기준으로 그리는 위 줄부터 바꿔야 합니다. */
+  const 적힌 = (고치는지출?.expense_shares || []).map(s => s.user_id);
+  const 켤것 = 적힌.length ? new Set(적힌) : null;
   $('x_shares').innerHTML = active.map(m =>
-    `<button class="day on" data-share="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</button>`
+    `<button class="day${!켤것 || 켤것.has(m.user_id) ? ' on' : ''}"` +
+    ` data-share="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</button>`
   ).join('');
 }
 $('x_shares').addEventListener('click', e => {
@@ -445,7 +457,7 @@ $('x_create').addEventListener('click', async () => {
   const r = 고치는지출
     ? await write({ table:'expenses', action:'update', id: 고치는지출.id, row })
     : await write({ table:'expenses', action:'insert', row: { trip_id: trip.id, ...row } });
-  const 고치던중 = !!고치는지출;
+  const 고치던중 = !!고치는지출, 고친id = 고치는지출?.id;
   btn.disabled = false; btn.textContent = 고치던중 ? '고치기' : '넣기';
 
   if (!r.ok) return fail(r.why, 'expform');
@@ -460,9 +472,32 @@ $('x_create').addEventListener('click', async () => {
   $('expcard').classList.add('hide');
   고치는지출 = null; 통화손댐 = false;
 
-  /* 고칠 때는 몫을 손대지 않습니다 — 아래 갈래는 새로 넣을 때만 뜻이 있습니다.
-     고친 김에 몫까지 다시 쓰면 이미 있던 expense_shares 와 겹칩니다. */
-  if (고치던중){ await loadExpenses(); return toast('고쳤어요'); }
+  /* ⚠⚠ **고칠 때도 몫을 씁니다(b717).** ⚠⚠
+     전에는 「고친 김에 몫까지 쓰면 이미 있던 줄과 겹친다」며 손대지
+     않았습니다. 그런데 화면에는 칩이 «눌리는 채로» 있었으니, 껐다 켠 것이
+     조용히 버려졌습니다 — 위 `drawShareChips` 를 고쳐 저장된 몫을 보여주게
+     된 이상, 보이는 대로 저장되어야 합니다.
+     ⚠ 겹침은 **먼저 지워서** 막습니다(덧붙이지 않습니다). 화면에 있는
+       것이 곧 그 지출의 몫입니다.
+     ⚠ 전원이 켜져 있으면 줄을 «안» 만듭니다 — 그게 균등이고, 줄을 남겨
+       두면 나중에 일행이 늘었을 때 그 사람이 빠집니다(아래 새로 넣기와 같은 규칙).
+     ⚠ 큐에 쌓였으면(연결 없음) 몫은 못 씁니다 — 그 줄은 서버에 바로
+       써야 하는데 지금 못 갑니다. 그때는 말해 줍니다. */
+  if (고치던중){
+    if (r.queued){
+      await loadExpenses();
+      return toast('연결이 없어 들고 있어요. 나눠 낼 사람은 연결된 뒤 다시 봐주세요.');
+    }
+    const del = await sb.from('expense_shares').delete().eq('expense_id', 고친id);
+    if (del.error) fail(del.error, 'exp');
+    else if (partial){
+      const sh = await sb.from('expense_shares')
+        .insert(picked.map(uid => ({ expense_id: 고친id, user_id: uid, weight: 1 })));
+      if (sh.error) fail(sh.error, 'exp');
+    }
+    await loadExpenses();
+    return toast('고쳤어요');
+  }
 
   if (r.queued){
     /* 큐에 쌓인 지출은 아직 id 가 없어서 몫을 붙일 수가 없습니다.

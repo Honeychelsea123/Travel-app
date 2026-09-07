@@ -16,17 +16,17 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b716';
-import { featOn } from './flags.js?v=b716';
-import { sb } from './db.js?v=b716';
-import { fail, write } from './net.js?v=b716';
+import { $, toast } from './dom.js?v=b717';
+import { featOn } from './flags.js?v=b717';
+import { sb } from './db.js?v=b717';
+import { fail, write } from './net.js?v=b717';
 import { trip, plans, setPlans, editPlanId, setEditPlanId,
-         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b716';
-import { arm } from './ui.js?v=b716';
-import { drawCats } from './planline.js?v=b716';
-import { drawPlanMap } from './planmap.js?v=b716';
-import { drawPlans } from './planview.js?v=b716';
-import { osmLookup, addressQueries } from './cands.js?v=b716';
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b717';
+import { arm } from './ui.js?v=b717';
+import { drawCats } from './planline.js?v=b717';
+import { drawPlanMap } from './planmap.js?v=b717';
+import { drawPlans } from './planview.js?v=b717';
+import { osmLookup, addressQueries } from './cands.js?v=b717';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -210,6 +210,15 @@ $('plans').addEventListener('click', async e => {
   /* 고치기 — 일정 칸을 그 줄 내용으로 채워 엽니다. 새로 적게 하지 않습니다. */
   if (b.dataset.pact === 'edit'){
     const p = plans.find(x => x.id === id); if (!p) return;
+    /* ⚠⚠ **먼저 닫습니다(b717, b698 점검 여섯째).** ⚠⚠
+       `addplanbtn` 은 «토글»입니다. 그래서 일정 추가 폼이 **이미 열려
+       있을 때** 「수정」을 누르면 이 클릭이 폼을 도로 «닫았습니다** —
+       그러고 나서 아래 줄들이 안 보이는 칸을 채우고 `editPlanId` 까지
+       세웁니다. 화면에서는 「수정을 눌렀더니 폼이 사라졌다」로 보이고,
+       속으로는 고치기 상태가 남습니다.
+       ⚠ cards.js 의 `openPlanForm` 은 이 함정을 알고 같은 줄을 갖고
+         있었습니다 — **여기만 빠져 있었습니다.** 고칠 때 둘을 같이 보십시오. */
+    $('plancard').classList.add('hide');
     $('addplanbtn').click();
     $('p_title').value = p.title || '';
     $('p_date').value  = p.date || '';

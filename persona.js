@@ -19,20 +19,20 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b716';
-import { sb } from './db.js?v=b716';
-import { cities, countryName, continentOf } from './cities.js?v=b716';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b717';
+import { sb } from './db.js?v=b717';
+import { cities, countryName, continentOf } from './cities.js?v=b717';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b716';
+import { similarPicks } from './rec.js?v=b717';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b716';
-import { visited } from './rate.js?v=b716';
+import { mateCode, mateHtml } from './mate.js?v=b717';
+import { visited } from './rate.js?v=b717';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b716';
+         shareCard } from './card.js?v=b717';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -195,6 +195,31 @@ async function drawPersona(s, ax, rates){
   const 임시 = s.cities < 문턱;
   const 남은곳 = Math.max(0, 문턱 - s.cities);
 
+  /* ⚠⚠ **한 곳도 안 매긴 사람에게는 성향을 «안» 냅니다(b717, b698 점검 셋째).** ⚠⚠
+   *   실측: 자료가 0인 계정에 **HLDG · 상위 80% · 환상의 메이트 99%** 가
+   *   그대로 떴습니다. 셋 다 «아무것도 없는 것»에서 나온 값입니다 —
+   *   코드는 축 넷이 전부 기본값이라 나온 글자이고, 상위 80% 는
+   *   「0개국이면 80%」라는 표의 맨 아랫칸이고, 99% 는 그 허깨비 코드로
+   *   낸 궁합입니다. 숫자가 붙어 있으면 사람은 그것을 «잰 것»으로 읽습니다.
+   * ⚠ **b408 의 「빈손으로 돌려보내지 말라」와 어긋나지 않습니다.** 그것은
+   *   네 곳 매긴 사람 이야기였습니다 — 반쯤 채워진 카드에는 근거가 있고
+   *   0곳에는 없습니다. 1~4곳은 아래에서 지금처럼 내되 숫자에 딱지를 답니다.
+   * ⚠ 못 받아온 것과는 다릅니다 — 그쪽은 renderPersona 가 먼저 거릅니다. */
+  if (!s.cities){
+    $('personabox').innerHTML = `<div class="card"><div class="empty"
+        style="padding:30px 14px">
+      <b>아직 성향을 낼 자료가 없어요</b>
+      <div class="memo" style="margin-top:6px">
+        다녀온 도시에 별점을 남기면 여기서 성향을 뽑아드려요.<br>
+        ${문턱}곳부터 확정돼요.
+      </div>
+      <div style="margin-top:14px">
+        <button class="primary" id="pgo">평가하러 가기</button></div>
+    </div></div>`;
+    $('pgo').onclick = () => { closePersona(); ctx.showApp('rate'); };
+    return;
+  }
+
   const code = ax.code;
   const type = PERSONA16[code] || { n:'여행자', d:'' };
   const rank = personaRank(s.countries);
@@ -291,8 +316,10 @@ async function drawPersona(s, ax, rates){
       <div class="ptop" style="cursor:default">
         <div class="pmeta"><div class="pcode">${esc(code)}</div>
         <div class="pname">${esc(type.n)}</div>
-        <span class="prank">${esc(rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b716"
+        <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
+             자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다. -->
+        <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span></div>
+        <div class="part"><img src="./persona/${esc(code)}.png?v=b717"
           alt="" onerror="this.closest('.part').remove()"></div>
       </div>
       <div class="empty" style="text-align:center; padding:2px 6px 0">
@@ -396,12 +423,14 @@ async function drawPersona(s, ax, rates){
     <div class="card">
       <h2>나와 맞는 사람</h2>
       <div class="mates">
+        <!-- ⚠ 확정 전에는 궁합 «%»도 뗍니다(b717). 유형이 흔들리는 동안에는
+             그 유형으로 낸 점수도 흔들립니다 — 위 상위 % 와 같은 이유입니다. -->
         <div class="mate good">
-          <span class="ml">환상의 메이트 · ${mate.bestScore}%</span>
+          <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <span class="ml">최악의 조합 · ${mate.worstScore}%</span>
+          <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
           <span class="mc">${esc(mate.worst)}</span></div>
       </div>
