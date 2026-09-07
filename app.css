@@ -2758,6 +2758,20 @@ body.bigmap .tabbar{ display:none; }
 /* 만든 사람이 띄우는 공지. 오프라인 띠와 같은 자리·같은 모양이라
    "지금 상태를 알리는 줄"로 한 벌처럼 읽힙니다. */
 #noticebar.warn{ background:var(--bad, var(--danger)); color:var(--on-dark); }
+/* ── 「다시 보지 않기」(b722) ──────────────────────────────────────────
+   ⚠ 알약 안 «오른쪽 끝»이 아니라 글 뒤에 이어 붙입니다 — 공지는 길어서
+     두세 줄이 되는데, 오른쪽에 붙박이로 두면 글이 그만큼 좁아지고
+     한 줄짜리 공지에서는 혼자 떠 있습니다.
+   ⚠ 닿는 자리를 넓힙니다 — 보이는 글자는 작아도 손가락은 큽니다. */
+#noticebar .nbx{
+  position:relative; display:inline-block; margin-left:8px; padding:0;
+  appearance:none; border:0; background:none; cursor:pointer;
+  font:inherit; font-size:var(--f-xs); font-weight:600;
+  color:inherit; opacity:.62; text-decoration:underline;
+  text-underline-offset:2px;
+}
+#noticebar .nbx::before{ content:""; position:absolute; inset:-12px -10px; }
+#noticebar .nbx:active{ opacity:1; }
 /* 기능 스위치로 끈 것들. 화면에서 감추기만 합니다 — 진짜로 막는 것은
    서버 쪽입니다. */
 body.noreorder .ev .grip{ display:none; }

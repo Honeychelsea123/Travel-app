@@ -16,13 +16,13 @@
  * **작은 것을 아래로 내리면 위쪽 여럿이 가벼워집니다**(b351 의 putHtml 과 같은 꼴).
  *
  * 층: db.js · net.js · dom.js 만 씁니다. */
-import { sb } from './db.js?v=b721';
-import { netTimeout, setReadOnly } from './net.js?v=b721';
+import { sb } from './db.js?v=b722';
+import { netTimeout, setReadOnly } from './net.js?v=b722';
 /* `$` 를 안 가져온 채로 b360 에 나갔습니다. drawNotice 와 applyFeatures 가
    async 안에서 도는 터라 조용한 unhandledrejection 으로만 남았고, 화면에는
    아무 표시도 안 났습니다 — 공지줄·기능 스위치·읽기전용이 통째로 안 걸린
    채였습니다. check-refs 가 `$` 를 못 보고 있었습니다(b362 에서 고침). */
-import { $ } from './dom.js?v=b721';
+import { $ } from './dom.js?v=b722';
 
 /* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
  * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
@@ -53,12 +53,45 @@ export function loadFlags(){
   return flagsP;
 }
 
+/* ── 공지 ── 「다시 보지 않기」가 있습니다(b722, 사용자 요청) ──────────
+ * ⚠⚠ **끈 것은 «그 공지»뿐입니다.** 열쇠를 «글에서» 뽑아 적어 둡니다 —
+ *   만든 사람이 새 공지를 올리면 글이 달라지니 열쇠도 달라지고, 껐던
+ *   사람에게도 **다시 뜹니다.** 「공지를 껐다」로 적어 두면 그 뒤로
+ *   무슨 일이 나도 말을 걸 수가 없습니다(db/066: 이것이 사용자에게 말을
+ *   걸 유일한 수단입니다).
+ * ⚠⚠ **빨간 띠(warn)는 못 끕니다.** 그것은 「지금 이런 상태다」이지
+ *   읽고 넘길 안내가 아닙니다 — 점검 중인 줄 모르고 저장을 눌러 보게 됩니다.
+ * ⚠ 글은 **`textContent` 로** 넣습니다. 만든 사람이 적는 글이지만
+ *   HTML 로 넣으면 그 칸이 곧 구멍입니다. 단추는 «요소로» 덧붙입니다.
+ * ⚠ 열쇠는 기기에만 둡니다(localStorage). 폰에서 껐다고 노트북에서도
+ *   꺼질 이유가 없고, 서버에 사람마다 적을 만한 일도 아닙니다.
+ * ⚠ 로그아웃하면 같이 지워집니다(net.js 의 `forgetLocal`) — 다음 사람에게
+ *   「이미 읽은 것」으로 넘어가면 안 됩니다. */
+const 공지열쇠 = t => {
+  let h = 0;
+  for (const ch of t) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return String(h);
+};
+const 공지껐나 = t => {
+  try { return localStorage.getItem('t2:noticeoff') === 공지열쇠(t); } catch { return false; }
+};
 function drawNotice(){
   const t = String(flags.notice?.text || '').trim();
   const el = $('noticebar');
-  el.classList.toggle('hide', !t);
-  el.classList.toggle('warn', flags.notice?.tone === 'warn');
+  const 경고 = flags.notice?.tone === 'warn';
+  el.classList.toggle('warn', 경고);
+  if (!t || (!경고 && 공지껐나(t))){ el.classList.add('hide'); el.textContent = ''; return; }
+  el.classList.remove('hide');
   el.textContent = t;
+  if (경고) return;                     /* 빨간 띠에는 끄는 단추를 안 답니다 */
+  const x = document.createElement('button');
+  x.type = 'button'; x.className = 'nbx';
+  x.textContent = '다시 보지 않기';
+  x.onclick = () => {
+    try { localStorage.setItem('t2:noticeoff', 공지열쇠(t)); } catch {}
+    el.classList.add('hide');
+  };
+  el.appendChild(x);
 }
 
 /* 기능 스위치. **화면에서 감추기만 합니다** — 진짜로 막는 것은 서버 쪽
