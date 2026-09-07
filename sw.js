@@ -8,7 +8,7 @@
  * 그래서 화면 쪽(app.js 의 checkBuild)이 빌드 번호를 확인해 한 번 새로고침합니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v7';
+const VER   = 'v8';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -16,7 +16,7 @@ const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
 const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
   './manifest.json', './icons/apple-touch-icon.png', './icons/keyro-512.png', './icons/keyro-icon-orange.svg',
-  './privacy.html', './terms.html',
+  './privacy.html', './privacy-2026-08-05.html', './terms.html',
 ];
 
 /* 앱 화면은 index.html 하나뿐입니다. 약관·처리방침은 **다른 문서**입니다.
