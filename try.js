@@ -25,16 +25,16 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     card.js · mate.js. */
-import { $, esc } from './dom.js?v=b723';
-import { sb } from './db.js?v=b723';
-import { cities } from './cities.js?v=b723';
-import { loadCities } from './citysearch.js?v=b723';
-import { paintStars } from './stars.js?v=b723';
+import { $, esc } from './dom.js?v=b725';
+import { sb } from './db.js?v=b725';
+import { cities } from './cities.js?v=b725';
+import { loadCities } from './citysearch.js?v=b725';
+import { paintStars } from './stars.js?v=b725';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { rateHero, starValue } from './rateui.js?v=b723';
-import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b723';
+import { rateHero, starValue } from './rateui.js?v=b725';
+import { personaAxes, personaRank, PERSONA16, AXIS_WORD, cardImage } from './card.js?v=b725';
 /* 친구가 보낸 궁합 링크. 링크를 받은 사람이 실제로 도착하는 자리가 여기입니다. */
-import { mateCode, mateHtml } from './mate.js?v=b723';
+import { mateCode, mateHtml } from './mate.js?v=b725';
 
 /* 담아두는 자리. **`localStorage` 입니다** — 탭을 닫았다 와도 남아야 합니다.
    로그인하러 구글로 나갔다 돌아오는 사이에 `sessionStorage` 는 살아남지만,

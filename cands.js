@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b723';
-import { sb } from './db.js?v=b723';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b723';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b723';
-import { trip, plans, legs } from './trip.js?v=b723';
-import { search } from './cities.js?v=b723';
-import { picked } from './citysearch.js?v=b723';
-import { mapLinks } from './planmap.js?v=b723';
-import { openPlanForm } from './cards.js?v=b723';
-import { syncSheets } from './ui.js?v=b723';
+import { $, esc, emptyDo } from './dom.js?v=b725';
+import { sb } from './db.js?v=b725';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b725';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b725';
+import { trip, plans, legs } from './trip.js?v=b725';
+import { search } from './cities.js?v=b725';
+import { picked } from './citysearch.js?v=b725';
+import { mapLinks } from './planmap.js?v=b725';
+import { openPlanForm } from './cards.js?v=b725';
+import { syncSheets } from './ui.js?v=b725';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -100,26 +100,37 @@ function findFits(){
     .sort((a, b) => (b.avail - a.avail) || (a.go - b.go)).slice(0, 3);
 }
 
+/* ── 목록은 «하나»입니다(b725, 사용자 요청) ────────────────────────────
+ * ⚠⚠ **같은 곳이 두 번 보이던 것을 합쳤습니다.** 위에 「빈 시간에 넣기
+ *   좋은 곳」 줄이 따로 있고 아래에 후보 카드가 또 있어서, 긴자 라멘집
+ *   하나가 화면에 두 번 나왔습니다(사용자 신고, 두 번째).
+ *   b627 에 「↑ 넣을 자리 있어요」 표를 달아 «둘이 다른 것»이라고 알려
+ *   주는 길로 갔었는데, 그건 **왜 두 개인지 설명한 것**이지 두 개인 것을
+ *   고친 것이 아니었습니다. 설명이 필요하면 대개 구조가 틀린 것입니다.
+ * ⚠ 잃은 것이 없는지 세어 봤습니다 — 위 줄에만 있던 것은 «자리 정보»
+ *   (언제·어디서 몇 분·머물 수 있는 시간)와 「넣기」 단추 둘뿐입니다.
+ *   그 둘을 카드 안으로 옮겼습니다. 지도·삭제는 원래 아래에만 있었습니다.
+ * ⚠ **자리가 있는 곳을 위로 올립니다.** 전에 위 줄이 하던 일이 그것입니다 —
+ *   합치면서 그것까지 잃으면 「지금 넣을 수 있는 곳」을 못 찾습니다.
+ *   그 안에서는 findFits 의 차례(머물 수 있는 시간이 긴 것 먼저)를 지킵니다.
+ * ⚠ 단추가 둘인 이유: 「이 자리에 넣기」는 **앱이 찾아준 자리 그대로**,
+ *   「일정에 넣기」는 **내가 날짜와 시각을 고르는 것**입니다. 글자가 달라야
+ *   두 단추가 왜 있는지 읽힙니다. */
 function drawCands(){
   fitList = findFits();
-  $('fits').innerHTML = fitList.length
-    ? `<div class="daysep">빈 시간에 넣기 좋은 곳</div>` + fitList.map((f, i) =>
-        `<div class="picked" style="align-items:flex-start; margin-bottom:8px">
-           <div class="p" style="min-width:0">
-             <b>${esc(f.cand.title)}</b>
-             <div class="c">${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</div>
-             <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
-               <b>${f.avail}분</b> · 다음까지 ${f.back}분${
-               f.tight ? ' · 짧게 보고 나와야 해요' : ''}</div>
-           </div>
-           <button class="small" data-fit="${i}">넣기</button>
-         </div>`).join('')
-    : '';
+  const 자리 = {};
+  fitList.forEach((f, i) => { 자리[f.cand.id] = { f, i }; });
+  /* 자리가 있는 것 먼저. 나머지는 원래 차례 그대로입니다(정렬은 안정적입니다). */
+  const 차례 = [...cands].sort((a, b) => {
+    const A = 자리[a.id], B = 자리[b.id];
+    if (A && B) return A.i - B.i;
+    return A ? -1 : B ? 1 : 0;
+  });
 
   $('cands').innerHTML = cands.length
     /* 한 줄로 늘어놓으니 답답했습니다. 카드로 펼치고 할 수 있는 일을 다 답니다 —
        일정에 넣기 · 지도 · 삭제. 도쿄 앱의 후보 여행지와 같은 구성입니다. */
-    ? cands.map(c => {
+    ? 차례.map(c => {
         const ml = mapLinks(c, trip?.destination);
         /* '좌표 없음'은 개발자 말입니다. 사용자에게 뜻하는 것은 하나뿐입니다 —
            이 곳은 지도에 안 뜬다. 아래 '좌표 채우기'가 채워줍니다. */
@@ -127,20 +138,23 @@ function drawCands(){
            같아서 "삼고정문 / 식사 · 삼고정문"처럼 이름이 두 번 나왔습니다. */
         const loc = c.title_local && c.title_local !== c.title ? c.title_local : null;
         const sub = [c.category, loc].filter(Boolean);
-        /* ⚠⚠ **위에 제안으로 올라온 곳에는 표를 답니다(b627, 사용자 지적).**
-           사용자: 「일정 후보 탭에서 아사쿠사 2개인데 이 차이가 뭐야?」
-           둘은 다른 것입니다 — 위는 **앱이 찾아준 자리**(Day 4 · 10:29쯤,
-           이동 29분), 아래는 **내가 담아둔 것 그 자체**(지도·삭제).
-           그런데 이름만 두 번 보이니 「왜 두 개지」가 됩니다.
-           지우면 안 됩니다 — 아래 줄에만 지도·삭제가 있습니다.
-           **둘을 이어주는 표 한 줄**이면 됩니다. */
-        const 제안됨 = fitList.some(f => f.cand.id === c.id);
+        /* 앱이 찾아준 자리. 없으면 그 줄만 안 나옵니다(b725 — 위 머리말). */
+        const 것 = 자리[c.id];
+        const f = 것?.f;
         return `<div class="cdc">
           <div class="t"><b>${esc(c.title)}</b>${
-            제안됨 ? ' <span class="fitmark">↑ 넣을 자리 있어요</span>' : ''}${
             c.lat == null ? ' <span class="val">지도에 아직 안 떠요</span>' : ''}</div>
           ${sub.length ? `<div class="s">${sub.map(esc).join(' · ')}</div>` : ''}
           ${c.memo ? `<div class="m">${esc(c.memo)}</div>` : ''}
+          ${f ? `<div class="fit">
+            <div class="p">
+              <div class="c"><b>${esc(dayLabel(f.date, trip))} · ${hhmm(f.at)}쯤</b></div>
+              <div class="c">${esc(f.after)}에서 ${f.go}분 · 머물 수 있는 시간
+                <b>${f.avail}분</b> · 다음까지 ${f.back}분${
+                f.tight ? ' · 짧게 보고 나와야 해요' : ''}</div>
+            </div>
+            <button class="small" data-fit="${것.i}">이 자리에 넣기</button>
+          </div>` : ''}
           <div class="a">
             <button class="ghost" data-candplan="${esc(c.id)}"
                     style="color:var(--primary)">일정에 넣기</button>

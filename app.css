@@ -2176,9 +2176,19 @@ body.intrip #backbtn{ display:block; }
 .cdc{ background:var(--pearl); border:1px solid var(--hairline);
       border-radius:var(--r-sm); padding:12px 14px; margin-bottom:8px; }
 .cdc .t{ font-size:var(--f-lg); }
-/* 위 「빈 시간에 넣기 좋은 곳」에 이 곳이 올라와 있다는 표(b627). */
-.cdc .fitmark{ font-size:var(--f-sm); font-weight:600; color:var(--primary);
-               white-space:nowrap; }
+/* ⚠ b627 의 `.fitmark`(「↑ 넣을 자리 있어요」)는 b725 에 걷었습니다 —
+   가리킬 위 목록이 없어졌습니다(cands.js 머리말). */
+/* ── 앱이 찾아준 자리(b725) ───────────────────────────────────────────
+   ⚠ 카드 «안»의 한 칸입니다. 위아래로 선을 그어 「이건 내가 적은 것이
+     아니라 앱이 찾아준 것」이라고 말합니다 — 메모와 섞이면 안 됩니다.
+   ⚠ 단추는 안 줄어듭니다(flex:none). 줄어드는 쪽은 글입니다. */
+.cdc .fit{ display:flex; align-items:center; gap:10px; margin-top:10px;
+           padding:9px 10px; border-radius:var(--r-sm);
+           background:var(--primary-06); }
+.cdc .fit .p{ min-width:0; flex:1; }
+.cdc .fit .c{ font-size:var(--f-sm); color:var(--ink-48); line-height:1.45; }
+.cdc .fit .c b{ color:var(--ink); font-weight:600; }
+.cdc .fit button{ flex:none; }
 .cdc .s{ color:var(--ink-48); font-size:var(--f-sm); margin-top:2px; }
 .cdc .m{ font-size:var(--f-md); margin-top:6px; line-height:1.5;
          word-break:keep-all; }
