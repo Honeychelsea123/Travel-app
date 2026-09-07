@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b715';
-import { sb } from './db.js?v=b715';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b715';
-import { myRates, cityStat, visited } from './rate.js?v=b715';
-import { starHtml, starValue } from './stars.js?v=b715';
-import { localTime } from './calc.js?v=b715';
-import { fail } from './net.js?v=b715';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b716';
+import { sb } from './db.js?v=b716';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b716';
+import { myRates, cityStat, visited } from './rate.js?v=b716';
+import { starHtml, starValue } from './stars.js?v=b716';
+import { localTime } from './calc.js?v=b716';
+import { fail } from './net.js?v=b716';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -68,6 +68,18 @@ export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
 export async function openCity(id){
   const c = (cities || []).find(x => x.id === id);
   if (!c) return;
+  /* ⚠⚠ **쓰던 글을 붙잡아 둡니다(b716, b698 점검 넷째).** ⚠⚠
+   *   이 함수는 «다시 그리기»로도 쓰입니다 — 별을 누르면 평균과 도장을
+   *   새로 받으려고 `openCity(id)` 를 다시 부릅니다. 그런데 아래에서
+   *   칸을 저장된 값으로 덮어써서, **일기를 쓰다 별을 누르면 쓰던 글이
+   *   통째로 날아갔습니다**(사용자가 겪은 자리).
+   * ⚠ «같은 도시로 다시 열 때»만입니다. 다른 도시로 가면 그 도시의 글이
+   *   나와야 합니다.
+   * ⚠ 저장된 것과 같으면 되살릴 것이 없습니다 — 저장 직후의 다시 그리기가
+   *   그 경우라, 굳이 손대지 않습니다. */
+  const 같은곳 = cityOpen?.id === id;
+  const 쓰던한줄 = 같은곳 ? ($('cv_note')?.value ?? null) : null;
+  const 쓰던일기 = 같은곳 ? ($('cv_journal')?.value ?? null) : null;
   cityOpen = c;
   if (history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
 
@@ -127,8 +139,13 @@ export async function openCity(id){
   $('cv_stars').innerHTML  = starHtml(r.stars);
   $('cv_want').classList.toggle('on', !!r.want);
   $('cv_note').value = r.comment || '';
-  cvNoteDirty();
   $('cv_journal').value = r.journal || '';
+  /* 위 `쓰던한줄`·`쓰던일기` 주석 참고 — 저장 안 한 글을 되돌려 놓습니다. */
+  if (쓰던한줄 != null && 쓰던한줄.trim() !== (r.comment || '').trim())
+    $('cv_note').value = 쓰던한줄;
+  if (쓰던일기 != null && 쓰던일기.trim() !== (r.journal || '').trim())
+    $('cv_journal').value = 쓰던일기;
+  cvNoteDirty();
   사진불러오기();
   일기바뀜();
 
@@ -239,7 +256,7 @@ $('cv_save').addEventListener('click', async () => {
   const v = $('cv_note').value.trim() || null;
   const id = cityOpen?.id; if (!id) return;   /* b691 — 아래 주석 참고 */
   $('cv_save').disabled = true;
-  await ctx.saveRate(id, { comment: v });
+  const 됐나 = await ctx.saveRate(id, { comment: v });
   /* ⚠⚠ **단추 글자만 바꾸던 것을 토스트로 옮깁니다(b660, 사용자 신고:
      「저장 누르면 저장 됐다는 피드백이 없어서 저장된지 안된지 모르겠어」).**
      글자는 «바뀌고 있었습니다** — 다만 그 단추가 `.ghost` 라 **잠기면
@@ -249,6 +266,13 @@ $('cv_save').addEventListener('click', async () => {
    ⚠ 단추 글자는 **쉬는 모양으로 되돌립니다.** 단추는 「무슨 일이
      일어났나」가 아니라 「누르면 무엇을 하나」를 적는 자리입니다.
      일어난 일은 토스트가 말합니다. */
+  /* ⚠ **안 됐으면 됐다고 하지 않습니다(b716).** 위 saveRate 주석 참고 —
+     오류 자체는 fail 이 적지만 그 자리가 안 보일 수 있어 여기서도 말합니다. */
+  if (됐나 === false){
+    $('cv_save').disabled = false;
+    toast('저장하지 못했어요. 잠시 뒤 다시 해주세요.');
+    return;
+  }
   toast(v ? '한줄평을 등록했어요' : '한줄평을 지웠어요');
   if (cityOpen?.id !== id) return;            /* 저장하는 동안 닫혔다 */
   cvNoteDirty();
@@ -315,17 +339,36 @@ function 키맞추기(){
 const 사진최대 = 8;
 let 내사진 = [];
 
+/* ⚠⚠ **한 번 누르면 안 지웁니다(b716, b698 점검 열째).** ⚠⚠
+ *   여태 ✕ 를 한 번 누르면 통에서도 표에서도 **바로, 영영** 지워졌습니다.
+ *   되돌릴 길이 없고 물어보지도 않았습니다 — 사진 위 6px 자리에 있는
+ *   30px 단추라 잘못 누르기도 쉽습니다.
+ * ⚠ `confirm()` 은 이 앱에서 안 씁니다(ui.js `arm` 주석: 내장 브라우저에서
+ *   막힙니다). 같은 «두 번 눌러 지우기»를 여기서도 씁니다.
+ * ⚠ `ui.js` 의 `arm/disarm` 을 그대로 못 씁니다 — 그것은 단추 «글자»를
+ *   갈아 끼우는데 이 단추 안에는 그림(svg)이 있었습니다. 그래서 글자
+ *   ×(U+00D7, 칩의 닫기와 같은 글자라 폰에서 두부가 안 됩니다)로 바꾸고
+ *   여기서 따로 풉니다.
+ * ⚠ 다른 데를 누르면 풀립니다 — 물어본 채로 두면 나중에 무심코 눌렀을 때
+ *   바로 지워집니다(ui.js 가 같은 이유로 하는 일). */
+const 엑스 = '\u00d7';
+function 사진무장풀기(){
+  document.querySelectorAll('#cv_jgrid .jpdel.ask').forEach(b => {
+    b.classList.remove('ask'); b.textContent = 엑스;
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest?.('#cv_jgrid .jpdel.ask')) 사진무장풀기();
+}, true);
+
 function 사진그리기(){
+  사진무장풀기();
   const 판 = $('cv_jgrid'), 빈 = $('cv_jpick');
   if (!판 || !빈) return;
   판.innerHTML = 내사진.map(p => `<div class="jpcell">
       <img src="${esc(p.url)}" alt="" loading="lazy">
       <button type="button" class="jpdel" data-jpdel="${esc(p.id)}"
-              aria-label="이 사진 지우기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.2" stroke-linecap="round">
-          <path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
+              aria-label="이 사진 지우기">${엑스}</button>
     </div>`).join('');
   /* ⚠ 다 찼으면 단추를 **숨깁니다.** 눌리는데 아무 일도 안 나면 고장으로
      보입니다. 몇 장까지인지도 같이 알려줍니다. */
@@ -361,7 +404,7 @@ $('cv_jfile')?.addEventListener('change', async e => {
   e.target.value = '';                 /* 같은 파일을 또 골라도 걸리게 */
   if (!고른것.length || !cityOpen) return;
   const 그림 = 고른것.filter(f => /^image\//.test(f.type));
-  if (!그림.length) return fail('사진 파일만 올릴 수 있어요.', 'city');
+  if (!그림.length) return fail('사진 파일만 올릴 수 있어요.', 'cv');
   /* ⚠ 넘치게 고르면 **앞에서부터** 받고 나머지는 말해 줍니다. 통째로
      거절하면 왜 안 되는지 모른 채 다시 고르게 됩니다. */
   const 넣을것 = 그림.slice(0, Math.max(0, 사진최대 - 내사진.length));
@@ -395,13 +438,13 @@ $('cv_jfile')?.addEventListener('change', async e => {
       사진그리기();
     }
     if (그림.length > 넣을것.length)
-      fail(`사진은 ${사진최대}장까지예요. ${넣을것.length}장만 넣었어요.`, 'city');
+      fail(`사진은 ${사진최대}장까지예요. ${넣을것.length}장만 넣었어요.`, 'cv');
   } catch (err) {
     fail(/relation|does not exist|schema cache/i.test(err.message || '')
       ? '사진 여러 장 저장이 아직 준비되지 않았어요. 만든 사람에게 알려주세요(db/073).'
       : /bucket|not found/i.test(err.message || '')
       ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요(db/072).'
-      : err, 'city');
+      : err, 'cv');
   }
   빈.disabled = false;
   사진그리기();
@@ -415,11 +458,20 @@ $('cv_jgrid')?.addEventListener('click', async e => {
   const id = b.dataset.jpdel;
   const p = 내사진.find(x => x.id === id);
   if (!p) return;
+  /* 첫 누름은 «묻는 것»입니다(위 주석). */
+  if (!b.classList.contains('ask')){
+    사진무장풀기();
+    b.classList.add('ask'); b.textContent = '지울까요?';
+    return;
+  }
   b.disabled = true;
-  /* 통에서도 지웁니다 — 줄만 지우면 파일이 남아 용량만 먹습니다. */
-  await sb.storage.from('journal-photos').remove([p.path]);
+  /* ⚠⚠ **표를 «먼저» 지웁니다(b716).** 전에는 통(파일)을 먼저 지웠는데,
+     그러고 표에서 실패하면 **사진은 없어졌는데 줄은 남아** 깨진 그림이
+     됩니다. 반대 차례면 최악이 「아무 데서도 안 보이는 파일이 남는 것」
+     뿐이라 되돌릴 여지가 있습니다. */
   const d = await sb.from('journal_photos').delete().eq('id', id);
-  if (d.error){ b.disabled = false; return fail(d.error, 'city'); }
+  if (d.error){ b.disabled = false; 사진무장풀기(); return fail(d.error, 'cv'); }
+  await sb.storage.from('journal-photos').remove([p.path]);
   내사진 = 내사진.filter(x => x.id !== id);
   사진그리기();
 });

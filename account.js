@@ -16,10 +16,10 @@
  * 층: dom.js · db.js · net.js · trip.js 만 씁니다. 프로필 화면의 '보관함·지도
  *     열기' 손잡이는 **두고 왔습니다** — 바로 아랫줄에 있었지만 그건 화면
  *     넘기기지 내 계정이 아닙니다. */
-import { $, esc, toast } from './dom.js?v=b715';
-import { sb } from './db.js?v=b715';
-import { fail, netTimeout } from './net.js?v=b715';
-import { plans, expenses, bookings } from './trip.js?v=b715';
+import { $, esc, toast } from './dom.js?v=b716';
+import { sb } from './db.js?v=b716';
+import { fail, netTimeout, forgetLocal } from './net.js?v=b716';
+import { plans, expenses, bookings } from './trip.js?v=b716';
 
 
 let ctx = { me: () => null, logError: () => {} };
@@ -103,11 +103,9 @@ $('del_go').addEventListener('click', async () => {
   }
 
   /* 계정이 없어졌으니 남은 토큰도 버리고 첫 화면으로 보냅니다.
-     캐시에 남은 내 자료도 지웁니다 — 안 지우면 다음 사람이 그걸 봅니다. */
-  try {
-    Object.keys(localStorage).filter(k => k.startsWith('t2:'))
-      .forEach(k => localStorage.removeItem(k));
-  } catch {}
+     캐시에 남은 내 자료도 지웁니다 — 안 지우면 다음 사람이 그걸 봅니다.
+     ⚠ 규칙은 net.js 한 곳입니다(b716) — 로그아웃도 같은 것을 부릅니다. */
+  forgetLocal();
   await sb.auth.signOut().catch(() => {});
   alert('탈퇴가 끝났어요. 그동안 고마웠어요.');
   location.replace(location.pathname);
@@ -199,11 +197,25 @@ $('dumpbtn').addEventListener('click', async () => {
   }
   /* 도시 목록은 우리가 만든 자료라 안 넣습니다 — 잃어버릴 것은 내가 쓴 것뿐입니다. */
 
+  /* ⚠⚠ **하나도 못 받았으면 파일을 안 내립니다(b716, b698 점검 여덟째).** ⚠⚠
+     여태 표를 전부 실패해도 `{}` 를 담은 파일이 그대로 떨어지고 토스트는
+     「0개를 저장했어요」였습니다. **그것은 백업이 아니라 백업처럼 생긴
+     빈 파일**이고, 받은 사람은 자료가 지켜졌다고 믿습니다.
+     ⚠ 진짜로 0개인 사람(가입 직후)과 갈립니다 — 그때는 `failed` 가 비어
+       있습니다. 「못 받은 표가 하나도 없는가」로 가릅니다.
+     ⚠ 일부만 실패한 경우는 **내립니다** — 받을 수 있는 것까지 못 받게
+       하는 것이 더 나쁩니다. 대신 파일 이름에 표를 남겨 나중에 이 파일이
+       온전한 것인 줄 알고 쓰지 않게 합니다. */
+  if (failed.length === TABLES.length){
+    b.disabled = false; b.textContent = '다시 받기';
+    return fail('아무것도 못 받았어요. 연결을 확인하고 다시 받아주세요.', 'dump');
+  }
   const n = Object.values(out.data).reduce((s, v) => s + v.length, 0);
   const blob = new Blob([JSON.stringify(out, null, 1)], { type:'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `aitrip-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = `aitrip-backup-${new Date().toISOString().slice(0,10)}${
+                  failed.length ? '-불완전' : ''}.json`;
   a.click(); URL.revokeObjectURL(a.href);
 
   b.disabled = false; b.textContent = '다시 받기';

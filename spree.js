@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b715';
-import { sb } from './db.js?v=b715';
-import { cities } from './cities.js?v=b715';
-import { loadCities } from './citysearch.js?v=b715';
-import { paintStars } from './stars.js?v=b715';
-import { rateHero, starValue } from './rateui.js?v=b715';
-import { saveRate } from './rating.js?v=b715';
-import { resetHomeSig } from './home.js?v=b715';
+import { $, esc } from './dom.js?v=b716';
+import { sb } from './db.js?v=b716';
+import { cities } from './cities.js?v=b716';
+import { loadCities } from './citysearch.js?v=b716';
+import { paintStars } from './stars.js?v=b716';
+import { rateHero, starValue } from './rateui.js?v=b716';
+import { saveRate } from './rating.js?v=b716';
+import { resetHomeSig } from './home.js?v=b716';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -48,10 +48,17 @@ let 건드림 = false;
  *   줄이 있으면 다시 안 묻습니다(홈의 fillQuiz 와 같은 규칙).
  * ⚠ **이름난 곳부터.** 처음 쭉 매기는 사람에게 생소한 곳을 먼저 주면 넘기다
  *   지칩니다. 유명도 안에서만 섞어 열 때마다 순서가 달라지게 합니다. */
+/* ⚠⚠ **못 받은 것과 「다 봤다」는 다릅니다(b716, b698 점검 다섯째).** ⚠⚠
+   여태 `if (r.error) return;` 이었습니다. 그러면 주머니가 처음 값 `[]` 인
+   채로 남고, 그리기()는 그걸 「물어볼 도시를 다 봤어요」로 읽습니다 —
+   **한 곳도 안 매긴 사람에게 다 매겼다고 말합니다.** 도시 목록을 못
+   받았을 때도 같습니다. 못 받았으면 못 받았다고 해야 합니다. */
+let 못받음 = false;
 async function 채우기(){
+  못받음 = false;
   await loadCities();
   const r = await sb.from('city_ratings').select('city_id').eq('user_id', ctx.me().id);
-  if (r.error) return;
+  if (r.error || !(cities || []).length){ 못받음 = true; 주머니 = []; return; }
   const 답한것 = new Set((r.data || []).map(x => x.city_id));
   주머니 = (cities || []).filter(c => c.image_url && !답한것.has(c.id));
   주머니.sort((a, b) => (a.fame ?? 9) - (b.fame ?? 9));
@@ -66,6 +73,12 @@ function 그리기(){
   const box = $('spreebox');
   if (!box) return;
   지금 = 주머니[0] || null;
+  if (!지금 && 못받음){
+    box.innerHTML = `<div class="card"><div class="empty" style="padding:28px 12px">
+      지금은 불러오지 못했어요.<br>
+      <span class="memo">잠시 뒤 다시 들어와 주세요.</span></div></div>`;
+    return;
+  }
   if (!지금){
     box.innerHTML = `<div class="card"><div class="empty" style="padding:28px 12px">
       물어볼 도시를 다 봤어요.${센것 ? `<br>

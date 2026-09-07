@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b715';
-import { sb } from './db.js?v=b715';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b715';
-import { dateRange } from './calc.js?v=b715';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b715';
+import { $, esc } from './dom.js?v=b716';
+import { sb } from './db.js?v=b716';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b716';
+import { dateRange } from './calc.js?v=b716';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b716';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b715';
+         countryInfo } from './cities.js?v=b716';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b715';
-import { openCity } from './city.js?v=b715';
-import { loadCities } from './citysearch.js?v=b715';
+         removeRate } from './rate.js?v=b716';
+import { openCity } from './city.js?v=b716';
+import { loadCities } from './citysearch.js?v=b716';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -392,14 +392,21 @@ export async function dropRate(cityId){
 
   const r = await sb.from('city_ratings').delete()
     .eq('user_id', ctx.me().id).eq('city_id', cityId).select('city_id');
-  if (r.error) return fail(r.error, 'rate');
+  if (r.error){ fail(r.error, 'rate'); return false; }
   removeRate(cityId);
   /* 다녀온 곳은 지난 여행에서도 오므로 서버에 다시 물어야 맞습니다. */
   await refreshVisited();
   const s = await sb.rpc('city_stats', { p_city: cityId });
   putCityStat(cityId, s.data?.[0]);
+  return true;
 }
 
+/* ⚠⚠ **되었는지를 «돌려줍니다»(b716, b698 점검 첫째).** ⚠⚠
+ *   여태 성공도 실패도 undefined 였습니다. 그래서 도시 화면은 저장이
+ *   실패해도 「한줄평을 등록했어요」를 띄웠습니다 — 그리고 진짜 오류는
+ *   평가 탭의 오류 상자로 갔는데, 그 판은 도시 화면 뒤에 숨어 있어
+ *   **아무 데도 안 보였습니다**(실측: 화면 아래 7,954px).
+ * ⚠ 부르는 쪽이 안 봐도 전과 똑같이 돕니다 — 값을 더했을 뿐입니다. */
 export async function saveRate(cityId, patch, quiet){
   /* ⚠⚠ **0 은 「지우기」입니다(b494).** ⚠⚠ 별을 끌어 맨 왼쪽까지 가면
    *   0 이 옵니다. 그대로 저장하면 **「0점을 준 곳」이라는 없는 상태**가
@@ -416,7 +423,7 @@ export async function saveRate(cityId, patch, quiet){
     .upsert({ user_id: ctx.me().id, city_id: cityId, ...patch },
             { onConflict: 'user_id,city_id' })
     .select('city_id,stars,want,comment,journal,journal_photo').maybeSingle();
-  if (r.error) return fail(r.error, 'rate');
+  if (r.error){ fail(r.error, 'rate'); return false; }
   /* 별점 · 방금 매긴 것 · 다녀온 곳을 **한 번에** 맞춥니다(rate.js).
      셋을 따로 적으면 그중 하나를 빠뜨립니다. 별을 지운 경우만 다녀온 곳을
      여기서 못 정합니다 — 지난 여행 기록이 있으면 그대로 다녀온 곳이라
@@ -427,5 +434,6 @@ export async function saveRate(cityId, patch, quiet){
   putCityStat(cityId, s.data?.[0]);
   /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다. */
   if (!quiet) drawRatings();
+  return true;
 }
 

@@ -4617,6 +4617,12 @@ body.pvon{ overflow:hidden; }
         border:0; border-radius:50%; background:rgba(255,255,255,.94);
         color:var(--ink); cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.18); }
 .jpdel svg{ width:15px; height:15px; flex:none; display:block; }
+/* ⚠ 그림(svg) 이던 것을 글자 × 로 바꿨습니다(b716) — 한 번 더 눌러야
+   지워지게 하면서 단추 «글자»를 갈아 끼워야 하기 때문입니다(city.js).
+   ⚠ 물어보는 동안에는 알약이 됩니다 — 동그라미에 「지울까요?」가 안 들어갑니다. */
+.jpdel{ font-size:19px; line-height:1; font-weight:600; padding:0; }
+.jpdel.ask{ width:auto; height:26px; padding:0 10px; border-radius:999px;
+            font-size:var(--f-xs); font-weight:600; color:var(--danger, #c0392b); }
 /* ── 일기 사진 여러 장(b573) ──────────────────────────────────────────
  * ⚠ **가로 두 칸입니다.** 한 줄에 하나면 여덟 장일 때 화면이 끝없이
  *   길어지고, 셋이면 폰에서 한 장이 엄지손톱만 해집니다.

@@ -18,8 +18,8 @@
  *
  * 밖에서 가져오는 것은 dom.js 와 db.js 뿐입니다. 둘 다 잎이라 순환이 없습니다.
  */
-import { $, toast } from './dom.js?v=b715';
-import { sb } from './db.js?v=b715';
+import { $, toast } from './dom.js?v=b716';
+import { sb } from './db.js?v=b716';
 
 /* 큐가 다 나간 뒤에 화면을 서버 값으로 맞추는 일은 app.js 가 압니다.
    여기서 trip 이나 loadPlans 를 직접 부르면 net → app 으로 거꾸로 기대게 되어
@@ -116,6 +116,24 @@ export function fail(e, where){
 
 /* 큐는 localStorage 에 둡니다. 앱을 껐다 켜도 남아야 합니다. */
 const QKEY = 't2:queue';
+
+/* ── 이 기기에 남은 내 자료를 지웁니다(b716, b698 점검 아홉째) ────────
+ * ⚠⚠ **로그아웃이 이걸 «안» 했습니다.** 탈퇴(account.js)는 하고 있었는데
+ *   로그아웃은 `signOut()` 하고 새로 고칠 뿐이라, **못 보낸 저장 대기줄
+ *   (`t2:queue`)과 받아둔 자료가 그대로 남아 다음 사람에게 넘어갔습니다.**
+ *   대기줄은 더 나쁩니다 — 다음 사람이 로그인하면 그 줄이 흘러 나갑니다.
+ * ⚠ 「내 것」만 지우는 게 아니라 `t2:` 를 통째로 지웁니다. 남는 것이
+ *   무엇인지 세어 가며 지우면 새 열쇠를 만들 때마다 빠뜨립니다 —
+ *   지구본/평면 같은 취향 하나 잃는 값이 훨씬 쌉니다.
+ * ⚠ 여기에 두는 이유는 대기줄의 «주인»이 이 파일이기 때문입니다.
+ *   부르는 곳은 둘(로그아웃·탈퇴)이고, 규칙은 한 곳에 있어야 합니다. */
+export function forgetLocal(){
+  queue = [];
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('t2:'))
+      .forEach(k => localStorage.removeItem(k));
+  } catch {}
+}
 let queue = [];
 try { queue = JSON.parse(localStorage.getItem(QKEY) || '[]'); } catch { queue = []; }
 const qsave = () => { try { localStorage.setItem(QKEY, JSON.stringify(queue)); } catch {} };
