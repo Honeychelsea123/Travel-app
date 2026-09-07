@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck, backLabel,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b717';
-import { openCity } from './city.js?v=b717';
-import { sb } from './db.js?v=b717';
-import { cities, countryName, cityCountry } from './cities.js?v=b717';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b717';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b717';
-import { fail } from './net.js?v=b717';
-import { arm } from './ui.js?v=b717';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b718';
+import { openCity } from './city.js?v=b718';
+import { sb } from './db.js?v=b718';
+import { cities, countryName, cityCountry } from './cities.js?v=b718';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b718';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b718';
+import { fail } from './net.js?v=b718';
+import { arm } from './ui.js?v=b718';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b717';
-import { shareCard } from './card.js?v=b717';
-import { todayYmd } from './calc.js?v=b717';
+import { 발자국스펙 } from './map.js?v=b718';
+import { shareCard } from './card.js?v=b718';
+import { todayYmd } from './calc.js?v=b718';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b717';
-import { loadCities } from './citysearch.js?v=b717';
-import { loadRateData, saveRate } from './rating.js?v=b717';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b718';
+import { loadCities } from './citysearch.js?v=b718';
+import { loadRateData, saveRate } from './rating.js?v=b718';
 
 let ctx = {
   me: () => null,
@@ -152,11 +152,17 @@ function 거르개칸채우기(all){
   $('shsheet').querySelectorAll('[data-ssort]').forEach(b =>
     b.classList.toggle('on', b.dataset.ssort === shelfSort));
 
-  $('sh_star').textContent = STAR_NAME[shelfStar] || '별점 전체';
-  $('sh_sort').textContent = SORT_NAME[shelfSort] || '최근에 매긴 순';
-  /* 거르개가 걸려 있으면 컨트롤이 «걸려 있다»고 말해야 합니다 —
-     목록이 왜 짧은지 모르는 것이 이 화면에서 제일 나쁜 일입니다. */
-  $('sh_star').classList.toggle('on', shelfStar !== 'all');
+  /* ⚠ 단추는 하나입니다(b718) — 정렬과 별점이 «한 시트» 안에 있으니
+       밖에도 하나면 됩니다. 자세한 사연은 index.html 의 `#shelffilter`.
+     ⚠ 거르개가 걸려 있으면 «걸려 있다»고 말해야 합니다 — 목록이 왜
+       짧은지 모르는 것이 이 화면에서 제일 나쁜 일입니다. 그래서 별점을
+       걸었을 때만 이름을 덧붙이고 까맣게 켭니다.
+     ⚠ **정렬은 안 적습니다.** 정렬은 «늘» 걸려 있는 것이라 적으면 단추가
+       도로 둘로 나뉜 것과 같아집니다. 무엇으로 정렬 중인지는 시트가 ✓ 로
+       말합니다. */
+  const 걸림 = shelfStar !== 'all';
+  $('sh_filter').textContent = 걸림 ? `필터 · ${STAR_NAME[shelfStar]}` : '필터';
+  $('sh_filter').classList.toggle('on', 걸림);
 }
 
 /* ── 시트(b673) ───────────────────────────────────────────────────────
@@ -164,9 +170,8 @@ function 거르개칸채우기(all){
  *   고를 수 있어야 합니다. 닫는 것은 「완료」·바깥 누르기·뒤로가기 셋.
  * ⚠ 기록에 자리를 남깁니다(`t2:'shsheet'`). 안 남기면 뒤로가기가 시트를
  *   건너뛰고 그 아래 보관함을 닫습니다. 닫는 쪽은 tripview.js 의 사슬. */
-const SORT_NAME = { new:'최근에 매긴 순', high:'내 별점 높은 순',
-                    low:'내 별점 낮은 순', avg:'다른 사람 평균 높은 순',
-                    name:'가나다 순' };
+/* ⚠ 정렬 이름표(SORT_NAME)는 b718 에 걷었습니다 — 밖의 단추가 하나가
+     되면서 쓸 데가 없어졌습니다. 시트 안의 이름은 index.html 에 있습니다. */
 const STAR_NAME = { all:'별점 전체', '5':'★5', '4':'★4점대', '3':'★3점대',
                     '2':'★2점대', '1':'★1점대 이하', none:'아직 안 매김' };
 
@@ -182,7 +187,7 @@ export function 거르개닫기(뒤로온것){
 }
 
 $('shelffilter').addEventListener('click', e => {
-  if (e.target.closest('#sh_star') || e.target.closest('#sh_sort')) 거르개열기();
+  if (e.target.closest('#sh_filter')) 거르개열기();
 });
 $('shsheet').addEventListener('click', e => {
   if (e.target.closest('[data-shclose]')) return 거르개닫기();

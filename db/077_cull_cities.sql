@@ -146,5 +146,5 @@ select * from (
   union all
   select 6, '몬터레이 고쳐졌나',
          coalesce((select name_en || ' ' || round(center_lat::numeric, 3)
-                     from public.cities where id in ('monterey','michie') limit 1), '없음')
+                     from public.cities where id in ('monterey','michie')), '없음')
 ) t order by ord;

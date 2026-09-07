@@ -1,5 +1,5 @@
 -- =====================================================================
--- 도시 목록 보강 — 682곳 추가 (469 → 1151)
+-- 도시 목록 보강 — 679곳 추가 (469 → 1148)
 --
 -- 「지금 같으면 간 나라도 평가를 못해서 갔다고 할 수 없을 것 같은데」
 --   — 사용자. 그래서 이 판의 목표는 **깊이가 아니라 나라 덮기**입니다.
@@ -384,9 +384,6 @@ from (values
   ('tarawa', '남타라와', 'Tarawa', 'KI', 1.32780, 172.97696, 'Pacific/Tarawa', 'limited', 1),
   ('moroni', '모로니', 'Moroni', 'KM', -11.70216, 43.25506, 'Indian/Comoro', 'limited', 1),
   ('basseterre', '바스테르', 'Basseterre', 'KN', 17.29550, -62.72499, 'America/St_Kitts', 'limited', 1),
-  ('pyongyang', '평양', 'Pyongyang', 'KP', 39.03385, 125.75432, 'Asia/Pyongyang', 'dense', 3),
-  ('hamhung', '함흥', 'Hamhung', 'KP', 39.91833, 127.53639, 'Asia/Pyongyang', 'normal', 2),
-  ('namp-o', '남포', 'Namp''o', 'KP', 38.73750, 125.40778, 'Asia/Pyongyang', 'normal', 2),
   ('boryeong', '보령', 'Boryeong', 'KR', 36.33401, 126.61316, 'Asia/Seoul', 'car', 2),
   ('buan', '부안', 'Buan', 'KR', 35.73168, 126.73302, 'Asia/Seoul', 'car', 2),
   ('cheongsong', '청송', 'Cheongsong', 'KR', 36.43580, 129.05710, 'Asia/Seoul', 'car', 2),
@@ -730,7 +727,7 @@ join public.countries c on c.code = v.country
 on conflict do nothing;
 
 -- ── 확인 ─────────────────────────────────────────────────────────────
--- 1번이 1151 이어야 합니다. 모자라면 3번이 어느 나라가 빠졌는지 알려줍니다.
+-- 1번이 1148 이어야 합니다. 모자라면 3번이 어느 나라가 빠졌는지 알려줍니다.
 select * from (
   select 1 as ord, '도시 전체'::text as 확인, count(*)::text as 결과
     from public.cities
