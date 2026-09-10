@@ -3724,7 +3724,7 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 /* ══ 도감 — 여행 유형 열여섯 가지 (b737) ══════════════════════════════
  * 사용자: 「이미지 위주로 보여주고 싶은데 너무 줄만있잖아」. 줄 목록을
  * 걷고 그림 격자로 갑니다 — 코드와 이름만 그림 위에 얹습니다.
- * ⚠ 그리는 것은 p16.js, 뼈대는 index.html 의 `#p16sheet` 입니다. */
+ * ⚠ 그리는 것은 p16.js, 뼈대는 index.html 의 `#p16pane` 입니다. */
 
 /* 들어가는 줄. 성향 카드 «안»에 답니다 — 카드 하나를 새로 세우면 머리와
    막대 사이가 벌어집니다. 위에 실선을 그어 카드 안의 «딴 일»임을 알립니다. */
@@ -3734,17 +3734,19 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
           font-size:calc(13px * var(--ts)); font-weight:600;
           color:var(--primary); cursor:pointer; }
 
-/* ⚠⚠ **높이를 건드리지 마십시오(b739).** ⚠⚠
-   b737 에 「도감은 기니까」 하고 84vh 로 올렸더니 **폰에서 위가 잘렸습니다**
-   (사용자: 「위에는 잘려있고」). 시트는 `justify-content:flex-end` 라 아래로
-   붙는데, 카드(84vh) + 감싼 것의 아래 여백(`--tabh` + 14px, 안전영역까지
-   치면 100px 넘음)이 화면을 넘으면 **넘치는 쪽이 위**입니다. 머리줄이
-   화면 밖으로 밀려 「닫기」가 안 보입니다.
-   → 다른 시트와 **같은 76vh**. 이 값은 안전영역까지 넣고도 남습니다.
-   ⚠ 길다는 것은 «안에서 굴리면» 됩니다. 시트를 키울 이유가 아닙니다. */
-.p16card{ max-height:76vh; }
-.p16grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px;
-          padding:10px 12px 14px; }
+/* ⚠⚠ **시트를 걷고 판으로 갔습니다(b740, 사용자 결정).** ⚠⚠
+   b737~b739 는 아래에서 올라오는 시트였습니다. 그런데 굴릴 것이 여덟 줄이라
+   붙박이 머리줄(`.shhead`)이 **그림 사이로 비쳐 보였습니다**(사용자: 「이미지
+   사이로 글씨 유형 16가지 보인다 … 그냥 새로운 페이지가 뜨는 걸로 해줘」).
+   시트는 «잠깐 고르는» 자리이지 «훑어보는» 자리가 아닙니다. 높이(76vh·84vh)를
+   맞추려 애쓸 일도 같이 없어집니다.
+   ⚠ 이제 일기장·보관함과 같은 «덱 밖 판»입니다. 높이·스크롤·아래 여백은
+     `.tabpane` 이 줍니다(app.js 가 붙여줍니다) — 여기서 손대지 마십시오. */
+.p16bar{ display:flex; align-items:center; justify-content:space-between;
+         gap:8px; padding:10px 12px; }
+.p16bar .ghost{ padding-left:0; }
+.p16bar .ghost + .p16n + .ghost{ padding-right:0; }
+.p16grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 
 /* ⚠⚠ **`aspect-ratio` 가 아니라 «자리 잡는 칸»(.sz) + 격자입니다.** ⚠⚠
    `.phero` 와 같은 구조이고 같은 이유입니다(b736 참고): 칸 안 글자는
@@ -3804,17 +3806,23 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * 사용자: 「요약이랑 궁합도만 있고 자세한 설명은 누르면 보이게 해줘」.
  * 요약(이름 · 한 줄 · 축 네 마디)은 이미 그림 안에 있습니다 — `.phero` 를
  * 그대로 씁니다. 그림 밖에 남는 것은 궁합 한 줄과 «접힌» 축 넷뿐입니다. */
-.p16wrap{ padding:10px 12px 16px; }
-/* ⚠⚠ **좌우로 넘기는 칸입니다(b739, 사용자 요청).** ⚠⚠
-   `touch-action:pan-y` 가 있어야 합니다 — 없으면 브라우저가 가로 몸짓을
-   먼저 채가서 손가락을 따라오지 않습니다. 세로 굴리기는 그대로 삽니다.
-   ⚠ 넘어간 뒤 «반대쪽에서 들어오는» 시늉만 냅니다(아래 두 줄). 열여섯 장을
-     다 DOM 에 두면 그림 3.8MB 를 통째로 받게 됩니다 — 그래서 진짜
-     캐러셀이 아니라 한 장만 두고 갈아 끼웁니다. */
-.p16one{ touch-action:pan-y;
-         transition:transform .18s var(--ease), opacity .18s var(--ease); }
-.p16one.fromr{ transform:translateX(34px); opacity:.3; }
-.p16one.froml{ transform:translateX(-34px); opacity:.3; }
+/* ⚠⚠ **진짜 가로 스크롤입니다(b740).** ⚠⚠
+   b739 는 손으로 밀었다가(touchmove) 놓으면 제자리로 튕기고 새 것이
+   끼어들었습니다 — 사용자: 「팍팍 튀는데」. 두 동작이 이어지지 않으니
+   당연합니다. 브라우저의 스크롤에 맡기면 관성까지 공짜로 따라옵니다.
+   ⚠ `scroll-snap-type:x mandatory` 가 «한 장씩» 서게 합니다. 없으면
+     어중간한 데서 멈춥니다.
+   ⚠ 높이를 안 정합니다 — 내용만큼 자랍니다. 그래서 `overflow-y:hidden`
+     이어도 잘릴 것이 없고, 세로 굴리기는 바깥 시트가 맡습니다.
+     (`overflow-x:auto` 를 쓰면 `overflow-y:visible` 은 못 씁니다.)
+   ⚠ `overscroll-behavior-x:contain` — 없으면 끝에서 더 밀 때 폰이
+     «뒤로가기»로 알아듣습니다. */
+.p16track{ display:flex; overflow-x:auto; overflow-y:hidden;
+           scroll-snap-type:x mandatory; overscroll-behavior-x:contain;
+           -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.p16track::-webkit-scrollbar{ display:none; }
+.p16slide{ flex:0 0 100%; min-width:0; scroll-snap-align:center;
+           padding:0 var(--s-md) 16px; }
 /* 넘기는 곳임을 알립니다 — 몸짓은 보이지 않으니 글자로 한 번 말합니다. */
 .p16hint{ margin-top:10px; text-align:center; font-size:calc(11px * var(--ts));
           color:var(--ink-48); }
