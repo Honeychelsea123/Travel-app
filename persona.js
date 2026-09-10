@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b742';
-import { sb } from './db.js?v=b742';
-import { cities, countryName, continentOf } from './cities.js?v=b742';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b743';
+import { sb } from './db.js?v=b743';
+import { cities, countryName, continentOf } from './cities.js?v=b743';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b742';
+import { similarPicks } from './rec.js?v=b743';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b742';
-import { visited } from './rate.js?v=b742';
-import { open16 } from './p16.js?v=b742';
+import { mateCode, mateHtml } from './mate.js?v=b743';
+import { visited } from './rate.js?v=b743';
+import { open16 } from './p16.js?v=b743';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b742';
+         shareCard } from './card.js?v=b743';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -315,8 +315,16 @@ async function drawPersona(s, ax, rates){
            ⚠ 그늘(.pscrim)은 그림마다 밝기가 달라서 깝니다. 글자 그림자만
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
-        <div class="psizer"></div>
-        <img src="./persona/${esc(code)}.webp?v=b742" alt=""
+        <!-- ⚠⚠ **깜빡임 막개(b743, 사용자: 「이미지가 깜빡거리네」).** ⚠⚠
+             이 화면은 열 때마다 innerHTML 을 통째로 다시 씁니다. 그러면
+             그림도 «새 요소»가 되어, 캐시에 있어도 붙는 순간까지 한 번
+             빈 칸(크림색)이 보입니다.
+             자리를 잡는 칸(.psizer)에 **썸네일**(22KB, 도감이 쓰는 그것)을
+             깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
+           ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
+        <div class="psizer"
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b743')"></div>
+        <img src="./persona/${esc(code)}.webp?v=b743" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
