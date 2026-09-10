@@ -19,20 +19,20 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b734';
-import { sb } from './db.js?v=b734';
-import { cities, countryName, continentOf } from './cities.js?v=b734';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b735';
+import { sb } from './db.js?v=b735';
+import { cities, countryName, continentOf } from './cities.js?v=b735';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b734';
+import { similarPicks } from './rec.js?v=b735';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b734';
-import { visited } from './rate.js?v=b734';
+import { mateCode, mateHtml } from './mate.js?v=b735';
+import { visited } from './rate.js?v=b735';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b734';
+         shareCard } from './card.js?v=b735';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -313,20 +313,32 @@ async function drawPersona(s, ax, rates){
           <circle cx="18" cy="19" r="2.6"/>
           <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/>
         </svg></button>`}
-      <div class="ptop" style="cursor:default">
-        <div class="pmeta"><div class="pcode">${esc(code)}</div>
-        <div class="pname">${esc(type.n)}</div>
+      <!-- ── 히어로(b735) ── 글자를 그림 «위»에 얹습니다 ───────────────
+           일러스트가 512 정사각 캐릭터에서 1536×1024 엽서 그림으로 바뀌었고,
+           **왼쪽 아래가 어둡게** 그려져 있습니다 — 거기에 흰 글자를 얹으라고
+           만든 것입니다. 공유 카드(card.js 의 drawP16)와 **같은 배치**라야
+           보는 것과 나가는 것이 같습니다.
+           ⚠ **그림이 안 오면 흰 글자를 쓰면 안 됩니다** — 크림 바탕에 흰 글자는
+             안 보입니다. onerror 로 .noart 를 달아 먹색으로 되돌립니다.
+           ⚠ 그늘(.pscrim)은 그림마다 밝기가 달라서 깝니다. 글자 그림자만
+             으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
+      <div class="phero">
+        <img src="./persona/${esc(code)}.webp?v=b735" alt=""
+             onerror="this.closest('.phero').classList.add('noart')">
+        <div class="pscrim"></div>
         <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
              자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다. -->
-        <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span></div>
-        <div class="part"><img src="./persona/${esc(code)}.png?v=b734"
-          alt="" onerror="this.closest('.part').remove()"></div>
-      </div>
-      <div class="empty" style="text-align:center; padding:2px 6px 0">
-        ${esc(type.d || '')}
-        <div class="memo" style="margin-top:6px">
-          ${s.countries}개국 · ${s.cities}도시
+        <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span>
+        <div class="ptxt">
+          <div class="peyebrow">나의 여행 유형은</div>
+          <div class="pcode">${esc(code)}</div>
+          <div class="pname">${esc(type.n)}</div>
+          ${type.d ? `<div class="pdesc">${esc(type.d)}</div>` : ''}
+          <div class="paxis">${esc(spec.axisWords)}</div>
         </div>
+      </div>
+      <div class="memo" style="text-align:center; padding:8px 6px 0">
+        ${s.countries}개국 · ${s.cities}도시
       </div>
       <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
            빈 문자열이라 아무것도 안 붙습니다. -->

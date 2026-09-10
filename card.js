@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b734';
+import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b735';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b734';
+import { distKm, pScale, SEOUL } from './calc.js?v=b735';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -313,7 +313,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.png?v=b734`;
+    img.src = `./persona/${code}.webp?v=b735`;
   });
 }
 
@@ -602,9 +602,6 @@ async function drawP16(s, W, H, F){
 
   const art = await p16Image(s.code);
 
-  /* 줄 수는 자(U)와 무관합니다 — 글자와 최대 너비가 같이 줄기 때문입니다. */
-  g.font = F(500, W * .030);
-  const descLines = wrapText(g, s.desc, W * .84);
   /* ⚠ **궁합과 MRZ 는 없을 수도 있습니다(b406).** 로그인 전 맛보기 카드
      (try.js)는 **내 유형 하나만** 보여줍니다 — 아직 계정이 없어 몇 개국을
      다녀왔는지도 모르고, 궁합은 상대가 있어야 뜻이 있습니다.
@@ -633,23 +630,10 @@ async function drawP16(s, W, H, F){
      나란한 두 칸의 키가 다르면 표가 아니라 사고로 보입니다. */
   const PICKH = .100 + 3 * .042 + .030;
 
+  /* ⚠ **코드·축 낱말·유형 이름·설명은 이제 배너 «안»에 있습니다(b735).**
+     여기서 또 그리면 한 카드에 두 번 나옵니다. 배너는 아래 「히어로 배너」
+     자리에서 그립니다 — 블록 계산 밖입니다(비율이 고정이라). */
   const blocks = [
-    { h:.082, draw:(y, U) => {                 /* 코드 — 작은 표식 */
-        g.font = F(800, U * .062); g.fillStyle = P16.잉크; g.textAlign = 'left';
-        spaced(g, s.code, cx, y + U * .060, U * .012);
-      } },
-    { h:.050, draw:(y, U) => {
-        g.font = F(600, U * .029); g.fillStyle = P16.흐림; g.textAlign = 'center';
-        g.fillText(s.axisWords, cx, y + U * .034);
-      } },
-    { h:.104, draw:(y, U) => {                 /* **주인공** — 크고 주황 */
-        g.font = F(800, U * .074); g.fillStyle = P16.주황; g.textAlign = 'center';
-        g.fillText(s.name, cx, y + U * .078);
-      } },
-    { h:descLines.length * .040 + .012, draw:(y, U) => {
-        g.font = F(500, U * .030); g.fillStyle = P16.흐림; g.textAlign = 'center';
-        descLines.forEach((l, i) => g.fillText(l, cx, y + U * (.030 + i * .040)));
-      } },
     { h:.090, draw:(y, U) => {                 /* 숫자는 크게, 단위는 작게 */
         const N = F(800, U * .058), 단 = F(600, U * .032);
         runs(g, [{ t:String(s.countries), f:N, c:P16.잉크 },
@@ -657,14 +641,6 @@ async function drawP16(s, W, H, F){
                  { t:'   ·   ', f:단, c:P16.아주흐림 },
                  { t:String(s.cities), f:N, c:P16.잉크 },
                  { t:' 도시', f:단, c:P16.흐림 }], cx, y + U * .062);
-      } },
-    { h:.290, draw:(y, U) => {                 /* 일러스트는 색 패널 위에 */
-        const p = U * .265, x = cx - p / 2, top = y + U * .014;
-        /* 일러스트 PNG 는 **제 배경을 이미 갖고 있습니다**(유형색 둥근 사각).
-           뒤에 패널을 또 깔면 모서리가 겹쳐 테두리처럼 보입니다.
-           못 받았을 때만 깝니다 — 그때는 빈칸보다 색이라도 있는 편이 낫습니다. */
-        if (art) g.drawImage(art, x, top, p, p);
-        else { g.fillStyle = P16_PANEL[kind]; rrect(g, x, top, p, p, U * .034); g.fill(); }
       } },
     { h:4 * .068 + .010, draw:(y, U) => {
         const tx = L + W * .158, tw = (R - W * .098) - tx, th = U * .042;
@@ -759,9 +735,93 @@ async function drawP16(s, W, H, F){
       } }] : []),
   ];
 
-  /* ── 자 정하기 ── 머리말과 바닥글이 쓰는 만큼을 빼고 남는 높이에 맞춥니다. */
+  /* ── 히어로 배너(b735) ────────────────────────────────────────────
+   * ⚠⚠ **일러스트가 «글자를 받는 그림»으로 바뀌었습니다.** 예전 것은
+   *   512×512 납작한 캐릭터라 글 아래 작은 패널로 놓았는데, 새것은
+   *   1536×1024 짜리 엽서 그림이고 **왼쪽 아래가 어둡게 그려져 있습니다** —
+   *   거기에 흰 글자를 얹으라고 만든 것입니다(사용자가 16장 전부 그렇게
+   *   세팅했습니다). 그래서 코드·유형 이름·설명·축 낱말이 **그림 안으로**
+   *   들어갑니다.
+   * ⚠ **블록 계산(U) 밖에서 그립니다.** 배너는 3:2 비율이 고정이라
+   *   남는 높이에 맞춰 늘였다 줄였다 하면 그림이 찌그러집니다.
+   *   먼저 자리를 잡고, 블록은 그 «아래»부터 시작합니다.
+   * ⚠ **그림을 못 받으면 흰 글자를 쓰면 안 됩니다** — 크림 바탕에 흰 글자는
+   *   안 보입니다. 그때는 옛 패널을 깔고 먹색으로 씁니다. */
+  /* ⚠ **그림은 3:2 인데 배너는 1.8:1 로 «잘라» 씁니다.** 3:2 그대로 두면
+     배너가 카드 높이의 45% 를 먹어서, 아래 막대와 상자가 3분의 1 작아집니다
+     (실측: 자 U 가 .60W → .40W). 위쪽 하늘을 조금 덜어냅니다 —
+     주인공과 어두운 아래쪽은 그대로 남습니다. */
+  const bw = R - L, bh = bw / 1.8, by0 = W * .118;
+  {
+    g.save();
+    rrect(g, L, by0, bw, bh, W * .028); g.clip();
+    if (art){
+      const sh = art.width / 1.8;
+      /* 남는 세로의 72% 를 위에서 덜어냅니다 — 아래(어두운 자리)를 지킵니다. */
+      const sy = Math.max(0, (art.height - sh) * .72);
+      g.drawImage(art, 0, sy, art.width, Math.min(sh, art.height - sy), L, by0, bw, bh);
+      /* ⚠⚠ **아래쪽에 그늘을 깝니다.** 그림마다 밝기가 달라서 글자 다섯 줄
+         중 위쪽이 하늘·엽서 위에 걸리면 안 읽힙니다(FMDP 에서 실제로 걸렸습니다).
+         글자마다 그늘을 주는 것만으로는 모자랍니다 — 바탕을 깔아야 합니다. */
+      const gr = g.createLinearGradient(0, by0 + bh * .12, 0, by0 + bh);
+      gr.addColorStop(0,   'rgba(20,16,12,0)');
+      gr.addColorStop(0.42,'rgba(20,16,12,.46)');
+      gr.addColorStop(1,   'rgba(20,16,12,.80)');
+      g.fillStyle = gr; g.fillRect(L, by0, bw, bh);
+    }
+    else { g.fillStyle = P16_PANEL[kind]; g.fillRect(L, by0, bw, bh); }
+    g.restore();
+
+    const 흰 = !!art;
+    const tx = L + bw * .055;
+    /* ⚠ **글자는 배너의 «왼쪽 아래»에만 놓습니다.** 그림이 그렇게 그려져
+       있습니다 — 오른쪽에는 주인공이 있어서 글자를 얹으면 얼굴을 가립니다.
+       그래서 줄바꿈 폭을 배너의 절반쯤으로 묶습니다. */
+    const 글폭 = bw * .52;
+    let ty = by0 + bh - bh * .085;
+    g.textAlign = 'left';
+    /* 그림이 어떤 색으로 와도 읽히게 옅은 그늘을 답니다.
+       ⚠ 그늘은 그리고 «바로» 끕니다 — 안 끄면 뒤에 그리는 막대까지 번집니다. */
+    if (흰){ g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = W * .012; }
+
+    /* ⚠ `spaced` 는 **가운데 정렬**입니다(x 를 중심으로 봅니다). 왼쪽 맞춤이
+       필요하므로 여기서는 직접 한 글자씩 놓습니다 — b735 에 그걸 모르고
+       왼쪽 좌표를 넘겼다가 코드 절반이 배너 밖으로 나갔습니다. */
+    const 왼쪽자간 = (txt, x, y, gap) => {
+      let cxx = x;
+      for (const ch of [...txt]){ g.fillText(ch, cxx, y); cxx += g.measureText(ch).width + gap; }
+    };
+
+    g.font = F(600, W * .024); g.fillStyle = 흰 ? 'rgba(255,255,255,.80)' : P16.흐림;
+    const al = wrapText(g, s.axisWords, 글폭);
+    for (let i = al.length - 1; i >= 0; i--){ g.fillText(al[i], tx, ty); ty -= W * .034; }
+    ty -= W * .004;
+
+    g.font = F(500, W * .027); g.fillStyle = 흰 ? 'rgba(255,255,255,.94)' : P16.흐림;
+    const dl = wrapText(g, s.desc, 글폭);
+    for (let i = dl.length - 1; i >= 0; i--){ g.fillText(dl[i], tx, ty); ty -= W * .038; }
+    ty -= W * .010;
+
+    /* ⚠ **브랜드 주황을 그대로 쓰면 어두운 그림 위에서 묻힙니다**(#F25E26 은
+       명도가 낮습니다). 배너에서만 밝은 쪽으로 올립니다 — 화면(app.css 의
+       `.pname`)도 같은 값입니다. 그림이 없을 때는 크림 바탕이라 원래 주황. */
+    g.font = F(800, W * .052); g.fillStyle = 흰 ? '#FF9166' : P16.주황;
+    g.fillText(s.name, tx, ty);
+    ty -= W * .070;
+
+    g.font = F(800, W * .076); g.fillStyle = 흰 ? '#FFFFFF' : P16.잉크;
+    왼쪽자간(s.code, tx, ty, W * .006);
+    ty -= W * .038;
+
+    g.font = F(600, W * .024); g.fillStyle = 흰 ? 'rgba(255,255,255,.90)' : P16.아주흐림;
+    g.fillText('나의 여행 유형은', tx, ty);
+
+    g.shadowColor = 'transparent'; g.shadowBlur = 0;
+  }
+
+  /* ── 자 정하기 ── 배너와 바닥글이 쓰는 만큼을 빼고 남는 높이에 맞춥니다. */
   const 총높이 = blocks.reduce((a, b) => a + b.h, 0);
-  const 위 = W * .150, 아래 = H - W * .160;
+  const 위 = by0 + bh + W * .034, 아래 = H - W * .160;
   const U = Math.min(W, (아래 - 위) / 총높이);
   let y = 위 + ((아래 - 위) - U * 총높이) / 2;
   for (const b of blocks){ b.draw(y, U); y += U * b.h; }

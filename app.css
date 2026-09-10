@@ -3600,43 +3600,70 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 #analbox .row .val{ font-size:var(--f-md); font-weight:600; color:var(--ink); }
 
 
-/* ── 분석 탭 머리 — 내가 누구인지 먼저(b448) ─────────────────────────
- * 코드를 제일 크게, 이름을 그 아래, 등수를 알약으로. 한 줄짜리
- * 「FMDP ›」로는 무엇을 보러 온 탭인지 안 읽힙니다. */
-/* ── 분석 탭 머리 — **글 왼쪽 · 그림 오른쪽**(b451) ────────────────────
- * 세로로 쌓았더니 그림이 자리를 다 먹어 **아래 지도가 안 보였습니다.**
- * 가로로 나누면 같은 내용이 절반 높이에 들어갑니다 — 지도가 주인공인
- * 화면에서 머리가 화면을 차지할 이유가 없습니다.
- * ⚠ 그림은 `flex:none`. 글이 길어져도 그림이 찌그러지면 안 됩니다.
- * ⚠ 성향 화면(persona.js)의 머리도 같은 `.ptop` 을 씁니다 — 거기는 읽는
- *   리포트라 가운데가 어울리지만, 부품을 둘로 나누면 또 갈라집니다.
- *   한 벌로 두고 가로로 통일합니다. */
-/* ⚠ **가운데 정렬입니다(b454).** 왼쪽 정렬(b453)도 해봤는데, 글과 그림을
-   양끝으로 벌려 두면 가운데가 비어 **둘이 남남처럼** 보였습니다.
-   가운데에서 만나야 한 덩어리로 읽힙니다 — 아래 줄들과 줄이 안 맞는
-   것은 감수합니다. 머리는 「이게 나」를 보여주는 자리라 목록의 리듬을
-   따를 이유가 없습니다. */
-.ptop{ position:relative; display:flex; align-items:center;
-       justify-content:center; gap:16px;
-       text-align:left; padding:4px 0 12px; cursor:pointer; }
-.ptop > .part{ order:2; }
-/* 글은 제 폭만 씁니다 — flex:1 로 늘리면 다시 좌우로 벌어집니다. */
-.pmeta{ min-width:0; }
-/* 유형 일러스트(b449). card.js 가 카드에 쓰는 것과 **같은 파일**입니다
-   (persona/{코드}.png) — 두 벌로 두면 카드와 화면의 그림이 갈라집니다.
-   ⚠ 세로 자리를 미리 잡습니다(aspect-ratio). 그림이 늦게 와도 옆 글이
-     밀리지 않습니다. */
-/* ⚠ 분석 탭이 마지막으로 종이로 넘어옵니다(b627). 훑어보니 둥근 것이
-     여기 넷뿐이었습니다 — 성향 그림·배지 줄·궁합 두 칸·히어로 사진. */
-.part{ flex:none; width:min(34%, 112px); margin:0; aspect-ratio:1;
-       border-radius:0; overflow:hidden; }
-.part img{ width:100%; height:100%; object-fit:contain; display:block; }
-.pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:var(--primary);
-        letter-spacing:calc(1px * var(--ts)); line-height:1.1; }
-.pname{ font-size:calc(17px * var(--ts)); font-weight:700; margin-top:3px; }
-.prank{ display:inline-block; margin-top:8px; padding:3px 10px;
-        border-radius:0; background:var(--line);
-        font-size:calc(12px * var(--ts)); font-weight:600; color:var(--ink-48); }
+/* ── 분석 탭 머리 ─────────────────────────────────────────────────────
+ * ⚠ 여기 있던 옛 설명(b448·b451·b454 — 「글 왼쪽 · 그림 오른쪽」·「가운데
+ *   정렬」)은 b735 에 갈아엎어서 지웠습니다. **그 배치는 이제 없습니다** —
+ *   그림이 폭을 다 쓰고 글자가 그 위에 얹힙니다. 아래 `.phero` 참고.
+ *   옛 규칙을 근거로 되돌리지 마십시오. 그때는 그림이 512 정사각 캐릭터라
+ *   글 옆에 두는 것이 맞았고, 지금은 글자를 받으라고 그린 엽서 그림입니다. */
+/* ── 히어로(b735) ── 글자를 그림 «위»에 얹습니다 ──────────────────────
+ * 옛 `.ptop`/`.part`(글 왼쪽 · 정사각 그림 112px)를 갈아치웠습니다.
+ * 일러스트가 1536×1024 엽서 그림으로 바뀌었고 **왼쪽 아래가 어둡게**
+ * 그려져 있습니다 — 거기에 글자를 얹으라고 만든 것입니다.
+ * ⚠ **공유 카드(card.js 의 drawP16)와 같은 배치**라야 보는 것과 나가는
+ *   것이 같습니다. 한쪽만 고치지 마십시오.
+ * ⚠ 카드 좌우 여백 밖으로 빼서 **폭을 다 씁니다** — 히어로는 이 화면의
+ *   첫인상이라 상자 안에 갇히면 값이 반으로 줄어듭니다.
+ * ⚠ 비율은 **1.8:1**. 그림은 3:2 인데 `object-fit:cover` 로 위쪽 하늘을
+ *   덜어냅니다(카드도 같은 값으로 잘라 씁니다). */
+.phero{ position:relative; margin:0 calc(-1 * var(--s-md)); aspect-ratio:1.8;
+        overflow:hidden; background:var(--pearl); }
+.phero img{ position:absolute; inset:0; width:100%; height:100%;
+            object-fit:cover; object-position:50% 72%; display:block; }
+/* 그림마다 밝기가 달라서 그늘을 깝니다 — 글자 그림자만으로는 밝은 하늘
+   위에서 안 버팁니다(카드에서 실제로 겪었습니다). */
+.phero .pscrim{ position:absolute; inset:0;
+  background:linear-gradient(to bottom, rgba(20,16,12,0) 8%,
+             rgba(20,16,12,.58) 44%, rgba(20,16,12,.86) 100%); }
+/* ⚠ **글자 그늘이 있어야 합니다.** 그늘 판(`.pscrim`)만으로는 모자랍니다 —
+   유형 이름은 주황이라 어두운 그림 위에서 대비가 죽습니다(실측: HMDP 의
+   부둣가 야경에서 「골목 탐험가」가 거의 안 읽혔습니다). 카드(card.js)도
+   같은 이유로 글자마다 그늘을 답니다. */
+.ptxt{ position:absolute; left:var(--s-md); right:44%; bottom:14px;
+       text-shadow:0 1px 6px rgba(0,0,0,.65), 0 0 2px rgba(0,0,0,.45); }
+.phero.noart .ptxt{ text-shadow:none; }
+/* ⚠ 오른쪽 44% 는 비웁니다 — 거기에 주인공이 서 있습니다. */
+.peyebrow{ font-size:calc(12px * var(--ts)); font-weight:600;
+           color:rgba(255,255,255,.90); }
+.pcode{ font-size:calc(38px * var(--ts)); font-weight:800; color:#fff;
+        letter-spacing:calc(2px * var(--ts)); line-height:1.05; margin-top:1px; }
+/* ⚠ **브랜드 주황을 그대로 쓰면 어두운 그림 위에서 안 읽힙니다.**
+   `--primary`(#F25E26)는 명도가 낮아 야경 위에서 묻힙니다(실측: HMDP 부둣가).
+   히어로에서만 밝은 쪽으로 올립니다 — 사진 위 글자는 원래 그렇게 씁니다.
+   ⚠ 그림이 없을 때(`.noart`)는 크림 바탕이라 «원래 주황»으로 되돌립니다. */
+.pname{ font-size:calc(21px * var(--ts)); font-weight:800; color:#FF9166;
+        margin-top:2px; }
+.phero.noart .pname{ color:var(--primary); }
+.pdesc{ font-size:calc(13px * var(--ts)); color:rgba(255,255,255,.94);
+        margin-top:5px; line-height:1.5; word-break:keep-all; }
+.paxis{ font-size:calc(11px * var(--ts)); color:rgba(255,255,255,.80);
+        margin-top:5px; line-height:1.45; word-break:keep-all; }
+/* ⚠⚠ **그림이 안 오면 흰 글자를 쓰면 안 됩니다** — 크림 바탕에 흰 글자는
+   안 보입니다. persona.js 가 `onerror` 로 이 클래스를 답니다. */
+.phero.noart{ aspect-ratio:auto; background:none; }
+.phero.noart .pscrim{ display:none; }
+.phero.noart .ptxt{ position:static; right:auto; padding:4px var(--s-md) 12px; }
+.phero.noart .peyebrow{ color:var(--ink-48); }
+.phero.noart .pcode{ color:var(--primary); }
+.phero.noart .pdesc,
+.phero.noart .paxis{ color:var(--ink-48); }
+/* 상위 % — 그림 오른쪽 위에 얹습니다(여권 도장 자리). */
+.prank{ position:absolute; right:12px; top:12px; z-index:1;
+        display:inline-block; padding:4px 11px; border-radius:0;
+        background:rgba(243,240,232,.92);
+        font-size:calc(12px * var(--ts)); font-weight:700; color:var(--primary); }
+.phero.noart .prank{ position:static; display:inline-block; margin:8px 0 0 var(--s-md);
+        background:var(--line); color:var(--ink-48); }
 
 /* ── 궁합 두 칸 ───────────────────────────────────────────────────────
  * 성향 카드 그림 안에만 있던 것을 꺼냈습니다 — 그림 안에 있으면 카드를
