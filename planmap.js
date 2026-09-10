@@ -14,9 +14,9 @@
  *
  * 층: dom.js · calc.js · trip.js 만 씁니다. 네트워크도 DB 도 안 씁니다 —
  * Leaflet 을 받아오는 것 하나뿐입니다. */
-import { $, esc } from './dom.js?v=b731';
-import { hm } from './calc.js?v=b731';
-import { plans, pickedDay, catFilter } from './trip.js?v=b731';
+import { $, esc } from './dom.js?v=b732';
+import { hm, 좌표수상 } from './calc.js?v=b732';
+import { plans, legs, pickedDay, catFilter } from './trip.js?v=b732';
 
 /* ── 일정 지도 ───────────────────────────────────────────────────────
  * 목록만 보면 오늘 얼마나 흩어져 다니는지 안 보입니다. 위에 지도를 얹습니다.
@@ -85,7 +85,11 @@ export function drawPlanMap(){
      받아왔습니다. 이제 접혀 있으면 아예 안 받습니다. */
   let show = pickedDay ? plans.filter(p => p.date === pickedDay) : plans;
   if (catFilter) show = show.filter(p => p.category === catFilter);
-  const pts = show.filter(p => p.lat != null && p.lng != null);
+  /* ⚠ **수상한 좌표는 안 찍습니다(b732).** 핀 하나가 273km 밖에 있으면
+     `fitBounds` 가 거기까지 담느라 **지도가 통째로 줌아웃**되어 그날 일정이
+     한 점으로 뭉칩니다 — 틀린 핀 하나가 지도 전체를 못 쓰게 만듭니다.
+     판정은 calc.js 의 `좌표수상` 한 곳입니다(그쪽 주석에 사연). */
+  const pts = show.filter(p => p.lat != null && p.lng != null && !좌표수상(p, legs));
   drawMapBtn(pts.length);
   if (!pts.length || !mapOpen){ box.classList.add('hide'); return; }
 

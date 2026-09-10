@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b731';
-import { featOn, flags } from './flags.js?v=b731';
-import { fail, write } from './net.js?v=b731';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b731';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b731';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b731';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b731';
-import { STAY_MIN, mins } from './plancheck.js?v=b731';
+import { $, esc, emptyDo } from './dom.js?v=b732';
+import { featOn, flags } from './flags.js?v=b732';
+import { fail, write } from './net.js?v=b732';
+import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b732';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b732';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b732';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b732';
+import { STAY_MIN, mins } from './plancheck.js?v=b732';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b731';
+import { fillOnePlan } from './cands.js?v=b732';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -78,6 +78,14 @@ function evRows(date){
  *   · 아직 안 움직였을 때 시작하므로 굴림이 시작되기 전에 가로챕니다.
  * 마우스는 그대로 바로 끕니다 — 굴리기와 헷갈릴 일이 없습니다. */
 const HOLD_MS = 320, MOVE_TOL = 8;
+
+/* 핀 아이콘. 「위치 찾기」와 「위치 확인」 둘이 같은 그림을 씁니다(b732) —
+   두 번 적으면 한쪽만 고치는 날이 옵니다.
+   ⚠ 크기는 CSS 로 줍니다(`.nogeo svg`) — b561 에 0×0 으로 찌그러진 함정. */
+const 핀아이콘 = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  ><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle
+      cx="12" cy="10" r="2.4"/></svg>`;
 let holdTimer = null, holdAt = null;
 
 const cancelHold = () => { clearTimeout(holdTimer); holdTimer = null; holdAt = null; };
