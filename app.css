@@ -3436,7 +3436,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .famerow{ display:flex; align-items:center; gap:8px; padding:5px 0; }
 .famerow > span{ flex:none; width:104px; font-size:var(--f-sm); color:var(--ink-80); }
 .famerow > .fp{ flex:1; margin-top:0; }
-.famerow > b{ flex:none; width:34px; text-align:right;
+/* ⚠ 34 → 46px(b727). ②는 「42%」지만 별점 분포는 「35곳」이고, 도시가
+   많아지면 「313곳」까지 갑니다 — 좁으면 숫자가 줄바꿈해 막대가 밀립니다. */
+.famerow > b{ flex:none; width:46px; text-align:right;
               font-size:var(--f-sm); font-variant-numeric:tabular-nums; }
 
 .gaprow{ display:flex; align-items:baseline; gap:8px; padding:5px 0; }

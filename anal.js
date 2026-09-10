@@ -14,30 +14,33 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b726';
-import { sb } from './db.js?v=b726';
-import { cities } from './cities.js?v=b726';
+import { $, esc } from './dom.js?v=b727';
+import { sb } from './db.js?v=b727';
+import { cities } from './cities.js?v=b727';
+/* 별 갈래와 그 이름. ⚠ **보관함 시트와 같은 것을 씁니다**(b727) — 따로 세면
+   「★4점대 32곳」이 두 화면에서 달라집니다. 규칙은 stars.js 한 곳입니다. */
+import { 별갈래, BAND_NAME } from './stars.js?v=b727';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b726';
+import { cityStat } from './rate.js?v=b727';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b726';
+import { loadRateData } from './rating.js?v=b727';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b726';
+import { renderPersona } from './persona.js?v=b727';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b726';
+import { similarPicks } from './rec.js?v=b727';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b726';
-import { pickCity } from './citysearch.js?v=b726';
+import { openNew } from './newtrip.js?v=b727';
+import { pickCity } from './citysearch.js?v=b727';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -218,7 +221,52 @@ export async function loadAnal(){
       }
     }
 
-    /* ── ③ 별점이 갈린 곳 ──
+    /* ── ③ 별점을 어떻게 주나 (b727, 사용자 결정: 「막대 + 해석으로 가자」) ──
+     * ⚠ **남이 필요 없는 칸입니다.** 위 ①③ 은 견줄 사람이 있어야 뜻이
+     *   생기는데, 이건 내 별점만으로 답이 납니다 — 사람이 적은 지금
+     *   이 카드에서 늘 살아 있는 칸이 ②와 여기뿐입니다.
+     * ⚠ **막대만 그리면 보관함 시트의 숫자를 한 번 더 적는 것뿐입니다**
+     *   (거기 갈래별 개수가 이미 있습니다). 값은 «해석»에서 나옵니다 —
+     *   「★3~4에 88%가 몰려 있다」는 본인도 모르던 사실이고, 별점을 사실상
+     *   두 칸으로만 쓰고 있다는 뜻입니다.
+     * ⚠ 갈래는 stars.js 의 `별갈래` 하나입니다(위 import 주석).
+     * ⚠ 문턱 5곳은 위 ①② 와 같습니다 — 세 곳으로 「몰려 있다」고 할 수 없습니다.
+     * ⚠ 해석은 **두 마디까지**만 답니다. 세 마디가 되면 읽다 말고, 그러면
+     *   막대만 남아 처음 문제로 돌아갑니다. */
+    {
+      const 갈래 = ['5', '4', '3', '2', '1'];
+      const 셈 = {}; 갈래.forEach(k => { 셈[k] = 0; });
+      let 전체 = 0;
+      for (const r of 매긴){ const k = 별갈래(r.stars); if (셈[k] != null){ 셈[k]++; 전체++; } }
+
+      if (전체 >= 5){
+        const 몫 = k => 셈[k] / 전체;
+        /* 제일 많은 두 갈래. 붙어 있으면 「★3~4」, 떨어져 있으면 「★3과 ★5」. */
+        const 큰둘 = [...갈래].sort((a, b) => 셈[b] - 셈[a]).slice(0, 2)
+                              .map(Number).sort((a, b) => a - b);
+        const 합 = (셈[String(큰둘[0])] + 셈[String(큰둘[1])]) / 전체;
+        const 말 = [];
+        if (합 >= 0.7)
+          말.push(`${큰둘[1] - 큰둘[0] === 1 ? `★${큰둘[0]}~${큰둘[1]}` :
+                    `★${큰둘[0]}과 ★${큰둘[1]}`}에 ${Math.round(합 * 100)}%가 몰려 있어요`);
+        if (몫('5') <= 0.1) 말.push(`별 다섯은 ${셈['5']}곳뿐이에요`);
+        else if (몫('5') >= 0.35) 말.push(`${Math.round(몫('5') * 100)}%가 별 다섯이에요`);
+        if (말.length < 2 && 셈['1'] + 셈['2'] === 0) 말.push('★2 아래는 하나도 없어요');
+
+        카드.insertAdjacentHTML('beforeend',
+          `<div class="picks"><span class="label">별점을 어떻게 주나</span></div>` +
+          갈래.map(k => {
+            const p = Math.round(몫(k) * 100);
+            return `<div class="famerow"><span>${esc(BAND_NAME[k])}</span>
+              <div class="fp"><i style="width:${p}%"></i></div>
+              <b>${셈[k]}곳</b></div>`;
+          }).join('') +
+          (말.length ? `<div class="memo">${esc(말.slice(0, 2).join(' · '))}</div>` : ''));
+        뭔가 = true;
+      }
+    }
+
+    /* ── ④ 별점이 갈린 곳 ──
        ⚠⚠ **「남이 둘 이상」으로 걸렀다가 되돌렸습니다(b658).** 실기기에서
          재보니 그 조건에 맞는 도시가 **0곳**이었습니다 — 지금 이 앱은 쓰는
          사람이 사실상 둘이라 거의 모든 도시가 `n_rated = 2`(나 + 한 명)
