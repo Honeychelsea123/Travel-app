@@ -19,20 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b736';
-import { sb } from './db.js?v=b736';
-import { cities, countryName, continentOf } from './cities.js?v=b736';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b737';
+import { sb } from './db.js?v=b737';
+import { cities, countryName, continentOf } from './cities.js?v=b737';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b736';
+import { similarPicks } from './rec.js?v=b737';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b736';
-import { visited } from './rate.js?v=b736';
+import { mateCode, mateHtml } from './mate.js?v=b737';
+import { visited } from './rate.js?v=b737';
+import { open16 } from './p16.js?v=b737';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b736';
+         shareCard } from './card.js?v=b737';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -324,13 +325,16 @@ async function drawPersona(s, ax, rates){
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${esc(code)}.webp?v=b736" alt=""
+        <img src="./persona/${esc(code)}.webp?v=b737" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <div class="ptxt">
           <div class="peyebrow">나의 여행 유형은</div>
           <div class="pcode">${esc(code)}</div>
-          <div class="pname">${esc(type.n)}</div>
+          <!-- 이름이 10자 넘으면 한 단계 줄입니다(app.css 의 .pname.long).
+             안 줄이면 「먼 길 마다않는 외골수」가 두 줄로 넘어갑니다. -->
+        <div class="pname${(type.n || '').length >= 10 ? ' long' : ''}"
+             >${esc(type.n)}</div>
           ${type.d ? `<div class="pdesc">${esc(type.d)}</div>` : ''}
           <div class="paxis">${esc(spec.axisWords)}</div>
           <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
@@ -341,6 +345,11 @@ async function drawPersona(s, ax, rates){
       <div class="memo" style="text-align:center; padding:8px 6px 0">
         ${s.countries}개국 · ${s.cities}도시
       </div>
+      <!-- ── 도감(b737, 사용자 요청) ────────────────────────────────
+           사용자: 「카드 퀄리티가 좋아서 사람들이 다른 성향도 보고 싶을 것
+           같은데」. 카드 «안»에 답니다 — 줄 하나로 새 영역을 안 먹습니다.
+           ⚠ 그리는 것은 p16.js 입니다. 여기는 들어가는 줄 하나뿐입니다. -->
+      <button class="p16open" id="p16go">다른 유형 15가지 보기 ›</button>
       <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
            빈 문자열이라 아무것도 안 붙습니다. -->
       ${변화배지}
@@ -522,6 +531,10 @@ async function drawPersona(s, ax, rates){
   /* 확정 전에는 공유 단추 대신 「평가하러 가기」가 서 있습니다(b408).
      둘 중 하나만 있으므로 있는 쪽에만 답니다 — `$()` 가 없는 것을 주면
      여기서 터지고 카드가 통째로 안 그려집니다. */
+  /* ⚠ 도감은 확정 전에도 엽니다 — 남의 유형을 구경하는 것뿐이라
+     내 코드가 흔들리는 것과 상관이 없습니다. 다만 궁합과 「나와 다른 점」은
+     내 코드를 쓰므로, 흔들리는 동안에는 p16.js 가 그 둘을 뗍니다. */
+  $('p16go').onclick = () => open16(code);
   if (임시) $('pgo').onclick = () => { closePersona(); ctx.showApp('rate'); };
   else $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
 
