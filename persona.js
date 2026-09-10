@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b738';
-import { sb } from './db.js?v=b738';
-import { cities, countryName, continentOf } from './cities.js?v=b738';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b739';
+import { sb } from './db.js?v=b739';
+import { cities, countryName, continentOf } from './cities.js?v=b739';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b738';
+import { similarPicks } from './rec.js?v=b739';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b738';
-import { visited } from './rate.js?v=b738';
-import { open16 } from './p16.js?v=b738';
+import { mateCode, mateHtml } from './mate.js?v=b739';
+import { visited } from './rate.js?v=b739';
+import { open16 } from './p16.js?v=b739';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b738';
+         shareCard } from './card.js?v=b739';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -325,7 +325,7 @@ async function drawPersona(s, ax, rates){
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${esc(code)}.webp?v=b738" alt=""
+        <img src="./persona/${esc(code)}.webp?v=b739" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <div class="ptxt">
@@ -345,11 +345,6 @@ async function drawPersona(s, ax, rates){
       <div class="memo" style="text-align:center; padding:8px 6px 0">
         ${s.countries}개국 · ${s.cities}도시
       </div>
-      <!-- ── 도감(b737, 사용자 요청) ────────────────────────────────
-           사용자: 「카드 퀄리티가 좋아서 사람들이 다른 성향도 보고 싶을 것
-           같은데」. 카드 «안»에 답니다 — 줄 하나로 새 영역을 안 먹습니다.
-           ⚠ 그리는 것은 p16.js 입니다. 여기는 들어가는 줄 하나뿐입니다. -->
-      <button class="p16open" id="p16go">다른 유형 15가지 보기 ›</button>
       <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
            빈 문자열이라 아무것도 안 붙습니다. -->
       ${변화배지}
@@ -384,6 +379,16 @@ async function drawPersona(s, ax, rates){
           <span class="axbar"><i style="width:${Math.max(값, 2)}%"></i></span>
           <span class="axv">${값}</span></div>`;
       }).join('')}</div>
+      <!-- ── 도감(b737, 사용자 요청) ────────────────────────────────
+           사용자: 「카드 퀄리티가 좋아서 사람들이 다른 성향도 보고 싶을 것
+           같은데」. 카드 «안»에 답니다 — 줄 하나로 새 영역을 안 먹습니다.
+         ⚠⚠ **카드 «맨 아래»여야 합니다(b739).** b737 에 「29개국·76도시」
+           바로 밑에 넣었더니, 그 다음 줄인 변화배지도 «가운데 정렬 + 윗줄»
+           이라 가로줄 두 개가 나란히 서서 무너져 보였습니다(사용자:
+           「레이아웃이 엉망」). 이 줄은 카드를 다 읽고 «더 볼래?» 하는
+           자리라, 내용 뒤가 맞습니다.
+         ⚠ 그리는 것은 p16.js 입니다. 여기는 들어가는 줄 하나뿐입니다. -->
+      <button class="p16open" id="p16go">다른 유형 15가지 보기 ›</button>
     </div>
 
     ${임시 ? `<div class="card" style="margin-bottom:var(--s-sm)">

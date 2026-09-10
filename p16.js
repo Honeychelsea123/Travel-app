@@ -17,8 +17,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc } from './dom.js?v=b738';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b738';
+import { $, esc } from './dom.js?v=b739';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b739';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 격자에서 이웃끼리
@@ -50,7 +50,7 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b738" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b739" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
@@ -76,12 +76,14 @@ function 하나(code){
 
   /* ⚠ 내 유형을 아직 모르면(평가가 모자라면) 궁합도 «다른 점»도 못 냅니다.
      그 자리를 빈 채로 두지 말고 아예 안 답니다 — 0% 로 적으면 거짓말입니다. */
+  /* ⚠ **접지 않습니다(b739, 사용자 결정: 「굳이 접지 말고 처음부터 다
+     펴진 상태로 나오고」).** 넷뿐이라 접어서 아낄 자리가 없었고, 접어 두면
+     이 화면에서 제일 쓸모 있는 것을 한 번 더 눌러야 봅니다. */
   const 견줌 = 내코드 && 내코드 !== code ? `
     <div class="p16mate"><span>나와의 궁합</span>
       <b>${personaMatch(내코드, code)}%</b></div>
-    <button class="p16more" data-p16more="1" aria-expanded="false">
-      나와 뭐가 다른가요 <span>⌄</span></button>
-    <div class="p16diff" id="p16diff" hidden>${AXIS_NAME.map((이름, k) => {
+    <div class="p16dh">나와 뭐가 다른가요</div>
+    <div class="p16diff">${AXIS_NAME.map((이름, k) => {
       const 나글 = AXIS_WORD[내코드[k]], 저글 = AXIS_WORD[code[k]];
       const 같 = 내코드[k] === code[k];
       return `<div class="p16dr${같 ? '' : ' off'}"><span>${esc(이름)}</span>
@@ -97,10 +99,10 @@ function 하나(code){
       <span class="p16n">${i + 1} / 16</span>
       <button class="shdone" data-p16next="1">다음 ›</button>
     </div>
-    <div class="p16wrap">
+    <div class="p16wrap" id="p16one">
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${code}.webp?v=b738" alt="" decoding="async"
+        <img src="./persona/${code}.webp?v=b739" alt="" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <div class="ptxt">
@@ -117,6 +119,7 @@ function 하나(code){
         </div>
       </div>
       ${견줌}
+      <div class="p16hint">좌우로 넘겨서 다른 유형도 보세요</div>
     </div>`;
 }
 
@@ -125,6 +128,38 @@ function 그리기(){
   if (!몸) return;
   몸.innerHTML = 지금 ? 하나(지금) : 격자();
   몸.scrollTop = 0;
+  if (지금) 이웃받기();
+}
+
+/* ⚠ **넘기기 전에 옆 그림을 받아 둡니다.** 원본은 장당 140~480KB 라, 넘긴
+   뒤에 받기 시작하면 잠깐 빈 칸이 보입니다. 앞뒤 한 장씩만 받습니다 —
+   열여섯 장을 다 받으면 썸네일을 만든 뜻이 없어집니다. */
+function 이웃받기(){
+  const i = 코드들.indexOf(지금);
+  if (i < 0) return;
+  for (const d of [1, -1]){
+    const c = 코드들[(i + d + 코드들.length) % 코드들.length];
+    const im = new Image();
+    im.src = `./persona/${c}.webp?v=b737`;
+  }
+}
+
+/* ⚠ 열여섯이 도는 고리입니다(마지막 다음이 처음). 끝이 없으니 「더 없음」을
+   따로 알릴 것도 없습니다. */
+function 넘기기(d){
+  const i = 코드들.indexOf(지금);
+  if (i < 0) return;
+  지금 = 코드들[(i + d + 코드들.length) % 코드들.length];
+  그리기();
+  /* 반대쪽에서 들어오는 시늉. ⚠ 클래스를 붙였다 바로 떼면 브라우저가
+     한 번에 계산해서 «아무 일도 안 일어납니다» — 사이에 리플로를 한 번
+     강제해야 전환이 돕니다(`offsetWidth` 읽기). */
+  const el = $('p16one');
+  if (!el) return;
+  const cls = d > 0 ? 'fromr' : 'froml';
+  el.classList.add(cls);
+  void el.offsetWidth;
+  el.classList.remove(cls);
 }
 
 /* ── 열고 닫기 ──────────────────────────────────────────────────────
@@ -170,22 +205,51 @@ $('p16sheet')?.addEventListener('click', e => {
   if (e.target.closest('[data-p16back]'))  return closeOne16();
   const g = e.target.closest('[data-p16go]');
   if (g) return 하나열기(g.dataset.p16go);
-  if (e.target.closest('[data-p16next]')){
-    const i = 코드들.indexOf(지금);
-    지금 = 코드들[(i + 1) % 코드들.length];
-    그리기();
-    return;
-  }
-  const m = e.target.closest('[data-p16more]');
-  if (m){
-    const 칸 = $('p16diff');
-    if (!칸) return;
-    칸.hidden = !칸.hidden;
-    m.setAttribute('aria-expanded', String(!칸.hidden));
-    /* ⚠ 화살표도 같이 뒤집습니다 — 안 뒤집으면 접힌 것인지 펼친 것인지
-       모릅니다. 글자를 통째로 갈지 «않습니다»(「접기」로 바뀌면 방금 누른
-       것이 사라진 것처럼 보입니다). */
-    const 화살 = m.querySelector('span');
-    if (화살) 화살.textContent = 칸.hidden ? '⌄' : '⌃';
-  }
+  if (e.target.closest('[data-p16next]')) return 넘기기(1);
 });
+
+/* ── 좌우로 넘기기(b739, 사용자 요청) ────────────────────────────────
+ * ⚠⚠ **듣는 곳은 시트입니다.** 상세는 넘길 때마다 통째로 다시 그려지므로,
+ *   안쪽 칸에 달면 한 번 넘긴 뒤 사건이 끊깁니다.
+ * ⚠⚠ **세로 굴리기를 뺏으면 안 됩니다.** 처음 몇 px 을 보고 «가로가 확실할
+ *   때만» 끌기로 칩니다(가로가 세로의 1.4배). 안 그러면 목록을 위아래로
+ *   굴리려다 유형이 넘어갑니다.
+ * ⚠ 격자에서는 안 듣습니다(`지금 == null`). 거기서는 세로 굴리기뿐입니다. */
+let 시작x = 0, 시작y = 0, 끌기 = null;
+const 판16 = $('p16sheet');
+판16?.addEventListener('touchstart', e => {
+  끌기 = null;
+  if (지금 == null || e.touches.length !== 1) return;
+  시작x = e.touches[0].clientX;
+  시작y = e.touches[0].clientY;
+  끌기 = false;                     /* 아직 «가로인지» 모릅니다 */
+}, { passive: true });
+
+판16?.addEventListener('touchmove', e => {
+  if (끌기 == null || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - 시작x;
+  const dy = e.touches[0].clientY - 시작y;
+  if (!끌기){
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+    if (Math.abs(dx) <= Math.abs(dy) * 1.4){ 끌기 = null; return; }
+    끌기 = true;
+  }
+  /* 손가락을 따라옵니다. 전환은 잠깐 꺼야 «따라오는» 느낌이 납니다. */
+  const el = $('p16one');
+  if (!el) return;
+  e.preventDefault();
+  el.style.transition = 'none';
+  el.style.transform = `translateX(${dx}px)`;
+}, { passive: false });
+
+판16?.addEventListener('touchend', e => {
+  const 끌었나 = 끌기 === true;
+  끌기 = null;
+  const el = $('p16one');
+  if (el){ el.style.transition = ''; el.style.transform = ''; }
+  if (!끌었나) return;
+  const dx = (e.changedTouches[0]?.clientX ?? 시작x) - 시작x;
+  /* 45px 은 «흘린 손짓»과 «넘기려는 손짓»이 갈리는 자리입니다. 너무 작게
+     잡으면 그림을 누르려다 넘어갑니다. */
+  if (Math.abs(dx) > 45) 넘기기(dx < 0 ? 1 : -1);
+}, { passive: true });

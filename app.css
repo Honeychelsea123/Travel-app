@@ -3638,15 +3638,24 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .phero{ position:relative; display:grid; grid-template-columns:minmax(0,1fr);
         overflow:hidden; background:var(--pearl); }
 .phero > *{ grid-area:1 / 1; }
-.psizer{ padding-top:55.55%; }          /* 1.8:1 — 최소 높이만 잡습니다 */
+/* ⚠⚠ **원본 비(3:2)를 지킵니다(b739, 사용자 지시: 「이미지 원본 비율
+   유지해줘야지 위아래 왜이렇게 많이 잘랐어」).** ⚠⚠
+   b735~b738 은 1.8:1(55.55%)로 잘랐습니다 — 배너가 카드 높이를 너무 먹는다는
+   «제» 판단이었는데, 그 대가로 그림의 위아래가 통째로 날아갔습니다.
+   그림은 1536×1024(3:2)라 66.67% 가 «안 자르는» 값입니다.
+   ⚠ 그래도 `object-fit:cover` 는 남깁니다 — 글자가 넘쳐 칸이 늘어나는
+     드문 경우에 빈틈이 생기면 안 됩니다. 평소에는 잘릴 것이 없습니다. */
+.psizer{ padding-top:66.67%; }          /* 3:2 — 원본 그대로 */
 /* ⚠⚠ **그림과 그늘은 자리를 안 잡아야 합니다(절대 자리).** ⚠⚠
    격자 칸 높이가 `auto` 인데 그 안에서 `height:100%` 를 쓰면 퍼센트가
    풀리지 않아 `auto` 로 떨어지고, 그림이 **원래 비(3:2)로 눕습니다** —
    높이를 정하는 것이 .psizer 가 아니라 그림이 됩니다(실측 b736: 198px 을
    잡아 뒀는데 237px 이 나왔습니다). 칸 밖으로 빼서 «칠하기만» 시킵니다. */
 .phero img, .phero .pscrim{ position:absolute; inset:0; }
+/* ⚠ 자를 것이 없으니 가운데를 봅니다(옛 `50% 72%` 는 1.8:1 로 자를 때
+   인물의 얼굴을 살리려던 값입니다). */
 .phero img{ width:100%; height:100%;
-            object-fit:cover; object-position:50% 72%; display:block; }
+            object-fit:cover; object-position:50% 50%; display:block; }
 /* 그림마다 밝기가 달라서 그늘을 깝니다 — 글자 그림자만으로는 밝은 하늘
    위에서 안 버팁니다(카드에서 실제로 겪었습니다). */
 .phero .pscrim{
@@ -3725,9 +3734,15 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
           font-size:calc(13px * var(--ts)); font-weight:600;
           color:var(--primary); cursor:pointer; }
 
-/* ⚠ 도감은 시트치고 깁니다(여덟 줄). 다른 시트(76vh)보다 높게 잡습니다 —
-   두 줄 반만 보이면 격자인지 목록인지도 모릅니다. */
-.p16card{ max-height:84vh; }
+/* ⚠⚠ **높이를 건드리지 마십시오(b739).** ⚠⚠
+   b737 에 「도감은 기니까」 하고 84vh 로 올렸더니 **폰에서 위가 잘렸습니다**
+   (사용자: 「위에는 잘려있고」). 시트는 `justify-content:flex-end` 라 아래로
+   붙는데, 카드(84vh) + 감싼 것의 아래 여백(`--tabh` + 14px, 안전영역까지
+   치면 100px 넘음)이 화면을 넘으면 **넘치는 쪽이 위**입니다. 머리줄이
+   화면 밖으로 밀려 「닫기」가 안 보입니다.
+   → 다른 시트와 **같은 76vh**. 이 값은 안전영역까지 넣고도 남습니다.
+   ⚠ 길다는 것은 «안에서 굴리면» 됩니다. 시트를 키울 이유가 아닙니다. */
+.p16card{ max-height:76vh; }
 .p16grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px;
           padding:10px 12px 14px; }
 
@@ -3743,10 +3758,11 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
           padding:0; border:0; border-radius:12px; overflow:hidden;
           background:var(--pearl); text-align:left; cursor:pointer; }
 .p16cell > *{ grid-area:1 / 1; }
-.p16cell .sz{ padding-top:76%; }
+/* ⚠ 칸도 원본 비(3:2)입니다(b739). 76% 로 두면 위아래를 잘라 먹습니다. */
+.p16cell .sz{ padding-top:66.67%; }
 .p16cell img, .p16cell .sh{ position:absolute; inset:0; }
 .p16cell img{ width:100%; height:100%; object-fit:cover;
-              object-position:50% 40%; display:block; }
+              object-position:50% 50%; display:block; }
 /* ⚠ 그림마다 밝기가 달라 그늘을 깝니다 — 글자 그림자만으로는 밝은 하늘
    위에서 안 버팁니다(히어로에서 겪은 것과 같습니다). */
 .p16cell .sh{ background:linear-gradient(to bottom, rgba(20,16,12,0) 30%,
@@ -3789,6 +3805,19 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * 요약(이름 · 한 줄 · 축 네 마디)은 이미 그림 안에 있습니다 — `.phero` 를
  * 그대로 씁니다. 그림 밖에 남는 것은 궁합 한 줄과 «접힌» 축 넷뿐입니다. */
 .p16wrap{ padding:10px 12px 16px; }
+/* ⚠⚠ **좌우로 넘기는 칸입니다(b739, 사용자 요청).** ⚠⚠
+   `touch-action:pan-y` 가 있어야 합니다 — 없으면 브라우저가 가로 몸짓을
+   먼저 채가서 손가락을 따라오지 않습니다. 세로 굴리기는 그대로 삽니다.
+   ⚠ 넘어간 뒤 «반대쪽에서 들어오는» 시늉만 냅니다(아래 두 줄). 열여섯 장을
+     다 DOM 에 두면 그림 3.8MB 를 통째로 받게 됩니다 — 그래서 진짜
+     캐러셀이 아니라 한 장만 두고 갈아 끼웁니다. */
+.p16one{ touch-action:pan-y;
+         transition:transform .18s var(--ease), opacity .18s var(--ease); }
+.p16one.fromr{ transform:translateX(34px); opacity:.3; }
+.p16one.froml{ transform:translateX(-34px); opacity:.3; }
+/* 넘기는 곳임을 알립니다 — 몸짓은 보이지 않으니 글자로 한 번 말합니다. */
+.p16hint{ margin-top:10px; text-align:center; font-size:calc(11px * var(--ts));
+          color:var(--ink-48); }
 .p16n{ font-size:calc(13px * var(--ts)); font-weight:700; color:var(--ink-48); }
 .p16mate{ display:flex; align-items:center; justify-content:space-between;
           margin-top:12px; padding:10px 12px; border-radius:10px;
@@ -3800,13 +3829,12 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .p16mine{ margin-top:12px; padding:10px 12px; border-radius:10px;
           background:var(--pearl); font-size:calc(12px * var(--ts));
           font-weight:600; color:var(--ink-48); text-align:center; }
-.p16more{ display:flex; width:100%; margin-top:8px; padding:11px 12px;
-          align-items:center; justify-content:space-between; gap:6px;
-          border:0; border-radius:10px; background:var(--pearl);
-          font-size:calc(13px * var(--ts)); font-weight:600;
-          color:var(--ink); cursor:pointer; }
-.p16more span{ color:var(--ink-48); font-weight:700; }
-.p16diff{ margin-top:4px; padding:2px 12px; }
+/* ⚠ **접는 단추를 걷었습니다(b739, 사용자 결정).** 「굳이 접지 말고
+   처음부터 다 펴진 상태로」 — 넷뿐이라 접어서 아낄 자리가 없었습니다.
+   제목만 남기고 늘 폅니다. */
+.p16dh{ margin-top:14px; padding:0 12px 2px; font-size:calc(12px * var(--ts));
+        font-weight:700; color:var(--ink-48); }
+.p16diff{ padding:0 12px; }
 .p16dr{ display:flex; align-items:baseline; gap:8px; padding:7px 0;
         border-bottom:1px solid var(--line); }
 .p16dr:last-child{ border-bottom:0; }
