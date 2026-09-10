@@ -12,14 +12,14 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b730';
-import { sb } from './db.js?v=b730';
-import { fail } from './net.js?v=b730';
-import { todayYmd } from './calc.js?v=b730';
-import { starHtml, starValue } from './stars.js?v=b730';
-import { trip, legs, nameOf } from './trip.js?v=b730';
-import { arm, disarm } from './ui.js?v=b730';
-import { openPhotos } from './photoview.js?v=b730';
+import { $, esc, toast } from './dom.js?v=b731';
+import { sb } from './db.js?v=b731';
+import { fail } from './net.js?v=b731';
+import { todayYmd } from './calc.js?v=b731';
+import { starHtml, starValue, starsRo } from './stars.js?v=b731';
+import { trip, legs, nameOf } from './trip.js?v=b731';
+import { arm, disarm } from './ui.js?v=b731';
+import { openPhotos } from './photoview.js?v=b731';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -71,7 +71,7 @@ export async function loadReview(){
         `<div class="rrow" style="padding:9px 0">
            <div class="t"><b>${esc(nameOf(r.user_id))}</b>
              ${r.comment ? `<span class="memo">${esc(r.comment)}</span>` : ''}
-             <span class="stars" style="pointer-events:none">${starHtml(r.stars)}</span></div>
+             ${starsRo(r.stars)}</div>
          </div>`).join('')
     : '';
 }

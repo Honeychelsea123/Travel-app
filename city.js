@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b730';
-import { sb } from './db.js?v=b730';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b730';
-import { myRates, cityStat, visited } from './rate.js?v=b730';
-import { starHtml, starValue } from './stars.js?v=b730';
-import { localTime } from './calc.js?v=b730';
-import { fail } from './net.js?v=b730';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b731';
+import { sb } from './db.js?v=b731';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b731';
+import { myRates, cityStat, visited } from './rate.js?v=b731';
+import { starHtml, starValue, starsRo } from './stars.js?v=b731';
+import { localTime } from './calc.js?v=b731';
+import { fail } from './net.js?v=b731';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -189,7 +189,7 @@ export async function openCity(id){
                        'width:36px; height:36px; border-radius:50%; object-fit:cover', 'thumb')}
            <div class="t"><b>${esc(x.name)}</b>
              <span class="memo">${esc(x.comment)}</span>
-             <span class="stars" style="pointer-events:none">${starHtml(x.stars)}</span></div>
+             ${starsRo(x.stars)}</div>
          </div>`).join('')
     : '';
 }

@@ -1550,6 +1550,9 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
            남깁니다 — 별 위에서 시작해도 화면은 굴러야 합니다
            (일정 손잡이에서 배운 것, 아래 .ev .grip 주석). */
         touch-action:pan-y; }
+/* 보여주기만 하는 별(b731). 세 곳에 인라인으로 적혀 있던
+   `pointer-events:none` 을 여기 한 자리로 모읍니다. */
+.stars.ro{ pointer-events:none; cursor:default; }
 .st{ position:relative; width:1.1em; height:1.1em; line-height:1;
      font-size:var(--f-2xl); color:var(--hairline); }
 .st::before{ content:'★'; position:absolute; left:0; top:0; }
