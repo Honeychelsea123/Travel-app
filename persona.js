@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b741';
-import { sb } from './db.js?v=b741';
-import { cities, countryName, continentOf } from './cities.js?v=b741';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b742';
+import { sb } from './db.js?v=b742';
+import { cities, countryName, continentOf } from './cities.js?v=b742';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b741';
+import { similarPicks } from './rec.js?v=b742';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b741';
-import { visited } from './rate.js?v=b741';
-import { open16 } from './p16.js?v=b741';
+import { mateCode, mateHtml } from './mate.js?v=b742';
+import { visited } from './rate.js?v=b742';
+import { open16 } from './p16.js?v=b742';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b741';
+         shareCard } from './card.js?v=b742';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -316,16 +316,16 @@ async function drawPersona(s, ax, rates){
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${esc(code)}.webp?v=b741" alt=""
+        <img src="./persona/${esc(code)}.webp?v=b742" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
-             b735~b740 은 카드 우상단(`position:absolute; top:6px`)이었는데,
+             b735~b740 은 카드 우상단(position:absolute · top:6px)이었는데,
              카드 위쪽 여백이 17px 뿐이라 아이콘(33px)의 «아래 2/3 가 그림에
              덮여» 반쪽만 보였습니다. 그림이 카드 맨 위에 오면서 생긴 일인데
              b735 부터 줄곧 그랬습니다(사용자: 「공유하기 버튼이 없는데?」).
            ⚠ 자리 잡힌 형제끼리는 **문서에서 뒤에 있는 쪽이 위**입니다 —
-             그림이 뒤라 아이콘을 덮었습니다. 안으로 넣고 `z-index` 로
+             그림이 뒤라 아이콘을 덮었습니다. 안으로 넣고 z-index 로
              올립니다.
            ⚠ 확정 전에는 안 답니다(b408). 흔들리는 코드가 남에게 가면 안 됩니다. -->
         ${임시 ? '' : `<button class="ghost pshare" id="p_img"

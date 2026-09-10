@@ -18,10 +18,23 @@ binmode(STDOUT, ':encoding(UTF-8)');
 # JS 문법이 아니므로, 그것이 소스에 있다는 것은 곧 **템플릿 문자열 안**이라는
 # 뜻입니다. 그 안의 역따옴표는 언제나 잘못입니다.
 #
-# 쓰기:  perl tools/tick.pl *.js
+# 쓰기:  perl tools/tick.pl        (안 주면 이 폴더의 .js 를 다 봅니다)
+#
+# ⚠⚠ **인자를 안 주면 «통과»하던 것을 고쳤습니다(b742).** ⚠⚠
+#   b741 에 persona.js 주석에 역따옴표를 넣고도 이 검사가 「끝」이라고 했습니다 —
+#   `perl tools/tick.pl` 로 불렀더니 @ARGV 가 비어서 **한 파일도 안 보고**
+#   통과했습니다. 앱이 통째로 안 떠서 사용자가 잡았습니다("화면을 못 불러왔어요").
+#   검사기는 «볼 것이 없으면 통과»가 아니라 «볼 것이 없으면 탈»이어야 합니다.
 
 my $탈 = 0;
-for my $f (@ARGV){
+my @파일 = @ARGV;
+if (!@파일){
+  opendir my $d, '.' or die "폴더를 못 엽니다: $!";
+  @파일 = grep { /\.js$/ } sort readdir $d;
+  closedir $d;
+}
+die "  ⚠ 볼 .js 가 없습니다 — 저장소 뿌리에서 부르십시오\n" unless @파일;
+for my $f (@파일){
   open my $h, '<:encoding(UTF-8)', $f or next;
   local $/;
   my $s = <$h>;
