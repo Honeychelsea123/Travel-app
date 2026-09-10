@@ -14,33 +14,33 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b735';
-import { sb } from './db.js?v=b735';
-import { cities } from './cities.js?v=b735';
+import { $, esc } from './dom.js?v=b736';
+import { sb } from './db.js?v=b736';
+import { cities } from './cities.js?v=b736';
 /* 별 갈래와 그 이름. ⚠ **보관함 시트와 같은 것을 씁니다**(b727) — 따로 세면
    「★4점대 32곳」이 두 화면에서 달라집니다. 규칙은 stars.js 한 곳입니다. */
-import { 별갈래, BAND_NAME } from './stars.js?v=b735';
+import { 별갈래, BAND_NAME } from './stars.js?v=b736';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b735';
+import { cityStat } from './rate.js?v=b736';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b735';
+import { loadRateData } from './rating.js?v=b736';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b735';
+import { renderPersona } from './persona.js?v=b736';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b735';
+import { similarPicks } from './rec.js?v=b736';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b735';
-import { pickCity } from './citysearch.js?v=b735';
+import { openNew } from './newtrip.js?v=b736';
+import { pickCity } from './citysearch.js?v=b736';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -123,9 +123,14 @@ export async function loadAnal(){
    *   그래서 위에서 미리 잡아 둡니다(`리포트`).
    * ⚠ 매긴 곳이 문턱(5곳)에 못 미쳐도 그냥 그립니다 — 리포트가 스스로
    *   「도시 N곳만 더 매기면」과 「평가하러 가기」를 냅니다(persona.js 의 `임시`). */
+  /* ⚠⚠ **`await` 가 있어야 합니다(b736).** 아래 ②·③ 이 리포트 «안»의
+     자리(#statspot · #nextspot)를 찾아 들어갑니다 — 리포트가 다 그려지기
+     전에는 그 칸이 없어서, 안 기다리면 둘 다 탭 맨 아래로 떨어집니다.
+     ⚠ 터져도 나머지는 그립니다 — 리포트 하나 때문에 탭 전체가 비면
+       안 됩니다. */
   if (리포트){
     box.appendChild(리포트);
-    renderPersona();
+    try { await renderPersona(); } catch (e) { console.error('@persona', e); }
   }
 
   /* ══ ② 내 별점 ═══════════════════════════════════════════════════════
@@ -302,7 +307,8 @@ export async function loadAnal(){
       }
     }
 
-    if (뭔가) box.appendChild(카드);
+    /* 리포트 안 「내 별점」 자리로. 리포트가 없으면 제자리(탭 맨 아래). */
+    if (뭔가) ($('statspot') || box).appendChild(카드);
   }
 
   /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
@@ -354,7 +360,8 @@ export async function loadAnal(){
     줄내기('반대로 가보면', 골라.opposite.map(x => x.city));
     줄내기('가보고 싶어요', 위시,
            위시.length > 6 ? `${위시.length}곳 중 6곳` : '');
-    box.appendChild(갈곳);
+    /* 리포트 안 「막대」 바로 밑으로(b736 시안 순서). 칸이 없으면 제자리. */
+    ($('nextspot') || box).appendChild(갈곳);
   }
 }
 

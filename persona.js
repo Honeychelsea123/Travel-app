@@ -19,20 +19,20 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b735';
-import { sb } from './db.js?v=b735';
-import { cities, countryName, continentOf } from './cities.js?v=b735';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b736';
+import { sb } from './db.js?v=b736';
+import { cities, countryName, continentOf } from './cities.js?v=b736';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b735';
+import { similarPicks } from './rec.js?v=b736';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b735';
-import { visited } from './rate.js?v=b735';
+import { mateCode, mateHtml } from './mate.js?v=b736';
+import { visited } from './rate.js?v=b736';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b735';
+         shareCard } from './card.js?v=b736';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -323,18 +323,19 @@ async function drawPersona(s, ax, rates){
            ⚠ 그늘(.pscrim)은 그림마다 밝기가 달라서 깝니다. 글자 그림자만
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
-        <img src="./persona/${esc(code)}.webp?v=b735" alt=""
+        <div class="psizer"></div>
+        <img src="./persona/${esc(code)}.webp?v=b736" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
-        <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
-             자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다. -->
-        <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span>
         <div class="ptxt">
           <div class="peyebrow">나의 여행 유형은</div>
           <div class="pcode">${esc(code)}</div>
           <div class="pname">${esc(type.n)}</div>
           ${type.d ? `<div class="pdesc">${esc(type.d)}</div>` : ''}
           <div class="paxis">${esc(spec.axisWords)}</div>
+          <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
+               자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다. -->
+          <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span>
         </div>
       </div>
       <div class="memo" style="text-align:center; padding:8px 6px 0">
@@ -386,6 +387,40 @@ async function drawPersona(s, ax, rates){
           <button class="primary" id="pgo">평가하러 가기</button></div>
       </div></div>` : ''}
 
+    <!-- 「다음 여행」(anal.js ③)이 여기로 들어옵니다 — 시안 순서(b736).
+         ⚠ **여기서 만들지 않습니다.** 추천은 rec.js 계산이라 재료(도시
+           목록 · 내 평가)가 있어야 하는데, 그것을 이미 들고 있는 쪽은
+           분석 탭입니다. 두 벌로 만들면 언젠가 갈라집니다 — 자리만
+           내주고 anal.js 가 채웁니다.
+         ⚠ 리포트가 안 그려지면 이 칸도 없습니다. anal.js 는 칸이 없으면
+           제자리(탭 맨 아래)에 붙입니다. -->
+    <div id="nextspot"></div>
+
+    <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
+         그림 안에 있으면 작게 눌러 담겨 읽기 어렵습니다. -->
+    <div class="card">
+      <h2>나와 맞는 사람</h2>
+      <div class="mates">
+        <!-- ⚠ 확정 전에는 궁합 «%»도 뗍니다(b717). 유형이 흔들리는 동안에는
+             그 유형으로 낸 점수도 흔들립니다 — 위 상위 % 와 같은 이유입니다. -->
+        <div class="mate good">
+          <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
+          <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
+          <span class="mc">${esc(mate.best)}</span></div>
+        <div class="mate bad">
+          <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
+          <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
+          <span class="mc">${esc(mate.worst)}</span></div>
+      </div>
+      <!-- ⚠ **궁합 밑 설명 줄도 뺐습니다(b454).** 「유명한 곳·멀리 같고
+           여러 나라·까다로움 달라」처럼 **왜 맞는지 풀어 쓰던 줄**입니다.
+           숫자(99%)와 유형 이름이 이미 말하고 있고, 이 앱은 **알아서
+           분석해서 내주는** 자리입니다 — 계산 과정을 변명처럼 붙일 이유가
+           없습니다(사용자 판단). 축별 근거는 아래 「왜 인가요」에 있습니다.
+           ⚠ mate.bestLine 은 카드 그림(card.js)에서는 그대로 씁니다 —
+             거기는 한 장으로 끝나는 물건이라 근거가 붙어야 뜻이 통합니다. -->
+    </div>
+
     <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
     <div class="card">
@@ -430,31 +465,6 @@ async function drawPersona(s, ax, rates){
            ⚠ 「해외만 센다」는 위 '그중 해외' 줄이 이미 말합니다. -->
     </div>
 
-    <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
-         그림 안에 있으면 작게 눌러 담겨 읽기 어렵습니다. -->
-    <div class="card">
-      <h2>나와 맞는 사람</h2>
-      <div class="mates">
-        <!-- ⚠ 확정 전에는 궁합 «%»도 뗍니다(b717). 유형이 흔들리는 동안에는
-             그 유형으로 낸 점수도 흔들립니다 — 위 상위 % 와 같은 이유입니다. -->
-        <div class="mate good">
-          <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
-          <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
-          <span class="mc">${esc(mate.best)}</span></div>
-        <div class="mate bad">
-          <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
-          <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
-          <span class="mc">${esc(mate.worst)}</span></div>
-      </div>
-      <!-- ⚠ **궁합 밑 설명 줄도 뺐습니다(b454).** 「유명한 곳·멀리 같고
-           여러 나라·까다로움 달라」처럼 **왜 맞는지 풀어 쓰던 줄**입니다.
-           숫자(99%)와 유형 이름이 이미 말하고 있고, 이 앱은 **알아서
-           분석해서 내주는** 자리입니다 — 계산 과정을 변명처럼 붙일 이유가
-           없습니다(사용자 판단). 축별 근거는 위 「왜 인가요」에 있습니다.
-           ⚠ mate.bestLine 은 카드 그림(card.js)에서는 그대로 씁니다 —
-             거기는 한 장으로 끝나는 물건이라 근거가 붙어야 뜻이 통합니다. -->
-    </div>
-
     <!-- ⚠⚠ **「다음에 가볼 만한 곳」을 여기서 걷었습니다(b547).** ⚠⚠
          b547 에 이 리포트가 «성향 탭 그 자체»가 되면서, 탭 맨 아래
          「다음 여행」 카드(anal.js)와 **한 화면에 두 벌**로 섰습니다.
@@ -492,6 +502,11 @@ async function drawPersona(s, ax, rates){
          일이 없어집니다. 시트가 열릴 때 그립니다.
        ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
          남에게 가면 안 됩니다. -->
+
+    <!-- 「내 별점」(anal.js ②)이 여기로 들어옵니다(b736). 위 「나의 여행
+         성향」이 유형 이야기라면 여기는 **나에 대한 숫자**입니다 — 유형
+         이야기를 다 읽은 뒤에 오는 것이 맞습니다. -->
+    <div id="statspot"></div>
     `;
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지

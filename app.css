@@ -3613,29 +3613,62 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * ⚠ **공유 카드(card.js 의 drawP16)와 같은 배치**라야 보는 것과 나가는
  *   것이 같습니다. 한쪽만 고치지 마십시오.
  * ⚠ 카드 좌우 여백 밖으로 빼서 **폭을 다 씁니다** — 히어로는 이 화면의
- *   첫인상이라 상자 안에 갇히면 값이 반으로 줄어듭니다.
+ *   첫인상입니다.
+ * ⚠⚠ **음수 여백으로 화면 끝까지 빼면 안 됩니다(b736 에 되돌림).** ⚠⚠
+ *   b735 에 `margin:0 calc(-1 * var(--s-md))` 로 카드 밖까지 뺐다가
+ *   **판이 17px 넘쳐 아래로 스크롤할 때 좌우로 흔들렸습니다**(사용자 신고).
+ *   b597 에 똑같이 겪고 위 1275줄에 「이 구조에서는 안 된다」고 적어 둔
+ *   자리인데 다시 넣었습니다 — 몸통 여백이 판 «밖»에 있어서, 판 안에서
+ *   아무리 빼도 판을 넘으면 곧 가로 스크롤입니다.
+ *   그때 걸린 넷(Day 칩·미니맵·일기장 줄기·지구본)에 이제 히어로가 더해집니다.
  * ⚠ 비율은 **1.8:1**. 그림은 3:2 인데 `object-fit:cover` 로 위쪽 하늘을
  *   덜어냅니다(카드도 같은 값으로 잘라 씁니다). */
-.phero{ position:relative; margin:0 calc(-1 * var(--s-md)); aspect-ratio:1.8;
+/* ⚠⚠ **`aspect-ratio` 만으로는 안 됩니다(b736).** ⚠⚠
+   1.8:1 로 못박으면 배너 높이가 폭에서만 나옵니다(폭 356 → 198px).
+   그런데 그 안의 글자는 **「글자 크게」(`--ts`)로 커집니다** — 1.25 로 재보니
+   글자가 220px 이라 **36px 이 위로 잘렸습니다.**
+   → 격자(grid)로 «자리 잡는 칸»(`.psizer`)과 글자를 **같은 칸에 겹쳐** 둡니다.
+     칸 높이는 둘 중 «큰 쪽»이 됩니다 — 평소엔 1.8:1, 글자가 넘치면 그만큼 늘어납니다.
+   ⚠ 그림은 격자 칸을 꽉 채우므로(`grid-area:1/1` + `object-fit:cover`)
+     배너가 늘어나도 비율이 안 깨집니다. 위쪽이 조금 더 보일 뿐입니다. */
+/* ⚠ 칸을 `minmax(0,1fr)` 로 못박습니다. `auto` 로 두면 «퍼센트 여백»
+   (.psizer 의 padding-top, .ptxt 의 padding-right)이 칸 너비를 참조하고
+   칸 너비가 다시 그 여백을 참조해 **순환**합니다 — 실측: 1.8:1 이 1.5:1 로
+   부풀었습니다. */
+.phero{ position:relative; display:grid; grid-template-columns:minmax(0,1fr);
         overflow:hidden; background:var(--pearl); }
-.phero img{ position:absolute; inset:0; width:100%; height:100%;
+.phero > *{ grid-area:1 / 1; }
+.psizer{ padding-top:55.55%; }          /* 1.8:1 — 최소 높이만 잡습니다 */
+/* ⚠⚠ **그림과 그늘은 자리를 안 잡아야 합니다(절대 자리).** ⚠⚠
+   격자 칸 높이가 `auto` 인데 그 안에서 `height:100%` 를 쓰면 퍼센트가
+   풀리지 않아 `auto` 로 떨어지고, 그림이 **원래 비(3:2)로 눕습니다** —
+   높이를 정하는 것이 .psizer 가 아니라 그림이 됩니다(실측 b736: 198px 을
+   잡아 뒀는데 237px 이 나왔습니다). 칸 밖으로 빼서 «칠하기만» 시킵니다. */
+.phero img, .phero .pscrim{ position:absolute; inset:0; }
+.phero img{ width:100%; height:100%;
             object-fit:cover; object-position:50% 72%; display:block; }
 /* 그림마다 밝기가 달라서 그늘을 깝니다 — 글자 그림자만으로는 밝은 하늘
    위에서 안 버팁니다(카드에서 실제로 겪었습니다). */
-.phero .pscrim{ position:absolute; inset:0;
+.phero .pscrim{
   background:linear-gradient(to bottom, rgba(20,16,12,0) 8%,
              rgba(20,16,12,.58) 44%, rgba(20,16,12,.86) 100%); }
 /* ⚠ **글자 그늘이 있어야 합니다.** 그늘 판(`.pscrim`)만으로는 모자랍니다 —
    유형 이름은 주황이라 어두운 그림 위에서 대비가 죽습니다(실측: HMDP 의
    부둣가 야경에서 「골목 탐험가」가 거의 안 읽혔습니다). 카드(card.js)도
    같은 이유로 글자마다 그늘을 답니다. */
-.ptxt{ position:absolute; left:var(--s-md); right:44%; bottom:14px;
+/* ⚠ 왼쪽 숨은 `--s-md`(17px)보다 넉넉히 줍니다(b736, 사용자: 「좌측에 여백이
+   너무 없어서 답답해」). 그림 안이라 바깥 여백과 줄을 맞출 이유가 없습니다 —
+   글자가 그림 가장자리에 붙으면 «잘린 것»처럼 보입니다. */
+/* ⚠ **글자 다섯 줄 + 상위 % 가 배너 안에 들어가야 합니다.** 배너가
+   1.8:1 이라 폭 356 이면 높이가 198 뿐입니다 — 글자를 조여 두지 않으면
+   「글자 크게」로 키운 사람에게서 위가 잘립니다(`--ts` 가 곱해집니다). */
+.ptxt{ align-self:end; padding:0 40% 14px 22px; z-index:1;
        text-shadow:0 1px 6px rgba(0,0,0,.65), 0 0 2px rgba(0,0,0,.45); }
 .phero.noart .ptxt{ text-shadow:none; }
 /* ⚠ 오른쪽 44% 는 비웁니다 — 거기에 주인공이 서 있습니다. */
 .peyebrow{ font-size:calc(12px * var(--ts)); font-weight:600;
            color:rgba(255,255,255,.90); }
-.pcode{ font-size:calc(38px * var(--ts)); font-weight:800; color:#fff;
+.pcode{ font-size:calc(34px * var(--ts)); font-weight:800; color:#fff;
         letter-spacing:calc(2px * var(--ts)); line-height:1.05; margin-top:1px; }
 /* ⚠ **브랜드 주황을 그대로 쓰면 어두운 그림 위에서 안 읽힙니다.**
    `--primary`(#F25E26)는 명도가 낮아 야경 위에서 묻힙니다(실측: HMDP 부둣가).
@@ -3645,24 +3678,27 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
         margin-top:2px; }
 .phero.noart .pname{ color:var(--primary); }
 .pdesc{ font-size:calc(13px * var(--ts)); color:rgba(255,255,255,.94);
-        margin-top:5px; line-height:1.5; word-break:keep-all; }
+        margin-top:4px; line-height:1.4; word-break:keep-all; }
 .paxis{ font-size:calc(11px * var(--ts)); color:rgba(255,255,255,.80);
-        margin-top:5px; line-height:1.45; word-break:keep-all; }
+        margin-top:4px; line-height:1.4; word-break:keep-all; }
 /* ⚠⚠ **그림이 안 오면 흰 글자를 쓰면 안 됩니다** — 크림 바탕에 흰 글자는
    안 보입니다. persona.js 가 `onerror` 로 이 클래스를 답니다. */
-.phero.noart{ aspect-ratio:auto; background:none; }
+.phero.noart{ background:none; }
+.phero.noart .psizer{ display:none; }
 .phero.noart .pscrim{ display:none; }
-.phero.noart .ptxt{ position:static; right:auto; padding:4px var(--s-md) 12px; }
+.phero.noart .ptxt{ padding:4px var(--s-md) 12px; }
 .phero.noart .peyebrow{ color:var(--ink-48); }
 .phero.noart .pcode{ color:var(--primary); }
 .phero.noart .pdesc,
 .phero.noart .paxis{ color:var(--ink-48); }
-/* 상위 % — 그림 오른쪽 위에 얹습니다(여권 도장 자리). */
-.prank{ position:absolute; right:12px; top:12px; z-index:1;
-        display:inline-block; padding:4px 11px; border-radius:0;
-        background:rgba(243,240,232,.92);
-        font-size:calc(12px * var(--ts)); font-weight:700; color:var(--primary); }
-.phero.noart .prank{ position:static; display:inline-block; margin:8px 0 0 var(--s-md);
+/* ⚠ **상위 % 도 왼쪽 아래 글자 묶음에 넣습니다(b736, 사용자 결정).**
+   b735 에는 오른쪽 위 알약이었는데, 글자가 두 군데로 갈려서 눈이 두 번
+   움직였습니다. 그림에서 «비워 둔 자리»는 왼쪽 아래 한 곳뿐입니다.
+   ⚠ 알약 바탕을 뺍니다 — 묶음 안에서는 배지가 아니라 «한 줄»입니다. */
+.prank{ display:block; margin-top:5px; padding:0; border-radius:0;
+        background:none;
+        font-size:calc(12px * var(--ts)); font-weight:700; color:#FF9166; }
+.phero.noart .prank{ display:inline-block; margin:6px 0 0;
         background:var(--line); color:var(--ink-48); }
 
 /* ── 궁합 두 칸 ───────────────────────────────────────────────────────
