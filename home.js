@@ -33,41 +33,41 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc } from './dom.js?v=b733';
-import { sb } from './db.js?v=b733';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b733';
-import { hm, todayYmd } from './calc.js?v=b733';
-import { starHtml, paintStars } from './stars.js?v=b733';
+import { $, esc, toast } from './dom.js?v=b734';
+import { sb } from './db.js?v=b734';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b734';
+import { hm, todayYmd } from './calc.js?v=b734';
+import { starHtml, paintStars } from './stars.js?v=b734';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b733';
-import { cities, countryName, cityCountry } from './cities.js?v=b733';
-import { UN_CODES } from './un.js?v=b733';
-import { myRates, cityStat, visited } from './rate.js?v=b733';
-import { plans } from './trip.js?v=b733';
-import { loadCities } from './citysearch.js?v=b733';
+import { starValue } from './rateui.js?v=b734';
+import { cities, countryName, cityCountry } from './cities.js?v=b734';
+import { UN_CODES } from './un.js?v=b734';
+import { myRates, cityStat, visited } from './rate.js?v=b734';
+import { plans } from './trip.js?v=b734';
+import { loadCities } from './citysearch.js?v=b734';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b733';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b733';
+import { openCity } from './city.js?v=b734';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b734';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b733';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b734';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b733';
+import { drawReport } from './report.js?v=b734';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b733';
+import { PERSONA_BG } from './card.js?v=b734';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b733';
+import { checkPersonaShift } from './pshift.js?v=b734';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b733';
+import { diaryBackTo } from './diary.js?v=b734';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b733';
+import { mountGlobe } from './globe.js?v=b734';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -333,11 +333,29 @@ async function 나라카드(코드, 먼저){
     wrap.onclick = async e => {
       const st = e.target.closest('.st'); if (!st) return;
       const v = starValue(st, e.clientX);
-      paintStars(wrap, v, true);
       const 칸 = wrap.parentElement;
-      칸.querySelector('.gsnum').textContent = v ? v.toFixed(1) : '';
-      칸.querySelector('.gslab').textContent = v ? '내 별점' : '눌러서 매기기';
-      await saveRate(wrap.dataset.city, { stars: v }, true);
+      const 숫자 = 칸.querySelector('.gsnum'), 이름표 = 칸.querySelector('.gslab');
+      /* ⚠⚠ **되돌릴 수 있게 «먼저» 적어 둡니다(b734).** ⚠⚠
+         b734 전에는 칠해 놓고 저장 결과를 **버렸습니다.** 실패해도 별은
+         칠해진 채 남고 지구본까지 그 나라 색으로 칠해져서, 사용자는
+         저장된 줄 알고 넘어갑니다 — 다시 열면 없습니다.
+         b716 부터 `saveRate` 가 성패를 돌려주는데 이 자리가 안 보고
+         있었습니다(도시 화면은 그때 고쳤습니다).
+       ⚠ 먼저 칠하는 것 자체는 그대로 둡니다 — 누른 즉시 반응이 있어야
+         합니다. 바뀐 것은 **실패하면 되돌린다**입니다. */
+      const 전값 = myRates[wrap.dataset.city]?.stars ?? null;
+      paintStars(wrap, v, true);
+      숫자.textContent = v ? v.toFixed(1) : '';
+      이름표.textContent = v ? '내 별점' : '눌러서 매기기';
+
+      const 됐나 = await saveRate(wrap.dataset.city, { stars: v }, true);
+      if (됐나 === false){
+        paintStars(wrap, 전값, false);
+        숫자.textContent = 전값 != null ? Number(전값).toFixed(1) : '';
+        이름표.textContent = 전값 != null ? '내 별점' : '눌러서 매기기';
+        toast('저장하지 못했어요. 잠시 뒤 다시 해주세요.');
+        return;                       /* 지구본도 안 칠합니다 */
+      }
       if (v && 지구갔다 && !지구갔다.has(코드)){ 지구갔다.add(코드); 지구?.다시(); }
       /* 발자국 숫자가 달라졌으니 이 탭은 다음에 다시 그립니다. */
       resetHomeSig();

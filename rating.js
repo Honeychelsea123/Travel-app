@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b733';
-import { sb } from './db.js?v=b733';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b733';
-import { dateRange } from './calc.js?v=b733';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b733';
+import { $, esc, josa } from './dom.js?v=b734';
+import { sb } from './db.js?v=b734';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b734';
+import { dateRange } from './calc.js?v=b734';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b734';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b733';
+         countryInfo } from './cities.js?v=b734';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b733';
-import { openCity } from './city.js?v=b733';
-import { loadCities } from './citysearch.js?v=b733';
+         removeRate } from './rate.js?v=b734';
+import { openCity } from './city.js?v=b734';
+import { loadCities } from './citysearch.js?v=b734';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -428,8 +428,23 @@ $('ratelist').addEventListener('click', async e => {
  *   별점을 무른다고 같이 없어지면 안 됩니다. 그때는 별점만 비웁니다. */
 export async function dropRate(cityId){
   const cur = myRates[cityId] || {};
-  if (cur.want || (cur.comment || '').trim())
-    return saveRate(cityId, { stars: null }, true);
+  /* ⚠⚠ **줄에 «남길 것»이 하나라도 있으면 지우지 않습니다(b734).** ⚠⚠
+   *   b734 전에는 `want` 와 `comment` 둘만 봤습니다. 그런데 **일기(`journal`)
+   *   와 일기 사진(`journal_photo`)도 같은 줄에 삽니다**(db/071·b565).
+   *   그래서 일기를 써 둔 도시에서 별을 맨 왼쪽까지 끌면 — ♡ 도 한줄평도
+   *   없으면 — **줄이 통째로 지워지면서 일기가 같이 날아갔습니다.**
+   *   별점 취소는 「별점만 비우는 것」이지 「이 도시 기록을 버리는 것」이
+   *   아닙니다. 사용자에게는 되돌릴 길도 없습니다.
+   * ⚠ **칸을 더할 때는 여기도 같이 봐야 합니다.** `city_ratings` 에 새 칸이
+   *   생기면 이 목록이 늘어야 합니다 — 안 늘리면 조용히 지워집니다.
+   *   지금 이 줄이 아는 칸: want · comment · journal · journal_photo.
+   * ⚠ 별점만 비우는 길은 `saveRate(…, {stars:null})` 입니다 — 그쪽은
+   *   upsert 라 나머지 칸을 안 건드립니다. */
+  const 남길것 = cur.want
+              || (cur.comment || '').trim()
+              || (cur.journal || '').trim()
+              || cur.journal_photo;
+  if (남길것) return saveRate(cityId, { stars: null }, true);
 
   const r = await sb.from('city_ratings').delete()
     .eq('user_id', ctx.me().id).eq('city_id', cityId).select('city_id');
