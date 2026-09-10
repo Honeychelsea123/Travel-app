@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b732';
-import { featOn, flags } from './flags.js?v=b732';
-import { fail, write } from './net.js?v=b732';
-import { dayLabel, hm, hop, money, legNear } from './calc.js?v=b732';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b732';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b732';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b732';
-import { STAY_MIN, mins } from './plancheck.js?v=b732';
+import { $, esc, emptyDo } from './dom.js?v=b733';
+import { featOn, flags } from './flags.js?v=b733';
+import { fail, write } from './net.js?v=b733';
+import { dayLabel, hm, hop, money, legNear, 좌표수상 } from './calc.js?v=b733';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b733';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b733';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b733';
+import { STAY_MIN, mins } from './plancheck.js?v=b733';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b732';
+import { fillOnePlan } from './cands.js?v=b733';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -287,7 +287,11 @@ export function drawPlans(){
   for (const p of show){
     /* 앞 일정과 이 일정 사이에 얼마나 걸리는지. 좌표가 둘 다 있어야 잽니다.
        시간이 모자라면 빨갛게 — 이게 "이 하루가 물리적으로 가능한가"입니다. */
-    if (prev && prev.date === p.date){
+    /* ⚠ **수상한 좌표로는 이동을 안 잽니다(b733).** 273km 짜리 좌표가
+       박혀 있으면 「888분 이동」이 그려집니다 — 없는 것보다 나쁩니다.
+       판정은 calc.js 의 `좌표수상` 한 곳입니다(그쪽 주석에 사연). */
+    if (prev && prev.date === p.date &&
+        !좌표수상(prev, legs) && !좌표수상(p, legs)){
       const h = hop(prev, p, legs);
       if (h){
         let warn = '';
@@ -370,12 +374,19 @@ export function drawPlans(){
              앞에 붙은 핀이 「위치가 없다」는 상태까지 같이 말합니다.
              ⚠ 아이콘 크기는 **CSS 로** 줍니다(b561 에 0×0 으로 찌그러진
                그 함정). `.nogeo svg` 참고. */
-          p.lat == null ? `<button class="nogeo" data-geo="${esc(p.id)}"
-            title="지도에 안 떠요. 눌러서 위치를 찾아봅니다."
-            ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-              ><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle
-                  cx="12" cy="10" r="2.4"/></svg>위치 찾기</button>` : ''}</b>${''}
+          /* ⚠ **좌표가 «틀린» 경우도 같은 단추로 말합니다(b733).** 없는 것과
+             틀린 것은 사용자가 할 일이 같습니다 — 다시 찾는 것. 다만 «왜»가
+             다르므로 글자와 설명을 갈라 적습니다. 지도에서 빼기만 하면
+             왜 안 보이는지 알 수가 없습니다. */
+          (() => {
+            if (p.lat == null) return `<button class="nogeo" data-geo="${esc(p.id)}"
+              title="지도에 안 떠요. 눌러서 위치를 찾아봅니다."
+              >${핀아이콘}위치 찾기</button>`;
+            const 멀 = 좌표수상(p, legs);
+            return 멀 ? `<button class="nogeo" data-geo="${esc(p.id)}"
+              title="그날 있는 곳에서 ${멀}km 떨어져 있어요. 위치가 틀린 것 같아 지도에서 뺐어요. 눌러서 다시 찾아봅니다."
+              >${핀아이콘}위치 확인</button>` : '';
+          })()}</b>${''}
           <span class="memo">${esc(sub)}${
             /* 노선은 이동 메모에 적혀 있습니다. 제목에도 있을 수 있어 같이 봅니다. */
             ''}${lineChips((mm.move || '') + ' ' + (p.title || ''))}</span></div>
