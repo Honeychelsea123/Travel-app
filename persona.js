@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b740';
-import { sb } from './db.js?v=b740';
-import { cities, countryName, continentOf } from './cities.js?v=b740';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b741';
+import { sb } from './db.js?v=b741';
+import { cities, countryName, continentOf } from './cities.js?v=b741';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b740';
+import { similarPicks } from './rec.js?v=b741';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b740';
-import { visited } from './rate.js?v=b740';
-import { open16 } from './p16.js?v=b740';
+import { mateCode, mateHtml } from './mate.js?v=b741';
+import { visited } from './rate.js?v=b741';
+import { open16 } from './p16.js?v=b741';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b740';
+         shareCard } from './card.js?v=b741';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -305,15 +305,6 @@ async function drawPersona(s, ax, rates){
            남에게 가면 안 됩니다. 그때는 바로 아래 카드가 「도시 N곳만 더
            매기면 성향이 확정돼요」라고 이미 말하고 있으므로, 여기에
            또 적지 않습니다. -->
-      ${임시 ? '' : `<button class="ghost" id="p_img" title="성향 카드 공유하기"
-              style="position:absolute; top:6px; right:8px; padding:6px 8px">
-        <svg viewBox="0 0 24 24" width="21" height="21" fill="none"
-             stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/>
-          <circle cx="18" cy="19" r="2.6"/>
-          <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/>
-        </svg></button>`}
       <!-- ── 히어로(b735) ── 글자를 그림 «위»에 얹습니다 ───────────────
            일러스트가 512 정사각 캐릭터에서 1536×1024 엽서 그림으로 바뀌었고,
            **왼쪽 아래가 어둡게** 그려져 있습니다 — 거기에 흰 글자를 얹으라고
@@ -325,9 +316,27 @@ async function drawPersona(s, ax, rates){
              으로는 밝은 하늘 위에서 안 버팁니다(카드에서 실제로 겪었습니다). -->
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${esc(code)}.webp?v=b740" alt=""
+        <img src="./persona/${esc(code)}.webp?v=b741" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
+        <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
+             b735~b740 은 카드 우상단(`position:absolute; top:6px`)이었는데,
+             카드 위쪽 여백이 17px 뿐이라 아이콘(33px)의 «아래 2/3 가 그림에
+             덮여» 반쪽만 보였습니다. 그림이 카드 맨 위에 오면서 생긴 일인데
+             b735 부터 줄곧 그랬습니다(사용자: 「공유하기 버튼이 없는데?」).
+           ⚠ 자리 잡힌 형제끼리는 **문서에서 뒤에 있는 쪽이 위**입니다 —
+             그림이 뒤라 아이콘을 덮었습니다. 안으로 넣고 `z-index` 로
+             올립니다.
+           ⚠ 확정 전에는 안 답니다(b408). 흔들리는 코드가 남에게 가면 안 됩니다. -->
+        ${임시 ? '' : `<button class="ghost pshare" id="p_img"
+                title="성향 카드 공유하기" aria-label="성향 카드 공유하기">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/>
+            <circle cx="18" cy="19" r="2.6"/>
+            <path d="M8.3 10.8 15.7 6.4M8.3 13.2l7.4 4.4"/>
+          </svg></button>`}
         <div class="ptxt">
           <div class="peyebrow">나의 여행 유형은</div>
           <div class="pcode">${esc(code)}</div>
@@ -338,12 +347,17 @@ async function drawPersona(s, ax, rates){
           ${type.d ? `<div class="pdesc">${esc(type.d)}</div>` : ''}
           <div class="paxis">${esc(spec.axisWords)}</div>
           <!-- ⚠ 확정 전에는 «상위 몇 %»를 안 씁니다(b717) — 다섯 곳도 안 되는
-               자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다. -->
-          <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span>
+               자료로 낸 등수라 숫자가 붙으면 잰 것처럼 읽힙니다.
+             ⚠ **「N개국 · N도시」를 같은 줄에 놓습니다(b741, 사용자 결정).**
+               그림 밑에 가운데로 떠 있던 줄인데, 등수와 «같은 이야기»(내가
+               얼마나 다녔나)라 떨어져 있을 이유가 없었습니다. 옆에 붙이면
+               그림 밖에 남는 줄이 하나 줄고, 공유 카드(card.js)와도 같은
+               차례가 됩니다 — 거기도 「개국 · 도시 · 상위 %」 한 줄입니다. -->
+          <div class="pstat">
+            <span class="prank">${esc(임시 ? '아직 재는 중' : rank)}</span>
+            <span class="pcnt">${s.countries}개국 · ${s.cities}도시</span>
+          </div>
         </div>
-      </div>
-      <div class="memo" style="text-align:center; padding:8px 6px 0">
-        ${s.countries}개국 · ${s.cities}도시
       </div>
       <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
            빈 문자열이라 아무것도 안 붙습니다. -->

@@ -17,8 +17,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b740';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b740';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b741';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b741';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 격자에서 이웃끼리
@@ -50,7 +50,7 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b740" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b741" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
@@ -100,7 +100,7 @@ function 슬라이드(code){
   return `<div class="p16slide">
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${code}.webp?v=b740" alt="" decoding="async"
+        <img src="./persona/${code}.webp?v=b741" alt="" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <div class="ptxt">
