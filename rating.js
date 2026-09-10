@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b727';
-import { sb } from './db.js?v=b727';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b727';
-import { dateRange } from './calc.js?v=b727';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b727';
+import { $, esc, josa } from './dom.js?v=b728';
+import { sb } from './db.js?v=b728';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b728';
+import { dateRange } from './calc.js?v=b728';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b728';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b727';
+         countryInfo } from './cities.js?v=b728';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b727';
-import { openCity } from './city.js?v=b727';
-import { loadCities } from './citysearch.js?v=b727';
+         removeRate } from './rate.js?v=b728';
+import { openCity } from './city.js?v=b728';
+import { loadCities } from './citysearch.js?v=b728';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -199,8 +199,49 @@ export function drawRatings(){
   거르개채우기();
 
   /* ⚠ 「직접 넣기」 안내를 걷었습니다(b670) — index.html 의 주석 참고. */
+  /* ── 왜 비었는지 말합니다(b728) ────────────────────────────────────
+   * ⚠⚠ **이 목록은 「이미 매긴 곳」을 «일부러» 뺍니다**(위 필터의 마지막 줄).
+   *   그런데 비었을 때 하던 말은 「찾는 도시가 없어요」 하나였습니다 —
+   *   도쿄를 검색했는데 그 말이 뜨면 **사전에 없는 줄 압니다.** 실제로는
+   *   이미 매겨서 빠진 것입니다. 앱이 자기가 한 일을 사용자 탓으로
+   *   돌리는 셈이라, 「저장 실패를 성공처럼 보이게」와 같은 부류입니다.
+   * ⚠ 그래서 **거르기 전 사전**과 견줍니다 — 사전에도 없으면 진짜 없는
+   *   것이고, 있는데 안 보이면 **우리가 뺀 것**입니다.
+   * ⚠ 단추는 안 답니다. 보관함은 «다른 탭» 안에 있어서, `data-go` 로
+   *   눌러도 그 탭으로 옮겨가지 않습니다(dom.js 의 data-go 는 요소를
+   *   누를 뿐 화면을 안 바꿉니다). 갈 곳을 글로만 알려줍니다.
+   * ⚠ 조사는 `josa` 로 붙입니다 — 「‘도쿄’는」과 「‘파리’는」이 다릅니다. */
   if (!list.length){
-    $('ratelist').innerHTML = '<div class="empty">찾는 도시가 없어요.</div>';
+    const 쓴것 = $('r_q').value.trim();
+    /* ① 검색어만으로 사전을 다시 봅니다(거르개도 「안 매긴 곳」도 빼고). */
+    const 사전 = q ? (cities || []).filter(c =>
+                      cho ? c._cho.includes(q) : c._hay.includes(q))
+                   : (cities || []);
+    /* ② 그중 지금 거르개를 통과하는 것. */
+    const 범위 = 사전.filter(c =>
+      (rtCont === 'all' || 대륙of(c) === rtCont) &&
+      (rtCtry === 'all' || 모국(c) === rtCtry));
+    const 거른이름 = rtCtry !== 'all' ? (countryName[rtCtry] || rtCtry)
+                   : rtCont !== 'all' ? rtCont : '';
+
+    let 글, 밑 = '';
+    if (!사전.length){
+      글 = '찾는 도시가 없어요.';
+    } else if (!범위.length){
+      글 = 쓴것 ? `${josa(`‘${쓴것}’`, '은', '는')} ${거른이름}에 없어요.`
+                : `${거른이름}에 아직 도시가 없어요.`;
+      밑 = '거르개를 「전체」로 두면 다 보여요.';
+    } else {
+      /* 사전에도 있고 거르개도 통과하는데 안 보인다 = 전부 이미 매긴 것. */
+      글 = 쓴것 ? `${josa(`‘${쓴것}’`, '은', '는')} 이미 매기셨어요.`
+                : (거른이름 ? `${josa(거른이름, '은', '는')} 다 매기셨어요.`
+                              : '매길 곳을 다 매기셨어요.');
+      밑 = '매긴 곳은 기록 탭의 보관함에서 볼 수 있어요.';
+    }
+    $('ratelist').innerHTML =
+      `<div class="empty"><div>${esc(글)}</div>` +
+      (밑 ? `<div class="memo" style="margin-top:6px">${esc(밑)}</div>` : '') +
+      `</div>`;
     lastRateHtml = '';
     return;
   }
