@@ -17,8 +17,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc } from './dom.js?v=b737';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b737';
+import { $, esc } from './dom.js?v=b738';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b738';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 격자에서 이웃끼리
@@ -28,7 +28,6 @@ const 코드들 = Object.keys(PERSONA16);
 let 내코드 = null;
 let 지금   = null;   /* 상세로 연 코드. null 이면 격자입니다. */
 
-const 축말 = code => code.split('').map(c => AXIS_WORD[c]);
 
 /* ── 격자 ───────────────────────────────────────────────────────────
  * ⚠ **내 유형이 맨 앞입니다.** 열여섯 중 내 것을 찾느라 훑게 하면 안 됩니다.
@@ -51,7 +50,7 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b737" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b738" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
@@ -101,7 +100,7 @@ function 하나(code){
     <div class="p16wrap">
       <div class="phero">
         <div class="psizer"></div>
-        <img src="./persona/${code}.webp?v=b737" alt="" decoding="async"
+        <img src="./persona/${code}.webp?v=b738" alt="" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <div class="ptxt">
@@ -109,7 +108,12 @@ function 하나(code){
           <div class="pcode">${esc(code)}</div>
           <div class="pname${긴이름}">${esc(t.n || code)}</div>
           ${t.d ? `<div class="pdesc">${esc(t.d)}</div>` : ''}
-          <div class="paxis">${esc(축말(code).join(' · '))}</div>
+          <!-- ⚠ **축 네 마디(「유명한 곳 · 한 나라 · 멀리 · 까다로움」)를
+               뗐습니다(b738, 사용자: 「이거 부연설명도 빼자」).** 밑의
+               「나와 뭐가 다른가요」가 같은 넷을 «나와 견줘서» 말합니다 —
+               견줌이 있는 쪽이 낫고, 둘 다 두면 같은 말이 두 번입니다.
+             ⚠ 성향 화면 머리(persona.js)에는 «남깁니다». 거기는 견줄
+               상대가 없어서 이 줄이 유일한 풀이입니다. -->
         </div>
       </div>
       ${견줌}
