@@ -18,17 +18,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 planline.js · planmap.js · planview.js · review.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b729';
-import { sb } from './db.js?v=b729';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b729';
-import { dateRange, travel, legAt, legNear } from './calc.js?v=b729';
-import { cities, countryName, cityCountry } from './cities.js?v=b729';
-import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b729';
-import { arm } from './ui.js?v=b729';
-import { drawCats } from './planline.js?v=b729';
-import { drawPlanMap } from './planmap.js?v=b729';
-import { drawPlans } from './planview.js?v=b729';
-import { loadReview } from './review.js?v=b729';
+import { $, esc } from './dom.js?v=b730';
+import { sb } from './db.js?v=b730';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b730';
+import { dateRange, travel, legAt, legNear } from './calc.js?v=b730';
+import { cities, countryName, cityCountry } from './cities.js?v=b730';
+import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b730';
+import { arm } from './ui.js?v=b730';
+import { drawCats } from './planline.js?v=b730';
+import { drawPlanMap } from './planmap.js?v=b730';
+import { drawPlans } from './planview.js?v=b730';
+import { loadReview } from './review.js?v=b730';
 
 let ctx = { drawDays: () => {}, drawTripHeader: () => {}, fetchTrip: async () => {} };
 export function setLegsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -40,7 +40,12 @@ export async function loadLegs(){
   const { data, error } = await netTimeout(sb.from('trip_legs')
     /* 도보 상수 둘을 빼먹어서 "도보 약 NaN분" 이 나왔습니다.
        travel() 이 쓰는 다섯 개를 다 가져와야 합니다. */
+    /* ⚠ `center_lat/lng` 도 같이 받습니다(b730). **좌표를 찾을 때의
+       «기준점»이 여기서 옵니다** — 전에는 「이미 찍힌 일정들의 평균」을
+       기준으로 썼는데, 그중 하나가 틀리면 기준이 그쪽으로 끌려가고
+       그 다음 것이 더 크게 틀립니다(cands.js 의 `여행기준` 주석). */
     .select('id,city_id,destination,country,start_date,end_date,timezone,currency,' +
+            'center_lat,center_lng,' +
             'walk_max_km,walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
     .eq('trip_id', trip.id).order('start_date'));
   /* 구간이 없으면 날짜 칩에 도시가 안 붙고 이동 시간도 못 잽니다. 캐시로 버팁니다. */

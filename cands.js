@@ -13,16 +13,16 @@
  * 같이 데려왔습니다.
  *
  * 층: 아래층 여럿과 planmap · citysearch · cards 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b729';
-import { sb } from './db.js?v=b729';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b729';
-import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b729';
-import { trip, plans, legs } from './trip.js?v=b729';
-import { search } from './cities.js?v=b729';
-import { picked } from './citysearch.js?v=b729';
-import { mapLinks } from './planmap.js?v=b729';
-import { openPlanForm } from './cards.js?v=b729';
-import { syncSheets } from './ui.js?v=b729';
+import { $, esc, emptyDo } from './dom.js?v=b730';
+import { sb } from './db.js?v=b730';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b730';
+import { dayLabel, distKm, travelMinutes, legFirst } from './calc.js?v=b730';
+import { trip, plans, legs } from './trip.js?v=b730';
+import { search } from './cities.js?v=b730';
+import { picked } from './citysearch.js?v=b730';
+import { mapLinks } from './planmap.js?v=b730';
+import { openPlanForm } from './cards.js?v=b730';
+import { syncSheets } from './ui.js?v=b730';
 
 let ctx = { loadPlans: async () => {}, openAi: () => {}, loadChats: async () => {} };
 export function setCandsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -206,6 +206,22 @@ function 여행중심(){
           pts.reduce((s, p) => s + p.lng, 0) / pts.length];
 }
 
+/* ── 좌표를 찾을 때의 기준점(b730) ────────────────────────────────────
+ * ⚠⚠ **「그날 있는 도시」가 먼저입니다.** 전에는 `여행중심()` — 이미 찍힌
+ *   일정들의 «평균» — 만 썼습니다. 그런데 그중 하나가 틀리면 **기준이
+ *   그쪽으로 끌려가고 그 다음 것이 더 크게 틀립니다.** 틀린 점이 기준을
+ *   만드는 구조라, 한 번 새면 계속 샙니다.
+ * ⚠ 도쿄→교토처럼 구간이 둘인 여행에서는 평균이 **둘 사이 어딘가**를
+ *   가리킵니다. 그러면 반경 창이 사실상 두 배가 되어 아무거나 통과합니다.
+ * ⚠ 구간에 도시 중심이 없으면(직접 적은 목적지) 옛 방식으로 떨어집니다.
+ *   그때도 나라(`countrycodes`)는 걸려 있습니다. */
+export function 여행기준(date){
+  const l = legOf(date);
+  if (l && l.center_lat != null && l.center_lng != null)
+    return [Number(l.center_lat), Number(l.center_lng)];
+  return 여행중심();
+}
+
 /* ── 이름으로 좌표 찾기 ───────────────────────────────────────────────
  * ⚠ **첫 결과를 그냥 받으면 안 됩니다 (b388).** 전에는 `limit=1` 로 물어보고
  *   나온 것을 그대로 썼습니다. 실사용 점검에서 「기온 거리」(교토)에
@@ -224,7 +240,17 @@ function 여행중심(){
  *
  * 돌려주는 값: `{lat,lng}` · `null`(못 찾음) · `'stop'`(그쪽에서 그만하라 함). */
 export async function osmLookup(q, opts = {}){
-  const { country, near, maxKm = 300 } = opts;
+  /* ⚠⚠ **반경을 300 → 120km 로 좁혔습니다(b730).** ⚠⚠
+   *   외부 QA(2026-09-09)에서 도쿄 일정 하나가 **273.7km** 떨어진 좌표를
+   *   달고 「888분 이동」으로 그려졌습니다. 300km 창을 그대로 통과한
+   *   것입니다. b388 에 41km 짜리 사고를 겪고 만든 창인데 너무 넓었습니다.
+   * ⚠ 120km 는 **하루 안에 다녀올 수 있는 거리**로 잡았습니다 —
+   *   도쿄→닛코 125 · 도쿄→하코네 80 · 오사카→교토 43. 그보다 먼 곳은
+   *   그 날짜의 «구간»이 따로 있어야 맞습니다.
+   * ⚠ **못 찾는 것이 틀린 것보다 낫습니다**(아래 머리말). 창 밖이면
+   *   `null` 을 주고, 화면은 「못 찾았어요」라고 말합니다 — 사용자가
+   *   고칠 수 있습니다. 틀린 좌표는 맞는 줄 알고 지나갑니다. */
+  const { country, near, maxKm = 120 } = opts;
   const u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8'
           + (country ? '&countrycodes=' + encodeURIComponent(String(country).toLowerCase()) : '')
           + '&q=' + encodeURIComponent(q);
@@ -374,7 +400,7 @@ async function geoOne(it){
      이제 나라(`countrycodes`)로 묶고 여행지를 기준점으로만 씁니다. */
   const leg = legOf(it.date) || (legs || [])[0];
   const country = leg?.country || trip?.country || '';
-  const 기준 = 여행중심();
+  const 기준 = 여행기준(it.date);
   const city = leg?.destination || trip?.destination || '';
 
   let hit = null;

@@ -16,17 +16,18 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     planline.js · planmap.js · planview.js · cands.js 를 씁니다. */
-import { $, toast } from './dom.js?v=b729';
-import { featOn } from './flags.js?v=b729';
-import { sb } from './db.js?v=b729';
-import { fail, write } from './net.js?v=b729';
-import { trip, plans, setPlans, editPlanId, setEditPlanId,
-         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b729';
-import { arm } from './ui.js?v=b729';
-import { drawCats } from './planline.js?v=b729';
-import { drawPlanMap } from './planmap.js?v=b729';
-import { drawPlans } from './planview.js?v=b729';
-import { osmLookup, addressQueries } from './cands.js?v=b729';
+import { $, toast } from './dom.js?v=b730';
+import { featOn } from './flags.js?v=b730';
+import { sb } from './db.js?v=b730';
+import { fail, write } from './net.js?v=b730';
+import { trip, plans, legs, setPlans, editPlanId, setEditPlanId,
+         planSeedGeo, setPlanSeedGeo } from './trip.js?v=b730';
+import { arm } from './ui.js?v=b730';
+import { drawCats } from './planline.js?v=b730';
+import { drawPlanMap } from './planmap.js?v=b730';
+import { drawPlans } from './planview.js?v=b730';
+import { osmLookup, addressQueries, 여행기준 } from './cands.js?v=b730';
+import { distKm, legFirst } from './calc.js?v=b730';
 
 let ctx = { drawDays: () => {}, loadPlans: async () => {} };
 export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -34,8 +35,11 @@ export function setGeocodeCtx(o){ ctx = { ...ctx, ...o }; }
 /* 일정 칸을 새로 열 때 앞사람 흔적을 지웁니다. app.js 가 두 변수를
    직접 비우던 자리인데, 변수가 여기로 왔으니 길도 여기서 냅니다.
    (b339 의 resetPick, b341 의 resetRateHtml 과 같은 꼴) */
+/* 이번에 찾을 때 쓴 기준점. 아래 「멀다」 판정이 같은 점을 씁니다 —
+   두 번 세면 두 값이 갈립니다. */
+let 기준점 = null;
 export function resetGeo(){
-  planGeo = null; geoAsked = "";
+  planGeo = null; geoAsked = ""; 기준점 = null;
   $("p_geonote").classList.add("hide");
 }
 
@@ -95,8 +99,18 @@ async function sniffMapLink(){
        도, Japan」 꼴로 바꿔 줍니다(그 함수 머리말에 잰 값이 있습니다).
        ⚠ 그래도 안 되면 **원문 그대로** 한 번 더 봅니다 — 일본이 아닌 나라
          에서는 원문이 더 나을 수 있습니다. */
+    /* ⚠⚠ **여기가 아무 울타리도 없이 묻던 자리였습니다(b730).** ⚠⚠
+       `osmLookup(q)` — 나라도, 기준점도, 반경도 안 넘겼습니다. 그러면
+       **지구 어디든** 걸립니다. 좌표 채우기(cands.js)는 b388 부터 나라와
+       기준점으로 걸러 왔는데 **이 길만 빠져 있었습니다.** 그러고도 화면은
+       「위치를 찾았어요」라고 말합니다 — 확신에 찬 거짓말입니다.
+       ⚠ 날짜는 폼에 적힌 날을 씁니다. 아직 안 골랐으면 여행 첫날로 봅니다. */
+    const 날 = $('p_date')?.value || trip?.start_date || '';
+    const leg = legFirst(legs, 날);
+    const 나라 = leg?.country || trip?.country || '';
+    기준점 = 여행기준(날);
     for (const q of [...addressQueries(name), name]){
-      const hit = await osmLookup(q);
+      const hit = await osmLookup(q, { country: 나라, near: 기준점 });
       if (hit === 'stop') break;
       if (hit){ lat = hit.lat; lng = hit.lng; break; }
       await new Promise(r => setTimeout(r, 1100));
@@ -115,8 +129,21 @@ async function sniffMapLink(){
     return;
   }
   planGeo = { lat, lng };
-  note.textContent = name ? `위치를 찾았어요 · ${name.split(',')[0].trim()}`
-                          : '위치를 찾았어요';
+  /* ⚠⚠ **멀면 «멀다»고 말합니다(b730).** ⚠⚠ 링크에 좌표가 들어 있는
+     경우에는 위 울타리를 안 지나갑니다 — 구글이 준 값을 그대로 믿습니다.
+     그런데 그것도 틀릴 수 있고(짧은 링크가 엉뚱한 곳을 펴는 경우),
+     틀린 좌표는 「888분 이동」 같은 그럴듯한 숫자로 바뀝니다.
+     막지는 않습니다 — 진짜로 먼 데를 넣는 날도 있습니다. 대신 **묻습니다.**
+   ⚠ 30km 는 b388 의 사고(41.2km)보다 안쪽입니다. */
+  const 멀다 = (() => {
+    const b = 기준점 || 여행기준($('p_date')?.value || trip?.start_date || '');
+    if (!b) return 0;
+    const d = distKm(b[0], b[1], lat, lng);
+    return d != null && d > 30 ? Math.round(d) : 0;
+  })();
+  note.textContent = (name ? `위치를 찾았어요 · ${name.split(',')[0].trim()}`
+                           : '위치를 찾았어요')
+                   + (멀다 ? ` · ⚠ 그날 있는 곳에서 ${멀다}km 떨어져 있어요` : '');
   /* 제목이 비어 있으면 채워줍니다. 링크만 붙여넣고 이름을 또 치게 할
      이유가 없습니다. 이미 적었으면 안 건드립니다. */
   if (r.data.name && !$('p_title').value.trim()) $('p_title').value = r.data.name;
