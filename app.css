@@ -1194,8 +1194,10 @@ body.kbup .assheet.wiz .wizfoot{ display:none; }
 
 /* 홈에서 방금 별점을 준 줄. 사라지지 않고 남아 있어서 다시 눌러 고칠 수 있습니다.
    남은 줄과 구분은 되어야 하니 아주 옅게만 깔아둡니다. */
+/* ⚠ 매긴 줄. 바탕에 옅은 별색을 흘리던 것 그대로 두되, 모서리를 사진과
+   같은 12px 로 맞춥니다 — 안쪽 사진이 둥근데 바탕만 각지면 어긋나 보입니다. */
 .rrow.rated{ background:linear-gradient(90deg, var(--star-10), transparent 70%);
-             border-radius:var(--r-sm); }
+             border-radius:12px; }
 
 /* iOS 는 date · time 을 자기 방식으로 그립니다.
    width 를 무시해 카드 밖으로 나가고, 값이 비어 있으면 높이까지 짜부라집니다.
@@ -1591,7 +1593,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
    좁은 화면에서 자리가 모자라면 아랫줄로 내려가되 오른쪽 정렬은 그대로입니다. */
 /* 한 줄 안에 다 들어가야 합니다. 줄바꿈을 허용했더니 좁은 화면에서 별이
    아래로 떨어져 한 줄이 250px 씩 먹었습니다. 별 크기를 화면 폭에 묶습니다. */
-.rrow{ display:flex; align-items:center; gap:9px; padding:9px 0; flex-wrap:nowrap; }
+.rrow{ display:flex; align-items:center; gap:11px; padding:10px 0; flex-wrap:nowrap; }
 .rrow + .rrow{ border-top:1px solid var(--divider-soft); }
 .rrow .thumb{ flex:none; }
 .rrow .t{ flex:1 1 auto; min-width:0; }
@@ -1631,7 +1633,7 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
  * 들어갑니다. 여섯 줄이 저마다 다른 것을 달고 있어서, 이름을 적어 두면
  * 하나 바뀔 때마다 여기도 고쳐야 합니다. */
 .rrow:has(> .stars){ display:grid; grid-template-columns:auto 1fr auto;
-                     align-items:center; column-gap:9px; row-gap:4px; }
+                     align-items:center; column-gap:11px; row-gap:4px; }
 /* ⚠ **한줄평은 이제 `.rcmt` 가 아닙니다(b513).** 줄 밖에 붙는 딸린 글로
    두었더니 화면에서 제일 작고 흐린 글씨가 됐습니다 — 정작 그 화면의
    주인공인데요. 아래쪽 `.cmt`·`.cq` 로 옮겼습니다(문장이 위, 도시가 밑). */
@@ -1645,8 +1647,15 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
        격자가 그만큼 벌어지므로 **아래에 빈 자리가 안 남습니다**
        (b269 에서 `stretch` 를 쓴 이유가 그것이었는데, 크기를 못박아도
         같은 결과가 나옵니다). */
+/* ⚠⚠ **76×76 정사각 → 100×76 (4:3)** (b750). 도시 사진은 대부분 가로로
+   찍힌 풍경인데 정사각으로 자르면 양쪽이 날아가 «무슨 사진인지» 안
+   보였습니다(재보니 1280×853 을 76×76 으로 = 가로의 40%가 잘림).
+   ⚠ 이름 자리가 218 → 194px 로 줄지만, b269 에서 87px 이던 것을 218 로
+     넓혀 둔 덕에 여유가 있습니다. 「부에노스아이레스」(8자)가 들어갑니다.
+   ⚠ 높이는 76 그대로여야 합니다 — 두 줄(이름 + 별)이 73px 이라 여기가
+     달라지면 사진 밑에 빈 자리가 생깁니다(b269 · b625 에서 겪은 것). */
 .rrow:has(> .stars) > .thumb{ grid-row:1 / span 2; align-self:start;
-                              width:76px; height:76px; }
+                              width:100px; height:76px; }
 .rrow:has(> .stars) > .t{ grid-column:2; grid-row:1; }
 .rrow:has(> .stars) > .stars{ grid-column:2 / -1; grid-row:2; margin-left:0;
                               line-height:1; /* 25px 글자의 줄 높이까지 따라오면 12px 이 놉니다 */ }
@@ -2675,8 +2684,15 @@ body.bigmap .tabbar{ display:none; }
      다 각지게 했는데 사진만 10px 로 둥글었습니다 — 훑어보니 **150곳**
      이었습니다. 앱에서 제일 많이 보이는 물건이 혼자 다른 규칙을
      따르고 있었습니다(도시 화면·일기·엽서 사진은 이미 각졌습니다). */
-.thumb{ width:56px; height:56px; border-radius:0; object-fit:cover; flex:none;
-        background:var(--parchment); }
+/* ⚠⚠ **모서리를 깎습니다(b750).** 각진 사진이 크림 바탕 위에 줄줄이
+   서면 «자료 목록»으로 보입니다 — 이 앱에서 사진은 자료가 아니라 «가고
+   싶게 만드는 것»입니다(사용자: 「여기도 좀 감성있게 바꿀 수 있는 방법
+   없나?」). 12px 은 카드(18px)보다 한 단계 작은 값입니다.
+   ⚠ 크림 위에 밝은 사진이 놓이면 가장자리가 녹습니다. 안쪽 테두리 한 겹을
+     넣어 사진이 «놓인 물건»으로 보이게 합니다. */
+.thumb{ width:56px; height:56px; border-radius:12px; object-fit:cover; flex:none;
+        background:var(--parchment);
+        box-shadow:inset 0 0 0 1px rgba(20,16,12,.07); }
 .thumb.ph{ display:flex; align-items:center; justify-content:center;
            font-size:var(--f-2xl); font-weight:700; color:var(--ink-48); }
 /* 도시 페이지 맨 위 사진 */
