@@ -1,89 +1,87 @@
 /* ══ 도감 — 여행 유형 열여섯 가지 ══════════════════════════════════════
  *
  * 사용자: 「카드 퀄리티가 좋아서 사람들이 다른 성향도 보고 싶을 것 같은데」.
- * 그래서 **그림이 주인공**입니다 — 처음에 줄 목록으로 그렸다가 반려됐습니다
- * (「이미지 위주로 보여주고 싶은데 너무 줄만있잖아」). 코드와 이름만 그림
- * 위에 얹고, 설명은 하나를 눌렀을 때로 미룹니다.
+ * 그래서 **그림이 주인공**입니다. 여기까지 오는 데 세 번 갈아엎었습니다 —
+ * 그 셋을 다 적어 둡니다. 되돌리려는 다음 사람이 같은 길을 다시 걷지 않게.
  *
- * ⚠⚠ **목록에는 «썸네일»을 씁니다(persona/t/*.jpg).** ⚠⚠
- *   원본 열여섯 장은 합쳐서 3.8MB 입니다. 그것을 격자에 깔면 도감을 열 때마다
- *   3.8MB 를 받습니다 — 폰에서 도감 한 번이 사진 앨범 한 편입니다.
- *   썸네일은 360px JPEG 로 **합쳐서 350KB**(장당 22KB)입니다.
- *   ⚠ 원본(webp)은 **상세에서 한 장만** 받습니다. 격자에서 원본을 쓰면
- *     썸네일을 만든 뜻이 없어집니다.
- *   ⚠ `loading="lazy"` 를 답니다 — 여덟 줄 중 처음 두 줄만 보입니다.
+ *   b737  줄 목록(코드 · 이름 · 한 줄)  → 반려: 「이미지 위주로 보여주고
+ *         싶은데 너무 줄만있잖아」
+ *   b738  2열 격자가 «첫 화면»          → 반려: 「16가지 한판에 나오는데
+ *         이러면 감성이 너무 없어서」
+ *   b740  한 판에 한 장씩 넘기기        → 반려: 「페이지에 하나씩만 나오니까
+ *         또 감성이 없어」
+ *   b744  **엿보기 캐러셀**(지금) — 가운데 카드가 크고 양옆이 살짝 보입니다.
+ *         사용자가 레퍼런스를 붙여 정한 모양입니다.
+ *
+ * ⚠⚠ **첫 화면은 «내 성향 카드»입니다.** 열면 내 유형이 가운데 서 있고
+ *   좌우로 넘겨 남의 것을 봅니다. 격자는 「모아보기」 단추 하나로 들어가는
+ *   **곁가지**입니다(사용자: 「16개 모아서 볼 수 있는 버튼도 하나만」).
+ *
+ * ⚠⚠ **캐러셀은 열여섯 장을 «다» 깔고, 다시 그리지 않습니다.** ⚠⚠
+ *   b740 은 세 장만 깔고 넘길 때마다 다시 그렸는데, 엿보기에서는 양옆이
+ *   보이므로 다시 그릴 때마다 그 가장자리가 번쩍입니다. 열여섯을 깔아두고
+ *   **가운데가 누구인지만** 고쳐 칠합니다 — 스크롤 자리도 그대로 남습니다.
+ *   무게는 `loading="lazy"` 와 중간 크기 그림(m/)으로 잡습니다.
+ *
+ * ⚠ 그림이 셋입니다. 자리마다 다른 것을 씁니다:
+ *     persona/CODE.webp   원본(장당 약 490KB) — **공유 카드 그림만**(card.js)
+ *     persona/m/CODE.jpg  720px(장당 77KB)    — 화면(성향 머리 · 이 캐러셀)
+ *     persona/t/CODE.jpg  360px(장당 23KB)    — 격자, 그리고 «자리막이»
+ *   원본을 화면에 쓰면 성향 탭 한 번에 0.5MB 를 받습니다. 재서 정한 값입니다.
  *
  * ⚠ 여기서 궁합을 **다시 계산하지 않습니다.** card.js 의 `personaMatch` 가
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b743';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b743';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b744';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b744';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
-   FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 격자에서 이웃끼리
-   한 글자만 다릅니다. 이름순·궁합순으로 흩으면 그 규칙이 안 보입니다. */
+   FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 이웃끼리 한 글자만
+   다릅니다. 이름순·궁합순으로 흩으면 그 규칙이 안 보입니다. */
 const 코드들 = Object.keys(PERSONA16);
 
 let 내코드 = null;
-let 지금   = null;   /* 상세로 연 코드. null 이면 격자입니다. */
+let 지금   = null;        /* 캐러셀 가운데에 선 코드 */
+let 격자냐 = false;       /* 「모아보기」로 들어간 상태인가 */
 
-
-/* ── 격자 ───────────────────────────────────────────────────────────
- * ⚠ **내 유형이 맨 앞입니다.** 열여섯 중 내 것을 찾느라 훑게 하면 안 됩니다.
- * ⚠ 궁합 배지는 **가장 잘 맞는 하나 · 가장 안 맞는 하나**에만 답니다.
- *   열여섯 칸에 다 붙이면 숫자가 그림을 덮습니다. 이 둘은 성향 화면의
- *   「나와 맞는 사람」에 이미 나와 있어서, 같은 것을 도감에서 찾는 셈입니다. */
-function 격자(){
-  const 쨍 = 내코드 ? [...코드들].filter(c => c !== 내코드)
-    .sort((a, b) => personaMatch(내코드, b) - personaMatch(내코드, a)) : [];
-  const 최고 = 쨍[0], 최악 = 쨍[쨍.length - 1];
-  const 차례 = 내코드 ? [내코드, ...코드들.filter(c => c !== 내코드)] : 코드들;
-
-  const 칸 = 차례.map(code => {
-    const t = PERSONA16[code];
-    const 나 = code === 내코드;
-    const 표 = 나 ? '<span class="p16chip me">나</span>'
-      : code === 최고 ? `<span class="p16chip good">${personaMatch(내코드, code)}%</span>`
-      : code === 최악 ? `<span class="p16chip bad">${personaMatch(내코드, code)}%</span>` : '';
-    /* ⚠ 그림이 안 오면 칸이 통째로 까맣게 됩니다 — 그림 위에 흰 글자를
-       얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
-    return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
-      <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b743" alt="" loading="lazy" decoding="async"
-           onerror="this.closest('.p16cell').classList.add('noart')">
-      <span class="sh"></span>${표}
-      <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
-    </button>`;
-  }).join('');
-
-  /* ⚠ 다른 판(일기장·보관함)과 **같은 뼈대**입니다 — 위에 「← 분석」 한 줄,
-     그 아래 제목 카드. 판마다 머리 모양이 다르면 어디 있는지 헷갈립니다. */
-  return `<div class="card p16bar">
-      <button class="ghost" data-p16close="1">← 분석</button>
-    </div>
-    <div class="card">
-      <h2>여행 유형 16가지</h2>
-      <div class="p16grid">${칸}</div>
+/* ── 카드 한 장 ─────────────────────────────────────────────────────
+ * 그림 안에 코드·이름·한 줄이 이미 얹혀 있습니다(성향 화면 머리와 같은
+ * 부품 `.phero`). 그래서 카드 밖에는 아무것도 안 붙습니다 — 궁합과
+ * 「나와 다른 점」은 캐러셀 «아래»에 한 벌만 두고 가운데 것으로 고쳐 씁니다.
+ * ⚠ 열여섯 장에 각각 붙이면 옆 카드의 글까지 엿보기에 딸려 보입니다. */
+function 카드(code, k, 시작){
+  const t = PERSONA16[code] || {};
+  const 긴이름 = (t.n || '').length >= 10 ? ' long' : '';
+  /* ⚠ 처음에 보이는 석 장만 먼저 받습니다. 나머지는 넘길 때 받습니다 —
+     열여섯을 한꺼번에 받으면 1.2MB 입니다. */
+  const 언제 = Math.abs(k - 시작) <= 1 ? 'eager' : 'lazy';
+  return `<div class="p16slide" data-code="${esc(code)}">
+      <div class="phero">
+        <!-- 자리막이(b743). 큰 그림이 붙기 전까지 이 자리를 채웁니다. -->
+        <div class="psizer"
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b744')"></div>
+        <img src="./persona/m/${esc(code)}.jpg?v=b744" alt=""
+             loading="${언제}" decoding="async"
+             onerror="this.closest('.phero').classList.add('noart')">
+        <div class="pscrim"></div>
+        <div class="ptxt">
+          <div class="peyebrow">여행 유형</div>
+          <div class="pcode">${esc(code)}</div>
+          <div class="pname${긴이름}">${esc(t.n || code)}</div>
+          ${t.d ? `<div class="pdesc">${esc(t.d)}</div>` : ''}
+        </div>
+      </div>
     </div>`;
 }
 
-/* ── 하나 ───────────────────────────────────────────────────────────
- * 사용자: 「요약이랑 궁합도만 있고 자세한 설명은 누르면 보이게 해줘」.
- * 요약은 **그림 안에 이미 있습니다**(코드 · 이름 · 한 줄 · 축 네 마디) —
- * 성향 화면 머리와 같은 부품(`.phero`)이라 두 벌로 그리지 않습니다.
- * ⚠ 그래서 그림 밖에 남는 것은 궁합 한 줄과 «접힌» 축 넷뿐입니다. */
-function 슬라이드(code){
-  const t = PERSONA16[code] || {};
-  const 긴이름 = (t.n || '').length >= 10 ? ' long' : '';
-
-  /* ⚠ 내 유형을 아직 모르면(평가가 모자라면) 궁합도 «다른 점»도 못 냅니다.
-     그 자리를 빈 채로 두지 말고 아예 안 답니다 — 0% 로 적으면 거짓말입니다. */
-  /* ⚠ **접지 않습니다(b739, 사용자 결정: 「굳이 접지 말고 처음부터 다
-     펴진 상태로 나오고」).** 넷뿐이라 접어서 아낄 자리가 없었고, 접어 두면
-     이 화면에서 제일 쓸모 있는 것을 한 번 더 눌러야 봅니다. */
-  const 견줌 = 내코드 && 내코드 !== code ? `
-    <div class="p16mate"><span>나와의 궁합</span>
+/* ── 카드 밑 글 ─────────────────────────────────────────────────────
+ * 사용자: 「요약이랑 궁합도만 있고 자세한 설명은 누르면 보이게 해줘」 →
+ * 그 뒤 「굳이 접지 말고 처음부터 다 펴진 상태로」(b739). 그래서 늘 펴 둡니다. */
+function 밑글(code){
+  if (!내코드) return '';
+  if (내코드 === code) return '<div class="p16mine">내 유형입니다</div>';
+  return `<div class="p16mate"><span>나와의 궁합</span>
       <b>${personaMatch(내코드, code)}%</b></div>
     <div class="p16dh">나와 뭐가 다른가요</div>
     <div class="p16diff">${AXIS_NAME.map((이름, k) => {
@@ -93,127 +91,137 @@ function 슬라이드(code){
         <b>${같 ? '같음' : '다름'}</b>
         <i>${같 ? `둘 다 ${esc(나글)}`
                 : `나는 ${esc(나글)} · 이 유형은 ${esc(저글)}`}</i></div>`;
-    }).join('')}</div>`
-    : 내코드 === code
-      ? '<div class="p16mine">내 유형입니다</div>' : '';
+    }).join('')}</div>`;
+}
 
-  return `<div class="p16slide">
-      <div class="phero">
-        <!-- 썸네일을 먼저 깔아 깜빡임을 막습니다(b743) — persona.js 와 같은 수법.
-             넘길 때마다 슬라이드를 새로 그리므로 여기가 더 티가 납니다. -->
-        <div class="psizer"
-             style="background-image:url('./persona/t/${code}.jpg?v=b743')"></div>
-        <img src="./persona/${code}.webp?v=b743" alt="" decoding="async"
-             onerror="this.closest('.phero').classList.add('noart')">
-        <div class="pscrim"></div>
-        <div class="ptxt">
-          <div class="peyebrow">여행 유형</div>
-          <div class="pcode">${esc(code)}</div>
-          <div class="pname${긴이름}">${esc(t.n || code)}</div>
-          ${t.d ? `<div class="pdesc">${esc(t.d)}</div>` : ''}
-          <!-- ⚠ **축 네 마디(「유명한 곳 · 한 나라 · 멀리 · 까다로움」)를
-               뗐습니다(b738, 사용자: 「이거 부연설명도 빼자」).** 밑의
-               「나와 뭐가 다른가요」가 같은 넷을 «나와 견줘서» 말합니다 —
-               견줌이 있는 쪽이 낫고, 둘 다 두면 같은 말이 두 번입니다.
-             ⚠ 성향 화면 머리(persona.js)에는 «남깁니다». 거기는 견줄
-               상대가 없어서 이 줄이 유일한 풀이입니다. -->
-        </div>
-      </div>
-      ${견줌}
-      <div class="p16hint">좌우로 넘겨서 다른 유형도 보세요</div>
+function 캐러셀(){
+  const 시작 = Math.max(0, 코드들.indexOf(지금));
+  return `<div class="card p16bar">
+      <button class="ghost" data-p16close="1">← 분석</button>
+      <span class="p16n" id="p16n">${시작 + 1} / ${코드들.length}</span>
+      <button class="ghost" data-p16grid="1">모아보기</button>
+    </div>
+    <div class="p16track" id="p16track">${
+      코드들.map((c, k) => 카드(c, k, 시작)).join('')}</div>
+    <div class="p16dots" id="p16dots">${
+      코드들.map(() => '<i></i>').join('')}</div>
+    <div class="p16meta" id="p16meta">${밑글(지금)}</div>`;
+}
+
+/* ── 모아보기(격자) ─────────────────────────────────────────────────
+ * ⚠ 여기 그림은 **작은 것(t/)** 입니다. 열여섯이 한 화면에 서므로 중간
+ *   크기를 쓰면 1.2MB 를 한 번에 받습니다.
+ * ⚠ 궁합 배지는 가장 잘 맞는 하나 · 가장 안 맞는 하나에만 답니다. 열여섯에
+ *   다 붙이면 숫자가 그림을 덮습니다. */
+function 격자(){
+  const 쨍 = 내코드 ? [...코드들].filter(c => c !== 내코드)
+    .sort((a, b) => personaMatch(내코드, b) - personaMatch(내코드, a)) : [];
+  const 최고 = 쨍[0], 최악 = 쨍[쨍.length - 1];
+
+  const 칸 = 코드들.map(code => {
+    const t = PERSONA16[code];
+    const 나 = code === 내코드;
+    const 표 = 나 ? '<span class="p16chip me">나</span>'
+      : code === 최고 ? `<span class="p16chip good">${personaMatch(내코드, code)}%</span>`
+      : code === 최악 ? `<span class="p16chip bad">${personaMatch(내코드, code)}%</span>` : '';
+    /* ⚠ 그림이 안 오면 칸이 통째로 까맣게 됩니다 — 그림 위에 흰 글자를
+       얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
+    return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
+      <span class="sz"></span>
+      <img src="./persona/t/${code}.jpg?v=b744" alt="" loading="lazy" decoding="async"
+           onerror="this.closest('.p16cell').classList.add('noart')">
+      <span class="sh"></span>${표}
+      <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
+    </button>`;
+  }).join('');
+
+  return `<div class="card p16bar">
+      <button class="ghost" data-p16cards="1">← 카드로</button>
+    </div>
+    <div class="card">
+      <h2>여행 유형 16가지</h2>
+      <div class="p16grid">${칸}</div>
     </div>`;
 }
 
-/* ── 넘기는 칸 ──────────────────────────────────────────────────────
- * ⚠⚠ **손으로 미는 대신 «진짜 가로 스크롤»에 맡깁니다(b740).** ⚠⚠
- *   b739 는 touchmove 로 손가락을 따라가다가 놓으면 «제자리로 튕겼다가»
- *   새 것이 34px 에서 끼어드는 식이었습니다 — 사용자: 「팍팍 튀는데」.
- *   두 동작이 이어지지 않으니 당연합니다.
- *   → 앞·지금·뒤 **세 장을 깔고** `scroll-snap` 으로 굴립니다. 브라우저가
- *     관성까지 알아서 처리하므로 손가락에 딱 붙고, 우리 코드는 «멈춘 뒤에»
- *     한 번만 끼어듭니다.
- * ⚠ 세 장뿐입니다. 열여섯을 다 깔면 그림 3.8MB 를 통째로 받습니다.
- * ⚠ 멈춘 자리가 가운데가 아니면 그 방향으로 한 칸 옮기고 **다시 그립니다**
- *   — 그리자마자 가운데로 되돌려 놓아서, 다음 몸짓도 양쪽으로 열려 있습니다. */
-function 하나(code){
-  const i = 코드들.indexOf(code);
-  const 앞 = 코드들[(i - 1 + 코드들.length) % 코드들.length];
-  const 뒤 = 코드들[(i + 1) % 코드들.length];
-  return `<div class="card p16bar">
-      <button class="ghost" data-p16back="1">← 도감</button>
-      <span class="p16n">${i + 1} / 16</span>
-      <button class="ghost" data-p16next="1">다음 ›</button>
-    </div>
-    <div class="p16track" id="p16track">${[앞, code, 뒤].map(슬라이드).join('')}</div>`;
-}
-
-/* ⚠ 스크롤 사건은 **거품이 안 올라옵니다** — 시트에 한 번 달아 두는 수법이
-   여기서는 안 통합니다. 칸이 다시 그려질 때마다 새로 답니다(옛 칸은 통째로
-   사라지므로 사건도 같이 사라집니다). */
-function 칸잡기(){
-  const t = $('p16track');
-  if (!t) return;
-  /* 가운데로. `scrollLeft` 를 읽는 순간 배치가 계산되므로 innerHTML 바로
-     뒤에 불러도 됩니다 — 그려지기 «전»이라 깜빡임이 없습니다. */
-  t.scrollLeft = t.clientWidth;
-  let 타이머 = 0;
-  t.addEventListener('scroll', () => {
-    clearTimeout(타이머);
-    /* ⚠ 멈춘 뒤에만 셉니다. 굴리는 도중에 다시 그리면 손가락 밑에서
-       내용이 바뀝니다. 90ms 는 `scrollend` 가 없는 기기까지 덮는 값입니다. */
-    타이머 = setTimeout(() => {
-      const w = t.clientWidth;
-      if (!w) return;
-      const k = Math.round(t.scrollLeft / w);   /* 0=앞 · 1=제자리 · 2=뒤 */
-      if (k === 1) return;
-      const i = 코드들.indexOf(지금);
-      지금 = 코드들[(i + (k - 1) + 코드들.length) % 코드들.length];
-      그리기();
-    }, 90);
-  }, { passive: true });
-}
-
+/* ── 그리기 ─────────────────────────────────────────────────────────
+ * ⚠ **캐러셀은 한 번만 그립니다.** 넘길 때는 아래 `가운데바뀜` 이 «가운데가
+ *   누구인지»만 고쳐 칠합니다. 다시 그리면 엿보기 가장자리가 번쩍입니다. */
 function 그리기(){
   const 몸 = $('p16body');
   if (!몸) return;
-  몸.innerHTML = 지금 ? 하나(지금) : 격자();
+  몸.innerHTML = 격자냐 ? 격자() : 캐러셀();
   몸.scrollTop = 0;
-  if (지금){ 칸잡기(); 이웃받기(); }
+  if (!격자냐) 캐러셀잡기();
 }
 
-/* ⚠ **넘기기 전에 옆 그림을 받아 둡니다.** 원본은 장당 140~480KB 라, 넘긴
-   뒤에 받기 시작하면 잠깐 빈 칸이 보입니다. 앞뒤 한 장씩만 받습니다 —
-   열여섯 장을 다 받으면 썸네일을 만든 뜻이 없어집니다. */
-function 이웃받기(){
-  const i = 코드들.indexOf(지금);
-  if (i < 0) return;
-  for (const d of [1, -1]){
-    const c = 코드들[(i + d + 코드들.length) % 코드들.length];
-    const im = new Image();
-    im.src = `./persona/${c}.webp?v=b743`;
+/* 가운데 칸을 화면 한가운데로. ⚠ 부드럽게 굴리면 아래 `scroll` 이 도중에
+   깨어나므로, 처음 자리잡기는 **바로** 합니다. */
+function 가운데로(t, k, 부드럽게){
+  const el = t.children[k];
+  if (!el) return;
+  const x = el.offsetLeft - (t.clientWidth - el.clientWidth) / 2;
+  t.scrollTo({ left: Math.max(0, x), behavior: 부드럽게 ? 'smooth' : 'auto' });
+}
+
+/* 지금 화면 한가운데에 제일 가까운 칸이 몇째인가. */
+function 가운데칸(t){
+  const 중심 = t.scrollLeft + t.clientWidth / 2;
+  let 고른 = 0, 최소 = Infinity;
+  for (let k = 0; k < t.children.length; k++){
+    const el = t.children[k];
+    const d = Math.abs(el.offsetLeft + el.clientWidth / 2 - 중심);
+    if (d < 최소){ 최소 = d; 고른 = k; }
+  }
+  return 고른;
+}
+
+/* 가운데가 바뀌었을 때 고쳐 칠하는 것 셋. **카드는 안 건드립니다.** */
+function 가운데바뀜(k, 글도){
+  const t = $('p16track');
+  if (!t) return;
+  for (let i = 0; i < t.children.length; i++)
+    t.children[i].classList.toggle('on', i === k);
+  const 점 = $('p16dots');
+  if (점) for (let i = 0; i < 점.children.length; i++)
+    점.children[i].classList.toggle('on', i === k);
+  const 셈 = $('p16n');
+  if (셈) 셈.textContent = `${k + 1} / ${코드들.length}`;
+  if (글도){
+    지금 = 코드들[k];
+    const 글 = $('p16meta');
+    if (글) 글.innerHTML = 밑글(지금);
   }
 }
 
-/* 「다음 ›」 도 **같은 길로** 갑니다 — 칸을 부드럽게 굴려 두면 위의 `scroll`
-   이 알아서 받아 넘깁니다. 두 벌로 두면 몸짓과 단추가 다르게 움직입니다. */
-function 넘기기(d){
+function 캐러셀잡기(){
   const t = $('p16track');
   if (!t) return;
-  t.scrollTo({ left: t.clientWidth * (d > 0 ? 2 : 0), behavior: 'smooth' });
+  const 시작 = Math.max(0, 코드들.indexOf(지금));
+  가운데로(t, 시작, false);
+  가운데바뀜(시작, false);
+
+  let 타이머 = 0;
+  t.addEventListener('scroll', () => {
+    /* 크기·흐림은 **굴리는 동안에도** 따라와야 살아 있어 보입니다.
+       글자는 멈춘 뒤에 한 번만 — 굴리는 내내 바꾸면 어지럽습니다. */
+    가운데바뀜(가운데칸(t), false);
+    clearTimeout(타이머);
+    타이머 = setTimeout(() => 가운데바뀜(가운데칸(t), true), 110);
+  }, { passive: true });
 }
 
 /* ── 열고 닫기 ──────────────────────────────────────────────────────
- * ⚠⚠ **기록에 자리를 «두 겹» 남깁니다(`p16` · `p16one`).** ⚠⚠
- *   상세를 시트와 같은 자리로 두면, 상세에서 뒤로가기 한 번에 도감까지
- *   같이 닫힙니다 — 열여섯 장을 넘겨보는 화면에서 그러면 못 씁니다.
- *   보관함 시트(shelf.js)가 쓰는 수법과 같고, 닫는 차례는 tripview.js 의
- *   사슬에 적습니다. **거기에 안 적으면 뒤로가기가 이 시트를 건너뜁니다.** */
+ * ⚠⚠ **기록에 자리를 «두 겹» 남깁니다(`p16` · `p16grid`).** ⚠⚠
+ *   모아보기를 카드와 같은 자리로 두면, 격자에서 뒤로가기 한 번에 도감까지
+ *   같이 닫힙니다. 닫는 차례는 tripview.js 의 사슬에 적습니다 —
+ *   **거기에 안 적으면 뒤로가기가 이 판을 건너뜁니다.** */
 export function open16(code){
   내코드 = code || null;
-  지금 = null;
-  /* ⚠ **판을 먼저 보이고 나서 그립니다.** 아래 `칸잡기` 가 칸 너비를 재서
-     가운데로 옮기는데, 숨어 있는 동안에는 너비가 0 입니다(이 앱에서 여러 번
-     겪은 함정 — dom.js 의 `toTop`, app.js 의 `덱으로` 주석 참고). */
+  지금 = code && PERSONA16[code] ? code : 코드들[0];
+  격자냐 = false;
+  /* ⚠ **판을 먼저 보이고 나서 그립니다.** `가운데로` 가 칸 너비를 재는데,
+     숨어 있는 동안에는 0 입니다(이 앱에서 여러 번 겪은 함정). */
   $('p16pane')?.classList.remove('hide');
   coverDeck(true);
   그리기();
@@ -227,33 +235,37 @@ export function close16(뒤로온것){
   판.classList.add('hide');
   /* 탭을 안 바꿨으니 덱만 걷으면 나온 자리(분석 탭)가 그대로 다시 섭니다. */
   coverDeck(false);
-  지금 = null;
+  격자냐 = false;
 }
 export const is16Open = () =>
   !!$('p16pane') && !$('p16pane').classList.contains('hide');
-export const isOne16Open = () => is16Open() && 지금 != null;
+export const is16Grid = () => is16Open() && 격자냐;
 
-function 하나열기(code){
-  지금 = code;
+function 격자열기(){
+  격자냐 = true;
   그리기();
   toTop($('p16pane'));
-  if (history.state?.t2 !== 'p16one') history.pushState({ t2: 'p16one' }, '');
+  if (history.state?.t2 !== 'p16grid') history.pushState({ t2: 'p16grid' }, '');
 }
-export function closeOne16(뒤로온것){
-  if (지금 == null) return;
-  if (!뒤로온것 && history.state?.t2 === 'p16one'){ history.back(); return; }
-  지금 = null;
+export function close16Grid(뒤로온것){
+  if (!격자냐) return;
+  if (!뒤로온것 && history.state?.t2 === 'p16grid'){ history.back(); return; }
+  격자냐 = false;
   그리기();
   toTop($('p16pane'));
 }
 
-/* ⚠ 듣는 곳은 시트 하나입니다 — 안을 다시 그릴 때마다 단추에 달면
-   지운 단추의 사건이 남습니다(이 앱에서 여러 번 겪은 자리). */
+/* ⚠ 듣는 곳은 판 하나입니다 — 안을 다시 그릴 때마다 단추에 달면 지운
+   단추의 사건이 남습니다(이 앱에서 여러 번 겪은 자리). */
 $('p16pane')?.addEventListener('click', e => {
   if (e.target.closest('[data-p16close]')) return close16();
-  if (e.target.closest('[data-p16back]'))  return closeOne16();
+  if (e.target.closest('[data-p16grid]'))  return 격자열기();
+  if (e.target.closest('[data-p16cards]')) return close16Grid();
   const g = e.target.closest('[data-p16go]');
-  if (g) return 하나열기(g.dataset.p16go);
-  if (e.target.closest('[data-p16next]')) return 넘기기(1);
+  if (g){
+    /* 격자에서 고른 것을 캐러셀 가운데에 세웁니다 — 「뭘 눌렀는지」가
+       그대로 이어져야 합니다. */
+    지금 = g.dataset.p16go;
+    return close16Grid();
+  }
 });
-

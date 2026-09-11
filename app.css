@@ -3826,23 +3826,42 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * 사용자: 「요약이랑 궁합도만 있고 자세한 설명은 누르면 보이게 해줘」.
  * 요약(이름 · 한 줄 · 축 네 마디)은 이미 그림 안에 있습니다 — `.phero` 를
  * 그대로 씁니다. 그림 밖에 남는 것은 궁합 한 줄과 «접힌» 축 넷뿐입니다. */
-/* ⚠⚠ **진짜 가로 스크롤입니다(b740).** ⚠⚠
-   b739 는 손으로 밀었다가(touchmove) 놓으면 제자리로 튕기고 새 것이
-   끼어들었습니다 — 사용자: 「팍팍 튀는데」. 두 동작이 이어지지 않으니
-   당연합니다. 브라우저의 스크롤에 맡기면 관성까지 공짜로 따라옵니다.
-   ⚠ `scroll-snap-type:x mandatory` 가 «한 장씩» 서게 합니다. 없으면
-     어중간한 데서 멈춥니다.
+/* ⚠⚠ **엿보기 캐러셀입니다(b744).** ⚠⚠
+   가운데 카드가 크게 서고 양옆이 살짝 보입니다. 한 판에 한 장만 꽉 채우면
+   «다음이 있다»는 것이 안 보입니다(사용자: 「페이지에 하나씩만 나오니까
+   또 감성이 없어」). 사용자가 붙인 레퍼런스가 이 모양입니다.
+   ⚠⚠ **너비는 `flex-basis:100%` + 칸의 «좌우 안쪽 여백»으로 만듭니다.** ⚠⚠
+     `flex:0 0 80%` 처럼 적어 두면 80% 가 **안쪽 여백을 뺀 폭**을 기준으로
+     풀려서 두 번 줄어듭니다(0.8 x 0.76 = 0.61). 여백으로 폭을 정하고
+     칸은 그 100% 를 쓰게 두는 편이 늘 맞습니다.
+   ⚠ `scroll-snap-align:center` 는 «스크롤 창» 한가운데에 맞춥니다. 좌우
+     여백이 같으므로 가운데 카드가 화면 한가운데에 섭니다.
    ⚠ 높이를 안 정합니다 — 내용만큼 자랍니다. 그래서 `overflow-y:hidden`
-     이어도 잘릴 것이 없고, 세로 굴리기는 바깥 시트가 맡습니다.
-     (`overflow-x:auto` 를 쓰면 `overflow-y:visible` 은 못 씁니다.)
+     이어도 잘릴 것이 없습니다(`overflow-x:auto` 옆에서는 `visible` 을 못 씁니다).
    ⚠ `overscroll-behavior-x:contain` — 없으면 끝에서 더 밀 때 폰이
      «뒤로가기»로 알아듣습니다. */
-.p16track{ display:flex; overflow-x:auto; overflow-y:hidden;
+.p16track{ position:relative; display:flex; gap:2.5%;
+           padding:6px 9% 12px;
+           overflow-x:auto; overflow-y:hidden;
            scroll-snap-type:x mandatory; overscroll-behavior-x:contain;
            -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .p16track::-webkit-scrollbar{ display:none; }
+/* ⚠ 옆 카드는 **작고 흐리게**. 그래야 가운데가 «지금 보는 것»으로 읽힙니다.
+   클래스는 p16.js 가 굴리는 동안에도 계속 고쳐 답니다. */
 .p16slide{ flex:0 0 100%; min-width:0; scroll-snap-align:center;
-           padding:0 var(--s-md) 16px; }
+           transform:scale(.93); opacity:.52;
+           transition:transform .28s var(--ease), opacity .28s var(--ease); }
+.p16slide.on{ transform:none; opacity:1; }
+.p16slide .phero{ border-radius:16px;
+                  box-shadow:0 10px 26px rgba(20,16,12,.20); }
+
+/* 몇째인지. 열여섯 개라 점이 많지만, 지금 것만 알약으로 늘여 두면 읽힙니다. */
+.p16dots{ display:flex; justify-content:center; align-items:center;
+          gap:5px; padding:2px 0 14px; }
+.p16dots i{ width:5px; height:5px; border-radius:99px; background:var(--line);
+            transition:width .2s var(--ease), background .2s var(--ease); }
+.p16dots i.on{ width:16px; background:var(--brand); }
+.p16meta{ padding:0 var(--s-md) 22px; }
 /* 넘기는 곳임을 알립니다 — 몸짓은 보이지 않으니 글자로 한 번 말합니다. */
 .p16hint{ margin-top:10px; text-align:center; font-size:calc(11px * var(--ts));
           color:var(--ink-48); }
