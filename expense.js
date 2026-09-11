@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b751';
-import { sb } from './db.js?v=b751';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b751';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b751';
+import { $, esc, toast, emptyDo } from './dom.js?v=b752';
+import { sb } from './db.js?v=b752';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b752';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b752';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b751';
-import { arm } from './ui.js?v=b751';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b752';
+import { arm } from './ui.js?v=b752';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -164,9 +164,15 @@ function drawExpenses(){
     const k = e.category ? 'k-' + e.category : '';
     /* 몫이 따로 적힌 지출은 그렇다고 적어줍니다. 안 적으면 정산 숫자만 보고
        왜 나만 많이 나왔는지 알 수가 없습니다. */
-    const sh = (e.expense_shares || []).length;
+    /* ⚠ **한 명이면 「나눠 냄」이 아닙니다(b752).** 기록만 남기고 정산에서
+       빼려고 «나만» 켜 둔 지출인데 「1명이 나눠 냄」이라고 적혀 있었습니다 —
+       나눈 적이 없는데 나눴다고 말하는 셈입니다. */
+    const 몫 = e.expense_shares || [];
+    const 몫말 = 몫.length === 1
+      ? `${몫[0].user_id === ctx.me()?.id ? '나' : nameOf(몫[0].user_id)}만 쓴 것`
+      : 몫.length ? `${몫.length}명이 나눠 냄` : null;
     const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : '결제자 없음',
-                 sh ? `${sh}명이 나눠 냄` : null, e.memo]
+                 몫말, e.memo]
                 .filter(Boolean).join(' · ');
     html += `<div class="plan">
       <span class="kdot ${esc(k)}"></span>
@@ -386,6 +392,7 @@ function drawShareChips(){
     `<button class="day${!켤것 || 켤것.has(m.user_id) ? ' on' : ''}"` +
     ` data-share="${esc(m.user_id)}">${esc(nameOf(m.user_id))}</button>`
   ).join('');
+  나만단추();
 }
 $('x_shares').addEventListener('click', e => {
   const b = e.target.closest('[data-share]'); if (!b) return;
@@ -395,6 +402,34 @@ $('x_shares').addEventListener('click', e => {
     b.classList.add('on');
     toast('적어도 한 명은 있어야 해요.');
   }
+  나만단추();
+});
+
+/* ── 「나만」 한 번 누르기 (b752, 사용자 요청) ────────────────────────
+ * 「지출 등록은 했는데 나만 쓴거라 기록용으로 두고 더치페이에는 포함 안
+ * 하는」 경우입니다. **셈은 이미 그렇게 돕니다** — 몫이 나 하나면 낸 돈과
+ * 쓴 돈이 같아져 내 잔액에 0 을 더하고 남의 숫자는 안 변합니다
+ * (calc.js 의 settleMath). 없던 것은 «한 번에 하는 길»뿐이었습니다.
+ * ⚠ 여행 총액에는 그대로 잡힙니다. 여행에서 쓴 돈인 것은 맞습니다.
+ * ⚠ 눌러서 되돌릴 수 있어야 합니다 — 나만 켜져 있으면 「전원」으로 바뀝니다. */
+function 나만뿐인가(){
+  const 칩 = [...$('x_shares').querySelectorAll('[data-share]')];
+  const 켠것 = 칩.filter(b => b.classList.contains('on'));
+  return 켠것.length === 1 && 켠것[0].dataset.share === ctx.me()?.id;
+}
+function 나만단추(){
+  const b = $('x_onlyme');
+  if (b) b.textContent = 나만뿐인가() ? '전원' : '나만';
+}
+$('x_onlyme')?.addEventListener('click', () => {
+  const 나 = ctx.me()?.id;
+  const 칩 = [...$('x_shares').querySelectorAll('[data-share]')];
+  /* 일행 목록에 내가 없으면(있을 수 없지만) 아무도 안 켜지는 일을 막습니다. */
+  if (!칩.some(b => b.dataset.share === 나))
+    return toast('내 몫을 찾지 못했어요.');
+  const 되돌리기 = 나만뿐인가();
+  칩.forEach(b => b.classList.toggle('on', 되돌리기 || b.dataset.share === 나));
+  나만단추();
 });
 const pickedShares = () =>
   [...$('x_shares').querySelectorAll('[data-share].on')].map(b => b.dataset.share);

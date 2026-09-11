@@ -5158,6 +5158,13 @@ body.pvon{ overflow:hidden; }
                      min-width:32px; min-height:32px; border-radius:50%;
                      background:rgba(255,255,255,.9); font-size:var(--f-lg); }
 
+/* 「누가 나눠 내나」 머리줄 — 라벨 왼쪽, 「나만」 단추 오른쪽(b752). */
+.xsharehd{ display:flex; align-items:center; justify-content:space-between;
+           gap:8px; }
+.xsharehd > label{ margin-bottom:0; }
+.xsharehd > .ghost{ flex:none; padding:2px 0; font-size:var(--f-sm);
+                    font-weight:700; }
+
 .onlyme{ flex:none; padding:2px 9px; border-radius:var(--r-pill);
          background:var(--pearl); color:var(--ink-48);
          font-size:var(--f-xs); font-weight:600; letter-spacing:0; }
