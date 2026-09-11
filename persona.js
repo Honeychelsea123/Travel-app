@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b748';
-import { sb } from './db.js?v=b748';
-import { cities, countryName, continentOf } from './cities.js?v=b748';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b749';
+import { sb } from './db.js?v=b749';
+import { cities, countryName, continentOf } from './cities.js?v=b749';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b748';
+import { similarPicks } from './rec.js?v=b749';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b748';
-import { visited } from './rate.js?v=b748';
-import { open16 } from './p16.js?v=b748';
+import { mateCode, mateHtml } from './mate.js?v=b749';
+import { visited } from './rate.js?v=b749';
+import { open16 } from './p16.js?v=b749';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b748';
+         shareCard } from './card.js?v=b749';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -154,12 +154,16 @@ async function drawPersona(s, ax, rates){
     }
     const [앞, 뒤] = (localStorage.getItem(기록열쇠) || '').split('>');
     if (!앞 || 뒤 !== code || !PERSONA16[앞]) return '';
-    const 딱 = c => `<span class="pwas1">
-        <img src="./persona/t/${esc(c)}.jpg?v=b748" alt="" loading="lazy">
-        <i>${esc(c)}</i><b>${esc(PERSONA16[c]?.n || c)}</b></span>`;
+    /* ⚠ **그림은 «예전 것» 한 장뿐입니다(b749, 사용자 지적).** 둘을 이어
+       붙이면 오른쪽 것이 **바로 위 히어로와 같은 그림**이라 한 화면에 같은
+       그림이 두 번 나옵니다 — 사용자: 「그림 둘로 이어붙이면 레이아웃이
+       이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
+       말할 것은 「예전엔 이랬다」 하나입니다. */
     return `<div class="pwas">
-      <span class="why">성향이 바뀌었어요</span>
-      <div class="pwasrow">${딱(앞)}<span class="pwasar">→</span>${딱(뒤)}</div>
+      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b749"
+           alt="" loading="lazy" decoding="async">
+      <span class="pwast"><b>성향이 바뀌었어요</b>
+        <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i></span>
     </div>`;
   } catch (e){ console.warn('바뀜 배지', e); return ''; } })();
   /* ⚠ **문턱을 3곳에서 5곳으로 올렸습니다(b381).** 축이 넷이라 3곳으로는
@@ -309,12 +313,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b748')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b749')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b748" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b749" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -425,13 +429,13 @@ async function drawPersona(s, ax, rates){
              있었습니다 — 유형은 «그림으로» 기억됩니다.
            ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
-          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b748"
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b749"
                alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b748"
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b749"
                alt="" loading="lazy" decoding="async">
           <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>

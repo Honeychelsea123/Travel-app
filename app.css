@@ -3444,7 +3444,14 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .famerow > b{ flex:none; width:46px; text-align:right;
               font-size:var(--f-sm); font-variant-numeric:tabular-nums; }
 
-.gaprow{ display:flex; align-items:baseline; gap:8px; padding:5px 0; }
+/* ⚠ 사진이 붙으면서 `baseline` 이 아니라 `center` 입니다(b749) — 글줄만
+   있을 때는 밑선을 맞추는 게 맞지만, 옆에 그림이 서면 가운데가 맞습니다. */
+.gaprow{ display:flex; align-items:center; gap:9px; padding:5px 0; }
+.gapim{ flex:none; width:46px; aspect-ratio:4 / 3; border-radius:8px;
+        background:var(--pearl) center/cover no-repeat;
+        display:flex; align-items:center; justify-content:center;
+        font-size:calc(15px * var(--ts)); font-weight:800; color:var(--ink-48);
+        overflow:hidden; }
 .gaprow > b{ flex:1; min-width:0; font-weight:600;
               overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .gaprow > span{ flex:none; font-size:var(--f-sm); color:var(--ink-48);
@@ -4118,21 +4125,18 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 /* ── 성향이 바뀐 기록 (b748) ───────────────────────────────────────────
  * 「예전 FMDP → 지금 HMDP」. 그림 둘을 나란히 놓아야 «바뀐 것»이 한눈에
  * 보입니다 — 코드 네 글자만으로는 무엇이 달라졌는지 안 그려집니다. */
-.pwas{ margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
-       text-align:center; }
-.pwas .why{ display:block; font-size:calc(12px * var(--ts)); font-weight:700;
-            color:var(--ink-48); }
-.pwasrow{ display:flex; align-items:flex-start; justify-content:center;
-          gap:10px; margin-top:9px; }
-.pwas1{ display:block; width:104px; }
-.pwas1 img{ display:block; width:100%; aspect-ratio:3 / 2; object-fit:cover;
-            border-radius:9px; background:var(--pearl); }
-.pwas1 i{ display:block; margin-top:5px; font-style:normal;
-          font-size:calc(10px * var(--ts)); font-weight:800;
-          letter-spacing:.04em; color:var(--ink-48); }
-.pwas1 b{ display:block; font-size:calc(12px * var(--ts)); font-weight:700; }
-.pwasar{ align-self:center; margin-top:-14px; color:var(--ink-48);
-         font-weight:700; }
+/* ⚠ 그림 한 장 + 글 한 덩이의 «줄»입니다. 둘을 화살표로 잇던 것을 걷었습니다
+   (b749) — 오른쪽 것이 바로 위 히어로와 같은 그림이었습니다. */
+.pwas{ display:flex; align-items:center; gap:11px;
+       margin-top:14px; padding-top:13px; border-top:1px solid var(--line); }
+.pwasim{ flex:none; width:76px; aspect-ratio:3 / 2; object-fit:cover;
+         border-radius:9px; background:var(--pearl); display:block; }
+.pwast{ min-width:0; display:flex; flex-direction:column; gap:2px; }
+.pwast b{ font-size:calc(12px * var(--ts)); font-weight:700; color:var(--ink-48); }
+.pwast i{ font-style:normal; font-size:calc(13px * var(--ts)); font-weight:700;
+          color:var(--ink); word-break:keep-all; }
+.pwast em{ font-style:normal; font-weight:800; letter-spacing:.03em;
+           color:var(--ink-48); margin-right:2px; }
 
 /* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
    으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이
