@@ -3847,13 +3847,24 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
            -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .p16track::-webkit-scrollbar{ display:none; }
 /* ⚠ 옆 카드는 **작고 흐리게**. 그래야 가운데가 «지금 보는 것»으로 읽힙니다.
-   클래스는 p16.js 가 굴리는 동안에도 계속 고쳐 답니다. */
-.p16slide{ flex:0 0 100%; min-width:0; scroll-snap-align:center;
+   클래스는 p16.js 가 굴리는 동안에도 계속 고쳐 답니다.
+   ⚠ `display:flex` 는 **판 높이를 칸끼리 맞추려고** 답니다(b745). 칸은
+     늘어나는 칸(stretch)이라 제일 큰 것에 맞춰지고, 그 안의 판이 그
+     높이를 다 씁니다 — 내 유형처럼 밑글이 짧은 판도 키가 같아집니다.
+     안 맞추면 넘길 때 판이 커졌다 작아졌다 합니다. */
+.p16slide{ flex:0 0 100%; min-width:0; scroll-snap-align:center; display:flex;
            transform:scale(.93); opacity:.52;
            transition:transform .28s var(--ease), opacity .28s var(--ease); }
 .p16slide.on{ transform:none; opacity:1; }
-.p16slide .phero{ border-radius:16px;
-                  box-shadow:0 10px 26px rgba(20,16,12,.20); }
+/* ⚠⚠ **그림과 밑글이 «한 판»입니다(b745, 사용자: 「아래 카드영역까지
+   한판이 되어야지」).** 그림만 카드처럼 두고 글을 밖에 놓았더니 둘이
+   따로 노는 모양이었습니다. 한 상자로 감싸고 모서리는 여기서만 깎습니다 —
+   `overflow:hidden` 이라 안의 그림이 알아서 잘립니다. */
+.p16box{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column;
+         background:var(--canvas); border-radius:16px; overflow:hidden;
+         box-shadow:0 10px 26px rgba(20,16,12,.18); }
+.p16box .phero{ border-radius:0; }
+.p16box .p16meta{ padding:13px 14px 16px; }
 
 /* 몇째인지. 열여섯 개라 점이 많지만, 지금 것만 알약으로 늘여 두면 읽힙니다. */
 .p16dots{ display:flex; justify-content:center; align-items:center;
@@ -3861,7 +3872,11 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .p16dots i{ width:5px; height:5px; border-radius:99px; background:var(--line);
             transition:width .2s var(--ease), background .2s var(--ease); }
 .p16dots i.on{ width:16px; background:var(--brand); }
+/* ⚠ 점은 판 **밖**입니다 — 열여섯 판에 하나씩 달면 옆 판 것까지 보입니다. */
 .p16meta{ padding:0 var(--s-md) 22px; }
+/* 판 안에서는 궁합·다른 점 사이 여백을 조금 좁힙니다(자리가 한정됩니다). */
+.p16box .p16mate{ margin-top:0; }
+.p16box .p16dh{ margin-top:12px; }
 /* 넘기는 곳임을 알립니다 — 몸짓은 보이지 않으니 글자로 한 번 말합니다. */
 .p16hint{ margin-top:10px; text-align:center; font-size:calc(11px * var(--ts));
           color:var(--ink-48); }
@@ -3894,6 +3909,9 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .p16dr.off b{ color:var(--mate-bad); }
 .p16dr i{ font-style:normal; font-size:calc(12px * var(--ts));
           color:var(--dim); word-break:keep-all; }
+/* 견줄 상대가 없을 때(내 유형 · 확정 전)는 «같음/다름» 칸이 없습니다.
+   그 자리를 비워 두면 글이 붕 떠 보이므로 낱말을 조금 진하게 씁니다. */
+.p16dr:not(.off) > i:first-of-type:last-child{ color:var(--ink); font-weight:600; }
 
 /* ── 궁합 두 칸 ───────────────────────────────────────────────────────
  * 성향 카드 그림 안에만 있던 것을 꺼냈습니다 — 그림 안에 있으면 카드를

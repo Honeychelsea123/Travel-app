@@ -33,8 +33,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b744';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b744';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b745';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b745';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 이웃끼리 한 글자만
@@ -46,10 +46,17 @@ let 지금   = null;        /* 캐러셀 가운데에 선 코드 */
 let 격자냐 = false;       /* 「모아보기」로 들어간 상태인가 */
 
 /* ── 카드 한 장 ─────────────────────────────────────────────────────
- * 그림 안에 코드·이름·한 줄이 이미 얹혀 있습니다(성향 화면 머리와 같은
- * 부품 `.phero`). 그래서 카드 밖에는 아무것도 안 붙습니다 — 궁합과
- * 「나와 다른 점」은 캐러셀 «아래»에 한 벌만 두고 가운데 것으로 고쳐 씁니다.
- * ⚠ 열여섯 장에 각각 붙이면 옆 카드의 글까지 엿보기에 딸려 보입니다. */
+ * 그림 + 그 밑의 궁합·「나와 다른 점」이 **한 판**입니다.
+ * ⚠⚠ **밑글을 캐러셀 밖에 두면 안 됩니다(b744 → b745).** ⚠⚠
+ *   b744 는 밑글을 한 벌만 두고 «멈춘 뒤에» 갈아 끼웠습니다. 그랬더니
+ *   카드가 먼저 지나가고 글이 뒤늦게 바뀌어 따라붙었습니다(사용자:
+ *   「데이터가 좌우로 움직이고 나서 늦게 따라 붙어」). 또 카드와 글이
+ *   따로 노는 모양이라 한 판으로 안 읽혔습니다(「아래 카드영역까지
+ *   한판이 되어야지」).
+ *   → 열여섯 장에 각각 붙이고 **같이 움직입니다.** 갈아 끼울 것이 없으니
+ *     늦을 것도 없습니다. 글자뿐이라 무게도 없습니다.
+ * ⚠ 판 높이는 **칸끼리 맞춥니다**(`.p16slide` 가 늘어나는 칸). 내 유형은
+ *   밑글이 한 줄뿐이라, 안 맞추면 그 칸만 짧아져 넘길 때 덜컹거립니다. */
 function 카드(code, k, 시작){
   const t = PERSONA16[code] || {};
   const 긴이름 = (t.n || '').length >= 10 ? ' long' : '';
@@ -57,11 +64,12 @@ function 카드(code, k, 시작){
      열여섯을 한꺼번에 받으면 1.2MB 입니다. */
   const 언제 = Math.abs(k - 시작) <= 1 ? 'eager' : 'lazy';
   return `<div class="p16slide" data-code="${esc(code)}">
+    <div class="p16box">
       <div class="phero">
         <!-- 자리막이(b743). 큰 그림이 붙기 전까지 이 자리를 채웁니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b744')"></div>
-        <img src="./persona/m/${esc(code)}.jpg?v=b744" alt=""
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b745')"></div>
+        <img src="./persona/m/${esc(code)}.jpg?v=b745" alt=""
              loading="${언제}" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
@@ -72,26 +80,41 @@ function 카드(code, k, 시작){
           ${t.d ? `<div class="pdesc">${esc(t.d)}</div>` : ''}
         </div>
       </div>
+      <div class="p16meta">${밑글(code)}</div>
+    </div>
     </div>`;
 }
 
 /* ── 카드 밑 글 ─────────────────────────────────────────────────────
  * 사용자: 「요약이랑 궁합도만 있고 자세한 설명은 누르면 보이게 해줘」 →
  * 그 뒤 「굳이 접지 말고 처음부터 다 펴진 상태로」(b739). 그래서 늘 펴 둡니다. */
+/* 축 네 줄. 견줄 상대가 있으면 «같음/다름»까지, 없으면 그 유형의 낱말만.
+   ⚠ **없을 때도 네 줄을 그립니다.** 내 유형 칸만 한 줄이면 판이 반쯤 비어
+     보입니다(b745 실측: 441px 중 글이 40px). 칸 높이는 서로 맞춰 두었으므로
+     빈자리가 그대로 드러납니다. */
+function 축표(code, 견줄){
+  return `<div class="p16diff">${AXIS_NAME.map((이름, k) => {
+    const 저글 = AXIS_WORD[code[k]];
+    if (!견줄) return `<div class="p16dr"><span>${esc(이름)}</span>
+      <i>${esc(저글)}</i></div>`;
+    const 나글 = AXIS_WORD[견줄[k]];
+    const 같 = 견줄[k] === code[k];
+    return `<div class="p16dr${같 ? '' : ' off'}"><span>${esc(이름)}</span>
+      <b>${같 ? '같음' : '다름'}</b>
+      <i>${같 ? `둘 다 ${esc(나글)}`
+              : `나는 ${esc(나글)} · 이 유형은 ${esc(저글)}`}</i></div>`;
+  }).join('')}</div>`;
+}
+
 function 밑글(code){
-  if (!내코드) return '';
-  if (내코드 === code) return '<div class="p16mine">내 유형입니다</div>';
+  /* ⚠ 아직 내 유형을 모르면(평가가 모자라면) 궁합도 «다른 점»도 못 냅니다 —
+     0% 로 적으면 거짓말입니다. 그 유형이 어떤 넷인지만 보여줍니다. */
+  if (!내코드) return `<div class="p16dh">어떤 유형인가요</div>${축표(code, null)}`;
+  if (내코드 === code)
+    return `<div class="p16mine">내 유형입니다</div>${축표(code, null)}`;
   return `<div class="p16mate"><span>나와의 궁합</span>
       <b>${personaMatch(내코드, code)}%</b></div>
-    <div class="p16dh">나와 뭐가 다른가요</div>
-    <div class="p16diff">${AXIS_NAME.map((이름, k) => {
-      const 나글 = AXIS_WORD[내코드[k]], 저글 = AXIS_WORD[code[k]];
-      const 같 = 내코드[k] === code[k];
-      return `<div class="p16dr${같 ? '' : ' off'}"><span>${esc(이름)}</span>
-        <b>${같 ? '같음' : '다름'}</b>
-        <i>${같 ? `둘 다 ${esc(나글)}`
-                : `나는 ${esc(나글)} · 이 유형은 ${esc(저글)}`}</i></div>`;
-    }).join('')}</div>`;
+    <div class="p16dh">나와 뭐가 다른가요</div>${축표(code, 내코드)}`;
 }
 
 function 캐러셀(){
@@ -104,8 +127,7 @@ function 캐러셀(){
     <div class="p16track" id="p16track">${
       코드들.map((c, k) => 카드(c, k, 시작)).join('')}</div>
     <div class="p16dots" id="p16dots">${
-      코드들.map(() => '<i></i>').join('')}</div>
-    <div class="p16meta" id="p16meta">${밑글(지금)}</div>`;
+      코드들.map(() => '<i></i>').join('')}</div>`;
 }
 
 /* ── 모아보기(격자) ─────────────────────────────────────────────────
@@ -128,7 +150,7 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b744" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b745" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
@@ -176,8 +198,10 @@ function 가운데칸(t){
   return 고른;
 }
 
-/* 가운데가 바뀌었을 때 고쳐 칠하는 것 셋. **카드는 안 건드립니다.** */
-function 가운데바뀜(k, 글도){
+/* 가운데가 바뀌었을 때 고쳐 칠하는 것. **카드 속은 안 건드립니다** —
+   글은 카드 안에 있어서 카드와 «같이» 움직입니다(위 머리말 참고).
+   여기서 하는 일은 크기·흐림(.on), 점, 그리고 몇째인지뿐입니다. */
+function 가운데바뀜(k, 멈췄나){
   const t = $('p16track');
   if (!t) return;
   for (let i = 0; i < t.children.length; i++)
@@ -187,11 +211,9 @@ function 가운데바뀜(k, 글도){
     점.children[i].classList.toggle('on', i === k);
   const 셈 = $('p16n');
   if (셈) 셈.textContent = `${k + 1} / ${코드들.length}`;
-  if (글도){
-    지금 = 코드들[k];
-    const 글 = $('p16meta');
-    if (글) 글.innerHTML = 밑글(지금);
-  }
+  /* 멈춘 뒤에 «지금 누구인지»만 적어 둡니다 — 모아보기에 갔다 오거나
+     판을 다시 열 때 이 값으로 되돌아옵니다. 화면에 보이는 것은 없습니다. */
+  if (멈췄나) 지금 = 코드들[k];
 }
 
 function 캐러셀잡기(){
