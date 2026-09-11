@@ -5121,15 +5121,27 @@ body.pvon{ overflow:hidden; }
  * ⚠ `.rrow:has(> .stars)` 가 이미 격자라, 그것보다 «자릿수가 높은»
  *   선택자로 덮어야 합니다 — `.wall` 을 앞에 붙여 그렇게 만듭니다.
  * ⚠ 줄 사이 선은 걷습니다. 벽에서는 선이 격자를 한 겹 더 그립니다. */
+/* ⚠⚠ **한 칸이 «한 장의 카드»여야 합니다(b751, 사용자 결정).** ⚠⚠
+   사진만 카드처럼 생기고 이름·별점은 그 밑 바탕에 떠 있었습니다. 그러면
+   「사진 한 장 + 흘러나온 글자」로 읽히지 «한 도시»로 안 읽힙니다
+   (사용자: 「도시들도 이름이랑 별점까지 하나의 카드로 인식되게」).
+   ⚠ 모서리는 **카드가** 깎습니다(overflow:hidden). 사진에 따로 주면 카드
+     모서리와 사진 모서리가 두 겹으로 보입니다.
+   ⚠ 카드가 제 경계를 가지므로 칸 사이를 조금 좁힙니다 — 그늘이 이미
+     떨어뜨려 놓습니다. */
 .wall{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
-       gap:var(--s-lg) var(--s-sm); }
-.wall .rrow, .wall .rrow:has(> .stars){ display:block; padding:0;
-                                        position:relative; }
+       gap:var(--s-md) var(--s-sm); }
+.wall .rrow, .wall .rrow:has(> .stars){ display:block; padding:0 0 11px;
+       position:relative; background:var(--canvas); border-radius:14px;
+       overflow:hidden;
+       box-shadow:0 1px 2px rgba(20,16,12,.07),
+                  0 8px 20px -10px rgba(20,16,12,.22); }
 .wall .rrow + .rrow{ border-top:0; }
 .wall .rrow > .thumb,
 .wall .rrow:has(> .stars) > .thumb{ width:100%; height:auto; aspect-ratio:4/3;
-                                    border-radius:0; display:block; }
-.wall .rrow > .t{ margin-top:8px; }
+                                    border-radius:0; display:block;
+                                    box-shadow:none; }
+.wall .rrow > .t{ margin-top:8px; padding:0 10px; }
 /* ⚠⚠ **`display:block` 이면 안 됩니다(b605).** `.st` 는 `width:1.1em`
  *   으로 크기를 잡는데, 그건 **flex 아이템이라 먹히는 것**입니다
  *   (`.stars{ display:inline-flex }`). block 으로 바꾸자 `.st` 가 다시
@@ -5137,7 +5149,8 @@ body.pvon{ overflow:hidden; }
  *   보였습니다. 재보고 알았습니다 — 화면으로는 「별이 작네」 였습니다.
  * ⚠ **틀을 바꿀 때는 그 틀에 기대던 자식을 봐야 합니다.**
  *   `width`·`height` 는 inline 요소에서 조용히 무시됩니다. */
-.wall .rrow > .stars{ display:flex; margin-left:0; margin-top:3px; }
+.wall .rrow > .stars{ display:flex; margin-left:0; margin-top:3px;
+                     padding-left:8px; padding-right:8px; }
 /* 별은 타일 폭에 맞춥니다 — 줄에서 쓰던 크기는 두 칸 격자에서 넘칩니다. */
 .wall .rrow .st{ font-size:min(var(--f-2xl), 5.4vw); }
 /* ♡ 는 사진 오른쪽 위. 사진 위에 얹히니 어떤 사진에서도 보이게 흰 원. */
