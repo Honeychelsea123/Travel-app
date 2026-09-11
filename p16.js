@@ -33,8 +33,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b746';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b746';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b747';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b747';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 이웃끼리 한 글자만
@@ -68,8 +68,8 @@ function 카드(code, k, 시작){
       <div class="phero">
         <!-- 자리막이(b743). 큰 그림이 붙기 전까지 이 자리를 채웁니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b746')"></div>
-        <img src="./persona/m/${esc(code)}.jpg?v=b746" alt=""
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b747')"></div>
+        <img src="./persona/m/${esc(code)}.jpg?v=b747" alt=""
              loading="${언제}" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
@@ -119,19 +119,15 @@ function 밑글(code){
 
 function 캐러셀(){
   const 시작 = Math.max(0, 코드들.indexOf(지금));
-  /* ⚠⚠ **바닥이 지금 카드의 색을 입습니다(b746).** ⚠⚠
-     사용자: 「전체 화면이랑 이어져있는 느낌이 아니라 영역이 나눠져 있으니까
-     느낌이 안살아」. 카드만 떠 있고 판은 그냥 크림색이라 «부품 하나»로
-     보였습니다. 지금 카드의 그림을 화면 가득 깔아 **판 전체가 그 카드의
-     분위기**를 입게 합니다.
-     ⚠ 48px 짜리를 늘려 씁니다(장당 1KB, 열여섯 합 17KB). 큰 그림에 흐림을
-       거는 것보다 훨씬 쌉니다 — 늘리면 저절로 뭉개집니다. 흐림 필터는
-       폰에서 매번 다시 그리느라 비쌉니다(유리 때 겪은 것과 같은 이유).
-     ⚠ 두 장을 겹쳐 두고 **번갈아 켭니다** — 한 장이면 그림을 바꾸는 순간
-       탁 끊깁니다. 켜고 끄는 것은 투명도뿐이라 값쌉니다. */
-  return `<div class="p16bg" id="p16bgA"></div>
-    <div class="p16bg" id="p16bgB"></div>
-    <div class="p16bar">
+  /* ⚠⚠ **바닥에 그림을 깔지 마십시오(b746 → b747).** ⚠⚠
+     b746 에 지금 카드의 그림을 화면 가득 깔았습니다. 「한 화면으로」 하려던
+     것인데, 위는 그림색 아래는 크림이라 **더 갈라져 보였습니다**(사용자:
+     「이게 더 별론데?? 하단바랑 통일감 있게 해줘야지」).
+     앱은 처음부터 끝까지 크림 한 세계입니다 — 한 화면에서만 딴 세계를
+     만들면 그 화면이 «남의 것»이 됩니다.
+     → 이어져 보이게 하는 것은 색이 아니라 **자리**입니다. 카드가 화면을
+       위아래로 꽉 채우면 빈 땅이 없어집니다(아래 `.p16mid` 주석). */
+  return `<div class="p16bar">
       <button class="ghost" data-p16close="1">← 분석</button>
       <span class="p16t">도감</span>
       <button class="ghost" data-p16grid="1">모아보기</button>
@@ -164,14 +160,14 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b746" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b747" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
     </button>`;
   }).join('');
 
-  return `<div class="p16bar plain">
+  return `<div class="p16bar">
       <button class="ghost" data-p16cards="1">← 카드로</button>
       <span class="p16t">모아보기</span>
       <span class="p16sp"></span>
@@ -190,7 +186,22 @@ function 그리기(){
   if (!몸) return;
   몸.innerHTML = 격자냐 ? 격자() : 캐러셀();
   몸.scrollTop = 0;
-  if (!격자냐) 캐러셀잡기();
+  if (!격자냐){ 캐러셀잡기(); 이웃받기(); }
+}
+
+/* ⚠ **넘기기 전에 옆 그림을 받아 둡니다.** 넘긴 뒤에 받기 시작하면 잠깐
+   빈 칸이 보이고, 받으면서 푸느라 손가락도 끊깁니다.
+   ⚠ **화면이 쓰는 것과 «같은» 주소라야 합니다** — 카드는 중간 크기(m/)를
+     씁니다. 원본(webp)을 미리 받으면 쓰지도 않을 0.5MB 를 받는 셈입니다.
+   ⚠ 앞뒤 둘씩만. 열여섯을 다 받으면 1.2MB 입니다. */
+function 이웃받기(){
+  const i = 코드들.indexOf(지금);
+  if (i < 0) return;
+  for (const d of [1, -1, 2, -2]){
+    const c = 코드들[(i + d + 코드들.length) % 코드들.length];
+    const im = new Image();
+    im.src = `./persona/m/${c}.jpg?v=b747`;
+  }
 }
 
 /* 가운데 칸을 화면 한가운데로. ⚠ 부드럽게 굴리면 아래 `scroll` 이 도중에
@@ -202,71 +213,63 @@ function 가운데로(t, k, 부드럽게){
   t.scrollTo({ left: Math.max(0, x), behavior: 부드럽게 ? 'smooth' : 'auto' });
 }
 
-/* 지금 화면 한가운데에 제일 가까운 칸이 몇째인가. */
+/* 지금 화면 한가운데에 제일 가까운 칸이 몇째인가.
+   ⚠⚠ **열여섯을 다 재면 안 됩니다(b747).** 굴릴 때마다 불리는 자리라,
+     칸마다 `offsetLeft` 를 읽으면 한 번 넘기는 동안 배치 계산이 수백 번
+     일어납니다 — 그래서 손가락이 뚝뚝 끊겼습니다(사용자: 「스와이프 할 때
+     너무 끊겨」). 칸 너비와 사이가 일정하므로 **나눗셈 하나**면 됩니다. */
 function 가운데칸(t){
-  const 중심 = t.scrollLeft + t.clientWidth / 2;
-  let 고른 = 0, 최소 = Infinity;
-  for (let k = 0; k < t.children.length; k++){
-    const el = t.children[k];
-    const d = Math.abs(el.offsetLeft + el.clientWidth / 2 - 중심);
-    if (d < 최소){ 최소 = d; 고른 = k; }
-  }
-  return 고른;
+  const a = t.children[0], b = t.children[1];
+  if (!a) return 0;
+  const 칸새 = b ? b.offsetLeft - a.offsetLeft : a.offsetWidth;
+  if (!칸새) return 0;
+  const 처음 = a.offsetLeft - (t.clientWidth - a.offsetWidth) / 2;
+  const k = Math.round((t.scrollLeft - 처음) / 칸새);
+  return Math.max(0, Math.min(t.children.length - 1, k));
 }
 
 /* 가운데가 바뀌었을 때 고쳐 칠하는 것. **카드 속은 안 건드립니다** —
    글은 카드 안에 있어서 카드와 «같이» 움직입니다(위 머리말 참고).
-   여기서 하는 일은 크기·흐림(.on), 점, 그리고 몇째인지뿐입니다. */
-function 가운데바뀜(k, 멈췄나){
+   ⚠ **바뀐 둘만 만집니다.** 열여섯에 `classList.toggle` 을 돌리면 한 프레임에
+     서른두 번입니다 — 굴리는 동안 그걸 하면 끊깁니다(b747). */
+function 가운데바뀜(k){
   const t = $('p16track');
   if (!t) return;
-  for (let i = 0; i < t.children.length; i++)
-    t.children[i].classList.toggle('on', i === k);
+  t.querySelector('.p16slide.on')?.classList.remove('on');
+  t.children[k]?.classList.add('on');
   const 점 = $('p16dots');
-  if (점) for (let i = 0; i < 점.children.length; i++)
-    점.children[i].classList.toggle('on', i === k);
-  바닥칠(코드들[k]);
-  /* 멈춘 뒤에 «지금 누구인지»만 적어 둡니다 — 모아보기에 갔다 오거나
-     판을 다시 열 때 이 값으로 되돌아옵니다. 화면에 보이는 것은 없습니다. */
-  if (멈췄나) 지금 = 코드들[k];
+  if (점){
+    점.querySelector('i.on')?.classList.remove('on');
+    점.children[k]?.classList.add('on');
+  }
 }
 
-/* 바닥 갈아 칠하기. 두 장을 번갈아 켜서 스르르 바뀝니다.
-   ⚠ 같은 코드면 아무것도 안 합니다 — 굴릴 때마다 불리므로, 안 막으면
-     한 번 넘기는 동안 수십 번 다시 칠합니다. */
-let 바닥코드 = null, 바닥턴 = 0;
-function 바닥칠(code){
-  if (!code || code === 바닥코드) return;
-  const a = $('p16bgA'), b = $('p16bgB');
-  if (!a || !b) return;
-  바닥코드 = code;
-  const 칠할것 = (바닥턴++ % 2) ? a : b;
-  const 끌것   = 칠할것 === a ? b : a;
-  칠할것.style.backgroundImage = `url('./persona/b/${code}.jpg?v=b746')`;
-  칠할것.classList.add('on');
-  끌것.classList.remove('on');
-}
-
-/* ⚠ 열여섯 장을 미리 받아 둡니다 — 다 합쳐 17KB 라 한 번에 받아도 됩니다.
-   안 받아 두면 처음 넘길 때마다 바닥이 한 박자 늦게 뜹니다. */
-function 바닥미리(){
-  for (const c of 코드들){ const im = new Image(); im.src = `./persona/b/${c}.jpg?v=b746`; }
-}
 
 function 캐러셀잡기(){
   const t = $('p16track');
   if (!t) return;
   const 시작 = Math.max(0, 코드들.indexOf(지금));
   가운데로(t, 시작, false);
-  가운데바뀜(시작, false);
+  가운데바뀜(시작);
 
-  let 타이머 = 0;
+  /* ⚠⚠ **굴리는 동안 하는 일을 한 프레임에 한 번으로 묶습니다(b747).** ⚠⚠
+     `scroll` 은 한 번 넘기는 동안 수십 번 옵니다. 올 때마다 재고 고치면
+     손가락이 끊깁니다. `requestAnimationFrame` 으로 한 프레임에 한 번만
+     보고, **가운데가 실제로 바뀌었을 때만** 손을 댑니다. */
+  let 아까 = 시작, 잡았나 = false, 타이머 = 0;
   t.addEventListener('scroll', () => {
-    /* 크기·흐림은 **굴리는 동안에도** 따라와야 살아 있어 보입니다.
-       글자는 멈춘 뒤에 한 번만 — 굴리는 내내 바꾸면 어지럽습니다. */
-    가운데바뀜(가운데칸(t), false);
+    if (!잡았나){
+      잡았나 = true;
+      requestAnimationFrame(() => {
+        잡았나 = false;
+        const k = 가운데칸(t);
+        if (k !== 아까){ 아까 = k; 가운데바뀜(k); }
+      });
+    }
+    /* 멈춘 뒤에 «지금 누구인지»만 적어 둡니다 — 모아보기에 갔다 오거나
+       판을 다시 열 때 쓰는 값입니다. 화면에 보이는 것은 없습니다. */
     clearTimeout(타이머);
-    타이머 = setTimeout(() => 가운데바뀜(가운데칸(t), true), 110);
+    타이머 = setTimeout(() => { 지금 = 코드들[가운데칸(t)] || 지금; }, 120);
   }, { passive: true });
 }
 
@@ -283,8 +286,6 @@ export function open16(code){
      숨어 있는 동안에는 0 입니다(이 앱에서 여러 번 겪은 함정). */
   $('p16pane')?.classList.remove('hide');
   coverDeck(true);
-  바닥코드 = null;
-  바닥미리();
   그리기();
   toTop($('p16pane'));
   if (history.state?.t2 !== 'p16') history.pushState({ t2: 'p16' }, '');

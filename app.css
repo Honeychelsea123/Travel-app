@@ -3767,49 +3767,27 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    느낌이 안살아」. 띠를 `.card` 로 두었더니 밑줄이 그어져 «위 구역 / 아래
    구역»으로 갈렸습니다. 여기서는 카드 한 장만 떠 있으면 됩니다 — 띠는
    바탕 없이 글자만. */
-#p16pane{ position:relative; }
-/* 지금 카드의 색을 판 전체에 입히는 바닥. p16.js 가 48px 짜리 그림을
-   넣고 두 장을 번갈아 켭니다(그쪽 주석 참고).
-   ⚠ 아래로 갈수록 사라지게 «가립니다»(mask). 그래야 크림 바탕과 이어지고,
-     내용이 짧아 바닥이 남아도 경계가 안 보입니다. */
-.p16bg{ position:absolute; inset:0; z-index:0; pointer-events:none;
-        background-size:cover; background-position:50% 28%;
-        opacity:0; transition:opacity .5s var(--ease);
-        -webkit-mask-image:linear-gradient(to bottom,
-          rgba(0,0,0,1) 0, rgba(0,0,0,1) 380px, rgba(0,0,0,0) 700px);
-        mask-image:linear-gradient(to bottom,
-          rgba(0,0,0,1) 0, rgba(0,0,0,1) 380px, rgba(0,0,0,0) 700px); }
-/* ⚠ 실측(b746): .34 는 «있는 둥 마는 둥» 이었습니다 — 바닥을 깔아 둔 줄도
-   모릅니다. .82 라야 판이 그 카드의 색을 입습니다. 대신 위쪽 글자가 그림
-   위에 놓이므로 띠에 그늘을 깝니다(아래 `.p16bar`). */
-.p16bg.on{ opacity:.82; }
-/* 내용은 바닥 «위»로. 층을 매기기 시작하면 끝이 없으므로 여기 셋만. */
-.p16bar, .p16mid, .p16pane > .card{ position:relative; z-index:1; }
-/* ⚠⚠ **남는 자리를 아래에 몰아 두면 «위젯 하나»로 보입니다(b746).** ⚠⚠
-   판은 한 화면을 다 쓰는데 카드는 그 위쪽 3분의 2 뿐이라, 밑에 크림색
-   빈 땅이 250px 남았습니다. 남는 자리를 위아래로 «나눠» 카드가 눈높이에
-   오게 합니다 — 그러면 빈 곳이 사고가 아니라 여백으로 읽힙니다. */
+/* ⚠⚠ **크림 한 세계를 벗어나지 마십시오(b746 에서 겪음).** ⚠⚠
+   b746 에 지금 카드의 그림을 화면 가득 깔았습니다. 위는 그림색 아래는
+   크림이 되어 **더 갈라져 보였습니다**(사용자: 「이게 더 별론데?? 하단바랑
+   통일감 있게 해줘야지」). 한 화면에서만 딴 세계를 만들면 그 화면이
+   «남의 것»이 됩니다.
+   → 이어져 보이게 하는 것은 색이 아니라 **자리**입니다. 아래 `.p16mid`. */
+/* ⚠⚠ **카드가 화면을 위아래로 꽉 채웁니다(b747).** ⚠⚠
+   b745 는 카드가 위쪽 3분의 2 뿐이라 밑에 크림 빈 땅이 250px 남았고,
+   그래서 «판 위에 얹힌 위젯 하나»로 보였습니다. b746 은 그 빈 땅을 색으로
+   덮으려다 실패했습니다. 빈 땅은 **없애는** 것이 맞습니다 — 띠와 점을 뺀
+   나머지를 카드가 다 씁니다. 그림은 제 비(3:2)를 지키고, 남는 높이는
+   밑글이 가져가 넉넉하게 벌어집니다. */
 #p16body{ min-height:100%; display:flex; flex-direction:column; }
-.p16mid{ flex:1 1 auto; display:flex; flex-direction:column;
-         justify-content:center; }
-/* ⚠⚠ **띠 글자는 그림 위에 놓입니다.** 밝은 그림(한낮 골목)에서도 읽히게
-   위에서 아래로 옅은 그늘을 깝니다 — 흰 글자만으로는 못 버팁니다.
-   그늘은 «띠 안에서» 사라지므로 아래 카드에는 안 걸립니다. */
+.p16mid{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
 .p16bar{ display:flex; align-items:center; justify-content:space-between;
-         gap:8px; padding:12px 14px 18px; border:0;
-         background:linear-gradient(to bottom,
-           rgba(20,16,12,.38), rgba(20,16,12,0)); }
-.p16bar .ghost{ padding-left:0; color:#fff;
-                text-shadow:0 1px 6px rgba(0,0,0,.45); }
+         gap:8px; padding:12px 14px 10px; background:none; border:0; }
+.p16bar .ghost{ padding-left:0; }
 .p16bar .ghost:last-child{ padding-right:0; }
 /* 가운데 글자. 여권 표지처럼 자간을 벌려 «이름표»로 읽히게 합니다. */
 .p16t{ font-size:calc(12px * var(--ts)); font-weight:700;
-       letter-spacing:.16em; color:rgba(255,255,255,.78);
-       text-shadow:0 1px 6px rgba(0,0,0,.45); }
-/* 모아보기 화면에는 바닥 그림이 없습니다 — 거기서는 먹색 그대로. */
-.p16bar.plain{ background:none; padding-bottom:8px; }
-.p16bar.plain .ghost{ color:var(--primary); text-shadow:none; }
-.p16bar.plain .p16t{ color:var(--ink-48); text-shadow:none; }
+       letter-spacing:.16em; color:var(--ink-48); }
 .p16sp{ flex:0 0 44px; }
 .p16grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 
@@ -3886,7 +3864,8 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    ⚠ `overscroll-behavior-x:contain` — 없으면 끝에서 더 밀 때 폰이
      «뒤로가기»로 알아듣습니다. */
 .p16track{ position:relative; display:flex; gap:2.5%;
-           padding:6px 9% 12px;
+           flex:1 1 auto; min-height:0;
+           padding:2px 9% 10px;
            overflow-x:auto; overflow-y:hidden;
            scroll-snap-type:x mandatory; overscroll-behavior-x:contain;
            -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -3899,7 +3878,7 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
      안 맞추면 넘길 때 판이 커졌다 작아졌다 합니다. */
 .p16slide{ flex:0 0 100%; min-width:0; scroll-snap-align:center; display:flex;
            transform:scale(.93); opacity:.52;
-           transition:transform .28s var(--ease), opacity .28s var(--ease); }
+           transition:transform .18s var(--ease), opacity .18s var(--ease); }
 .p16slide.on{ transform:none; opacity:1; }
 /* ⚠⚠ **그림과 밑글이 «한 판»입니다(b745, 사용자: 「아래 카드영역까지
    한판이 되어야지」).** 그림만 카드처럼 두고 글을 밖에 놓았더니 둘이
@@ -3912,7 +3891,16 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
          box-shadow:0 1px 2px rgba(20,16,12,.10),
                     0 18px 40px -12px rgba(20,16,12,.34); }
 .p16box .phero{ border-radius:0; }
-.p16box .p16meta{ padding:13px 14px 16px; }
+/* ⚠⚠ **남는 높이를 «줄 사이»로 나눠 씁니다(b747).** ⚠⚠
+   한군데에 몰아 두면 그림 밑이 뻥 빕니다. 축 네 줄이 남는 높이를 고르게
+   나눠 가지면 «넉넉한 표»가 되고, 카드가 화면을 끝까지 쓰면서도 안 비어
+   보입니다. */
+.p16box .p16meta{ flex:1 1 auto; min-height:0; padding:14px 15px 16px;
+                  display:flex; flex-direction:column; }
+.p16box .p16diff{ flex:1 1 auto; min-height:0;
+                  display:flex; flex-direction:column; justify-content:space-evenly; }
+.p16box .p16dr{ border-bottom:1px solid var(--line); }
+.p16box .p16dr:last-child{ border-bottom:0; }
 
 /* 몇째인지. 열여섯 개라 점이 많지만, 지금 것만 알약으로 늘여 두면 읽힙니다. */
 .p16dots{ display:flex; justify-content:center; align-items:center;
@@ -3945,7 +3933,7 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .p16dh{ margin-top:14px; padding:0 12px 2px; font-size:calc(12px * var(--ts));
         font-weight:700; color:var(--ink-48); }
 .p16diff{ padding:0 12px; }
-.p16dr{ display:flex; align-items:baseline; gap:8px; padding:7px 0;
+.p16dr{ display:flex; align-items:baseline; gap:8px; padding:10px 0;
         border-bottom:1px solid var(--line); }
 .p16dr:last-child{ border-bottom:0; }
 .p16dr span{ flex:none; width:50px; font-size:calc(12px * var(--ts));
@@ -3959,7 +3947,7 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
           color:var(--dim); word-break:keep-all; }
 /* 견줄 상대가 없을 때(내 유형 · 확정 전)는 «같음/다름» 칸이 없습니다.
    그 자리를 비워 두면 글이 붕 떠 보이므로 낱말을 조금 진하게 씁니다. */
-.p16dr:not(.off) > i:first-of-type:last-child{ color:var(--ink); font-weight:600; }
+.p16dr > span + i{ color:var(--ink); font-weight:600; }
 
 /* ── 궁합 두 칸 ───────────────────────────────────────────────────────
  * 성향 카드 그림 안에만 있던 것을 꺼냈습니다 — 그림 안에 있으면 카드를
