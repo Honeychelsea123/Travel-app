@@ -3762,10 +3762,55 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    맞추려 애쓸 일도 같이 없어집니다.
    ⚠ 이제 일기장·보관함과 같은 «덱 밖 판»입니다. 높이·스크롤·아래 여백은
      `.tabpane` 이 줍니다(app.js 가 붙여줍니다) — 여기서 손대지 마십시오. */
+/* ⚠⚠ **판 전체가 한 화면으로 읽혀야 합니다(b746).** ⚠⚠
+   사용자: 「전체 화면이랑 이어져있는 느낌이 아니라 영역이 나눠져 있으니까
+   느낌이 안살아」. 띠를 `.card` 로 두었더니 밑줄이 그어져 «위 구역 / 아래
+   구역»으로 갈렸습니다. 여기서는 카드 한 장만 떠 있으면 됩니다 — 띠는
+   바탕 없이 글자만. */
+#p16pane{ position:relative; }
+/* 지금 카드의 색을 판 전체에 입히는 바닥. p16.js 가 48px 짜리 그림을
+   넣고 두 장을 번갈아 켭니다(그쪽 주석 참고).
+   ⚠ 아래로 갈수록 사라지게 «가립니다»(mask). 그래야 크림 바탕과 이어지고,
+     내용이 짧아 바닥이 남아도 경계가 안 보입니다. */
+.p16bg{ position:absolute; inset:0; z-index:0; pointer-events:none;
+        background-size:cover; background-position:50% 28%;
+        opacity:0; transition:opacity .5s var(--ease);
+        -webkit-mask-image:linear-gradient(to bottom,
+          rgba(0,0,0,1) 0, rgba(0,0,0,1) 380px, rgba(0,0,0,0) 700px);
+        mask-image:linear-gradient(to bottom,
+          rgba(0,0,0,1) 0, rgba(0,0,0,1) 380px, rgba(0,0,0,0) 700px); }
+/* ⚠ 실측(b746): .34 는 «있는 둥 마는 둥» 이었습니다 — 바닥을 깔아 둔 줄도
+   모릅니다. .82 라야 판이 그 카드의 색을 입습니다. 대신 위쪽 글자가 그림
+   위에 놓이므로 띠에 그늘을 깝니다(아래 `.p16bar`). */
+.p16bg.on{ opacity:.82; }
+/* 내용은 바닥 «위»로. 층을 매기기 시작하면 끝이 없으므로 여기 셋만. */
+.p16bar, .p16mid, .p16pane > .card{ position:relative; z-index:1; }
+/* ⚠⚠ **남는 자리를 아래에 몰아 두면 «위젯 하나»로 보입니다(b746).** ⚠⚠
+   판은 한 화면을 다 쓰는데 카드는 그 위쪽 3분의 2 뿐이라, 밑에 크림색
+   빈 땅이 250px 남았습니다. 남는 자리를 위아래로 «나눠» 카드가 눈높이에
+   오게 합니다 — 그러면 빈 곳이 사고가 아니라 여백으로 읽힙니다. */
+#p16body{ min-height:100%; display:flex; flex-direction:column; }
+.p16mid{ flex:1 1 auto; display:flex; flex-direction:column;
+         justify-content:center; }
+/* ⚠⚠ **띠 글자는 그림 위에 놓입니다.** 밝은 그림(한낮 골목)에서도 읽히게
+   위에서 아래로 옅은 그늘을 깝니다 — 흰 글자만으로는 못 버팁니다.
+   그늘은 «띠 안에서» 사라지므로 아래 카드에는 안 걸립니다. */
 .p16bar{ display:flex; align-items:center; justify-content:space-between;
-         gap:8px; padding:10px 12px; }
-.p16bar .ghost{ padding-left:0; }
-.p16bar .ghost + .p16n + .ghost{ padding-right:0; }
+         gap:8px; padding:12px 14px 18px; border:0;
+         background:linear-gradient(to bottom,
+           rgba(20,16,12,.38), rgba(20,16,12,0)); }
+.p16bar .ghost{ padding-left:0; color:#fff;
+                text-shadow:0 1px 6px rgba(0,0,0,.45); }
+.p16bar .ghost:last-child{ padding-right:0; }
+/* 가운데 글자. 여권 표지처럼 자간을 벌려 «이름표»로 읽히게 합니다. */
+.p16t{ font-size:calc(12px * var(--ts)); font-weight:700;
+       letter-spacing:.16em; color:rgba(255,255,255,.78);
+       text-shadow:0 1px 6px rgba(0,0,0,.45); }
+/* 모아보기 화면에는 바닥 그림이 없습니다 — 거기서는 먹색 그대로. */
+.p16bar.plain{ background:none; padding-bottom:8px; }
+.p16bar.plain .ghost{ color:var(--primary); text-shadow:none; }
+.p16bar.plain .p16t{ color:var(--ink-48); text-shadow:none; }
+.p16sp{ flex:0 0 44px; }
 .p16grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
 
 /* ⚠⚠ **`aspect-ratio` 가 아니라 «자리 잡는 칸»(.sz) + 격자입니다.** ⚠⚠
@@ -3860,18 +3905,22 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    한판이 되어야지」).** 그림만 카드처럼 두고 글을 밖에 놓았더니 둘이
    따로 노는 모양이었습니다. 한 상자로 감싸고 모서리는 여기서만 깎습니다 —
    `overflow:hidden` 이라 안의 그림이 알아서 잘립니다. */
+/* ⚠ 그늘을 둘로 깝니다 — 가까운 것(윤곽)과 먼 것(떠 있는 느낌). 하나로는
+   «종이 위에 인쇄된 네모»처럼 보입니다. 바닥에 색이 깔려 있어 더 그렇습니다. */
 .p16box{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column;
-         background:var(--canvas); border-radius:16px; overflow:hidden;
-         box-shadow:0 10px 26px rgba(20,16,12,.18); }
+         background:var(--canvas); border-radius:18px; overflow:hidden;
+         box-shadow:0 1px 2px rgba(20,16,12,.10),
+                    0 18px 40px -12px rgba(20,16,12,.34); }
 .p16box .phero{ border-radius:0; }
 .p16box .p16meta{ padding:13px 14px 16px; }
 
 /* 몇째인지. 열여섯 개라 점이 많지만, 지금 것만 알약으로 늘여 두면 읽힙니다. */
 .p16dots{ display:flex; justify-content:center; align-items:center;
-          gap:5px; padding:2px 0 14px; }
-.p16dots i{ width:5px; height:5px; border-radius:99px; background:var(--line);
-            transition:width .2s var(--ease), background .2s var(--ease); }
-.p16dots i.on{ width:16px; background:var(--brand); }
+          gap:5px; padding:4px 0 16px; }
+.p16dots i{ width:5px; height:5px; border-radius:99px;
+            background:rgba(20,16,12,.18);
+            transition:width .22s var(--ease), background .22s var(--ease); }
+.p16dots i.on{ width:18px; background:var(--brand); }
 /* ⚠ 점은 판 **밖**입니다 — 열여섯 판에 하나씩 달면 옆 판 것까지 보입니다. */
 .p16meta{ padding:0 var(--s-md) 22px; }
 /* 판 안에서는 궁합·다른 점 사이 여백을 조금 좁힙니다(자리가 한정됩니다). */
@@ -3880,7 +3929,6 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 /* 넘기는 곳임을 알립니다 — 몸짓은 보이지 않으니 글자로 한 번 말합니다. */
 .p16hint{ margin-top:10px; text-align:center; font-size:calc(11px * var(--ts));
           color:var(--ink-48); }
-.p16n{ font-size:calc(13px * var(--ts)); font-weight:700; color:var(--ink-48); }
 .p16mate{ display:flex; align-items:center; justify-content:space-between;
           margin-top:12px; padding:10px 12px; border-radius:10px;
           background:var(--pearl); }

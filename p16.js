@@ -33,8 +33,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b745';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b745';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b746';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b746';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 이웃끼리 한 글자만
@@ -68,8 +68,8 @@ function 카드(code, k, 시작){
       <div class="phero">
         <!-- 자리막이(b743). 큰 그림이 붙기 전까지 이 자리를 채웁니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b745')"></div>
-        <img src="./persona/m/${esc(code)}.jpg?v=b745" alt=""
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b746')"></div>
+        <img src="./persona/m/${esc(code)}.jpg?v=b746" alt=""
              loading="${언제}" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
@@ -119,15 +119,29 @@ function 밑글(code){
 
 function 캐러셀(){
   const 시작 = Math.max(0, 코드들.indexOf(지금));
-  return `<div class="card p16bar">
+  /* ⚠⚠ **바닥이 지금 카드의 색을 입습니다(b746).** ⚠⚠
+     사용자: 「전체 화면이랑 이어져있는 느낌이 아니라 영역이 나눠져 있으니까
+     느낌이 안살아」. 카드만 떠 있고 판은 그냥 크림색이라 «부품 하나»로
+     보였습니다. 지금 카드의 그림을 화면 가득 깔아 **판 전체가 그 카드의
+     분위기**를 입게 합니다.
+     ⚠ 48px 짜리를 늘려 씁니다(장당 1KB, 열여섯 합 17KB). 큰 그림에 흐림을
+       거는 것보다 훨씬 쌉니다 — 늘리면 저절로 뭉개집니다. 흐림 필터는
+       폰에서 매번 다시 그리느라 비쌉니다(유리 때 겪은 것과 같은 이유).
+     ⚠ 두 장을 겹쳐 두고 **번갈아 켭니다** — 한 장이면 그림을 바꾸는 순간
+       탁 끊깁니다. 켜고 끄는 것은 투명도뿐이라 값쌉니다. */
+  return `<div class="p16bg" id="p16bgA"></div>
+    <div class="p16bg" id="p16bgB"></div>
+    <div class="p16bar">
       <button class="ghost" data-p16close="1">← 분석</button>
-      <span class="p16n" id="p16n">${시작 + 1} / ${코드들.length}</span>
+      <span class="p16t">도감</span>
       <button class="ghost" data-p16grid="1">모아보기</button>
     </div>
-    <div class="p16track" id="p16track">${
-      코드들.map((c, k) => 카드(c, k, 시작)).join('')}</div>
-    <div class="p16dots" id="p16dots">${
-      코드들.map(() => '<i></i>').join('')}</div>`;
+    <div class="p16mid">
+      <div class="p16track" id="p16track">${
+        코드들.map((c, k) => 카드(c, k, 시작)).join('')}</div>
+      <div class="p16dots" id="p16dots">${
+        코드들.map(() => '<i></i>').join('')}</div>
+    </div>`;
 }
 
 /* ── 모아보기(격자) ─────────────────────────────────────────────────
@@ -150,15 +164,17 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b745" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b746" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
     </button>`;
   }).join('');
 
-  return `<div class="card p16bar">
+  return `<div class="p16bar plain">
       <button class="ghost" data-p16cards="1">← 카드로</button>
+      <span class="p16t">모아보기</span>
+      <span class="p16sp"></span>
     </div>
     <div class="card">
       <h2>여행 유형 16가지</h2>
@@ -209,11 +225,32 @@ function 가운데바뀜(k, 멈췄나){
   const 점 = $('p16dots');
   if (점) for (let i = 0; i < 점.children.length; i++)
     점.children[i].classList.toggle('on', i === k);
-  const 셈 = $('p16n');
-  if (셈) 셈.textContent = `${k + 1} / ${코드들.length}`;
+  바닥칠(코드들[k]);
   /* 멈춘 뒤에 «지금 누구인지»만 적어 둡니다 — 모아보기에 갔다 오거나
      판을 다시 열 때 이 값으로 되돌아옵니다. 화면에 보이는 것은 없습니다. */
   if (멈췄나) 지금 = 코드들[k];
+}
+
+/* 바닥 갈아 칠하기. 두 장을 번갈아 켜서 스르르 바뀝니다.
+   ⚠ 같은 코드면 아무것도 안 합니다 — 굴릴 때마다 불리므로, 안 막으면
+     한 번 넘기는 동안 수십 번 다시 칠합니다. */
+let 바닥코드 = null, 바닥턴 = 0;
+function 바닥칠(code){
+  if (!code || code === 바닥코드) return;
+  const a = $('p16bgA'), b = $('p16bgB');
+  if (!a || !b) return;
+  바닥코드 = code;
+  const 칠할것 = (바닥턴++ % 2) ? a : b;
+  const 끌것   = 칠할것 === a ? b : a;
+  칠할것.style.backgroundImage = `url('./persona/b/${code}.jpg?v=b746')`;
+  칠할것.classList.add('on');
+  끌것.classList.remove('on');
+}
+
+/* ⚠ 열여섯 장을 미리 받아 둡니다 — 다 합쳐 17KB 라 한 번에 받아도 됩니다.
+   안 받아 두면 처음 넘길 때마다 바닥이 한 박자 늦게 뜹니다. */
+function 바닥미리(){
+  for (const c of 코드들){ const im = new Image(); im.src = `./persona/b/${c}.jpg?v=b746`; }
 }
 
 function 캐러셀잡기(){
@@ -246,6 +283,8 @@ export function open16(code){
      숨어 있는 동안에는 0 입니다(이 앱에서 여러 번 겪은 함정). */
   $('p16pane')?.classList.remove('hide');
   coverDeck(true);
+  바닥코드 = null;
+  바닥미리();
   그리기();
   toTop($('p16pane'));
   if (history.state?.t2 !== 'p16') history.pushState({ t2: 'p16' }, '');
