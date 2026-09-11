@@ -3962,6 +3962,10 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
    ⚠ 왼쪽 선은 2px 라야 색으로 읽힙니다. 1px 면 그냥 경계선입니다. */
 .mate{ flex:1; min-width:0; padding:6px 0 6px 12px; border-radius:0;
        background:none; border:0; border-left:2px solid var(--line); }
+/* ⚠ 성향 그림(b748). 열여섯 장을 이미 갖고 있는데 이름만 적고 있었습니다.
+   ⚠ 원본 비(3:2)를 지킵니다 — 이 앱에서 이 그림들은 안 자릅니다. */
+.mateimg{ display:block; width:100%; aspect-ratio:3 / 2; object-fit:cover;
+          border-radius:10px; margin-bottom:8px; background:var(--pearl); }
 .mate.good{ border-left-color:var(--mate-good); }
 .mate.bad { border-left-color:var(--mate-bad); }
 .mate .ml{ display:block; font-size:calc(11px * var(--ts)); font-weight:600; }
@@ -4084,6 +4088,51 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .picks + .picks{ margin-top:10px; padding-top:10px;
                  border-top:1px solid var(--divider-soft); }
 .picks > .label{ font-size:var(--f-md); color:var(--dim); }
+
+/* ── 도시 사진 칸을 가로로 (b748) ──────────────────────────────────────
+ * ⚠ **끝까지 빼지 않습니다.** 화면 끝까지 흘리려고 음수 마진을 주면 판이
+ *   가로로 흔들립니다 — 이 구조에서 여러 번 겪은 덫입니다(b597 · b736).
+ *   몸통 여백 안에서 굴립니다.
+ * ⚠ 스냅은 `proximity` 입니다. `mandatory` 로 하면 넉 장을 훑어보려는데
+ *   자꾸 한 칸에 붙잡힙니다 — 여기는 «고르는» 자리가 아니라 «구경하는»
+ *   자리입니다(성향 캐러셀과 반대). */
+.crow{ display:flex; gap:9px; margin-top:8px; padding-bottom:2px;
+       overflow-x:auto; overscroll-behavior-x:contain;
+       scroll-snap-type:x proximity; scrollbar-width:none;
+       -webkit-overflow-scrolling:touch; }
+.crow::-webkit-scrollbar{ display:none; }
+.ccard{ flex:0 0 118px; min-width:0; padding:0; border:0; background:none;
+        text-align:left; cursor:pointer; scroll-snap-align:start; }
+.ccard .cimg{ display:flex; align-items:center; justify-content:center;
+              width:100%; aspect-ratio:4 / 3; border-radius:12px;
+              background:var(--pearl) center/cover no-repeat;
+              font-size:calc(22px * var(--ts)); font-weight:800;
+              color:var(--ink-48); overflow:hidden; }
+.ccard b{ display:block; margin-top:7px; font-size:calc(13px * var(--ts));
+          font-weight:700; overflow:hidden; text-overflow:ellipsis;
+          white-space:nowrap; }
+.ccard i{ display:block; font-style:normal; font-size:calc(11px * var(--ts));
+          color:var(--ink-48); overflow:hidden; text-overflow:ellipsis;
+          white-space:nowrap; }
+
+/* ── 성향이 바뀐 기록 (b748) ───────────────────────────────────────────
+ * 「예전 FMDP → 지금 HMDP」. 그림 둘을 나란히 놓아야 «바뀐 것»이 한눈에
+ * 보입니다 — 코드 네 글자만으로는 무엇이 달라졌는지 안 그려집니다. */
+.pwas{ margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+       text-align:center; }
+.pwas .why{ display:block; font-size:calc(12px * var(--ts)); font-weight:700;
+            color:var(--ink-48); }
+.pwasrow{ display:flex; align-items:flex-start; justify-content:center;
+          gap:10px; margin-top:9px; }
+.pwas1{ display:block; width:104px; }
+.pwas1 img{ display:block; width:100%; aspect-ratio:3 / 2; object-fit:cover;
+            border-radius:9px; background:var(--pearl); }
+.pwas1 i{ display:block; margin-top:5px; font-style:normal;
+          font-size:calc(10px * var(--ts)); font-weight:800;
+          letter-spacing:.04em; color:var(--ink-48); }
+.pwas1 b{ display:block; font-size:calc(12px * var(--ts)); font-weight:700; }
+.pwasar{ align-self:center; margin-top:-14px; color:var(--ink-48);
+         font-weight:700; }
 
 /* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
    으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이

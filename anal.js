@@ -14,33 +14,33 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b747';
-import { sb } from './db.js?v=b747';
-import { cities } from './cities.js?v=b747';
+import { $, esc } from './dom.js?v=b748';
+import { sb } from './db.js?v=b748';
+import { cities, cityCountry } from './cities.js?v=b748';
 /* 별 갈래와 그 이름. ⚠ **보관함 시트와 같은 것을 씁니다**(b727) — 따로 세면
    「★4점대 32곳」이 두 화면에서 달라집니다. 규칙은 stars.js 한 곳입니다. */
-import { 별갈래, BAND_NAME } from './stars.js?v=b747';
+import { 별갈래, BAND_NAME } from './stars.js?v=b748';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b747';
+import { cityStat } from './rate.js?v=b748';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b747';
+import { loadRateData } from './rating.js?v=b748';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b747';
+import { renderPersona } from './persona.js?v=b748';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b747';
+import { similarPicks } from './rec.js?v=b748';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b747';
-import { pickCity } from './citysearch.js?v=b747';
+import { openNew } from './newtrip.js?v=b748';
+import { pickCity } from './citysearch.js?v=b748';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -339,27 +339,40 @@ export async function loadAnal(){
     갈곳.className = 'card quiet';
     갈곳.innerHTML = '<h2>다음 여행</h2>';
 
+    /* ⚠⚠ **이름만 적힌 알약에서 «사진 칸»으로(b748, 사용자 결정:
+       「다음 여행도 도시 사진 다 넣자」).** 여기는 «가고 싶게 만드는» 자리인데
+       글자만 있으면 아무 그림도 안 그려집니다. 도시 사진은 이미 다 갖고
+       있습니다(cities.image_url, 469곳 전부 — city-photos 메모).
+     ⚠ **가로로 굴립니다.** 한 줄에 넉 장이 안 들어가므로 접지 말고 밀어
+       보게 합니다(사용자: 「가로로 다 못 넣으면 스와이프 해서 볼 수 있게」).
+     ⚠ 사진이 없는 도시도 있습니다(드물게). 그때는 크림 칸에 이름 첫 글자 —
+       도시 화면(city.js)이 쓰는 것과 같은 수법입니다. */
     const 줄내기 = (제목, 도시들, 꼬리) => {
       if (!도시들.length) return;
       const 줄 = document.createElement('div');
       줄.className = 'picks';
       줄.innerHTML = `<span class="label">${esc(제목)}${
         꼬리 ? `<i>${esc(꼬리)}</i>` : ''}</span>`;
-      const 칩들 = document.createElement('div');
-      칩들.className = 'cchips';
-      도시들.slice(0, 6).forEach(c => {
+      const 칸들 = document.createElement('div');
+      칸들.className = 'crow';
+      도시들.slice(0, 8).forEach(c => {
         const b = document.createElement('button');
-        b.textContent = c.name;
+        b.className = 'ccard';
+        b.innerHTML =
+          `<span class="cimg"${c.image_url
+              ? ` style="background-image:url('${esc(c.image_url)}')"`
+              : ' data-ph="1"'}>${c.image_url ? '' : esc(c.name.slice(0, 1))}</span>` +
+          `<b>${esc(c.name)}</b><i>${esc(cityCountry(c))}</i>`;
         b.onclick = () => 여행짜기(c);
-        칩들.appendChild(b);
+        칸들.appendChild(b);
       });
-      줄.appendChild(칩들);
+      줄.appendChild(칸들);
       갈곳.appendChild(줄);
     };
     줄내기('어울리는 곳', 골라.match.map(x => x.city));
     줄내기('반대로 가보면', 골라.opposite.map(x => x.city));
     줄내기('가보고 싶어요', 위시,
-           위시.length > 6 ? `${위시.length}곳 중 6곳` : '');
+           위시.length > 8 ? `${위시.length}곳 중 8곳` : '');
     /* 리포트 안 「막대」 바로 밑으로(b736 시안 순서). 칸이 없으면 제자리. */
     ($('nextspot') || box).appendChild(갈곳);
   }

@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 반대로 가보면」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b747';
-import { sb } from './db.js?v=b747';
-import { cities, countryName, continentOf } from './cities.js?v=b747';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b748';
+import { sb } from './db.js?v=b748';
+import { cities, countryName, continentOf } from './cities.js?v=b748';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b747';
+import { similarPicks } from './rec.js?v=b748';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b747';
-import { visited } from './rate.js?v=b747';
-import { open16 } from './p16.js?v=b747';
+import { mateCode, mateHtml } from './mate.js?v=b748';
+import { visited } from './rate.js?v=b748';
+import { open16 } from './p16.js?v=b748';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b747';
+         shareCard } from './card.js?v=b748';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -126,56 +126,42 @@ async function drawPersona(s, ax, rates){
      안 떴습니다(「성향을 계산하는 중」에서 멈춤). 쓰는 곳과 만드는 곳은
      같은 함수 안이어야 합니다.
    ⚠ 자료는 매개변수 `rates` 입니다(openPersona 가 넘긴 city_ratings). */
-  /* ── 변화 배지 ── 분석 탭에서 옮겨왔습니다(b519) ─────────────────────
-   * 사용자 결정. 분석 탭의 성향 카드는 **지금 내가 누구인가**만 말하고,
-   * 「처음 20곳과 견주면 이렇게 옮겨갔다」는 이야기는 리포트 안입니다 —
-   * 한 줄로 보고 지나칠 것이 아니라 읽으러 들어오는 사람의 몫입니다.
-   * ⚠ **40곳부터입니다.** 20+20 이 겹치면 처음과 지금이 같은 자료가 되어
-   *   늘 「그대로」가 나옵니다 — 아무 말도 안 하는 줄입니다.
-   * ⚠⚠ **「지금」이라고 쓰면 안 됩니다(b500).** 바로 위 큰 글자는 **전체**
-   *   별점으로 낸 유형(FMDP)인데 이 줄은 **최근 20곳만**으로 낸 코드
-   *   (HMDP)입니다. 둘은 다를 수 있고, 실제로 한 화면에 같이 떠서 어느 게
-   *   내 유형인지 알 수 없었습니다. 무엇을 견줬는지 그대로 적습니다.
-   * ⚠ 재는 방법은 안 바꿉니다 — 전체와 견주면 전체 안에 처음 20곳이 들어
-   *   있어 변화가 묽어집니다. 틀린 것은 말이었지 셈이 아니었습니다. */
-  /* ⚠⚠ **별점 있는 줄만 셉니다(b521).** 옮겨오면서 `data` 를 그대로
-     넘겼는데, 거기에는 「가보고 싶어요」(별점 없는 줄)가 섞여 있습니다.
-     personaAxes 는 안에서 걸러내지만 **자르는 것은 그 전**이라, 앞 20줄을
-     떼면 실제로 매긴 것은 스물이 안 됩니다 — 분석 탭에서 보던 값과
-     달라집니다(재보니 축 변화가 10 → 37 로 벌어졌습니다).
-   ⚠ 이 배지 하나 때문에 리포트 전체가 안 뜨면 안 됩니다. 여기서 무슨 일이
-     나든 배지만 빠지고 나머지는 나옵니다 — 화면을 못 띄우는 것보다 낫습니다. */
-  const 변화배지 = (() => { try {
-    const 시간순 = (rates || []).filter(r => r.created_at && r.stars != null)
-      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-    if (시간순.length < 40) return '';
-
-    const 처음 = personaAxes(시간순.slice(0, 20), { cities });
-    const 지금 = personaAxes(시간순.slice(-20), { cities });
-    /* 어느 축이 제일 움직였나. 오른 쪽·내린 쪽을 **말로** 들고 옵니다.
-       ⚠ 축 이름을 안 씁니다 — 「개척력이 올랐어요」는 개척력이 무엇인지
-         아는 사람에게만 말이 됩니다. 무엇이 달라졌는지를 그대로 적어야
-         처음 보는 사람도 읽습니다.
-       ⚠ 방향은 card.js 의 코드 규칙과 같습니다(개척 50↑ = H = 숨은 곳,
-         단골 50↑ = L = 한 나라, 모험 50↑ = D = 멀리, 만족 50↑ = G = 후함).
-         한쪽만 고치면 배지와 코드 네 글자가 서로 다른 말을 하게 됩니다. */
-    const 말 = [
-      ['숨은 곳을 더 찾게 됐어요',   '유명한 곳을 더 보게 됐어요'],
-      ['한 나라를 깊게 파게 됐어요', '여러 나라를 넓게 다니게 됐어요'],
-      ['더 멀리 나가게 됐어요',      '가까운 곳을 더 보게 됐어요'],
-      ['별점이 후해졌어요',          '별점이 까다로워졌어요'],
-    ];
-    const 큰 = ['개척', '단골', '모험', '만족']
-      .map((k, i) => ({ i, 값: 지금[k] - 처음[k] }))
-      .sort((a, b) => Math.abs(b.값) - Math.abs(a.값))[0];
-    const 문장 = Math.abs(큰.값) >= 10 ? 말[큰.i][큰.값 > 0 ? 0 : 1] : '';
-    const 아래 = 처음.code === 지금.code
-      ? `처음 20곳도 최근 20곳도 <b class="on">${esc(처음.code)}</b>`
-      : `처음 20곳 <b>${esc(처음.code)}</b> <i>→</i> ` +
-        `최근 20곳 <b class="on">${esc(지금.code)}</b>`;
-    return `<div class="pbadge">${문장
-      ? `<span class="why">${esc(문장)}</span>` : ''}<span class="pcd">${아래}</span></div>`;
-  } catch (e){ console.warn('변화 배지', e); return ''; } })();
+  /* ── 성향이 바뀌었을 때 ── (b748, 사용자 결정) ──────────────────────
+   * ⚠⚠ **「처음 20곳 / 최근 20곳」을 걷었습니다.** ⚠⚠
+   *   b519~b747 은 처음 스물과 최근 스물을 견줘 **다른 코드**를 한 줄 더
+   *   보여줬습니다. 그런데 바로 위 큰 글자는 «전체 별점»으로 낸 유형이라,
+   *   한 화면에 코드가 둘 떠서 어느 것이 내 유형인지 헷갈렸습니다
+   *   (사용자: 「처음 20개가 왜 아직도 보이고 있는거지? 최종 성향은 최근
+   *   20개가 아니라 내가 매긴 총합으로 늘 분석해줘야지」).
+   * ⚠ 성향은 **늘 전체 별점**으로 냅니다(card.js 의 personaAxes). 여기서
+   *   견주는 것은 자료 조각이 아니라 «시간»입니다 — 그 전체 코드가 지난번과
+   *   달라졌을 때만 「예전 → 지금」 한 줄을 붙입니다.
+   * ⚠ 확정 전(임시)에는 적지도 보여주지도 않습니다. 흔들리는 코드로
+   *   「바뀌었다」고 하면 한 곳 매길 때마다 바뀝니다.
+   * ⚠ 기기마다 따로 적습니다(localStorage). pshift.js 의 홈 알림과 열쇠를
+   *   **나눠** 씁니다 — 거기는 「봤다」에 지워지고 여기는 기록이라 남습니다.
+   * ⚠ 배지 하나 때문에 리포트가 통째로 안 뜨면 안 됩니다(b521 의 교훈) —
+   *   무슨 일이 나든 배지만 빠지고 나머지는 나옵니다. */
+  const 바뀜배지 = (() => { try {
+    if (임시) return '';
+    const uid = ctx.me()?.id;
+    if (!uid) return '';
+    const 열쇠 = 't2:p16:' + uid, 기록열쇠 = 't2:p16was:' + uid;
+    const 옛 = localStorage.getItem(열쇠) || '';
+    if (옛 !== code){
+      if (옛 && PERSONA16[옛]) localStorage.setItem(기록열쇠, 옛 + '>' + code);
+      localStorage.setItem(열쇠, code);
+    }
+    const [앞, 뒤] = (localStorage.getItem(기록열쇠) || '').split('>');
+    if (!앞 || 뒤 !== code || !PERSONA16[앞]) return '';
+    const 딱 = c => `<span class="pwas1">
+        <img src="./persona/t/${esc(c)}.jpg?v=b748" alt="" loading="lazy">
+        <i>${esc(c)}</i><b>${esc(PERSONA16[c]?.n || c)}</b></span>`;
+    return `<div class="pwas">
+      <span class="why">성향이 바뀌었어요</span>
+      <div class="pwasrow">${딱(앞)}<span class="pwasar">→</span>${딱(뒤)}</div>
+    </div>`;
+  } catch (e){ console.warn('바뀜 배지', e); return ''; } })();
   /* ⚠ **문턱을 3곳에서 5곳으로 올렸습니다(b381).** 축이 넷이라 3곳으로는
      한 곳만 바뀌어도 코드가 통째로 뒤집힙니다 — "어제는 골목 탐험가였는데
      오늘은 명소 검열관" 이면 아무도 안 믿습니다. 5곳이면 나라도 대개
@@ -323,12 +309,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b747')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b748')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b747" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b748" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -371,9 +357,9 @@ async function drawPersona(s, ax, rates){
           </div>
         </div>
       </div>
-      <!-- 「처음 20곳과 견주면」 (b519, 분석 탭에서 옮겨옴). 40곳 미만이면
-           빈 문자열이라 아무것도 안 붙습니다. -->
-      ${변화배지}
+      <!-- 성향이 바뀌었으면 「예전 → 지금」 한 줄(b748). 안 바뀌었거나
+           확정 전이면 빈 문자열이라 아무것도 안 붙습니다. -->
+      ${바뀜배지}
       <!-- ── 네 축 ── 가로 막대(b551 에 되살림) ───────────────────────
            ⚠⚠ **b547 에 조용히 사라졌던 것입니다.** 성향 탭의 요약 카드를
              걷고 리포트를 그 자리에 놓으면서, 요약 카드에만 있던 막대가
@@ -427,15 +413,6 @@ async function drawPersona(s, ax, rates){
           <button class="primary" id="pgo">평가하러 가기</button></div>
       </div></div>` : ''}
 
-    <!-- 「다음 여행」(anal.js ③)이 여기로 들어옵니다 — 시안 순서(b736).
-         ⚠ **여기서 만들지 않습니다.** 추천은 rec.js 계산이라 재료(도시
-           목록 · 내 평가)가 있어야 하는데, 그것을 이미 들고 있는 쪽은
-           분석 탭입니다. 두 벌로 만들면 언젠가 갈라집니다 — 자리만
-           내주고 anal.js 가 채웁니다.
-         ⚠ 리포트가 안 그려지면 이 칸도 없습니다. anal.js 는 칸이 없으면
-           제자리(탭 맨 아래)에 붙입니다. -->
-    <div id="nextspot"></div>
-
     <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
          그림 안에 있으면 작게 눌러 담겨 읽기 어렵습니다. -->
     <div class="card">
@@ -443,11 +420,19 @@ async function drawPersona(s, ax, rates){
       <div class="mates">
         <!-- ⚠ 확정 전에는 궁합 «%»도 뗍니다(b717). 유형이 흔들리는 동안에는
              그 유형으로 낸 점수도 흔들립니다 — 위 상위 % 와 같은 이유입니다. -->
+        <!-- ⚠ 그림을 답니다(b748, 사용자: 「나와 맞는 사람에 성향카드가
+             있는데 왜 안써」). 열여섯 장을 이미 갖고 있는데 이름만 적고
+             있었습니다 — 유형은 «그림으로» 기억됩니다.
+           ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b748"
+               alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b748"
+               alt="" loading="lazy" decoding="async">
           <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
           <span class="mc">${esc(mate.worst)}</span></div>
@@ -460,6 +445,15 @@ async function drawPersona(s, ax, rates){
            ⚠ mate.bestLine 은 카드 그림(card.js)에서는 그대로 씁니다 —
              거기는 한 장으로 끝나는 물건이라 근거가 붙어야 뜻이 통합니다. -->
     </div>
+
+    <!-- 「다음 여행」(anal.js ③)이 여기로 들어옵니다 — 시안 순서(b736) → 궁합 밑으로(b748).
+         ⚠ **여기서 만들지 않습니다.** 추천은 rec.js 계산이라 재료(도시
+           목록 · 내 평가)가 있어야 하는데, 그것을 이미 들고 있는 쪽은
+           분석 탭입니다. 두 벌로 만들면 언젠가 갈라집니다 — 자리만
+           내주고 anal.js 가 채웁니다.
+         ⚠ 리포트가 안 그려지면 이 칸도 없습니다. anal.js 는 칸이 없으면
+           제자리(탭 맨 아래)에 붙입니다. -->
+    <div id="nextspot"></div>
 
     <!-- 왜 이렇게 나왔는지 밝힙니다. 근거를 안 보여주면 그냥 재미로만 보고 맙니다.
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
