@@ -33,41 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b756';
-import { sb } from './db.js?v=b756';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b756';
-import { hm, todayYmd } from './calc.js?v=b756';
-import { starHtml, paintStars } from './stars.js?v=b756';
+import { $, esc, toast } from './dom.js?v=b757';
+import { sb } from './db.js?v=b757';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b757';
+import { hm, todayYmd } from './calc.js?v=b757';
+import { starHtml, paintStars } from './stars.js?v=b757';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b756';
-import { cities, countryName, cityCountry } from './cities.js?v=b756';
-import { UN_CODES } from './un.js?v=b756';
-import { myRates, cityStat, visited } from './rate.js?v=b756';
-import { plans } from './trip.js?v=b756';
-import { loadCities } from './citysearch.js?v=b756';
+import { starValue } from './rateui.js?v=b757';
+import { cities, countryName, cityCountry } from './cities.js?v=b757';
+import { UN_CODES } from './un.js?v=b757';
+import { myRates, cityStat, visited } from './rate.js?v=b757';
+import { plans } from './trip.js?v=b757';
+import { loadCities } from './citysearch.js?v=b757';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b756';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b756';
+import { openCity } from './city.js?v=b757';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b757';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b756';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b757';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b756';
+import { drawReport } from './report.js?v=b757';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b756';
+import { PERSONA_BG } from './card.js?v=b757';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b756';
+import { checkPersonaShift } from './pshift.js?v=b757';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
-import { diaryBackTo } from './diary.js?v=b756';
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b756';
+import { mountGlobe } from './globe.js?v=b757';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -641,13 +640,6 @@ async function buildHome(){
   if (sig === lastHomeSig && $('homefp')) return;
   lastHomeSig = sig;
 
-  /* ⚠⚠ **지우기 «전»에 붙잡습니다(b550).** 보관함 통(`#shelfbox`)은 처음엔
-     프로필 마크업 안에 있고, 한 번 옮기고 나면 **여기 자식**입니다.
-     아래 한 줄이 자식을 다 지우므로, 여기서 안 잡으면 두 번째부터
-     `getElementById` 가 null 을 주고 보관함이 영영 사라집니다.
-     (성향 탭에서 `#personabox` 로 겪은 것과 같은 함정입니다.) */
-  const 서랍 = $('shelfbox');
-
   /* ⚠⚠ **옛 지구본을 먼저 끝냅니다(b690).** 아래에서 통째로 지우면 캔버스는
      사라지지만 globe.js 가 문서에 걸어 둔 처리기와 관찰자는 남습니다.
      별점을 매길 때마다 홈이 다시 그려지므로 쓸수록 하나씩 쌓였습니다. */
@@ -739,21 +731,14 @@ async function buildHome(){
     칩놓기(매기러, () => 끄기('rate'), 'rate');
   }
 
-  /* ⚠ **보관함을 같은 카드 안으로(b552, 사용자 결정).** b550 에 프로필에서
-     가져올 때는 제 카드였는데, 지구본·숫자와 «한 판»이어야 한 화면이
-     한 덩어리로 읽힙니다.
-   ⚠ 통 안에 넣으면서 `card quiet` 옷을 벗깁니다 — 안 벗기면 카드 안에
-     카드가 생겨 모서리가 두 겹입니다.
-   ⚠ **노드째 옮기는 것은 그대로입니다.** 위에서 `innerHTML = ''` 전에
-     붙잡아 두는 이유가 여기 있습니다(그 자리 주석 참고). */
-  if (서랍){
-    서랍.className = 'fpshelf';
-    통.appendChild(서랍);
-    /* ⚠ 여는 절차는 감춰둔 `#opendiary` 하나입니다 — 여기서 또 적으면
-       두 벌이 됩니다. 「기록 탭에서 왔다」만 먼저 적어 둡니다. */
-    const 일기줄 = 서랍.querySelector('#diaryrow');
-    if (일기줄) 일기줄.onclick = () => { diaryBackTo('home'); $('opendiary')?.click(); };
-  }
+  /* ⚠⚠ **보관함을 여기로 «훔쳐오던» 것을 걷었습니다(b757, 사용자 결정).** ⚠⚠
+     b550 에 프로필 → 기록으로, b552 에 카드 «안»으로 옮겼던 것입니다.
+     그런데 이 탭이 하는 일은 **지구본과 숫자 하나**입니다 — 그 밑에 타일
+     여섯이 붙으면 지도가 화면의 절반도 못 쓰고 「한 화면」으로 안 읽힙니다
+     (사용자: 「지도영역이 너무 작아서 몰입도가 확 떨어져」).
+     → 마크업은 원래 자리(프로필)에 그대로 두고, 여기서는 안 건드립니다.
+   ⚠ `#diaryrow` 를 누르는 절차도 같이 갔습니다 — app.js 에서 한 번만
+     답니다(여기서 달면 홈을 다시 그릴 때마다 다시 달립니다). */
 
   /* ⚠⚠ **「새 여행」 띠를 여기서 걷었습니다(b542). 네 번째입니다.** ⚠⚠
      b377 에 「권유는 하나만」이라며 뺐다가 b378 에 되살렸고, b402 에
