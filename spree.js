@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b754';
-import { sb } from './db.js?v=b754';
-import { cities } from './cities.js?v=b754';
-import { loadCities } from './citysearch.js?v=b754';
-import { paintStars } from './stars.js?v=b754';
-import { rateHero, starValue } from './rateui.js?v=b754';
-import { saveRate } from './rating.js?v=b754';
-import { resetHomeSig } from './home.js?v=b754';
+import { $, esc } from './dom.js?v=b755';
+import { sb } from './db.js?v=b755';
+import { cities } from './cities.js?v=b755';
+import { loadCities } from './citysearch.js?v=b755';
+import { paintStars } from './stars.js?v=b755';
+import { rateHero, starValue } from './rateui.js?v=b755';
+import { saveRate } from './rating.js?v=b755';
+import { resetHomeSig } from './home.js?v=b755';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -54,13 +54,27 @@ let 건드림 = false;
    **한 곳도 안 매긴 사람에게 다 매겼다고 말합니다.** 도시 목록을 못
    받았을 때도 같습니다. 못 받았으면 못 받았다고 해야 합니다. */
 let 못받음 = false;
+/* 이번에 돌릴 도시를 못박아 두는 자리. 비어 있으면 «아직 안 답한 곳 전부».
+   사진에서 가져온 뒤에 그 곳들만 바로 매기게 할 때 씁니다(photo.js). */
+let 씨앗 = null;
+
 async function 채우기(){
   못받음 = false;
   await loadCities();
-  const r = await sb.from('city_ratings').select('city_id').eq('user_id', ctx.me().id);
+  const r = await sb.from('city_ratings')
+    .select('city_id,stars,want').eq('user_id', ctx.me().id);
   if (r.error || !(cities || []).length){ 못받음 = true; 주머니 = []; return; }
-  const 답한것 = new Set((r.data || []).map(x => x.city_id));
-  주머니 = (cities || []).filter(c => c.image_url && !답한것.has(c.id));
+  /* ⚠⚠ **«줄이 있다»와 «답했다»는 다릅니다(b755).** ⚠⚠
+     여태는 `city_ratings` 에 줄만 있으면 걸러냈습니다. 그런데 b754 에
+     사진에서 가져온 곳이 `been` 만 켠 줄을 만들기 시작했습니다 — 그러면
+     **가져온 도시가 넘기며 매기기에서 통째로 빠집니다.** 가져오기의 목적이
+     「매기게 하는 것」인데 정확히 그 반대가 됩니다.
+     답한 것은 **별을 줬거나 「가보고 싶어요」를 누른 것**입니다. */
+  const 답한것 = new Set((r.data || [])
+    .filter(x => x.stars != null || x.want).map(x => x.city_id));
+  const 씨 = 씨앗 && 씨앗.length ? new Set(씨앗) : null;
+  주머니 = (cities || []).filter(c =>
+    c.image_url && !답한것.has(c.id) && (!씨 || 씨.has(c.id)));
   주머니.sort((a, b) => (a.fame ?? 9) - (b.fame ?? 9));
   for (let i = 주머니.length - 1; i > 0; i--){
     const j = Math.floor(Math.random() * (i + 1));
@@ -109,8 +123,11 @@ function 다음(){
   그리기();
 }
 
-export async function openSpree(){
+/* `고를것` 에 도시 id 들을 주면 **그 곳들만** 돕니다(사진에서 가져온 직후).
+   안 주면 여태처럼 아직 안 답한 곳 전부입니다. */
+export async function openSpree(고를것){
   if (도는중) return;
+  씨앗 = Array.isArray(고를것) && 고를것.length ? [...고를것] : null;
   도는중 = true;
   $('tabdeck').classList.add('hide');   /* 덱 한 덩어리로(b474) */
   $('spreeview').classList.remove('hide');
@@ -151,6 +168,9 @@ function 돌아가기(){
 export function closeSpree(fromPop){
   if (!fromPop && history.state?.t2 === 'spree'){ history.back(); return; }
   도는중 = false;
+  /* ⚠ 다음에 「넘기며 매기기」로 들어오는 사람은 **전부**를 봐야 합니다.
+     안 비우면 사진으로 가져온 열두 곳만 계속 돕니다. */
+  씨앗 = null;
   $('spreeview').classList.add('hide');
   $('tabdeck').classList.remove('hide');
   /* 숨긴 것을 반드시 되돌립니다 — 여기서 빠뜨리면 앱에 탭 바가 영영 없습니다. */

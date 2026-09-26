@@ -19,12 +19,17 @@
  *   이 앱이 밖에서 받는 것은 supabase 하나뿐이고(sw.js 의 isCodeUrl),
  *   사진을 다루는 코드를 CDN 에서 받아오는 것은 안심시키기 어렵습니다.
  */
-import { $, esc, toast } from './dom.js?v=b754';
-import { sb } from './db.js?v=b754';
-import { cities } from './cities.js?v=b754';
-import { distKm } from './calc.js?v=b754';
+import { $, esc, toast } from './dom.js?v=b755';
+import { sb } from './db.js?v=b755';
+import { cities } from './cities.js?v=b755';
+import { distKm } from './calc.js?v=b755';
 
-let ctx = { me: () => null, 새로고침: async () => {} };
+/* ⚠⚠ **spree.js 를 여기서 import 하지 «않습니다».** ⚠⚠
+   photo.js 를 쓰는 rating.js 를 spree.js 가 다시 쓰므로, 여기서 부르면
+   rating → photo → spree → rating 고리가 생깁니다. 이 앱의 규칙대로
+   **둘 다 아는 app.js 가 넣어줍니다**(ctx 주입 — 같은 이유로 생긴 규칙이
+   spree.js 의 `afterSpree` 주석에 적혀 있습니다). */
+let ctx = { me: () => null, 새로고침: async () => {}, 매기기: () => {} };
 export function setPhotoCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ⚠ 한 번에 너무 많이 고르면 폰이 멈춥니다. 앞 1000장만 봅니다 —
@@ -194,7 +199,7 @@ function 고른수(){ return $('phbody').querySelectorAll('[data-ph].on').length
 function 단추글(){
   const n = 고른수();
   const b = $('phsave');
-  if (b){ b.textContent = n ? `${n}곳 다녀온 곳으로` : '고른 곳이 없어요'; b.disabled = !n; }
+  if (b){ b.textContent = n ? `${n}곳 별점 매기기` : '고른 곳이 없어요'; b.disabled = !n; }
 }
 
 function 결과그리기({ 셈, 도시들 }){
@@ -225,15 +230,22 @@ function 결과그리기({ 셈, 도시들 }){
     </div>
     <div class="phlist">${줄}</div>
     <div class="phfoot">
-      <button class="primary" id="phsave">${도시들.length}곳 다녀온 곳으로</button>
-      <button class="small" data-phclose="1">취소</button>
+      <button class="primary" id="phsave">${도시들.length}곳 별점 매기기</button>
+      <button class="small" id="phlater">나중에</button>
     </div>`);
 }
 
-/* ⚠ **한 번에 씁니다(upsert).** 한 줄씩 넣으면 마흔 곳이 마흔 번 왕복입니다.
+/* ⚠⚠ **가져오기의 끝은 «별점»입니다(b755, 사용자 지적: 「이건 그냥
+   가봤다이고 별점을 못남기잖아 우리는 별점을 남기게하는게 우선순위야」).** ⚠⚠
+   b754 는 넣고 목록으로 돌려보냈습니다. 목록 맨 위에 「평가 대기」로 서긴
+   하지만, 거기까지 가서 하나씩 누르는 것은 **다른 일**입니다.
+   → 넣자마자 **그 곳들만** 넘기며 매기기로 보냅니다. 사진첩을 연 김에
+     별점까지 받는 것이 이 기능의 목적입니다.
+   ⚠ 「나중에」도 남깁니다 — 다녀온 기록만 남기고 싶은 사람도 있습니다.
+   ⚠ **한 번에 씁니다(upsert).** 한 줄씩 넣으면 마흔 곳이 마흔 번 왕복입니다.
    ⚠ `stars` 는 **건드리지 않습니다** — 이미 매긴 곳을 사진으로 덮으면
      별점이 날아갑니다. `been` 만 켭니다. */
-async function 저장(){
+async function 저장(바로매기기){
   const me = ctx.me()?.id;
   if (!me) return toast('로그인이 필요해요.');
   const 고른 = [...$('phbody').querySelectorAll('[data-ph].on')].map(b => b.dataset.ph);
@@ -248,8 +260,9 @@ async function 저장(){
     return toast('넣지 못했어요. 잠시 뒤 다시 해주세요.');
   }
   closePhoto();
-  toast(`${고른.length}곳을 다녀온 곳에 넣었어요.`);
   await ctx.새로고침();
+  if (바로매기기) return ctx.매기기(고른);
+  toast(`${고른.length}곳을 다녀온 곳에 넣었어요.`);
 }
 
 /* ── 들어오는 문 ─────────────────────────────────────────────────────── */
@@ -282,7 +295,8 @@ $('phfile')?.addEventListener('change', async () => {
 
 $('phsheet')?.addEventListener('click', e => {
   if (e.target.closest('[data-phclose]')) return closePhoto();
-  if (e.target.closest('#phsave')) return 저장();
+  if (e.target.closest('#phlater')) return 저장(false);
+  if (e.target.closest('#phsave')) return 저장(true);
   const r = e.target.closest('[data-ph]');
   if (r){ r.classList.toggle('on'); 단추글(); }
 });
