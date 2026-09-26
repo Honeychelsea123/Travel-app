@@ -14,18 +14,19 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b753';
-import { sb } from './db.js?v=b753';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b753';
-import { dateRange } from './calc.js?v=b753';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b753';
+import { $, esc, josa } from './dom.js?v=b754';
+import { sb } from './db.js?v=b754';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b754';
+import { dateRange } from './calc.js?v=b754';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b754';
+import { openPhoto, setPhotoCtx } from './photo.js?v=b754';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b753';
+         countryInfo } from './cities.js?v=b754';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b753';
-import { openCity } from './city.js?v=b753';
-import { loadCities } from './citysearch.js?v=b753';
+         removeRate } from './rate.js?v=b754';
+import { openCity } from './city.js?v=b754';
+import { loadCities } from './citysearch.js?v=b754';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -88,6 +89,17 @@ export async function loadRateData(){
 export async function refreshVisited(){
   setVisited(await netTimeout(sb.rpc('my_visited')));
 }
+
+/* ── 사진에서 찾기(b754) ──────────────────────────────────────────────
+ * ⚠ photo.js 는 rating.js 를 **모릅니다**(고리가 생기면 둘 다 안 뜹니다).
+ *   필요한 둘을 여기서 넣어줍니다 — 이 앱이 쓰는 ctx 주입과 같은 수법입니다.
+ * ⚠ 넣고 나면 **다시 받아야** 합니다. `been` 은 서버에서 오는 값이라
+ *   (my_visited), 화면만 고치면 새로고침에 되돌아갑니다. */
+setPhotoCtx({
+  me: () => ctx.me(),
+  새로고침: async () => { await loadRateData(); await loadRatings(); },
+});
+$('photogo')?.addEventListener('click', () => openPhoto());
 
 export async function loadRatings(){
   /* 도시 목록은 받아둔 것이 있어도 **내 별점은 서버에서** 옵니다.
