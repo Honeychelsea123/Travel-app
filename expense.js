@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b752';
-import { sb } from './db.js?v=b752';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b752';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b752';
+import { $, esc, toast, emptyDo } from './dom.js?v=b753';
+import { sb } from './db.js?v=b753';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b753';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b753';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b752';
-import { arm } from './ui.js?v=b752';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b753';
+import { arm } from './ui.js?v=b753';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -90,7 +90,7 @@ export async function loadExpenses(){
   const { data, error } = await netTimeout(sb.from('expenses')
     /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
        비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
-    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,' +
+    .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,method,' +
             'plan_id,expense_shares(user_id,weight)')
     .eq('trip_id', trip.id)
     .is('deleted_at', null)
@@ -171,8 +171,10 @@ function drawExpenses(){
     const 몫말 = 몫.length === 1
       ? `${몫[0].user_id === ctx.me()?.id ? '나' : nameOf(몫[0].user_id)}만 쓴 것`
       : 몫.length ? `${몫.length}명이 나눠 냄` : null;
+    /* 카드·현금(b753). 안 고른 옛 지출은 조용합니다. */
+    const 낸법 = e.method === 'card' ? '카드' : e.method === 'cash' ? '현금' : null;
     const sub = [e.payer_id ? nameOf(e.payer_id) + ' 결제' : '결제자 없음',
-                 몫말, e.memo]
+                 낸법, 몫말, e.memo]
                 .filter(Boolean).join(' · ');
     html += `<div class="plan">
       <span class="kdot ${esc(k)}"></span>
@@ -321,6 +323,10 @@ function openExpForm(e){
   $('x_date').value   = e?.date   || 지출기본날();
   $('x_cat').value    = e?.category || '';
   $('x_payer').value  = e?.payer_id ?? ctx.me().id;
+  /* ⚠ 새로 넣을 때는 **아무것도 안 고른 채**로 둡니다. 「카드」를 미리
+     켜 두면 현금으로 낸 것까지 카드로 적히고, 그건 안 적느니만 못합니다. */
+  $('x_method').querySelectorAll('[data-method]').forEach(b =>
+    b.classList.toggle('on', !!e?.method && b.dataset.method === e.method));
   drawExpPlans();
   $('x_plan').value = e?.plan_id || '';
   drawShareChips();
@@ -394,6 +400,15 @@ function drawShareChips(){
   ).join('');
   나만단추();
 }
+/* ⚠ 둘 중 하나입니다. 다시 누르면 꺼집니다 — 잘못 눌렀을 때 되돌릴 길이
+   없으면 안 됩니다(안 고른 것도 답입니다). */
+$('x_method')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-method]'); if (!b) return;
+  const 켜짐 = b.classList.contains('on');
+  $('x_method').querySelectorAll('[data-method]').forEach(x => x.classList.remove('on'));
+  if (!켜짐) b.classList.add('on');
+});
+
 $('x_shares').addEventListener('click', e => {
   const b = e.target.closest('[data-share]'); if (!b) return;
   b.classList.toggle('on');
@@ -417,9 +432,10 @@ function 나만뿐인가(){
   const 켠것 = 칩.filter(b => b.classList.contains('on'));
   return 켠것.length === 1 && 켠것[0].dataset.share === ctx.me()?.id;
 }
+/* 체크 줄은 «지금 나만인가»를 그대로 비춥니다 — 칩을 손으로 껐다 켰다
+   해도 늘 맞습니다. 글자는 안 바꿉니다(그게 b752 의 잘못이었습니다). */
 function 나만단추(){
-  const b = $('x_onlyme');
-  if (b) b.textContent = 나만뿐인가() ? '전원' : '나만';
+  $('x_onlyme')?.classList.toggle('on', 나만뿐인가());
 }
 $('x_onlyme')?.addEventListener('click', () => {
   const 나 = ctx.me()?.id;
@@ -485,6 +501,7 @@ $('x_create').addEventListener('click', async () => {
     category: $('x_cat').value || null,
     plan_id: $('x_plan').value || null,
     payer_id: $('x_payer').value || null,
+    method: $('x_method').querySelector('[data-method].on')?.dataset.method || null,
     memo: $('x_memo').value.trim() || null
   };
   /* 고치는 중이면 같은 줄을 덮어씁니다. 지웠다 다시 넣으면 몫(share)과
