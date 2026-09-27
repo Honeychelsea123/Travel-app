@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b761';
+import { $ } from './dom.js?v=b762';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -257,6 +257,19 @@ export function syncSheets(){
    display-mode 는 안드로이드·데스크톱까지 봅니다. 둘 다 봅니다. */
 const STANDALONE = !!navigator.standalone ||
   matchMedia('(display-mode: standalone)').matches;
+
+/* ── 위쪽 「흐려지는 띠」를 비웁니다(b762) ─────────────────────────────
+ * ⚠⚠ **iOS 는 홈 화면 앱의 위쪽 가장자리를 스스로 흐립니다.** 왜 CSS 로
+ *   못 막는지와 44 라는 값이 어디서 나왔는지는 app.css 의 `--edge` 에
+ *   적어 뒀습니다.
+ * ⚠ **`navigator.standalone` 하나만 봅니다.** 이 값은 **iOS 전용**이고
+ *   홈 화면에 담았을 때만 참입니다 — 정확히 흐림이 나는 경우입니다.
+ *   위 `STANDALONE` 을 쓰면 안드로이드 PWA 와 데스크톱까지 걸려서,
+ *   흐림도 없는 화면이 44px 을 버립니다.
+ * ⚠ 한 번만 정합니다. 앱을 쓰는 중에 「홈 화면 앱인가」가 바뀔 일은
+ *   없습니다. */
+if (navigator.standalone)
+  document.documentElement.style.setProperty('--edge', '44px');
 
 /* ── 화면(브라우저) 확대를 막습니다(b562) ─────────────────────────────
  * ⚠⚠ **이 앱은 자리를 «재서» 잡습니다** — --vvh(보이는 창 높이) ·
