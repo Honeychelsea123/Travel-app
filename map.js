@@ -13,15 +13,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b775';
-import { openCity } from './city.js?v=b775';
-import { distKm } from './calc.js?v=b775';
-import { sb } from './db.js?v=b775';
-import { cities, countryName, continentOf } from './cities.js?v=b775';
+         coverDeck } from './dom.js?v=b776';
+import { openCity } from './city.js?v=b776';
+import { distKm } from './calc.js?v=b776';
+import { sb } from './db.js?v=b776';
+import { cities, countryName, continentOf } from './cities.js?v=b776';
 /* ⚠ `PERSONA_ICON` 은 b649 에 안 쓰게 됐습니다 — 발자국 카드가 여권 스탬프
    면으로 바뀌면서 선 아이콘 자리가 없어졌습니다(큰 수와 지도가 그 일을
    합니다). 안 쓰는 것을 가져오면 나중에 "여기도 쓰나" 하고 헷갈립니다. */
-import { shareCard } from './card.js?v=b775';
+import { shareCard } from './card.js?v=b776';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -436,6 +436,9 @@ $('ctrypane').addEventListener('click', e => {
  *   나란히 올리면 **다른 앱에서 나온 것**으로 보였습니다.
  *   → `kind:'stamps'` 로 넘겨 `card.js` 의 `drawStamps` 가 크림 종이에
  *     그립니다. 내용은 그대로고 그림만 바뀝니다.
+ *   b776 에 **성향 카드와 같은 틀**로 한 번 더 갈아입었습니다(지도 히어로 ·
+ *   대륙 막대 · 깃발 벽, 사용자가 시안 ㄴ 을 고름). 대륙 막대 때문에
+ *   `byCont` 가, 많이 간 나라 셋에 깃발을 달려고 `top` 에 나라 코드가 늘었습니다.
  *
  * ⚠ **세는 자료를 받아서 씁니다.** 여기서 다시 받아오면 부르는 쪽이 이미
  *   가진 것을 한 번 더 묻는 셈이고, 두 화면의 숫자가 갈릴 수 있습니다.
@@ -469,11 +472,15 @@ export function 발자국스펙(도시들){
     conts: conts.size,
     total: UN_COUNTRIES,
     pct,
-    top: codes.slice(0, 3).map(c => [countryName[c] || c, byC[c].length]),
+    /* [이름, 도시 수, 나라 코드] — 코드는 카드가 깃발을 꺼내는 데 씁니다(b776). */
+    top: codes.slice(0, 3).map(c => [countryName[c] || c, byC[c].length, c]),
+    /* 대륙 여섯 [이름, 분모, 다녀온 나라 수] — 카드의 막대(b776).
+       ⚠ 분모는 지도 화면 「대륙별」과 **같은 표**(CONT)입니다. 여기서 따로
+         적으면 같은 앱이 두 가지 수를 말합니다. */
+    byCont: CONT.map(([k, total]) => [k, total, codes.filter(c => continentOf[c] === k).length]),
     land,
-    /* 여권 아래 기계판독 줄. **장식입니다** — 진짜 정보는 위에 다 있습니다.
-       44칸은 실제 여권 MRZ 의 한 줄 길이입니다. 짧으면 `<` 로 채웁니다. */
-    mrz: ('P<KEYRO<' + codes.join('<')).toUpperCase().slice(0, 44).padEnd(44, '<'),
+    /* ⚠ 여권 코드 줄(`mrz`)을 걷었습니다(b776) — 카드가 성향 카드 틀로
+       바뀌며 그리지 않습니다. */
   };
 }
 
