@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b773';
-import { sb } from './db.js?v=b773';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b773';
-import { hm, todayYmd } from './calc.js?v=b773';
-import { starHtml, paintStars } from './stars.js?v=b773';
+import { $, esc, toast } from './dom.js?v=b774';
+import { sb } from './db.js?v=b774';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b774';
+import { hm, todayYmd } from './calc.js?v=b774';
+import { starHtml, paintStars } from './stars.js?v=b774';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b773';
-import { cities, countryName, cityCountry } from './cities.js?v=b773';
-import { UN_CODES } from './un.js?v=b773';
-import { myRates, cityStat, visited } from './rate.js?v=b773';
-import { plans } from './trip.js?v=b773';
-import { loadCities } from './citysearch.js?v=b773';
+import { starValue } from './rateui.js?v=b774';
+import { cities, countryName, cityCountry } from './cities.js?v=b774';
+import { UN_CODES } from './un.js?v=b774';
+import { myRates, cityStat, visited } from './rate.js?v=b774';
+import { plans } from './trip.js?v=b774';
+import { loadCities } from './citysearch.js?v=b774';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b773';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b773';
+import { openCity } from './city.js?v=b774';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b774';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b773';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b774';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b773';
+import { drawReport } from './report.js?v=b774';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b773';
+import { PERSONA_BG } from './card.js?v=b774';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b773';
+import { checkPersonaShift } from './pshift.js?v=b774';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b773';
+import { mountGlobe } from './globe.js?v=b774';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -292,20 +292,35 @@ async function 나라카드(코드, 먼저){
            ⚠ 두 줄에서 끊습니다 — 이 카드는 지구본 위에 떠 있는 것이지
              읽는 화면이 아닙니다. 더 보려면 카드를 누르면 됩니다. -->
         ${c.summary ? `<div class="gsabout">${esc(c.summary)}</div>` : ''}
-        <!-- ⚠ **여기서 바로 매깁니다(b560).** 읽기 전용이 아니라 누를 수
-             있는 별입니다 — 안 가본 나라를 눌러 들어온 사람에게 이것이
-             유일한 할 일입니다.
-             ⚠ 「data-city」 가 있어야 어느 도시인지 압니다(별 부품의 규칙).
-             ⚠ **글자에 「.gslab」 을 답니다.** 「i」 로 두었더니 그 규칙이
-                별 부품의 「.st i」(주황 칠)까지 덮어서 **별이 통째로
-                회색으로** 나왔습니다(b560 에서 겪음, 사용자 지적). -->
-        <div class="gsmine"><span class="stars" data-city="${esc(c.id)}"
-            >${starHtml(r.stars)}</span>
-          <b class="gsnum">${r.stars != null ? r.stars.toFixed(1) : ''}</b>
-          <span class="gslab">${r.stars != null ? '내 별점' : '눌러서 매기기'}</span>
-          ${st?.avg_stars != null ? `<span class="gsavg">평균
-            <b>${Number(st.avg_stars).toFixed(1)}</b></span>` : ''}</div>
+        <!-- ⚠⚠ **별점이 이 카드의 주인공입니다(b774, 사용자가 시안에서
+             고름).** ⚠⚠ 지구본에서 도시를 누르는 사람은 대개 **아직 안
+             매긴 곳**을 누릅니다 — 매긴 곳은 이미 칠해져 있으니까요.
+             그래서 「평균 | 내 별점」을 나란히 놓으면 정작 할 일인 별이
+             오른쪽 절반에 묻힙니다. **물음 → 별 → 안내** 차례로 둡니다.
+           ⚠ **이미 매긴 곳도 같은 틀입니다.** 말만 갈아끼웁니다 —
+             화면이 둘로 갈리지 않게.
+           ⚠ **여기서 바로 매깁니다(b560).** 읽기 전용이 아니라 누를 수
+             있는 별입니다. data-city 가 있어야 어느 도시인지 압니다.
+           ⚠ **글자에 .gslab 같은 제 이름을 답니다.** i 로 두었더니 그
+             규칙이 별 부품의 .st i(주황 칠)까지 덮어서 **별이 통째로
+             회색으로** 나왔습니다(b560 에서 겪음).
+           ⚠ 이 주석 안에 역따옴표를 쓰지 마십시오 — 이 덩이는 통째로
+             템플릿 문자열 안입니다(b741 에 앱 전체가 그렇게 멎었습니다). -->
+        <div class="gsask">
+          <div class="gsasklab">${r.stars != null ? '내 별점' : '여기, 어땠나요?'}</div>
+          <span class="stars big" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
+          <div class="gsaskhint">${r.stars != null
+            ? '다시 눌러 바꿀 수 있어요'
+            : '별을 눌러 매기면 지도가 칠해져요'}</div>
+        </div>
         ${r.comment ? `<div class="gscmt">${esc(r.comment)}</div>` : ''}
+        <!-- 남들 점수와 「더 보기」는 맨 아래 한 줄로. 주인공이 아닙니다. -->
+        <div class="gsfootrow">
+          <span>${st?.avg_stars != null
+            ? `평균 <b>${Number(st.avg_stars).toFixed(1)}</b>${
+                st.n_rated ? ` · ${st.n_rated}명` : ''}`
+            : '아직 아무도 안 매김'}</span>
+          <span class="gsgo2">자세히 보기 ›</span></div>
       </div></div></div>`;
   }).join('');
   /* 카드를 누르면 그 도시 화면으로. 시트는 먼저 닫습니다 — 도시 화면

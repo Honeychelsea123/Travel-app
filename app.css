@@ -5158,7 +5158,15 @@ body.pvon{ overflow:hidden; }
 .gsin:active{ transform:scale(.994); transition:transform .1s var(--ease); }
 
 /* 사진. 카드 높이의 절반쯤을 씁니다 — 이 카드의 주인공입니다. */
-.gsimg{ position:relative; width:100%; height:172px; background:var(--parchment); }
+/* ⚠⚠ **높이를 «화면 비율»로 잡습니다(b774, 사용자: 「사진이 세로로 더
+   길었으면」·「더 올릴 수도 있어?」).** ⚠⚠ 172 는 너무 납작했습니다.
+   그렇다고 320 처럼 못 박으면 **작은 폰에서 카드가 화면을 넘칩니다** —
+   아이폰 SE(667)에서 카드 620 + 하단바 58 이면 벌써 넘습니다.
+ ⚠ 36% 는 계산으로 고른 값입니다: 844 화면에서 304px(카드 약 566, 하단바
+   위 자리 766 안에 들어가고 지구본이 200 남습니다), 667 화면에서 240px.
+ ⚠ 330 은 큰 폰에서 사진만 끝없이 커지지 않게 두는 뚜껑입니다. */
+.gsimg{ position:relative; width:100%; background:var(--parchment);
+        height:min(330px, calc(var(--vvh, 100dvh) * 0.36)); }
 .gsimg img{ width:100%; height:100%; object-fit:cover; display:block; }
 .gsph{ display:flex; align-items:center; justify-content:center; width:100%;
        height:100%; font-size:var(--f-2xl); color:var(--ink-48); }
@@ -5198,9 +5206,34 @@ body.pvon{ overflow:hidden; }
 .gsabout{
   margin-top:6px; font-size:var(--f-md); line-height:1.5;
   color:var(--ink-48); word-break:keep-all;
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
   overflow:hidden;
 }
+
+/* ── 별점 묻는 자리(b774) ─────────────────────────────────────────────
+ * 물음 → 큰 별 → 안내. 왜 이 차례인지는 home.js 의 그 자리에 적어 뒀습니다.
+ * ⚠ 별은 **32px** 입니다. 이 카드에서 유일하게 누르는 것이고, 손가락이
+ *   닿는 물건은 커야 합니다.
+ * ⚠ 가운데 정렬입니다 — 왼쪽에 붙이면 「줄 하나」로 읽혀서 묻는 말이
+ *   안 됩니다. */
+.gsask{
+  margin-top:14px; padding:14px 0 12px;
+  border-top:1px solid var(--divider-soft);
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.gsask .stars .st{ font-size:32px; }
+.gsasklab{ font-size:var(--f-md); font-weight:600; color:var(--ink); }
+.gsaskhint{ font-size:var(--f-sm); color:var(--ink-48); }
+
+/* 남들 점수와 「더 보기」. 주인공이 아니라 맨 아래 한 줄입니다. */
+.gsfootrow{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:2px; padding-top:11px;
+  border-top:1px solid var(--divider-soft);
+  font-size:var(--f-sm); color:var(--ink-48);
+}
+.gsfootrow b{ color:var(--ink); font-variant-numeric:tabular-nums; }
+.gsgo2{ flex:none; font-weight:600; color:var(--primary); }
 .gssub{ flex:1; min-width:0; font-size:var(--f-md); color:var(--ink-48);
         overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* ── 내 별점 ── 여기서 바로 매깁니다(b560) ────────────────────────────
@@ -5208,17 +5241,9 @@ body.pvon{ overflow:hidden; }
  *   `.st i`(주황 #f5a623)입니다 — 같은 명시도라 뒤에 오는 쪽이 이기고,
  *   **별이 통째로 회색**이 됩니다(b560 에서 겪음). 글자에는 `.gslab` 을.
  * ⚠ 별은 눌러서 매기는 것이라 `pointer-events` 를 막지 않습니다. */
-.gsmine{ display:flex; align-items:center; gap:8px; margin-top:10px;
-         flex-wrap:wrap; }
-.gsmine .stars .st{ font-size:var(--f-2xl); }
-.gsnum{ font-size:var(--f-lg); font-weight:700; color:var(--ink);
-        font-variant-numeric:tabular-nums; }
-.gslab{ font-size:var(--f-sm); color:var(--ink-48); }
-/* 평균은 남들 점수입니다 — 내 것과 갈라 보이게 왼쪽에 선을 하나 긋습니다. */
-.gsavg{ margin-left:auto; padding-left:10px; font-size:var(--f-sm);
-        color:var(--ink-48); border-left:1px solid var(--divider-soft); }
-.gsavg b{ margin-left:4px; font-size:var(--f-lg); font-weight:700;
-          color:var(--ink); font-variant-numeric:tabular-nums; }
+/* ⚠ .gsmine · .gsnum · .gslab · .gsavg 를 걷었습니다(b774) — 별점 줄이
+   「물음 + 큰 별 + 안내」로 바뀌면서 쓰는 곳이 0 이 됐습니다. 되살리려거든
+   home.js 의 그 자리 주석부터 읽으십시오(왜 차례를 바꿨는지 있습니다). */
 .gscmt{ margin-top:10px; padding-top:10px; border-top:1px solid var(--divider-soft);
         font-size:var(--f-md); color:var(--ink-80); line-height:1.5;
         word-break:keep-all; }
