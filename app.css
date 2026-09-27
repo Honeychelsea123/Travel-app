@@ -266,7 +266,7 @@
    * ⚠ 값을 만지려거든 **재고 만지십시오.** 44 는 사용자 사진에서 흐림이
    *   잦아드는 자리를 역산한 값입니다(로고 윗변 69pt 가 흐렸고 90pt 쯤에서
    *   잦아들었습니다). 더 줄이면 글자 윗머리가 다시 뭉개집니다. */
-  --edge:32px;
+  --edge:38px;
 
   /* ── 움직임 ──
      곡선을 곳마다 다르게(ease / ease-out / 기본) 쓰고 있었습니다. 그러면
@@ -3525,9 +3525,11 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
    왜 이 둘만 내리는지는 :root 의 `--edge` 주석에 있습니다. */
 .gmark{
   position:absolute; left:var(--s-md); z-index:0;
-  /* ⚠ `--sat`(시계) + `--edge`(iOS 가 흐리는 띠) 둘 다 피합니다(b764).
-     지도는 그 밑까지 올라가지만 또렷한 글자는 못 올라갑니다. */
-  top:calc(var(--sat) + var(--edge) + 10px);
+  /* ⚠ **끊긴 선 «바로 밑»입니다**(b765, 사용자 요청: 「기로 로고랑 자세히는
+     바로 그 밑으로 딱 붙여주고」). 같은 식(`--sat + --edge`)을 쓰므로
+     선과 절대 안 벌어집니다 — 값을 만지려거든 `:root` 의 `--edge` 하나만
+     만지십시오. */
+  top:calc(var(--sat) + var(--edge) + 6px);
   display:flex; align-items:center; gap:7px; margin:0;
   pointer-events:none; user-select:none;
   font-size:calc(19px * var(--ts)); font-weight:800; line-height:1;
@@ -3542,9 +3544,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      (판은 514 인데 지구본 칸이 480 이었습니다). */
 #tabdeck > #homeview{
   padding-left:0; padding-right:0;
-  /* ⚠ 위도 0 입니다(b764) — 지구본이 시계 뒤까지 올라갑니다. 바로 위
-     `#tabdeck > .tabpane` 의 `padding-top` 을 여기서 눕힙니다. */
-  padding-top:0;
+  /* ⚠⚠ **위쪽은 «일자로» 끊습니다(b765, 사용자: 「뭉개지말고 그냥 일자로
+     끊어줘」).** ⚠⚠ b764 에 지도를 시계 뒤까지 올렸더니 iOS 가 흐리는 띠에
+     **지도의 윗변**이 들어가 뭉개졌습니다. 그러데이션으로 스미게 해 봤지만
+     그것도 「뭉갠 것」으로 읽혔습니다.
+     → 지도를 **흐림이 닿지 않는 데서 시작**시킵니다. 그 위는 종이색
+       단색이고, 단색은 흐려도 단색이라 **끊긴 선이 또렷하게 남습니다.**
+   ⚠ 높이는 `--sat`(시계) + `--edge`(흐림이 그 밑으로 더 내려오는 만큼)
+     입니다 — 값과 그 근거는 `:root` 의 `--edge` 주석에 있습니다.
+   ⚠ **좌우는 그대로 0 입니다.** 끊는 것은 위뿐이고 옆은 화면 끝까지입니다.
+   ⚠ 로고와 「자세히」는 이 선 **바로 밑**에 붙습니다(사용자 요청) —
+     아래 `.gmark`·`.gmore` 가 같은 값을 씁니다. 한쪽만 고치면 벌어집니다. */
+  padding-top:calc(var(--sat) + var(--edge));
   /* ⚠ 아래 여백도 뺍니다. 지구본은 **하단바 뒤로 지나가야** 합니다 —
      탭바가 불투명한 종이 띠라 가려지긴 하지만, 줌인했을 때 화면 맨
      아래까지 그림이 차 있어야 「꽉 찬다」로 읽힙니다. */
@@ -3565,8 +3576,17 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
                      max-height:none; margin:0; }
 /* 얹힌 단추는 화면 끝에 붙으면 안 됩니다 — 몸통 여백만큼 안으로.
    ⚠ b759 에 3D/2D 가 없어져서 이 화면에 얹히는 것은 「자세히」 하나입니다. */
-#homeview .gmore{ right:calc(var(--s-md) + 2px);
-                  top:calc(var(--sat) + var(--edge) + var(--s-xs)); }
+/* ⚠⚠ **로고와 «기준이 다릅니다».** 로고(`.gmark`)는 판(`#homeview`)의
+   직계라 «판 맨 위(화면 0)»에서 재고, 「자세히」는 `.gwrap` 안에 있어
+   **이미 위 여백 밑에서** 잽니다. 그래서 여기는 `--sat`·`--edge` 를 더하면
+   안 됩니다 — 더하면 두 배로 내려가 지구본 한가운데에 뜹니다(실측 198).
+   둘이 한 줄로 보이게 로고와 «같은 화면 높이»가 되는 값만 줍니다. */
+#homeview .gmore{ right:calc(var(--s-md) + 2px); top:6px; }
+
+/* ⚠ **「스미는 띠」(그러데이션)를 걷었습니다(b765 안에서 한 번 더,
+   사용자: 「뭉개지말고 그냥 일자로 끊어줘」).** 흐려도 티가 안 나는 것을
+   두자는 발상이었는데, 부드럽게 스미는 것 자체가 「뭉갠 것」으로 읽혔습니다.
+   → 아래 `#tabdeck > #homeview` 의 위 여백으로 **딱 끊습니다.** */
 
 /* ── 숫자는 지도 «위에» 뜹니다 ──────────────────────────────────────────
  * ⚠ 옷은 **칩(`.gchips`)과 같은 것**입니다 — 종이색 · 1px 실선 · 옅은
