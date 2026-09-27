@@ -45,16 +45,25 @@ binmode STDOUT, ':encoding(UTF-8)';
 #   파일이 **한 줄**이고 조각이 `{"type":"Feature"` 로 시작하므로 **글자로
 #   먼저 쪼갠 뒤** 조각 하나씩만 JSON 으로 풉니다.
 
-my $DIR = shift(@ARGV) or die "쓰는 법: perl tools/mkadm1.pl <자료폴더>\n";
+my $DIR = shift(@ARGV) or die "쓰는 법: perl tools/mkadm1.pl <자료폴더> [나라,나라,…]\n";
+# ⚠ 둘째 인자(b780): **이 나라들만** 굽습니다 — 쉼표로. 도시가 없어 map50 이
+#   없는 나라(북한·그린란드·남극 …)를 더할 때 씁니다. 안 주면 예전처럼 map50 목록.
+#   ⚠ 이미 있는 나라를 다시 굽지 마십시오 — 원본(NE master)이 그사이 바뀌었으면
+#     파일이 달라지고, 그러면 citymap.js 의 MAP_V 까지 올려야 합니다.
+my $목록 = shift(@ARGV);
 my $OUT = 'adm1';
 my $EPS = 0.04;
 my $큰것 = 60 * 1024;        # 이보다 커지면 한 번 더 줄입니다
 my $EPS2 = 0.08;
 
 # ── 어느 나라를 구울까 — map50 에 있는 것 ─────────────────────────────
-opendir(my $d, 'map50') or die "map50/ 를 못 엽니다: $!\n";
-my %want = map { /^([A-Z]{2})\.js$/ ? ($1 => 1) : () } readdir($d);
-closedir $d;
+my %want;
+if ($목록){ %want = map { uc($_) => 1 } grep { /^[A-Za-z]{2}$/ } split /,/, $목록 }
+else {
+  opendir(my $d, 'map50') or die "map50/ 를 못 엽니다: $!\n";
+  %want = map { /^([A-Z]{2})\.js$/ ? ($1 => 1) : () } readdir($d);
+  closedir $d;
+}
 die "map50 에서 나라를 못 읽었습니다\n" unless keys %want;
 printf "도시가 있는 나라 %d개를 굽습니다\n", scalar keys %want;
 
@@ -196,6 +205,9 @@ for my $i (0 .. $#pos){
   $덩이 =~ s/,\s*$//;
   $덩이 =~ s/\}\s*\]\s*\}\s*$/}/ if $i == $#pos;    # 마지막 조각 꼬리
   my ($cc) = $덩이 =~ /"iso_a2":"([A-Z]{2})"/;
+  # ⚠ 프랑스령 기아나는 NE 에서 «프랑스의 한 도»(iso_a2 FR · FR-GF)입니다. 세계지도
+  #   (world.js)는 GF 를 따로 그리므로 GF 로 꺼냅니다(b780).
+  $cc = 'GF' if $덩이 =~ /"iso_3166_2":"FR-GF"/;
   next unless $cc && $want{$cc};
   my $f = eval { $J->decode($덩이) } or next;
   push @{ $모음{$cc} }, $f;
