@@ -6,17 +6,17 @@
  *   app.js    ← 여기. 나머지 전부
  */
 import { WORLD_PATHS } from './world.js';
-import { sb } from './db.js?v=b781';
+import { sb } from './db.js?v=b782';
 
 /* JOIN_URL 은 member.js 로 옮겼습니다(b337) — 쓰는 곳이 거기 한 줄뿐이라
    여기 둘 이유가 없었습니다. 왜 앱 주소가 아닌지도 같이 옮겼습니다. */
 import { $, esc, toast, copyText, md, avatarOf, avatarImg, emptyDo,
-         putHtml, dropHtml, toTop, coverDeck } from './dom.js?v=b781';
-import { starHtml, paintStars, markRated, armStarDrag } from './stars.js?v=b781';
+         putHtml, dropHtml, toTop, coverDeck } from './dom.js?v=b782';
+import { starHtml, paintStars, markRated, armStarDrag } from './stars.js?v=b782';
 import { fail, offNote, cacheGet, cacheSet, netIsDown, netTimeout, isOffline,
          write, flushQueue, drawOffbar, setOnDrained,
-         setErrLogger, setReadOnly, NOROW, forgetLocal } from './net.js?v=b781';
-import { loadAdmin } from './admin.js?v=b781';
+         setErrLogger, setReadOnly, NOROW, forgetLocal } from './net.js?v=b782';
+import { loadAdmin } from './admin.js?v=b782';
 /* 취향으로 다음 도시를 고르는 계산. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고, 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
 /* ⚠ **화면은 아직 이걸 하나도 안 씁니다.** `__recCheck` 만 씁니다.
@@ -24,8 +24,8 @@ import { loadAdmin } from './admin.js?v=b781';
    확실한 것만 고르는 `certainPicks` 는 홈에 카드로 붙였다가 뺐습니다(b291) —
    '가보고 싶은 곳' 보관함에 이미 있는 걸 홈에 한 번 더 보여줄 뿐이었습니다.
    계산 자체는 멀쩡하니 남겨둡니다. 쓸 자리가 생기면 여기서 가져다 쓰면 됩니다. */
-import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b781';
-import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b781';
+import { recommend, tasteOf, scoreCity, certainPicks } from './rec.js?v=b782';
+import { arm, disarm, syncSheets, setSheetCloser, onSwipeX } from './ui.js?v=b782';
 /* 지금 열려 있는 여행. 이름은 **살아 있는 연결**이라 읽는 쪽은 예전 그대로입니다.
    값을 넣는 것은 set* 를 지나가야 합니다 — 여기서 `trip = x` 라고 쓰면
    브라우저가 문법 오류를 내고 앱이 아예 안 뜹니다. 그게 이 분리의 핵심입니다. */
@@ -34,92 +34,92 @@ import { trip, plans, legs, members, expenses, bookings, transitLines,
          setTrip, clearTrip, setTripCloser,
          setPlans, setLegs, setMembers, setExpenses, setBookings, setTransitLines,
          setPickedDay, setTab, setCatFilter, setSettleOn, setTodayOn,
-         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b781';
+         setEditPlanId, setPlanSeedGeo, nameOf } from './trip.js?v=b782';
 /* 도시 평가. 네 화면이 같이 쓰는 자료라 한 곳이 어긋나면 넷이 같이 어긋납니다. */
 import { myRates, cityStat, visited, justRated, avgTail,   /* rateFilter 는 b671 에 뺌 */
          setRateData, setVisited, applyRate, putCityStat,
-         clearJustRated, clearRates } from './rate.js?v=b781';
+         clearJustRated, clearRates } from './rate.js?v=b782';
 /* 도시 사전과 찾기. 한 번 받으면 안 바뀝니다 — 여행이 바뀌어도 사람이 바뀌어도. */
 import { cities, countryName, countryInfo, continentOf,
-         useCities, search } from './cities.js?v=b781';   /* addCity 는 b670 에 뺌 */
+         useCities, search } from './cities.js?v=b782';   /* addCity 는 b670 에 뺌 */
 /* 여행 비서가 방금 내놓은 카드. 화면의 번호가 여기를 찾아가므로 통째로 갈아끼웁니다. */
 import { suggested, aiTripId,
-         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b781';
+         setSuggested, clearSuggested, setAiTripId } from './ai.js?v=b782';
 /* 성향 카드 화면. app.js 에서 떼어낸 첫 조각입니다(b321) — persona.js 머리말 참고. */
 import { openPersona, closePersona, setPersonaCtx,
-         personaBackTo } from './persona.js?v=b781';
-import { setShiftCtx, clearPcode } from './pshift.js?v=b781';
+         personaBackTo } from './persona.js?v=b782';
+import { setShiftCtx, clearPcode } from './pshift.js?v=b782';
 /* 세계지도·다녀온 국가. app.js 에서 떼어낸 두 번째 조각입니다(b322) —
    map.js 머리말 참고. UN_COUNTRIES 도 거기서 내보냅니다(두 곳에 적으면
    언젠가 한쪽만 고칩니다). */
 import { openMap, closeMap, openCountries, closeCountries,
-         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b781';
+         shutBigMap, UN_COUNTRIES, setMapCtx } from './map.js?v=b782';
 /* 보관함·배지. app.js 에서 떼어낸 세 번째 조각입니다(b323) — shelf.js 머리말 참고. */
-import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b781';
+import { openShelf, closeShelf, setShelfCtx } from './shelf.js?v=b782';
 /* 일기장(b538) — 도시마다 남긴 일기를 한 장씩 넘겨 봅니다. */
-import { openDiary, closeDiary, setDiaryCtx, diaryBackTo } from './diary.js?v=b781';
+import { openDiary, closeDiary, setDiaryCtx, diaryBackTo } from './diary.js?v=b782';
 /* 도시 한 곳 화면. app.js 에서 떼어낸 네 번째 조각입니다(b324) — city.js 머리말 참고.
    map.js·shelf.js 도 openCity 를 쓰는데, 이제 ctx 로 넘기지 않고 그쪽이 직접
    import 합니다. 떼어낼수록 얽힘이 줄어드는 자리였습니다. */
 import { openCity, closeCity, setCityCtx,
-         isCityOpen, clearCityOpen } from './city.js?v=b781';
+         isCityOpen, clearCityOpen } from './city.js?v=b782';
 /* AI 대화 화면의 부품(점 세 개·사진 첨부·출처). 다섯 번째 조각입니다(b326) —
    aiui.js 머리말 참고. AI 덩어리 전체는 여행 상태와 얽혀 있어 못 뗐고,
    얽힘이 적은 앞부분만 가져왔습니다. */
 import { showTyping, hideTyping, growMsg, fitJpeg, drawShot, drawSources,
-         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b781';
+         aiShots, SHOT_MAX, SRC_KO, setAiUiCtx } from './aiui.js?v=b782';
 /* 여행 리포트. app.js 에서 떼어낸 여섯 번째 조각입니다(b333) — report.js 머리말 참고.
    이 화면은 끝에서 다른 화면으로 이어져서 ctx 가 깁니다(함수 다섯). */
-import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b781';
+import { drawReport, renderAiCard, setReportCtx } from './report.js?v=b782';
 /* AI 제안 카드. app.js 에서 떼어낸 일곱 번째 조각입니다(b334) — cards.js 머리말 참고.
    LVCOLOR(검토 등급 색)도 거기서 내보냅니다 — 두 곳에 적으면 한쪽만 고칩니다. */
 import { drawCards, openPlanForm, runReview,
-         LVCOLOR, setCardsCtx } from './cards.js?v=b781';
-import { loadExpenses, setExpenseCtx } from './expense.js?v=b781';
-import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b781';
-import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b781';
-import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b781';
-import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b781';
-import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b781';
-import { loadReview, setReviewCtx } from './review.js?v=b781';
+         LVCOLOR, setCardsCtx } from './cards.js?v=b782';
+import { loadExpenses, setExpenseCtx } from './expense.js?v=b782';
+import { loadBookings, loadPacking, loadLinks, closeDocs } from './prep.js?v=b782';
+import { loadMembers, handleJoin, ROLE_KO, setMemberCtx } from './member.js?v=b782';
+import { drawPlanMap, mapLinks, memoMapUrl, splitParts, ensureLeaflet } from './planmap.js?v=b782';
+import { loadCities, drawHits, drawPop, pick, picked, resetPick } from './citysearch.js?v=b782';
+import { applyTs, setMyAvatar, setProfileCtx } from './profile.js?v=b782';
+import { loadReview, setReviewCtx } from './review.js?v=b782';
 import { loadRateData, loadRatings, drawRatings, saveRate, refreshVisited,
-         tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b781';
-import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b781';
-import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b781';
+         tripSub, resetRateHtml, setRatingCtx } from './rating.js?v=b782';
+import { loadNotifPrefs, loadNotifs, setNotifyCtx } from './notify.js?v=b782';
+import { openNew, movePrefs, setNewTripCtx } from './newtrip.js?v=b782';
 /* 로그인 전 맛보기 평가(b406). 로그인 화면 안에서만 돕니다 — 앱 전체를
    익명에 열지 않습니다. 자세한 것은 try.js 머리말. */
-import { drawTry, claimTryRates } from './try.js?v=b781';
+import { drawTry, claimTryRates } from './try.js?v=b782';
 /* 체크 카드로 들어온 사람(b488). 링크 ?check=eu 가 여기로 떨어집니다. */
 /* 궁합 링크(?mate=CODE)를 주소에서 받아 담아둡니다 — mate.js 머리말 참고. */
-import { catchMate } from './mate.js?v=b781';
+import { catchMate } from './mate.js?v=b782';
 /* 연속 평가 — 넘기며 매기기(b409). 기록 탭에서 들어갑니다. spree.js 머리말 참고. */
-import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b781';
+import { openSpree, closeSpree, setSpreeCtx, spreeBackTo } from './spree.js?v=b782';
 /* 분석 탭(b439) — 성향·지도로 가는 입구. 화면은 anal.js 가 그립니다. */
-import { loadAnal, setAnalCtx } from './anal.js?v=b781';
+import { loadAnal, setAnalCtx } from './anal.js?v=b782';
 import { loadHome, loadFootprint, heroTint, tripPhoto, closeReview,
-         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b781';
-import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b781';
-import './selfcheck.js?v=b781';
-import { guessCat, setBringCtx } from './bring.js?v=b781';
-import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b781';
-import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b781';
-import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b781';
-import { setAccountCtx } from './account.js?v=b781';
-import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b781';
-import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b781';
-import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b781';
-import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b781';
-import { resetGeo, setGeocodeCtx } from './geocode.js?v=b781';
-import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b781';
-import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b781';
-import { drawToday } from './today.js?v=b781';
-import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b781';
-import { flags, featOn, loadFlags } from './flags.js?v=b781';
-import { setSwRegCtx } from './swreg.js?v=b781';
+         openTripReport, resetHomeSig, setHomeCtx } from './home.js?v=b782';
+import { hhmm, osmLookup, setCandsCtx } from './cands.js?v=b782';
+import './selfcheck.js?v=b782';
+import { guessCat, setBringCtx } from './bring.js?v=b782';
+import { loadTrash, TAB_TRASH, setTrashCtx } from './trash.js?v=b782';
+import { review, mins, STAY_MIN, loadAi, setPlanCheckCtx } from './plancheck.js?v=b782';
+import { openAi, closeAi, loadChats, aiToBottom, setAiScreenCtx } from './aiscreen.js?v=b782';
+import { setAccountCtx } from './account.js?v=b782';
+import { openDraft, closeDraft, setDraftCtx } from './draft.js?v=b782';
+import { loadTrips, tripFilter, setTripFilter, setTripListCtx } from './triplist.js?v=b782';
+import { inTrip, showTab, setTabsCtx } from './tabs.js?v=b782';
+import { drawPlans, openPlans, setPlanViewCtx } from './planview.js?v=b782';
+import { resetGeo, setGeocodeCtx } from './geocode.js?v=b782';
+import { loadLegs, legIn, legFor, fillCityList, setLegsCtx } from './legs.js?v=b782';
+import { drawDays, loadPlans, backToList, setTripViewCtx } from './tripview.js?v=b782';
+import { drawToday } from './today.js?v=b782';
+import { openTrip, fetchTrip, drawTripHeader, unwatch, setOpenTripCtx } from './opentrip.js?v=b782';
+import { flags, featOn, loadFlags } from './flags.js?v=b782';
+import { setSwRegCtx } from './swreg.js?v=b782';
 import { drawCats, parseMemo, nice, lineChips, dayStat,
-         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b781';
+         catsOpen, setCatsOpen, setPlanLineCtx } from './planline.js?v=b782';
 import { distKm, travel, hop, settleMath, dateRange, dayLabel, localTime, money,
-         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b781';
+         legAt, legNear, legFirst, travelMinutes, NO_CENTS, D1, asDate, hm, ymd, todayYmd } from './calc.js?v=b782';
 
 /* persona.js 는 app.js 를 import 하지 않습니다 — 그러면 app → persona → app
    으로 고리가 생깁니다. app.js 만 아는 셋을 여기서 넣어줍니다.
@@ -602,6 +602,34 @@ const 지금칸 = () => Math.round(덱.scrollLeft / 칸폭());
    순간이 있고, 그때 판정이 끼어들어 `showApp("home")` 을 부른 것입니다.
    목적지는 이미 정해져 있으니 도착할 때까지 아무 말도 듣지 않습니다. */
 let 덱잠금 = false, 덱잠금타이머 = 0;
+/* ── 하단바로 옮길 때 «밀려 들어오기»(b782) ─────────────────────────────
+ * ⚠⚠ **b781 에 생긴 삐걱임의 정체.** 덱을 손가락으로 못 밀게
+ *   (`overflow-x:hidden`) 하자 iOS 가 이 칸의 부드러운 스크롤을 **앱 본체
+ *   (메인 스레드)에서** 굴리게 됐습니다. 하단바를 누르면 본체는 새 탭을
+ *   그리느라 바쁘고, 그동안 스크롤은 출발을 못 합니다 → 150ms 되박기가
+ *   목표로 순간이동 → 늦게 출발한 스크롤이 **처음 자리부터** 다시 굴러감.
+ *   사용자가 본 그대로입니다: 「넘어가야 할 탭이 잠깐 나왔다가 기존 탭으로
+ *   돌아갔다가 넘어간다」. 크롬에서도 열한 번 중 여섯 번이 150ms 안에
+ *   출발을 못 했습니다(크롬은 늦은 것을 버려서 뒤로는 안 갔습니다).
+ *   b780 까지는 칸이 `auto` 라 iOS 가 스크롤을 본체 밖에서 굴려서 몰랐습니다.
+ * ⚠ 이제 자리는 즉시 넣고, 보이는 움직임만 판 둘의 **CSS transform 전환**
+ *   으로 합니다. iOS 는 이 전환을 본체와 따로(Core Animation) 돌리므로 새
+ *   탭을 그리는 중에도 안 멈추고, 자리를 쓰는 주인이 하나라 되돌아갈 일이
+ *   없습니다.
+ * ⚠ 끝은 **transitionend** 로 압니다. 고정 시간으로 걷었더니 출발이 늦은 날
+ *   (홈을 그리는 동안) 중간에 걷혀 뚝 떨어졌습니다 — 크롬에서 재서 걸렸습니다.
+ *   안 오는 환경(숨은 창·전환 취소)을 위해 1.2초 뒤에도 한 번 걷습니다.
+ * ⚠ 판에 transform 이 걸린 동안은 그 안의 `position:fixed` 가 판을 기준으로
+ *   섭니다(홈의 떠 있는 칩). 판이 화면과 같은 크기라 멈춰 있을 때는 자리가
+ *   같고, 들어오는 동안 판과 같이 움직입니다. 0.34초만입니다. */
+let 미끄럼 = null;
+function 미끄럼걷기(){
+  if (!미끄럼) return;
+  const { 판들, 끝 } = 미끄럼;
+  미끄럼 = null;
+  clearTimeout(끝);
+  판들.forEach(p => { p.style.transition = ''; p.style.transform = ''; });
+}
 function 덱으로(t, 부드럽게, 다시){
   const i = 탭순서().indexOf(t);
   if (i < 0) return;
@@ -623,48 +651,74 @@ function 덱으로(t, 부드럽게, 다시){
   /* ⚠ **`scrollTo({behavior:"smooth"})` 를 안 씁니다.** 스크롤 칸에서는 그것이
      아예 안 도는 환경이 있습니다 — b471 에서 `toTop` 을 그 이유로 고쳤는데
      여기서 또 썼고, 재보니 덱이 0 에서 꿈쩍도 안 했습니다.
-     부드러움은 CSS 에 맡기고 **값은 직접 넣습니다.** 그러면 애니메이션이
-     돌든 안 돌든 끝 자리는 반드시 그 칸입니다. */
-  /* CSS 기본이 smooth 라(app.css) 여기서는 **즉시 옮길 때만** 꺼 둡니다.
-     대입 뒤에 되돌리면 애니메이션이 시작하자마자 끊깁니다. */
+     **값은 직접 넣습니다** — 끝 자리는 반드시 그 칸입니다. 부드러움은
+     b782 부터 CSS 스크롤이 아니라 판의 transform 이 맡습니다(위 머리말). */
   덱잠금 = true;
   clearTimeout(덱잠금타이머);
-  const 목표 = i * 칸폭(), 시작 = 덱.scrollLeft;
-  if (!부드럽게) 덱.style.scrollBehavior = "auto";
-  덱.scrollLeft = 목표;
-  if (!부드럽게) 덱.style.scrollBehavior = "";
-  /* ⚠⚠ **CSS `scroll-behavior:smooth` 도 대입을 삼킵니다(b492).** ⚠⚠
-   *   위 주석은 `scrollTo({behavior:"smooth"})` 만 조심하면 되는 줄 알고
-   *   썼는데, 크롬에서 재보니 **CSS 로 smooth 여도 `scrollLeft = 값` 이
-   *   아무 일도 안 했습니다** — 덱이 0 에서 꿈쩍하지 않아 하단바만 바뀌고
-   *   화면은 그대로였습니다. 스냅과는 무관합니다(none·proximity·mandatory
-   *   셋 다 같음). `behavior:auto` 로 두면 즉시 옮겨집니다.
-   *   그래서 **넣어 보고, 안 갔으면 즉시로 다시 넣습니다.**
-   * ⚠ 「안 갔다」의 판정은 **시작 자리에서 한 톨도 안 움직였을 때**입니다.
-   *   부드럽게 도는 중이면 이미 조금이라도 가 있습니다 — 그때 강제로
-   *   끝 값을 넣으면 애니메이션을 끊게 되므로 건드리지 않습니다. */
-  if (부드럽게 && 목표 !== 시작) setTimeout(() => {
-    if (덱.scrollLeft !== 시작) return;          /* 돌고 있습니다 — 둡니다 */
-    덱.style.scrollBehavior = "auto";
-    덱.scrollLeft = 목표;
-    덱.style.scrollBehavior = "";
-  }, 150);
-  /* 끝 칸에서 끝 칸까지(네 칸)도 넉넉히 덮는 시간입니다. 손가락으로 미는
-     것은 이 사이에 안 일어납니다 — 방금 하단바를 눌렀으니까요. */
-  /* ⚠⚠ **끝나고 나서 «정말 그 칸에 섰나»를 한 번 더 봅니다(b729).** ⚠⚠
-     위 150ms 되박기는 「한 톨도 안 움직였을 때」만 듭니다 — 움직이긴 했는데
-     **엉뚱한 데 멎은 경우**(스냅이 도로 당기거나, 도중에 폭이 바뀌거나)는
-     아무도 안 봅니다. 그러면 하단바는 평가인데 화면은 분석입니다.
-     잠금을 푸는 그 자리에서 한 번 확인하고, 어긋났으면 즉시 앉힙니다. */
-  덱잠금타이머 = setTimeout(() => {
-    덱잠금 = false;
-    if (!덱.classList.contains('hide') && 덱.clientWidth && 지금칸() !== i){
-      덱.style.scrollBehavior = 'auto';
-      덱.scrollLeft = i * 칸폭();
-      덱.style.scrollBehavior = '';
-    }
-  }, 부드럽게 ? 520 : 0);
+  미끄럼걷기();
+  const 폭 = 칸폭(), 전 = 지금칸();
+  /* ⚠⚠ **자리는 «즉시» 옮깁니다(b782).** app.css 의 #tabdeck 이 이제
+     `scroll-behavior:auto` 라 대입이 곧 도착입니다. 눈에 보이는 미끄러짐은
+     아래에서 판 둘의 transform 으로 따로 합니다.
+     ⚠ b492 의 「smooth 가 대입을 삼킨다 → 150ms 뒤 되박기」는 걷었습니다.
+       smooth 를 안 쓰니 삼킬 것이 없고, 그 되박기가 바로 b781 의 삐걱임을
+       만든 짝이었습니다(위 `미끄럼` 머리말). */
+  덱.scrollLeft = i * 폭;
+  /* ⚠⚠ **잠금을 풀면서 «정말 그 칸에 섰나»를 한 번 더 봅니다(b729).** ⚠⚠
+     엉뚱한 데 멎으면(도중에 폭이 바뀌거나) 하단바는 평가인데 화면은
+     분석입니다. 반올림한 칸 번호가 아니라 **픽셀로** 봅니다 — 폭이 바뀐
+     뒤에는 번호는 맞아도 두 탭이 조금씩 걸칠 수 있습니다. */
+  const 풀기 = 늦게 => {
+    clearTimeout(덱잠금타이머);
+    덱잠금타이머 = setTimeout(() => {
+      덱잠금 = false;
+      if (!덱.classList.contains('hide') && 덱.clientWidth
+          && Math.abs(덱.scrollLeft - i * 칸폭()) > 1)
+        덱.scrollLeft = i * 칸폭();
+    }, 늦게);
+  };
+  const 옛 = 덱.children[전], 새 = 덱.children[i];
+  if (!부드럽게 || 전 === i || !옛 || !새
+      || matchMedia('(prefers-reduced-motion: reduce)').matches) return 풀기(0);
+  /* 옛 판은 이제 (전-i)칸 떨어진 자리에 있습니다. 화면으로 당겨 놓고 거기서
+     밀어냅니다. 새 판은 한 칸 옆에서 들어옵니다 — 멀리 떨어진 탭이어도
+     중간 탭들을 스치지 않습니다. 둘은 붙어서 가므로 겹칠 일이 없습니다. */
+  const 방향 = i > 전 ? 1 : -1, 옛자리 = (i - 전) * 폭;
+  옛.style.transition = 새.style.transition = 'none';
+  옛.style.transform = `translateX(${옛자리}px)`;
+  새.style.transform = `translateX(${방향 * 폭}px)`;
+  /* 출발 자리를 스타일로 한 번 확정시켜야 전환이 거기서 출발합니다. */
+  void getComputedStyle(옛).transform; void getComputedStyle(새).transform;
+  옛.style.transition = 새.style.transition = 'transform .34s cubic-bezier(.22,.61,.36,1)';
+  옛.style.transform = `translateX(${옛자리 - 방향 * 폭}px)`;
+  새.style.transform = 'translateX(0)';
+  const 이번 = { 판들: [옛, 새], 끝: 0 };
+  /* transitionend 는 **거품처럼 올라옵니다** — 판 안의 단추 전환이 끝나도
+     옵니다. 판 자신의 transform 인지 보고 받습니다. */
+  const 마침 = e => {
+    if (e && (e.target !== 새 || e.propertyName !== 'transform')) return;
+    새.removeEventListener('transitionend', 마침);
+    새.removeEventListener('transitioncancel', 마침);
+    if (미끄럼 !== 이번) return;              /* 그사이 다른 탭을 눌렀습니다 */
+    미끄럼걷기();
+    풀기(60);
+  };
+  새.addEventListener('transitionend', 마침);
+  새.addEventListener('transitioncancel', 마침);
+  이번.끝 = setTimeout(마침, 1200);
+  미끄럼 = 이번;
 }
+/* ── 폭이 바뀌면 지금 칸에 다시 앉힙니다(b782) ─────────────────────────
+ * 스냅을 걷었으므로(app.css 의 #tabdeck) 창 폭이 바뀌어도 브라우저가 칸을
+ * 맞춰 주지 않습니다 — 화면을 돌리면 두 탭이 반씩 걸칩니다.
+ * 미끄러지는 중이면 그쪽이 끝에서(`풀기`) 맞춥니다. */
+function 덱칸맞추기(){
+  if (미끄럼 || 덱.classList.contains('hide') || !덱.clientWidth) return;
+  const i = 탭순서().indexOf(appTab);
+  if (i >= 0 && Math.abs(덱.scrollLeft - i * 칸폭()) > 1) 덱.scrollLeft = i * 칸폭();
+}
+addEventListener('resize', 덱칸맞추기);
+addEventListener('orientationchange', () => setTimeout(덱칸맞추기, 120));
 /* 탭 하나를 여는 절차. **화면을 고르는 일은 덱이 맡습니다** — 여기서는
    덮고 있던 것들을 걷고, 내용을 채우고, 덱을 그 칸으로 보냅니다. */
 function showApp(t, 표시탭, 이미덱에){
@@ -793,12 +847,10 @@ function 닿았다(el){
   };
   덱.addEventListener('scroll', 나중에, { passive:true });
   덱.addEventListener('scrollend', 나중에, { passive:true });
-  /* ⚠ **손가락이 닿으면 잠금을 바로 풉니다.** 하단바를 눌러 미끄러지는 도중에
-     사용자가 밀 수 있습니다. 그때까지 잠겨 있으면 민 것이 무시됩니다 —
-     기계가 사람을 기다리게 하면 안 됩니다. */
-  덱.addEventListener("pointerdown", () => {
-    덱잠금 = false; clearTimeout(덱잠금타이머);
-  }, { passive:true });
+  /* ⚠ 「손가락이 닿으면 잠금을 바로 푼다」(pointerdown)가 여기 있었습니다 —
+     미끄러지는 도중에 사용자가 밀 수 있어서였습니다. b781 부터 덱은 손가락으로
+     안 밀리므로 b782 에 걷었습니다. 남겨 두면 미끄러지는 중에 판을 건드리기만
+     해도 잠금이 풀려, 지나가는 칸에 반응해 하단바가 깜빡입니다. */
 }
 $("appbar").addEventListener("click", e => {
   const b = e.target.closest("button[data-a]");
