@@ -27,11 +27,11 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b768';
+import { $ } from './dom.js?v=b769';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
-import { 가진땅, 가진주도, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b768';
-import { countryName } from './cities.js?v=b768';
-import { visited, myRates } from './rate.js?v=b768';
+import { 가진땅, 가진주도, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b769';
+import { countryName } from './cities.js?v=b769';
+import { visited, myRates } from './rate.js?v=b769';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -644,12 +644,25 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         if (걸침[0] > 창c[2] || 걸침[2] < 창c[0] ||
             걸침[1] > 창c[3] || 걸침[3] < 창c[1]) continue;
         const 자세 = 가진땅(나라.code);        /* 없으면 다음 프레임부터 */
+        const 주도 = 가진주도(나라.code);
 
-        /* 해안선으로 자릅니다 — 셀이 바다로 새어 나가면 지도가 아닙니다. */
+        /* ⚠⚠ **주·도가 있으면 해안선으로 «안» 자릅니다(b769, 사용자: 「색칠이
+         *   왤케 안깔끔하냐」).** ⚠⚠
+         *   자르개(`가진땅`)는 **50m** 이고 주·도는 **10m** 입니다. 서로
+         *   촘촘함이 달라서, 10m 로 그린 해안이 50m 자르개에 물려 **가장자리가
+         *   들쭉날쭉**해졌습니다 — 섬이 잘려 나가고 곶이 뭉툭해졌습니다
+         *   (실기 사진: 서해안 섬들과 완도·목포 언저리).
+         * ⚠ **주·도의 합집합이 곧 그 나라 해안선입니다.** 그것도 10m 라
+         *   50m 자르개보다 촘촘합니다. 자를 이유가 없습니다.
+         * ⚠ 보로노이일 때는 **반드시 잘라야 합니다** — 셀은 나라를 덮을 만큼
+         *   크게 만들어 두는 것이라 안 자르면 바다로 샙니다. */
+        const 자를까 = !(주도 && 주도.length);
+
         ctx.save();
         ctx.beginPath();
         let 길있나 = false;
-        if (자세) for (const q of 자세){
+        if (!자를까) 길있나 = true;
+        else if (자세) for (const q of 자세){
           if (q.x1 < 창c[0] || q.x0 > 창c[2] || q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
           let 시작 = true;
           for (const [mx, my] of q.점){
@@ -663,7 +676,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
           if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)) 길있나 = true;
         }
         if (!길있나){ ctx.restore(); continue; }
-        ctx.clip();
+        if (자를까) ctx.clip();
 
         /* ══ 칸을 칠합니다 ═══════════════════════════════════════════════
          * ⚠⚠ **주·도(admin-1)가 있으면 그것을, 없으면 보로노이를 씁니다
@@ -682,7 +695,6 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          *   칠해집니다 — 보로노이는 「도시 주변 땅」이라 좁았습니다.
          *   사용자가 시안을 보고 고른 것입니다(글로브마크가 그 방식입니다).
          * ⚠ 테두리는 그대로 바다색입니다 — 칸을 가르는 일은 테두리가 합니다. */
-        const 주도 = 가진주도(나라.code);
         const 칠할것 = 주도 && 주도.length
           ? 주도.map(u => ({ 고리: u.고리, 갔나: u.도시.some(
               id => visited?.has?.(id) || myRates?.[id]?.stars != null) }))
@@ -728,8 +740,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
                눌러서 매길 마음이 납니다. */
           ctx.globalAlpha = 섞 * (칸.갔나 ? 0.62 : 0.03);
           ctx.fillStyle = 내것; ctx.fill('evenodd');
-          ctx.globalAlpha = 섞 * 0.5;
-          ctx.strokeStyle = 바다; ctx.lineWidth = 0.7; ctx.stroke();
+          /* ⚠ **테두리를 가늘게 했습니다(b769).** 0.7 · 알파 0.5 였습니다.
+             맞닿은 두 주가 **각자 제 테두리를 그리므로** 맞닿은 선은 두 겹이
+             됩니다 — 굵으면 흰 띠처럼 보여서 「조각을 이어 붙인 것」으로
+             읽힙니다(실기 사진). 절반으로 줄이면 두 겹이 겹쳐도 원래
+             굵기쯤이 됩니다.
+             ⚠ 없애지는 않습니다 — 칸을 가르는 일은 이 선이 합니다. */
+          ctx.globalAlpha = 섞 * 0.32;
+          ctx.strokeStyle = 바다; ctx.lineWidth = 0.4; ctx.stroke();
           ctx.globalAlpha = 1;
         }
         ctx.restore();
