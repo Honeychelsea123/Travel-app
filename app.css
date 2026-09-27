@@ -3269,6 +3269,11 @@ body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
    이제 탭과 여행이 다른 값이라 그쪽도 갈라 뒀습니다(`덱높이맞추기`). */
 body:not(.intrip) .topbar{ display:none; }
 
+/* ⚠ 덱이 위쪽 안전영역 밖으로 올라가므로(b764), 그 위에 있던 띠 둘이
+   지도에 덮입니다. 자리를 잡아 주고 위로 올립니다 — 공지나 「오프라인」은
+   지도에 가려지면 안 됩니다. 평소에는 `display:none` 이라 놀고 있습니다. */
+#offbar, #noticebar{ position:relative; z-index:2; }
+
 /* ══ 상태바 뒤를 덮는 띠(b760, 사용자 신고: 「상단에 블러먹는데」) ═══════
  * ⚠⚠ **상단바를 감췄더니 시계 뒤가 뿌옇게 번졌습니다.** ⚠⚠
  *   이 앱은 `apple-mobile-web-app-status-bar-style: black-translucent` 라
@@ -3519,7 +3524,10 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* ⚠ `--edge` 만큼 내려 앉습니다(b763) — iOS 가 흐리는 띠 밖입니다.
    왜 이 둘만 내리는지는 :root 의 `--edge` 주석에 있습니다. */
 .gmark{
-  position:absolute; left:var(--s-md); top:calc(var(--edge) + 10px); z-index:0;
+  position:absolute; left:var(--s-md); z-index:0;
+  /* ⚠ `--sat`(시계) + `--edge`(iOS 가 흐리는 띠) 둘 다 피합니다(b764).
+     지도는 그 밑까지 올라가지만 또렷한 글자는 못 올라갑니다. */
+  top:calc(var(--sat) + var(--edge) + 10px);
   display:flex; align-items:center; gap:7px; margin:0;
   pointer-events:none; user-select:none;
   font-size:calc(19px * var(--ts)); font-weight:800; line-height:1;
@@ -3534,6 +3542,9 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      (판은 514 인데 지구본 칸이 480 이었습니다). */
 #tabdeck > #homeview{
   padding-left:0; padding-right:0;
+  /* ⚠ 위도 0 입니다(b764) — 지구본이 시계 뒤까지 올라갑니다. 바로 위
+     `#tabdeck > .tabpane` 의 `padding-top` 을 여기서 눕힙니다. */
+  padding-top:0;
   /* ⚠ 아래 여백도 뺍니다. 지구본은 **하단바 뒤로 지나가야** 합니다 —
      탭바가 불투명한 종이 띠라 가려지긴 하지만, 줌인했을 때 화면 맨
      아래까지 그림이 차 있어야 「꽉 찬다」로 읽힙니다. */
@@ -3555,7 +3566,7 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 /* 얹힌 단추는 화면 끝에 붙으면 안 됩니다 — 몸통 여백만큼 안으로.
    ⚠ b759 에 3D/2D 가 없어져서 이 화면에 얹히는 것은 「자세히」 하나입니다. */
 #homeview .gmore{ right:calc(var(--s-md) + 2px);
-                  top:calc(var(--edge) + var(--s-xs)); }
+                  top:calc(var(--sat) + var(--edge) + var(--s-xs)); }
 
 /* ── 숫자는 지도 «위에» 뜹니다 ──────────────────────────────────────────
  * ⚠ 옷은 **칩(`.gchips`)과 같은 것**입니다 — 종이색 · 1px 실선 · 옅은
@@ -4486,12 +4497,22 @@ body.kbup .tabpane{ padding-bottom:0; }
   scroll-snap-type:x mandatory;
   overscroll-behavior-x:contain;
   scrollbar-width:none; -ms-overflow-style:none;
-  /* ⚠⚠ **몸통 좌우 여백 밖으로 나갑니다(b758).** 기록 탭이 화면 끝까지
-     써야 해서입니다 — 왜 «판»이 아니라 «덱»에서 빼는지는 위 `#homeview`
-     블록의 ⚠⚠ 에 적어 뒀습니다. 여기는 그냥 블록이라 폭만 넓어집니다.
-     뺀 만큼은 바로 아래 칸의 안쪽 여백으로 도로 줍니다. */
+  /* ⚠⚠ **몸통 여백 밖으로 나갑니다 — 좌우(b758)와 «위»(b764).** ⚠⚠
+     기록 탭이 화면 끝까지 써야 해서입니다. 왜 «판»이 아니라 «덱»에서
+     빼는지는 위 `#homeview` 블록의 ⚠⚠ 에 적어 뒀습니다 — 판은
+     `flex:0 0 100%` 짜리 덱의 «칸»이라 거기에 음수 여백을 주면 칸 폭과
+     스냅 자리가 어긋납니다. 덱은 그냥 블록이라 안전합니다.
+     뺀 만큼은 바로 아래 칸의 안쪽 여백으로 도로 줍니다.
+   ⚠⚠ **위쪽(`--sat`)은 b764 에 뺐습니다**(사용자 요청: 「글로브마크처럼
+     시계까지도 다 채우자」). 지구본이 **시계 뒤까지** 올라갑니다.
+     iOS 가 그 띠를 흐리지만 **지도는 흐려져도 지도처럼 보입니다** —
+     또렷한 로고와 「자세히」만 `--sat + --edge` 만큼 내려 앉습니다.
+   ⚠ 위에 있는 띠 둘(`#offbar`·`#noticebar`)은 덱이 올라오면 덮입니다.
+     그래서 그 둘에 `z-index` 를 줘서 위로 올립니다(아래). 평소에는
+     `display:none` 이라 아무 일도 안 납니다. */
   margin-left:calc(-1 * var(--s-md));
   margin-right:calc(-1 * var(--s-md));
+  margin-top:calc(-1 * var(--sat));
 }
 #tabdeck::-webkit-scrollbar{ display:none; }
 /* ⚠ 덱 안에서는 **낱개로 숨기지 않습니다.** 한 칸이 사라지면 그 뒤 칸들의
@@ -4499,10 +4520,13 @@ body.kbup .tabpane{ padding-bottom:0; }
 #tabdeck > .tabpane{
   flex:0 0 100%; min-width:0;
   scroll-snap-align:start;
-  /* ⚠ 위에서 덱이 밖으로 나간 만큼 도로 들여씁니다(b758) — 이 한 줄 덕에
-     기록 탭을 뺀 네 탭은 픽셀 하나 안 바뀝니다. 기록 탭만 `#tabdeck >
-     #homeview` 로 이걸 다시 0 으로 눕힙니다. */
+  /* ⚠ 위에서 덱이 밖으로 나간 만큼 도로 들여씁니다(b758 좌우 · b764 위) —
+     이 두 줄 덕에 기록 탭을 뺀 네 탭은 픽셀 하나 안 바뀝니다. 기록 탭만
+     `#tabdeck > #homeview` 로 이걸 다시 0 으로 눕힙니다.
+   ⚠ 위쪽은 `.tabpane` 이 이미 주던 `var(--s-md)` 에 `--sat` 를 «더한» 것
+     입니다 — 덱이 그만큼 올라갔으므로 더해야 제자리입니다. */
   padding-left:var(--s-md); padding-right:var(--s-md);
+  padding-top:calc(var(--sat) + var(--s-md));
   /* 세로로 굴리다 끝에 닿아도 옆 칸으로 새지 않게 */
   overscroll-behavior:contain;
 }
