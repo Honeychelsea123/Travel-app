@@ -3546,6 +3546,18 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
 .gmark .mark{ width:26px; height:26px; flex:none; }
 /* ⚠ 기록 탭에만 답니다 — 다른 판에는 이런 요소가 없습니다. */
 
+/* ── 탭 제목(b771) ────────────────────────────────────────────────────
+ * ⚠ **분석 탭 하나뿐입니다.** 왜 거기만인지는 index.html 의 그 자리에.
+ * ⚠ 자리는 기록 탭의 로고(`.gmark`)와 **같은 높이**입니다 — 탭을 넘길 때
+ *   위쪽 글자가 같은 줄에서 이어져야 화면이 안 들썩입니다.
+ *   그래서 판의 위 여백도 `--sat + --edge` 로 맞춥니다(아래).
+ * ⚠ `--edge` 는 iOS 가 흐리는 띠입니다 — 그 밑이라야 글자가 안 뭉갭니다. */
+.pagetitle{
+  margin:0 0 var(--s-sm); font-size:var(--f-2xl); font-weight:700;
+  letter-spacing:calc(-0.4px * var(--ts)); color:var(--ink);
+}
+#tabdeck > #analview{ padding-top:calc(var(--sat) + var(--edge) + 6px); }
+
 /* 기록 탭만 그 여백을 도로 뺍니다 — 여기가 「꽉 차는」 자리입니다.
    ⚠⚠ **`#tabdeck > #homeview` 로 적습니다.** `#homeview` 하나로는 바로 위
      `#tabdeck > .tabpane`(아이디+클래스)에 **집니다** — 실측으로 걸렸습니다
