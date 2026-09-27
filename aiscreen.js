@@ -15,14 +15,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     ai.js · aiui.js · cards.js · plancheck.js 를 씁니다. */
-import { $, esc, toast, md } from './dom.js?v=b776';
-import { sb } from './db.js?v=b776';
-import { fail, netTimeout, netIsDown } from './net.js?v=b776';
-import { trip, plans } from './trip.js?v=b776';
-import { arm, disarm, syncSheets } from './ui.js?v=b776';
-import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b776';
-import { loadAi } from './plancheck.js?v=b776';
-import { clearLastTake } from './cards.js?v=b776';
+import { $, esc, toast, md } from './dom.js?v=b777';
+import { sb } from './db.js?v=b777';
+import { fail, netTimeout, netIsDown } from './net.js?v=b777';
+import { trip, plans } from './trip.js?v=b777';
+import { arm, disarm, syncSheets } from './ui.js?v=b777';
+import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b777';
+import { loadAi } from './plancheck.js?v=b777';
+import { clearLastTake } from './cards.js?v=b777';
 
 let ctx = { me: () => null };
 export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
@@ -136,6 +136,9 @@ export function closeAi(fromPop){
   syncSheets();
 }
 $('aibtn').addEventListener('click', openAi);
+/* 여행 안 위 줄의 ✦ AI(b777). 같은 창을 엽니다 — 여행이 열려 있으므로
+   openAi 가 그 여행을 골라 둡니다. */
+$('tripaibtn').addEventListener('click', openAi);
 $('ai_close').addEventListener('click', () => closeAi());
 
 /* 대화 지우기. 여행 없이 나눈 것은 trip_id 가 비어 있어 is 로 지웁니다. */

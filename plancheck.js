@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b776';
-import { sb } from './db.js?v=b776';
-import { fail } from './net.js?v=b776';
-import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd } from './calc.js?v=b776';
-import { trip } from './trip.js?v=b776';
-import { aiTripId } from './ai.js?v=b776';
-import { runReview } from './cards.js?v=b776';
+import { $, esc, josa } from './dom.js?v=b777';
+import { sb } from './db.js?v=b777';
+import { fail } from './net.js?v=b777';
+import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd } from './calc.js?v=b777';
+import { trip } from './trip.js?v=b777';
+import { aiTripId } from './ai.js?v=b777';
+import { runReview } from './cards.js?v=b777';
 
 let ctx = { loadChats: async () => {} };
 
@@ -145,11 +145,17 @@ export async function loadAi(){
      기준을 따로 적으면 두 화면이 언젠가 갈립니다.
    ⚠ 지난 여행을 두고 물어볼 일이 생기면 **그 여행 화면에서** 여는 길이
      따로 있습니다(bring.js · cands.js 가 `ai_trip.value` 를 직접 넣습니다).
-     그때는 목록에 없는 id 라 아래 `some(...)` 이 걸러 버리므로, 그 자리에
-     한 칸을 만들어 넣어야 합니다 — 지금은 그런 길이 없어 안 만듭니다. */
+   ⚠⚠ **b777 에 그 길이 하나 더 생겼습니다 — 여행 안 위 줄의 「✦ AI」.**
+     지난 여행 안에서 누르면 그 id 가 위 목록에 없어 아래 `some(...)` 이
+     걸러 버리고, **그 여행 안에서 눌렀는데 「여행 선택」으로 열렸습니다.**
+     → 지금 열려 있는 여행이면 한 칸을 만들어 맨 앞에 넣습니다. 목록 자체는
+       그대로 «다가오는 여행»만입니다(평생 떠 있는 문제는 안 돌아옵니다). */
   const { data, error } = await sb.from('trips')
     .select('id,title').gte('end_date', todayYmd()).order('start_date');
   if (error) return fail(error, 'trip');
+  const 목록 = [...(data || [])];
+  if (aiTripId && trip?.id === aiTripId && !목록.some(t => t.id === aiTripId))
+    목록.unshift({ id: trip.id, title: trip.title });
 
   /* 여행을 안 고르고도 물어볼 수 있어야 합니다. 어디로 갈지 정하기 전에
      묻는 것이 오히려 더 많습니다. 그때는 여행 자료 없이 그냥 답합니다. */
@@ -159,8 +165,8 @@ export async function loadAi(){
      이름이 그대로 보이므로 무슨 이야기 중인지도 여기서 알 수 있습니다. */
   $('ai_trip').innerHTML =
     `<option value="">여행 선택</option>` +
-    (data || []).map(t => `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
-  $('ai_trip').value = (aiTripId && data.some(t => t.id === aiTripId)) ? aiTripId : '';
+    목록.map(t => `<option value="${esc(t.id)}">${esc(t.title)}</option>`).join('');
+  $('ai_trip').value = (aiTripId && 목록.some(t => t.id === aiTripId)) ? aiTripId : '';
   /* 들어올 때는 채팅부터 보입니다. 홈에서 "자세히"로 온 경우만 펼칩니다. */
   $('reviewcard').classList.toggle('hide', !openReview);
   openReview = false;
