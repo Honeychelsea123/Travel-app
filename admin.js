@@ -11,11 +11,11 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b780';
-import { sb } from './db.js?v=b780';
-import { fail, netTimeout } from './net.js?v=b780';
+import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b781';
+import { sb } from './db.js?v=b781';
+import { fail, netTimeout } from './net.js?v=b781';
 /* 기능 스위치를 바꾸면 그 자리에서 화면에 먹입니다(b491) — flags.js 머리말. */
-import { reapplyFeatures } from './flags.js?v=b780';
+import { reapplyFeatures } from './flags.js?v=b781';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -289,11 +289,10 @@ async function loadSettings(){
  * loadSettings 의 기본값 읽기(`!== false`)와 같은 값이라야 합니다 —
  * 한쪽만 고치면 "기본과 다름"이 거짓말을 합니다. */
 const 정상 = { ai_on:true, signup_on:true, push_on:true, readonly:false,
-               push:true, docs:true, reorder:true, maplink:true, swipe:true };
+               push:true, docs:true, reorder:true, maplink:true };   /* swipe 는 b781 에 걷음 */
 const 스위치이름 = { ai_on:'AI', signup_on:'가입', push_on:'알림', readonly:'점검 모드',
                      push:'잠금화면 알림', docs:'여행 서류',
-                     reorder:'끌어서 순서', maplink:'지도 링크',
-                     swipe:'탭 좌우 스와이프' };
+                     reorder:'끌어서 순서', maplink:'지도 링크' };
 
 /* ⚠ **위험한 셋만 묻습니다.** 알림 끄기까지 물으면 확인창이 흔해져서
    정작 점검 모드에서도 그냥 누르게 됩니다. 값은 '이 자리로 갈 때 묻는다'. */

@@ -16,10 +16,9 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b780';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b780';
-import { onSwipeX } from './ui.js?v=b780';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b780';
+import { $ } from './dom.js?v=b781';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b781';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b781';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -197,37 +196,11 @@ $("tstrip").addEventListener("click", e => {
    한 번 민 것이 두 칸을 넘어갑니다(앱 탭에서 b474 에 겪은 것과 같음).
    구역 알약은 그대로 둡니다 — 쓸기는 알려주지 않으면 아무도 모릅니다. */
 
-/* ── 하단바도 좌우로 쓸어 넘기기 ──────────────────────────────────────
- * 사용자 요청. 탭이 넷이라 끝에서 끝으로 갈 때 손가락이 화면을 가로지릅니다.
- * 바 위에서 쓸면 옆 탭으로 갑니다 — 손가락을 옮길 필요가 없습니다.
- *
- * **여행 안에서도 바 위에서는 앱 탭이 바뀝니다.** 바에 그려진 것이 앱 탭이니
- * 거기서 쓸면 그것이 움직이는 게 맞습니다(위 여행 구역 쓸기는 바를 건너뜁니다).
- * 순서는 index.html 의 단추에서 읽습니다 — 코드에 또 적으면 어긋납니다. */
-{
-  const order = () => [...document.querySelectorAll('#appbar button[data-a]')]
-    .map(b => b.dataset.a);
-  const step = d => {
-    const o = order(), i = o.indexOf(ctx.appTab());
-    if (i < 0) return;
-    const next = o[i + d];
-    /* 끝에서 더 밀어도 안 돌아 나옵니다 — 돌면 지금 어디인지 감이 사라집니다. */
-    if (next && next !== ctx.appTab()) ctx.showApp(next);
-  };
-  /* ⚠ **화면 전체 쓸기를 걷었습니다(b474).** 이제 탭 다섯이 가로 스크롤
-     덱이라, 손가락으로 미는 것은 **브라우저가** 받습니다. 여기서 또 받으면
-     한 번 민 것이 두 칸을 넘어갑니다.
-     여행 안에서 쓰는 하단바 쓸기는 남깁니다 — 여행 화면은 덱 밖이라
-     브라우저가 넘겨줄 것이 없습니다. */
-  /* 여행 안에서는 위가 구역 차례라 화면 전체로는 못 겁니다. 바만 따로 듣습니다. */
-  onSwipeX($('appbar'), {
-    active: () => !$('appbar').classList.contains('hide') &&
-                  !document.body.classList.contains('sheeton') &&
-                  document.body.classList.contains('intrip'),
-    onLeft:  () => step(1),
-    onRight: () => step(-1),
-  });
-}
+/* ⚠ **하단바 쓸어 넘기기를 걷었습니다(b781, 사용자 결정: 「1,2만 끄자」).**
+   여행 안에서 하단바를 좌우로 쓸면 앱 탭이 바뀌던 것입니다(탭 덱 스와이프와
+   같이 걷음 — app.css 의 #tabdeck 주석). 하단바는 누르기만 합니다.
+   ⚠ 여행 안 구역(일정·지출·준비·일행) 넘기기는 #tripdeck 의 가로 스크롤이라
+     여기와 무관하게 남습니다. */
 
 /* 여행 안이냐 밖이냐. 상단바가 이걸 보고 모양을 바꿉니다 —
    안이면 구역 넷이 나오고 앱 이름이 접힙니다. */

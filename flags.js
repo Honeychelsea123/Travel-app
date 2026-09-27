@@ -16,13 +16,13 @@
  * **작은 것을 아래로 내리면 위쪽 여럿이 가벼워집니다**(b351 의 putHtml 과 같은 꼴).
  *
  * 층: db.js · net.js · dom.js 만 씁니다. */
-import { sb } from './db.js?v=b780';
-import { netTimeout, setReadOnly } from './net.js?v=b780';
+import { sb } from './db.js?v=b781';
+import { netTimeout, setReadOnly } from './net.js?v=b781';
 /* `$` 를 안 가져온 채로 b360 에 나갔습니다. drawNotice 와 applyFeatures 가
    async 안에서 도는 터라 조용한 unhandledrejection 으로만 남았고, 화면에는
    아무 표시도 안 났습니다 — 공지줄·기능 스위치·읽기전용이 통째로 안 걸린
    채였습니다. check-refs 가 `$` 를 못 보고 있었습니다(b362 에서 고침). */
-import { $ } from './dom.js?v=b780';
+import { $ } from './dom.js?v=b781';
 
 /* ── 만든 사람이 켜고 끄는 것들 ─────────────────────────────────────
  * 일이 터졌을 때 **배포를 기다리지 않아도 되게** 하는 값들입니다(db/066).
@@ -126,10 +126,8 @@ function applyFeatures(){
   $('pushkinds')?.classList.toggle('hide', !featOn('push'));
   $('docbtn')?.classList.toggle('hide', !featOn('docs'));
   document.body.classList.toggle('noreorder', !featOn('reorder'));
-  /* 탭 좌우 스와이프(b491). 끄면 **손가락 스와이프만** 죽습니다 —
-     #tabdeck 은 overflow-x:hidden 이어도 여전히 스크롤 칸이라 하단바로
-     옮기는 scrollLeft·스냅·부드러운 이동은 다 남습니다(app.css). */
-  document.body.classList.toggle('noswipe', !featOn('swipe'));
+  /* ⚠ 탭 좌우 스와이프 스위치(`swipe`, b491)는 b781 에 걷었습니다 — 스와이프
+     자체를 없앴습니다(app.css 의 #tabdeck). 서버에 값이 남아 있어도 안 읽습니다. */
   document.body.classList.toggle('readonly', !!flags.readonly);
   /* **진짜로 막는 것은 여기입니다.** 화면에서 단추를 흐리게 하는 것은
      안내일 뿐이고, 저장은 write() 한 곳을 지나므로 거기서 막습니다. */
