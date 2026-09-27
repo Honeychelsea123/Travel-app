@@ -16,13 +16,13 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
  *     이미 떼어낸 aiui.js · cards.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { fail } from './net.js?v=b758';
-import { trip } from './trip.js?v=b758';
-import { syncSheets } from './ui.js?v=b758';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b758';
-import { drawCards } from './cards.js?v=b758';
+import { $, esc, toast } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { fail } from './net.js?v=b759';
+import { trip } from './trip.js?v=b759';
+import { syncSheets } from './ui.js?v=b759';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b759';
+import { drawCards } from './cards.js?v=b759';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }
@@ -223,6 +223,17 @@ $('imp_go').addEventListener('click', async () => {
   $('importcard').classList.add('hide');
   syncSheets();
   ctx.openAi();
+  /* ⚠ **고르개에 없으면 한 칸을 만들어 넣습니다(b759).** 그 칸은 이제
+     «다가오는 여행»만 담습니다(plancheck.js 의 `loadAi`) — 지난 여행을
+     열어 놓고 여기를 누르면 `value` 대입이 조용히 빈 값이 되어, 엉뚱하게
+     「여행 선택」 상태의 대화가 열립니다. 지금 보고 있는 여행이 빠질 수는
+     없으므로 여기서 채웁니다. */
+  {
+    const 칸 = $('ai_trip');
+    if (칸 && !칸.querySelector(`option[value="${trip.id}"]`))
+      칸.insertAdjacentHTML('beforeend',
+        `<option value="${esc(trip.id)}">${esc(trip.title || '이 여행')}</option>`);
+  }
   $('ai_trip').value = trip.id;
   await ctx.loadChats(trip.id);
   drawSources(data.sources, data.web);

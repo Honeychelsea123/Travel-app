@@ -14,9 +14,9 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b758';
+import { $, esc, toast } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b759';
 
 let ctx = { me: () => null };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
@@ -229,33 +229,31 @@ $('notifprefcard').addEventListener('change', async e => {
  * 있었는데 상관없는 것이었습니다 — 알림은 알림 파일이 맞습니다.
  * 덕분에 이 파일의 ctx 에서 `loadNotifs` 가 빠졌습니다(둘 → 하나). */
 
-/* 종을 누르면 그 자리에서 펼쳐집니다. 프로필로 넘어가게 하면
-   보던 화면을 잃고 돌아오기도 번거롭습니다. */
-$('bell').addEventListener('click', async e => {
-  e.stopPropagation();
-  const open = $('notifpanel').classList.toggle('hide');
-  if (open) return;
-  await loadNotifs();
-  /* 목록을 열었으면 읽은 것입니다. 종에 붙은 숫자를 지웁니다.
-     전에는 "모두 읽음"을 따로 눌러야만 지워져서, 봤는데도 계속 1 이 붙어 있었습니다.
-     1.2초 뒤에 처리하는 이유는 **어느 것이 새 것이었는지 보이게** 하려는 것입니다 —
-     열자마자 전부 흐려지면 뭐가 새로 온 건지 알 수가 없습니다. */
+/* ⚠⚠ **종이 없어졌습니다(b759, 사용자 결정).** ⚠⚠
+   상단바에 떠 있던 종과 그 아래 펼쳐지던 판(`#notifpanel`)을 걷고, 받은
+   알림을 **프로필의 「알림」 카드**에 펼쳐 뒀습니다. 그러면 알림을 보러
+   가는 것과 알림을 끄고 켜는 것이 한자리에 모입니다.
+   ⚠ 여닫는 것이 없어졌으므로 **여는 처리기도 없습니다.** 프로필 탭을
+     열 때 app.js 가 `loadNotifs(true)` 를 부릅니다.
+   ⚠ 「읽었다」로 치는 때는 그대로 **1.2초 뒤**입니다 — 어느 것이 새
+     것이었는지 눈에 한 번 들어와야 하니까요. 다만 판정이 「판이 열려
+     있나」에서 「아직 프로필에 있나」로 바뀌었습니다. */
+let readTimer = null;
+function 읽음처리(){
   clearTimeout(readTimer);
   readTimer = setTimeout(async () => {
-    if ($('notifpanel').classList.contains('hide')) return;   /* 벌써 닫았으면 그만 */
+    /* 그새 딴 탭으로 갔으면 그만둡니다 — 스쳐 지나간 것은 본 것이 아닙니다. */
+    if (document.body.dataset.tab !== 'set') return;
     const r = await netTimeout(sb.from('notifications')
       .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
     if (!r.error && r.data?.length) loadNotifs();
   }, 1200);
-});
-let readTimer = null;
-/* 바깥을 누르면 닫힙니다. */
-document.addEventListener('click', e => {
-  if (!$('notifpanel').classList.contains('hide') &&
-      !e.target.closest('#notifpanel')) $('notifpanel').classList.add('hide');
-});
+}
 
-export async function loadNotifs(){
+/* `본것` 이 참이면 **1.2초 뒤에 읽은 것으로 칩니다.** 프로필 탭을 연
+   때만 참입니다 — 앱을 켤 때와 설정을 바꿀 때도 이 함수를 부르는데,
+   그때 읽음 처리를 하면 보지도 않은 알림이 지워집니다. */
+export async function loadNotifs(본것){
   /* 알림은 서버에만 있습니다. 오프라인이면 종 숫자도 못 셉니다. */
   if (netIsDown()){
     $('notifs').innerHTML = '<div class="empty">연결이 없어 알림은 지금 볼 수 없어요.</div>';
@@ -266,8 +264,11 @@ export async function loadNotifs(){
     .select('id,kind,body,created_at,read_at')
     .order('created_at', { ascending:false }).limit(30);
   const unread = (data || []).filter(n => !n.read_at).length;
-  $('belldot').textContent = unread > 9 ? '9+' : unread;
-  $('belldot').classList.toggle('hide', !unread);
+  /* ⚠ 하단바 「프로필」 위의 점입니다(b759). 숫자가 아니라 점인 이유는
+     index.html 의 그 자리에 적어 뒀습니다 — 칸이 71px 이라 숫자를 얹으면
+     글자와 다툽니다. */
+  $('settabdot')?.classList.toggle('hide', !unread);
+  if (본것 && unread) 읽음처리();
 
   if (error || !data?.length){
     $('notifs').innerHTML = '<div class="empty">알림이 없어요.</div>';

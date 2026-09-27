@@ -16,10 +16,10 @@
  * 아닙니다(b345·b347·b350 과 같은 자리).
  *
  * 층: dom.js · trip.js · ui.js 와 이미 떼어낸 trash.js 를 씁니다. */
-import { $ } from './dom.js?v=b758';
-import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b758';
-import { onSwipeX } from './ui.js?v=b758';
-import { TAB_TRASH, loadTrash } from './trash.js?v=b758';
+import { $ } from './dom.js?v=b759';
+import { plans, tab, setTab, settleOn, todayOn } from './trip.js?v=b759';
+import { onSwipeX } from './ui.js?v=b759';
+import { TAB_TRASH, loadTrash } from './trash.js?v=b759';
 
 let ctx = { appTab: () => '', showApp: () => {} };
 export function setTabsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -234,5 +234,11 @@ $("tstrip").addEventListener("click", e => {
 export function inTrip(on){
   document.body.classList.toggle('intrip', on);
   $('tstrip').classList.toggle('hide', !on);
+  /* ⚠ **다시 재라고 알립니다(b759).** 상단바가 여행 안에서만 나오므로
+     들고 날 때마다 화면이 시작하는 y(`--deck-top`)가 달라집니다.
+     app.js 의 `덱높이맞추기` 가 듣습니다 — 곧바로 부르지 않고 이벤트로
+     알리는 것은 **import 고리를 만들지 않기 위해서**입니다(tabs ↔ app).
+   ⚠ 한 박자 미룹니다. 지금은 아직 옛 자리라 재봐야 옛 값이 나옵니다. */
+  setTimeout(() => dispatchEvent(new Event('t2:remeasure')), 0);
 }
 

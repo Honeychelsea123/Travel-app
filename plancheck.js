@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { fail } from './net.js?v=b758';
-import { D1, asDate, ymd, hm, dayLabel, hop } from './calc.js?v=b758';
-import { trip } from './trip.js?v=b758';
-import { aiTripId } from './ai.js?v=b758';
-import { runReview } from './cards.js?v=b758';
+import { $, esc, josa } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { fail } from './net.js?v=b759';
+import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd } from './calc.js?v=b759';
+import { trip } from './trip.js?v=b759';
+import { aiTripId } from './ai.js?v=b759';
+import { runReview } from './cards.js?v=b759';
 
 let ctx = { loadChats: async () => {} };
 
@@ -135,8 +135,20 @@ export function review(t, ps, lgs){
 
 
 export async function loadAi(){
+  /* ⚠⚠ **다녀온 여행은 안 담습니다(b759, 사용자 지적: 「다녀온 여행은
+     안뜨게 해줘 그거 평생 떠있어」).** ⚠⚠
+     여태는 `trips` 를 **거르지 않고** 다 담았습니다. 여행은 쌓이기만 하므로
+     이 고르개는 해가 갈수록 길어지고, 정작 묻고 싶은 «다음 여행»이 저
+     아래로 밀립니다. 물어볼 일은 거의 «앞으로 갈 곳»입니다.
+   ⚠ 기준은 여행 목록과 **같은 것**을 씁니다 — `end_date >= 오늘`이면
+     「다가오는」입니다(triplist.js). 진행 중인 여행도 이쪽입니다.
+     기준을 따로 적으면 두 화면이 언젠가 갈립니다.
+   ⚠ 지난 여행을 두고 물어볼 일이 생기면 **그 여행 화면에서** 여는 길이
+     따로 있습니다(bring.js · cands.js 가 `ai_trip.value` 를 직접 넣습니다).
+     그때는 목록에 없는 id 라 아래 `some(...)` 이 걸러 버리므로, 그 자리에
+     한 칸을 만들어 넣어야 합니다 — 지금은 그런 길이 없어 안 만듭니다. */
   const { data, error } = await sb.from('trips')
-    .select('id,title').order('start_date');
+    .select('id,title').gte('end_date', todayYmd()).order('start_date');
   if (error) return fail(error, 'trip');
 
   /* 여행을 안 고르고도 물어볼 수 있어야 합니다. 어디로 갈지 정하기 전에

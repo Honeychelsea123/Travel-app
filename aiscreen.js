@@ -15,14 +15,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     ai.js · aiui.js · cards.js · plancheck.js 를 씁니다. */
-import { $, esc, toast, md } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { fail, netTimeout, netIsDown } from './net.js?v=b758';
-import { trip, plans } from './trip.js?v=b758';
-import { arm, disarm, syncSheets } from './ui.js?v=b758';
-import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b758';
-import { loadAi } from './plancheck.js?v=b758';
-import { clearLastTake } from './cards.js?v=b758';
+import { $, esc, toast, md } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { fail, netTimeout, netIsDown } from './net.js?v=b759';
+import { trip, plans } from './trip.js?v=b759';
+import { arm, disarm, syncSheets } from './ui.js?v=b759';
+import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b759';
+import { loadAi } from './plancheck.js?v=b759';
+import { clearLastTake } from './cards.js?v=b759';
 
 let ctx = { me: () => null };
 export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
@@ -121,7 +121,8 @@ export function aiToBottom(){
 
 export function openAi(){
   if (trip) setAiTripId(trip.id);
-  $('notifpanel').classList.add('hide');
+  /* ⚠ 알림판(`#notifpanel`)을 닫던 줄이 여기 있었습니다 — b759 에 그 판이
+     프로필 카드로 들어가면서 «떠 있는 것»이 아니게 됐습니다. */
   $('aiview').classList.remove('hide');
   $('sheetbg').classList.remove('hide');
   document.body.classList.add('sheeton');

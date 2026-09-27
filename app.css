@@ -532,10 +532,23 @@ h1.brand .mark{ width:1.05em; height:1.05em; flex:none; fill:var(--brand);
  * 설명은 어디 있든 설명입니다. **한 곳에서 정합니다.** */
 .memo{ color:var(--ink-48); font-size:var(--f-md); }
 /* 알림은 종 바로 아래에 붙습니다 */
-#notifpanel{ position:absolute; top:100%; right:8px; margin-top:8px; z-index:30;
-             width:min(320px, calc(100vw - 40px)); max-height:60vh; overflow-y:auto;
-             background:var(--canvas); border-radius:var(--r-lg);
-             padding:14px 16px; box-shadow:var(--lift-2); text-align:left; }
+/* ⚠ **`#notifpanel`(떠 있던 알림판)을 걷었습니다(b759).** 받은 알림은 이제
+   프로필의 「알림」 카드 «안»에 펼쳐져 있습니다 — 뜨는 것이 아니라 문서의
+   일부라 자리·그림자·「바깥 누르면 닫기」가 다 필요 없어졌습니다.
+   목록 줄을 그리는 규칙은 그대로 씁니다.
+ ⚠ 대신 목록이 길어지면 카드가 끝없이 길어지므로 여기서 묶습니다. */
+#notifs{ max-height:42vh; overflow-y:auto;
+         scrollbar-width:none; -ms-overflow-style:none; }
+#notifs::-webkit-scrollbar{ display:none; }
+
+/* ── 하단바 「프로필」 위의 안 읽은 점(b759) ───────────────────────────
+   ⚠ 숫자가 아니라 점입니다 — 칸이 71px 이라 숫자를 얹으면 글자와 다툽니다.
+   ⚠ 아이콘 «오른쪽 위»에 붙습니다. 칸 가운데에서 6px 오른쪽이 아이콘
+     모서리입니다(아이콘 18px). */
+.tabbar button{ position:relative; }
+.tabdot{ position:absolute; top:3px; left:50%; margin-left:6px;
+         width:7px; height:7px; border-radius:50%;
+         background:var(--danger); }
 .sub{ color:var(--ink-48); font-size:var(--f-md); margin:0;
       flex:1; text-align:right; overflow:hidden; text-overflow:ellipsis;
       white-space:nowrap; }
@@ -2350,16 +2363,18 @@ stroke-linecap='round' stroke-linejoin='round'/></svg>");
 /* ⚠ **아래 마진은 음수가 아닙니다(b423).** 지도가 카드 맨 아래에서
      **발자국 줄 바로 아래**로 올라왔습니다 — 음수로 두면 다음 줄(내 성향)을
      덮습니다. 좌우만 넓혀 been 처럼 끝까지 갑니다. */
-.minimap{ margin:12px 0 14px;
-          background:none; border-radius:0; overflow:hidden; }
+/* ⚠⚠ **작은 평면 지도(`.minimap`)를 걷었습니다(b759).** 기록 탭에서
+   3D/2D 를 없애면서 쓰는 곳이 0 이 됐습니다(사용자 결정: 「기록 탭에
+   3D 2D는 없어도 될 것 같아」). 세계지도를 칠하는 규칙은 큰 지도 화면
+   (`#worldsvg`)과 공유 카드(`.cbmap`)에 그대로 있습니다 — 색을 고치려거든
+   그 둘을 보십시오.
+ ⚠ 바로 아래 `#homefp` 는 **남깁니다.** 여기 끼어 있을 뿐 하는 일이
+   다릅니다 — 지구본 칸을 카드 모서리 안에 가둡니다. */
 /* ⚠ **`pointer-events:none` 을 걷어냈습니다(b423).** 옛 주석이 "보기만 하는
    것이라 손가락은 안 받습니다" 였는데, b419 에서 지도에 직접 onclick 을
    걸었습니다(누르면 큰 지도). CSS 가 그걸 **조용히 막고 있었습니다** —
    커서만 손가락 모양이고 눌러도 아무 일이 없었습니다. */
 #homefp{ overflow:hidden; }
-.minimap svg{ width:100%; height:auto; display:block; }
-.minimap path{ fill:var(--line); stroke:var(--canvas); stroke-width:.5; }
-.minimap path.been{ fill:var(--brand); opacity:.9; }
 
 /* 잠깐 뜨는 알림 */
 #toast{ position:fixed; left:50%; transform:translateX(-50%) translateY(12px);
@@ -3209,6 +3224,18 @@ body.hastab #spreeview{ padding-bottom:calc(var(--tabh, 58px) + 20px + var(--kb)
    지금 궁금한 것은 이 여행의 어디를 보고 있느냐입니다. */
 body.intrip .topbar h1, body.intrip .topbar .sub{ display:none; }
 
+/* ⚠⚠ **탭 화면에서는 이 줄을 통째로 감춥니다(b759, 사용자 결정: 「이
+   상단바가 있을 필요가 있을까?」).** ⚠⚠
+   AI(→ 일정 탭)와 알림(→ 프로필)이 빠지고 나면 탭에서 이 줄에 남는 것은
+   로고 하나입니다. 어느 앱인지는 이미 알고 있습니다.
+ ⚠ **여행 안에서는 그대로 둡니다.** ← 와 구역 넷(일정·지출·준비·일행)이
+   여기 삽니다 — 통째로 지우면 여행에서 나갈 길이 없어집니다.
+ ⚠ **얻는 것은 탭마다 52px** 입니다(실측). 지구본이 780 → 832 가 되고,
+   목록 화면도 한 줄씩 더 보입니다.
+ ⚠ 높이를 재는 곳이 따라옵니다 — `--deck-top` 은 app.js 가 **재서** 넣는데,
+   이제 탭과 여행이 다른 값이라 그쪽도 갈라 뒀습니다(`덱높이맞추기`). */
+body:not(.intrip) .topbar{ display:none; }
+
 /* 나란히 둔 단추 둘. 기본 크기로 두면 글자가 두 줄로 접힙니다 —
    좁은 화면에서 반씩 나눠 쓰는 자리입니다. */
 /* 둘은 같은 무게입니다 — 한쪽만 진하면 다른 쪽이 곁다리로 보여 안 눌립니다.
@@ -3422,6 +3449,24 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
  *   여백과 `#tabdeck > .tabpane` 의 안쪽 여백). 규칙을 두 군데로 나누면
  *   언젠가 한쪽만 고칩니다. */
 
+/* ── 기록 탭 왼쪽 위의 「기로」(b759) ──────────────────────────────────
+ * 상단바가 없어진 자리를 대신합니다. **지구본 밑에 깔립니다** — 왜 그것만으로
+ * 「확대하면 가려지는」 연출이 되는지는 index.html 의 그 자리에 적어 뒀습니다.
+ * ⚠ `z-index` 를 안 줍니다. 둘 다 자리를 잡은 요소라 **DOM 차례**가 정합니다 —
+ *   숫자를 주기 시작하면 칩(900)·시트(1200)와 줄을 맞춰야 해서 일이 커집니다.
+ * ⚠ 손가락을 안 받습니다. 여기서도 지구본이 돌아가야 합니다.
+ * ⚠ 상단바의 것(`h1.brand`)과 **같은 마크**를 씁니다. 크기만 조금 작습니다 —
+ *   여기서는 이름표지 머리글이 아닙니다. */
+.gmark{
+  position:absolute; left:var(--s-md); top:10px; z-index:0;
+  display:flex; align-items:center; gap:7px; margin:0;
+  pointer-events:none; user-select:none;
+  font-size:calc(19px * var(--ts)); font-weight:800; line-height:1;
+  letter-spacing:calc(-0.5px * var(--ts)); color:var(--ink);
+}
+.gmark .mark{ width:26px; height:26px; flex:none; }
+/* ⚠ 기록 탭에만 답니다 — 다른 판에는 이런 요소가 없습니다. */
+
 /* 기록 탭만 그 여백을 도로 뺍니다 — 여기가 「꽉 차는」 자리입니다.
    ⚠⚠ **`#tabdeck > #homeview` 로 적습니다.** `#homeview` 하나로는 바로 위
      `#tabdeck > .tabpane`(아이디+클래스)에 **집니다** — 실측으로 걸렸습니다
@@ -3446,11 +3491,8 @@ code{ background:var(--parchment); padding:2px 7px; border-radius:var(--r-sm);
      이 값이 무엇을 하고 무엇을 못 하는지는 아래 `.globebox` 주석에 있습니다. */
 #homeview .globebox{ flex:1; min-height:0; aspect-ratio:auto;
                      max-height:none; margin:0; }
-/* 2D(평면)일 때는 세로 한가운데. 그림이 짧아서 위에 붙이면 떠 보입니다. */
-#homeview .minimap{ margin:0; }
-
-/* 얹힌 단추 둘은 화면 끝에 붙으면 안 됩니다 — 몸통 여백만큼 안으로. */
-#homeview .gswitch{ left:calc(var(--s-md) + 2px); top:var(--s-xs); }
+/* 얹힌 단추는 화면 끝에 붙으면 안 됩니다 — 몸통 여백만큼 안으로.
+   ⚠ b759 에 3D/2D 가 없어져서 이 화면에 얹히는 것은 「자세히」 하나입니다. */
 #homeview .gmore{ right:calc(var(--s-md) + 2px); top:var(--s-xs); }
 
 /* ── 숫자는 지도 «위에» 뜹니다 ──────────────────────────────────────────
@@ -4595,8 +4637,9 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
  * ⚠ **`viewBox` 가 아니라 `transform` 입니다.** viewBox 는 CSS 로 부드럽게
  *   못 바꿉니다. 안쪽 `<g>` 를 옮기면 그건 전이가 됩니다.
  * ⚠ 값은 home.js 가 넣습니다 — 여기는 **어떻게 움직일지**만 정합니다. */
-.mmzoom{ transition:transform .38s var(--ease); }
-@media (prefers-reduced-motion:reduce){ .mmzoom{ transition:none; } }
+/* ⚠ **`.mmzoom` 을 걷었습니다(b759)** — 확대되던 그 평면 지도가 없어졌습니다.
+   대륙 넘김 자체는 삽니다: 이제 **지구본이 돕니다**(home.js 의 `지도맞추기`).
+   위에 적힌 `CONT_VIEW` 내력은 큰 지도 화면이 같은 표를 쓰므로 남깁니다. */
 
 /* ⚠ **지도 위의 좌우 밀기를 탭 덱이 가져가고 있었습니다(b511).**
    홈에서 지도를 옆으로 밀면 평가 탭으로 넘어갔습니다 — 정작 그 지도가
@@ -4606,7 +4649,8 @@ body.noswipe #tabdeck{ overflow-x:hidden; }
    ⚠ 분석 탭의 지도(`.minimap`)에는 안 답니다 — 거기엔 넘길 카드가 없어서
      뺏어봐야 아무 일도 안 하고 탭 넘김만 죽습니다. 홈에서 붙이는
      클래스입니다(home.js). */
-.mmswipe{ touch-action:pan-y; }
+/* ⚠ **`.mmswipe` 도 같이 걷었습니다(b759).** 홈의 평면 지도에만 달던
+   것입니다. 지구본 캔버스는 제 `touch-action:none` 을 따로 갖고 있습니다. */
 
 /* ── 한줄평 목록 ── 문장이 주인공입니다(b513) ─────────────────────────
  * 사용자 지적: 「한줄평이 제대로 보이지도 않는다」. 재보니 읽는 순서가
@@ -4834,15 +4878,17 @@ body:not([data-tab="home"]) .gchips{ display:none; }
                   display:block; touch-action:none; cursor:grab; }
 .globebox canvas:active{ cursor:grabbing; }
 
-/* ── 지구 / 평면 바꿈(b541) ───────────────────────────────────────────
- * 사용자 요청. **둘은 다른 일을 합니다** — 지구본은 돌려 보는 재미고,
- * 평면은 「내가 어디를 다녔나」를 **한눈에 세는** 자리입니다. 지구본은
- * 언제나 절반이 뒤통수라 세는 일을 못 합니다.
- * ⚠ 고른 쪽은 기억합니다(`t2:mapview`). 기기마다 따로입니다 — 폰에서
- *   지구본을 보는 사람이 노트북에서도 그러란 법은 없습니다.
- * ⚠ 단추는 지도 **위에 얹습니다.** 아래에 줄로 놓으면 카드가 그만큼
- *   길어지는데, 이 카드는 앱을 열면 제일 먼저 보이는 것이라 한 줄이
- *   아깝습니다. */
+/* ⚠⚠ **지구 / 평면 바꿈을 걷었습니다(b759, 사용자 결정: 「기록 탭에
+ *   3D 2D는 없어도 될 것 같아」).** ⚠⚠
+ * b541 의 근거는 「지구본은 언제나 절반이 뒤통수라 세는 일을 못 한다」
+ * 였습니다. 그 일은 **「자세히」가 여는 세계지도 화면**이 이미 합니다.
+ * b758 에 지구본이 화면을 통째로 쓰게 되면서, 한 화면에 둘을 둘 이유가
+ * 없어졌습니다.
+ * ⚠ 규칙(`.gswitch`·`.flatbox`)은 이 구역 «아래쪽»에서 지웠습니다 —
+ *   그 사이에 `.gwrap`·`.gmore`·`.rvcity` 가 끼어 있어 통째로 자르면
+ *   그것들까지 날아갑니다(실제로 한 번 그랬고 실측으로 잡았습니다).
+ * ⚠ 되살리려거든 home.js 의 「평면 지도를 걷었습니다」 주석부터 읽으십시오 —
+ *   같이 걷힌 것이 넷입니다. */
 /* ── 지구본은 «화면 끝까지» (b594, 사용자 요청) ───────────────────────
  * 「지구본이랑 보관함을 하나의 카드로 감싸지 말고 좌우 여백이랑 쭉
  *  이어지게 해줘」. 몸통 여백만큼 도로 빼서 화면 폭을 다 씁니다.
@@ -5028,28 +5074,8 @@ body.pvon{ overflow:hidden; }
      하나」를 고르는 칸이라, 인쇄물에서도 채워서 표시합니다.
    ⚠ 칸 사이 틈(gap)도 걷고 가운데에 선 하나를 둡니다 — 두 칸이 한 물건
      이라는 것이 그래야 보입니다. */
-/* ⚠ b664 에 아래로 내렸다가 b666 에 도로 올렸습니다(사용자 결정). */
-.gswitch{ position:absolute; left:2px; top:2px; z-index:2;
-          display:flex; padding:0; gap:0; border-radius:0;
-          background:var(--canvas); border:1px solid var(--line);
-          box-shadow:none; }
-.gswitch button + button{ border-left:1px solid var(--line); }
-.gswitch button{ appearance:none; border:0; cursor:pointer;
-                 padding:5px 12px; border-radius:0; background:none;
-                 font-size:var(--f-sm); font-weight:600; color:var(--ink-48);
-                 transition:background var(--t) var(--ease), color var(--t) var(--ease); }
-.gswitch button.on{ background:var(--ink); color:var(--canvas); }
-
-/* 평면 쪽. 좌표도 색도 홈 미니맵과 **같은 것**을 씁니다 — 여기서 따로
-   그리면 같은 지도가 두 벌이 되어 언젠가 갈라집니다.
-   ⚠ 지구본과 **높이를 맞춥니다.** 안 맞추면 바꿀 때마다 카드가 들썩여서
-     아래 내용이 위아래로 뜁니다. */
-.flatbox{ display:flex; align-items:center; justify-content:center;
-          min-height:240px;
-          cursor:pointer; }
-/* ⚠ **색과 svg 규칙은 여기 안 적습니다.** `.minimap` 이 이미 갖고
-   있고, 이 칸은 `class="minimap flatbox"` 로 둘 다 답니다 — 여기서 또
-   적으면 나라 색이 두 곳에 있게 되어 언젠가 갈라집니다. */
+/* ⚠ **`.gswitch`(3D/2D 단추)와 `.flatbox`(평면 칸)를 여기서 지웠습니다
+   (b759).** 왜인지는 이 구역 머리말에 적어 뒀습니다. */
 
 /* ── 성향이 바뀌었어요(b526) ───────────────────────────────────────────
  * 락인에서 마지막까지 빠져 있던 「다시 열 이유」입니다. 앱을 열었을 때
@@ -5445,6 +5471,27 @@ body.pvon{ overflow:hidden; }
     transparent 0 calc(var(--dg-line) - 1px),
     var(--dg-rule) calc(var(--dg-line) - 1px) var(--dg-line));
 }
+/* ── 「＋ 새 일기」 고르개(b759) ───────────────────────────────────────
+ * 일기장 «위»에 잠깐 펼쳐지는 칸입니다. 카드도 시트도 아닙니다 —
+ * 고르면 바로 도시 화면으로 가므로 오래 머무는 자리가 아닙니다.
+ * ⚠ 높이를 묶고 안에서 굴립니다. 안 묶으면 마흔 줄이 일기장을 저 아래로
+ *   밀어냅니다(이 판은 덮는 판이라 화면 하나가 통째로 굴러갑니다). */
+#dgadd{ flex:none; }
+#dgadd.on{ background:var(--ink); color:var(--canvas); border-color:var(--ink); }
+#dgpick{ margin:2px 0 10px; }
+#dgpick input{ width:100%; }
+#dghits{ max-height:44vh; overflow-y:auto; margin-top:8px;
+         scrollbar-width:none; -ms-overflow-style:none; }
+#dghits::-webkit-scrollbar{ display:none; }
+.dghit{ appearance:none; width:100%; display:flex; align-items:baseline;
+        gap:8px; text-align:left; cursor:pointer;
+        padding:11px 2px; border:0; border-radius:0; background:none;
+        border-bottom:1px solid var(--divider-soft); }
+.dghit b{ font-size:var(--f-lg); font-weight:600; }
+.dghit span{ font-size:var(--f-sm); color:var(--ink-48); }
+.dghit:active{ background:var(--primary-06); }
+.dgnone{ padding:14px 2px; }
+
 .dgfoot{ display:flex; align-items:center; gap:10px; margin-top:18px;
          padding-top:12px; border-top:1px dashed var(--dg-edge); }
 .dgfoot button{ margin-left:auto; }

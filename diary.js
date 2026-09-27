@@ -21,11 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { cities, countryName, cityCountry } from './cities.js?v=b758';
-import { starsRo } from './stars.js?v=b758';
-import { openPhotos } from './photoview.js?v=b758';
+import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { cities, countryName, cityCountry, search } from './cities.js?v=b759';
+import { starsRo } from './stars.js?v=b759';
+import { openPhotos } from './photoview.js?v=b759';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -79,10 +79,13 @@ export async function openDiary(){
   }
 
   if (!장들.length){
-    $('diarybody').innerHTML = `<div class="card"><div class="empty">
-      아직 쓴 일기가 없어요.<br>
-      <span class="memo">도시를 열고 「내 일기」에 남기면 여기 모여요.</span>
-    </div></div>`;
+    /* ⚠ **빈 화면에는 «하러 가는 단추»를 답니다**(빈 화면 규칙).
+       b759 전에는 「도시를 열고 …에 남기면 여기 모여요」라고 «설명»만
+       했습니다. 이제 여기서 바로 고를 수 있으므로 그 길을 답니다 —
+       `data-go` 가 위 `#dgadd` 를 대신 눌러 줍니다(dom.js). */
+    $('diarybody').innerHTML = '<div class="card">' +
+      emptyDo('아직 쓴 일기가 없어요.', '일기 쓸 곳 고르기', 'dgadd',
+              '다녀온 도시를 고르면 그 자리에서 쓸 수 있어요.') + '</div>';
     $('diarycount').textContent = '';
     return;
   }
@@ -274,6 +277,13 @@ export function closeDiary(fromPop){
   coverDeck(false);
   /* 분석·홈에서 왔으면 그리로. 한 번 쓰고 비웁니다 — 남기면 프로필에서
      연 사람도 튕깁니다(map.js 의 「나온 자리로」와 같은 규칙). */
+  /* ⚠ 고르개는 접고 목록은 버립니다(b759) — 다음에 열 때 그 사이에 매긴
+     별점이 반영돼야 합니다. 열어 둔 채로 나가면 다시 들어왔을 때 옛
+     목록이 펼쳐진 채 보입니다. */
+  $('dgpick')?.classList.add('hide');
+  $('dgadd')?.classList.remove('on');
+  고를거리 = null;
+
   const t = 왔던탭; 왔던탭 = null;
   if (t && ctx.showApp) return ctx.showApp(t);
   $('profpane').classList.remove('hide');
@@ -287,4 +297,92 @@ $('diarypane')?.addEventListener('click', e => {
   if (!b) return;
   closeDiary();
   ctx.openCity(b.dataset.dgedit);
+});
+
+/* ══ 「＋ 새 일기」 ── 도시를 고르는 칸(b759) ════════════════════════════
+ * 사용자 요청: 「일기 탭에서 직접 일기를 추가하는 기능도 있어야할 것 같아」.
+ *
+ * ⚠⚠ **여기서 «글»을 받지 않습니다.** 왜인지는 index.html 의 `#dgpick`
+ *   주석에 적어 뒀습니다 — 한 줄로 줄이면: 쓰는 칸이 도시 화면에 이미
+ *   있고, 사진·한줄평·쓰던 글 붙잡기가 다 거기 붙어 있습니다.
+ * ⚠ 안 치고 있을 때 보여주는 것은 **다녀왔는데 아직 일기가 없는 곳**입니다.
+ *   쓸 사람은 대개 그중에서 고릅니다. 찾기 칸은 **모든 도시**를 봅니다 —
+ *   아직 안 다녀온 곳에도 쓰고 싶을 수 있습니다.
+ * ⚠ 목록은 **한 번만 받아 들고 있다가 일기장을 닫을 때 버립니다.** 그 사이에
+ *   별점을 매기고 돌아오면 새로 받는 것이 맞습니다.
+ */
+let 고를거리 = null;
+
+async function 고를거리받기(){
+  if (고를거리) return 고를거리;
+  const me = ctx.me();
+  if (!me) return (고를거리 = []);
+  const r = await sb.from('city_ratings')
+    .select('city_id,journal,updated_at')
+    .eq('user_id', me.id).order('updated_at', { ascending: false });
+  고를거리 = (r.data || [])
+    .filter(x => !String(x.journal || '').trim())
+    .map(x => (cities || []).find(c => c.id === x.city_id))
+    .filter(Boolean);
+  return 고를거리;
+}
+
+const 빈말 = '다녀온 곳이 아직 없어요. 위에서 찾아보세요.';
+
+function 줄그리기(것들, 비었을때){
+  const 통 = $('dghits');
+  if (!통) return;
+  if (!것들.length){
+    통.innerHTML = `<div class="memo dgnone">${esc(비었을때)}</div>`;
+    return;
+  }
+  /* ⚠ **마흔에서 끊습니다** — 찾기(search)도 같은 수에서 끊습니다(cities.js).
+     이 칸은 일기장 «위에» 얹혀 있어서 길어지면 일기가 저 아래로 밀립니다. */
+  통.innerHTML = 것들.slice(0, 40).map(c =>
+    `<button type="button" class="dghit" data-dgpick="${esc(c.id)}">
+       <b>${esc(c.name)}</b><span>${esc(cityCountry(c))}</span>
+     </button>`).join('');
+}
+
+async function 고르개(켜기){
+  const 칸 = $('dgpick'), 단추 = $('dgadd');
+  if (!칸) return;
+  const 켬 = (켜기 === undefined) ? 칸.classList.contains('hide') : !!켜기;
+  칸.classList.toggle('hide', !켬);
+  단추?.classList.toggle('on', 켬);
+  if (!켬) return;
+  const q = $('dgq');
+  if (q) q.value = '';
+  줄그리기([], '불러오는 중…');
+  줄그리기(await 고를거리받기(), 빈말);
+  q?.focus();
+}
+
+$('dgadd')?.addEventListener('click', () => 고르개());
+
+$('dgq')?.addEventListener('input', e => {
+  const q = String(e.target.value || '').trim();
+  if (!q) return 줄그리기(고를거리 || [], 빈말);
+  줄그리기(search(q), '그런 도시가 없어요.');
+});
+
+$('dghits')?.addEventListener('click', async e => {
+  const b = e.target.closest('[data-dgpick]');
+  if (!b) return;
+  const id = b.dataset.dgpick;
+  고르개(false);
+  closeDiary();
+  await ctx.openCity(id);
+  /* ⚠⚠ **일기 칸에 바로 손이 가게 합니다.** 안 그러면 도시 화면 «맨 위»에
+     떨어져서 「일기 쓰러 왔는데 또 찾아야」가 됩니다 — 이 기능이 없애려던
+     번거로움이 그대로 남습니다.
+   ⚠ 한 박자 미룹니다. `openCity` 가 그리기를 끝낸 «뒤»라야 칸이 있습니다.
+   ⚠ `preventScroll` 로 초점만 줍니다 — 자리 옮기기는 바로 위
+     `scrollIntoView` 가 부드럽게 하고, 둘이 같이 움직이면 튑니다. */
+  setTimeout(() => {
+    const 칸 = $('cv_journal');
+    if (!칸) return;
+    칸.scrollIntoView({ block:'center', behavior:'smooth' });
+    칸.focus({ preventScroll:true });
+  }, 60);
 });

@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b758';
-import { sb } from './db.js?v=b758';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b758';
-import { hm, todayYmd } from './calc.js?v=b758';
-import { starHtml, paintStars } from './stars.js?v=b758';
+import { $, esc, toast } from './dom.js?v=b759';
+import { sb } from './db.js?v=b759';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b759';
+import { hm, todayYmd } from './calc.js?v=b759';
+import { starHtml, paintStars } from './stars.js?v=b759';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b758';
-import { cities, countryName, cityCountry } from './cities.js?v=b758';
-import { UN_CODES } from './un.js?v=b758';
-import { myRates, cityStat, visited } from './rate.js?v=b758';
-import { plans } from './trip.js?v=b758';
-import { loadCities } from './citysearch.js?v=b758';
+import { starValue } from './rateui.js?v=b759';
+import { cities, countryName, cityCountry } from './cities.js?v=b759';
+import { UN_CODES } from './un.js?v=b759';
+import { myRates, cityStat, visited } from './rate.js?v=b759';
+import { plans } from './trip.js?v=b759';
+import { loadCities } from './citysearch.js?v=b759';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b758';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b758';
+import { openCity } from './city.js?v=b759';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b759';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b758';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b759';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b758';
+import { drawReport } from './report.js?v=b759';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b758';
+import { PERSONA_BG } from './card.js?v=b759';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b758';
+import { checkPersonaShift } from './pshift.js?v=b759';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b758';
+import { mountGlobe } from './globe.js?v=b759';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -381,19 +381,10 @@ async function 나라카드(코드, 먼저){
   if (history.state?.t2 !== 'gsheet') history.pushState({ t2:'gsheet' }, '');
 }
 
-/* ── 지구본이냐 평면이냐(b541 · b542 에 여기로) ────────────────────────
- * 사용자 결정: **고른 쪽을 기억합니다.** 매번 지구본으로 되돌아가면,
- * 세어 보려고 평면을 고른 사람이 열 때마다 다시 눌러야 합니다.
- * ⚠ 기기마다 따로입니다(localStorage). 계정에 매달지 않습니다 — 폰에서
- *   지구본을 돌려 보는 사람이 노트북에서도 그러란 법이 없고, 이건
- *   **취향이 아니라 화면 크기** 이야기에 가깝습니다.
- * ⚠ 사파리 비공개 모드에서 localStorage 가 던집니다. 감싸 둡니다. */
-const 뷰열쇠 = 't2:mapview';
-function 뷰읽기(){
-  try { return localStorage.getItem(뷰열쇠) === 'flat' ? 'flat' : 'globe'; }
-  catch { return 'globe'; }
-}
-function 뷰쓰기(v){ try { localStorage.setItem(뷰열쇠, v); } catch {} }
+/* ⚠ **「지구본이냐 평면이냐」를 기억하던 것을 걷었습니다(b759).**
+   평면이 없어졌으므로 고를 것이 없습니다. 쓰던 열쇠는 `t2:mapview` 였고,
+   이미 저장된 값은 이제 아무도 안 읽으므로 그냥 둡니다 — 지우는 코드를
+   따로 두면 그 코드가 영영 남습니다. */
 
 let ctx = { me: () => null, openTrip: async () => {}, showApp: () => {} };
 export function setHomeCtx(o){ ctx = { ...ctx, ...o }; }
@@ -1390,125 +1381,25 @@ async function renderFoot(통){
     if (있음) 줄기.addEventListener('scrollend', 멎으면, { passive:true });
   }
 
-  /* ── 지도는 **발자국 바로 아래**입니다(b423) ─────────────────────────
-   * 숫자보다 칠해진 면적이 더 와닿습니다. 지도 좌표는 이미 문서에 있으니
-   * 그대로 빌려 씁니다. 누르면 큰 지도로 갑니다.
-   *
-   * ⚠ **전에는 카드 맨 아래였습니다.** 그러면 홈을 열었을 때 지도가 접힌
-   *   자리 아래에 있어서 **스크롤해야 보였습니다.** 이 앱에서 지도는
-   *   "내가 얼마나 다녔나" 를 한눈에 보여주는 자리라 열자마자 보여야
-   *   합니다. 발자국 줄에 딸린 것이기도 하니 바로 아래가 제자리입니다.
-   * ⚠ 중간에 오므로 **아래 음수 마진을 쓰면 안 됩니다** — 다음 줄을
-   *   덮습니다. 좌우만 넓힙니다(app.css 의 .minimap). */
-  const mm = document.createElement('div');
-  /* ⚠ **클래스가 둘입니다(b542).** `.minimap` 은 여태 쓰던 규칙(좌우로
-     넓히기 · 나라 색)이고, `.flatbox` 는 **지구본과 높이를 맞추는** 것만
-     합니다. 안 맞추면 지구 ↔ 평면을 오갈 때 카드가 들썩여서 아래 내용이
-     위아래로 뜁니다. */
-  mm.className = 'minimap flatbox';
-  mm.style.cursor = 'pointer';
-  /* ── 왜 이 viewBox 인가(b425) ────────────────────────────────────────
-     been 은 1.88:1 인데 우리는 2.58:1 이라 가로로 찌그러져 보인다는
-     지적을 받고 여러 값을 재봤습니다. **결론: 등장방형 세계지도로
-     been 비율은 못 만듭니다.** 재본 것을 적어둡니다.
+  /* ⚠⚠ **평면(2D) 지도를 걷었습니다(b759, 사용자 결정: 「기록 탭에 3D 2D는
+     없어도 될 것 같아」).** ⚠⚠
+     b541·b542 에 「지구본은 언제나 절반이 뒤통수라 «내가 어디를 다녔나»를
+     세지 못한다」는 이유로 평면을 나란히 뒀습니다. 그런데 그 일은
+     **「자세히」가 여는 세계지도 화면**(#mappane)이 이미 하고 있습니다 —
+     한 화면에 둘을 두는 것은 겹치기였습니다. b758 에 지구본이 화면을
+     통째로 쓰게 되면서 더 그렇습니다.
+   ⚠ **같이 걷힌 것이 넷입니다.** 지구/평면 단추(`.gswitch`) · 고른 쪽
+     기억(`t2:mapview`) · 평면을 옆으로 밀어 대륙을 넘기던 것(b511) ·
+     평면이 대륙으로 확대되던 것(`.mmzoom`, b500).
+   ⚠ **대륙 넘김 자체는 그대로 삽니다** — 아래 `지도맞추기` 가 지구본을
+     돌립니다. 없어진 것은 평면 쪽 절반뿐입니다.
+   ⚠ 되살리려거든 b758 판을 보십시오. 위 넷을 다 되돌려야 말이 됩니다.
 
-     · 대륙이 실제로 차지하는 범위: x 23~995 · y 18~405.
-       (남극 path 는 world.js 에 **아예 없습니다** — 그래서 세로를 늘려도
-        빈 자리만 늘어납니다. `0 8 1000 432` 로 해보니 2.31:1 이 되긴 하나
-        지도가 커진 게 아니라 위아래 여백만 생겼습니다.)
-     · 그러니 **2.5:1 이 한계**입니다. been 이 1.88 인 것은 태평양을
-       크게 잘랐기 때문인데, 우리는 못 자릅니다 —
-     · b424 에서 `150 22 850 380`(2.24:1) 로 잘라봤다가 **알래스카가
-       통째로 사라졌습니다.** 캐나다 서부와 러시아 극동도 같이 잘렸습니다.
-       미국은 본토가 칠해지니 괜찮을 줄 알았는데 **눈에 바로 띕니다.**
-       좌우로 80씩만 잘라도 뉴질랜드·바누아투·뉴칼레도니아·솔로몬제도가
-       사라집니다(x 985~995).
-
-     ── 왜 아메리카가 왼쪽인가(b516, 사용자 결정: 그대로 둔다) ──────────
-     세계지도에는 관습이 둘 있습니다.
-       · 대서양(그리니치) 중심 — 좌 아메리카 · 중 유럽/아프리카 · 우 아시아
-         경도 0°가 한가운데. 국제 표준이고 지도 자료가 기본으로 이렇게 옵니다.
-       · 태평양 중심 — 좌 유럽/아프리카 · 중 아시아 · 우 아메리카
-         한국·일본·중국·호주 학교 지도가 이쪽입니다.
-     우리는 **앞의 것**입니다. 실측(가로 1000 기준):
-       미국 159 · 브라질 352 · 영국 491 · 남아공 545 · 한국 851 · 호주 910
-     한국이 오른쪽 끝에 붙습니다. 어색하다는 지적을 받았고 태평양 중심으로
-     옮기는 것도 검토했지만(원통도법이라 가로로 이어 붙이는 것은 정확합니다),
-     **안 하기로 했습니다.** 옮기면 딸려오는 것이 이만큼입니다:
-       ① `CONT_VIEW`(대륙 여섯의 중심·폭)를 전부 다시 재야 합니다 —
-          홈 확대 · 대륙 배지 · 지도 화면 대륙 단추가 다 그 표를 씁니다.
-       ② 이음매에 걸리는 나라(그린란드)가 양 끝으로 쪼개집니다.
-       ③ 지도가 나오는 자리가 다섯입니다(홈 · 분석 · 지도 화면 · 배지 ·
-          공유 카드) — 한 번에 다 바뀝니다.
-     ⚠ 다시 꺼내려거든 **두 벌 겹쳐 그리기는 하지 마십시오.** 코드는 세 줄인데
-       경로 176개가 352개가 되고, 배지가 여섯 장이라 아이폰에서 2,112개를
-       그립니다. 할 거면 `world.js` 좌표를 한 번 옮겨서 구워 넣는 쪽입니다.
-
-     ⚠ **자르지 마십시오.** 대륙에 딱 맞춰 여백만 걷어냅니다.
-       값을 건드리려거든 `path.getBBox()` 로 잘리는 나라를 먼저 세십시오. */
-  /* ⚠ **좌표를 `<g>` 로 감쌉니다(b500).** 아래 카드를 넘기면 이 지도가
-     그 대륙으로 **확대·이동**합니다. `viewBox` 는 CSS 로 부드럽게 못
-     바꾸므로 안쪽 `<g>` 의 `transform` 을 옮깁니다 — 그건 전이가 됩니다. */
-  mm.innerHTML = `<svg viewBox="20 16 976 392"
-    preserveAspectRatio="xMidYMid meet"><g class="mmzoom">${
-      $('worldland').innerHTML}</g></svg>`;
+   ⚠⚠ **`gone` 만 남깁니다.** 평면을 칠하려고 여기서 셌지만 **지구본도
+     이것을 씁니다**(아래 `mountGlobe(공판, gone, …)` 와 `지구갔다`).
+     같이 지우면 지구본이 통째로 안 칠해집니다. */
   const gone = new Set((cities || []).filter(c => visited.has(c.id)).map(c => c.cc));
-  mm.querySelectorAll('path').forEach(p =>
-    p.classList.toggle('been', gone.has(p.dataset.c)));
-  /* ── 지도 위에서 옆으로 밀어도 카드가 넘어갑니다(b511) ───────────────
-   * 사용자 요청. 지도가 이 카드의 주인공인데, 정작 그 위에서 미는 것은
-   * **탭 넘김**이 가져가고 있었습니다 — 홈에서 지도를 밀면 평가 탭으로
-   * 갔습니다(사용자 확인).
-   *
-   * ⚠ **먼저 탭 덱에게서 그 제스처를 뺏어야 합니다.** `touch-action:pan-y`
-   *   를 이 지도에만 답니다(app.css 의 `.mmswipe`). 위아래는 그대로
-   *   굴러가고 좌우만 브라우저가 손을 뗍니다 — 별점 끌기와 같은 수법입니다.
-   * ⚠ **손가락을 따라가게 만들지 않습니다.** 아래 줄은 스냅이 걸린
-   *   스크롤러라, 미는 대로 scrollLeft 를 대입하면 스냅·관성과 다툽니다
-   *   (b468 · b492 에서 겪은 것). 손을 뗀 뒤 **한 칸만** 넘깁니다 —
-   *   그러면 나머지(점 · 지도 확대 · 복제 자리 고치기)는 아래 `scroll`
-   *   핸들러가 평소처럼 합니다.
-   * ⚠ 지도는 **누르면 큰 지도로 가는 단추**이기도 합니다. 민 것을 눌린
-   *   것으로 치면 지도가 열려 버립니다 — 민 직후의 누름 한 번을 건너뜁니다.
-   * ⚠ 세로로 더 많이 움직였으면 밀기가 아닙니다. 홈을 위아래로 굴리다
-   *   손가락이 지도를 스치는 일이 흔합니다. */
-  mm.classList.add('mmswipe');
-  {
-    const 줄기 = 넘김.querySelector('.swrow');
-    let 시작 = null, 밀림 = false;
-    mm.addEventListener('touchstart', e => {
-      밀림 = false;
-      시작 = e.touches.length === 1
-        ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
-    }, { passive:true });
-    mm.addEventListener('touchmove', e => {
-      if (!시작 || !e.touches.length) return;
-      const dx = e.touches[0].clientX - 시작.x;
-      const dy = e.touches[0].clientY - 시작.y;
-      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy)) 밀림 = true;
-    }, { passive:true });
-    mm.addEventListener('touchend', e => {
-      const 처음 = 시작; 시작 = null;
-      if (!처음 || !밀림 || !줄기) return;
-      const dx = (e.changedTouches[0]?.clientX ?? 처음.x) - 처음.x;
-      if (Math.abs(dx) < 40) return;
-      줄기.scrollBy({ left: dx < 0 ? 줄기.clientWidth : -줄기.clientWidth,
-                      behavior:'smooth' });
-    }, { passive:true });
-    /* ⚠ 평면도 눌러서 열지 않습니다(b554) — 위 「자세히」 하나입니다.
-       `밀림` 은 옆으로 밀어 대륙을 넘길 때 여전히 씁니다. */
-  }
-  /* ── 지구 / 평면 (b542) ─────────────────────────────────────────────
-   * ⚠ **둘은 다른 일을 합니다.** 지구본은 언제나 절반이 뒤통수라
-   *   「내가 어디를 다녔나」를 **세지 못합니다.** 평면은 그게 됩니다.
-   *   하나를 고르라는 것이 아니라 **두 가지 질문**이라 둘 다 둡니다.
-   * ⚠ 평면 쪽은 여태 쓰던 미니맵 그대로입니다 — 좌우로 미는 것도,
-   *   대륙으로 확대되는 것도(b500·b511) 그대로 삽니다.
-   * ⚠ 지구본은 **평면을 보는 동안 스스로 멈춥니다.** 따로 알려줄 필요가
-   *   없습니다: `display:none` 이 되면 IntersectionObserver 가 「안 보인다」고
-   *   하고 globe.js 가 멈춥니다.
-   * ⚠ **지도를 카드 맨 위로 올립니다(b542).** 앱을 열면 이것이 먼저 보여야
-   *   합니다 — 이 탭이 맡은 것은 「내가 어디를 갔나」 하나뿐입니다. */
+
   const 감쌈 = document.createElement('div');
   감쌈.className = 'gwrap';
 
@@ -1518,7 +1409,6 @@ async function renderFoot(통){
   공판.setAttribute('aria-label', '지구본');
   공칸.appendChild(공판);
   감쌈.appendChild(공칸);
-  감쌈.appendChild(mm);
 
   /* ── 「자세히」 ── 지도 화면으로 가는 «이름표»(b554, 사용자 요청) ──────
    * ⚠ 전에는 **지구본을 누르면** 지도 화면이 열렸습니다. 그런데 이 지구본은
@@ -1539,25 +1429,6 @@ async function renderFoot(통){
   /* ⚠ ＋/− 단추가 여기 있었습니다(b560 → b561 에 걷음, 사용자 결정).
      확대는 손가락 둘로 집기와 마우스 휠 둘입니다. */
 
-  const 바꿈 = document.createElement('div');
-  바꿈.className = 'gswitch';
-  /* ⚠ **「지구」가 아니라 「3D」입니다(b557, 사용자 결정).** 「지구 / 평면」은
-     둘 다 «무엇을 보여주나»를 말해서 짝이 안 맞았습니다 — 평면 지도도
-     지구입니다. 「3D / 평면」은 **어떻게 보여주나**로 짝이 맞습니다.
-   ⚠ 저장하는 값(`t2:mapview`)은 그대로 globe/flat 입니다. 글자만
-     바뀐 것이라 이미 골라둔 사람의 설정이 안 날아갑니다. */
-  바꿈.innerHTML = '<button type="button">3D</button><button type="button">2D</button>';
-  감쌈.appendChild(바꿈);
-
-  /* ⚠ 저장된 값이 이상하면 지구본입니다 — 이 카드의 주인공이 그것입니다. */
-  let 평면인가 = 뷰읽기() === 'flat';
-  const 맞추기 = () => {
-    공칸.classList.toggle('hide', 평면인가);
-    mm.classList.toggle('hide', !평면인가);
-    바꿈.children[0].classList.toggle('on', !평면인가);
-    바꿈.children[1].classList.toggle('on', 평면인가);
-  };
-  맞추기();
 
   box.prepend(감쌈);
   /* ⚠ 못 받았을 때는 **0 을 적지 않습니다.** 「0 / 195」는 거짓말이고,
@@ -1609,22 +1480,9 @@ async function renderFoot(통){
     /* 보던 자리로 되돌립니다(위 `지구자리`). 처음 열 때는 없으므로
        globe.js 가 정한 첫 면(대한민국)이 그대로 나옵니다. */
     if (지구자리) 공.앉히기?.(지구자리.경도, 지구자리.위도, 지구자리.배율);
-    /* ⚠ 눌러서 여는 것과 돌리는 것이 한 자리에 있습니다 — 민 뒤의 누름
-       한 번은 건너뜁니다(globe.js 의 `민적있나`). 평면 쪽 `mm.onclick` 이
-       쓰는 `밀림` 과 같은 수법입니다. */
-    /* ⚠ **지구본을 눌러도 지도가 안 열립니다(b554).** 위 「자세히」가
-       그 일을 맡습니다. 그래서 `민적있나`(민 뒤의 누름 한 번 건너뛰기)도
-       여기서는 쓸 일이 없어졌습니다 — globe.js 에는 그대로 둡니다.
-       평면 쪽(`mm.onclick`)도 같은 이유로 걷었습니다. */
-    바꿈.onclick = e => {
-      const b = e.target.closest('button'); if (!b) return;
-      평면인가 = b === 바꿈.children[1];
-      뷰쓰기(평면인가 ? 'flat' : 'globe');
-      맞추기();
-      /* ⚠ **평면에서 돌아오면 다시 그려야 합니다.** 숨어 있는 동안 캔버스는
-         크기를 잃고(clientWidth 0), globe.js 는 「안 보인다」며 멈춰 있습니다. */
-      if (!평면인가) 공?.되살리기();
-    };
+    /* ⚠ 지구본을 눌러도 지도가 안 열립니다(b554) — 「자세히」가 그 일을
+       맡습니다. 그래서 `민적있나`(민 뒤의 누름 한 번 건너뛰기)도 여기서는
+       쓸 일이 없습니다. globe.js 에는 그대로 둡니다. */
   }, 0);
 
   /* ── 넘기면 지도가 그 대륙으로 갑니다(b500) ─────────────────────────
@@ -1633,9 +1491,10 @@ async function renderFoot(통){
    * 「지도 위에 지도」로 걷었는데(b496 → b497), 애초에 **지도는 하나면
    * 됩니다.** 넘기는 것이 곧 지도를 옮기는 것입니다.
    *
-   * ⚠ **`viewBox` 를 바꾸지 않습니다.** CSS 로 부드럽게 못 바꿉니다.
-   *   안쪽 `<g>` 를 `translate → scale → translate` 로 옮기면 그건
-   *   전이가 됩니다(app.css 의 `.mmzoom`).
+   * ⚠ **b759 에 평면 쪽 절반이 없어졌습니다.** 남은 것은 지구본을 그
+   *   대륙으로 돌리는 것뿐입니다 — 아래 `CONT_VIEW` 주석은 평면을 확대할
+   *   때 정한 값들인데, **같은 표를 큰 지도 화면이 그대로 씁니다**(map.js).
+   *   그래서 값과 그 내력은 지우지 않고 둡니다.
    * ⚠ **배율은 폭과 높이 중 작은 쪽입니다.** 폭만 보면 아프리카·남아메리카
    *   처럼 키 큰 대륙이 위아래로 잘립니다 — 배지에서 겪은 것과 같은
    *   함정입니다(b499).
@@ -1648,12 +1507,8 @@ async function renderFoot(통){
    *   대가: 아프리카 남쪽 끝이 살짝 잘립니다 — 그건 배지가 제대로 보여줍니다.
    * ⚠ **창은 `CONT_VIEW` 하나입니다.** 큰 지도의 대륙 단추도 그 표를
    *   씁니다 — 여기서 본 자리와 눌러서 들어간 자리가 같아야 합니다. */
-  const 줌 = mm.querySelector('.mmzoom');
   지도맞추기 = 이름 => {
-    /* ── 지구본도 같이 돕니다(b542) ─────────────────────────────────
-       ⚠ **평면일 때만 확대하고 지구본일 때만 돌립니다** — 가 아니라 둘 다
-         합니다. 숨어 있는 쪽도 맞춰 놔야, 바꿈 단추를 눌렀을 때 방금 보던
-         대륙이 그대로 있습니다. 한쪽만 맞추면 바꾸는 순간 딴 데로 튑니다.
+    /* ── 넘기면 지구본이 그 대륙으로 돕니다(b542, b759 에 평면 걷음) ──
        ⚠ 좌표는 `CONT_VIEW` 를 그대로 씁니다 — 평면의 x/y 를 경위도로
          되돌리는 식은 globe.js 의 `점()` 과 같아야 합니다(1000×500 기준).
        ⚠ 「전체」는 안 돌립니다. 대한민국이 한가운데인 처음 자리로 두는
@@ -1667,13 +1522,6 @@ async function renderFoot(통){
       if (!v || 이름 === 첫장) 공.처음으로();
       else 공.회전(v.cx / 1000 * 360 - 180, 90 - v.cy / 500 * 180);
     }
-    if (!줌) return;
-    if (!v || 이름 === 첫장){ 줌.style.transform = ''; return; }
-    const k = Math.min(976 / v.w, 392 / (v.w * 0.62));
-    /* 보이는 칸의 가운데(508, 212)에 그 대륙의 가운데를 갖다 놓습니다. */
-    줌.style.transform =
-      `translate(508px, 212px) scale(${k.toFixed(3)}) ` +
-      `translate(${-v.cx}px, ${-v.cy}px)`;
   };
   /* ⚠ **카드에 대륙 지도를 깔았다가 걷었습니다(b496 → b497).**
      대륙마다 모양이 달라 넘기는 맛은 살았는데, **바로 위에 세계지도가
