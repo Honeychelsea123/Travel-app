@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b778';
+import { $ } from './dom.js?v=b779';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기, 가진시군 } from './citymap.js?v=b778';
-import { countryName } from './cities.js?v=b778';
-import { visited, myRates } from './rate.js?v=b778';
+         상자자르기, 가진시군 } from './citymap.js?v=b779';
+import { countryName } from './cities.js?v=b779';
+import { visited, myRates } from './rate.js?v=b779';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -228,9 +228,10 @@ function 격자(ctx, R, cx, cy, λ0, φ0){
     }
     ctx.stroke();
   };
-  ctx.lineWidth = 0.5;
-  /* 새긴 선입니다 — 검정이 아니라 «먹»입니다(b585). */
-  ctx.strokeStyle = 'rgba(46,38,26,.085)';
+  /* ⚠ 바다가 먹물색이 되면서(b779) 선을 «밝게» 긋습니다 — 종이를 파낸
+     자국처럼. 먹선이면 짙은 바다에 묻힙니다. */
+  ctx.lineWidth = 0.6;
+  ctx.strokeStyle = 'rgba(255,253,246,.34)';
   for (let d = -180; d < 180; d += 30){          /* 자오선 열둘 */
     const λ = d * RAD, 점들 = [];
     for (let p = -84; p <= 84; p += 3) 점들.push([λ, p * RAD]);
@@ -242,7 +243,8 @@ function 격자(ctx, R, cx, cy, λ0, φ0){
     for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, φ]);
     줄(점들);
   }
-  ctx.strokeStyle = 'rgba(46,38,26,.14)';        /* 적도만 한 겹 진하게 */
+  ctx.lineWidth = 0.7;
+  ctx.strokeStyle = 'rgba(255,253,246,.55)';     /* 적도만 한 겹 진하게 */
   {
     const 점들 = [];
     for (let d = -180; d <= 180; d += 3) 점들.push([d * RAD, 0]);
@@ -390,7 +392,16 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     ctx.clearRect(0, 0, w, h);
 
     const cs = getComputedStyle(document.documentElement);
-    const 바다 = cs.getPropertyValue('--parchment').trim() || '#eeeef2';
+    /* ⚠ 이름을 `바다` → `종이` 로 바꿨습니다(b779). 이제 바다는 아래
+       `바다1~3`(먹물 그러데이션)이고, 이 값은 **칸 사이 경계선**(주·도·시·군)
+       에만 씁니다 — 종이를 파낸 듯한 밝은 선. */
+    const 종이 = cs.getPropertyValue('--parchment').trim() || '#F3F0E8';
+    /* ── 바다 — 먹물을 푼 종이(b779, 사용자가 시안 ㅂ 고름) ────────────
+       빛 쪽(왼쪽 위)이 밝고 가장자리로 갈수록 짙습니다. 그러데이션이라
+       한 색이 아니라 셋입니다(app.css 의 --globe-sea-1~3). */
+    const 바다1 = cs.getPropertyValue('--globe-sea-1').trim() || '#DCD6CA';
+    const 바다2 = cs.getPropertyValue('--globe-sea-2').trim() || '#CFC8BA';
+    const 바다3 = cs.getPropertyValue('--globe-sea-3').trim() || '#BDB4A3';
     /* ⚠⚠ **`--line` 을 쓰면 지구가 «투명»해집니다(b587 에 고침).**
        b585 에서 그대로 뒀는데, b584 로 종이색이 되면서
        바다 #F1EEE6 대 땅 #DFDAD0 — 차이가 거의 없어 대륙이 안 보였습니다
@@ -399,7 +410,10 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          데 쓰면 안 됩니다.** 땅은 제 값을 갖습니다 — 종이 위에 한 톤 앉힌
          미색입니다. 바다(종이)와는 확실히 갈리고, 다녀온 곳(오렌지)보다는
          한참 물러섭니다. */
-    const 땅   = cs.getPropertyValue('--globe-land').trim() || '#DDD5C4';
+    /* ⚠⚠ **b779 에 `--globe-earth`(미색 #EFE9DC)로 옮겼습니다** — 바다가 짙어져서
+       땅이 바다보다 밝아야 대륙이 떠오릅니다. `--globe-land` 는 평면 지도 몫으로
+       남겨 둡니다(위 주석의 «평면 지도와 같은 색»은 이제 오렌지에만 해당). */
+    const 땅   = cs.getPropertyValue('--globe-earth').trim() || '#EFE9DC';
     /* ⚠⚠ **평면 지도와 «같은 색»이라야 합니다.** 다른 값을 쓰면 같은 나라가
        3D 와 2D 에서 두 색으로 보입니다. b531 에 오렌지로 줬다가 되돌린 적이
        있는데, 그때는 **평면 쪽을 같이 안 바꿔서** 어긋난 것이었습니다.
@@ -487,15 +501,22 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          지구에서 비껴 앉아 「그림자가 뜬」 것처럼 보입니다. */
       const 칸 = canvas.parentElement;
       if (칸){
-        const 안 = R * 0.94, 밖 = R * 1.10, 폭 = 밖 - 안;
-        const 자국 =
-          `radial-gradient(circle ${밖.toFixed(1)}px at ${cx.toFixed(1)}px ${
-            cy.toFixed(1)}px,` +
-          ` rgba(70,58,40,0) ${안.toFixed(1)}px,` +
-          ` rgba(70,58,40,.055) ${(안 + 폭 * 0.42).toFixed(1)}px,` +
-          ` rgba(70,58,40,.022) ${(안 + 폭 * 0.74).toFixed(1)}px,` +
-          ` rgba(70,58,40,0) ${밖.toFixed(1)}px)`;
-        if (칸.style.backgroundImage !== 자국) 칸.style.backgroundImage = 자국;
+        /* ⚠⚠ **번짐 자국 대신 «바닥 그림자»입니다(b779, 사용자가 시안 ㅂ
+           고름).** 지구본이 종이 위에 놓인 물건 하나로 보이게 — 조금 오른쪽
+           아래로, 납작한 타원으로 떨어집니다. 예전 자국(0.94~1.10R 의 갈색
+           고리)은 걷었습니다. 둘을 같이 두면 둘레가 탁해집니다.
+         ⚠ **멀리 볼 때만** 둡니다(배율 1 → 1.4 에서 사라짐). 확대하면
+           지구가 화면을 넘어 그림자가 설 바닥이 없습니다.
+         ⚠ 같은 값이면 다시 안 넣습니다 — 브라우저가 style 문자열을 고쳐
+           적어 되읽으면 달라지므로, 마지막으로 넣은 값을 따로 들고 있습니다. */
+        const 그늘 = Math.max(0, 1 - (배율 - 1) / 0.4);
+        const 자국 = 그늘 <= 0 ? 'none' :
+          `radial-gradient(ellipse ${(R * 0.95).toFixed(1)}px ${(R * 0.152).toFixed(1)}px at ${
+            (cx + R * 0.05).toFixed(1)}px ${(cy + R * 1.03).toFixed(1)}px,` +
+          ` rgba(58,44,24,${(0.30 * 그늘).toFixed(3)}) 0%,` +
+          ` rgba(58,44,24,${(0.12 * 그늘).toFixed(3)}) 55%,` +
+          ` rgba(58,44,24,0) 100%)`;
+        if (칸.__자국 !== 자국){ 칸.__자국 = 자국; 칸.style.backgroundImage = 자국; }
       }
     }
 
@@ -521,8 +542,15 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
     }
 
     /* ── ② 바다 ────────────────────────────────────────────────────── */
+    /* 먹물 그러데이션(b779). 가운데를 빛 쪽으로 조금 옮겨 둥글게 보이게 합니다.
+       ⚠ R 에 맞춰 늘어나므로 확대하면 화면에는 가운데 한 톤만 남습니다. */
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.fillStyle = 바다; ctx.fill();
+    {
+      const 물 = ctx.createRadialGradient(cx - R * 0.2, cy - R * 0.25, R * 0.1, cx, cy, R);
+      물.addColorStop(0, 바다1); 물.addColorStop(0.7, 바다2); 물.addColorStop(1, 바다3);
+      ctx.fillStyle = 물;
+    }
+    ctx.fill();
 
     ctx.save();
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
@@ -588,7 +616,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       return 그렸나;
     };
 
-    ctx.lineWidth = 0.4;
+    ctx.lineWidth = 0.5;
     for (const 나라 of 목록){
       const 감 = 갔다.has(나라.code);
       /* ⚠⚠ **주·도를 칠할 나라는 이 칠을 «아주» 걷습니다(b770, 사용자
@@ -617,10 +645,20 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
        * ⚠ **안 간 나라도 마찬가지입니다.** 칠은 땅색으로 남겨야 하지만
        *   (안 가본 땅도 땅입니다) 그건 주·도가 옅게 칠합니다. */
       if (덮임) continue;
-      ctx.fillStyle = 감 ? 내것 : 땅;
+      /* ⚠⚠ **다녀온 나라도 밑에 땅을 먼저 깝니다(b779).** ⚠⚠ 확대하면 주황이
+         옅어지는데(1-0.94섞), 전에는 그 밑이 종이색 바다라 «옅은 주황 땅»으로
+         보였습니다. 바다가 먹물색이 된 지금은 밑에 땅이 없으면 **바다색 땅**이
+         됩니다. */
+      const 칠하기 = () => {
+        ctx.globalAlpha = 1; ctx.fillStyle = 땅; ctx.fill();
+        if (감){ ctx.globalAlpha = 1 - 0.94 * 섞; ctx.fillStyle = 내것; ctx.fill(); }
+        ctx.globalAlpha = 1;
+      };
       /* ⚠ 전에는 «바다색»으로 그어 나라 사이를 «벌려» 놨습니다. 종이에서는
-         경계가 선이라야 새긴 것으로 읽힙니다 — 옅은 먹선으로 긋습니다. */
-      ctx.strokeStyle = 'rgba(46,38,26,.20)';
+         경계가 선이라야 새긴 것으로 읽힙니다 — 먹선으로 긋습니다.
+         b779 에 0.20 → 0.35 · 굵기 0.4 → 0.5: 미색 땅 위에서는 더 옅으면
+         나라 사이가 안 갈립니다(시안 ㅂ 값). */
+      ctx.strokeStyle = 'rgba(70,58,40,.35)';
       /* ── 윤곽을 «단계»로 고릅니다(b772) ─────────────────────────────
        * ⚠⚠ **사용자 물음: 「처음부터 세계지도 사이즈에서도 그냥 고퀄리티
        *   지도로 그리면 안되냐」.** 세계 전체를 50m 로 두면 매 프레임
@@ -643,15 +681,13 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         ctx.beginPath();
         let 그렸나 = false;
         for (const q of 자세땅) if (조각길(q)) 그렸나 = true;
-        if (그렸나){ ctx.fill(); ctx.globalAlpha = 1; ctx.stroke(); }
+        if (그렸나){ 칠하기(); ctx.stroke(); }
         ctx.globalAlpha = 1;
       } else {
         const 고리들 = (자세한 && 자세한.code === 나라.code) ? 자세한.고리 : 나라.고리;
         for (const 고리 of 고리들){
           if (만들기(ctx, R, cx, cy, 고리, λ0, φ0)){
-            ctx.globalAlpha = 감 ? 1 - 0.94 * 섞 : 1;
-            ctx.fill();
-            ctx.globalAlpha = 1;
+            칠하기();
             ctx.stroke();
           }
         }
@@ -785,9 +821,17 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
                다녀온 곳 1-(1-0.06)(1-0.62) = **0.643**
            ⚠ 바탕이 남아 있을 때(주·도가 아직 안 왔거나 안 간 나라)는
              예전 값 그대로입니다 — 안 그러면 두 번 얹힙니다. */
-        const 덮었나 = 갔다.has(나라.code) && 주도 && 주도.length;
-        const 진하게 = 덮었나 ? 0.643 : 0.62;
-        const 옅게   = 덮었나 ? 0.088 : 0.03;
+        const 덮었나 = !!(갔다.has(나라.code) && 주도 && 주도.length);
+        /* ⚠⚠ **섞(0→1)을 «여기서» 곱합니다(b779).** ⚠⚠ 바탕(나라 칠)이 걷힌
+           나라는, 섞이 막 0 을 넘는 순간에도 **온 나라가 주황**이어야 합니다 —
+           전에는 그 순간 주·도가 섞×0.643 로 거의 투명해서 한 번 «깜빡» 비었다가
+           차올랐습니다. 종이색 바다일 땐 덜 보였는데, 바다가 짙어지니 바로
+           보입니다. 바탕이 있었다면 보였을 값을 겹쳐 셉니다:
+             다녀온 주  1-(0.94섞)(1-0.62섞)   섞=0 → 1 · 섞=1 → 0.643(예전 값)
+             안 간 주   1-(0.94섞)(1-0.03섞)   섞=0 → 1 · 섞=1 → 0.088
+           바탕이 남는 나라(주·도가 아직 안 왔거나 안 간 나라)는 예전처럼 섞×0.62 · 섞×0.03. */
+        const 진하게 = 덮었나 ? 1 - (0.94 * 섞) * (1 - 0.62 * 섞) : 섞 * 0.62;
+        const 옅게   = 덮었나 ? 1 - (0.94 * 섞) * (1 - 0.03 * 섞) : 섞 * 0.03;
 
         const 갔나 = id => visited?.has?.(id) || myRates?.[id]?.stars != null;
 
@@ -852,8 +896,10 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
           const 쪼갤까 = 섞2 > 0 && 칸.도시 && 칸.도시.length >= 2 && !!시군 && 간곳.length > 0;
           /* ⚠ 쪼갤 때는 주·도가 «진하게 → 옅게»로 넘어갑니다. 그 자리를 간 시·군이
              물려받습니다 — 다 넘어가면 간 시·군 = 진하게, 나머지 = 옅게. */
-          ctx.globalAlpha = 섞 * (칸.갔나
-            ? (쪼갤까 ? 진하게 + (옅게 - 진하게) * 섞2 : 진하게) : 옅게);
+          /* 바탕이 걷힌 나라는 여기서 땅을 깝니다(위 나라 칠의 `칠하기` 와 같은 이유). */
+          if (덮었나){ ctx.globalAlpha = 1; ctx.fillStyle = 땅; ctx.fill('evenodd'); }
+          ctx.globalAlpha = 칸.갔나
+            ? (쪼갤까 ? 진하게 + (옅게 - 진하게) * 섞2 : 진하게) : 옅게;
           ctx.fillStyle = 내것; ctx.fill('evenodd');
           /* ⚠ **테두리를 가늘게 했습니다(b769).** 0.7 · 알파 0.5 였습니다.
              맞닿은 두 주가 **각자 제 테두리를 그리므로** 맞닿은 선은 두 겹이
@@ -862,7 +908,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
              굵기쯤이 됩니다.
              ⚠ 없애지는 않습니다 — 칸을 가르는 일은 이 선이 합니다. */
           ctx.globalAlpha = 섞 * 0.32;
-          ctx.strokeStyle = 바다; ctx.lineWidth = 0.4; ctx.stroke();
+          ctx.strokeStyle = 종이; ctx.lineWidth = 0.4; ctx.stroke();
           ctx.globalAlpha = 1;
 
           if (쪼갤까){
@@ -873,7 +919,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
             ctx.save();
             ctx.clip('evenodd');
             /* 겹쳐서 «진하게»가 되게: 1-(1-옅게)(1-a) = 진하게 */
-            const 얹기 = 섞 * 섞2 * (1 - (1 - 진하게) / (1 - 옅게));
+            const 얹기 = 섞2 * (1 - (1 - 진하게) / (1 - 옅게));
             for (const id of 간곳){
               const 조각들 = 시군[id];
               if (!조각들){ 점찍을.push(id); continue; }
@@ -897,7 +943,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
               ctx.globalAlpha = 얹기;
               ctx.fillStyle = 내것; ctx.fill('evenodd');
               ctx.globalAlpha = 섞 * 섞2 * 0.32;
-              ctx.strokeStyle = 바다; ctx.lineWidth = 0.4; ctx.stroke();
+              ctx.strokeStyle = 종이; ctx.lineWidth = 0.4; ctx.stroke();
               /* 화면에서 5px 도 안 되면 칠이 안 보입니다 — 점을 같이 찍습니다. */
               if (x1 - x0 < 5 && y1 - y0 < 5) 점찍을.push(id);
             }
@@ -912,7 +958,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          * ⚠ 반지름 2.6px: 칠보다 튀지 않되 손끝만 한 크기에서도 보이게. */
         if (점찍을.length){
           const 자리 = new Map(도시.map(d => [d.c.id, d]));
-          ctx.globalAlpha = 섞 * 섞2 * 진하게;
+          ctx.globalAlpha = 섞2 * 진하게;
           ctx.fillStyle = 내것;
           for (const id of 점찍을){
             const d = 자리.get(id); if (!d) continue;
@@ -951,22 +997,35 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
          반들거리는 구슬입니다. 종이에 새긴 지구는 그렇게 안 빛납니다.
          하이라이트를 4분의 1로 줄이고, 가장자리 그늘은 «먹»으로 바꿔
          남겼습니다 — 구로 읽히게 하는 일은 그늘이 하기 때문입니다. */
+    /* ⚠⚠ **b779 에 «입체 조명»으로 바꿨습니다(사용자가 시안 ㅂ 고름).** ⚠⚠
+       왼쪽 위에서 빛이 들어 그쪽이 밝고, 오른쪽 아래가 가라앉습니다 — 예전
+       값(하이라이트 0.16 · 가장자리 0.15)보다 명암 폭이 두 배쯤입니다.
+       바닥 그림자(위 `자국`)와 짝입니다.
+       ⚠ 유리 광택으로 돌아가지 않았습니다 — 흰 점 반사가 아니라 넓게 번지는
+         빛이고, 가장자리 «빛테»도 왼쪽 위 초승달에만 아주 옅게(0.32) 둡니다. */
     {
-      const g = ctx.createRadialGradient(cx - R * 0.34, cy - R * 0.38, R * 0.06,
-                                         cx, cy, R * 1.02);
-      g.addColorStop(0,    'rgba(255,255,255,.16)');
-      g.addColorStop(0.34, 'rgba(255,255,255,.05)');
-      g.addColorStop(0.68, 'rgba(255,255,255,0)');
-      g.addColorStop(0.9,  'rgba(46,38,26,.05)');
-      g.addColorStop(1,    'rgba(46,38,26,.15)');
-      ctx.fillStyle = g;
+      const L = ctx.createRadialGradient(cx - R * 0.45, cy - R * 0.5, R * 0.05,
+                                         cx + R * 0.15, cy + R * 0.2, R * 1.35);
+      L.addColorStop(0,    'rgba(255,253,246,.315)');
+      L.addColorStop(0.35, 'rgba(255,253,246,.063)');
+      L.addColorStop(0.62, 'rgba(40,30,15,0)');
+      L.addColorStop(0.86, 'rgba(40,30,15,.147)');
+      L.addColorStop(1,    'rgba(40,30,15,.315)');
+      ctx.fillStyle = L;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+      const E = ctx.createRadialGradient(cx, cy, R * 0.86, cx, cy, R);
+      E.addColorStop(0, 'rgba(255,255,255,0)');
+      E.addColorStop(1, 'rgba(255,252,240,.294)');
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.32; ctx.fillStyle = E;
+      ctx.beginPath(); ctx.arc(cx, cy, R, Math.PI * 0.75, Math.PI * 1.75); ctx.lineTo(cx, cy); ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
 
     /* ── ⑦ 테두리 ── 머리카락 한 올. 구와 배경을 갈라 줍니다 ───────── */
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(46,38,26,.22)'; ctx.stroke();
+    ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(46,38,26,.40)'; ctx.stroke();   /* b779 .22 → .40 — 짙어진 바다 가장자리를 한 올로 마무리 */
 
     /* ── ⑧ 이름 (b707) ───────────────────────────────────────────────
      * 사용자: 「구글지도처럼 국가 이름도 뜨면 좋겠네」 · 「확대하고부터 이름이 뜨자」
