@@ -14,15 +14,21 @@
  * `xlsxLib` 는 **쓸 때 받아옵니다.** 엑셀을 안 올리는 사람이 대부분인데
  * 그 라이브러리는 큽니다 — planmap.js 의 Leaflet 과 같은 이유입니다.
  *
+ * ⚠⚠ **날짜·시간·일정 칸이 있는 표는 AI 를 안 거칩니다(b784, sheetimp.js).**
+ *   고르는 순간 표를 읽어 「11/6 10개 · 11/7 14개…」를 보여 주고 단추가
+ *   「N개 넣기」로 바뀝니다. 누르면 한 번에 넣고 위치까지 찾아 찍습니다.
+ *   사진·글·낯선 표는 예전처럼 AI 로 읽어 카드로 보여 줍니다(아래 imp_go).
+ *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
- *     이미 떼어낸 aiui.js · cards.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b783';
-import { sb } from './db.js?v=b783';
-import { fail } from './net.js?v=b783';
-import { trip } from './trip.js?v=b783';
-import { syncSheets } from './ui.js?v=b783';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b783';
-import { drawCards } from './cards.js?v=b783';
+ *     이미 떼어낸 aiui.js · cards.js · sheetimp.js 를 씁니다. */
+import { $, esc, toast } from './dom.js?v=b784';
+import { sb } from './db.js?v=b784';
+import { fail } from './net.js?v=b784';
+import { trip } from './trip.js?v=b784';
+import { syncSheets } from './ui.js?v=b784';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b784';
+import { drawCards } from './cards.js?v=b784';
+import { 표에서일정, 글표, 일정넣기, 좌표찾기, 넣은것되돌리기, 지도로찍기 } from './sheetimp.js?v=b784';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }
@@ -79,12 +85,32 @@ async function loadXlsx(){
 }
 
 /* 엑셀을 글자로 바꿉니다. 시트가 여럿이면 시트 이름을 붙여 이어 씁니다 —
-   "숙소" 시트와 "일정" 시트가 나뉘어 있는 파일이 흔합니다. */
-async function xlsxToText(file){
+   "숙소" 시트와 "일정" 시트가 나뉘어 있는 파일이 흔합니다.
+   ⚠ **줄×칸(rows)도 같이 돌려줍니다(b784).** 표로 읽을 수 있으면 AI 없이 넣습니다.
+     `raw:false` — 화면에 보이는 글자 그대로(「11/6 (금)」·「10:50」). */
+async function xlsxRead(file){
   const X = await loadXlsx();
   const wb = X.read(await file.arrayBuffer(), { type:'array' });
-  return wb.SheetNames.map(name =>
-    `[${name}]\n` + X.utils.sheet_to_csv(wb.Sheets[name])).join('\n\n').slice(0, 8000);
+  return {
+    text: wb.SheetNames.map(name =>
+      `[${name}]\n` + X.utils.sheet_to_csv(wb.Sheets[name])).join('\n\n').slice(0, 8000),
+    sheets: wb.SheetNames.map(name =>
+      X.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:false, defval:'' })),
+  };
+}
+
+/* 시트마다 표를 찾아 합칩니다. 날마다 시트를 나눈 파일도 흔합니다.
+   표가 하나도 없으면 null — 그때는 AI 가 읽습니다. */
+function 표모으기(sheets){
+  let 찾음 = false;
+  const 합 = { items: [], 날짜밖: 0, 날짜모름: 0 };
+  for (const rows of sheets){
+    const t = 표에서일정(rows, trip);
+    if (!t) continue;
+    찾음 = true;
+    합.items.push(...t.items); 합.날짜밖 += t.날짜밖; 합.날짜모름 += t.날짜모름;
+  }
+  return 찾음 ? 합 : null;
 }
 
 /* ⚠ 전에는 머리줄의 `불러오기`(#impbtn)가 이걸 열었습니다. **그 단추가 무엇을
@@ -96,6 +122,9 @@ function openImport(){
   $('plancard').classList.add('hide');
   $('importcard').classList.remove('hide');
   $('imperr').classList.add('hide');
+  /* 앞서 넣은 결과 칸은 걷습니다. 위치 찾기가 아직 돌고 있으면 뒤에서 마저
+     돕니다 — 판만 넘겨서 그 글이 새 카드를 덮지 않게 합니다(b784). */
+  $('imp_done').classList.add('hide'); ++좌표판;
   impShots = []; impFiles = [];
   $('imp_text').value = '';
   drawImpPicked();
@@ -123,7 +152,153 @@ function drawImpPicked(){
   $('imp_files').classList.toggle('hide', !impFiles.length);
   $('imp_files').textContent = impFiles.length
     ? '파일 ' + impFiles.map(f => f.name).join(' · ') : '';
+  표미리보기();
 }
+
+/* ── 표로 바로 넣을 수 있나(b784) ──────────────────────────────────────
+ * 고른 것이 **전부 표**이고 사진·붙여넣은 글이 없을 때만입니다. 섞여 있으면
+ * AI 가 한꺼번에 읽는 편이 맞습니다(사진 속 일정과 표를 맞춰 봐야 하므로). */
+const 표합 = () => impFiles.map(f => f.표).filter(Boolean);
+function 표로갈까(){
+  return impFiles.length > 0 && impFiles.every(f => f.표) && !impShots.length
+      && !$('imp_text').value.trim() && 표합().some(t => t.items.length);
+}
+const 요일 = d => '일월화수목금토'[new Date(d + 'T00:00:00Z').getUTCDay()];
+const 짧은날 = d => `${+d.slice(5, 7)}/${+d.slice(8)}(${요일(d)})`;
+/* 넣기 **전에** 무엇이 어디로 들어가는지 보여 줍니다. 묻는 단계 대신입니다 —
+   「다 담기」가 확인 없이 넣던 것이 문제였던 자리(b388, cards.js)와 같은 이유. */
+function 표미리보기(){
+  const 칸 = $('imp_table');
+  const 표들 = 표합();
+  const items = 표들.flatMap(t => t.items);
+  const 간다 = 표로갈까();
+  $('imp_go').textContent = 간다 ? `일정 ${items.length}개 넣기` : '읽어오기';
+  const 뺀 = 표들.reduce((s, t) => s + t.날짜밖, 0);
+  const 모름 = 표들.reduce((s, t) => s + t.날짜모름, 0);
+  if (!간다 && !(표들.length && !items.length)){ 칸.classList.add('hide'); 칸.innerHTML = ''; return; }
+  if (!items.length){
+    칸.innerHTML = `표는 읽었는데 이 여행 날짜(${짧은날(trip.start_date)}~${짧은날(trip.end_date)})에 ` +
+                  `맞는 줄이 없어요.` + (뺀 ? ` 날짜 밖 ${뺀}줄.` : '');
+    칸.classList.remove('hide');
+    return;
+  }
+  const 날마다 = {};
+  for (const it of items) 날마다[it.date] = (날마다[it.date] || 0) + 1;
+  칸.innerHTML = `<b>표에서 일정 ${items.length}개를 읽었어요</b><br>` +
+    esc(Object.keys(날마다).sort().map(d => `${짧은날(d)} ${날마다[d]}개`).join(' · ')) +
+    (뺀 ? `<br>여행 날짜 밖이라 뺀 줄 ${뺀}개` : '') +
+    (모름 ? `<br>날짜를 못 읽어 뺀 줄 ${모름}개` : '') +
+    '<br>누르면 바로 일정에 들어가고 위치도 찾아서 찍어요. 이미 있는 줄은 다시 안 넣어요.';
+  칸.classList.remove('hide');
+}
+$('imp_text').addEventListener('input', 표미리보기);
+
+/* ── 표로 넣기 ── 넣고 → 일정을 다시 그리고 → 위치를 찾습니다.
+ * ⚠ 위치 찾기는 **뒤에서 계속** 돕니다(OSM 이 초당 한 번이라 30곳이면 30초 남짓).
+ *   카드를 닫아도 멈추지 않습니다 — 되돌리기를 눌렀을 때만 멈춥니다.
+ * ⚠ `좌표판` — 새로 불러오거나 되돌리면 앞선 찾기가 글을 덮지 않게 판을 셉니다. */
+let 방금넣은 = [], 좌표판 = 0, 되돌린판 = -1;
+function 좌표말(r){
+  if (r.그만둠) return '';
+  if (r.안됨)
+    return '위치는 못 찾았어요' + (r.이유 ? ` (${r.이유})` : '') +
+           '. 일정 화면의 「좌표 채우기」로 다시 해볼 수 있어요.';
+  const 못 = r.못찾음 || [];
+  const 줄수 = 못.reduce((s, g) => s + g.ids.length, 0);
+  return `위치 ${r.찍음}줄을 찍었어요.` +
+    (못.length ? ` 지도에서 못 찾은 ${못.length}곳(${줄수}줄)은 아래에 구글 지도 링크를 붙이면` +
+                 ' 그 곳의 줄에 한꺼번에 찍혀요.' : '') +
+    (r.장소아님 ? ` 점심·휴식처럼 어디인지 정해지지 않은 ${r.장소아님}줄은 비워 뒀어요.` : '') +
+    (r.멈춤 ? ' 지도 서버가 잠시 쉬라고 해서 멈췄어요 — 남은 곳도 아래에 있어요.' : '');
+}
+
+/* ── 못 찾은 곳 — 곳마다 링크 한 번(b784) ──────────────────────────────
+ * 료칸 하나가 여섯 줄에 나옵니다. 줄마다 「수정」을 열어 링크를 붙이게 하면
+ * 여섯 번이라, 곳으로 묶어 한 칸씩만 보여 줍니다(sheetimp.js 의 지도로찍기). */
+/* 일정 다시 받기. 연결이 끊겨 실패해도 넣기·위치 찾기 흐름은 이어갑니다 —
+   이미 들어간 것은 들어간 것이고, 화면은 다음에 열 때 맞춰집니다. */
+const 다시그리기 = async () => { try { await ctx.loadPlans(); } catch {} };
+let 못묶음 = [];
+function 못그리기(){
+  const 칸 = $('imp_miss');
+  칸.innerHTML = 못묶음.map((g, i) => `
+    <div style="margin-top:10px">
+      <div><b>${esc(g.이름)}</b> <span class="memo">· ${g.ids.length}줄</span>` +
+      (g.끝 ? ` <span style="color:var(--ok)">✓ ${esc(g.끝)}</span></div>` : `</div>
+      <div style="display:flex; gap:6px; margin-top:4px">
+        <input data-missurl="${i}" placeholder="구글 지도 링크 붙여넣기" inputmode="url"
+               style="flex:1; min-width:0">
+        <button class="small" data-missgo="${i}">찍기</button>
+      </div>`) + `
+    </div>`).join('');
+  칸.classList.toggle('hide', !못묶음.length);
+}
+$('imp_miss').addEventListener('click', async e => {
+  const b = e.target.closest('[data-missgo]');
+  if (!b) return;
+  const i = +b.dataset.missgo, g = 못묶음[i];
+  if (!g) return;
+  const 글 = $('imp_miss').querySelector(`[data-missurl="${i}"]`)?.value || '';
+  $('imperr').classList.add('hide');
+  b.disabled = true; b.innerHTML = '<span class="load">찾는 중…</span>';
+  const r = await 지도로찍기(g.ids, 글, g.near);
+  b.disabled = false; b.textContent = '찍기';
+  if (r.안됨) return fail(r.안됨, 'imp');
+  g.끝 = `${r.찍음}줄에 찍었어요`;
+  못그리기();
+  await 다시그리기();
+});
+async function 표로넣기(){
+  const b = $('imp_go');
+  const items = 표합().flatMap(t => t.items);
+  $('imperr').classList.add('hide');
+  b.disabled = true; b.innerHTML = '<span class="load">넣는 중…</span>';
+  let 결과;
+  try { 결과 = await 일정넣기(items, guessCat); }
+  catch (err){ b.disabled = false; 표미리보기(); return fail(err, 'imp'); }
+  b.disabled = false;
+  impFiles = []; impShots = []; $('imp_text').value = '';
+  drawImpPicked();
+  const { 넣은, 있던 } = 결과;
+  const 판 = ++좌표판;
+  방금넣은 = 넣은.map(x => x.id);
+  못묶음 = []; 못그리기();
+  $('imp_done').classList.remove('hide');
+  $('imp_done_msg').textContent = 넣은.length
+    ? `일정 ${넣은.length}개를 넣었어요.` + (있던 ? ` 이미 있던 ${있던}개는 건너뛰었어요.` : '')
+    : `새로 넣을 것이 없어요 — ${있던}개가 이미 들어 있어요.`;
+  $('imp_undo').classList.toggle('hide', !넣은.length);
+  $('imp_geo_msg').textContent = 넣은.length ? '위치를 찾는 중…' : '';
+  /* 결과 칸은 시트 맨 아래(「읽어오기」 밑)라 폰에서는 화면 밖입니다 — 내려 줍니다. */
+  $('imp_done').scrollIntoView({ block: 'nearest' });
+  await 다시그리기();
+  if (!넣은.length) return;
+  const r = await 좌표찾기(넣은, (단계, i, n) => {
+    if (판 !== 좌표판) return;
+    $('imp_geo_msg').textContent = 단계 === '이름'
+      ? '장소 이름을 확인하는 중…(10초쯤)' : `위치를 찾는 중… ${i}/${n}`;
+  }, () => 되돌린판 === 판);
+  if (되돌린판 === 판) return;
+  await 다시그리기();
+  if (판 !== 좌표판) return;
+  $('imp_geo_msg').textContent = 좌표말(r);
+  못묶음 = r.못찾음 || [];
+  못그리기();
+}
+$('imp_undo').addEventListener('click', async () => {
+  const u = $('imp_undo');
+  if (!방금넣은.length) return;
+  되돌린판 = 좌표판;
+  u.disabled = true; u.innerHTML = '<span class="load">되돌리는 중…</span>';
+  try { await 넣은것되돌리기(방금넣은); }
+  catch (err){ u.disabled = false; u.textContent = '방금 넣은 것 되돌리기'; return fail(err, 'imp'); }
+  toast(`${방금넣은.length}개를 되돌렸어요.`);
+  방금넣은 = [];
+  못묶음 = []; 못그리기();
+  u.disabled = false; u.textContent = '방금 넣은 것 되돌리기';
+  $('imp_done').classList.add('hide');
+  await 다시그리기();
+});
 $('imp_shots').addEventListener('click', e => {
   const b = e.target.closest('[data-impx]'); if (!b) return;
   impShots.splice(+b.dataset.impx, 1); drawImpPicked();
@@ -141,7 +316,10 @@ $('imp_file').addEventListener('change', async e => {
     }
     if (/\.xlsx?$/i.test(f.name)){
       toast('엑셀을 읽는 중…');
-      try { impFiles.push({ name: f.name, text: await xlsxToText(f) }); }
+      try {
+        const { text, sheets } = await xlsxRead(f);
+        impFiles.push({ name: f.name, text, 표: 표모으기(sheets) });
+      }
       catch (err){ fail(err, 'imp'); }
       continue;
     }
@@ -152,13 +330,15 @@ $('imp_file').addEventListener('change', async e => {
     /* 나머지는 글자 파일로 봅니다. CSV·TSV·메모장이 여기 들어옵니다. */
     try {
       const text = await f.text();
-      impFiles.push({ name: f.name, text: text.slice(0, 8000) });
+      impFiles.push({ name: f.name, text: text.slice(0, 8000), 표: 표모으기([글표(text)]) });
     } catch { fail(`${f.name} 을 읽지 못했어요.`, 'imp'); }
   }
   drawImpPicked();
 });
 
 $('imp_go').addEventListener('click', async () => {
+  /* 표면 AI 를 안 거칩니다(b784 — 위 `표로넣기`). */
+  if (표로갈까()) return 표로넣기();
   const b = $('imp_go');
   $('imperr').classList.add('hide');
   const typed = $('imp_text').value.trim();

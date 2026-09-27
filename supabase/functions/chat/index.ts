@@ -568,6 +568,8 @@ Deno.serve(async (req) => {
     // 불러오기 — 이미 짜둔 일정(엑셀·사진·글)을 읽어 일정 카드로 만듭니다.
     // 초안과 같은 자리를 씁니다. 둘 다 "날짜가 붙은 여러 개"를 내놓기 때문입니다.
     const imp = mode === 'import';
+    // 표로 넣은 일정의 «장소 이름» 짓기(b784) — 아래 ai_take 바로 뒤에서 처리하고 끝냅니다.
+    const geo = mode === 'places';
 
     // 사진. 간판·메뉴판·티켓을 찍어 물어보는 자리입니다.
     // 화면에서 이미 긴 쪽 1024px JPEG 으로 줄여 보냅니다. 여기서는 크기만 다시 봅니다 —
@@ -593,8 +595,10 @@ Deno.serve(async (req) => {
     }
     const shot = shots.length ? shots[0] : null;   // 아래 검색 건너뛰기 판단에 씁니다
 
-    if (!draft && !shots.length && (!message || !String(message).trim()))
+    if (!draft && !geo && !shots.length && (!message || !String(message).trim()))
       return json({ error: '물어볼 말을 적어주세요.' }, 400);
+    if (geo && !(Array.isArray(body.items) && body.items.length))
+      return json({ error: '찾을 일정이 없어요.' }, 400);
     if ((draft || imp) && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
     if (imp && !shots.length && !String(message ?? '').trim())
@@ -608,7 +612,8 @@ Deno.serve(async (req) => {
     // 아래 기본값으로 갑니다 — 설정을 못 읽었다고 답을 안 해주면 안 됩니다.
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const [{ data: take, error: takeErr }, { data: cfgRows }] = await Promise.all([
-      admin.rpc('ai_take', { p_user: user.id, p_kind: draft ? 'draft' : imp ? 'import' : 'chat' }),
+      admin.rpc('ai_take', { p_user: user.id,
+                             p_kind: draft ? 'draft' : (imp || geo) ? 'import' : 'chat' }),
       admin.from('app_settings').select('key,value'),
     ]);
     const cfg: Record<string, any> =
@@ -627,6 +632,89 @@ Deno.serve(async (req) => {
       }, 429);
 
     mark('ai_take');
+
+    // ── 표로 넣은 일정의 «장소 이름» 짓기(b784) ────────────────────────
+    // 표는 화면이 AI 없이 그대로 읽어 넣습니다(sheetimp.js). 여기서는 줄마다
+    // «실제로 어디인지»의 **현지 이름만** 짓습니다. 좌표는 적지 않습니다 —
+    // 화면이 OSM 으로 찾고 그 줄 지역의 40km 안에서, 이름이 맞는 것만 받습니다.
+    // 실측(2026-09-27, 나라=일본): 한국어 이름으로는 OSM 이 10곳 중 1곳만 맞혔고
+    // 1곳은 엉뚱한 데였습니다. 일본어 이름으로는 8곳이 맞았습니다.
+    // 지역(유후인·벳푸…)은 **기준점**으로만 쓰므로 AI 좌표로 충분합니다 —
+    // 몇 km 틀려도 40km 창 안의 진짜 장소는 그대로 걸립니다.
+    // **대화 기록(chats)에 안 남깁니다.** 사용자가 쓴 말이 아니라 화면이 부른 일입니다.
+    if (geo) {
+      // deno-lint-ignore no-explicit-any
+      const items: any[] = (body.items as any[]).slice(0, 200);
+      const country = String(body.country ?? '').slice(0, 2).toUpperCase();
+      const cell = (v: unknown, n: number) =>
+        String(v ?? '').replace(/[\t\r\n]+/g, ' ').trim().slice(0, n);
+      const table = items.map((it, i) =>
+        [i, cell(it?.date, 10), cell(it?.area, 40), cell(it?.title, 100), cell(it?.memo, 160)]
+          .join('\t')).join('\n');
+      const placeSystem = [
+        '너는 여행 일정표의 줄마다 그 일정이 «실제로 일어나는 곳»을 정하는 조수다.',
+        `나라: ${country || '모름'}. 받는 것: 번호 · 날짜 · 지역 · 일정 · 메모 (탭으로 나뉨).`,
+        '',
+        '정하는 법:',
+        '- 한 줄에 한 곳. 그 곳의 **현지어 공식 이름**(local)과 **영어 이름**(en)을 쓴다.',
+        '  ko 에는 표에 적힌 그 곳의 한국어 이름을 쓴다(「메바에소」·「BAND HOTEL HAKATA」).',
+        '  같은 곳이면 줄마다 ko·local 을 똑같이 쓴다 — 화면이 같은 곳끼리 묶는다.',
+        '  local 은 그 나라 지도에 적힌 이름이다(일본이면 일본어). 지도 검색에 그대로 넣는다.',
+        '  예) 우미지고쿠 → local "海地獄", en "Umi Jigoku"',
+        '      캐널시티 하카타 → local "キャナルシティ博多", en "Canal City Hakata"',
+        '- 한 줄에 곳이 둘이면(「후쿠오카성터 · 마이즈루공원」) 먼저 적힌 곳을 local 로,',
+        '  다른 곳의 현지어 이름을 alt 로 쓴다. 지도에 없을 수 있는 시설(로프웨이·작은 가게)은',
+        '  **같은 자리를 가리키는** 다른 이름(탑승역·본관 이름)이 있으면 alt 로 쓴다. 없으면 null.',
+        '- 이동하는 줄(「A → B」, 「~ 이동」, 「~행 버스 탑승」, 「렌터카 반납 · 벳푸역 이동」)은',
+        '  **도착하는 곳**이다. 항공편 도착·출발은 그 공항이다.',
+        '- 줄에 장소 이름이 없어도 **표의 다른 줄로 확실히 알 수 있으면** 그 곳이다.',
+        '  예) 숙소에 묵는 날 저녁의 「온천」·「가이세키 저녁」, 다음 날 「조식」 → 그 숙소.',
+        '      「체크아웃 · 캐리어 호텔 보관」 → 그 전에 체크인한 호텔.',
+        '- 어느 가게인지 모르고 동네만 알면(「텐진·다이묘 저녁」) 그 동네 이름을 쓴다.',
+        '- **모르면 null.** 「점심」·「휴식」·「자유시간」처럼 어디인지 표로 알 수 없으면',
+        '  local 과 en 을 null 로 둔다. 이름을 지어내지 않는다 — 틀린 이름은 엉뚱한 핀이 된다.',
+        '- 지역 칸에 나온 값마다 그 지역의 현지어 이름과 중심 위도·경도를 적는다.',
+        '  name 은 지역 칸에 적힌 글자 그대로 쓴다. 「A → B」 꼴이면 B 의 중심이다.',
+        '',
+        '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다. 모든 번호를 낸다.',
+        '{',
+        '  "rows": [ { "i": 0, "ko": "우미지고쿠", "local": "海地獄" 또는 null, "alt": null,',
+        '              "en": "Umi Jigoku" 또는 null } ],',
+        '  "areas": [ { "name": "벳푸", "local": "別府", "lat": 33.28, "lng": 131.49 } ]',
+        '}',
+      ].join('\n');
+      const t = await askGemini(key, [
+        { role: 'user',  parts: [{ text: placeSystem }] },
+        { role: 'model', parts: [{ text: '알겠습니다. 확실한 곳만 적겠습니다.' }] },
+        { role: 'user',  parts: [{ text: '번호\t날짜\t지역\t일정\t메모\n' + table }] },
+      ], true);
+      mark('gemini');
+      console.log('TIMING places | ' + lap.join(' | ') + ' | 총 ' + (Date.now() - T0) +
+                  'ms | 줄 ' + items.length);
+      if (!t) return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 해주세요.' }, 502);
+      // deno-lint-ignore no-explicit-any
+      let o: any = {};
+      try { o = JSON.parse(t); } catch { return json({ error: '답을 읽지 못했어요.' }, 502); }
+      const txt = (v: unknown, n: number) =>
+        typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null;
+      // 번호를 글자("0")로 주는 일이 있어 숫자로 펴서 봅니다.
+      const rows = (Array.isArray(o?.rows) ? o.rows : [])
+        // deno-lint-ignore no-explicit-any
+        .map((r: any) => ({ i: Number(r?.i), ko: txt(r?.ko, 60), local: txt(r?.local, 80),
+                            alt: txt(r?.alt, 80), en: txt(r?.en, 80) }))
+        .filter((r: { i: number }) => Number.isInteger(r.i) && r.i >= 0 && r.i < items.length);
+      const areas = (Array.isArray(o?.areas) ? o.areas : [])
+        // deno-lint-ignore no-explicit-any
+        .filter((a: any) => a && txt(a.name, 60) && typeof a.lat === 'number' &&
+                            typeof a.lng === 'number' && Math.abs(a.lat) <= 90 &&
+                            Math.abs(a.lng) <= 180)
+        .slice(0, 40)
+        // deno-lint-ignore no-explicit-any
+        .map((a: any) => ({ name: txt(a.name, 60), local: txt(a.local, 60),
+                            lat: a.lat, lng: a.lng }));
+      return json({ rows, areas });
+    }
+
     // ── 여행 자료 ── 없으면 없는 대로 답합니다.
     let ctx = '';
     // 링크 읽기를 **여기서 미리 걸어둡니다.** 아래 여행 자료를 받아오는 동안
