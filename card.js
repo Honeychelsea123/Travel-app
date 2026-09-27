@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b774';
+import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b775';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b774';
+import { distKm, pScale, SEOUL } from './calc.js?v=b775';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -313,7 +313,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.webp?v=b774`;
+    img.src = `./persona/${code}.webp?v=b775`;
   });
 }
 
@@ -541,356 +541,354 @@ const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r);
  * 테두리·머리말·바닥글은 흐름에 안 넣습니다. 종이의 일부라 늘 같은 자리에
  * 있어야 합니다. */
 
+/* ══ 성향 공유 카드(b775 에 새로 그림, 사용자 결정 「ㄱ으로 가자」) ══════
+ * 사용자: 「공유카드 퀄리티가 너무 구려」.
+ *
+ * ⚠⚠ **분석 탭 화면을 그대로 옮긴 그림입니다.** ⚠⚠
+ *   b775 이전 카드는 **종이 디자인(b584~b628) 이전의 여권 콘셉트**로 그려져
+ *   있었습니다 — 둥근 카드, 주황 막대, 색 칠한 상자, ARRIVED·NEXT TRIP
+ *   도장, 여권 코드 줄. 캔버스 그림이라 앱을 종이로 갈아입힐 때 같이 안
+ *   바뀌었고, 그래서 **혼자 다른 앱처럼** 보였습니다(b773 도시 카드와 같은
+ *   사연). 사람들이 보고 공유하고 싶어진 것은 분석 탭 화면이므로 카드도
+ *   그것과 똑같이 생겨야 합니다.
+ *   시안 셋(분석 탭 그대로 / + 여권 한 줄 / 세로판) 중 첫째를 골랐습니다.
+ *
+ * ⚠ **치수는 시안(폭 360)의 1px 을 `u` 로 불러 씁니다.** 시안이 곧 설계도라
+ *   숫자를 옮겨 적기만 하면 됩니다 — 1080 폭이면 u = 3 입니다.
+ *   값을 만지려거든 시안의 숫자와 같이 보십시오.
+ *
+ * ⚠ **세 크기는 «높이 비율»로 가릅니다.** 히어로는 원본 비(3:2) 그대로라
+ *   (b740, 사용자 지시 「이미지 원본 비율 유지해줘야지」) 폭이 1080 이면
+ *   늘 720 을 먹습니다. 남는 높이에 들어가는 만큼만 넣습니다:
+ *     스토리(1920) — 축 · 궁합(그림 크게) · 추천 · 바닥
+ *     세로(1350)   — 축 · 궁합(그림 작게 한 줄) · 바닥
+ *     정사각(1080) — 축 · 바닥
+ *   시안 셋에서 셋 다 딱 들어가는 것을 재서 확인했습니다.
+ *
+ * ⚠ **궁합과 추천은 없을 수도 있습니다.** 로그인 전 맛보기(try.js)는 내
+ *   유형 하나만 넘깁니다. 없으면 그 칸을 통째로 비웁니다 — 빈 자리는
+ *   바닥 위로 모입니다(시안의 `margin-top:auto`).
+ *
+ * ⚠ **팔레트가 따로입니다(`P16N`).** 옛 `P16` 은 여권 스탬프 면(drawStamps)이
+ *   아직 씁니다. 거기까지 바꾸면 그 카드도 같이 달라지는데, 사용자가 고른
+ *   것은 이 카드뿐입니다. ⚠ 그래서 지금은 **스탬프 면이 옛 옷**입니다 —
+ *   둘을 나란히 올리면 다른 앱처럼 보입니다. 맞추려거든 그 함수를 이
+ *   모양으로 옮기고 `P16` 을 걷으십시오.
+ *
+ * ⚠ 걷은 것: 둥근 카드와 테두리 · ARRIVED 도장 · PASSPORT 머리말과 상위 %
+ *   알약(→ 히어로 안 한 줄로) · 개국/도시 큰 숫자(→ 같은 한 줄) · 주황 막대
+ *   (→ 먹색) · 궁합 색 상자(→ 그림 + 왼쪽 색 선) · 추천 상자 · 여권 코드 줄
+ *   (`s.mrz` 는 이제 안 씁니다. 부르는 쪽은 그대로 넘겨도 됩니다) · 점선
+ *   바닥과 뜯는 홈 · NEXT TRIP 알약.
+ */
+const P16N = {
+  종이:'#F3F0E8', 잉크:'#1B1B1F', 흐림:'#807C74', 선:'#DFDAD0', 홈:'#E3DDD0',
+  주황:'#F25E26', 밝은주황:'#FF9166', 좋음:'#5A7A46', 나쁨:'#B0574E',
+};
+
+/* 궁합 그림 — 화면이 쓰는 720px 판(m/)입니다. 원본 webp(약 500KB)를 둘 더
+   받을 이유가 없습니다. 이 카드에서 궁합 그림은 폭 430px 남짓입니다. */
+function p16Thumb(code){
+  return new Promise(ok => {
+    if (!code) return ok(null);
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = () => ok(null);      /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
+    img.src = `./persona/m/${code}.jpg?v=b775`;
+  });
+}
+
+/* 그림을 칸에 «꽉 차게»(object-fit:cover) 놓습니다. 비가 같으면 자르지 않습니다. */
+function 덮어그리기(g, img, x, y, w, h){
+  const sr = img.width / img.height, dr = w / h;
+  let sx = 0, sy = 0, sw = img.width, sh = img.height;
+  if (sr > dr){ sw = img.height * dr; sx = (img.width - sw) / 2; }
+  else if (sr < dr){ sh = img.width / dr; sy = (img.height - sh) / 2; }
+  g.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
 async function drawP16(s, W, H, F){
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
   const kind = s.code[0] === 'H' ? 'H' : 'F';
-  const cx = W / 2;
-  const L = W * .078, R = W * .922;          /* 내용의 좌우 끝 */
-  const 여백 = W * .018;                      /* 카드가 캔버스에서 물러난 만큼 */
-  const 둥금 = W * .046;
 
-  /* ── 종이 ── */
-  /* ⚠ **투명 배경(b498).** 바깥 흰 바탕만 안 칠합니다 — 둥근 카드 자체는
-     그대로 남습니다. 스토리에 올릴 때 자기 배경 위에 얹으라고 두는
-     갈래입니다. 전에는 종이색이 화면을 꽉 채워 **흰 사각형**이었습니다.
-     ⚠ 투명은 PNG 에서만 삽니다. 이 카드들은 이미 PNG 로 뽑습니다. */
-  if (!s.투명){ g.fillStyle = P16.판; g.fillRect(0, 0, W, H); }
-  g.fillStyle = P16.카드;
-  rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.fill();
-  g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
+  /* ── 종이 ── 화면 끝까지 칠합니다(시안 그대로). 모서리는 각집니다 —
+     앱이 b628 에 모서리를 토큰째 0 으로 뒀습니다.
+     ⚠ **투명판(b498)은 없앴습니다(b775, 사용자: 「굳이 투명판 없어도 될것
+       같아」).** 저장 시트의 「배경 포함 / 투명」 줄도 같이 걷었습니다.
+       되살리려거든 그 줄(index.html 의 #cardsheet)부터 되돌려야 합니다. */
+  const PX = 0, PY = 0, PW = W, PH = H;
+  const u = PW / 360;
+  const px = v => v * u;
+  g.fillStyle = P16N.종이; g.fillRect(PX, PY, PW, PH);
   g.save();
-  rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.clip();
+  g.beginPath(); g.rect(PX, PY, PW, PH); g.clip();
 
-  /* ── ARRIVED 도장 ── 모서리에 걸쳐 잘립니다. 다 보이면 장식이 아니라
-        내용처럼 읽힙니다. 아주 흐리게 — 눈에 걸리면 안 됩니다. */
-  {
-    const r = W * .150;
-    /* ⚠ **도장을 배지보다 먼저 그리므로 겹치는 자리는 배지가 덮어 지웁니다.**
-       처음에 글자를 배지와 같은 높이에 두어 'VE' 만 남았습니다. 시안도
-       글자가 배지보다 위·오른쪽에 있어서 안 겹칩니다. 거기에 맞춥니다. */
-    g.save(); g.translate(W * .915, -W * .010); g.rotate(-Math.PI / 9);
-    g.strokeStyle = 'rgba(242,94,38,.22)'; g.lineWidth = W * .003;
-    g.setLineDash([W * .020, W * .014]);
-    g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke();
-    g.setLineDash([]);
-    g.beginPath(); g.arc(0, 0, r * .86, 0, Math.PI * 2); g.stroke();
-    g.font = F(800, W * .026); g.fillStyle = "rgba(242,94,38,.34)";
-    g.textAlign = 'left';
-    spaced(g, "ARRIVED", 0, r * .35, W * .005);
-    g.restore();
-  }
-
-  /* ── 머리말 ── */
-  const hy = W * .088;
-  g.font = F(700, W * .024); g.fillStyle = P16.아주흐림; g.textAlign = 'left';
-  {   /* 자간을 벌립니다. 여권 표지처럼 보이게 하는 유일한 장치입니다. */
-    let x = L;
-    for (const ch of 'PASSPORT · 여행 성향'){
-      g.fillText(ch, x, hy); x += g.measureText(ch).width + W * .004;
-    }
-  }
-  {   /* 상위 % 는 **알약 배지**입니다. 맨 글씨로 두면 그냥 한 줄이 됩니다. */
-    g.font = F(800, W * .027);
-    const tw = g.measureText(s.rank).width, ph = W * .058, pw = tw + W * .054;
-    g.fillStyle = P16.배지;
-    rrect(g, R - pw, hy - ph * .72, pw, ph, ph / 2); g.fill();
-    g.fillStyle = P16.주황; g.textAlign = 'center';
-    g.fillText(s.rank, R - pw / 2, hy + ph * .04);
-  }
-
-  const art = await p16Image(s.code);
-
-  /* ⚠ **궁합과 MRZ 는 없을 수도 있습니다(b406).** 로그인 전 맛보기 카드
-     (try.js)는 **내 유형 하나만** 보여줍니다 — 아직 계정이 없어 몇 개국을
-     다녀왔는지도 모르고, 궁합은 상대가 있어야 뜻이 있습니다.
-     없으면 그 칸을 통째로 비웁니다(카드가 그만큼 짧아집니다).
-     ⚠ 예전에는 `s.best.line` 을 그냥 읽어서 **없으면 그리다 터졌습니다.** */
   const 궁합있음 = !!(s.best && s.worst);
-  const boxLines = 궁합있음 ? [s.best, s.worst].map(m => {
-    g.font = F(500, W * .026);
-    return wrapText(g, m.line || '', (R - L) / 2 - W * .080).slice(0, 2);
-  }) : [];
-  const boxN = boxLines.length ? Math.max(...boxLines.map(l => l.length)) : 0;
-  /* ⚠ 글줄이 **어디서 시작하는지**까지 세야 합니다. .100 만 잡았더니
-     셋째 줄이 상자 밖으로 나갔습니다 — 글줄은 .140 부터 시작합니다. */
-  const 글줄시작 = .140, 글간 = .034;
-  const BOXH = 글줄시작 + boxN * 글간 + .020;
+  const [art, 좋은그림, 나쁜그림] = await Promise.all([
+    p16Image(s.code),
+    궁합있음 ? p16Thumb(s.best.code)  : null,
+    궁합있음 ? p16Thumb(s.worst.code) : null,
+  ]);
 
-  /* ── 다음에 갈 곳 두 줄 ──────────────────────────────────────────────
-     `spec.picks` 는 부르는 쪽(persona.js)이 rec.js 로 뽑아 넣어줍니다.
-     **card.js 는 추천을 계산하지 않습니다** — 여기서 또 세면 화면과 그림이
-     갈라집니다. 없으면 이 자리를 통째로 비웁니다(카드가 그만큼 짧아집니다). */
-  const 추천줄 = [['어울리는 곳',   s.picks?.match    || [], true],
-                  ['반대로 가보면', s.picks?.opposite || [], false]]
-                 .filter(([, names]) => names.length);
-  /* 상자 높이 — 제목(.046) 아래로 이름이 .042 씩. **이름이 적어도 높이는
-     같습니다** — 나란한 두 칸의 키가 다르면 표가 아니라 사고로 보입니다.
-     ⚠ **넷에서 셋으로 줄였습니다(b743, 사용자 결정).** 배너가 원본 비(3:2)로
-       커지면서 아래가 좁아졌는데, 추천은 «맛보기»라 넷이 꼭 필요하지
-       않습니다. 화면(분석 탭 「다음 여행」)에는 그대로 넷이 뜹니다.
-     ⚠ 아래 `names.slice(0, 3)` 과 **같은 수**여야 합니다. 하나만 고치면
-       칸이 남거나 이름이 상자 밖으로 나갑니다. */
-  const 픽수 = 3;
-  const PICKH = .100 + (픽수 - 1) * .042 + .030;
-
-  /* ⚠ **코드·축 낱말·유형 이름·설명은 이제 배너 «안»에 있습니다(b735).**
-     여기서 또 그리면 한 카드에 두 번 나옵니다. 배너는 아래 「히어로 배너」
-     자리에서 그립니다 — 블록 계산 밖입니다(비율이 고정이라). */
-  const blocks = [
-    { h:.090, draw:(y, U) => {                 /* 숫자는 크게, 단위는 작게 */
-        const N = F(800, U * .058), 단 = F(600, U * .032);
-        runs(g, [{ t:String(s.countries), f:N, c:P16.잉크 },
-                 { t:' 개국', f:단, c:P16.흐림 },
-                 { t:'   ·   ', f:단, c:P16.아주흐림 },
-                 { t:String(s.cities), f:N, c:P16.잉크 },
-                 { t:' 도시', f:단, c:P16.흐림 }], cx, y + U * .062);
-      } },
-    { h:4 * .068 + .010, draw:(y, U) => {
-        const tx = L + W * .158, tw = (R - W * .098) - tx, th = U * .042;
-        s.bars.forEach(([name, v], i) => {
-          const by = y + U * (.034 + i * .068);
-          g.font = F(800, U * .031); g.fillStyle = P16.잉크; g.textAlign = 'left';
-          g.fillText(name, L, by + U * .012);
-          g.fillStyle = P16.홈; rrect(g, tx, by - th / 2, tw, th, th / 2); g.fill();
-          g.fillStyle = P16.주황;
-          rrect(g, tx, by - th / 2, Math.max(tw * v / 100, th), th, th / 2); g.fill();
-          /* 값도 주황입니다. 검정으로 두면 막대와 숫자가 따로 놉니다. */
-          g.font = F(800, U * .036); g.textAlign = 'right';
-          g.fillText(String(v), R, by + U * .013);
-        });
-      } },
-    ...(궁합있음 ? [{ h:BOXH + .052, draw:(y, U) => {   /* 테두리 색이 좋고 나쁨을 말합니다 */
-        const gap = W * .022, bw = ((R - L) - gap) / 2, bh = U * BOXH, top = y + U * .030;
-        [[s.best,  '환상의 메이트', P16.좋음배경, P16.좋음선, P16.좋음글],
-         [s.worst, '최악의 조합',   P16.나쁨배경, P16.나쁨선, P16.나쁨글]]
-        .forEach(([m, cap, bg, edge, tint], i) => {
-          const bx = L + i * (bw + gap), px = bx + W * .034;
-          g.fillStyle = bg; rrect(g, bx, top, bw, bh, U * .030); g.fill();
-          g.strokeStyle = edge; g.lineWidth = Math.max(1.5, W * .0018); g.stroke();
-          g.textAlign = 'left';
-          g.font = F(700, U * .027); g.fillStyle = tint;
-          g.fillText(`${cap} · ${m.code} ${m.score}%`, px, top + U * .046);
-          g.font = F(800, U * .038); g.fillStyle = P16.잉크;
-          g.fillText(m.name, px, top + U * .100);
-          g.font = F(500, U * .026); g.fillStyle = P16.흐림;
-          boxLines[i].forEach((l, j) => g.fillText(l, px, top + U * (글줄시작 + j * 글간)));
-        });
-      } }] : []),
-    /* ── 다음에 갈 곳(b399) ──────────────────────────────────────────
-       ⚠ **화면에 따로 카드로 붙였다가 카드 안으로 들여왔습니다.** 이유는
-         하나입니다 — **이것도 같이 공유돼야 하기 때문입니다.** 밖에 두면
-         보는 사람만 보고, 올리는 그림에는 안 들어갑니다. 이 파일의 오래된
-         규칙("보는 것이 곧 올리는 것")과도 그쪽이 맞습니다.
-
-       ⚠ **사진도 이유도 안 넣습니다**(사용자 결정). 화면 카드에는 "오사카와
-         닮았어요" 가 붙어 있었는데, 여기서는 이름만 씁니다. 카드가 세로로
-         길어지는 것은 받아들입니다 — 아래 자(U)가 알아서 줄입니다.
-
-       ⚠ **누르면 도시가 열리던 것은 사라집니다.** 그림이라 누를 데가 없습니다.
-         알고 버린 것입니다. 되살리려면 카드 밑에 얇은 이름 줄을 따로 놓아야
-         하는데, 그러면 같은 것이 두 벌이 됩니다.
-
-       ⚠ 이름이 넘치면 **뒤에서부터 덜어냅니다.** 줄이지 않고 밀어 넣으면
-         카드 밖으로 삐져나가는데, 캔버스는 잘라주지 않습니다. */
-    /* ⚠ **줄 간격을 좁게 잡았다가 겹쳤습니다(b399).** .062 로 두었더니 아랫줄
-       제목이 윗줄 이름 위에 겹쳐 그려졌습니다. 캔버스는 겹쳐도 아무 말이
-       없습니다 — 눈으로 보고서야 알았습니다. 여기 숫자를 줄일 때는 반드시
-       긴 이름(로스앤젤레스·요하네스버그)으로 다시 그려 보십시오.
-
-       ⚠ **두 제목의 색이 다릅니다.** 「어울리는 곳」은 재서 정한 것이라
-       주황(카드의 강조색), 「반대로 가보면」은 정확도를 주장하지 않는
-       것이라 회색입니다. 같은 색으로 맞추면 둘 다 같은 무게로 읽힙니다. */
-    /* ⚠ **글줄 둘에서 상자 둘로 바꿨습니다(b411, 사용자 결정).** 위 궁합과
-       같은 생김새입니다 — 나란한 두 칸. 같은 카드 안에서 "둘을 견주는 것"이
-       두 번 나오는데 하나는 상자고 하나는 맨 글줄이면 결이 안 맞습니다.
-
-       ⚠ **색은 궁합과 달라야 합니다.** 궁합은 초록·분홍(좋고 나쁨)인데
-       여기에 같은 색을 쓰면 「반대로 가보면」이 **나쁜 곳**으로 읽힙니다.
-       그건 뜻이 아닙니다 — 재서 정한 것(주황)과 정확도를 주장하지 않는
-       것(수수한 색)으로 가릅니다.
-
-       ⚠ **이름을 세로로 쌓습니다.** 한 줄에 넷을 넣으면 좁은 칸에서 두 개도
-       안 들어갑니다. 그래도 넘치는 긴 이름은 끝을 …로 줄입니다. */
-    /* ⚠ 위 여백(.030 → .062)을 키워 **상자를 조금 내립니다**(b743, 사용자:
-       「조금씩 아래로 내리자」). 막대와 상자가 너무 붙어 있었습니다. */
-    ...(추천줄.length ? [{ h:PICKH + .084, draw:(y, U) => {
-        const gap = W * .022, bw = ((R - L) - gap) / 2;
-        const bh = U * PICKH, top = y + U * .062;
-        추천줄.forEach(([cap, names, 진하게], i) => {
-          const bx = L + i * (bw + gap), px = bx + W * .034;
-          g.fillStyle = 진하게 ? P16.배지 : P16.띠;
-          rrect(g, bx, top, bw, bh, U * .030); g.fill();
-          g.strokeStyle = 진하게 ? P16.주황선 : P16.점선;
-          g.lineWidth = Math.max(1.5, W * .0018); g.stroke();
-
-          g.textAlign = 'left';
-          g.font = F(700, U * .027); g.fillStyle = 진하게 ? P16.주황 : P16.흐림;
-          g.fillText(cap, px, top + U * .046);
-          /* **자르기 전에 글꼴을 먼저 정합니다** — 재는 것이 그 글꼴 기준입니다. */
-          g.font = F(600, U * .034); g.fillStyle = P16.잉크;
-          names.slice(0, 픽수).forEach((n, j) =>
-            g.fillText(줄여쓰기(g, n, bw - W * .068), px, top + U * (.100 + j * .042)));
-        });
-      } }] : []),
-    ...(s.mrz ? [{ h:.088, draw:(y, U) => {    /* **장식입니다.** 진짜 정보는 위에 다 있습니다 */
-        const bh = U * .062;
-        g.fillStyle = P16.띠; rrect(g, L, y + U * .012, R - L, bh, U * .020); g.fill();
-        g.font = F(600, U * .027); g.fillStyle = P16.아주흐림; g.textAlign = 'center';
-        g.fillText(s.mrz, cx, y + U * .012 + bh * .66);
-      } }] : []),
-  ];
-
-  /* ── 히어로 배너(b735) ────────────────────────────────────────────
-   * ⚠⚠ **일러스트가 «글자를 받는 그림»으로 바뀌었습니다.** 예전 것은
-   *   512×512 납작한 캐릭터라 글 아래 작은 패널로 놓았는데, 새것은
-   *   1536×1024 짜리 엽서 그림이고 **왼쪽 아래가 어둡게 그려져 있습니다** —
-   *   거기에 흰 글자를 얹으라고 만든 것입니다(사용자가 16장 전부 그렇게
-   *   세팅했습니다). 그래서 코드·유형 이름·설명·축 낱말이 **그림 안으로**
-   *   들어갑니다.
-   * ⚠ **블록 계산(U) 밖에서 그립니다.** 배너는 3:2 비율이 고정이라
-   *   남는 높이에 맞춰 늘였다 줄였다 하면 그림이 찌그러집니다.
-   *   먼저 자리를 잡고, 블록은 그 «아래»부터 시작합니다.
-   * ⚠ **그림을 못 받으면 흰 글자를 쓰면 안 됩니다** — 크림 바탕에 흰 글자는
-   *   안 보입니다. 그때는 옛 패널을 깔고 먹색으로 씁니다. */
-  /* ⚠⚠ **원본 비(3:2) 그대로 씁니다(b740, 사용자 지시).** ⚠⚠
-     b735~b739 는 1.8:1 로 «잘라» 썼습니다 — 3:2 로 두면 배너가 카드 높이의
-     45% 를 먹어 아래 막대가 작아진다는 이유였는데, 그 대가가 그림의 위아래
-     였습니다. 사용자: 「이미지 원본 비율 유지해줘야지 위아래 왜이렇게 많이
-     잘랐어」. **그림이 이 카드의 주인공**이므로 그림을 지킵니다.
-   ⚠ `drawImage` 에 잘라내기 좌표를 안 넘깁니다 — 통째로 그립니다.
-   ⚠⚠ **`by0` 를 .088W 로 내렸다가 머리말을 덮었습니다(b740→b743).** ⚠⚠
-     자(U)를 조금 돌려받으려고 배너를 위로 올렸는데, 머리말 기준선이 .088W
-     이고 상위 % 알약이 .046W~.104W 라 **배너가 그 위에 그려졌습니다** —
-     PASSPORT 글자와 알약 아래쪽이 잘렸습니다(사용자: 「공유할 때 상단에
-     패스포트글씨랑 상위 3프로 잘린다」).
-     ⚠ 배너 위 여백은 **머리말이 끝나는 .104W 보다 아래**여야 합니다.
-       .118W 가 그 값입니다(여유 .014W). 여기를 다시 줄이지 마십시오 —
-       자리는 아래(추천 상자)에서 덜어냅니다. */
-  const bw = R - L, bh = bw / 1.5, by0 = W * .118;
-  {
-    g.save();
-    rrect(g, L, by0, bw, bh, W * .028); g.clip();
-    if (art){
-      g.drawImage(art, L, by0, bw, bh);
-      /* ⚠⚠ **아래쪽에 그늘을 깝니다.** 그림마다 밝기가 달라서 글자 다섯 줄
-         중 위쪽이 하늘·엽서 위에 걸리면 안 읽힙니다(FMDP 에서 실제로 걸렸습니다).
-         글자마다 그늘을 주는 것만으로는 모자랍니다 — 바탕을 깔아야 합니다. */
-      const gr = g.createLinearGradient(0, by0 + bh * .12, 0, by0 + bh);
-      gr.addColorStop(0,   'rgba(20,16,12,0)');
-      gr.addColorStop(0.42,'rgba(20,16,12,.46)');
-      gr.addColorStop(1,   'rgba(20,16,12,.80)');
-      g.fillStyle = gr; g.fillRect(L, by0, bw, bh);
+  /* 왼쪽부터 이어 쓰는 글줄(색·굵기가 섞일 때). */
+  const 이어쓰기 = (parts, x, y) => {
+    let cx = x;
+    for (const p of parts){
+      g.font = p.f; g.fillStyle = p.c; g.fillText(p.t, cx, y);
+      cx += g.measureText(p.t).width;
     }
-    else { g.fillStyle = P16_PANEL[kind]; g.fillRect(L, by0, bw, bh); }
-    g.restore();
+  };
 
+  /* ══ 히어로 — 원본 비(3:2) 그대로 ═════════════════════════════════
+     ⚠ 자르지 않습니다(b740). ⚠ 그림을 못 받으면 흰 글자를 쓰면 안
+       됩니다 — 옅은 패널에 먹색으로 씁니다. */
+  const hw = PW, hh = PW / 1.5, hx = PX, hy = PY;
+  if (art){
+    g.drawImage(art, hx, hy, hw, hh);
+    /* 아래쪽 그늘 — 글자가 하늘·엽서 위에 걸려도 읽히게(FMDP 에서 걸렸습니다). */
+    const gr = g.createLinearGradient(0, hy + hh * .30, 0, hy + hh);
+    gr.addColorStop(0, 'rgba(15,12,8,0)');
+    gr.addColorStop(1, 'rgba(15,12,8,.78)');
+    g.fillStyle = gr; g.fillRect(hx, hy, hw, hh);
+  } else {
+    g.fillStyle = P16_PANEL[kind]; g.fillRect(hx, hy, hw, hh);
+  }
+  {
     const 흰 = !!art;
-    const tx = L + bw * .055;
-    /* ⚠ **글자는 배너의 «왼쪽 아래»에만 놓습니다.** 그림이 그렇게 그려져
-       있습니다 — 오른쪽에는 주인공이 있어서 글자를 얹으면 얼굴을 가립니다.
-       그래서 줄바꿈 폭을 배너의 절반쯤으로 묶습니다. */
-    const 글폭 = bw * .52;
-    let ty = by0 + bh - bh * .085;
-    g.textAlign = 'left';
-    /* 그림이 어떤 색으로 와도 읽히게 옅은 그늘을 답니다.
-       ⚠ 그늘은 그리고 «바로» 끕니다 — 안 끄면 뒤에 그리는 막대까지 번집니다. */
-    if (흰){ g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = W * .012; }
+    const tx = hx + px(16);
+    /* ⚠ 글자는 **왼쪽 아래**에만 둡니다 — 오른쪽에 주인공이 있습니다. */
+    const 글폭 = hw * .58;
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+    if (흰){ g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = px(3); }
 
-    /* ⚠ `spaced` 는 **가운데 정렬**입니다(x 를 중심으로 봅니다). 왼쪽 맞춤이
-       필요하므로 여기서는 직접 한 글자씩 놓습니다 — b735 에 그걸 모르고
-       왼쪽 좌표를 넘겼다가 코드 절반이 배너 밖으로 나갔습니다. */
-    const 왼쪽자간 = (txt, x, y, gap) => {
-      let cxx = x;
-      for (const ch of [...txt]){ g.fillText(ch, cxx, y); cxx += g.measureText(ch).width + gap; }
-    };
+    /* 아래에서 위로 쌓습니다 — 맨 아래 줄 자리가 고정이고 위는 줄 수에
+       따라 올라갑니다. */
+    let ty = hy + hh - px(13);
 
-    g.font = F(600, W * .024); g.fillStyle = 흰 ? 'rgba(255,255,255,.80)' : P16.흐림;
-    const al = wrapText(g, s.axisWords, 글폭);
-    for (let i = al.length - 1; i >= 0; i--){ g.fillText(al[i], tx, ty); ty -= W * .034; }
-    ty -= W * .004;
+    /* 「상위 3% · 29개국 · 77도시」 — 화면의 `.pstat` 와 같은 한 줄 */
+    const 곳 = (s.countries != null && s.cities != null)
+      ? ` · ${s.countries}개국 · ${s.cities}도시` : '';
+    이어쓰기([
+      { t: s.rank || '', f: F(800, px(9.5)), c: 흰 ? P16N.밝은주황 : P16N.주황 },
+      { t: 곳,           f: F(600, px(9.5)), c: 흰 ? 'rgba(255,255,255,.90)' : P16N.흐림 },
+    ], tx, ty);
+    ty -= px(15);
 
-    g.font = F(500, W * .027); g.fillStyle = 흰 ? 'rgba(255,255,255,.94)' : P16.흐림;
-    const dl = wrapText(g, s.desc, 글폭);
-    for (let i = dl.length - 1; i >= 0; i--){ g.fillText(dl[i], tx, ty); ty -= W * .038; }
-    ty -= W * .010;
+    g.font = F(500, px(9)); g.fillStyle = 흰 ? 'rgba(255,255,255,.80)' : P16N.흐림;
+    const al = wrapText(g, s.axisWords || '', 글폭);
+    for (let i = al.length - 1; i >= 0; i--){ g.fillText(al[i], tx, ty); ty -= px(12); }
+    ty -= px(3);
 
-    /* ⚠ **브랜드 주황을 그대로 쓰면 어두운 그림 위에서 묻힙니다**(#F25E26 은
-       명도가 낮습니다). 배너에서만 밝은 쪽으로 올립니다 — 화면(app.css 의
-       `.pname`)도 같은 값입니다. 그림이 없을 때는 크림 바탕이라 원래 주황. */
-    g.font = F(800, W * .052); g.fillStyle = 흰 ? '#FF9166' : P16.주황;
-    g.fillText(s.name, tx, ty);
-    ty -= W * .070;
+    g.font = F(500, px(10)); g.fillStyle = 흰 ? 'rgba(255,255,255,.94)' : P16N.흐림;
+    const dl = wrapText(g, s.desc || '', 글폭);
+    for (let i = dl.length - 1; i >= 0; i--){ g.fillText(dl[i], tx, ty); ty -= px(14); }
+    ty -= px(4);
 
-    g.font = F(800, W * .076); g.fillStyle = 흰 ? '#FFFFFF' : P16.잉크;
-    왼쪽자간(s.code, tx, ty, W * .006);
-    /* ⚠⚠ **한 칸 올리는 값은 «지금 글자»가 아니라 «방금 그린 글자»에 맞춥니다.** ⚠⚠
-       여기 .038W 는 코드(.076W)의 절반이라, 위에 놓는 「나의 여행 유형은」이
-       FMDP «글자 안»으로 들어가 겹쳐 찍혔습니다(b735 부터 줄곧 그랬고,
-       공유 카드를 눈으로 볼 일이 없어 b741 에 사용자가 잡았습니다 —
-       「개판이다」). 코드의 대문자 높이가 .076 x .72 = .055W 이므로
-       그만큼에 여백을 더해 올립니다. */
-    ty -= W * .074;
+    /* 브랜드 주황은 어두운 그림 위에서 묻힙니다 — 배너에서만 밝게(화면 `.pname` 과 같은 값). */
+    g.font = F(800, px(16)); g.fillStyle = 흰 ? P16N.밝은주황 : P16N.주황;
+    g.fillText(s.name || '', tx, ty);
+    /* ⚠ 한 칸 올리는 값은 «방금 그린 글자»의 대문자 높이에 맞춥니다 —
+       b741 에 「나의 여행 유형은」이 코드 «안»으로 겹쳐 찍혔습니다. */
+    ty -= px(20);
 
-    g.font = F(600, W * .024); g.fillStyle = 흰 ? 'rgba(255,255,255,.90)' : P16.아주흐림;
+    g.font = F(800, px(31)); g.fillStyle = 흰 ? '#FFFFFF' : P16N.잉크;
+    { let cx = tx; for (const ch of [...s.code]){ g.fillText(ch, cx, ty); cx += g.measureText(ch).width + px(.6); } }
+    ty -= px(29);                      /* 코드 대문자 높이(31 × .72) + 여유 */
+
+    g.font = F(600, px(9)); g.fillStyle = 흰 ? 'rgba(255,255,255,.88)' : P16N.흐림;
     g.fillText('나의 여행 유형은', tx, ty);
 
     g.shadowColor = 'transparent'; g.shadowBlur = 0;
   }
 
-  /* ── 자 정하기 ── 배너와 바닥글이 쓰는 만큼을 빼고 남는 높이에 맞춥니다. */
-  const 총높이 = blocks.reduce((a, b) => a + b.h, 0);
-  const 위 = by0 + bh + W * .034, 아래 = H - W * .160;
-  const U = Math.min(W, (아래 - 위) / 총높이);
-  let y = 위 + ((아래 - 위) - U * 총높이) / 2;
-  for (const b of blocks){ b.draw(y, U); y += U * b.h; }
+  /* ══ 무엇을 넣을지 — 높이 비율로 ══════════════════════════════════ */
+  const 비 = PH / PW;
+  const 추천 = [['어울리는 곳',   s.picks?.match    || []],
+                ['반대로 가보면', s.picks?.opposite || []]]
+               .filter(([, n]) => n.length);
+  const 궁합꼴 = !궁합있음 ? null : 비 >= 1.6 ? '크게' : 비 >= 1.15 ? '작게' : null;
+  const 추천넣기 = 비 >= 1.6 && 추천.length > 0;
 
-  /* ── 바닥 ── 점선으로 한 번 끊고, 어디서 나온 카드인지. ── */
-  const fy = H - W * .060;                     /* 바닥글 기준선 */
-  const dy = H - W * .122;                     /* 점선 */
-  g.strokeStyle = P16.점선; g.lineWidth = Math.max(1.5, W * .0018);
-  g.setLineDash([W * .016, W * .014]);
-  g.beginPath(); g.moveTo(여백, dy); g.lineTo(W - 여백, dy); g.stroke();
-  g.setLineDash([]);
-  /* 표 모양 홈. 점선과 같은 높이라 '뜯는 자리'로 읽힙니다.
-     ⚠ **투명일 때는 흰색으로 덮으면 안 됩니다(b498).** 바깥이 투명한데
-       홈만 흰 동그라미면 거기만 도드라집니다. `destination-out` 으로
-       **뚫어냅니다** — 그래야 뒤 배경이 그 자리로 비칩니다. */
-  g.save();
-  if (s.투명) g.globalCompositeOperation = 'destination-out';
-  g.fillStyle = P16.판;
-  for (const x of [여백, W - 여백]){ g.beginPath(); g.arc(x, dy, W * .022, 0, Math.PI * 2); g.fill(); }
-  g.restore();
+  /* 조각마다 높이(시안 px). 사이는 11 입니다. */
+  const 좌 = px(16), 우 = PX + PW - px(16);
+  const 칸폭 = (우 - (PX + 좌) - px(10)) / 2;        /* 두 칸 */
+  const 조각 = [];
+  /* 궁합 그림 높이(시안 px). 칸폭에서 왼쪽 선·여백(10)을 뺀 폭의 3:2 입니다.
+     ⚠ 그릴 때도 **이 값에서** 폭을 되짚습니다 — 몸통이 줄면(k) 그림도 같이
+       줄어야 다음 조각을 안 덮습니다. 폭만 두고 높이만 줄이면 찌그러집니다. */
+  const 그림높이 = (칸폭 / u - 10) / 1.5;
+  /* ⚠⚠ **정사각은 축을 «한 줄 넷 칸»으로 둡니다.** ⚠⚠ 히어로가 720 을
+     먹으면 남는 높이가 58(시안 px)뿐인데, 넷 줄(109)을 우겨 넣으면 0.53 배로
+     눌려 글자가 6pt 가 됩니다(실제로 그려 보고 알았습니다). 한 줄이면
+     1 배 그대로 들어갑니다. */
+  if (비 < 1.15) 조각.push({ h: 28, 그리기: 축한줄 });
+  else 조각.push({ h: 4 * 22 + 3 * 7, 그리기: 축그리기 });
+  if (궁합꼴 === '크게'){
+    조각.push({ h: 25 + 7 + 그림높이 + 5 + 11 + 15 + 11, 그리기: 궁합크게 });
+  } else if (궁합꼴 === '작게'){
+    조각.push({ h: 1 + 9 + 38, 그리기: 궁합작게 });
+  }
+  if (추천넣기) 조각.push({ h: 1 + 10 + 11 + 3 + 29, 그리기: 추천그리기 });
 
-  /* 기로 마크 — 주황 막대 둘. 로고 파일을 안 받습니다(카드마다 받아올 이유가
-     없습니다). 이 크기에서는 모양만 같으면 됩니다. */
+  const 바닥높이 = px(42);
+  const 위 = hy + hh + px(12);
+  const 아래 = PY + PH - 바닥높이 - px(8);
+  const 필요 = 조각.reduce((a, b) => a + b.h, 0) + (조각.length - 1) * 11;
+  /* 넘치면 몸통만 줄입니다(히어로는 못 줄입니다 — 원본 비). 시안에서는
+     셋 다 1 이었습니다. 긴 이름·세 줄 설명이 들어오면 조금 줄 수 있습니다. */
+  const k = Math.min(1, (아래 - 위) / px(필요));
+  const bx = v => px(v) * k;
+
+  let y = 위;
+  for (const c of 조각){ c.그리기(y); y += bx(c.h + 11); }
+
+  /* ── 축 넷 ── 이름 · 작은 뜻 · 먹색 막대 · 값 ─────────────────────
+     ⚠ **작은 뜻은 `axisWords` 를 나눠 씁니다.** 부르는 쪽이 코드 글자
+       차례대로 「유명한 곳 · 여러 나라 · 멀리 · 까다로움」을 넘기는데, 그
+       차례가 `bars`(개척·단골·모험·만족)의 차례와 같습니다(persona.js).
+     ⚠ 막대 끝은 각집니다 — 화면(`.pbar`)과 같습니다. */
+  function 축그리기(y0){
+    const 뜻 = String(s.axisWords || '').split(' · ');
+    const 막대왼 = PX + 좌 + bx(54 + 10), 값폭 = bx(20), 막대오 = 우 - 값폭 - bx(10);
+    (s.bars || []).forEach(([name, v], i) => {
+      const ry = y0 + bx(i * (22 + 7));
+      g.textAlign = 'left';
+      g.font = F(800, bx(10.5)); g.fillStyle = P16N.잉크;
+      g.fillText(name, PX + 좌, ry + bx(10));
+      g.font = F(500, bx(8)); g.fillStyle = P16N.흐림;
+      g.fillText(뜻[i] || '', PX + 좌, ry + bx(20));
+      const th = bx(5), tyy = ry + bx(11) - th / 2;
+      g.fillStyle = P16N.홈; g.fillRect(막대왼, tyy, 막대오 - 막대왼, th);
+      g.fillStyle = P16N.잉크;
+      g.fillRect(막대왼, tyy, (막대오 - 막대왼) * Math.max(0, Math.min(100, v)) / 100, th);
+      g.font = F(800, bx(11)); g.textAlign = 'right';
+      g.fillText(String(v), 우, ry + bx(15));
+    });
+    g.textAlign = 'left';
+  }
+
+  /* ── 축 넷을 한 줄로(정사각) ── 칸마다 이름·값, 그 밑에 막대 ── */
+  function 축한줄(y0){
+    const 폭 = 우 - (PX + 좌), 틈 = bx(12), 칸 = (폭 - 틈 * 3) / 4;
+    (s.bars || []).forEach(([name, v], i) => {
+      const x0 = PX + 좌 + i * (칸 + 틈);
+      g.textAlign = 'left';
+      g.font = F(700, bx(9.5)); g.fillStyle = P16N.잉크;
+      g.fillText(name, x0, y0 + bx(13));
+      g.textAlign = 'right';
+      g.font = F(800, bx(14)); g.fillText(String(v), x0 + 칸, y0 + bx(14));
+      const th = bx(5), ty0 = y0 + bx(21);
+      g.fillStyle = P16N.홈; g.fillRect(x0, ty0, 칸, th);
+      g.fillStyle = P16N.잉크;
+      g.fillRect(x0, ty0, 칸 * Math.max(0, Math.min(100, v)) / 100, th);
+    });
+    g.textAlign = 'left';
+  }
+
+  /* 조각 위의 가는 선 — 화면이 구역을 선으로 나누는 것과 같습니다. */
+  function 윗선(y0){
+    g.fillStyle = P16N.선; g.fillRect(PX + 좌, y0, 우 - (PX + 좌), Math.max(1, bx(.8)));
+  }
+
+  /* ── 궁합(스토리) ── 제목 · 그림 · 딱지 · 이름 · 코드 ──────────────
+     ⚠ 좋고 나쁨은 **왼쪽 색 선**이 말합니다 — 화면(`.matecard`)과 같습니다.
+       상자를 칠하지 않습니다(b627 에 화면에서 걷은 것). */
+  function 궁합크게(y0){
+    윗선(y0);
+    g.font = F(800, bx(11)); g.fillStyle = P16N.잉크; g.textAlign = 'left';
+    g.fillText('나와 맞는 사람', PX + 좌, y0 + bx(10 + 11));
+    const top = y0 + bx(25 + 7);
+    [[s.best, '환상의 메이트', P16N.좋음, 좋은그림],
+     [s.worst, '최악의 조합',  P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
+      const cx0 = PX + 좌 + i * (칸폭 + px(10));
+      const ih = bx(그림높이), iw = ih * 1.5, ix = cx0 + bx(10);
+      g.fillStyle = 색; g.fillRect(cx0, top, Math.max(1.5, bx(2)), ih + bx(5 + 11 + 15 + 11));
+      if (그림) 덮어그리기(g, 그림, ix, top, iw, ih);
+      else { g.fillStyle = P16_PANEL[m.code[0] === 'H' ? 'H' : 'F']; g.fillRect(ix, top, iw, ih); }
+      let ly = top + ih + bx(5 + 9);
+      g.font = F(700, bx(8.5)); g.fillStyle = 색;
+      g.fillText(줄여쓰기(g, `${딱지} · ${m.score}%`, iw), ix, ly);
+      ly += bx(15);
+      g.font = F(800, bx(11.5)); g.fillStyle = P16N.잉크;
+      g.fillText(줄여쓰기(g, m.name, iw), ix, ly);
+      ly += bx(12);
+      g.font = F(500, bx(8.5)); g.fillStyle = P16N.흐림;
+      g.fillText(m.code, ix, ly);
+    });
+  }
+
+  /* ── 궁합(세로) ── 작은 네모 그림 한 줄 ────────────────────────────
+     ⚠ 세로(1350)는 높이가 모자라 그림을 크게 못 둡니다. 시안 ㈂ 그대로. */
+  function 궁합작게(y0){
+    윗선(y0);
+    const top = y0 + bx(1 + 9), th = bx(38);
+    [[s.best, '환상의 메이트', P16N.좋음, 좋은그림],
+     [s.worst, '최악의 조합',  P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
+      const cx0 = PX + 좌 + i * (칸폭 + px(10));
+      if (그림) 덮어그리기(g, 그림, cx0, top, th, th);
+      else { g.fillStyle = P16_PANEL[m.code[0] === 'H' ? 'H' : 'F']; g.fillRect(cx0, top, th, th); }
+      const lx = cx0 + th + bx(7), lw = 칸폭 - th - bx(7);
+      g.textAlign = 'left';
+      g.font = F(700, bx(8)); g.fillStyle = 색;
+      g.fillText(줄여쓰기(g, `${딱지} · ${m.score}%`, lw), lx, top + bx(15));
+      g.font = F(800, bx(11)); g.fillStyle = P16N.잉크;
+      g.fillText(줄여쓰기(g, m.name, lw), lx, top + bx(30));
+    });
+  }
+
+  /* ── 다음에 갈 곳(스토리만) ── 두 칸, 작은 제목 + 이름 ── */
+  function 추천그리기(y0){
+    윗선(y0);
+    추천.forEach(([cap, names], i) => {
+      const cx0 = PX + 좌 + i * (칸폭 + px(10));
+      g.textAlign = 'left';
+      g.font = F(500, bx(8.5)); g.fillStyle = P16N.흐림;
+      g.fillText(cap, cx0, y0 + bx(1 + 10 + 9));
+      g.font = F(700, bx(10.5)); g.fillStyle = P16N.잉크;
+      /* 이름은 셋까지, 두 줄에서 끊습니다 — 넘치면 캔버스는 잘라주지 않습니다. */
+      const 줄 = wrapText(g, names.slice(0, 3).join(' · '), 칸폭).slice(0, 2);
+      줄.forEach((l, j) => g.fillText(l, cx0, y0 + bx(1 + 10 + 11 + 3 + 11 + j * 14.5)));
+    });
+  }
+
+  /* ══ 바닥 ── 가는 선 · 기로 · 부르는 말 ═══════════════════════════
+     ⚠ 로고는 앱 아이콘과 **같은 모양**으로 그립니다(주황 네모 + 흰 화살 둘).
+       파일을 안 받습니다 — 카드마다 받아올 이유가 없습니다. */
   {
-    const mw = W * .036, mh = W * .010, mx = L, my = fy - W * .028;
-    g.fillStyle = P16.주황;
-    rrect(g, mx, my, mw, mh, mh / 2); g.fill();
-    rrect(g, mx + mw * .24, my + mh * 1.7, mw * .76, mh, mh / 2); g.fill();
-  }
-  g.font = F(800, W * .036); g.fillStyle = P16.잉크; g.textAlign = 'left';
-  g.fillText('기로', L + W * .056, fy);
-  g.font = F(500, W * .030); g.fillStyle = P16.흐림;
-  g.fillText('기록이 길이 되다', L + W * .130, fy);
-  {   /* NEXT TRIP? — 점선 알약. "이제 네 차례" 라고 말하는 자리입니다. */
-    g.font = F(800, W * .030);
-    const t = 'NEXT TRIP?', gapx = W * .006;
-    const tw = [...t].reduce((a, c) => a + g.measureText(c).width, 0) + gapx * (t.length - 1);
-    const pw = tw + W * .060, ph = W * .072;
-    g.strokeStyle = P16.주황; g.lineWidth = Math.max(1.5, W * .0022);
-    g.setLineDash([W * .012, W * .009]);
-    rrect(g, R - pw, fy - ph * .70, pw, ph, ph / 2); g.stroke();
-    g.setLineDash([]);
-    g.fillStyle = P16.주황;
-    spaced(g, t, R - pw / 2, fy + ph * .04, gapx);
+    const fy0 = PY + PH - 바닥높이;
+    g.fillStyle = P16N.선; g.fillRect(PX, fy0, PW, Math.max(1, px(.8)));
+    const ls = px(20), lx = PX + px(16), ly = fy0 + (바닥높이 - ls) / 2;
+    g.fillStyle = P16N.주황; rrect(g, lx, ly, ls, ls, ls * .233); g.fill();
+    g.fillStyle = '#FFFFFF';
+    const q = ls / 96;                 /* 아이콘 SVG(96칸)를 그대로 옮깁니다 */
+    g.save(); g.translate(lx + 9.6 * q, ly + 9.6 * q); g.scale(.8 * q, .8 * q);
+    g.beginPath();
+    g.moveTo(18, 22); g.lineTo(62, 22); g.lineTo(76, 33); g.lineTo(62, 44); g.lineTo(18, 44);
+    g.quadraticCurveTo(13, 44, 13, 33); g.quadraticCurveTo(13, 22, 18, 22); g.closePath();
+    g.moveTo(78, 52); g.lineTo(34, 52); g.lineTo(20, 63); g.lineTo(34, 74); g.lineTo(78, 74);
+    g.quadraticCurveTo(83, 74, 83, 63); g.quadraticCurveTo(83, 52, 78, 52); g.closePath();
+    g.fill(); g.restore();
+    const by = fy0 + 바닥높이 / 2 + px(4);
+    g.textAlign = 'left';
+    g.font = F(800, px(12.5)); g.fillStyle = P16N.잉크;
+    g.fillText('기로', lx + ls + px(7), by);
+    g.textAlign = 'right';
+    g.font = F(500, px(9)); g.fillStyle = P16N.흐림;
+    g.fillText('나의 여행 성향 알아보기', PX + PW - px(16), by);
+    g.textAlign = 'left';
   }
 
   g.restore();
-  /* 성향 카드는 사진이 없어 단색이 넓게 깔립니다 — PNG 로도 작고 글자가 더 삽니다. */
-  return new Promise(r => cv.toBlob(r, 'image/png'));
+  /* ⚠⚠ **PNG 가 아니라 JPEG 입니다(b775).** 이제 사진이 셋이라 PNG 면
+     2MB 가 넘습니다(실측: 스토리 2,222KB). 옛 주석은 「사진이 없어 단색이
+     넓게 깔리니 PNG 로도 작다」였는데 그 전제가 사라졌고, PNG 를 쓰던
+     다른 이유(투명판)도 같이 없어졌습니다. 카톡·인스타는 어차피 다시
+     눌러 담습니다.
+     ⚠ 저장 쪽(`saveCardImage`)이 `blob.type` 을 보고 확장자를 정하므로
+       여기만 바꾸면 됩니다. */
+  return new Promise(r => cv.toBlob(r, 'image/jpeg', .92));
 }
 
 /* ── 여권 스탬프 면 (b649, 사용자 요청 「깃발 공유 + 국가 공유 톤」) ────
@@ -924,7 +922,8 @@ async function drawStamps(s, W, H, F){
   const 둥금 = W * .046;
 
   /* ── 종이 ── drawP16 과 **같은 값**입니다. 다르면 나란히 놨을 때 티가 납니다. */
-  if (!s.투명){ g.fillStyle = P16.판; g.fillRect(0, 0, W, H); }
+  /* ⚠ 투명판은 b775 에 없앴습니다 — 늘 바깥을 칠합니다. */
+  g.fillStyle = P16.판; g.fillRect(0, 0, W, H);
   g.fillStyle = P16.카드;
   rrect(g, 여백, 여백, W - 여백 * 2, H - 여백 * 2, 둥금); g.fill();
   g.strokeStyle = P16.테두리; g.lineWidth = Math.max(1.5, W * .0016); g.stroke();
@@ -1102,7 +1101,6 @@ async function drawStamps(s, W, H, F){
   g.beginPath(); g.moveTo(여백, dy); g.lineTo(W - 여백, dy); g.stroke();
   g.setLineDash([]);
   g.save();
-  if (s.투명) g.globalCompositeOperation = 'destination-out';
   g.fillStyle = P16.판;
   for (const x of [여백, W - 여백]){ g.beginPath(); g.arc(x, dy, W * .022, 0, Math.PI * 2); g.fill(); }
   g.restore();
@@ -1552,7 +1550,7 @@ async function 시트그리기(){
   판.innerHTML = `<div class="empty"><span class="load">그리는 중…</span></div>`;
   if (s.url){ URL.revokeObjectURL(s.url); s.url = null; }
   try {
-    const { blob } = await cardImage({ ...s.spec, 투명: !s.배경 }, 'story');
+    const { blob } = await cardImage(s.spec, 'story');
     if (시트 !== s) { return; }               /* 그 사이에 닫혔거나 다시 눌렸습니다 */
     s.blob = blob; s.url = URL.createObjectURL(blob);
     판.innerHTML = `<img src="${s.url}" alt="${esc(s.spec.title || '카드')}">`;
@@ -1575,23 +1573,16 @@ export function shareCard(spec, name){
   /* 시트가 없는 화면(옛 index.html)에서는 하던 대로 바로 보냅니다 —
      기능이 통째로 막히는 것보다 낫습니다. */
   if (!판) return saveCardImage(spec, 'story', name);
-  시트 = { spec, name, 배경: true, url: null, blob: null };
+  시트 = { spec, name, url: null, blob: null };
   판.classList.remove('hide');
-  /* ⚠ **투명을 못 받는 카드에서는 그 줄을 숨깁니다.** 영수증은 제 팔레트로
-     제 배경을 칠하고(RC), 일반 카드는 **JPEG 라 애초에 투명이 없습니다.**
-     눌러도 아무 일이 없는 단추를 두는 것이 제일 나쁩니다.
-     ⚠ 받는 kind 를 늘리면 여기도 같이 늘려야 합니다 — 안 그러면 새 카드가
-       조용히 옵션을 잃습니다. */
-  /* 체크 카드를 지우면서 갈래가 하나 남았습니다(b507).
-     b649 에 여권 스탬프 면이 붙었습니다 — 같은 크림 종이라 같은 길입니다. */
-  const 투명가능 = spec.kind === 'p16' || spec.kind === 'stamps';
-  판.querySelector('.csrow').classList.toggle('hide', !투명가능);
-  if (!투명가능) 시트.배경 = true;
+  /* ⚠⚠ **「배경 포함 / 투명」 줄을 걷었습니다(b775, 사용자: 「굳이
+     투명판 없어도 될것 같아」).** ⚠⚠ 이 시트의 옵션은 그것 하나뿐이었습니다
+     — 이제 미리보기와 「저장하기」만 남습니다.
+     ⚠ 되살리려거든 index.html 의 #cardsheet 줄 · 여기 `시트.배경` · 아래
+       #cs_bg 처리기 · 그리는 쪽의 투명 갈래 넷을 같이 되돌려야 합니다. */
   /* 뒤로 가기로 닫힙니다 — 안드로이드에서 시트를 뒤로가기로 못 닫으면
      앱을 나가게 됩니다. */
   if (history.state?.t2 !== 'cs') history.pushState({ t2:'cs' }, '');
-  [...판.querySelectorAll('#cs_bg button')].forEach(b =>
-    b.classList.toggle('on', (b.dataset.bg === 'on') === true));
   return 시트그리기();
 }
 
@@ -1604,15 +1595,6 @@ if (typeof document !== 'undefined' && $('cardsheet')){
     /* 시트 «밖»(덮개)을 눌러도 닫힙니다. ::before 가 시트의 자식이라
        그 자리 클릭은 시트 자신을 대상으로 옵니다. */
     if (e.target === $('cardsheet')) 시트닫기();
-  });
-  $('cs_bg').addEventListener('click', e => {
-    const b = e.target.closest('button[data-bg]'); if (!b || !시트) return;
-    const 켬 = b.dataset.bg === 'on';
-    if (켬 === 시트.배경) return;              /* 같은 것을 다시 누른 것 */
-    시트.배경 = 켬;
-    [...e.currentTarget.querySelectorAll('button')].forEach(x =>
-      x.classList.toggle('on', x === b));
-    시트그리기();
   });
   $('cs_go').addEventListener('click', async () => {
     const s = 시트; if (!s?.blob) return;
