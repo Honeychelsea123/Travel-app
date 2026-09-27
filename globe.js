@@ -27,11 +27,11 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b767';
+import { $ } from './dom.js?v=b768';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
-import { 가진땅, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b767';
-import { countryName } from './cities.js?v=b767';
-import { visited, myRates } from './rate.js?v=b767';
+import { 가진땅, 가진주도, 나라셀, 도시있나, 상자자르기 } from './citymap.js?v=b768';
+import { countryName } from './cities.js?v=b768';
+import { visited, myRates } from './rate.js?v=b768';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -665,29 +665,69 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         if (!길있나){ ctx.restore(); continue; }
         ctx.clip();
 
-        for (let i = 0; i < 도시.length; i++){
-          const 잘림 = 상자자르기(셀[i] || [], 창c[0], 창c[1], 창c[2], 창c[3]);
-          if (잘림.length < 3) continue;
-          let 시작 = true, 그림 = false;
+        /* ══ 칸을 칠합니다 ═══════════════════════════════════════════════
+         * ⚠⚠ **주·도(admin-1)가 있으면 그것을, 없으면 보로노이를 씁니다
+         *   (b768, 사용자 지적: 「삐뚤빼뚤한 채움으로 인해 너무 아마추어처럼
+         *   보이고」).** ⚠⚠
+         *   보로노이는 「가장 가까운 도시의 땅」이라 경계가 **직선으로 뚝뚝**
+         *   끊깁니다 — 실제 지형·행정과 아무 상관이 없습니다. 이제 진짜
+         *   행정경계를 씁니다(`adm1/XX.js`, `tools/mkadm1.pl` 가 굽습니다).
+         * ⚠ **보로노이를 안 지웁니다.** 자료는 받아오는 것이라 «아직 안 온
+         *   순간»이 있고, 그때는 전처럼 그려야 화면이 비지 않습니다.
+         *   `가진주도` 는 map50 과 같은 규칙입니다 — 없으면 `undefined`,
+         *   받아봤는데 없으면 `null`.
+         * ⚠ 「다녀온 주」는 **그 안에 별점 매긴 도시가 있는 곳**입니다.
+         *   어느 도시가 어느 주에 드는지는 citymap.js 가 한 번만 셉니다.
+         * ⚠⚠ **칠하는 면적이 확 늘어납니다.** 도쿄를 갔으면 도쿄도 전체가
+         *   칠해집니다 — 보로노이는 「도시 주변 땅」이라 좁았습니다.
+         *   사용자가 시안을 보고 고른 것입니다(글로브마크가 그 방식입니다).
+         * ⚠ 테두리는 그대로 바다색입니다 — 칸을 가르는 일은 테두리가 합니다. */
+        const 주도 = 가진주도(나라.code);
+        const 칠할것 = 주도 && 주도.length
+          ? 주도.map(u => ({ 고리: u.고리, 갔나: u.도시.some(
+              id => visited?.has?.(id) || myRates?.[id]?.stars != null) }))
+          : 도시.map((d, i) => ({ 셀: 셀[i], 갔나:
+              visited?.has?.(d.c.id) || myRates?.[d.c.id]?.stars != null }));
+
+        for (const 칸 of 칠할것){
           ctx.beginPath();
-          for (const [mx, my] of 잘림){
-            const p = 던져(mx, my);
-            if (!p){ 시작 = true; continue; }
-            if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
-            그림 = true;
+          let 그림 = false;
+          if (칸.고리){
+            /* 주·도는 고리 여럿입니다(섬·구멍). 상자로 먼저 거릅니다. */
+            for (const q of 칸.고리){
+              if (q.x1 < 창c[0] || q.x0 > 창c[2] ||
+                  q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
+              let 시작 = true;
+              for (const [mx, my] of q.점){
+                const p = 던져(mx, my);
+                if (!p){ 시작 = true; continue; }
+                if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; }
+                else ctx.lineTo(p[0], p[1]);
+                그림 = true;
+              }
+              ctx.closePath();
+            }
+          } else {
+            const 잘림 = 상자자르기(칸.셀 || [], 창c[0], 창c[1], 창c[2], 창c[3]);
+            if (잘림.length < 3) continue;
+            let 시작 = true;
+            for (const [mx, my] of 잘림){
+              const p = 던져(mx, my);
+              if (!p){ 시작 = true; continue; }
+              if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; }
+              else ctx.lineTo(p[0], p[1]);
+              그림 = true;
+            }
+            ctx.closePath();
           }
           if (!그림) continue;
-          ctx.closePath();
-          const d = 도시[i];
           /* ⚠ **안 간 곳은 아주 옅게**(b711, 사용자 요청: 「안 간 도시는
              색이 좀 더 연했으면」). 0.13 → 0.06 → **0.03**(b712) 입니다.
              ⚠ 아주 빼지는 않습니다 — 칠이 0 이면 「아직 안 받은 자료」와
                「안 가본 곳」이 같아 보입니다. 자리가 있다는 것은 보여야
-               눌러서 매길 마음이 납니다. 테두리는 그대로 둡니다(아래
-               `strokeStyle = 바다`) — 칸을 가르는 일은 테두리가 합니다. */
-          const 갔나 = visited?.has?.(d.c.id) || myRates?.[d.c.id]?.stars != null;
-          ctx.globalAlpha = 섞 * (갔나 ? 0.62 : 0.03);
-          ctx.fillStyle = 내것; ctx.fill();
+               눌러서 매길 마음이 납니다. */
+          ctx.globalAlpha = 섞 * (칸.갔나 ? 0.62 : 0.03);
+          ctx.fillStyle = 내것; ctx.fill('evenodd');
           ctx.globalAlpha = 섞 * 0.5;
           ctx.strokeStyle = 바다; ctx.lineWidth = 0.7; ctx.stroke();
           ctx.globalAlpha = 1;
