@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b777';
+import { $ } from './dom.js?v=b778';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기 } from './citymap.js?v=b777';
-import { countryName } from './cities.js?v=b777';
-import { visited, myRates } from './rate.js?v=b777';
+         상자자르기, 가진시군 } from './citymap.js?v=b778';
+import { countryName } from './cities.js?v=b778';
+import { visited, myRates } from './rate.js?v=b778';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -321,6 +321,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
    * ⚠ **탁 바뀌지 않게 3.2 부터 서서히 섞습니다.** 나라 칠이 옅어지면서
    *   도시 조각이 떠오릅니다 — 사용자 결정: 「나라칠은 옅게 남기자」. */
   const 도시시작 = 3.2, 도시끝 = 4.5;
+  /* ── 시·군이 떠오르는 배율(b778, 사용자: 「더 안으로 줌 할수록 간 도시부분만
+   *   진하게」) ──────────────────────────────────────────────────────
+   * 4.5 에서 주·도가 다 떠오르고, 여기서 한 번 더 들어가면 **도시가 여럿인
+   * 주·도**가 옅어지면서 그 안의 **간 도시의 시·군만** 진해집니다(adm2/).
+   * ⚠ 7 은 일본 전체가 화면을 조금 넘는 자리, 10 은 홋카이도가 화면의 반쯤인
+   *   자리입니다(1pt ≈ 3km — 삿포로시가 11pt). 더 늦추면 홋카이도를
+   *   들여다봐도 도 전체가 칠해져 있어 사용자 신고가 그대로 남습니다. */
+  const 시군시작 = 7, 시군끝 = 10;
   /* 이번 판에 실제로 그린 도시 — 누르기 판정에 씁니다(화면 좌표). */
   let 그린도시 = [];
   /* ── 확대(b560, 사용자 요청) ─────────────────────────────────────
@@ -552,6 +560,8 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
            · 다녀온 도시 1-(1-0.06)(1-0.62) = **0.643**  → 일곱 배 차이.
        ⚠ 안 간 나라는 그대로 흙색 1 입니다 — 여기서 옅게 할 것이 없습니다. */
     const 섞 = Math.min(1, Math.max(0, (배율 - 도시시작) / (도시끝 - 도시시작)));
+    /* 두 번째 단계(주·도 → 시·군). 위 `시군시작` 주석. */
+    const 섞2 = Math.min(1, Math.max(0, (배율 - 시군시작) / (시군끝 - 시군시작)));
 
     /* ── 지도 단위 → 화면 ─────────────────────────────────────────────
      * ⚠ **b772 에 여기로 올렸습니다.** 도시 칸을 그릴 때만 쓰던 것인데,
@@ -779,11 +789,25 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         const 진하게 = 덮었나 ? 0.643 : 0.62;
         const 옅게   = 덮었나 ? 0.088 : 0.03;
 
+        const 갔나 = id => visited?.has?.(id) || myRates?.[id]?.stars != null;
+
+        /* ── 시·군(b778) ── 도시가 «여럿»인 주·도만 한 번 더 들어갑니다 ────
+         * 사용자: 「하코다테, 아사히카와는 가지도 않았는데 칠해져있네?」 —
+         *   홋카이도는 도 하나라, 삿포로만 가도 도 전체가 칠해졌습니다.
+         * ⚠ **도시가 하나뿐인 주·도는 안 건드립니다.** 그 주·도가 곧 그 도시의
+         *   자리입니다(서울특별시·도쿄도) — 시·군으로 쪼개면 서울이 «중구»만
+         *   남습니다(광역시의 시·군구 단위는 «구»입니다).
+         * ⚠ 자료는 그 나라에 «여럿»인 주·도가 있을 때만, **한 박자 일찍**(6 부터)
+         *   받습니다 — 7 에서 섞기 시작할 때 이미 와 있게. */
+        const 여럿있나 = !!(주도 && 주도.length && 주도.some(u => u.도시.length >= 2));
+        const 시군 = 여럿있나 && 배율 > 시군시작 - 1 ? 가진시군(나라.code) : undefined;
+        /* 점으로 찍을 도시 — 시·군이 화면에서 너무 작거나(아말피 6km²) 경계가
+           없는(독도는 10m 해안선에 없습니다) 곳. 칠이 끝난 «뒤»에 찍습니다. */
+        const 점찍을 = [];
+
         const 칠할것 = 주도 && 주도.length
-          ? 주도.map(u => ({ 고리: u.고리, 갔나: u.도시.some(
-              id => visited?.has?.(id) || myRates?.[id]?.stars != null) }))
-          : 도시.map((d, i) => ({ 셀: 셀[i], 갔나:
-              visited?.has?.(d.c.id) || myRates?.[d.c.id]?.stars != null }));
+          ? 주도.map(u => ({ 고리: u.고리, 도시: u.도시, 갔나: u.도시.some(갔나) }))
+          : 도시.map((d, i) => ({ 셀: 셀[i], 갔나: 갔나(d.c.id) }));
 
         for (const 칸 of 칠할것){
           ctx.beginPath();
@@ -822,7 +846,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
              ⚠ 아주 빼지는 않습니다 — 칠이 0 이면 「아직 안 받은 자료」와
                「안 가본 곳」이 같아 보입니다. 자리가 있다는 것은 보여야
                눌러서 매길 마음이 납니다. */
-          ctx.globalAlpha = 섞 * (칸.갔나 ? 진하게 : 옅게);
+          /* 이 주·도를 «간 시·군만» 칠할까(위 `시군` 주석). 자료가 아직
+             안 왔으면(undefined) 예전처럼 통째로 칠합니다 — 빈 칸보다 낫습니다. */
+          const 간곳 = 칸.도시 ? 칸.도시.filter(갔나) : [];
+          const 쪼갤까 = 섞2 > 0 && 칸.도시 && 칸.도시.length >= 2 && !!시군 && 간곳.length > 0;
+          /* ⚠ 쪼갤 때는 주·도가 «진하게 → 옅게»로 넘어갑니다. 그 자리를 간 시·군이
+             물려받습니다 — 다 넘어가면 간 시·군 = 진하게, 나머지 = 옅게. */
+          ctx.globalAlpha = 섞 * (칸.갔나
+            ? (쪼갤까 ? 진하게 + (옅게 - 진하게) * 섞2 : 진하게) : 옅게);
           ctx.fillStyle = 내것; ctx.fill('evenodd');
           /* ⚠ **테두리를 가늘게 했습니다(b769).** 0.7 · 알파 0.5 였습니다.
              맞닿은 두 주가 **각자 제 테두리를 그리므로** 맞닿은 선은 두 겹이
@@ -833,8 +864,63 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
           ctx.globalAlpha = 섞 * 0.32;
           ctx.strokeStyle = 바다; ctx.lineWidth = 0.4; ctx.stroke();
           ctx.globalAlpha = 1;
+
+          if (쪼갤까){
+            /* ⚠⚠ **이 주·도의 길로 «잘라서» 칠합니다.** ⚠⚠ 시·군 자료는 나라마다
+               출처가 달라(통계청·인구조사국·geoBoundaries) 해안선이 지구본의 10m 와
+               조금씩 어긋납니다. 안 자르면 칠이 바다로 번집니다 — 샌프란시스코시
+               경계는 만(灣)의 물까지 듭니다. 지금 길이 곧 이 주·도라 `clip` 한 줄. */
+            ctx.save();
+            ctx.clip('evenodd');
+            /* 겹쳐서 «진하게»가 되게: 1-(1-옅게)(1-a) = 진하게 */
+            const 얹기 = 섞 * 섞2 * (1 - (1 - 진하게) / (1 - 옅게));
+            for (const id of 간곳){
+              const 조각들 = 시군[id];
+              if (!조각들){ 점찍을.push(id); continue; }
+              ctx.beginPath();
+              let 그렸나 = false, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+              for (const q of 조각들){
+                if (q.x1 < 창c[0] || q.x0 > 창c[2] || q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
+                let 시작 = true;
+                for (const [mx, my] of q.점){
+                  const p = 던져(mx, my);
+                  if (!p){ 시작 = true; continue; }
+                  if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; }
+                  else ctx.lineTo(p[0], p[1]);
+                  if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
+                  if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
+                  그렸나 = true;
+                }
+                ctx.closePath();
+              }
+              if (!그렸나) continue;
+              ctx.globalAlpha = 얹기;
+              ctx.fillStyle = 내것; ctx.fill('evenodd');
+              ctx.globalAlpha = 섞 * 섞2 * 0.32;
+              ctx.strokeStyle = 바다; ctx.lineWidth = 0.4; ctx.stroke();
+              /* 화면에서 5px 도 안 되면 칠이 안 보입니다 — 점을 같이 찍습니다. */
+              if (x1 - x0 < 5 && y1 - y0 < 5) 점찍을.push(id);
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+          }
         }
         ctx.restore();
+
+        /* ── 점 — 너무 작거나 경계가 없는 «간 시·군»(b778) ──────────────
+         * ⚠ 자르지 않고 찍습니다 — 독도는 지구본의 10m 해안선에 없습니다.
+         * ⚠ 반지름 2.6px: 칠보다 튀지 않되 손끝만 한 크기에서도 보이게. */
+        if (점찍을.length){
+          const 자리 = new Map(도시.map(d => [d.c.id, d]));
+          ctx.globalAlpha = 섞 * 섞2 * 진하게;
+          ctx.fillStyle = 내것;
+          for (const id of 점찍을){
+            const d = 자리.get(id); if (!d) continue;
+            const p = 던져(d.x, d.y); if (!p) continue;
+            ctx.beginPath(); ctx.arc(p[0], p[1], 2.6, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
 
         /* 누르기 판정에 쓸 자리를 적어 둡니다(화면 좌표). */
         for (const d of 도시){
