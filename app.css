@@ -2094,6 +2094,14 @@ input[type=time]::-webkit-date-and-time-value{ text-align:left; }
 /* 우상단 아이콘 셋(대시보드·공유·톱니)은 그대로 떠 있습니다. 이름이 가운데로
    왔으니 겹치지 않습니다 — 전에는 오른쪽에 34px 을 비워 두고 있었습니다. */
 
+/* ── 이름 칸 밑 한 줄(b783) ── 「쓸 수 있어요 / 이미 있어요」(profile.js).
+   ⚠ 자리를 늘 비워 둡니다(min-height). 치는 동안 줄이 생겼다 없어졌다 하면
+     아래 저장 단추가 들썩입니다. */
+.n-hint{ margin:6px 2px 0; min-height:1.35em; line-height:1.35;
+         font-size:calc(13px * var(--ts)); color:var(--ink-48); }
+.n-hint[data-s="ok"]{ color:var(--ok); }
+.n-hint[data-s="bad"]{ color:var(--danger); }
+
 /* ── 섹션 제목 ── been 의 회색 소제목 ────────────────────────────────
  * 카드 **밖**에 둡니다. 카드 안 h2 로 두면 카드마다 제목이 들어가서
  * 무리 짓는 힘이 약해집니다 — been 은 제목이 카드 사이에 떠 있습니다. */

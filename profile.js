@@ -15,11 +15,11 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf } from './dom.js?v=b782';
-import { sb } from './db.js?v=b782';
-import { fail, NOROW } from './net.js?v=b782';
+import { $, esc, avatarOf } from './dom.js?v=b783';
+import { sb } from './db.js?v=b783';
+import { fail, NOROW } from './net.js?v=b783';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b782';
+import { fitTabBar } from './ui.js?v=b783';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
@@ -92,20 +92,76 @@ $('avatarfile').addEventListener('change', async e => {
 
 /* ── 이름 ── profiles.display_name 은 모든 여행에서 쓰는 이름입니다.
    여행마다 다르게 부르고 싶으면 그 여행의 trip_members.nickname 을 씁니다. */
+/* ⚠⚠ **이름은 겹치지 않습니다(b783, 사용자 결정 「이름 하나를 유일하게」).** ⚠⚠
+   진짜 관문은 DB 입니다(db/100) — 겹치면 색인이 23505, 못 쓰는 이름은
+   트리거가 23514, 30자가 넘으면 22001 로 거절합니다. 여기서는 치는 동안
+   `name_free` 로 미리 물어 한 줄로 알려 줄 뿐입니다.
+   ⚠ SQL(100)을 아직 안 돌렸거나 연결이 끊겼으면 물음이 실패합니다 — 그때는
+     조용히 아무 말도 안 합니다(저장은 예전처럼 됩니다).
+   ⚠ 「같은 이름」의 규칙은 DB 의 `name_key` 와 **같아야** 합니다. 바꾸면 둘 다.
+   ⚠ 오류는 이름 칸 밑(#nameerr)에 띄웁니다. 전에는 `fail(…, 'trip')` 이라
+     여행 탭 목록 밑에 떠서 **프로필에서는 저장이 실패해도 안 보였습니다.** */
+const 이름열쇠 = s => (s || '').normalize('NFKC')
+  .replace(/[\s­ᅟᅠ᠎​-‏⁠ㅤ﻿ﾠ]+/g, '')
+  .toLowerCase();
+const 이름말 = {
+  ok:       ['쓸 수 있는 이름이에요.', 'ok'],
+  taken:    ['이미 있는 이름이에요. 다른 이름을 골라 주세요.', 'bad'],
+  reserved: ['쓸 수 없는 이름이에요.', 'bad'],
+  long:     ['이름은 30자까지 쓸 수 있어요.', 'bad'],
+};
+let 이름물음 = 0, 이름타이머 = 0;
+function 이름알림(말, 결){
+  $('n_hint').textContent = 말 || '';
+  $('n_hint').dataset.s = 결 || '';
+  $('n_save').disabled = 결 === 'bad';
+}
+/* 치고 0.35초 멈추면 묻습니다. 답이 늦게 와서 그사이 더 쳤으면 옛 답은
+   버립니다(`번`). 새 답이 올 때까지는 앞의 말을 그대로 둡니다 — 칠 때마다
+   지웠다 쓰면 한 줄이 깜빡입니다. */
+function 이름살피기(){
+  clearTimeout(이름타이머);
+  const 번 = ++이름물음;
+  $('nameerr').classList.add('hide');
+  const v = $('n_name').value.trim();
+  if (!이름열쇠(v)) return 이름알림('');
+  이름타이머 = setTimeout(async () => {
+    let r;
+    try { r = await sb.rpc('name_free', { n: v }); } catch { return; }
+    if (번 !== 이름물음) return;
+    const 말 = !r.error && 이름말[r.data];
+    if (!말) return 이름알림('');
+    /* 지금 쓰는 이름 그대로면 「쓸 수 있어요」는 군말입니다. */
+    if (r.data === 'ok' && 이름열쇠(v) === 이름열쇠($('name').textContent)) return 이름알림('');
+    이름알림(...말);
+  }, 350);
+}
+$('n_name').addEventListener('input', 이름살피기);
 $('editname').addEventListener('click', () => {
   $('namebox').classList.toggle('hide');
   if ($('namebox').classList.contains('hide')) return;
   $('n_name').value = $('name').textContent;
+  이름알림('');
+  $('nameerr').classList.add('hide');
   $('n_name').focus();
 });
-$('n_cancel').addEventListener('click', () => $('namebox').classList.add('hide'));
+$('n_cancel').addEventListener('click', () => {
+  ++이름물음; clearTimeout(이름타이머);
+  $('namebox').classList.add('hide');
+});
 $('n_save').addEventListener('click', async () => {
   const v = $('n_name').value.trim();
-  if (!v) return fail('이름을 적어주세요.', 'trip');
+  if (!v) return fail('이름을 적어주세요.', 'name');
+  ++이름물음; clearTimeout(이름타이머);      /* 늦게 온 물음 답이 저장 뒤에 덮지 않게 */
   const r = await sb.from('profiles').update({ display_name: v })
     .eq('id', ctx.me().id).select('id');
-  if (r.error) return fail(r.error, 'trip');
-  if (!r.data?.length) return fail(NOROW.edit, 'trip');
+  if (r.error){
+    const 말 = { '23505': 이름말.taken, '23514': 이름말.reserved,
+                '22001': 이름말.long }[r.error.code];
+    if (말) return 이름알림(...말);
+    return fail(r.error, 'name');
+  }
+  if (!r.data?.length) return fail(NOROW.edit, 'name');
   $('name').textContent = v;
   /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이 바뀝니다. */
   if (!myAvatar) $('avatar').src = avatarOf(ctx.me().id, v);
