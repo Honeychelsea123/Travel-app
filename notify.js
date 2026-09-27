@@ -14,9 +14,9 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b759';
-import { sb } from './db.js?v=b759';
-import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b759';
+import { $, esc, toast } from './dom.js?v=b760';
+import { sb } from './db.js?v=b760';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b760';
 
 let ctx = { me: () => null };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
@@ -244,6 +244,7 @@ function 읽음처리(){
   readTimer = setTimeout(async () => {
     /* 그새 딴 탭으로 갔으면 그만둡니다 — 스쳐 지나간 것은 본 것이 아닙니다. */
     if (document.body.dataset.tab !== 'set') return;
+    if ($('notifpane')?.classList.contains('hide')) return;   /* 벌써 나갔으면 그만 */
     const r = await netTimeout(sb.from('notifications')
       .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
     if (!r.error && r.data?.length) loadNotifs();
@@ -268,6 +269,9 @@ export async function loadNotifs(본것){
      index.html 의 그 자리에 적어 뒀습니다 — 칸이 71px 이라 숫자를 얹으면
      글자와 다툽니다. */
   $('settabdot')?.classList.toggle('hide', !unread);
+  /* 프로필 안의 종에도 같은 점을 찍습니다(b760) — 하단바 점만 보고
+     프로필에 들어오면 「어디에 왔다는 거지」가 됩니다. */
+  $('belldot')?.classList.toggle('hide', !unread);
   if (본것 && unread) 읽음처리();
 
   if (error || !data?.length){

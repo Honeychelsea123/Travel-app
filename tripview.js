@@ -17,33 +17,33 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast } from './dom.js?v=b759';
-import { photosOpen, closePhotos } from './photoview.js?v=b759';
-import { sb } from './db.js?v=b759';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b759';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b759';
+import { $, esc, toast, coverDeck } from './dom.js?v=b760';
+import { photosOpen, closePhotos } from './photoview.js?v=b760';
+import { sb } from './db.js?v=b760';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b760';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b760';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b759';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b759';
-import { drawPlanMap } from './planmap.js?v=b759';
-import { drawPlans } from './planview.js?v=b759';
-import { legIn, fillCityList } from './legs.js?v=b759';
-import { inTrip } from './tabs.js?v=b759';
-import { closeAi } from './aiscreen.js?v=b759';
-import { closeDraft } from './draft.js?v=b759';
-import { closeReview } from './home.js?v=b759';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b760';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b760';
+import { drawPlanMap } from './planmap.js?v=b760';
+import { drawPlans } from './planview.js?v=b760';
+import { legIn, fillCityList } from './legs.js?v=b760';
+import { inTrip } from './tabs.js?v=b760';
+import { closeAi } from './aiscreen.js?v=b760';
+import { closeDraft } from './draft.js?v=b760';
+import { closeReview } from './home.js?v=b760';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b759';
-import { closeCity, isCityOpen } from './city.js?v=b759';
-import { closeMap, closeCountries } from './map.js?v=b759';
-import { closePersona } from './persona.js?v=b759';
+import { closeSpree } from './spree.js?v=b760';
+import { closeCity, isCityOpen } from './city.js?v=b760';
+import { closeMap, closeCountries } from './map.js?v=b760';
+import { closePersona } from './persona.js?v=b760';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b759';
-import { closeShelf, 거르개닫기 } from './shelf.js?v=b759';
-import { 나라거르개닫기 } from './rating.js?v=b759';
-import { closeDiary } from './diary.js?v=b759';
-import { closeDocs } from './prep.js?v=b759';
-import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b759';
+import { 시트닫기 } from './home.js?v=b760';
+import { closeShelf, 거르개닫기 } from './shelf.js?v=b760';
+import { 나라거르개닫기 } from './rating.js?v=b760';
+import { closeDiary } from './diary.js?v=b760';
+import { closeDocs } from './prep.js?v=b760';
+import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b760';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
@@ -210,6 +210,22 @@ window.addEventListener('popstate', () => {
   if (!$('shelfpane').classList.contains('hide')) return closeShelf(true);
   if (!$('diarypane').classList.contains('hide')) return closeDiary(true);
   if (!$('personapane').classList.contains('hide')) return closePersona(true);
+  /* ⚠ **프로필 안의 두 겹(b760)** — 종이 여는 알림(`#notifpane`)과 톱니가
+     여는 설정(`#setpane`). 둘 다 프로필 위에 한 겹 얹히므로 여기가 자리입니다.
+   ⚠ 닫는 일이 클래스 토글뿐이라 **여기서 바로** 합니다. app.js 의 함수를
+     불러 쓰면 tripview ↔ app 고리가 생깁니다.
+   ⚠ 설정은 뒤로가기 기록을 안 쌓습니다(`#setback` 이 그 일을 합니다).
+     그래도 사슬에 둡니다 — 알림에서 설정으로 넘어간 뒤의 뒤로가기가
+     여기까지 내려옵니다. */
+  for (const id of ['notifpane', 'setpane']){
+    const el = $(id);
+    if (el && !el.classList.contains('hide')){
+      el.classList.add('hide');
+      $('profpane')?.classList.remove('hide');
+      coverDeck(false);
+      return;
+    }
+  }
   /* ⚠ 나라 지도(#cmappane)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
      보여주므로 그 판이 아예 안 만들어집니다. 사슬에서도 뺐습니다. */
   if (!$('ctrypane').classList.contains('hide')) return closeCountries(true);
