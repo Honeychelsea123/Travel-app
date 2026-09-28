@@ -13,16 +13,16 @@
  *
  * 층: dom.js · calc.js · trip.js 와 이미 떼어낸 planline · planmap ·
  *     planview · plancheck · cands · legs · tripview 를 씁니다. */
-import { $, esc } from './dom.js?v=b784';
-import { D1, asDate, hm, hop, todayYmd } from './calc.js?v=b784';
-import { trip, plans, legs, setPickedDay, setTodayOn } from './trip.js?v=b784';
-import { drawCats } from './planline.js?v=b784';
-import { drawPlanMap } from './planmap.js?v=b784';
-import { drawPlans, openPlans } from './planview.js?v=b784';
-import { STAY_MIN, mins } from './plancheck.js?v=b784';
-import { hhmm } from './cands.js?v=b784';
-import { legFor } from './legs.js?v=b784';
-import { drawDays } from './tripview.js?v=b784';
+import { $, esc } from './dom.js?v=b785';
+import { D1, asDate, hm, hop, todayYmd, 같은곳, 붙은칸, 이동줄인가 } from './calc.js?v=b785';
+import { trip, plans, legs, setPickedDay, setTodayOn } from './trip.js?v=b785';
+import { drawCats } from './planline.js?v=b785';
+import { drawPlanMap } from './planmap.js?v=b785';
+import { drawPlans, openPlans } from './planview.js?v=b785';
+import { STAY_MIN, mins } from './plancheck.js?v=b785';
+import { hhmm } from './cands.js?v=b785';
+import { legFor } from './legs.js?v=b785';
+import { drawDays } from './tripview.js?v=b785';
 
 /* ── 날씨 ───────────────────────────────────────────────────────────
  * open-meteo 는 키가 없어도 됩니다. 키를 받아 어딘가에 두는 순간
@@ -123,13 +123,15 @@ export async function drawToday(){
     const nx = timed[i + 1];
     if (nx && (isCur || isNext)){
       const mv = hop(p, nx, legs);
-      if (mv){
+      /* 같은 곳은 줄을 안 그리고, 딱 붙은 칸·이동 일정 앞은 경고만 안 합니다(b785) —
+         일정 목록과 같은 규칙(calc.js 의 `붙은칸` 머리말). */
+      if (mv && !같은곳(mv)){
         const end = p.end_time ? mins(p.end_time)
                   : mins(p.start_time) + (STAY_MIN[p.category] ?? 30);
         const gap = mins(nx.start_time) - end;
         /* 남은 시간이 음수면 "-20분밖에 없어요"가 됩니다. 말이 안 되는 문장입니다.
            앞 일정이 이미 다음 시작을 넘겼다는 뜻이니 그렇게 적습니다. */
-        const tight = gap < mv.min;
+        const tight = !붙은칸(p, nx) && !이동줄인가(nx) && gap < mv.min;
         const why = gap < 0 ? '앞 일정이 이미 넘겼어요'
                   : tight   ? `${gap}분밖에 없어요` : '';
         h += `<div class="tdmv${tight ? ' bad' : ''}">${mv.walk ? '도보' : '이동'}

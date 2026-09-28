@@ -18,17 +18,17 @@
  *
  * 층: dom.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     planline.js · planmap.js · plancheck.js 를 씁니다. */
-import { $, esc, emptyDo } from './dom.js?v=b784';
-import { featOn, flags } from './flags.js?v=b784';
-import { fail, write } from './net.js?v=b784';
-import { dayLabel, hm, hop, money, legNear, 좌표수상 } from './calc.js?v=b784';
-import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b784';
-import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b784';
-import { drawPlanMap, mapLinks } from './planmap.js?v=b784';
-import { STAY_MIN, mins } from './plancheck.js?v=b784';
+import { $, esc, emptyDo } from './dom.js?v=b785';
+import { featOn, flags } from './flags.js?v=b785';
+import { fail, write } from './net.js?v=b785';
+import { dayLabel, hm, hop, money, legNear, 좌표수상, 같은곳, 붙은칸, 이동줄인가 } from './calc.js?v=b785';
+import { trip, plans, legs, expenses, setPlans, pickedDay, catFilter } from './trip.js?v=b785';
+import { dayStat, lineChips, nice, parseMemo } from './planline.js?v=b785';
+import { drawPlanMap, mapLinks } from './planmap.js?v=b785';
+import { STAY_MIN, mins } from './plancheck.js?v=b785';
 /* 좌표 없는 줄에서 그 한 곳만 찾습니다. **cands.js 는 이 파일을 안 부르므로
    고리가 안 생깁니다**(b375 에 확인). */
-import { fillOnePlan } from './cands.js?v=b784';
+import { fillOnePlan } from './cands.js?v=b785';
 
 let ctx = { loadPlans: async () => {} };
 export function setPlanViewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -290,12 +290,17 @@ export function drawPlans(){
     /* ⚠ **수상한 좌표로는 이동을 안 잽니다(b733).** 273km 짜리 좌표가
        박혀 있으면 「888분 이동」이 그려집니다 — 없는 것보다 나쁩니다.
        판정은 calc.js 의 `좌표수상` 한 곳입니다(그쪽 주석에 사연). */
+    /* ⚠ `plans` 를 같이 넘깁니다(b785) — 같은 날 다른 곳과 이어진 좌표는 구간
+       도시에서 멀어도 멀쩡한 것으로 봅니다(calc.js 의 `좌표수상` 머리말). */
     if (prev && prev.date === p.date &&
-        !좌표수상(prev, legs) && !좌표수상(p, legs)){
+        !좌표수상(prev, legs, 120, plans) && !좌표수상(p, legs, 120, plans)){
       const h = hop(prev, p, legs);
-      if (h){
+      /* ⚠ 같은 곳(50m 안)은 줄을 안 그립니다(b785, 사용자: 「온천에서 가이세키 저녁처럼
+         0.0km 인데 뜨는 경우만 없게」). 딱 붙은 칸·이동 일정 앞은 줄은 그리고 경고만
+         안 합니다 — calc.js 의 `붙은칸`·`이동줄인가` 머리말. */
+      if (h && !같은곳(h)){
         let warn = '';
-        if (prev.start_time && p.start_time){
+        if (prev.start_time && p.start_time && !붙은칸(prev, p) && !이동줄인가(p)){
           const end = prev.end_time ? mins(prev.end_time)
                     : mins(prev.start_time) + (STAY_MIN[prev.category] ?? 30);
           const gap = mins(p.start_time) - end;
@@ -382,7 +387,7 @@ export function drawPlans(){
             if (p.lat == null) return `<button class="nogeo" data-geo="${esc(p.id)}"
               title="지도에 안 떠요. 눌러서 위치를 찾아봅니다."
               >${핀아이콘}위치 찾기</button>`;
-            const 멀 = 좌표수상(p, legs);
+            const 멀 = 좌표수상(p, legs, 120, plans);
             return 멀 ? `<button class="nogeo" data-geo="${esc(p.id)}"
               title="그날 있는 곳에서 ${멀}km 떨어져 있어요. 위치가 틀린 것 같아 지도에서 뺐어요. 눌러서 다시 찾아봅니다."
               >${핀아이콘}위치 확인</button>` : '';

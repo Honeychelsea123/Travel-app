@@ -38,22 +38,40 @@ const json = (body: unknown, status = 200) =>
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 
-async function callGemini(model: string, key: string, contents: unknown, temp = 0.7) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: temp,
-          responseMimeType: 'application/json',   // 제안을 카드로 만들려면 형식이 있어야 합니다
-        },
-      }),
-    },
-  );
-  return { code: res.status, body: await res.text() };
+/* ⚠ `extra`(생성 설정 덧붙이기)와 `기다림`(ms, 0 이면 제한 없음)은 b784 에 더했습니다.
+   **안 넘기면 예전과 똑같이** 돕니다 — 대화·초안·불러오기는 그대로입니다.
+   ⚠⚠ places 모드가 세 줄짜리에도 **150초를 채우고 546(WORKER_RESOURCE_LIMIT)** 으로
+     죽었습니다(2026-09-28 실측). 여기엔 시간 제한도 답 길이 제한도 없어서, 모델이
+     답을 끝없이 이어 쓰면(JSON 뒤 빈칸 반복이 흔한 꼴) 함수 한도까지 붙잡혀 있습니다.
+     제한을 넘기면 코드 599 로 돌려줍니다 — 부르는 쪽이 다른 모델로 넘깁니다. */
+async function callGemini(model: string, key: string, contents: unknown, temp = 0.7,
+                          extra: Record<string, unknown> = {}, 기다림 = 0) {
+  const ac = 기다림 ? new AbortController() : null;
+  const 타이머 = ac ? setTimeout(() => ac.abort(), 기다림) : 0;
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: temp,
+            responseMimeType: 'application/json',   // 제안을 카드로 만들려면 형식이 있어야 합니다
+            ...extra,
+          },
+        }),
+        signal: ac?.signal,
+      },
+    );
+    return { code: res.status, body: await res.text() };
+  } catch (e) {
+    if (!ac) throw e;                  /* 제한을 안 건 부름은 예전처럼 던집니다 */
+    return { code: 599, body: String(e) };
+  } finally {
+    if (타이머) clearTimeout(타이머);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -570,6 +588,8 @@ Deno.serve(async (req) => {
     const imp = mode === 'import';
     // 표로 넣은 일정의 «장소 이름» 짓기(b784) — 아래 ai_take 바로 뒤에서 처리하고 끝냅니다.
     const geo = mode === 'places';
+    // 이름으로 못 찾은 곳의 «주소» 찾기(b785) — 아래 geo 바로 뒤에서 처리하고 끝냅니다.
+    const addrMode = mode === 'addr';
 
     // 사진. 간판·메뉴판·티켓을 찍어 물어보는 자리입니다.
     // 화면에서 이미 긴 쪽 1024px JPEG 으로 줄여 보냅니다. 여기서는 크기만 다시 봅니다 —
@@ -595,9 +615,9 @@ Deno.serve(async (req) => {
     }
     const shot = shots.length ? shots[0] : null;   // 아래 검색 건너뛰기 판단에 씁니다
 
-    if (!draft && !geo && !shots.length && (!message || !String(message).trim()))
+    if (!draft && !geo && !addrMode && !shots.length && (!message || !String(message).trim()))
       return json({ error: '물어볼 말을 적어주세요.' }, 400);
-    if (geo && !(Array.isArray(body.items) && body.items.length))
+    if ((geo || addrMode) && !(Array.isArray(body.items) && body.items.length))
       return json({ error: '찾을 일정이 없어요.' }, 400);
     if ((draft || imp) && !trip_id)
       return json({ error: '어느 여행인지 골라주세요.' }, 400);
@@ -613,7 +633,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const [{ data: take, error: takeErr }, { data: cfgRows }] = await Promise.all([
       admin.rpc('ai_take', { p_user: user.id,
-                             p_kind: draft ? 'draft' : (imp || geo) ? 'import' : 'chat' }),
+                             p_kind: draft ? 'draft' : (imp || geo || addrMode) ? 'import' : 'chat' }),
       admin.from('app_settings').select('key,value'),
     ]);
     const cfg: Record<string, any> =
@@ -683,18 +703,50 @@ Deno.serve(async (req) => {
         '  "areas": [ { "name": "벳푸", "local": "別府", "lat": 33.28, "lng": 131.49 } ]',
         '}',
       ].join('\n');
-      const t = await askGemini(key, [
+      const 물음 = [
         { role: 'user',  parts: [{ text: placeSystem }] },
         { role: 'model', parts: [{ text: '알겠습니다. 확실한 곳만 적겠습니다.' }] },
         { role: 'user',  parts: [{ text: '번호\t날짜\t지역\t일정\t메모\n' + table }] },
-      ], true);
+      ];
+      /* ⚠⚠ **askGemini 를 안 씁니다(b784 실측 — 위 callGemini 머리말).** ⚠⚠
+         한 번에 45초까지만 기다리고, 답 길이에 상한을 둡니다(줄마다 60토큰 남짓 +
+         여유). 두 번(큰 모델 → 가벼운 모델) 해도 90초라 함수 한도(150초) 안입니다.
+         실패하면 **왜** 실패했는지 로그에 남깁니다 — 546 만 보고는 몰랐습니다. */
+      const 상한 = Math.min(8192, 2000 + items.length * 60);
+      let 답 = '';
+      /* 가벼운 모델이 먼저입니다 — 이름 옮기기는 추론이 아니라 옮겨 적기라 충분하고
+         빠릅니다. 못 하면 큰 모델이 받습니다. (불러오기에서 가벼운 모델이 «줄을
+         빠뜨린» 일이 있었지만, 여기서 빠진 줄은 핀이 안 찍힐 뿐 틀린 핀이 되지는
+         않습니다.) */
+      for (const m of [MODEL_FALLBACK, activeModel]) {
+        const r = await callGemini(m, key, 물음, 0, { maxOutputTokens: 상한 }, 45000);
+        if (r.code !== 200) {
+          console.log(`PLACES ${m} -> ${r.code} ${String(r.body).slice(0, 300)} | ${Date.now() - T0}ms`);
+          continue;
+        }
+        try {
+          const c = JSON.parse(r.body)?.candidates?.[0];
+          답 = (c?.content?.parts ?? []).map((p: { text?: string }) => p.text ?? '').join('').trim();
+          if (c?.finishReason && c.finishReason !== 'STOP')
+            console.log(`PLACES ${m} 끝난 까닭 ${c.finishReason} · 글자 ${답.length}`);
+        } catch { 답 = ''; }
+        if (답) break;
+      }
       mark('gemini');
       console.log('TIMING places | ' + lap.join(' | ') + ' | 총 ' + (Date.now() - T0) +
-                  'ms | 줄 ' + items.length);
-      if (!t) return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 해주세요.' }, 502);
+                  'ms | 줄 ' + items.length + ' | 답 ' + 답.length + '자');
+      if (!답) return json({ error: 'AI가 답을 안 줬어요. 잠시 뒤 다시 해주세요.' }, 502);
+      /* 통째로 못 읽으면(상한에 잘림) **읽을 수 있는 줄만** 건집니다. 한 줄이 한
+         {…} 라 따로 읽힙니다 — 못 건진 줄은 화면이 「장소 아님」처럼 비워 둡니다. */
       // deno-lint-ignore no-explicit-any
       let o: any = {};
-      try { o = JSON.parse(t); } catch { return json({ error: '답을 읽지 못했어요.' }, 502); }
+      try { o = JSON.parse(답); } catch {
+        const 건짐 = (re: RegExp) => (답.match(re) ?? [])
+          .map((s) => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+        o = { rows: 건짐(/\{\s*"i"\s*:[^{}]*\}/g), areas: 건짐(/\{\s*"name"\s*:[^{}]*\}/g) };
+        console.log(`PLACES 잘린 답에서 건짐: 줄 ${o.rows.length} · 지역 ${o.areas.length}`);
+        if (!o.rows.length) return json({ error: '답을 읽지 못했어요.' }, 502);
+      }
       const txt = (v: unknown, n: number) =>
         typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null;
       // 번호를 글자("0")로 주는 일이 있어 숫자로 펴서 봅니다.
@@ -713,6 +765,86 @@ Deno.serve(async (req) => {
         .map((a: any) => ({ name: txt(a.name, 60), local: txt(a.local, 60),
                             lat: a.lat, lng: a.lng }));
       return json({ rows, areas });
+    }
+
+    // ── 이름으로 못 찾은 곳의 «주소» 찾기(b785) ────────────────────────────
+    // 화면(sheetimp.js 의 `주소로찾기`)이 OSM 에서 이름으로 못 찾은 곳(대개 숙소)만
+    // 보냅니다. 사용자: 「호텔 좌표는 너가 넣을 수 있는거아냐?」·「나중에 다 자동화」 —
+    // 손으로 한 순서 그대로입니다: 웹에서 그 곳을 검색해 **결과에 적혀 있는** 주소를
+    // 옮깁니다. 모델이 기억으로 지어낸 주소는 엉뚱한 번지에 핀을 꽂습니다.
+    // 좌표는 화면이 주소로 찾습니다(일본은 국토지리원 — 번지까지, 그 밖은 OSM).
+    // 대화 기록(chats)에 안 남깁니다. 검색 열쇠가 없거나 검색이 꺼져 있으면 빈 답입니다.
+    if (addrMode) {
+      const tavily = Deno.env.get('TAVILY_KEY');
+      if (!tavily || !searchOn) return json({ rows: [] });
+      // deno-lint-ignore no-explicit-any
+      const items: any[] = (body.items as any[]).slice(0, 8);
+      const country = String(body.country ?? '').slice(0, 2).toUpperCase();
+      const 말 = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+      // deno-lint-ignore no-explicit-any
+      const 찾음: any[][] = await Promise.all(items.map(async (it) => {
+        const q = [말(it?.name, 60), 말(it?.area, 30), country === 'JP' ? '住所' : 'address']
+          .filter(Boolean).join(' ');
+        try { return (await webSearch(tavily, admin, q, 5, null)) ?? []; } catch { return []; }
+      }));
+      mark('search');
+      const 목록 = items.map((it, i) => {
+        const hits = 찾음[i].slice(0, 4);
+        return `## ${i} · ${말(it?.name, 60)}${it?.en ? ' (' + 말(it.en, 60) + ')' : ''} · ${말(it?.area, 30)}\n` +
+          (hits.length
+            // deno-lint-ignore no-explicit-any
+            ? hits.map((h: any, j: number) => `[${j}] ${h.title}\n${h.link}\n${h.snippet}`).join('\n')
+            : '(검색 결과 없음)');
+      }).join('\n\n');
+      const addrSystem = [
+        '너는 검색 결과에서 «그 곳의 주소»를 옮겨 적는 조수다.',
+        '- 곳마다 검색 결과가 있다. 그 곳(이름이 같은 호텔·가게·시설)의 주소가 결과에',
+        '  **글자로 적혀 있으면** 그대로 옮긴다.',
+        '- 결과에 없으면 null. 기억으로 지어내거나 짐작하지 않는다. 다른 지점·비슷한 이름의',
+        '  주소를 쓰지 않는다.',
+        '- 일본 주소는 일본어 그대로(도도부현부터 번지까지). 우편번호는 빼도 된다.',
+        '- src 에는 그 주소를 옮긴 결과의 링크를 그대로 적는다.',
+        '',
+        '반드시 아래 JSON 하나만 낸다. 설명이나 코드블록을 덧붙이지 않는다.',
+        '{ "rows": [ { "i": 0, "addr": "福岡県福岡市中央区春吉2丁目4-14" 또는 null,',
+        '              "src": "https://…" 또는 null } ] }',
+      ].join('\n');
+      let 답 = '';
+      for (const m of [MODEL_FALLBACK, activeModel]) {
+        const r = await callGemini(m, key, [
+          { role: 'user',  parts: [{ text: addrSystem }] },
+          { role: 'model', parts: [{ text: '알겠습니다. 결과에 적힌 주소만 옮기겠습니다.' }] },
+          { role: 'user',  parts: [{ text: 목록 }] },
+        ], 0, { maxOutputTokens: 1500 }, 30000);
+        if (r.code !== 200) {
+          console.log(`ADDR ${m} -> ${r.code} ${String(r.body).slice(0, 200)} | ${Date.now() - T0}ms`);
+          continue;
+        }
+        try {
+          답 = (JSON.parse(r.body)?.candidates?.[0]?.content?.parts ?? [])
+            .map((p: { text?: string }) => p.text ?? '').join('').trim();
+        } catch { 답 = ''; }
+        if (답) break;
+      }
+      mark('gemini');
+      console.log('TIMING addr | ' + lap.join(' | ') + ' | 총 ' + (Date.now() - T0) +
+                  'ms | 곳 ' + items.length + ' | 답 ' + 답.length + '자');
+      // deno-lint-ignore no-explicit-any
+      let o: any = {};
+      try { o = JSON.parse(답); } catch { return json({ rows: [] }); }
+      // 링크는 **우리가 보여 준 결과 중 하나**여야 합니다 — 링크까지 지어낸 답은 버립니다.
+      const rows = (Array.isArray(o?.rows) ? o.rows : [])
+        // deno-lint-ignore no-explicit-any
+        .map((r: any) => ({
+          i: Number(r?.i),
+          addr: typeof r?.addr === 'string' && r.addr.trim() ? r.addr.trim().slice(0, 120) : null,
+          src: typeof r?.src === 'string' ? r.src.trim() : null,
+        }))
+        .filter((r: { i: number; addr: string | null; src: string | null }) =>
+          Number.isInteger(r.i) && r.i >= 0 && r.i < items.length && !!r.addr &&
+          // deno-lint-ignore no-explicit-any
+          찾음[r.i].some((h: any) => h.link === r.src));
+      return json({ rows });
     }
 
     // ── 여행 자료 ── 없으면 없는 대로 답합니다.

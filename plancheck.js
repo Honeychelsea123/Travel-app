@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b784';
-import { sb } from './db.js?v=b784';
-import { fail } from './net.js?v=b784';
-import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd } from './calc.js?v=b784';
-import { trip } from './trip.js?v=b784';
-import { aiTripId } from './ai.js?v=b784';
-import { runReview } from './cards.js?v=b784';
+import { $, esc, josa } from './dom.js?v=b785';
+import { sb } from './db.js?v=b785';
+import { fail } from './net.js?v=b785';
+import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd, 같은곳, 붙은칸, 이동줄인가 } from './calc.js?v=b785';
+import { trip } from './trip.js?v=b785';
+import { aiTripId } from './ai.js?v=b785';
+import { runReview } from './cards.js?v=b785';
 
 let ctx = { loadChats: async () => {} };
 
@@ -109,14 +109,17 @@ export function review(t, ps, lgs){
              좌표가 둘 다 있어야 잽니다. */
           const h = hop(p, nx, lgs);
           const gap = nst - end;
-          if (h && gap < h.min) out.push({
+          /* ⚠ 같은 곳 · 딱 붙은 칸 · 이동 일정 앞은 따지지 않습니다(b785) — 일정
+             목록의 이동 줄과 **같은 규칙**입니다(calc.js 의 `붙은칸` 머리말). */
+          const 볼까 = !같은곳(h) && !붙은칸(p, nx) && !이동줄인가(nx);
+          if (볼까 && h && gap < h.min) out.push({
             lv: gap < h.min - 15 ? '심각' : '주의',
             t: `${p.title} → ${nx.title} 이동 시간이 모자랍니다`,
             /* 음수면 "-20분밖에 없어요"가 됩니다. 앞 일정이 이미 넘겼다는 뜻입니다. */
             s: `${h.km.toFixed(1)}km · ${h.walk ? '도보' : '이동'} 약 ${h.min}분인데 ` +
                (gap < 0 ? '앞 일정이 이미 넘겼어요.' : `${gap}분밖에 없어요.`) +
                (guessed ? ' (앞 일정 끝 시각이 없어 어림잡았어요)' : '') });
-          else if (!h && gap === 0) out.push({ lv:'주의',
+          else if (볼까 && !h && gap === 0) out.push({ lv:'주의',
             t:`${p.title} 다음에 이동할 시간이 없어요`,
             s:`끝나자마자 ${nx.title} 이 시작합니다.` });
         }

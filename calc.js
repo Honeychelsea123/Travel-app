@@ -68,12 +68,55 @@ export function travel(km, g){
      칸을 못 받아왔거나 아직 안 채워진 구간에서도 그럴듯한 값이 나오게 합니다. */
   const n = (v, d) => Number.isFinite(Number(v)) ? Number(v) : d;
   const q = g || {};
-  return km < n(q.walk_max_km, 1.2)
-    ? { walk:true,  min: Math.max(1, Math.round(km * n(q.walk_min_per_km, 13) +
-                                                n(q.walk_base_min, 2))) }
-    : { walk:false, min: Math.max(1, Math.round(km * n(q.transit_factor, 3.5) +
-                                                n(q.transit_base_min, 13))) };
+  if (km < n(q.walk_max_km, 1.2))
+    return { walk:true,  min: Math.max(1, Math.round(km * n(q.walk_min_per_km, 13) +
+                                                     n(q.walk_base_min, 2))) };
+  /* ⚠⚠ **20km 넘게는 기차·고속도로 속도로 이어 셉니다(b785).** ⚠⚠ 도시 안
+     대중교통 식(1km 에 3.5분)을 그대로 늘리면 벳푸→하카타(106km, 특급으로 2시간)가
+     **384분**이 됐습니다(후쿠오카 표 불러오기 실측). 20km 까지는 예전 값 그대로
+     두고 그 뒤를 1km 에 1분(시속 60km)으로 잇습니다 — 20km 에서 끊기지 않습니다.
+     도시 안 일정(대개 20km 안)은 한 분도 안 바뀝니다. */
+  const 도시 = k => k * n(q.transit_factor, 3.5) + n(q.transit_base_min, 13);
+  return { walk:false, min: Math.max(1, Math.round(km <= 20 ? 도시(km) : 도시(20) + (km - 20))) };
 }
+
+/* ── 적어 둔 이동 수단(b785) ─────────────────────────────────────────────
+ * 표로 넣은 일정에는 「이동」 칸이 있습니다(`move_note` — 「렌터카」·「도보/택시」·
+ * 「JR 특급 소닉」). 그 칸은 **그 일정까지 어떻게 가는가**입니다. 앱은 늘 대중교통
+ * 식으로만 재서, 렌터카로 5분 거리를 22~31분으로 잡고 「…분밖에 없어요」를
+ * 띄웠습니다(후쿠오카 둘째 날 다섯 줄).
+ * ⚠ 차가 한 번이라도 적혀 있으면 차로 잽니다(「도보/택시」는 택시를 탈 수 있다는 뜻).
+ * ⚠ 걷기만 적혀 있으면 1.2km 가 넘어도 걸어서 잽니다.
+ * ⚠ 대중교통·비행기·모르는 말은 `null` — 예전 식(위 `travel`)을 씁니다.
+ *   도쿄 일정처럼 이 칸이 비어 있으면 아무것도 안 바뀝니다. */
+function 적힌수단(km, g, 적힌){
+  const t = String(적힌 || '');
+  if (!t) return null;
+  const n = (v, d) => Number.isFinite(Number(v)) ? Number(v) : d;
+  const q = g || {};
+  if (/렌터카|렌트카|택시|자가용|자동차|승용차|드라이브|차량|\bcar\b|taxi|drive/i.test(t))
+    return { walk:false, min: Math.max(3, Math.round(km * 2 + 3)) };   /* 시내 운전 30km/h + 대고 내리기 */
+  if (/도보|걸어|walk/i.test(t) &&
+      !/버스|지하철|전철|기차|열차|JR|신칸센|특급|트램|페리|bus|subway|metro|train|tram|ferry/i.test(t))
+    return { walk:true, min: Math.max(1, Math.round(km * n(q.walk_min_per_km, 13) +
+                                                   n(q.walk_base_min, 2))) };
+  return null;
+}
+
+/* ── 이동 줄·경고를 거를 때 쓰는 셋(b785) ───────────────────────────────
+ * 일정 목록(planview) · 일정 검토(plancheck) · 오늘 화면(today) 셋이 **같은 규칙**을
+ * 써야 합니다 — 한 곳만 고치면 화면마다 경고가 다르게 뜹니다.
+ * · `같은곳` — 50m 안이면 같은 곳입니다. 줄을 안 그립니다(사용자: 「온천에서
+ *   가이세키 저녁처럼 0.0km 인데 뜨는 경우만 없게」 — 둘 다 료칸).
+ * · `붙은칸` — 끝 시각과 다음 시작이 딱 붙은 표(14:10~15:20 → 15:20~)는 짜는
+ *   사람이 이동을 다음 칸 안에 넣은 것입니다. 「0분밖에 없어요」는 경고가 아니라
+ *   소음이었습니다(후쿠오카 43줄에서 24개). 줄은 그리고 경고만 안 합니다.
+ * · `이동줄인가` — 다음 일정이 이동 그 자체(「특급 소닉으로 하카타 이동」)면 그
+ *   앞의 틈을 따지지 않습니다. 그 일정이 곧 이동 시간입니다. */
+export const 같은곳 = h => !!h && h.km < 0.05;
+export const 붙은칸 = (a, b) => !!(a?.end_time && b?.start_time &&
+  String(a.end_time).slice(0, 5) === String(b.start_time).slice(0, 5));
+export const 이동줄인가 = p => p?.category === '이동';
 
 /* ── 믿을 수 있는 좌표인가 (b732, 사용자 요청) ─────────────────────────
  * 사용자: 「좌표 모르면 그냥 지도에 띄우지 말자, 지도 이상한 데 핀 꽂혀 있다」.
@@ -94,22 +137,36 @@ export function travel(km, g){
  * ⚠ 좌표가 «없는» 것은 0 을 줍니다 — 그건 「수상」이 아니라 「없음」이고,
  *   부르는 쪽이 이미 따로 다룹니다(「위치 찾기」 단추).
  *
+ * ⚠⚠ **같은 날 다른 곳과 이어져 있으면 수상하지 않습니다(b785).** ⚠⚠
+ *   구간이 「후쿠오카 11/6~11/9」 하나뿐인 여행에서 첫날 **오이타공항**(제대로 찾은
+ *   좌표, 공항에서 0.1km)이 후쿠오카에서 125km 라 「위치 확인」으로 빠졌습니다
+ *   (사용자: 「오이타 공항 좌표를 못찾는건 이상하네」). 그날 유후인 일정들과는
+ *   29km 입니다 — 여러 도시를 도는 여행은 구간을 하나만 둬도 흔합니다.
+ *   `같은날`(그 여행 일정 전부)을 넘기면, 같은 날짜의 다른 좌표 하나라도 60km 안에
+ *   있을 때 통과시킵니다. 273km 짜리 엉뚱한 핀(b733)은 그날 곳들과도 멀어서 그대로
+ *   걸립니다. 안 넘기면 예전 판정 그대로입니다.
+ *
  * 돌려주는 값: 0(멀쩡하거나 못 잼) · 거리(km, 반올림) */
-export function 좌표수상(p, lgs, maxKm = 120){
+export function 좌표수상(p, lgs, maxKm = 120, 같은날 = null){
   if (!p || p.lat == null || p.lng == null) return 0;
   const l = legNear(lgs, p.date);
   if (!l || l.center_lat == null || l.center_lng == null) return 0;
   const d = distKm(Number(l.center_lat), Number(l.center_lng), p.lat, p.lng);
-  return d != null && d > maxKm ? Math.round(d) : 0;
+  if (d == null || d <= maxKm) return 0;
+  if (같은날 && 같은날.some(q => q !== p && q.id !== p.id && q.date === p.date &&
+        q.lat != null && q.lng != null && (distKm(q.lat, q.lng, p.lat, p.lng) ?? 1e9) <= 60))
+    return 0;
+  return Math.round(d);
 }
 
-/* 두 일정 사이 이동. 좌표가 둘 다 있어야 잽니다. */
+/* 두 일정 사이 이동. 좌표가 둘 다 있어야 잽니다.
+   ⚠ 도착하는 쪽(`b`)의 「이동」 칸에 수단이 적혀 있으면 그 수단으로 잽니다(b785, 위 `적힌수단`). */
 export function hop(a, b, lgs){
   const km = distKm(a.lat, a.lng, b.lat, b.lng);
   if (km == null) return null;
   const g = (lgs || []).find(l => a.date >= l.start_date && a.date <= l.end_date)
             || (lgs || [])[0];
-  const tv = travel(km, g);
+  const tv = 적힌수단(km, g, b?.move_note) || travel(km, g);
   return tv && { km, ...tv };
 }
 

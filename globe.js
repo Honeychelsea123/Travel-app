@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b784';
+import { $ } from './dom.js?v=b785';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기, 가진시군 } from './citymap.js?v=b784';
-import { countryName } from './cities.js?v=b784';
-import { visited, myRates } from './rate.js?v=b784';
+         상자자르기, 가진시군 } from './citymap.js?v=b785';
+import { countryName } from './cities.js?v=b785';
+import { visited, myRates } from './rate.js?v=b785';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -387,6 +387,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
 
   const 그리기 = () => {
     예약 = 0;
+    /* ⚠⚠ **경도를 한 바퀴 안으로 접습니다(b785).** ⚠⚠ 자동 회전·관성·끌기가 λ0 을
+       **더하기만** 해서, 홈에 켜 두면 164초마다 한 바퀴씩 쌓였습니다. 두 바퀴를
+       넘기면 아래 ⑤ 의 「화면에 걸린 나라」 창(가운데x)이 지도 밖(−1000 따위)으로
+       나가고, ±1000 한 번 옮기는 보정으로는 못 돌아옵니다 — 주·도를 받아 둔 나라는
+       ④ 도 건너뛰므로 **땅이 통째로 사라졌습니다**(사용자 사진: 동아시아에 이름만
+       떠 있음. 로컬에서 경도만 −720° 틀어 3.4배에서 대구·오사카·베이징이 바다색 —
+       재현). 그리는 자리에서 접으면 굴림(`굴림.λ + dλ·k`)도 관성도 그대로 돕니다. */
+    λ0 = Math.atan2(Math.sin(λ0), Math.cos(λ0));
     const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     const w = canvas.clientWidth, h = canvas.clientHeight;
     /* ⚠⚠ **크기가 아직 0 이면 포기하지 말고 다시 옵니다(b523).** ⚠⚠
@@ -929,7 +937,10 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
           /* 이 주·도를 «간 시·군만» 칠할까(위 `시군` 주석). 자료가 아직
              안 왔으면(undefined) 예전처럼 통째로 칠합니다 — 빈 칸보다 낫습니다. */
           const 간곳 = 칸.도시 ? 칸.도시.filter(갔나) : [];
-          const 쪼갤까 = 섞2 > 0 && 칸.도시 && 칸.도시.length >= 2 && !!시군 && 간곳.length > 0;
+          /* 시·군 단계에 든 주·도(도시가 여럿이고 시·군 자료가 왔음). 윤곽은 **간 곳
+             안 간 곳 다** 긋고(b785, 아래 `여럿`), 칠은 간 곳만 합니다(`쪼갤까`). */
+          const 여럿 = 섞2 > 0 && 칸.도시 && 칸.도시.length >= 2 && !!시군;
+          const 쪼갤까 = 여럿 && 간곳.length > 0;
           /* ⚠ 쪼갤 때는 주·도가 «진하게 → 옅게»로 넘어갑니다. 그 자리를 간 시·군이
              물려받습니다 — 다 넘어가면 간 시·군 = 진하게, 나머지 = 옅게. */
           /* 바탕이 걷힌 나라는 여기서 땅을 깝니다(위 나라 칠의 `칠하기` 와 같은 이유). */
@@ -949,12 +960,18 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
              주·도는 먹선**입니다(b780). 이제 안 간 나라도 ④ 의 나라 테두리가 없으므로,
              이 선이 곧 나라 경계입니다 — 종이색이면 미색 땅 위에서 안 보여서 나라
              사이가 사라집니다. */
-          if (칸.고리 && !덮었나){ ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(70,58,40,.26)'; ctx.lineWidth = 0.5; }
+          /* ⚠⚠ **다녀온 나라도 먹선입니다(b785, 사용자: 「도시가 칠해진 나라도 도시별로
+             윤곽선 보이게 해줘」).** ⚠⚠ 종이색 0.32·0.4px 선은 옅은 주황 위에서 **안
+             보였습니다** — 한국을 확대하면 칠한 도시 말고는 경계가 하나도 없었고, 유럽은
+             나라 경계까지 사라져 「경계선이 다 무너진다」로 보였습니다. 이제 주·도 칸은
+             나라를 가리지 않고 같은 먹선입니다. 보로노이 칸(주·도가 아직 안 옴)만
+             예전처럼 종이색으로 파냅니다. */
+          if (칸.고리){ ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(70,58,40,.26)'; ctx.lineWidth = 0.5; }
           else { ctx.globalAlpha = 섞 * 0.32; ctx.strokeStyle = 종이; ctx.lineWidth = 0.4; }
           if (!테두리없음.has(나라.code)) ctx.stroke();
           ctx.globalAlpha = 1;
 
-          if (쪼갤까){
+          if (여럿){
             /* ⚠⚠ **이 주·도의 길로 «잘라서» 칠합니다.** ⚠⚠ 시·군 자료는 나라마다
                출처가 달라(통계청·인구조사국·geoBoundaries) 해안선이 지구본의 10m 와
                조금씩 어긋납니다. 안 자르면 칠이 바다로 번집니다 — 샌프란시스코시
@@ -963,9 +980,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
             ctx.clip('evenodd');
             /* 겹쳐서 «진하게»가 되게: 1-(1-옅게)(1-a) = 진하게 */
             const 얹기 = 섞2 * (1 - (1 - 진하게) / (1 - 옅게));
-            for (const id of 간곳){
+            const 간것 = new Set(간곳);
+            /* ⚠ 전에는 간 곳만 돌았습니다 — 그래서 한국을 확대하면 칠한 도시 말고는
+               경계가 하나도 없었습니다(b785 사용자 사진). 이제 그 주·도의 도시를 다
+               돌고, 안 간 곳은 윤곽만 긋습니다. */
+            for (const id of 칸.도시){
+              const 간 = 간것.has(id);
               const 조각들 = 시군[id];
-              if (!조각들){ 점찍을.push(id); continue; }
+              if (!조각들){ if (간) 점찍을.push(id); continue; }
               ctx.beginPath();
               let 그렸나 = false, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
               for (const q of 조각들){
@@ -983,12 +1005,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
                 ctx.closePath();
               }
               if (!그렸나) continue;
-              ctx.globalAlpha = 얹기;
-              ctx.fillStyle = 내것; ctx.fill('evenodd');
-              ctx.globalAlpha = 섞 * 섞2 * 0.32;
-              ctx.strokeStyle = 종이; ctx.lineWidth = 0.4; ctx.stroke();
+              if (간){ ctx.globalAlpha = 얹기; ctx.fillStyle = 내것; ctx.fill('evenodd'); }
+              /* 도시 윤곽 — 주·도 선과 같은 먹선. 시·군 단계로 들어갈수록(섞2) 진해져
+                 7배에서 갑자기 선이 튀어나오지 않습니다. 종이색이었던 것은 위 주·도
+                 선과 같은 이유로 바꿨습니다(안 보였습니다). */
+              ctx.globalAlpha = 섞2;
+              ctx.strokeStyle = 'rgba(70,58,40,.30)'; ctx.lineWidth = 0.5; ctx.stroke();
               /* 화면에서 5px 도 안 되면 칠이 안 보입니다 — 점을 같이 찍습니다. */
-              if (x1 - x0 < 5 && y1 - y0 < 5) 점찍을.push(id);
+              if (간 && x1 - x0 < 5 && y1 - y0 < 5) 점찍을.push(id);
             }
             ctx.globalAlpha = 1;
             ctx.restore();

@@ -21,14 +21,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js · card.js 와
  *     이미 떼어낸 aiui.js · cards.js · sheetimp.js 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b784';
-import { sb } from './db.js?v=b784';
-import { fail } from './net.js?v=b784';
-import { trip } from './trip.js?v=b784';
-import { syncSheets } from './ui.js?v=b784';
-import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b784';
-import { drawCards } from './cards.js?v=b784';
-import { 표에서일정, 글표, 일정넣기, 좌표찾기, 넣은것되돌리기, 지도로찍기 } from './sheetimp.js?v=b784';
+import { $, esc, toast } from './dom.js?v=b785';
+import { sb } from './db.js?v=b785';
+import { fail } from './net.js?v=b785';
+import { trip } from './trip.js?v=b785';
+import { syncSheets } from './ui.js?v=b785';
+import { fitJpeg, drawSources, SHOT_MAX } from './aiui.js?v=b785';
+import { drawCards } from './cards.js?v=b785';
+import { 표에서일정, 글표, 일정넣기, 좌표찾기, 넣은것되돌리기, 지도로찍기 } from './sheetimp.js?v=b785';
 
 let ctx = { openAi: () => {}, loadChats: async () => {}, loadPlans: async () => {} };
 export function setBringCtx(o){ ctx = { ...ctx, ...o }; }
@@ -275,8 +275,12 @@ async function 표로넣기(){
   if (!넣은.length) return;
   const r = await 좌표찾기(넣은, (단계, i, n) => {
     if (판 !== 좌표판) return;
-    $('imp_geo_msg').textContent = 단계 === '이름'
-      ? '장소 이름을 확인하는 중…(10초쯤)' : `위치를 찾는 중… ${i}/${n}`;
+    /* ⚠ 「10초쯤」이 틀렸습니다(b785) — 실제로는 20~60초 걸립니다. 모르는 채
+       「10초」라고 하면 20초째부터 멈춘 줄 압니다. */
+    $('imp_geo_msg').textContent =
+      단계 === '이름' ? '장소 이름을 확인하는 중…(길면 1분)'
+      : 단계 === '주소' ? `숙소처럼 지도에 없는 곳은 주소로 찾는 중…${n ? ` ${i}/${n}` : ''}`
+      : `위치를 찾는 중… ${i}/${n}`;
   }, () => 되돌린판 === 판);
   if (되돌린판 === 판) return;
   await 다시그리기();

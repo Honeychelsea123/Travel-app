@@ -22,10 +22,10 @@
  *
  * 층: dom.js · db.js · trip.js · cands.js 만 씁니다. 화면(불러오기 카드)은
  *     bring.js 가 그립니다 — 여기는 읽고·넣고·찾는 일만 합니다. */
-import { sb } from './db.js?v=b784';
-import { trip, plans, legs } from './trip.js?v=b784';
-import { 여행기준, osmLookup, addressQueries } from './cands.js?v=b784';
-import { distKm } from './calc.js?v=b784';
+import { sb } from './db.js?v=b785';
+import { trip, plans, legs } from './trip.js?v=b785';
+import { 여행기준, osmLookup, addressQueries } from './cands.js?v=b785';
+import { distKm } from './calc.js?v=b785';
 
 /* ── 머리줄 찾기 ──────────────────────────────────────────────────────
  * 칸 이름은 사람마다 다르게 씁니다. 날짜와 «무엇을 하나» 두 칸만 있으면
@@ -344,11 +344,17 @@ export async function 좌표찾기(넣은, 진행 = () => {}, 그만 = () => fal
   const 대상 = 넣은.map((x, i) => ({ x, r: 이름.get(i) })).filter(({ r }) => r && (r.local || r.alt || r.en));
   const 장소아님 = 넣은.length - 대상.length;
   const 답 = new Map();
+  /* 지역의 현지 이름(「유후인」 → 「由布院」) — 주소를 찾을 때 검색어에 붙입니다. */
+  const 지역현지 = new Map((data.areas || []).filter(a => a?.name)
+    .map(a => [String(a.name).replace(/\s+/g, ' ').trim(), a.local || '']));
   /* 같은 곳 = AI 가 준 현지 이름이 같은 것(없으면 한국어·영어·제목 순). */
   const 묶음 = new Map();
   const 못 = (x, r, near) => {
     const k = 이름꼴(r?.local || r?.ko || r?.en || x.title);
-    const g = 묶음.get(k) || { 이름: r?.ko || r?.en || r?.local || x.title, ids: [], near };
+    const 지역말 = String(x.area || '').replace(/\s+/g, ' ').trim();
+    const g = 묶음.get(k) || { 이름: r?.ko || r?.en || r?.local || x.title, ids: [], near,
+                               local: r?.local || '', en: r?.en || '',
+                               지역이름: 지역현지.get(지역말) || 지역말 };
     g.ids.push(x.id);
     묶음.set(k, g);
   };
@@ -390,7 +396,93 @@ export async function 좌표찾기(넣은, 진행 = () => {}, 그만 = () => fal
     if (!u.error && u.data?.length) 찍음++;
     else 못(x, r, near);
   }
+  /* 이름으로 못 찾은 곳(대개 숙소)은 주소로 한 번 더 — 아래 `주소로찾기`. */
+  if (묶음.size && !그만()) 찍음 += await 주소로찾기(묶음, 나라, 진행, 그만);
   return { 찍음, 못찾음: 못찾음(), 장소아님 };
+}
+
+/* ── 이름으로 못 찾은 곳은 «주소»로(b785) ─────────────────────────────────
+ * 사용자: 「호텔 좌표는 너가 넣을 수 있는거아냐?」 · 「지금 하고 있는 로직들은
+ *   나중에 다 자동화시켜놔야해」. 손으로 한 것을 그대로 옮겼습니다 —
+ *   ① 웹에서 그 곳의 주소를 찾고(서버 chat 의 `addr` 모드: 검색 결과에 **적힌**
+ *      주소만 옮깁니다, 지어내지 않습니다) ② 주소를 좌표로 바꿉니다.
+ * ⚠⚠ **일본 주소는 국토지리원(GSI) 주소 검색**으로 바꿉니다. OSM 은 일본 주소를
+ *   동네(丁目)까지만 알아 1~2km 틀립니다. GSI 는 번지까지입니다 — 실측(2026-09-28):
+ *   「福岡市中央区春吉2丁目4-14」 → 두 출처로 확인해 둔 좌표와 **20m**,
+ *   「湯布院町川南249-1」 → **191m**.
+ * ⚠ 그대로 넣으면 안 되는 꼴이 둘 있었습니다(실측):
+ *   · 우편번호(〒810-0003)나 「春吉2-4-14」 꼴 → **0건**. 우편번호를 빼고
+ *     「2丁目4-14」로 폅니다.
+ *   · 「大字」가 붙으면 **6.9km 떨어진 딴 동네(下湯平)가 1등**이었습니다 →
+ *     「大字」를 뺀 꼴을 먼저 묻고, 결과 이름에 **그 동네 이름(川南)이 들어 있을
+ *     때만** 받습니다.
+ * ⚠ 그날 지역에서 40km 넘게 먼 좌표는 안 받습니다 — 다른 지점의 주소입니다.
+ * ⚠ 서버에 `addr` 모드가 없거나(옛 배포) 검색이 꺼져 있으면 조용히 넘어갑니다 —
+ *   그 곳은 「구글 지도 링크 한 번」 칸으로 남습니다. */
+function 일본주소꼴(a){
+  const s = 펴기(a).replace(/〒\s*\d{3}-?\d{4}/g, ' ').replace(/^\s*\d{3}-\d{4}\s*/, '')
+    .replace(/日本(国)?[、,]?/g, '').replace(/\s+/g, '').trim();
+  const out = new Set();
+  for (const v of [s.replace(/大字/g, ''), s]){
+    out.add(v);
+    const m = v.match(/^(.*?[^\d-])(\d+)-(\d+)-(\d+)$/);
+    if (m && !/丁目/.test(v)) out.add(`${m[1]}${m[2]}丁目${m[3]}-${m[4]}`);
+  }
+  return [...out].filter(v => v.length >= 6);
+}
+/* 번지 바로 앞의 동네 이름 — 「…中央区春吉2丁目…」 → 春吉, 「…湯布院町川南249-1」 → 川南. */
+const 동네이름 = a => (펴기(a).replace(/大字|字/g, '')
+  .match(/([^\d\s市区町村郡都道府県〒-]{1,6})(?=\d)/) || [])[1] || '';
+async function 주소좌표(주소, 나라, near){
+  if (나라 === 'JP'){
+    const 동네 = 동네이름(주소);
+    for (const q of 일본주소꼴(주소)){
+      try {
+        const r = await fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' +
+                              encodeURIComponent(q));
+        const a = r.ok ? await r.json() : [];
+        const 맞는 = (Array.isArray(a) ? a : []).find(f =>
+          Array.isArray(f?.geometry?.coordinates) &&
+          (!동네 || String(f?.properties?.title || '').includes(동네)));
+        if (맞는){
+          const [lng, lat] = 맞는.geometry.coordinates.map(Number);
+          if (Number.isFinite(lat) && Number.isFinite(lng) &&
+              (!near || distKm(near[0], near[1], lat, lng) <= 40)) return { lat, lng };
+        }
+      } catch {}
+    }
+    return null;
+  }
+  /* 일본 밖은 OSM — 유럽·미국은 번지까지 올라 있는 곳이 많습니다. */
+  const hit = await osmLookup(주소, { country: 나라, near, maxKm: 40 });
+  return hit && hit !== 'stop' ? hit : null;
+}
+async function 주소로찾기(묶음, 나라, 진행, 그만){
+  const 남은 = [...묶음.entries()].slice(0, 8);
+  진행('주소', 0, 남은.length);
+  let data = null;
+  try {
+    const r = await sb.functions.invoke('chat', { body: {
+      mode: 'addr', trip_id: trip.id, country: 나라,
+      items: 남은.map(([, g], i) => ({ i, name: g.local || g.이름, en: g.en || '',
+                                      area: g.지역이름 || '' })),
+    } });
+    data = r.error ? null : r.data;
+  } catch {}
+  if (!Array.isArray(data?.rows)) return 0;
+  let 찍음 = 0;
+  for (const r of data.rows){
+    if (그만()) break;
+    const 짝 = 남은[r?.i];
+    if (!짝 || !r?.addr) continue;
+    const [k, g] = 짝;
+    진행('주소', r.i + 1, 남은.length);
+    const hit = await 주소좌표(r.addr, 나라, g.near);
+    if (!hit) continue;
+    const u = await sb.from('plans').update({ lat: hit.lat, lng: hit.lng }).in('id', g.ids).select('id');
+    if (!u.error && u.data?.length){ 찍음 += u.data.length; 묶음.delete(k); }
+  }
+  return 찍음;
 }
 
 /* ── 못 찾은 «곳»에 지도 링크 한 번으로 찍기 ──────────────────────────────
