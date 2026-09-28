@@ -12,13 +12,12 @@
  * ⚠ SQL(101)을 아직 안 돌렸으면 친구 줄 · 설정 카드를 통째로 숨깁니다 —
  *   눌러도 안 되는 단추를 두면 안 됩니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b792';
-import { sb } from './db.js?v=b792';
-import { netTimeout } from './net.js?v=b792';
-import { cities } from './cities.js?v=b792';
-import { arm, disarm } from './ui.js?v=b792';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b793';
+import { sb } from './db.js?v=b793';
+import { netTimeout } from './net.js?v=b793';
+import { cities } from './cities.js?v=b793';
 /* 소식의 도시 칩을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b792';
+import { openCity } from './city.js?v=b793';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -121,7 +120,7 @@ async function 그리기(){
     if (r?.error) return 실패(r.error);
     const 목록 = r?.data || [];
     칸.innerHTML = 목록.length ? 목록.map(p => 사람줄(p)).join('')
-      : 빈칸('아직 나를 팔로우한 사람이 없어요.', '아래 「내 프로필 링크」를 친구에게 보내 보세요.');
+      : 빈칸('아직 나를 팔로우한 사람이 없어요.', '프로필의 「프로필 공유」로 친구에게 링크를 보내 보세요.');
     return;
   }
 
@@ -247,8 +246,6 @@ $('friendview')?.addEventListener('click', async e => {
   }
 
   if (e.target.closest('#fr_go')) return 찾기();
-  if (e.target.closest('#fr_share')) return 링크보내기();
-  if (e.target.closest('#fr_newlink')) return 새링크();
   if (e.target.closest('#friendback')) return closeFriends();
 });
 $('fr_q')?.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); 찾기(); } });
@@ -284,7 +281,8 @@ async function 내링크(){
   }
   return 내코드 ? location.origin + location.pathname + '?p=' + encodeURIComponent(내코드) : null;
 }
-/* 프로필 머리의 「프로필 공유」(b791)도 이것을 씁니다 — 친구 화면 맨 아래 단추와 같은 일. */
+/* 프로필 머리의 「프로필 공유」(b791)가 부릅니다. 친구 화면 맨 아래에 같은 단추가 있었는데
+   중복이라 b793 에 걷었습니다(「새 링크로」도 같이). */
 export function shareProfile(){ return 링크보내기(); }
 async function 링크보내기(){
   const url = await 내링크();
@@ -295,19 +293,6 @@ async function 링크보내기(){
     catch (e){ if (e?.name === 'AbortError') return; }
   }
   toast(await copyText(url) ? '링크를 복사했어요' : url);
-}
-async function 새링크(){
-  /* ⚠ confirm() 대신 한 번 더 누르게 합니다(앱 안 브라우저에서 막힘 — people.js 와 같음). */
-  const b = $('fr_newlink');
-  if (b.dataset.armed !== '1'){ arm(b, '한 번 더 누르면 바꿔요 — 예전 링크는 끊겨요'); return; }
-  disarm(b);
-  const 바이트 = new Uint8Array(4); crypto.getRandomValues(바이트);
-  const code = [...바이트].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
-  const r = await netTimeout(sb.from('profiles').update({ link_code: code })
-    .eq('id', ctx.me().id).select('link_code'));
-  if (!r || r.error || !r.data?.length){ toast('바꾸지 못했어요. 다시 해 주세요'); return; }
-  내코드 = code; 코드주인 = ctx.me()?.id;      /* 공유가 옛 코드를 보내지 않게 */
-  toast('새 링크를 만들었어요');
 }
 
 /* ── 설정: 공개 범위(b790 에 이름을 바꿈) ──────────────────────────────────────────────────

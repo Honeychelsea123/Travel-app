@@ -5894,7 +5894,6 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
         color:var(--fg); }   /* .ghost 의 흐린 글자(--dim)를 이름에는 안 씁니다 */
 .frwho b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .frbtns{ display:flex; gap:6px; flex:none; }
-.frlink{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
 
 /* 소식 */
 .frfeed{ padding:12px 0; border-bottom:1px solid var(--divider-soft); }
