@@ -17,8 +17,8 @@
  * 끄는 자리**라, 떼면 그 조각이 나머지 전부를 알아야 합니다.
  *
  * 층: dom.js 와 planmap.js(Leaflet 을 미리 받아둘지 정하는 자리) 만 씁니다. */
-import { $ } from './dom.js?v=b795';
-import { ensureLeaflet } from './planmap.js?v=b795';
+import { $ } from './dom.js?v=b796';
+import { ensureLeaflet } from './planmap.js?v=b796';
 
 let ctx = { logError: () => {} };
 export function setSwRegCtx(o){ ctx = { ...ctx, ...o }; }
@@ -105,6 +105,12 @@ if ('serviceWorker' in navigator){
     if (document.visibilityState !== 'visible') return;
     navigator.serviceWorker.getRegistration('./').then(r => r?.update()).catch(() => {});
     checkBuild();
+  });
+  /* 워커가 보낸 쪽지(sw.js 의 `알리기`, b796) — 캐시에 못 담은 것을 오류 기록에 남깁니다.
+     워커는 로그인을 몰라 직접 못 씁니다. 같은 말은 한 번만, 한 번 켤 때 다섯 개까지는
+     logError 가 거릅니다. */
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.t2 === 'swerr') ctx.logError(String(e.data.말 || '').slice(0, 300), 'sw.js');
   });
 }
 

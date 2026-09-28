@@ -16,17 +16,17 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b795';
-import { sb } from './db.js?v=b795';
-import { netTimeout } from './net.js?v=b795';
-import { cities, countryName } from './cities.js?v=b795';
-import { myRates, visited } from './rate.js?v=b795';
-import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b795';
-import { starsRo } from './stars.js?v=b795';
-import { mountGlobe } from './globe.js?v=b795';
-import { arm } from './ui.js?v=b795';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b796';
+import { sb } from './db.js?v=b796';
+import { netTimeout } from './net.js?v=b796';
+import { cities, countryName } from './cities.js?v=b796';
+import { myRates, visited } from './rate.js?v=b796';
+import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b796';
+import { starsRo } from './stars.js?v=b796';
+import { mountGlobe } from './globe.js?v=b796';
+import { arm } from './ui.js?v=b796';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b795';
+import { openCity } from './city.js?v=b796';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }

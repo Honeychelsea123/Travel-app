@@ -8,7 +8,9 @@
  * 그래서 화면 쪽(app.js 의 checkBuild)이 빌드 번호를 확인해 한 번 새로고침합니다.
  * 저장(POST·PATCH)은 손대지 않습니다 — 그건 앱 쪽 큐가 맡습니다.
  */
-const VER   = 'v8';
+/* v9(b796): 셸을 한 번 통째로 비웁니다. b795 전까지 `?m=`·`?s=` 의 옛 판을 아무도 안 지워서
+   지도 자료가 판마다 쌓여 있었습니다(아래 판꼬리). 새 이름이면 activate 가 옛 통을 지웁니다. */
+const VER   = 'v9';
 const SHELL = 't2-shell-' + VER;      /* 우리 파일 */
 const RUN   = 't2-run-' + VER;        /* 지도 타일 · CDN · 사진 */
 const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
@@ -149,6 +151,40 @@ async function dropOldVersions(cache, req){
   }
 }
 
+/* ── 워커에서 난 일을 오류 기록으로(b796) ──────────────────────────────
+ * 워커는 client_errors 에 직접 못 씁니다(로그인은 화면 쪽에 있습니다). 열린 화면에
+ * 쪽지를 보내면 swreg.js 가 받아 남깁니다. 저장 공간 수치를 같이 붙입니다 —
+ * 「가득 차서 못 담았나」를 짐작 말고 재려고. */
+async function 알리기(무엇, 주소, err){
+  try {
+    let 용량 = '';
+    const s = await self.navigator?.storage?.estimate?.().catch(() => null);
+    if (s) 용량 = ` · 저장 ${Math.round(s.usage / 1e6)}/${Math.round(s.quota / 1e6)}MB`;
+    const 파일 = new URL(주소).pathname.split('/').slice(-2).join('/') + new URL(주소).search;
+    const 말 = `${무엇}: ${파일} — ${err?.name || ''} ${err?.message || err}${용량}`;
+    for (const w of await self.clients.matchAll({ type:'window' })) w.postMessage({ t2:'swerr', 말 });
+  } catch {}
+}
+
+/* ── 받은 것을 셸에 담고 옛 판을 치웁니다 — **답을 준 «뒤»에**(b796) ──────
+ * ⚠⚠ 전에는 `await c.put(…)` 을 끝낸 뒤에 답을 줬습니다. 그러면 담기가 실패할 때
+ *   (아이폰은 저장 공간이 모자라면 QuotaExceededError 를 냅니다) **받아 놓은 파일까지
+ *   못 준 것**이 됩니다. b795 에 `?m=` 를 이 갈래로 들이자 폰에서 지도 자료(map50·adm1)가
+ *   통째로 안 와서 온 유럽이 앱 초기 칠(110m + 보로노이)로 돌아갔습니다(사용자: 「앱초기에
+ *   최악으로 칠하던 방식으로 돌아갓어」). 까닭으로 제일 유력한 것이 이것입니다 — 폰에서
+ *   재 보지는 못했으므로 실패하면 `알리기` 로 남깁니다.
+ *   담기는 오프라인을 위한 덤입니다. 덤이 실패했다고 본 일(화면)을 망치면 안 됩니다.
+ * ⚠ 순서는 그대로 «담고 나서 지우기» — 못 담았으면 옛 판이 오프라인의 마지막 수단입니다.
+ * ⚠ `waitUntil` 로 붙잡습니다 — 안 붙잡으면 아이폰은 답을 준 뒤 워커를 멈춥니다(b792). */
+function 담아두기(e, c, req, res){
+  const 일 = (async () => {
+    try { await c.put(req, res); }
+    catch (err){ await 알리기('캐시에 못 담음', req.url, err); return; }
+    try { await dropOldVersions(c, req); } catch {}
+  })();
+  try { e.waitUntil(일); } catch {}
+}
+
 /* 캐시가 무한정 커지지 않게 오래된 것부터 버립니다. */
 async function trim(cache, cap){
   const keys = await cache.keys();
@@ -182,8 +218,9 @@ self.addEventListener('fetch', e => {
         /* 여기서 꼬리표를 무시하면 안 됩니다.
            무시하면 b115 를 달라는데 미리 담아둔 옛 app.js 를 줍니다.
            새 화면에 옛 코드가 붙어 조용히 깨집니다. 주소가 똑같을 때만 씁니다. */
-        const c = await caches.open(SHELL);
-        const hit = await c.match(req);
+        /* ⚠ 캐시가 망가져 있어도(열기·찾기가 던져도) 네트워크로는 줍니다(b796). */
+        const c = await caches.open(SHELL).catch(() => null);
+        const hit = c && await c.match(req).catch(() => null);
         if (hit) return hit;
 
         /* ⚠ **여기서 throw 하면 앱이 통째로 무너집니다.**
@@ -194,10 +231,9 @@ self.addEventListener('fetch', e => {
            전부 한꺼번에 쏟아집니다. 실기기에서 그렇게 터졌습니다(b295).
            비행기모드가 아니라 **잠깐 끊긴 것만으로도** 납니다. */
         const res = await fetch(req).catch(() => null);
-        /* 새것을 **담고 나서** 옛 판을 지웁니다. 순서가 중요합니다 —
-           먼저 지우면 받아오다 실패했을 때 둘 다 없어집니다. */
+        /* 새것을 **담고 나서** 옛 판을 지웁니다(위 `담아두기`) — 답은 기다리지 않고 바로 줍니다. */
         if (res && res.ok){
-          await c.put(req, res.clone()); await dropOldVersions(c, req);
+          if (c) 담아두기(e, c, req, res.clone());
           return res;
         }
 
@@ -209,7 +245,7 @@ self.addEventListener('fetch', e => {
            때문입니다 — 이 경우엔 안 담겼으니 그대로 있습니다.
            ⚠ 새 화면에 옛 코드가 붙는 위험은 그대로입니다. 그래서 이건
              **마지막 수단**이고, 화면 쪽이 새 빌드를 알아채면 새로고침합니다. */
-        const old = await c.match(req, { ignoreSearch:true });
+        const old = c && await c.match(req, { ignoreSearch:true }).catch(() => null);
         if (old) return old;
         return res || Response.error();
       })());
@@ -240,7 +276,10 @@ self.addEventListener('fetch', e => {
                  상태가 생기고, 그때 비행기모드로 들어가면 흰 화면이 됩니다.
                  실제로 그렇게 터졌습니다. */
               const html = await r.clone().text();
-              await c.put('./index.html', r.clone());
+              /* 못 담아도 받은 문서는 줍니다(b796, 위 `담아두기` 와 같은 까닭) — 여기서 던지면
+                 캐시가 빈 첫 실행에서 멀쩡히 받아 놓고 「아직 받아둔 화면이 없어요」가 뜹니다. */
+              try { await c.put('./index.html', r.clone()); }
+              catch (err){ await 알리기('캐시에 못 담음', url.href, err); }
               /* 파일 이름을 나열하지 않습니다 — 모듈을 새로 만들 때마다 여기
                  더하는 것을 잊으면 그 파일만 빠진 채로 담깁니다.
                  ?v= 가 붙은 우리 파일은 전부 이 문서의 짝입니다. */
@@ -284,7 +323,8 @@ self.addEventListener('fetch', e => {
       }
       try {
         const res = await fetch(req);
-        if (res.ok) c.put(req, res.clone());
+        /* 담기는 붙잡되(b796) 실패해도 답은 그대로 — 위 `담아두기` 와 같은 까닭. */
+        if (res.ok){ const 담기 = c.put(req, res.clone()).catch(() => {}); try { e.waitUntil(담기); } catch {} }
         return res;
       } catch {
         /* 약관·처리방침도 여기로 옵니다. 문서인데 빈 화면을 내면 안 됩니다. */
@@ -318,8 +358,11 @@ self.addEventListener('fetch', e => {
       /* opaque(무응답) 도 담습니다 — 타일은 CORS 를 안 줍니다.
          대신 상태를 못 보므로 실패한 타일도 담길 수 있습니다. 용량만 막아둡니다. */
       if (res.status === 200 || res.type === 'opaque'){
-        c.put(req, res.clone());
-        if (!isCode) trim(c, TILECAP);     /* 셸은 자르지 않습니다 */
+        /* 담고 자르는 일은 붙잡되(b796) 실패해도 답은 그대로. */
+        const 담기 = c.put(req, res.clone())
+          .then(() => { if (!isCode) return trim(c, TILECAP); })   /* 셸은 자르지 않습니다 */
+          .catch(() => {});
+        try { e.waitUntil(담기); } catch {}
       }
       return res;
     } catch {
