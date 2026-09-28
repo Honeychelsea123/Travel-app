@@ -132,9 +132,17 @@ function offlineNote(){
  * 셸 전체를 개수로 자르면(RUN 처럼) **지금 쓰는 파일을 버릴 수 있어 위험합니다.**
  * 대신 방금 담은 것과 **같은 경로에 꼬리표만 다른 것**만 지웁니다.
  * 새 판을 한 번 받으면 그 파일의 옛 판이 전부 정리됩니다. */
+/* 판 꼬리표 — `?v=`(빌드) 말고도 지도 자료는 제 꼬리를 씁니다: map50·adm1 은 `?m=`,
+   adm2 는 `?s=`(citymap.js 의 MAP_V · 시군V). ⚠⚠ **b795 전에는 `v` 만 봤습니다.** 그래서
+   `?m=4` 는 「나머지 파일」 가지로 가서 ignoreSearch 로 **옛 `?m=3` 을 그대로** 내줬고,
+   폰에서 잘게 쪼개진 나라를 합친 것(b792)이 안 보였습니다(사용자: 「여기 나라들 아직 조각이
+   그대론데?」). 한국 경계 한 벌(b786)·27개국(b787)도 같은 까닭으로 폰에 못 갔을 것입니다. */
+const 판꼬리 = ['v', 'm', 's'];
+const 판있나 = url => 판꼬리.some(k => url.searchParams.has(k));
+
 async function dropOldVersions(cache, req){
   const now = new URL(req.url);
-  if (!now.searchParams.has('v')) return;      /* 꼬리표가 없으면 판이랄 게 없습니다 */
+  if (!판있나(now)) return;                    /* 꼬리표가 없으면 판이랄 게 없습니다 */
   for (const k of await cache.keys()){
     const old = new URL(k.url);
     if (old.pathname === now.pathname && old.search !== now.search) await cache.delete(k);
@@ -167,7 +175,7 @@ self.addEventListener('fetch', e => {
         그러니 캐시에 있으면 그게 곧 맞는 것입니다. 바로 줍니다.
      2) 문서(index.html) — 캐시로 바로 열고 새것은 뒤에서 받아둡니다. */
   if (mine){
-    const versioned = url.searchParams.has('v');
+    const versioned = 판있나(url);          /* ?v= 빌드 · ?m= 지도 · ?s= 시·군(b795) */
 
     if (versioned){
       e.respondWith((async () => {

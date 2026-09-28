@@ -69,7 +69,7 @@ die "map50 에서 나라를 못 읽었습니다\n" unless keys %want;
 #   합쳐 구웠습니다(슬로베니아 193 → 12 …). 여기서 다시 구우면 합친 것이 풀려 퍼즐로 돌아갑니다.
 #   정말 이 도구로 굽고 싶으면 둘째 인자로 그 나라를 직접 적으십시오.
 unless ($목록){
-  delete $want{$_} for qw(SI MK XK LV AZ MT HK KN GB HU IE PH ME MD AG AD SM LI NR SC BB LC DM);
+  delete $want{$_} for qw(SI MK XK LV AZ MT HK KN UG GB HU IE PH ME MD AG AD SM LI NR SC BB LC DM);
 }
 printf "도시가 있는 나라 %d개를 굽습니다\n", scalar keys %want;
 

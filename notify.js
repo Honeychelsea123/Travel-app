@@ -14,9 +14,9 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b794';
-import { sb } from './db.js?v=b794';
-import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b794';
+import { $, esc, toast } from './dom.js?v=b795';
+import { sb } from './db.js?v=b795';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b795';
 
 let ctx = { me: () => null, openPerson: () => {}, openFriends: () => {} };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
