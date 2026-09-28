@@ -79,27 +79,27 @@
        그냥 흰 화면을 냅니다 — 비슷한 것으로 늘려주지 않습니다.
        새 아이폰이 나오면 여기 한 줄과 그림 한 장이 더 필요합니다.
        기기당 한 장(15~33KB)만 받습니다. -->
-<link rel="apple-touch-startup-image" href="splash/440x956@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/440x956@3x.png?v=b790"
       media="(device-width:440px) and (device-height:956px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 16 Pro Max -->
-<link rel="apple-touch-startup-image" href="splash/430x932@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/430x932@3x.png?v=b790"
       media="(device-width:430px) and (device-height:932px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 15/14 Pro Max -->
-<link rel="apple-touch-startup-image" href="splash/428x926@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/428x926@3x.png?v=b790"
       media="(device-width:428px) and (device-height:926px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 12~14 Pro Max -->
-<link rel="apple-touch-startup-image" href="splash/402x874@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/402x874@3x.png?v=b790"
       media="(device-width:402px) and (device-height:874px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 16 Pro -->
-<link rel="apple-touch-startup-image" href="splash/393x852@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/393x852@3x.png?v=b790"
       media="(device-width:393px) and (device-height:852px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 15/14 Pro -->
-<link rel="apple-touch-startup-image" href="splash/390x844@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/390x844@3x.png?v=b790"
       media="(device-width:390px) and (device-height:844px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 12~14 · 16e -->
-<link rel="apple-touch-startup-image" href="splash/375x812@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/375x812@3x.png?v=b790"
       media="(device-width:375px) and (device-height:812px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- X/XS/11 Pro · 13 mini -->
-<link rel="apple-touch-startup-image" href="splash/414x896@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/414x896@3x.png?v=b790"
       media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- XS Max/11 Pro Max -->
-<link rel="apple-touch-startup-image" href="splash/414x896@2x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/414x896@2x.png?v=b790"
       media="(device-width:414px) and (device-height:896px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)">  <!-- XR/11 -->
-<link rel="apple-touch-startup-image" href="splash/375x667@2x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/375x667@2x.png?v=b790"
       media="(device-width:375px) and (device-height:667px) and (-webkit-device-pixel-ratio:2) and (orientation:portrait)">  <!-- SE 2·3 · 8 -->
-<link rel="apple-touch-startup-image" href="splash/414x736@3x.png?v=b789"
+<link rel="apple-touch-startup-image" href="splash/414x736@3x.png?v=b790"
       media="(device-width:414px) and (device-height:736px) and (-webkit-device-pixel-ratio:3) and (orientation:portrait)">  <!-- 8 Plus -->
 
 <!-- ── 링크를 보냈을 때 상대가 보는 것 ──────────────────────────────
@@ -168,79 +168,80 @@ document.fonts?.load('700 1em Dongle').then(() => {
      스크립트와 모듈은 문서 순서대로 실행되므로 unpkg 가 매달리면 뒤에 있는
      app.js 가 **아예 실행되지 않았습니다** — 앱이 통째로 안 켜지고 부팅 실패
      상자만 남았습니다. 지도 하나 때문에 그럴 이유가 없습니다. -->
-<link rel="stylesheet" href="app.css?v=b789">
+<link rel="stylesheet" href="app.css?v=b790">
 <!-- app.js 가 아래 모듈들을 정적 import 합니다(?v= 로 버전 고정). 여기서도 참조를
      남겨야 checkBuild(app.js)·서비스워커(sw.js)의 "새 파일 다 받아진 뒤에만
      새로고침" 스캔이 index.html 글자만 훑어도 이것들을 놓치지 않습니다.
      **모듈을 새로 만들 때마다 여기 한 줄을 같이 더하세요.** -->
-<link rel="modulepreload" href="supabase.js?v=b789">
-<link rel="modulepreload" href="dom.js?v=b789">
-<link rel="modulepreload" href="db.js?v=b789">
-<link rel="modulepreload" href="calc.js?v=b789">
-<link rel="modulepreload" href="rec.js?v=b789">
-<link rel="modulepreload" href="persona.js?v=b789">
-<link rel="modulepreload" href="map.js?v=b789">
-<link rel="modulepreload" href="shelf.js?v=b789">
-<link rel="modulepreload" href="city.js?v=b789">
-<link rel="modulepreload" href="aiui.js?v=b789">
-<link rel="modulepreload" href="report.js?v=b789">
-<link rel="modulepreload" href="cards.js?v=b789">
-<link rel="modulepreload" href="expense.js?v=b789">
-<link rel="modulepreload" href="prep.js?v=b789">
-<link rel="modulepreload" href="member.js?v=b789">
-<link rel="modulepreload" href="planmap.js?v=b789">
-<link rel="modulepreload" href="citysearch.js?v=b789">
-<link rel="modulepreload" href="profile.js?v=b789">
-<link rel="modulepreload" href="review.js?v=b789">
-<link rel="modulepreload" href="rating.js?v=b789">
-<link rel="modulepreload" href="notify.js?v=b789">
-<link rel="modulepreload" href="newtrip.js?v=b789">
-<link rel="modulepreload" href="home.js?v=b789">
-<link rel="modulepreload" href="cands.js?v=b789">
-<link rel="modulepreload" href="selfcheck.js?v=b789">
-<link rel="modulepreload" href="bring.js?v=b789">
-<link rel="modulepreload" href="sheetimp.js?v=b789">
-<link rel="modulepreload" href="trash.js?v=b789">
-<link rel="modulepreload" href="plancheck.js?v=b789">
-<link rel="modulepreload" href="aiscreen.js?v=b789">
-<link rel="modulepreload" href="account.js?v=b789">
-<link rel="modulepreload" href="draft.js?v=b789">
-<link rel="modulepreload" href="triplist.js?v=b789">
-<link rel="modulepreload" href="tabs.js?v=b789">
-<link rel="modulepreload" href="planline.js?v=b789">
-<link rel="modulepreload" href="planview.js?v=b789">
-<link rel="modulepreload" href="geocode.js?v=b789">
-<link rel="modulepreload" href="legs.js?v=b789">
-<link rel="modulepreload" href="tripview.js?v=b789">
-<link rel="modulepreload" href="today.js?v=b789">
-<link rel="modulepreload" href="opentrip.js?v=b789">
-<link rel="modulepreload" href="flags.js?v=b789">
-<link rel="modulepreload" href="swreg.js?v=b789">
-<link rel="modulepreload" href="stars.js?v=b789">
-<link rel="modulepreload" href="net.js?v=b789">
-<link rel="modulepreload" href="admin.js?v=b789">
-<link rel="modulepreload" href="ui.js?v=b789">
-<link rel="modulepreload" href="card.js?v=b789">
-<link rel="modulepreload" href="trip.js?v=b789">
-<link rel="modulepreload" href="citymap.js?v=b789">
-<link rel="modulepreload" href="rate.js?v=b789">
-<link rel="modulepreload" href="cities.js?v=b789">
-<link rel="modulepreload" href="ai.js?v=b789">
-<link rel="modulepreload" href="un.js?v=b789">
-<link rel="modulepreload" href="world.js?v=b789">
-<link rel="modulepreload" href="rateui.js?v=b789">
-<link rel="modulepreload" href="globe.js?v=b789">
-<link rel="modulepreload" href="anal.js?v=b789">
-<link rel="modulepreload" href="diary.js?v=b789">
-<link rel="modulepreload" href="mate.js?v=b789">
-<link rel="modulepreload" href="photoview.js?v=b789">
-<link rel="modulepreload" href="p16.js?v=b789">
-<link rel="modulepreload" href="pshift.js?v=b789">
-<link rel="modulepreload" href="spree.js?v=b789">
-<link rel="modulepreload" href="try.js?v=b789">
-<link rel="modulepreload" href="people.js?v=b789">
-<link rel="modulepreload" href="friends.js?v=b789">
-<link rel="modulepreload" href="app.js?v=b789">
+<link rel="modulepreload" href="supabase.js?v=b790">
+<link rel="modulepreload" href="dom.js?v=b790">
+<link rel="modulepreload" href="db.js?v=b790">
+<link rel="modulepreload" href="calc.js?v=b790">
+<link rel="modulepreload" href="rec.js?v=b790">
+<link rel="modulepreload" href="persona.js?v=b790">
+<link rel="modulepreload" href="map.js?v=b790">
+<link rel="modulepreload" href="shelf.js?v=b790">
+<link rel="modulepreload" href="city.js?v=b790">
+<link rel="modulepreload" href="aiui.js?v=b790">
+<link rel="modulepreload" href="report.js?v=b790">
+<link rel="modulepreload" href="cards.js?v=b790">
+<link rel="modulepreload" href="expense.js?v=b790">
+<link rel="modulepreload" href="prep.js?v=b790">
+<link rel="modulepreload" href="member.js?v=b790">
+<link rel="modulepreload" href="planmap.js?v=b790">
+<link rel="modulepreload" href="citysearch.js?v=b790">
+<link rel="modulepreload" href="profile.js?v=b790">
+<link rel="modulepreload" href="review.js?v=b790">
+<link rel="modulepreload" href="rating.js?v=b790">
+<link rel="modulepreload" href="notify.js?v=b790">
+<link rel="modulepreload" href="newtrip.js?v=b790">
+<link rel="modulepreload" href="home.js?v=b790">
+<link rel="modulepreload" href="cands.js?v=b790">
+<link rel="modulepreload" href="selfcheck.js?v=b790">
+<link rel="modulepreload" href="bring.js?v=b790">
+<link rel="modulepreload" href="sheetimp.js?v=b790">
+<link rel="modulepreload" href="trash.js?v=b790">
+<link rel="modulepreload" href="plancheck.js?v=b790">
+<link rel="modulepreload" href="aiscreen.js?v=b790">
+<link rel="modulepreload" href="account.js?v=b790">
+<link rel="modulepreload" href="draft.js?v=b790">
+<link rel="modulepreload" href="triplist.js?v=b790">
+<link rel="modulepreload" href="tabs.js?v=b790">
+<link rel="modulepreload" href="planline.js?v=b790">
+<link rel="modulepreload" href="planview.js?v=b790">
+<link rel="modulepreload" href="geocode.js?v=b790">
+<link rel="modulepreload" href="legs.js?v=b790">
+<link rel="modulepreload" href="tripview.js?v=b790">
+<link rel="modulepreload" href="today.js?v=b790">
+<link rel="modulepreload" href="opentrip.js?v=b790">
+<link rel="modulepreload" href="flags.js?v=b790">
+<link rel="modulepreload" href="swreg.js?v=b790">
+<link rel="modulepreload" href="stars.js?v=b790">
+<link rel="modulepreload" href="net.js?v=b790">
+<link rel="modulepreload" href="admin.js?v=b790">
+<link rel="modulepreload" href="ui.js?v=b790">
+<link rel="modulepreload" href="card.js?v=b790">
+<link rel="modulepreload" href="trip.js?v=b790">
+<link rel="modulepreload" href="citymap.js?v=b790">
+<link rel="modulepreload" href="rate.js?v=b790">
+<link rel="modulepreload" href="cities.js?v=b790">
+<link rel="modulepreload" href="ai.js?v=b790">
+<link rel="modulepreload" href="un.js?v=b790">
+<link rel="modulepreload" href="world.js?v=b790">
+<link rel="modulepreload" href="rateui.js?v=b790">
+<link rel="modulepreload" href="globe.js?v=b790">
+<link rel="modulepreload" href="anal.js?v=b790">
+<link rel="modulepreload" href="diary.js?v=b790">
+<link rel="modulepreload" href="mate.js?v=b790">
+<link rel="modulepreload" href="photoview.js?v=b790">
+<link rel="modulepreload" href="p16.js?v=b790">
+<link rel="modulepreload" href="pshift.js?v=b790">
+<link rel="modulepreload" href="spree.js?v=b790">
+<link rel="modulepreload" href="try.js?v=b790">
+<link rel="modulepreload" href="people.js?v=b790">
+<link rel="modulepreload" href="friends.js?v=b790">
+<link rel="modulepreload" href="setnav.js?v=b790">
+<link rel="modulepreload" href="app.js?v=b790">
 </head>
 <body>
 <!-- ── 스플래시(런치 스크린) ────────────────────────────────────────
@@ -1354,7 +1355,9 @@ document.fonts?.load('700 1em Dongle').then(() => {
             </div>
           </div>
 
-          <div id="namebox" class="hide" style="margin-bottom:4px">
+          <!-- data-kbkeep(b790): 키보드가 떠도 칸과 「저장」을 한 덩어리로 보이게
+               — ui.js 의 keepInView. 값은 덩어리의 끝(저장 단추). -->
+          <div id="namebox" class="hide" style="margin-bottom:4px" data-kbkeep="n_save">
             <input id="n_name" maxlength="30" placeholder="예: 여행하는수달">
             <!-- 「쓸 수 있어요 / 이미 있어요」 한 줄(b783). 치는 동안 서버에 묻습니다
                  (profile.js 의 `이름살피기`, db/100 의 name_free). -->
@@ -1726,12 +1729,50 @@ document.fonts?.load('700 1em Dongle').then(() => {
            설정**뿐입니다. -->
       <div id="setpane" class="hide">
         <div class="card" style="padding:10px 12px">
+          <!-- 목록에서는 「← 프로필」, 항목 안에서는 「← 설정」(setnav.js 가 글자를 바꿈) -->
           <button class="ghost" id="setback" style="padding-left:0">← 프로필</button>
         </div>
-        <!-- 카드를 항목마다 하나씩 쌓았더니 여섯 덩어리가 같은 무게로 늘어서
-             무엇이 중요한지 안 보였습니다. 성격별로 묶고 소제목을 답니다. -->
+        <!-- ══ 설정 목록(b790) ═══════════════════════════════════════════
+             사용자: 「우리 설정창이 너무 복잡해 — 첨부한 이미지처럼(카카오톡 설정)
+             각 영역을 한번 더 들어가서 설정을 바꾸는걸로하자」 · 「공개 범위 로 가자」.
+             첫 화면은 이 목록뿐이고, 줄을 누르면 아래 `.setsub` 하나만 보입니다(setnav.js).
+             ⚠ 안의 카드·스위치는 **그대로**입니다 — id 도 처리기도 안 바꾸고 감싸기만 했습니다.
+             ⚠ 오른쪽 값(`.v`)은 열 때마다 화면에서 읽어 채웁니다(setnav.js 의 목록값).
+             ⚠ 줄을 늘리면 아래에 같은 data-sp 의 `.setsub` 도 하나 만드십시오. -->
+        <div class="card setlist" id="setlist">
+          <h2>설정</h2>
+          <button class="setrow" data-sp="acct">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            <span class="l">계정</span><span class="v" id="sv_acct"></span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="notif">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9z"/><path d="M10.5 19a2 2 0 0 0 3 0"/></svg>
+            <span class="l">알림</span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="open">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="l">공개 범위</span><span class="v" id="sv_open"></span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="screen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <span class="l">화면</span><span class="v" id="sv_screen"></span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="data">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span class="l">내 자료</span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="help">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17.5h.01"/></svg>
+            <span class="l">도움</span><i class="c" aria-hidden="true">›</i>
+          </button>
+          <button class="setrow" data-sp="legal">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>
+            <span class="l">약관과 정보</span><i class="c" aria-hidden="true">›</i>
+          </button>
+        </div>
 
         <!-- ── 알림 ── -->
+        <div class="setsub hide" data-sp="notif">
         <div class="card" id="notifprefcard">
           <h2>알림</h2>
           <!-- ⚠ **여기는 켜고 끄는 설정만입니다.** 받은 알림 «목록»은
@@ -1743,6 +1784,14 @@ document.fonts?.load('700 1em Dongle').then(() => {
           <div class="srow">
             <span class="label"><b>알림 받기</b></span>
             <label class="sw"><input type="checkbox" id="nf_all" checked><span></span></label>
+          </div>
+          <!-- 팔로우 알림(b789) — 「공개 범위」에서 옮겨 왔습니다(b790). 알림 스위치는
+               한곳에. 「알림 받기」를 끄면 이것도 서버에서 같이 막힙니다(notify_wants).
+               ⚠ 처리기는 friends.js 가 이 스위치에 직접 답니다(카드가 바뀌어서). -->
+          <div class="srow">
+            <span class="label"><b>팔로우 알림</b>
+              <div class="memo">팔로우 요청 · 수락 · 새 팔로워</div></span>
+            <label class="sw"><input type="checkbox" id="sc_notify" checked><span></span></label>
           </div>
           <!-- 여행 중에 앱을 여는 이유는 "지금 뭐 할 시간인가" 하나인데,
                그걸 알려면 앱을 열어야 한다는 것이 앞뒤가 안 맞았습니다. -->
@@ -1775,12 +1824,14 @@ document.fonts?.load('700 1em Dongle').then(() => {
           </div>
           <pre id="nferr" class="hide"></pre>
         </div>
+        </div>
 
-        <!-- ── 공개와 친구(b789) ── friends.js 의 loadSocialPrefs 가 채웁니다.
+        <!-- ── 공개 범위(b789, 이름은 b790) ── friends.js 의 loadSocialPrefs 가 채웁니다.
              ⚠ 팔로우를 «승인»하는 것이 곧 그 사람에게 보여 주겠다는 동의입니다
                (개인정보처리방침 16조). 「누구나」는 본인이 여기서 고를 때만. -->
+        <div class="setsub hide" data-sp="open">
         <div class="card hide" id="socialcard">
-          <h2>공개와 친구</h2>
+          <h2>공개 범위</h2>
           <!-- 비공개로 잠그기(b789, db/102). 서버가 거릅니다 — 화면에서 숨기는 것이 아님. -->
           <div class="srow">
             <span class="label"><b>비공개로 잠그기</b>
@@ -1800,18 +1851,15 @@ document.fonts?.load('700 1em Dongle').then(() => {
               <div class="memo">끄면 별 개수만 가려요.<br>다녀온 곳·성향·한줄평은 보여요</div></span>
             <label class="sw"><input type="checkbox" id="sc_stars" checked><span></span></label>
           </div>
-          <div class="srow">
-            <span class="label"><b>팔로우 알림</b>
-              <div class="memo">팔로우 요청 · 수락 · 새 팔로워</div></span>
-            <label class="sw"><input type="checkbox" id="sc_notify" checked><span></span></label>
-          </div>
           <div class="srow" style="display:block">
             <span class="label"><b>차단한 사람</b></span>
             <div id="sc_blocks" style="margin-top:6px"></div>
           </div>
         </div>
+        </div>
 
         <!-- ── 화면 ── -->
+        <div class="setsub hide" data-sp="screen">
         <div class="card">
           <h2>화면</h2>
           <div class="srow" style="display:block">
@@ -1824,8 +1872,10 @@ document.fonts?.load('700 1em Dongle').then(() => {
             </div>
           </div>
         </div>
+        </div>
 
         <!-- ── 도움 ── 문제를 겪었을 때 갈 곳을 한자리에 모읍니다. -->
+        <div class="setsub hide" data-sp="help">
         <div class="card">
           <h2>도움</h2>
           <div class="srow">
@@ -1858,11 +1908,13 @@ document.fonts?.load('700 1em Dongle').then(() => {
           </div>
           <div id="errlist" class="hide"></div>
         </div>
+        </div>
 
         <!-- 관리자 대시보드는 프로필 우상단 아이콘으로 옮겼습니다.
              설정에도 두면 같은 문이 둘이라 어느 쪽이 최신인지 헷갈립니다. -->
 
         <!-- ── 내 자료 ── -->
+        <div class="setsub hide" data-sp="data">
         <div class="card">
           <h2>내 자료</h2>
           <div class="srow">
@@ -1872,11 +1924,13 @@ document.fonts?.load('700 1em Dongle').then(() => {
           <div id="dumplist" class="hide"></div>
           <pre id="dumperr" class="hide"></pre>
         </div>
+        </div>
 
-        <!-- ── 약속 ── 약관과 처리방침. 앱 밖에서도 열리는 별도 문서라
-             <a> 로 그냥 넘깁니다. 화면 안에 담으면 링크를 남에게 못 줍니다. -->
+        <!-- ── 약관과 정보(b790 에 「약속」에서 이름을 바꿈) ── 약관과 처리방침. 앱 밖에서도
+             열리는 별도 문서라 <a> 로 그냥 넘깁니다. 화면 안에 담으면 링크를 남에게 못 줍니다. -->
+        <div class="setsub hide" data-sp="legal">
         <div class="card">
-          <h2>약속</h2>
+          <h2>약관과 정보</h2>
           <div class="srow">
             <span class="label"><b>이용약관</b></span>
             <a class="small btn" href="./terms.html">보기</a>
@@ -1902,8 +1956,10 @@ document.fonts?.load('700 1em Dongle').then(() => {
                ⚠ 나중에 AI 공급자를 바꾸면 그 표를 고쳐야 합니다 — 앱
                  화면에 요약이 없으니 여기를 보고 잊지 마십시오. -->
         </div>
+        </div>
 
         <!-- ── 계정 ── 로그아웃과 탈퇴는 성격이 같아 한 덩어리로 둡니다. -->
+        <div class="setsub hide" data-sp="acct">
         <div class="card">
           <h2>계정</h2>
           <!-- 메일 주소는 **프로필 맨 위 이름 바로 밑**에 있었습니다(b373 에서
@@ -1951,6 +2007,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
             </div>
             <pre id="delerr" class="hide"></pre>
           </div>
+        </div>
         </div>
       </div>
 
@@ -2208,7 +2265,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
            **여기 프로필 맨 아래에만 둡니다.** 전에는 </main> 바로 앞에 있어서,
            보고 있는 탭이 무엇이든 그 아래에 곧장 붙어 목록 한가운데 떠 있는
            것처럼 보였습니다. 관리자가 일부러 찾아봐야 하는 자리로 옮깁니다. -->
-      <p class="foot hide" id="foot">화면 <code id="build">b789</code> · <span id="ms">—</span></p>
+      <p class="foot hide" id="foot">화면 <code id="build">b790</code> · <span id="ms">—</span></p>
     </div><!-- /setview -->
 
     <!-- ── 친구(b789, friends.js) · 남의 프로필(b789, people.js) ──────────────
@@ -3032,7 +3089,7 @@ document.fonts?.load('700 1em Dongle').then(() => {
   </div>
 </div>
 
-<script type="module" src="app.js?v=b789"></script>
+<script type="module" src="app.js?v=b790"></script>
 </body>
 </html>
 

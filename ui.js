@@ -7,7 +7,7 @@
  *
  * 층: dom.js 만 씁니다. app.js 를 거꾸로 부르지 않습니다 —
  * 하나 필요한 것(AI 시트 닫기)은 setSheetCloser 로 받아 둡니다. */
-import { $ } from './dom.js?v=b789';
+import { $ } from './dom.js?v=b790';
 
 /* ── 좌우로 쓸기 ────────────────────────────────────────────────────
  * 상단의 구역 알약(일정·지출·준비·일행)은 화면 **왼쪽 위**에 있습니다.
@@ -499,6 +499,21 @@ if (window.visualViewport){
    * · 문서가 스크롤러면 아무것도 안 합니다 — 그건 브라우저가 잘합니다.
    * ⚠ **이미 보이면 아무것도 안 합니다.** 그 조건이 없으면 손으로 조금
    *   내려볼 때마다 도로 끌어올려서 화면을 못 움직이게 됩니다. */
+  /* 화면 위 흐림 띠가 끝나는 줄(b790). 홈 화면 앱은 OS 가 위 90pt 쯤을 흐리고,
+     또렷해야 하는 것은 `--sat + --edge + 6px` 밑에 둡니다(app.css 의 --edge).
+     변수가 env() 라 숫자로 못 읽으므로 그 줄에 안 보이는 핀을 꽂아 잽니다 —
+     fixed 요소의 자리는 키보드가 떠도 맞게 나옵니다. */
+  let 핀 = null;
+  const 흐림밖 = () => {
+    if (!핀){
+      핀 = document.createElement('i');
+      핀.setAttribute('aria-hidden', 'true');
+      핀.style.cssText = 'position:fixed; left:0; width:0; height:0; visibility:hidden;' +
+                          'pointer-events:none; top:calc(var(--sat, 0px) + var(--edge, 0px) + 6px)';
+      document.body.appendChild(핀);
+    }
+    return 핀.getBoundingClientRect().top;
+  };
   const 굴릴칸 = el => {
     let p = el?.parentElement;
     while (p && p !== document.body && p !== document.documentElement){
@@ -536,7 +551,34 @@ if (window.visualViewport){
     const 떠있나 = getComputedStyle(body).position === 'fixed';
     const 가린높이 = Math.max(0, 레이아웃높이() - vv.height);
     const SAFE = 떠있나 ? 24 : (가린높이 ? 가린높이 + 60 : 120);
-    const top = br.top + 16, bottom = br.bottom - SAFE;
+    /* ⚠⚠ **위 줄은 «흐림 띠 밖»입니다(b790).** 판 맨 위 16px 로 끌어올렸더니
+       홈 화면 앱에서 이름 칸이 시계 밑 흐림 속까지 올라가고 사진·이름이
+       밀려났습니다(사용자 사진 · 「입력창이 조금만 아래로 내려오게 해줘」).
+       떠 있는 시트는 제 자리가 따로라 예전 그대로 둡니다. */
+    const top = 떠있나 ? br.top + 16 : Math.max(br.top + 16, vv.offsetTop + 흐림밖());
+    const bottom = br.bottom - SAFE;
+    /* ── 칸과 단추를 한 덩어리로(`data-kbkeep`, b790) ─────────────────────
+       이름 바꾸기처럼 칸 바로 밑에 「저장」이 있는 곳. 칸만 맨 위로 보내면
+       위 맥락(사진·이름)이 다 밀려나고, 칸만 키보드 위에 맞추면 단추가
+       키보드 뒤로 숨습니다. 그래서 **덩어리가 다 보이면 안 굴리고**, 아니면
+       **단추가 키보드 위에 막 걸릴 만큼만** 올립니다(칸이 위 줄을 넘지는 않게).
+       값은 덩어리의 끝이 될 요소 id 입니다 — 안내 글까지 올릴 필요는 없습니다. */
+    const 묶음 = !떠있나 && el.closest('[data-kbkeep]');
+    if (묶음){
+      const 끝 = document.getElementById(묶음.dataset.kbkeep) || 묶음;
+      const 끝아래 = 끝.getBoundingClientRect().bottom;
+      /* 아래 줄은 «보이는 창» 기준입니다 — iOS 가 창을 밀었어도(offsetTop) 맞습니다.
+         60 은 키보드 위 ∧∨✓ 막대 몫입니다(visualViewport 에 안 잡힘). */
+      const 아래 = Math.min(br.bottom - 16, vv.offsetTop + vv.height - 60);
+      if (er.top >= top && 끝아래 <= 아래) return;
+      /* 덩어리 끝을 아래 줄에 맞춥니다 — 위로 끌어올릴 때도(단추가 가려짐), 누가
+         너무 올려 둔 것을 되돌릴 때도(칸이 흐림 속) 같은 식입니다. 칸이 위 줄을
+         넘어가면 거기서 멈춥니다. */
+      let 이동 = 끝아래 - 아래;
+      if (er.top - 이동 < top) 이동 = er.top - top;
+      body.scrollTop += 이동;
+      return;
+    }
     if (er.top >= top && er.bottom <= bottom) return;
     /* 가운데가 아니라 **위쪽으로** 데려옵니다. 가운데로 두면 칸이 아래
        절반에 앉는데, 가려지는 곳이 바로 거기입니다. */

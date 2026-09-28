@@ -12,13 +12,13 @@
  * ⚠ SQL(101)을 아직 안 돌렸으면 친구 줄 · 설정 카드를 통째로 숨깁니다 —
  *   눌러도 안 되는 단추를 두면 안 됩니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b789';
-import { sb } from './db.js?v=b789';
-import { netTimeout } from './net.js?v=b789';
-import { cities } from './cities.js?v=b789';
-import { arm, disarm } from './ui.js?v=b789';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b790';
+import { sb } from './db.js?v=b790';
+import { netTimeout } from './net.js?v=b790';
+import { cities } from './cities.js?v=b790';
+import { arm, disarm } from './ui.js?v=b790';
 /* 소식의 도시 칩을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b789';
+import { openCity } from './city.js?v=b790';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -296,7 +296,7 @@ async function 새링크(){
   toast('새 링크를 만들었어요');
 }
 
-/* ── 설정: 공개와 친구 ──────────────────────────────────────────────────
+/* ── 설정: 공개 범위(b790 에 이름을 바꿈) ──────────────────────────────────────────────────
  * 팔로우 받기(승인 / 누구나) · 팔로워에게 별점 보이기 · 팔로우 알림 · 차단한 사람.
  * 톱니 설정 화면이 열릴 때 app.js 가 부릅니다. */
 export async function loadSocialPrefs(){
@@ -312,6 +312,7 @@ export async function loadSocialPrefs(){
   카드?.classList.remove('hide');
   모드칠하기(p.data.follow_mode || 'approve');
   $('sc_lock').checked = p.data.locked === true;
+  잠금표시(p.data.locked === true);
   $('sc_stars').checked = p.data.show_stars !== false;
   $('sc_notify').checked = u?.data?.notify_social !== false;
   const 막음 = bl?.data || [];
@@ -351,6 +352,7 @@ $('socialcard')?.addEventListener('change', async e => {
       .eq('id', ctx.me().id).select('locked'));
     if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
     toast(on ? '비공개로 잠갔어요 — 이제 아무에게도 안 보여요' : '잠금을 풀었어요 — 팔로워에게 다시 보여요');
+    잠금표시(on);
     loadSocialCounts();
     return;
   }
@@ -360,11 +362,16 @@ $('socialcard')?.addEventListener('change', async e => {
       .eq('id', ctx.me().id).select('show_stars'));
     if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
     toast(on ? '팔로워에게 별점을 보여요' : '팔로워에게 별점을 숨겨요');
-  } else if (e.target.id === 'sc_notify'){
-    const on = e.target.checked;
-    const r = await netTimeout(sb.from('user_prefs')
-      .upsert({ user_id: ctx.me().id, notify_social: on }, { onConflict: 'user_id' }).select('user_id'));
-    if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
-    toast(on ? '팔로우 알림을 받아요' : '팔로우 알림을 껐어요');
   }
 });
+/* 팔로우 알림 — **알림 칸으로 옮겨 갔습니다(b790).** 그래서 위 `#socialcard`
+   의 change 로는 안 옵니다. 스위치에 직접 답니다. */
+$('sc_notify')?.addEventListener('change', async e => {
+  const on = e.target.checked;
+  const r = await netTimeout(sb.from('user_prefs')
+    .upsert({ user_id: ctx.me().id, notify_social: on }, { onConflict: 'user_id' }).select('user_id'));
+  if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
+  toast(on ? '팔로우 알림을 받아요' : '팔로우 알림을 껐어요');
+});
+/* 설정 목록의 「공개 범위」 줄 오른쪽 값(b790) — 잠갔을 때만 「비공개」. */
+function 잠금표시(on){ if ($('sv_open')) $('sv_open').textContent = on ? '비공개' : ''; }
