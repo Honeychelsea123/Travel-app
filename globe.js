@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b787';
+import { $ } from './dom.js?v=b788';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기, 가진시군 } from './citymap.js?v=b787';
-import { countryName } from './cities.js?v=b787';
-import { visited, myRates } from './rate.js?v=b787';
+         상자자르기, 가진시군 } from './citymap.js?v=b788';
+import { countryName } from './cities.js?v=b788';
+import { visited, myRates } from './rate.js?v=b788';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
