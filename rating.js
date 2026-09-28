@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b785';
-import { sb } from './db.js?v=b785';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b785';
-import { dateRange } from './calc.js?v=b785';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b785';
+import { $, esc, josa } from './dom.js?v=b786';
+import { sb } from './db.js?v=b786';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b786';
+import { dateRange } from './calc.js?v=b786';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b786';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b785';
+         countryInfo } from './cities.js?v=b786';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b785';
-import { openCity } from './city.js?v=b785';
-import { loadCities } from './citysearch.js?v=b785';
+         removeRate } from './rate.js?v=b786';
+import { openCity } from './city.js?v=b786';
+import { loadCities } from './citysearch.js?v=b786';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -365,6 +365,17 @@ export function 나라거르개닫기(뒤로온것){
   if (!판 || 판.classList.contains('hide')) return;
   if (!뒤로온것 && history.state?.t2 === 'rtsheet'){ history.back(); return; }
   판.classList.add('hide');
+}
+
+/* ── 평가 탭 «첫 화면»(b786) ── 하단바 «같은 탭 다시 누르기»(app.js)가 부릅니다.
+   사용자: 「그 버튼 한번 더 누르면 그 탭 제일 처음 화면으로」. 거르개 시트를 닫고
+   검색어와 대륙·국가 거르개를 풉니다. 걸린 것이 없으면 목록을 다시 안 그립니다. */
+export function 평가처음으로(){
+  나라거르개닫기();
+  const 칸 = $('r_q');
+  if (!칸.value && rtCont === 'all' && rtCtry === 'all') return;
+  칸.value = ''; rtCont = 'all'; rtCtry = 'all';
+  거르개채우기(); drawRatings();
 }
 
 $('rt_btn').addEventListener('click', () => 나라거르개열기());

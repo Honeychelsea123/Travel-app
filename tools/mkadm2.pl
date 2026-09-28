@@ -376,6 +376,9 @@ my (%모자람, %출처);
 my ($합도시, $합크기, $나눈, $올린, $없는) = (0, 0, 0, 0, 0);
 for my $cc (sort keys %나라){
   if ($안씀{$cc}){ print "-- $cc: 뺌 — $안씀{$cc}\n"; next }
+  # ⚠ 한국은 tools/mkkr.pl 이 굽습니다(b786) — 시·도(adm1)와 시·군을 «같은 선»으로 같이
+  #   굽습니다. 여기서 따로 구우면 이웃 시·군끼리, 시·도 선과 또 어긋납니다.
+  if ($cc eq 'KR'){ print "-- KR: tools/mkkr.pl 이 굽습니다(b786)\n"; next }
   my $iso = $ISO3{$cc} or do { print "!! $cc: ISO3 를 모릅니다\n"; next };
   my @단계 = @{ $단계{$cc} || ['ADM2'] };
   my $도시들 = $나라{$cc};

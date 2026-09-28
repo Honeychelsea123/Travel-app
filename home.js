@@ -33,40 +33,40 @@
  * 층: 아래층 여럿과 이미 떼어낸 조각들(citysearch · rating · map ·
  *     report · globe)을 씁니다. 그쪽은 이 파일을 안 부르므로 고리가
  *     생기지 않습니다 — 저쪽이 이 화면을 다시 그릴 때는 ctx 를 씁니다. */
-import { $, esc, toast } from './dom.js?v=b785';
-import { sb } from './db.js?v=b785';
-import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b785';
-import { hm, todayYmd } from './calc.js?v=b785';
-import { starHtml, paintStars } from './stars.js?v=b785';
+import { $, esc, toast } from './dom.js?v=b786';
+import { sb } from './db.js?v=b786';
+import { fail, netTimeout, netIsDown, drawOffbar } from './net.js?v=b786';
+import { hm, todayYmd } from './calc.js?v=b786';
+import { starHtml, paintStars } from './stars.js?v=b786';
 /* 평가 히어로는 세 화면이 같은 것을 씁니다 — rateui.js 머리말 참고(b409). */
-import { starValue } from './rateui.js?v=b785';
-import { cities, countryName, cityCountry } from './cities.js?v=b785';
-import { UN_CODES } from './un.js?v=b785';
-import { myRates, cityStat, visited } from './rate.js?v=b785';
-import { plans } from './trip.js?v=b785';
-import { loadCities } from './citysearch.js?v=b785';
+import { starValue } from './rateui.js?v=b786';
+import { cities, countryName, cityCountry } from './cities.js?v=b786';
+import { UN_CODES } from './un.js?v=b786';
+import { myRates, cityStat, visited } from './rate.js?v=b786';
+import { plans } from './trip.js?v=b786';
+import { loadCities } from './citysearch.js?v=b786';
 /* 지구본에서 나라를 누르면 뜨는 카드가 도시 화면으로 보냅니다(b555). */
-import { openCity } from './city.js?v=b785';
-import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b785';
+import { openCity } from './city.js?v=b786';
+import { saveRate, refreshVisited, loadRateData } from './rating.js?v=b786';
 /* CONT 는 대륙별 분모(b451) — 지도 화면과 **같은 표**를 씁니다.
    여기서 새로 적으면 두 화면의 분모가 갈라집니다. */
-import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b785';
+import { openMap, UN_COUNTRIES, CONT, CONT_VIEW, mapBackTo } from './map.js?v=b786';
 /* ⚠ **`renderAiCard`·`aiPrompt` 를 b398 에서 뗐습니다.** 홈에서 AI 일정
    권유를 걷어냈기 때문입니다(메인은 평가, 일정은 서브). 둘은 report.js 에
    그대로 살아 있으니 일정 쪽에서 쓸 자리가 생기면 거기서 가져다 쓰십시오. */
-import { drawReport } from './report.js?v=b785';
+import { drawReport } from './report.js?v=b786';
 /* 성향은 **card.js 가 정합니다.** 여기서 다시 세지 않습니다 — 두 군데서 세면
    홈에 뜬 유형과 성향 화면의 유형이 언젠가 갈라집니다. */
 /* PERSONA_BG 만 씁니다 — 카드 배경색입니다. personaAxes·personaRank·PERSONA16 은
    b457 에 홈에서 성향을 빼면서 같이 걷었습니다(분석 탭이 씁니다). */
-import { PERSONA_BG } from './card.js?v=b785';
+import { PERSONA_BG } from './card.js?v=b786';
 /* 성향이 바뀌면 홈 맨 위에 한 번 알립니다(b526) — 「다시 열 이유」. */
-import { checkPersonaShift } from './pshift.js?v=b785';
+import { checkPersonaShift } from './pshift.js?v=b786';
 /* 일기장은 제 화면을 엽니다. 「기록 탭에서 왔다」를 적어둬야 닫을 때
    프로필이 아니라 여기로 돌아옵니다(map.js 의 「나온 자리로」와 같은 규칙). */
 /* 손가락으로 돌려 보는 지구본. **성향 탭에 있던 것을 여기로 옮겼습니다(b542)** —
    이 탭이 곧 「내가 어디를 갔나」입니다. */
-import { mountGlobe } from './globe.js?v=b785';
+import { mountGlobe } from './globe.js?v=b786';
 /* 나라 지도 화면(b682). 지구본에서 나라를 누르면 여기로 갑니다. */
 /* ⚠ `ctrymap.js`(나라 페이지)는 b707 에 없앴습니다 — 지구본이 직접 도시까지
    보여줍니다. 파일도 지웠습니다. */
@@ -128,6 +128,15 @@ export function 시트닫기(뒤로온것){
   if (!뒤로온것 && history.state?.t2 === 'gsheet'){ history.back(); return; }
   판.classList.add('hide');
 }
+
+/* ── 기록 탭 «첫 화면»(b786) ──────────────────────────────────────────
+ * 사용자: 「하단바 버튼으로 이동한 상태에서 그 버튼 한번 더 누르면 그 탭 제일 처음
+ *   화면으로 돌아가게 해줘」. app.js 의 하단바 «같은 탭 다시 누르기»가 부릅니다.
+ * 나라 시트를 닫고, 넘김 카드를 첫 장 「전체」로, 지구본을 처음 자리(대한민국
+ * 한가운데 · 1배)로. 몸통(`처음화면`)은 홈을 그리는 곳의 넘김 카드 블록이
+ * 채웁니다 — 카드와 지구본이 거기 삽니다. 홈이 아직 안 그려졌으면 빈 함수입니다. */
+let 처음화면 = () => {};
+export function 기록처음으로(){ 시트닫기(); 처음화면(); }
 
 /* ⚠ 별을 글자로 찍던 `별글` 을 걷었습니다(b559). 반 칸 기호(U+2BE8)가
    아이폰에서 **두부(네모)** 로 나왔습니다 — 폰트에 없는 글자입니다.
@@ -1415,6 +1424,17 @@ async function renderFoot(통){
     }, { passive:true });
 
     if (있음) 줄기.addEventListener('scrollend', 멎으면, { passive:true });
+
+    /* 하단바 «같은 탭 다시 누르기»의 몸통(b786, 위 `기록처음으로`).
+       ⚠ 카드가 이미 첫 장이면 scroll 이 안 나서 `지도맞추기` 가 안 불립니다 —
+         손가락으로 확대·회전만 한 지구본이 그대로 남으므로 `처음으로()` 를 직접
+         부릅니다. `지난칸` 을 먼저 0 으로 두어, 뒤늦게 오는 scroll 이 지구본에
+         굴림을 한 번 더 걸지 않게 합니다. */
+    처음화면 = () => {
+      if (Math.round(줄기.scrollLeft / 폭())) 옮기기(0);
+      지난칸 = 0; 점찍기(0);
+      공?.처음으로();
+    };
   }
 
   /* ⚠⚠ **평면(2D) 지도를 걷었습니다(b759, 사용자 결정: 「기록 탭에 3D 2D는
