@@ -15,11 +15,11 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b791';
-import { sb } from './db.js?v=b791';
-import { fail, NOROW } from './net.js?v=b791';
+import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b792';
+import { sb } from './db.js?v=b792';
+import { fail, NOROW } from './net.js?v=b792';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b791';
+import { fitTabBar } from './ui.js?v=b792';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }

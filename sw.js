@@ -267,7 +267,11 @@ self.addEventListener('fetch', e => {
       const c = await caches.open(SHELL);
       const hit = await c.match(req, { ignoreSearch:true });
       if (hit){
-        fetch(req).then(r => r.ok && c.put(req, r.clone())).catch(() => {});
+        /* ⚠ **뒤에서 받는 일을 `waitUntil` 로 붙잡습니다(b792).** 안 붙잡으면
+           아이폰은 답을 준 뒤 워커를 멈춰 버려서 새 파일이 **영영 안 담겼습니다**
+           — 폰에만 남극·안도라가 없던 까닭(world.js 는 이제 ?v= 라 여기 안 오지만
+           manifest·아이콘·약관은 아직 여기로 옵니다). */
+        e.waitUntil(fetch(req).then(r => r.ok && c.put(req, r.clone())).catch(() => {}));
         return hit;
       }
       try {

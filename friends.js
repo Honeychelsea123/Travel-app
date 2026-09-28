@@ -12,13 +12,13 @@
  * ⚠ SQL(101)을 아직 안 돌렸으면 친구 줄 · 설정 카드를 통째로 숨깁니다 —
  *   눌러도 안 되는 단추를 두면 안 됩니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b791';
-import { sb } from './db.js?v=b791';
-import { netTimeout } from './net.js?v=b791';
-import { cities } from './cities.js?v=b791';
-import { arm, disarm } from './ui.js?v=b791';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b792';
+import { sb } from './db.js?v=b792';
+import { netTimeout } from './net.js?v=b792';
+import { cities } from './cities.js?v=b792';
+import { arm, disarm } from './ui.js?v=b792';
 /* 소식의 도시 칩을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b791';
+import { openCity } from './city.js?v=b792';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
