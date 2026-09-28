@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b786';
+import { $ } from './dom.js?v=b787';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기, 가진시군 } from './citymap.js?v=b786';
-import { countryName } from './cities.js?v=b786';
-import { visited, myRates } from './rate.js?v=b786';
+         상자자르기, 가진시군 } from './citymap.js?v=b787';
+import { countryName } from './cities.js?v=b787';
+import { visited, myRates } from './rate.js?v=b787';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -631,15 +631,59 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
       if (sφ0m * sφ + cφ0m * cφ * cΔ <= 0) return null;
       return [cx + R * cφ * Math.sin(λ - λ0), cy - R * (cφ0m * sφ - sφ0m * cφ * cΔ)];
     };
-    /* 50m 조각 하나를 길로 만듭니다 — 아래 나라 윤곽과 도시 칸이 같이 씁니다. */
-    const 조각길 = (q) => {
-      let 시작 = true, 그렸나 = false;
-      for (const [mx, my] of q.점){
-        const p = 던져(mx, my);
-        if (!p){ 시작 = true; continue; }
-        if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
+    /* ── 고리 하나를 길에 싣습니다(b787) ─────────────────────────────────
+     * ⚠⚠ **점마다 삼각함수를 새로 하지 않습니다.** ⚠⚠ 주·도·시·군을 나라 자료
+     *   (tools/mktopo.pl)로 바꾸자 점이 수십 배가 됐습니다 — 일본 약 3천 → 7만.
+     *   `던져` 는 점마다 cos·sin 을 네 번 해서, 나라가 통째로 보이는 배율에서는
+     *   한 프레임에 수십만 번이었습니다.
+     * → 점의 방향(단위 벡터)을 자료가 처음 그려질 때 **한 번만** 재 두고(`q.벡`),
+     *   매 프레임은 지구를 돌린 만큼 곱셈만 합니다. 식은 `던져` 와 같습니다
+     *   (cos(λ-λ0)·cosφ = X·cosλ0 + Y·sinλ0, sin(λ-λ0)·cosφ = Y·cosλ0 − X·sinλ0).
+     * ⚠ 화면에서 0.5px 도 안 움직인 점은 건너뜁니다 — 멀리서는 수만 점이 몇 px 에
+     *   몰려 캔버스 길만 무거워집니다. 고리의 마지막 점은 늘 잇습니다.
+     * `상자` 를 주면 보이는 점의 화면 상자를 적습니다(작은 시·군 → 점 찍기 판정).
+     * 돌려주는 값: 하나라도 그렸나. closePath 는 부르는 쪽이 합니다(전과 같음). */
+    const cλ0 = Math.cos(λ0), sλ0 = Math.sin(λ0);
+    /* 지도 단위 1 이 화면에서 몇 px 인가(가운데 기준 대강). 0.36° × R. */
+    const 단위px = R * 0.36 * RAD;
+    const 고리싣기 = (q, 상자) => {
+      /* ⚠ **화면에서 1px 도 안 되는 고리는 건너뜁니다**(`상자` 를 안 줄 때만). 칠레
+         남쪽 섬 수천 개가 3.4배에서 하나하나 길이 되어 한 프레임 14.5ms 였습니다
+         (재 봄). 크게 당기면 다시 그려집니다. 도시 칸(`상자` 를 줌)은 작아도 점을
+         찍어야 하므로 안 건너뜁니다. */
+      if (!상자 && ((q.x1 - q.x0) + (q.y1 - q.y0)) * 단위px < 1) return false;
+      let u = q.벡;
+      if (!u){
+        const 점 = q.점, n = 점.length;
+        u = q.벡 = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++){
+          const λ = (점[i][0] / 1000 * 360 - 180) * RAD, φ = (90 - 점[i][1] / 500 * 180) * RAD;
+          const cφ = Math.cos(φ);
+          u[i * 3] = cφ * Math.cos(λ); u[i * 3 + 1] = cφ * Math.sin(λ); u[i * 3 + 2] = Math.sin(φ);
+        }
+      }
+      let 시작 = true, 그렸나 = false, lx = 0, ly = 0;
+      const n = u.length;
+      for (let i = 0; i < n; i += 3){
+        const X = u[i], Y = u[i + 1], Z = u[i + 2];
+        const c = X * cλ0 + Y * sλ0;
+        if (sφ0m * Z + cφ0m * c <= 0){ 시작 = true; continue; }
+        const x = cx + R * (Y * cλ0 - X * sλ0), y = cy - R * (cφ0m * Z - sφ0m * c);
+        if (시작){ ctx.moveTo(x, y); 시작 = false; lx = x; ly = y; }
+        else if (i + 3 >= n || Math.abs(x - lx) + Math.abs(y - ly) >= 0.5){
+          ctx.lineTo(x, y); lx = x; ly = y;
+        }
+        if (상자){
+          if (x < 상자[0]) 상자[0] = x; if (x > 상자[1]) 상자[1] = x;
+          if (y < 상자[2]) 상자[2] = y; if (y > 상자[3]) 상자[3] = y;
+        }
         그렸나 = true;
       }
+      return 그렸나;
+    };
+    /* 50m 조각 하나를 길로 만듭니다 — 아래 나라 윤곽과 도시 칸이 같이 씁니다. */
+    const 조각길 = (q) => {
+      const 그렸나 = 고리싣기(q);
       ctx.closePath();
       return 그렸나;
     };
@@ -828,12 +872,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         if (!자를까) 길있나 = true;
         else if (자세) for (const q of 자세){
           if (q.x1 < 창c[0] || q.x0 > 창c[2] || q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
-          let 시작 = true;
-          for (const [mx, my] of q.점){
-            const p = 던져(mx, my);
-            if (!p){ 시작 = true; continue; }
-            if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
-          }
+          고리싣기(q);
           ctx.closePath(); 길있나 = true;
         }
         else for (const 고리 of 나라.고리){
@@ -905,14 +944,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
             for (const q of 칸.고리){
               if (q.x1 < 창c[0] || q.x0 > 창c[2] ||
                   q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
-              let 시작 = true;
-              for (const [mx, my] of q.점){
-                const p = 던져(mx, my);
-                if (!p){ 시작 = true; continue; }
-                if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; }
-                else ctx.lineTo(p[0], p[1]);
-                그림 = true;
-              }
+              if (고리싣기(q)) 그림 = true;
               ctx.closePath();
             }
           } else {
@@ -989,21 +1021,14 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
               const 조각들 = 시군[id];
               if (!조각들){ if (간) 점찍을.push(id); continue; }
               ctx.beginPath();
-              let 그렸나 = false, x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+              let 그렸나 = false;
+              const 화상자 = [Infinity, -Infinity, Infinity, -Infinity];
               for (const q of 조각들){
                 if (q.x1 < 창c[0] || q.x0 > 창c[2] || q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
-                let 시작 = true;
-                for (const [mx, my] of q.점){
-                  const p = 던져(mx, my);
-                  if (!p){ 시작 = true; continue; }
-                  if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; }
-                  else ctx.lineTo(p[0], p[1]);
-                  if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
-                  if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
-                  그렸나 = true;
-                }
+                if (고리싣기(q, 화상자)) 그렸나 = true;
                 ctx.closePath();
               }
+              const [x0, x1, y0, y1] = 화상자;
               if (!그렸나) continue;
               if (간){ ctx.globalAlpha = 얹기; ctx.fillStyle = 내것; ctx.fill('evenodd'); }
               /* 도시 윤곽 — 주·도 선과 같은 먹선. 시·군 단계로 들어갈수록(섞2) 진해져
@@ -1065,13 +1090,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
           let 그림 = false;
           for (const q of u.고리){
             if (q.x1 < 창c[0] || q.x0 > 창c[2] || q.y1 < 창c[1] || q.y0 > 창c[3]) continue;
-            let 시작 = true;
-            for (const [mx, my] of q.점){
-              const p = 던져(mx, my);
-              if (!p){ 시작 = true; continue; }
-              if (시작){ ctx.moveTo(p[0], p[1]); 시작 = false; } else ctx.lineTo(p[0], p[1]);
-              그림 = true;
-            }
+            if (고리싣기(q)) 그림 = true;
             ctx.closePath();
           }
           if (!그림) continue;

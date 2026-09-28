@@ -379,6 +379,9 @@ for my $cc (sort keys %나라){
   # ⚠ 한국은 tools/mkkr.pl 이 굽습니다(b786) — 시·도(adm1)와 시·군을 «같은 선»으로 같이
   #   굽습니다. 여기서 따로 구우면 이웃 시·군끼리, 시·도 선과 또 어긋납니다.
   if ($cc eq 'KR'){ print "-- KR: tools/mkkr.pl 이 굽습니다(b786)\n"; next }
+  # ⚠ 27개국은 tools/mktopo.pl 이 주·도(adm1)와 같이 굽습니다(b787). 여기서 따로 구우면 또 어긋납니다.
+  #   남은 것은 물까지 든 자료(네덜란드·피지)와 분쟁 경계가 든 자료(인도)뿐입니다.
+  if ($cc !~ /^(NL|FJ|IN|OM)$/){ print "-- $cc: tools/mktopo.pl 이 굽습니다(b787)\n"; next }
   my $iso = $ISO3{$cc} or do { print "!! $cc: ISO3 를 모릅니다\n"; next };
   my @단계 = @{ $단계{$cc} || ['ADM2'] };
   my $도시들 = $나라{$cc};
