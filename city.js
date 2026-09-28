@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b790';
-import { sb } from './db.js?v=b790';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b790';
-import { myRates, cityStat, visited } from './rate.js?v=b790';
-import { starHtml, starValue, starsRo } from './stars.js?v=b790';
-import { localTime } from './calc.js?v=b790';
-import { fail } from './net.js?v=b790';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b791';
+import { sb } from './db.js?v=b791';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b791';
+import { myRates, cityStat, visited } from './rate.js?v=b791';
+import { starHtml, starValue, starsRo } from './stars.js?v=b791';
+import { localTime } from './calc.js?v=b791';
+import { fail } from './net.js?v=b791';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -48,7 +48,7 @@ import { fail } from './net.js?v=b790';
    한 번 눌러도 «안 보이던» 도시가 닫힐 뿐이라 아무 일도 안 한 것 같습니다.
    ⚠ 판을 새로 만들면 **이 줄에 더하는 것까지가 그 일**입니다. */
 const 덱밖판 = ['personapane', 'shelfpane', 'mappane', 'ctrypane', 'cmappane',
-                'diarypane', 'setpane', 'notifpane', 'admpane', 'p16pane'];
+                'diarypane', 'setpane', 'notifpane', 'admpane', 'p16pane', 'editpane'];
 /* 팔로우의 두 덮개(b789) — 친구 화면·사람 화면. 화면 전체를 덮는 판이라
    도시를 그 «위»에 열려면 가렸다가 닫을 때 되살려야 합니다.
    ⚠ 위 열 개와 다릅니다 — 덱 밖으로 꺼낸 판이 아니라 **덱 위에 뜬 판**입니다.

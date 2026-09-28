@@ -12,13 +12,13 @@
  * ⚠ SQL(101)을 아직 안 돌렸으면 친구 줄 · 설정 카드를 통째로 숨깁니다 —
  *   눌러도 안 되는 단추를 두면 안 됩니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b790';
-import { sb } from './db.js?v=b790';
-import { netTimeout } from './net.js?v=b790';
-import { cities } from './cities.js?v=b790';
-import { arm, disarm } from './ui.js?v=b790';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b791';
+import { sb } from './db.js?v=b791';
+import { netTimeout } from './net.js?v=b791';
+import { cities } from './cities.js?v=b791';
+import { arm, disarm } from './ui.js?v=b791';
 /* 소식의 도시 칩을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b790';
+import { openCity } from './city.js?v=b791';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -29,7 +29,7 @@ let 소식끝 = null;          /* 소식을 더 받을 때 기준 시각 */
 
 export const isFriendsOpen = () => !!$('friendview') && !$('friendview').classList.contains('hide');
 
-export async function openFriends(t){
+export async function openFriends(t, 옵션 = {}){
   if (!ctx.me()) return;
   탭 = t || 'feed';
   const 판 = $('friendview');
@@ -39,6 +39,9 @@ export async function openFriends(t){
   $('fr_q').value = '';
   $('fr_found').innerHTML = '';
   탭칠하기();
+  /* 프로필의 「친구 찾기」(b791) — 찾기 칸에 커서를 둡니다. ⚠ 아래 await «전»에
+     해야 아이폰이 키보드를 올립니다(누른 그 순간 안이어야 합니다). */
+  if (옵션.찾기) $('fr_q').focus();
   await 그리기();
 }
 
@@ -268,11 +271,21 @@ async function 찾기(){
 }
 
 /* ── 내 프로필 링크 ─────────────────────────────────────────────────── */
+/* ⚠ **링크 코드를 미리 받아 둡니다(b791).** 아이폰은 공유 창을 단추를 누른
+   «그 순간»에만 띄워 줍니다 — 누른 뒤 서버에 코드를 물으러 갔다 오면 그 순간이
+   지나 공유 창 대신 복사로 떨어질 수 있습니다. 설정 칸을 채울 때(loadSocialPrefs)
+   받아 두고, 없을 때만 여기서 받습니다. 사람이 바뀌면 버립니다. */
+let 내코드 = null, 코드주인 = null;
 async function 내링크(){
-  const r = await netTimeout(sb.from('profiles').select('link_code').eq('id', ctx.me().id).maybeSingle());
-  const code = r?.data?.link_code;
-  return code ? location.origin + location.pathname + '?p=' + encodeURIComponent(code) : null;
+  const 나 = ctx.me()?.id;
+  if (!내코드 || 코드주인 !== 나){
+    const r = await netTimeout(sb.from('profiles').select('link_code').eq('id', 나).maybeSingle());
+    내코드 = r?.data?.link_code || null; 코드주인 = 나;
+  }
+  return 내코드 ? location.origin + location.pathname + '?p=' + encodeURIComponent(내코드) : null;
 }
+/* 프로필 머리의 「프로필 공유」(b791)도 이것을 씁니다 — 친구 화면 맨 아래 단추와 같은 일. */
+export function shareProfile(){ return 링크보내기(); }
 async function 링크보내기(){
   const url = await 내링크();
   if (!url){ toast('링크를 만들 수 없어요. 잠시 뒤에 다시 해 주세요'); return; }
@@ -293,6 +306,7 @@ async function 새링크(){
   const r = await netTimeout(sb.from('profiles').update({ link_code: code })
     .eq('id', ctx.me().id).select('link_code'));
   if (!r || r.error || !r.data?.length){ toast('바꾸지 못했어요. 다시 해 주세요'); return; }
+  내코드 = code; 코드주인 = ctx.me()?.id;      /* 공유가 옛 코드를 보내지 않게 */
   toast('새 링크를 만들었어요');
 }
 
@@ -303,7 +317,7 @@ export async function loadSocialPrefs(){
   const me = ctx.me();
   if (!me) return;
   const [p, u, bl] = await Promise.all([
-    netTimeout(sb.from('profiles').select('follow_mode,show_stars,locked').eq('id', me.id).maybeSingle()),
+    netTimeout(sb.from('profiles').select('follow_mode,show_stars,locked,link_code').eq('id', me.id).maybeSingle()),
     netTimeout(sb.from('user_prefs').select('*').eq('user_id', me.id).maybeSingle()),
     netTimeout(sb.rpc('my_blocks')),
   ]);
@@ -311,6 +325,7 @@ export async function loadSocialPrefs(){
   if (!p || p.error || !p.data){ 카드?.classList.add('hide'); return; }
   카드?.classList.remove('hide');
   모드칠하기(p.data.follow_mode || 'approve');
+  if (p.data.link_code){ 내코드 = p.data.link_code; 코드주인 = me.id; }   /* 공유용(b791, 위 내링크) */
   $('sc_lock').checked = p.data.locked === true;
   잠금표시(p.data.locked === true);
   $('sc_stars').checked = p.data.show_stars !== false;

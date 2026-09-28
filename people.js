@@ -16,17 +16,17 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b790';
-import { sb } from './db.js?v=b790';
-import { netTimeout } from './net.js?v=b790';
-import { cities, countryName } from './cities.js?v=b790';
-import { myRates, visited } from './rate.js?v=b790';
-import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b790';
-import { starsRo } from './stars.js?v=b790';
-import { mountGlobe } from './globe.js?v=b790';
-import { arm } from './ui.js?v=b790';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b791';
+import { sb } from './db.js?v=b791';
+import { netTimeout } from './net.js?v=b791';
+import { cities, countryName } from './cities.js?v=b791';
+import { myRates, visited } from './rate.js?v=b791';
+import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b791';
+import { starsRo } from './stars.js?v=b791';
+import { mountGlobe } from './globe.js?v=b791';
+import { arm } from './ui.js?v=b791';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b790';
+import { openCity } from './city.js?v=b791';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }
@@ -141,6 +141,7 @@ function 머리그림(h){
     ${avatarImg(h.avatar_url, h.id, 이름(h),
                 'width:88px;height:88px;border-radius:50%;object-fit:cover', 'thumb')}
     <div class="whoname">${esc(이름(h))}</div>
+    ${h.bio ? `<p class="whobio">${esc(h.bio)}</p>` : ''}
     ${잠김 ? '' : `<div class="whocounts"><span>팔로워 <b>${h.followers ?? 0}</b></span>
                            <span>팔로잉 <b>${h.following ?? 0}</b></span></div>`}
     ${h.self && h.locked ? `<div class="memo">🔒 비공개로 잠가 두었어요 — 지금은 나만 봐요</div>` : ''}

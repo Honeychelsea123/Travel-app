@@ -15,11 +15,11 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf } from './dom.js?v=b790';
-import { sb } from './db.js?v=b790';
-import { fail, NOROW } from './net.js?v=b790';
+import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b791';
+import { sb } from './db.js?v=b791';
+import { fail, NOROW } from './net.js?v=b791';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b790';
+import { fitTabBar } from './ui.js?v=b791';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
@@ -52,43 +52,106 @@ export function shrink(file, size = 256){
   });
 }
 
-$('avatarbtn').addEventListener('click', () => $('avatarfile').click());
+/* ── 프로필 변경 화면(b791) ───────────────────────────────────────────
+ * 사용자: 「프로필 수정에서 닉네임이랑, 사진 바꾸고, 소개까지 넣자」(왓챠 사진).
+ * 예전에는 사진을 누르면 **바로** 올라가고 이름은 그 자리에서 고쳤습니다.
+ * 이제 한 화면(#editpane)에서 고르고 「확인」을 눌러야 바뀝니다.
+ * ⚠ 저장 차례: **이름·소개 먼저, 성공하면 사진.** 사진은 같은 경로에 덮어쓰므로
+ *   (avatar.jpg) 올리는 순간 옛 사진이 사라집니다 — 이름이 겹쳐 실패했는데
+ *   사진만 바뀌면 안 됩니다.
+ * ⚠ 여닫기: 열 때 기록 'edit' 를 쌓고, 닫기는 뒤로가기 사슬(tripview.js)이
+ *   합니다 — 「취소」·「확인」도 기록이 있으면 history.back() 으로 닫습니다. */
+export let myBio = '';
+/* 소개를 적어 두고 프로필 머리에도 보입니다(없으면 줄째 숨김). app.js 의 render 가
+   로그인 때 서버 값으로, 여기 「확인」이 저장 뒤에 부릅니다. */
+export function setMyBio(v){
+  myBio = (v || '').trim();
+  const p = $('profbio');
+  if (p){ p.textContent = myBio; p.classList.toggle('hide', !myBio); }
+}
 
-$('avatarfile').addEventListener('change', async e => {
+let 새사진 = null;                 /* 고른 사진 { blob, url(미리보기) } — 확인 전까지는 여기만 */
+const 글자 = s => [...(s || '')].length;   /* DB 의 char_length 와 같게(한 글자 = 한 자) */
+function 글자수(){
+  $('ed_ncount').textContent = `${글자($('n_name').value)}/30`;
+  $('ed_bcount').textContent = `${글자($('ed_bio').value)}/60`;
+}
+function 사진버리기(){
+  if (새사진?.url) URL.revokeObjectURL(새사진.url);
+  새사진 = null;
+}
+
+export function openProfileEdit(){
+  if (!ctx.me()) return;
+  사진버리기();
+  ++이름물음; clearTimeout(이름타이머);
+  $('ed_avatar').src = $('avatar').src;
+  const 지금이름 = $('name').textContent;
+  $('n_name').value = 지금이름 === '—' ? '' : 지금이름;
+  $('ed_bio').value = myBio;
+  글자수();
+  이름알림('');
+  $('ederr').classList.add('hide');
+  $('nameerr').classList.add('hide');
+  $('profpane').classList.add('hide');
+  $('editpane').classList.remove('hide');
+  coverDeck(true);
+  toTop($('editpane'));
+  if (history.state?.t2 !== 'edit') history.pushState({ t2:'edit' }, '');
+}
+/* 닫기. 기록이 있으면 뒤로가기로(사슬이 판을 숨깁니다), 없으면 여기서. */
+function 닫기(){
+  ++이름물음; clearTimeout(이름타이머);
+  사진버리기();
+  if (history.state?.t2 === 'edit') return history.back();
+  $('editpane').classList.add('hide');
+  $('profpane').classList.remove('hide');
+  coverDeck(false);
+}
+
+$('avatarbtn')?.addEventListener('click', openProfileEdit);
+$('editprof')?.addEventListener('click', openProfileEdit);
+$('ed_cancel')?.addEventListener('click', 닫기);
+$('ed_photo')?.addEventListener('click', () => $('avatarfile').click());
+$('n_name')?.addEventListener('input', 글자수);
+$('ed_bio')?.addEventListener('input', 글자수);
+$('ed_nclear')?.addEventListener('click', () => {
+  $('n_name').value = '';
+  글자수(); 이름알림('');
+  $('n_name').focus();
+});
+
+/* 사진을 고르면 줄여서 미리보기만 합니다(올리는 것은 「확인」에서). */
+$('avatarfile')?.addEventListener('change', async e => {
   const f = e.target.files?.[0];
   e.target.value = '';                     /* 같은 파일을 또 골라도 걸리게 */
   if (!f) return;
-  $('avaerr').classList.add('hide');
-  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있어요.', 'ava');
-
-  const before = $('avatar').src;
-  $('avatar').style.opacity = '.4';
+  $('ederr').classList.add('hide');
+  if (!/^image\//.test(f.type)) return fail('사진 파일만 올릴 수 있어요.', 'ed');
   try {
     const blob = await shrink(f);
-    /* 파일 이름을 고정해 옛 사진이 쌓이지 않게 합니다. */
-    const path = `${ctx.me().id}/avatar.jpg`;
-    const up = await sb.storage.from('avatars')
-      .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-    if (up.error) throw up.error;
-
-    /* 이름이 같으니 주소도 같습니다. 그대로 두면 옛 사진이 캐시에서 나옵니다. */
-    const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl
-              + '?v=' + Date.now();
-    const r = await sb.from('profiles').update({ avatar_url: url })
-      .eq('id', ctx.me().id).select('avatar_url').maybeSingle();
-    if (r.error) throw r.error;
-    if (!r.data) throw new Error(NOROW.save);
-
-    $('avatar').src = url;
-    setMyAvatar(url);
-  } catch (err) {
-    $('avatar').src = before;
-    fail(/bucket|not found/i.test(err.message || '')
-      ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
-      : err, 'ava');
-  }
-  $('avatar').style.opacity = '';
+    사진버리기();
+    새사진 = { blob, url: URL.createObjectURL(blob) };
+    $('ed_avatar').src = 새사진.url;
+  } catch (err) { fail(err, 'ed'); }
 });
+
+/* 고른 사진을 올리고 주소를 적습니다. 실패하면 던집니다(부르는 쪽이 알립니다). */
+async function 사진올리기(blob){
+  /* 파일 이름을 고정해 옛 사진이 쌓이지 않게 합니다. */
+  const path = `${ctx.me().id}/avatar.jpg`;
+  const up = await sb.storage.from('avatars')
+    .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (up.error) throw up.error;
+  /* 이름이 같으니 주소도 같습니다. 그대로 두면 옛 사진이 캐시에서 나옵니다. */
+  const url = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl
+            + '?v=' + Date.now();
+  const r = await sb.from('profiles').update({ avatar_url: url })
+    .eq('id', ctx.me().id).select('avatar_url').maybeSingle();
+  if (r.error) throw r.error;
+  if (!r.data) throw new Error(NOROW.save);
+  return url;
+}
 
 /* ── 이름 ── profiles.display_name 은 모든 여행에서 쓰는 이름입니다.
    여행마다 다르게 부르고 싶으면 그 여행의 trip_members.nickname 을 씁니다. */
@@ -114,7 +177,7 @@ let 이름물음 = 0, 이름타이머 = 0;
 function 이름알림(말, 결){
   $('n_hint').textContent = 말 || '';
   $('n_hint').dataset.s = 결 || '';
-  $('n_save').disabled = 결 === 'bad';
+  $('ed_ok').disabled = 결 === 'bad';        /* 겹치는 이름이면 「확인」을 잠급니다(b791) */
 }
 /* 치고 0.35초 멈추면 묻습니다. 답이 늦게 와서 그사이 더 쳤으면 옛 답은
    버립니다(`번`). 새 답이 올 때까지는 앞의 말을 그대로 둡니다 — 칠 때마다
@@ -137,37 +200,54 @@ function 이름살피기(){
   }, 350);
 }
 $('n_name').addEventListener('input', 이름살피기);
-$('editname').addEventListener('click', () => {
-  $('namebox').classList.toggle('hide');
-  if ($('namebox').classList.contains('hide')) return;
-  $('n_name').value = $('name').textContent;
-  이름알림('');
-  $('nameerr').classList.add('hide');
-  /* 자리는 ui.js 의 keepInView 가 잡습니다(b790) — 여기서 브라우저가 먼저
-     굴리지 않게 합니다. 이미 보이는 칸을 끌어올릴 까닭이 없습니다. */
-  $('n_name').focus({ preventScroll: true });
-});
-$('n_cancel').addEventListener('click', () => {
-  ++이름물음; clearTimeout(이름타이머);
-  $('namebox').classList.add('hide');
-});
-$('n_save').addEventListener('click', async () => {
-  const v = $('n_name').value.trim();
-  if (!v) return fail('이름을 적어주세요.', 'name');
+
+/* ── 「확인」 ── 이름·소개 → (성공하면) 사진. 바뀐 것만 보냅니다. */
+$('ed_ok')?.addEventListener('click', async () => {
+  const b = $('ed_ok');
+  const 이름 = $('n_name').value.trim(), 소개 = $('ed_bio').value.trim();
+  if (!이름) return 이름알림('이름을 적어 주세요.', 'bad');
   ++이름물음; clearTimeout(이름타이머);      /* 늦게 온 물음 답이 저장 뒤에 덮지 않게 */
-  const r = await sb.from('profiles').update({ display_name: v })
-    .eq('id', ctx.me().id).select('id');
-  if (r.error){
-    const 말 = { '23505': 이름말.taken, '23514': 이름말.reserved,
-                '22001': 이름말.long }[r.error.code];
-    if (말) return 이름알림(...말);
-    return fail(r.error, 'name');
+  $('ederr').classList.add('hide');
+  b.disabled = true;
+  try {
+    const 바꿀 = {};
+    if (이름 !== $('name').textContent) 바꿀.display_name = 이름;
+    if (소개 !== myBio) 바꿀.bio = 소개 || null;
+    if (Object.keys(바꿀).length){
+      const r = await sb.from('profiles').update(바꿀).eq('id', ctx.me().id).select('id');
+      if (r.error){
+        /* 소개 60자(db/103 의 profiles_bio_len)도 23514 라 이름의 「못 쓰는 이름」과
+           갈라야 합니다 — 칸 이름으로 봅니다. */
+        if (r.error.code === '23514' && /bio/i.test(r.error.message || ''))
+          return fail('소개는 60자까지 쓸 수 있어요.', 'ed');
+        const 말 = { '23505': 이름말.taken, '23514': 이름말.reserved,
+                    '22001': 이름말.long }[r.error.code];
+        if (말) return 이름알림(...말);
+        return fail(r.error, 'ed');
+      }
+      if (!r.data?.length) return fail(NOROW.edit, 'ed');
+      if ('display_name' in 바꿀) $('name').textContent = 이름;
+      if ('bio' in 바꿀) setMyBio(소개);
+    }
+    if (새사진){
+      try {
+        const url = await 사진올리기(새사진.blob);
+        $('avatar').src = url;
+        setMyAvatar(url);
+      } catch (err) {
+        return fail(/bucket|not found/i.test(err.message || '')
+          ? '사진 저장 공간이 아직 준비되지 않았어요. 만든 사람에게 알려주세요.'
+          : err, 'ed');
+      }
+    } else if (!myAvatar && 바꿀.display_name){
+      /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이. */
+      $('avatar').src = avatarOf(ctx.me().id, 이름);
+    }
+    toast('프로필을 바꿨어요');
+    닫기();
+  } finally {
+    b.disabled = $('n_hint').dataset.s === 'bad';
   }
-  if (!r.data?.length) return fail(NOROW.edit, 'name');
-  $('name').textContent = v;
-  /* 사진을 안 올린 사람은 첫 글자가 곧 프로필 그림입니다. 이름을 바꿨으면 같이 바뀝니다. */
-  if (!myAvatar) $('avatar').src = avatarOf(ctx.me().id, v);
-  $('namebox').classList.add('hide');
 });
 
 /* ── 글자 크기 ──────────────────────────────────────────────────────

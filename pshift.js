@@ -24,11 +24,11 @@
  *   누르는 것이 곧 봤다는 증거입니다. 그전까지는 홈을 그릴 때마다 다시
  *   붙습니다 — 그게 「다시 열 이유」의 뜻이기도 합니다.
  */
-import { $, esc } from './dom.js?v=b790';
-import { sb } from './db.js?v=b790';
-import { netTimeout } from './net.js?v=b790';
-import { cities } from './cities.js?v=b790';
-import { personaAxes, PERSONA16 } from './card.js?v=b790';
+import { $, esc } from './dom.js?v=b791';
+import { sb } from './db.js?v=b791';
+import { netTimeout } from './net.js?v=b791';
+import { cities } from './cities.js?v=b791';
+import { personaAxes, PERSONA16 } from './card.js?v=b791';
 
 let ctx = { me: () => null, 열기: () => {} };
 export function setShiftCtx(o){ ctx = { ...ctx, ...o }; }
