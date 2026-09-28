@@ -33,9 +33,19 @@ binmode STDOUT, ':encoding(UTF-8)'; binmode STDERR, ':encoding(UTF-8)';
 # ⚠ 이 나라들은 시·군 자료(adm2)가 없습니다. 생기면 «도시 여럿인 지역»이 시·군 단계로 들어갑니다.
 # ⚠ 여기 나라를 tools/mkadm1.pl 로 다시 구우면 합친 것이 풀립니다. 그 도구는 이 나라들을 빼고 쓰십시오.
 
+# ── --map50(b797): 나라 «전체»를 한 덩어리로 합쳐 map50/XX.js(50m 자리)로 씁니다 ──────────
+#   perl tools/mkregion.pl <ne10_adm1.geojson> CY,SO --map50
+#   world-atlas 50m(tools/mkmap50.pl 의 원본)에는 북키프로스·소말릴란드가 나라 코드 없는 조각이라
+#   CY·SO 파일에서 빠져 있었습니다. 주·도를 못 받았을 때(globe.js `통째`) 그 땅이 바다로 비지 않게
+#   NE 10m 에서 나라째 합쳐(아래 %얹을곳 포함) 50m 쯤으로 줄여 씁니다. %규칙 에 없는 나라도 됩니다.
+my $MAP50 = grep { $_ eq '--map50' } @ARGV;
+@ARGV = grep { $_ ne '--map50' } @ARGV;
 my ($SRC, $목록) = @ARGV;
-die "쓰는 법: perl tools/mkregion.pl <ne10_adm1.geojson> [나라,…]\n" unless $SRC;
-my $OUT = 'adm1';
+die "쓰는 법: perl tools/mkregion.pl <ne10_adm1.geojson> [나라,…] [--map50]\n" unless $SRC;
+my $OUT = $MAP50 ? 'map50' : 'adm1';
+
+# ── 나라 코드가 없는 NE 조각을 그 땅을 품은 나라로(b797) — tools/mkadm1.pl 의 %얹을곳 과 같게 둘 것 ──
+my %얹을곳 = (KAB => 'KZ', ESB => 'CY', WSB => 'CY', USG => 'CU', KAS => 'PK', CYN => 'CY', SOL => 'SO');
 
 # 이름 맞추기용 — 악센트·기호·대소문자를 걷습니다(NE 는 ş/ș, ţ/ț 를 섞어 씁니다).
 sub 열쇠 { my $t = NFD(shift // ''); $t =~ s/\p{Mn}//g; $t = lc $t; $t =~ s/[^a-z0-9]+//g; $t }
@@ -108,6 +118,8 @@ my %규칙 = (
 );
 
 my %want = $목록 ? (map { uc($_) => 1 } grep { /^[A-Za-z]{2}$/ } split /,/, $목록) : (map { $_ => 1 } keys %규칙);
+die "!! --map50 은 나라를 적어야 합니다\n" if $MAP50 && !$목록;
+if ($MAP50){ $규칙{$_} = { 통째 => 1 } for keys %want }   # 나라째 한 무리(아래 ① 의 `통째`)
 for (keys %want){ die "!! $_: 규칙이 없습니다\n" unless $규칙{$_} }
 
 # ── 원본을 글자로 먼저 쪼갭니다(mkadm1.pl 과 같음) ─────────────────────
@@ -120,6 +132,7 @@ for my $i (0 .. $#pos){
   my $끝 = $i < $#pos ? $pos[$i+1] : length($s);
   my $덩이 = substr($s, $pos[$i], $끝 - $pos[$i]);
   my ($cc) = $덩이 =~ /"iso_a2":"([A-Z]{2})"/;
+  unless ($cc){ my ($a3) = $덩이 =~ /"adm0_a3":"([A-Z0-9]{3})"/; $cc = $얹을곳{$a3 // ''}; }   # 위 %얹을곳
   next unless $cc && $want{$cc};
   $덩이 =~ s/,\s*$//; $덩이 =~ s/\}\s*\]\s*\}\s*$/}/ if $i == $#pos;
   my $f = eval { $J->decode($덩이) } or next;
@@ -199,7 +212,8 @@ for my $cc (sort keys %모음){
   for my $i (0 .. $#$fs){
     my $pr = $fs->[$i]{properties}; my $이름 = $pr->{name} // '';
     my $k;
-    if ($규->{하나}){ $k = $pr->{admin} // $cc }
+    if ($규->{통째}){ $k = $cc }                          # --map50: 얹은 땅까지 나라째 하나
+    elsif ($규->{하나}){ $k = $pr->{admin} // $cc }
     elsif ($동쪽{$i}){ $k = $동쪽{$i} }
     elsif ($규->{표}){ $k = $이름표{열쇠($이름)} // die "!! $cc: 표에 없는 조각 「$이름」\n" }
     elsif ($규->{이름대로} && $이름 =~ $규->{이름대로}){ $k = $이름 }
@@ -282,7 +296,8 @@ for my $cc (sort keys %모음){
   my @굽힘;
   # 크면 한 단계씩 더 줄입니다: 나라 크기에 맞춘 값 → 0.04 → 0.08(mkadm1.pl 의 마지막 값)
   my $첫ε = $짧 > 0 && $짧/1200 < $바닥ε ? $짧/1200 : $바닥ε;
-  for my $ε ($첫ε, ($첫ε < 0.04 ? 0.04 : ()), 0.08){
+  # --map50 은 50m 쯤(0.02 지도단위 ≈ 0.7km) 한 번만 — 주·도를 못 받았을 때만 쓰는 윤곽입니다.
+  for my $ε ($MAP50 ? (0.02) : ($첫ε, ($첫ε < 0.04 ? 0.04 : ()), 0.08)){
     my %호캐시;
     my $호 = sub {    # 점 열쇠 목록 → 줄인 좌표 목록(같은 호는 방향과 상관없이 같은 결과)
       my @v = @{ shift() };
@@ -332,6 +347,12 @@ for my $cc (sort keys %모음){
     printf "  %s: ε=%.4f 에서 %.0fKB — 한 단계 더 줄입니다\n", $cc, $ε, length(내보내기(\@단위))/1024;
   }
   my $글 = 내보내기(\@굽힘);
+  if ($MAP50){
+    # map50 꼴: 머리 주석 + 길 하나(tools/mkmap50.pl 이 쓰는 것과 같은 문법·좌표계)
+    $글 = "/* $cc · NE 10m admin-1 을 나라째 합쳐 줄인 것(b797, tools/mkregion.pl --map50) · 좌표 1000x500\n"
+        . "   world-atlas 50m 에는 북키프로스·소말릴란드가 빠져 있어 이것으로 바꿨습니다. 손으로 고치지 마십시오. */\n"
+        . 'export default "' . join('', map { $_->[1] } @굽힘) . "\";\n";
+  }
   open my $w, '>:encoding(UTF-8)', "$OUT/$cc.js" or die "$OUT/$cc.js: $!\n";
   print $w $글; close $w;
   printf "%s  %3d 조각 → %3d 지역  %6.1fKB  (%s)\n", $cc, scalar @$fs, scalar @굽힘, length($글)/1024,
