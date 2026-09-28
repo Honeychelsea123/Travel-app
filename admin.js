@@ -11,11 +11,13 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop, coverDeck } from './dom.js?v=b788';
-import { sb } from './db.js?v=b788';
-import { fail, netTimeout } from './net.js?v=b788';
+import { $, esc, toast, copyText, toTop, coverDeck, emptyDo } from './dom.js?v=b789';
+import { sb } from './db.js?v=b789';
+import { fail, netTimeout } from './net.js?v=b789';
+/* 사람 신고의 「보기」(b789) — 그 사람 화면을 대시보드 위에 엽니다. */
+import { openPerson } from './people.js?v=b789';
 /* 기능 스위치를 바꾸면 그 자리에서 화면에 먹입니다(b491) — flags.js 머리말. */
-import { reapplyFeatures } from './flags.js?v=b788';
+import { reapplyFeatures } from './flags.js?v=b789';
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -58,6 +60,7 @@ export async function loadAdmin(){
   /* 조절 칸도 같이 채웁니다. 여기서 기다리지 않습니다 — 통계와 상관없는
      별개 요청이라 순서대로 하면 화면만 늦게 뜹니다. */
   loadSettings();
+  사람신고();                /* 처리 안 한 사람 신고(b789) — 아래 */
   const d = r.data;
 
   const n   = v => Number(v ?? 0).toLocaleString('ko-KR');
@@ -242,6 +245,51 @@ export async function loadAdmin(){
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
+
+/* ── 사람 신고(b789) ─────────────────────────────────────────────────
+ * 팔로우가 생기면서 받기 시작한 신고입니다(db/101). **처리 안 한 것만**
+ * 보입니다 — 「처리함」을 누르면 빠집니다. 같은 사람이 여러 번 신고됐으면
+ * 그 수를 같이 적습니다(여러 사람에게 신고당하는 것이 신호입니다).
+ * ⚠ 이름·사진은 서버 함수(db/102)로 받습니다 — profiles 는 일행만 읽힙니다.
+ *   102 를 안 돌렸으면 함수가 없어 카드째 숨습니다.
+ * ⚠ 처리 안 한 것이 있으면 프로필의 대시보드 아이콘에 점을 찍습니다 —
+ *   대시보드를 안 열면 신고가 온 줄 모릅니다. */
+async function 사람신고(){
+  const 카드 = $('adm_repcard'), 칸 = $('adm_reports');
+  if (!카드 || !칸) return;
+  const r = await netTimeout(sb.rpc('admin_people_reports'), 8000);
+  if (!r || r.error){ 카드.classList.add('hide'); $('dashdot')?.classList.add('hide'); return; }
+  const 목록 = r.data || [];
+  카드.classList.remove('hide');
+  $('adm_repn').textContent = 목록.length ? String(목록.length) : '';
+  $('dashdot')?.classList.toggle('hide', !목록.length);
+  칸.innerHTML = 목록.length ? 목록.map(x => `<div class="arow">
+      <span class="k"><b>${esc(x.reason)}</b> ${esc(x.target_name || '이름 없음')}${
+          x.target_total > 1 ? ` · <b>이 사람 신고 ${x.target_total}건</b>` : ''}
+        ${x.detail ? `<span class="m">“${esc(x.detail)}”</span>` : ''}
+        <span class="m">${esc(x.reporter_name || '이름 없음')}님이 · ${
+          esc(new Date(x.created_at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric',
+                                                              hour: '2-digit', minute: '2-digit' }))}</span></span>
+      <span class="abtns">
+        <button class="small" data-repwho="${esc(x.target)}">보기</button>
+        <button class="small" data-repdone="${esc(String(x.id))}">처리함</button></span>
+    </div>`).join('')
+    : emptyDo('처리할 신고가 없어요.');
+}
+$('adm_reports')?.addEventListener('click', async e => {
+  const 누구 = e.target.closest('[data-repwho]');
+  if (누구) return openPerson(누구.dataset.repwho);
+  const b = e.target.closest('[data-repdone]'); if (!b) return;
+  b.disabled = true;
+  /* 101 의 정책(preports_admin)이 관리자에게만 고치기를 허락합니다.
+     `select` 를 붙여야 막혔을 때(0줄) 조용히 성공한 척하지 않습니다. */
+  const r = await netTimeout(sb.from('people_reports')
+    .update({ handled_at: new Date().toISOString() })
+    .eq('id', Number(b.dataset.repdone)).select('id'));
+  if (!r || r.error || !r.data?.length){ b.disabled = false; toast('처리하지 못했어요'); return; }
+  toast('처리했어요');
+  사람신고();
+});
 
 /* ── 조절 ────────────────────────────────────────────────────────────
  * 코드에 박아두면 껐다 켤 때마다 개발 도구를 열어야 합니다. 운영하는 사람이

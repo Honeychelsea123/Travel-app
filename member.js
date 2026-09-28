@@ -15,16 +15,17 @@
  * 하나입니다 — 일행 목록도, 정산 송금 줄도 같은 것을 씁니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b788';
-import { sb } from './db.js?v=b788';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b788';
-import { dateRange } from './calc.js?v=b788';
-import { trip, members, setMembers, nameOf } from './trip.js?v=b788';
-import { arm } from './ui.js?v=b788';
+import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b789';
+import { sb } from './db.js?v=b789';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b789';
+import { dateRange } from './calc.js?v=b789';
+import { trip, members, setMembers, nameOf } from './trip.js?v=b789';
+import { arm } from './ui.js?v=b789';
 
 /* app.js 만 아는 것 셋. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
-let ctx = { me: () => null, loadTrips: async () => {}, openTrip: async () => {} };
+let ctx = { me: () => null, loadTrips: async () => {}, openTrip: async () => {},
+            openPerson: () => {} };
 export function setMemberCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 초대 링크가 지나가는 자리 ────────────────────────────────────────
@@ -101,10 +102,12 @@ export async function loadMembers(){
     const mine = self && !gone
       ? `<button class="ghost" data-mact="nick" data-nick="${esc(m.nickname || '')}">별명</button>`
       : '';
+    /* 다른 일행의 사진·이름을 누르면 그 사람 프로필이 덮여 열립니다(b789). */
+    const 누름 = self ? '' : ` data-person="${esc(m.user_id)}" style="cursor:pointer"`;
     return `<div class="trip" style="cursor:default">
-      ${avatarImg(p.avatar_url, m.user_id, name,
-                  'width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none')}
-      <div class="t"><b style="${gone ? 'opacity:.5' : ''}">${esc(name)}${self ? ' (나)' : ''}</b>
+      <span${누름}>${avatarImg(p.avatar_url, m.user_id, name,
+                  'width:32px;height:32px;border-radius:50%;object-fit:cover;flex:none')}</span>
+      <div class="t"><b${누름}><span style="${gone ? 'opacity:.5' : ''}">${esc(name)}${self ? ' (나)' : ''}</span></b>
         <div style="margin-top:2px">${mine}${admin}</div></div>${tag}</div>`;
   }).join('');
 
@@ -224,6 +227,8 @@ $('i_copy').addEventListener('click', async () => {
 });
 
 $('members').addEventListener('click', async e => {
+  const 누구 = e.target.closest('[data-person]');
+  if (누구){ ctx.openPerson(누구.dataset.person); return; }
   const b = e.target.closest('button[data-mact]'); if (!b) return;
 
   /* prompt 도 confirm 과 같이 내장 브라우저에서 막힙니다. 화면 안에서 받습니다. */

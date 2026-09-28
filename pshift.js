@@ -24,11 +24,11 @@
  *   누르는 것이 곧 봤다는 증거입니다. 그전까지는 홈을 그릴 때마다 다시
  *   붙습니다 — 그게 「다시 열 이유」의 뜻이기도 합니다.
  */
-import { $, esc } from './dom.js?v=b788';
-import { sb } from './db.js?v=b788';
-import { netTimeout } from './net.js?v=b788';
-import { cities } from './cities.js?v=b788';
-import { personaAxes, PERSONA16 } from './card.js?v=b788';
+import { $, esc } from './dom.js?v=b789';
+import { sb } from './db.js?v=b789';
+import { netTimeout } from './net.js?v=b789';
+import { cities } from './cities.js?v=b789';
+import { personaAxes, PERSONA16 } from './card.js?v=b789';
 
 let ctx = { me: () => null, 열기: () => {} };
 export function setShiftCtx(o){ ctx = { ...ctx, ...o }; }
@@ -55,6 +55,21 @@ let 대기 = null;
    남아 있는 편이 맞습니다. */
 export function clearPcode(){ 대기 = null; }
 
+/* ── 팔로워에게 보일 성향(b789) ───────────────────────────────────────
+ * 다른 사람 화면(people.js)은 내 별점을 다 받지 않고(별점을 숨길 수도
+ * 있습니다) `profiles.persona` 네 글자만 읽습니다. 여기서 올려 둡니다.
+ * ⚠ **바뀐 때만** 보냅니다 — 홈은 자주 다시 그려집니다. 마지막으로 올린
+ *   값을 기기에 적어 두고 같으면 안 보냅니다. 못 올리면 안 적으므로 다음에
+ *   다시 해 봅니다(101_follow.sql 을 돌리기 전에도 조용히 넘어갑니다).
+ * ⚠ 문턱(5곳) 아래로 내려가면 지웁니다 — 남겨 두면 옛 성향이 계속 보입니다. */
+const 올린열쇠 = uid => 't2:psrv:' + uid;
+function 서버성향(uid, code){
+  try { if ((localStorage.getItem(올린열쇠(uid)) ?? '') === (code || '')) return; } catch { return; }
+  sb.from('profiles').update({ persona: code }).eq('id', uid)
+    .then(r => { if (!r.error) try { localStorage.setItem(올린열쇠(uid), code || ''); } catch {} })
+    .catch(() => {});
+}
+
 /* ── 재고, 바뀌었으면 알린다 ──────────────────────────────────────────
  * 홈이 다 그려진 뒤에 부릅니다. **화면을 막지 않습니다** — 늦게 와서
  * 맨 위에 한 줄 얹히는 편이, 이것 때문에 홈이 늦게 뜨는 것보다 낫습니다.
@@ -69,11 +84,12 @@ export async function checkPersonaShift(){
   const r = await netTimeout(sb.from('city_ratings')
     .select('city_id,stars').eq('user_id', me.id).not('stars', 'is', null));
   if (!r || r.error || !Array.isArray(r.data)) return;
-  if (r.data.length < 문턱) return;
+  if (r.data.length < 문턱){ 서버성향(me.id, null); return; }
 
   const ax = personaAxes(r.data, { cities });
   const 지금 = ax?.code;
   if (!지금 || 지금.length !== 4) return;
+  서버성향(me.id, 지금);
 
   const 전 = 읽기(me.id);
   if (!전){ 쓰기(me.id, 지금); return; }   /* 처음 본 코드는 견줄 기준일 뿐입니다 */

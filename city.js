@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b788';
-import { sb } from './db.js?v=b788';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b788';
-import { myRates, cityStat, visited } from './rate.js?v=b788';
-import { starHtml, starValue, starsRo } from './stars.js?v=b788';
-import { localTime } from './calc.js?v=b788';
-import { fail } from './net.js?v=b788';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b789';
+import { sb } from './db.js?v=b789';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b789';
+import { myRates, cityStat, visited } from './rate.js?v=b789';
+import { starHtml, starValue, starsRo } from './stars.js?v=b789';
+import { localTime } from './calc.js?v=b789';
+import { fail } from './net.js?v=b789';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -49,25 +49,49 @@ import { fail } from './net.js?v=b788';
    ⚠ 판을 새로 만들면 **이 줄에 더하는 것까지가 그 일**입니다. */
 const 덱밖판 = ['personapane', 'shelfpane', 'mappane', 'ctrypane', 'cmappane',
                 'diarypane', 'setpane', 'notifpane', 'admpane', 'p16pane'];
-/* 도시를 열면서 «내가» 가린 판. 닫을 때 그대로 되돌립니다 — 어디서
-   들어왔든 그 자리로 돌아가야 합니다. */
-let 가린판 = [];
+/* 팔로우의 두 덮개(b789) — 친구 화면·사람 화면. 화면 전체를 덮는 판이라
+   도시를 그 «위»에 열려면 가렸다가 닫을 때 되살려야 합니다.
+   ⚠ 위 열 개와 다릅니다 — 덱 밖으로 꺼낸 판이 아니라 **덱 위에 뜬 판**입니다.
+     그래서 이것만 가렸었다면 닫을 때 덱도 같이 되살립니다(closeCity). */
+const 덮개 = ['friendview', 'whoview'];
+
+/* ── 도시 겹(b789) ────────────────────────────────────────────────────
+ * 도시를 열면서 «내가» 가린 판을 적어 두고 닫을 때 그대로 되돌립니다 —
+ * 어디서 들어왔든 그 자리로 돌아가야 합니다. 여태는 한 겹(`가린판`)이었는데,
+ * 도시 → 친구 이름 → 친구 화면 → 친구가 매긴 **다른 도시**로 갈 수 있게 되어
+ * 겹을 쌓습니다. 뒤로 한 번에 한 겹씩: 다른 도시 → 친구 화면 → 처음 도시.
+ *   { id, 가린: [그때 가린 판], y: 스크롤, 쓰던: 저장 안 한 글 }
+ * ⚠⚠ **다시 그리기(별 누른 뒤·한줄평 저장 뒤)는 겹을 건드리지 않습니다.**
+ *   b788 까지는 다시 그릴 때마다 `가린판` 을 새로 셌는데, 그때는 이미 다
+ *   가려져 있어서 **빈 목록으로 덮였습니다** — 보관함에서 도시를 열고 별을
+ *   누른 뒤 뒤로 가면 보관함이 아니라 프로필로 떨어졌습니다. */
+let 층 = [];
 
 let cityOpen = null;
 export const isCityOpen = () => cityOpen != null;
-export function clearCityOpen(){ cityOpen = null; }
+/* 탭을 옮기면(app.js 의 showApp) 도시가 통째로 닫힙니다 — 겹도 같이 버립니다. */
+export function clearCityOpen(){ cityOpen = null; 층 = []; }
 
 let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {},
-            openTrip: async () => {}, loadHome: async () => {}, appTab: () => '' };
+            openTrip: async () => {}, loadHome: async () => {}, appTab: () => '',
+            openPerson: () => {} };
 export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 도시 상세 ──────────────────────────────────────────────────────
  * 왓챠는 포스터를 누르면 작품 페이지가 열립니다. 여행앱에서는 그보다 쓸모가
  * 있는데, **내가 그 도시에서 뭘 했는지**를 같이 보여줄 수 있기 때문입니다.
  * 일정에 이미 다 적혀 있으니 새로 입력받을 것이 없습니다. */
-export async function openCity(id){
+export async function openCity(id, 옵션 = {}){
   const c = (cities || []).find(x => x.id === id);
   if (!c) return;
+  /* 위 겹을 닫고 아래 도시로 «돌아와서» 다시 그리는 중인가(closeCity 가 부름).
+     그때는 기록도 판도 건드리지 않고, 그 겹에 적어 둔 스크롤·글을 되살립니다. */
+  const 되돌림 = 옵션.되돌림 || null;
+  /* 별·한줄평을 저장한 뒤 «같은 도시를» 다시 그리는 중인가(아래 두 곳).
+     ⚠ 그때도 겹·판·기록을 건드리지 않습니다 — 저장하는 사이에 친구 이름을
+       눌러 사람 화면이 위에 떴을 수 있는데, 그걸 «새로 연다»로 읽으면
+       사람 화면을 가리고 기록을 한 칸 더 쌓습니다. */
+  const 다시 = !!옵션.다시 && cityOpen?.id === id;
   /* ⚠⚠ **쓰던 글을 붙잡아 둡니다(b716, b698 점검 넷째).** ⚠⚠
    *   이 함수는 «다시 그리기»로도 쓰입니다 — 별을 누르면 평균과 도장을
    *   새로 받으려고 `openCity(id)` 를 다시 부릅니다. 그런데 아래에서
@@ -78,19 +102,37 @@ export async function openCity(id){
    * ⚠ 저장된 것과 같으면 되살릴 것이 없습니다 — 저장 직후의 다시 그리기가
    *   그 경우라, 굳이 손대지 않습니다. */
   const 같은곳 = cityOpen?.id === id;
-  const 쓰던한줄 = 같은곳 ? ($('cv_note')?.value ?? null) : null;
-  const 쓰던일기 = 같은곳 ? ($('cv_journal')?.value ?? null) : null;
+  const 쓰던한줄 = 같은곳 ? ($('cv_note')?.value ?? null) : (되돌림?.쓰던?.한줄 ?? null);
+  const 쓰던일기 = 같은곳 ? ($('cv_journal')?.value ?? null) : (되돌림?.쓰던?.일기 ?? null);
+  /* 지금 보이는 판 — 도시가 가려야 할 것. 스크롤도 같이 적습니다(덮개는
+     제 스크롤을 갖고 있어서, 가렸다 되살릴 때 제자리로 돌려놓아야 합니다). */
+  const 보이는 = (되돌림 || 다시) ? []
+    : [...덱밖판, ...덮개].filter(p => $(p) && !$(p).classList.contains('hide'))
+                          .map(p => ({ p, y: $(p).scrollTop }));
+  if (되돌림 || 다시){ /* 겹은 그대로(되돌림이면 closeCity 가 이미 걷었습니다) */ }
+  else if (!cityOpen) 층 = [{ id, 가린: 보이는 }];
+  else if (보이는.length){
+    /* 도시 위에 뜬 판(친구·사람 화면)에서 또 도시를 엶 — 한 겹 더 쌓습니다.
+       아래 도시의 스크롤과 쓰던 글을 적어 둡니다(돌아올 때 되살림). */
+    const 아래 = 층[층.length - 1];
+    if (아래){
+      아래.y = window.scrollY;
+      아래.쓰던 = { 한줄: $('cv_note')?.value ?? null, 일기: $('cv_journal')?.value ?? null };
+    }
+    층.push({ id, 가린: 보이는 });
+  }
+  else if (층.length) 층[층.length - 1].id = id;     /* 다시 그리기 — 겹은 그대로 */
+  else 층 = [{ id, 가린: [] }];
   cityOpen = c;
-  if (history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
+  if (!되돌림 && !다시 && history.state?.t2 !== 'city') history.pushState({ t2:'city' }, '');
 
   /* 홈에서도 지도에서도 도시를 열 수 있습니다 — 열린 탭이 뭐든 다 덮어야 합니다.
      setview 안쪽(프로필/지도/설정) 상태는 건드리지 않아서 닫으면 그대로 돌아옵니다. */
   /* 탭 화면 다섯은 덱 한 덩어리입니다(b474) — 낱개로 숨기면 덱 안에서
      가로 위치가 밀립니다. */
-  /* ⚠ 덱«과» 덱 밖 판 일곱을 같이 가립니다(위 주석). 지금 보이는 것만
-     적어 두었다가 닫을 때 그것만 되살립니다. */
-  가린판 = 덱밖판.filter(id => $(id) && !$(id).classList.contains('hide'));
-  가린판.forEach(id => $(id).classList.add('hide'));
+  /* ⚠ 덱«과» 덱 밖 판·덮개를 같이 가립니다(위 주석). 지금 보이는 것만
+     겹에 적어 두었다가 닫을 때 그것만 되살립니다. */
+  보이는.forEach(x => $(x.p).classList.add('hide'));
   $('tabdeck').classList.add('hide');
   $('cityview').classList.remove('hide');
   window.scrollTo({ top:0 });
@@ -179,31 +221,84 @@ export async function openCity(id){
   ].filter(([, v]) => v).map(([k, v]) =>
     `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
 
-  /* 남들 한줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요. */
-  const { data: cm } = await sb.rpc('city_comments', { p_city: id });
-  const others = (cm || []).filter(x => x.user_id !== ctx.me().id);
+  /* ── 내가 팔로우하는 사람들(b789) ── Letterboxd 의 친구 평점 · Beli 의 「친구 점수」.
+     매겼거나 한줄평을 썼거나 다녀온 사람. 별점을 숨긴 사람은 별 없이 이름만.
+     ⚠ SQL(101)을 안 돌렸으면 함수가 없어 조용히 비웁니다.
+     ⚠ 한줄평과 **같이** 받습니다 — 차례로 받으면 한줄평이 한 번 더 늦게 뜹니다. */
+  const [{ data: fr }, { data: cm }] = await Promise.all([
+    sb.rpc('city_friends', { p_city: id }),
+    sb.rpc('city_comments', { p_city: id }),
+  ]);
+  if (cityOpen?.id !== id) return;       /* 그사이 다른 도시로 갔습니다 */
+  const 친구 = fr || [];
+  const 별 = 친구.filter(x => x.stars != null).map(x => Number(x.stars));
+  $('cv_friends').innerHTML = 친구.length
+    ? `<div class="cvfr"><div class="daysep">팔로우하는 사람들${
+          별.length >= 2 ? ` · 친구 평균 ★${(별.reduce((a, b) => a + b, 0) / 별.length).toFixed(1)}` : ''}</div>` +
+      친구.map(x =>
+        `<div class="rrow" style="padding:8px 0">
+           <button class="ghost frwho" data-person="${esc(x.user_id)}">
+             ${avatarImg(x.avatar_url, x.user_id, x.name || '이름 없음',
+                         'width:36px; height:36px; border-radius:50%; object-fit:cover; flex:none', 'thumb')}
+             <span class="t"><b>${esc(x.name || '이름 없음')}</b>
+               ${x.comment ? `<span class="memo">${esc(x.comment)}</span>` : ''}
+               ${x.stars != null ? starsRo(x.stars) : '<span class="memo">다녀왔어요</span>'}</span>
+           </button>
+         </div>`).join('') + '</div>'
+    : '';
+
+  /* 남들 한줄평. 별점만 매긴 사람은 여기 안 나옵니다 — 이름이 걸리니까요.
+     ⚠ 팔로우하는 사람은 위 칸에 이미 나오므로 여기서 뺍니다(두 번 안 나오게). */
+  const 위에 = new Set(친구.map(x => x.user_id));
+  const others = (cm || []).filter(x => x.user_id !== ctx.me().id && !위에.has(x.user_id));
   $('cv_comments').innerHTML = others.length
     ? `<div class="daysep">다른 사람들</div>` + others.map(x =>
         `<div class="rrow" style="padding:10px 0">
-           ${avatarImg(x.avatar_url, x.user_id, x.name,
-                       'width:36px; height:36px; border-radius:50%; object-fit:cover', 'thumb')}
-           <div class="t"><b>${esc(x.name)}</b>
+           <button class="ghost frwho" data-person="${esc(x.user_id)}"
+                   aria-label="${esc(x.name)} 프로필">
+             ${avatarImg(x.avatar_url, x.user_id, x.name,
+                         'width:36px; height:36px; border-radius:50%; object-fit:cover; flex:none', 'thumb')}
+           </button>
+           <div class="t"><b data-person="${esc(x.user_id)}" style="cursor:pointer">${esc(x.name)}</b>
              <span class="memo">${esc(x.comment)}</span>
              ${starsRo(x.stars)}</div>
          </div>`).join('')
     : '';
+  /* 위 겹에서 돌아왔으면 보던 자리로(b789). 친구·한줄평 칸이 다 그려진
+     «뒤»에 옮깁니다 — 먼저 옮기면 페이지가 아직 짧아서 중간에 걸립니다. */
+  if (되돌림?.y) window.scrollTo({ top: 되돌림.y });
+}
+
+/* 가렸던 판을 되살립니다 — 덮개는 제 스크롤까지(가려지면 0 으로 읽힘). */
+function 되살리기(가린){
+  가린.forEach(({ p, y }) => {
+    const el = $(p); if (!el) return;
+    el.classList.remove('hide');
+    if (y && el.scrollTop !== y) el.scrollTop = y;
+  });
 }
 
 export function closeCity(fromPop){
   if (!fromPop && history.state?.t2 === 'city'){ history.back(); return; }
+  const 위 = 층.pop() || { 가린: [] };
+  /* 겹이 남았으면 — 친구 화면을 거쳐 도시 «위에» 연 도시였습니다(b789).
+     아래 도시를 다시 그리고, 그 위에 떠 있던 판(사람·친구 화면)을 되살립니다.
+     뒤로 한 번에 한 겹입니다. 도시 화면은 닫지 않습니다. */
+  if (층.length){
+    const 아래 = 층[층.length - 1];
+    openCity(아래.id, { 되돌림: 아래 });
+    되살리기(위.가린);
+    return;
+  }
   cityOpen = null;
   $('cityview').classList.add('hide');
   /* ⚠ **판에서 들어왔으면 그 판으로 돌아갑니다(b646).** 덱을 되살리면
-     안 됩니다 — 그 판이 이미 덱을 덮고 있었고, 둘 다 보이면 또 겹칩니다. */
-  if (가린판.length){
-    가린판.forEach(id => $(id)?.classList.remove('hide'));
-    가린판 = [];
-    return;
+     안 됩니다 — 그 판이 이미 덱을 덮고 있었고, 둘 다 보이면 또 겹칩니다.
+   ⚠ 다만 **덮개만** 가렸었다면(친구·사람 화면에서 왔다면) 덱도 되살립니다 —
+     덮개는 덱 위에 뜬 판이라, 덱이 없으면 덮개를 닫는 순간 빈 화면입니다. */
+  if (위.가린.length){
+    되살리기(위.가린);
+    if (위.가린.some(x => !덮개.includes(x.p))) return;
   }
   /* 열었던 탭으로 돌아갑니다 — 덱은 그 칸에 그대로 서 있으므로 되살리기만
      하면 됩니다(b474). 내용 갱신은 탭마다 다르니 그것만 나눕니다. */
@@ -213,6 +308,9 @@ export function closeCity(fromPop){
 }
 
 $('cityview').addEventListener('click', async e => {
+  /* 한줄평·친구 칸의 이름(b789) — 그 사람 프로필이 도시 화면 «위»에 덮여 열립니다. */
+  const 누구 = e.target.closest('[data-person]');
+  if (누구){ ctx.openPerson(누구.dataset.person); return; }
 
   /* ⚠⚠ **`await` 를 건너면 `cityOpen` 이 없어질 수 있습니다(b691).**
      저장하는 동안 뒤로를 누르면 `closeCity` 가 `cityOpen = null` 로 만드는데,
@@ -226,7 +324,7 @@ $('cityview').addEventListener('click', async e => {
     const cur = myRates[id]?.stars;
     await ctx.saveRate(id, { stars: Number(cur) === v ? null : v });
     if (cityOpen?.id !== id) return;      /* 그새 닫혔거나 다른 도시로 갔다 */
-    return openCity(id);
+    return openCity(id, { 다시: true });
   }
   if (e.target.closest('#cv_want')){
     const id = cityOpen?.id; if (!id) return;
@@ -277,7 +375,7 @@ $('cv_save').addEventListener('click', async () => {
   if (cityOpen?.id !== id) return;            /* 저장하는 동안 닫혔다 */
   cvNoteDirty();
   /* 남들 한줄평 목록에 내 것이 바로 끼어들어야 남긴 느낌이 납니다. */
-  await openCity(id);
+  await openCity(id, { 다시: true });
 });
 
 

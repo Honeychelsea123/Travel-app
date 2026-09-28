@@ -27,12 +27,12 @@
  * ⚠ **북쪽은 85° 까지 엽니다(b710).** 아래 `기울제한` 에 이유가 있습니다 —
  *   북에는 구멍이 없고, 북으로 기울이면 남쪽 구멍은 오히려 더 잘 숨습니다.
  */
-import { $ } from './dom.js?v=b788';
+import { $ } from './dom.js?v=b789';
 /* 확대하면 지구본 위에 도시가 뜹니다(b707) — 계산은 citymap.js 가 합니다. */
 import { 가진땅, 가진주도, 주도있나, 본땅, 나라셀, 도시있나,
-         상자자르기, 가진시군 } from './citymap.js?v=b788';
-import { countryName } from './cities.js?v=b788';
-import { visited, myRates } from './rate.js?v=b788';
+         상자자르기, 가진시군 } from './citymap.js?v=b789';
+import { countryName } from './cities.js?v=b789';
+import { visited, myRates } from './rate.js?v=b789';
 
 /* 화면에 있는 경로를 한 번만 읽어 경위도로 바꿔 둡니다. 돌릴 때마다 다시
    파싱하면 손가락을 따라올 수 없습니다(점이 만 개입니다). */
@@ -323,7 +323,10 @@ const 자동속도 = 2.2;    /* 초당 도. 한 바퀴에 164초 — 도는 것�
 /* ⚠ `누름` 은 **나라를 눌렀을 때** 부를 함수입니다(b555). 나라 코드를
    넘깁니다. 안 넘기면 누르기는 아무 일도 안 합니다 — 지구본은 원래
    돌리는 물건이고, 누르는 것은 부르는 쪽이 원할 때만 답니다. */
-export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
+/* ⚠ `옵션.갔나`(b789) — **남의 지구본**을 그릴 때 「그 사람이 간 도시」 판정을 넘깁니다
+   (people.js). 안 넘기면 지금처럼 **내** 기록(rate.js 의 visited · myRates)입니다.
+   나라 칠은 둘째 인자 `갔다`(나라 코드들)가 맡고, 이것은 주·도·시·군 칠을 맡습니다. */
+export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름, 옵션 = {}){
   const 목록 = 읽기();
   if (!목록 || !canvas) return null;
 
@@ -916,7 +919,7 @@ export function mountGlobe(canvas, 갔다, 처음경도, 처음위도, 누름){
         const 진하게 = 덮었나 ? 1 - (0.94 * 섞) * (1 - 0.62 * 섞) : 섞 * 0.62;
         const 옅게   = 덮었나 ? 1 - (0.94 * 섞) * (1 - 0.03 * 섞) : 섞 * 0.03;
 
-        const 갔나 = id => visited?.has?.(id) || myRates?.[id]?.stars != null;
+        const 갔나 = 옵션.갔나 || (id => visited?.has?.(id) || myRates?.[id]?.stars != null);
 
         /* ── 시·군(b778) ── 도시가 «여럿»인 주·도만 한 번 더 들어갑니다 ────
          * 사용자: 「하코다테, 아사히카와는 가지도 않았는데 칠해져있네?」 —

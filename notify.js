@@ -14,11 +14,11 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b788';
-import { sb } from './db.js?v=b788';
-import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b788';
+import { $, esc, toast } from './dom.js?v=b789';
+import { sb } from './db.js?v=b789';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b789';
 
-let ctx = { me: () => null };
+let ctx = { me: () => null, openPerson: () => {}, openFriends: () => {} };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 알림 설정 ──────────────────────────────────────────────────────
@@ -262,7 +262,7 @@ export async function loadNotifs(본것){
     return;
   }
   const { data, error } = await sb.from('notifications')
-    .select('id,kind,body,created_at,read_at')
+    .select('id,kind,body,created_at,read_at,actor_id')
     .order('created_at', { ascending:false }).limit(30);
   const unread = (data || []).filter(n => !n.read_at).length;
   /* ⚠ 하단바 「프로필」 위의 점입니다(b759). 숫자가 아니라 점인 이유는
@@ -285,11 +285,21 @@ export async function loadNotifs(본것){
   $('readall').textContent = unread ? '모두 읽음' : '지우기';
   $('readall').dataset.act = unread ? 'read' : 'clear';
 
-  $('notifs').innerHTML = data.map(n =>
-    `<div class="row"><span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
-       ${esc(n.body)}</span>
-     <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`).join('');
+  /* 팔로우 알림(b789)은 누를 수 있습니다 — 요청이면 받은 요청 목록, 아니면 그 사람. */
+  $('notifs').innerHTML = data.map(n => {
+    const 사람 = /^follow_/.test(n.kind || '') && n.actor_id;
+    return `<div class="row"${사람 ? ` data-nkind="${esc(n.kind)}" data-actor="${esc(n.actor_id)}"
+                                     style="cursor:pointer"` : ''}>
+       <span class="label"${n.read_at ? ' style="opacity:.55"' : ''}>
+       ${esc(n.body)}${사람 ? ' ›' : ''}</span>
+     <span class="val">${esc(n.created_at.slice(5,10))}</span></div>`;
+  }).join('');
 }
+$('notifs')?.addEventListener('click', e => {
+  const r = e.target.closest('[data-actor]'); if (!r) return;
+  if (r.dataset.nkind === 'follow_request') ctx.openFriends('requests');
+  else ctx.openPerson(r.dataset.actor);
+});
 $('readall').addEventListener('click', async e => {
   e.stopPropagation();
   const b = $('readall');
