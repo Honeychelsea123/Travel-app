@@ -15,11 +15,11 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b806';
-import { sb } from './db.js?v=b806';
-import { fail, NOROW } from './net.js?v=b806';
+import { $, esc, avatarOf, toast, coverDeck, toTop, tipOff } from './dom.js?v=b807';
+import { sb } from './db.js?v=b807';
+import { fail, NOROW } from './net.js?v=b807';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b806';
+import { fitTabBar } from './ui.js?v=b807';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
@@ -79,11 +79,20 @@ export function setMyName(v){
   if (!el) return;
   el.textContent = myName || '이름을 정해 주세요';
   el.classList.toggle('noname', !myName);
+  /* 제자리 안내 한 줄(b807) — 이름이 아직 **메일 앞부분 그대로**면 친구 찾기에서 빠집니다(db/106 people_find).
+     그때만 「이름을 정하면 친구가 나를 찾을 수 있어요」. 이름이 비었으면 위 「이름을 정해 주세요」가 이미 말하므로
+     안 띄웁니다(같은 말 두 번 안 함). 이름을 바꿔 저장하면 이 함수가 다시 불려 저절로 사라집니다.
+     ⚠ 견주는 규칙은 서버 `name_key`(db/100: NFKC → 빈칸·보이지 않는 글자 빼기 → 소문자)를 흉내 냅니다. */
+  const 키 = s => String(s || '').normalize('NFKC')
+    .replace(/[\s­ᅟᅠ᠎​-‏⁠ㅤ﻿ﾠ]+/g, '').toLowerCase();
+  const 메일앞 = (ctx.me()?.email || '').split('@')[0];
+  $('tip_name')?.classList.toggle('hide', !myName || !메일앞 || 키(myName) !== 키(메일앞) || tipOff('name'));
 }
 /* 로그인·계정 바꿈 — 앞사람 이름을 들고 있지 않게(app.js 가 메일 앞부분을 그리기 전에 부릅니다). */
 export function resetMyName(){
   myName = null; 이름받음 = false;
   $('name')?.classList.remove('noname');
+  $('tip_name')?.classList.add('hide');      /* 앞사람의 안내 줄을 들고 있지 않게(b807) */
 }
 /* 지금 내 이름 — 서버 값이 왔으면 그것(없으면 ''), 안 왔으면 화면 글자. */
 const 원래이름 = () => 이름받음 ? (myName || '') : $('name').textContent;

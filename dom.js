@@ -150,6 +150,22 @@ document.addEventListener('click', e => {
   if (b) $(b.dataset.go)?.click();
 });
 
+/* ── 제자리 안내 한 줄(b807) ─────────────────────────────────────────
+ * 사용자: 「원래 앱에 처음 들어오면 유저들한테 기능 설명하는 카드같은거 있지 않아?」 → 설계 셋 + 다른 앱
+ * 벤치마크(소개 카드를 쓰는 앱이 없었고, NN/g 실험에서 카드는 앱을 «더 어렵게» 느끼게 함) → 시안 C 를 고름.
+ * 새 화면을 띄우지 않고 **그 탭의 그 자리에 한 줄**(.tabtip)만 둡니다. 할 일을 마치면 부르는 쪽이 숨기고,
+ * ×(data-tipoff="이름")를 누르면 영구로 끕니다.
+ * ⚠ 열쇠는 기록 탭 칩과 **같은 칸**(`t2:chipoff:<이름>`, home.js 의 껐나·끄기)입니다 — 로그아웃하면 forgetLocal 이
+ *   t2: 를 다 지우므로, 할 일을 아직 안 한 사람에게는 다시 뜹니다(칩과 같은 동작).
+ * ⚠ 끈 기록은 **누를 때만** 적습니다(그릴 때 적지 않음 — 「썼다≠봤다」, b528). */
+export const tipOff = k => { try { return localStorage.getItem('t2:chipoff:' + k) === '1'; } catch { return false; } };
+document.addEventListener('click', e => {
+  const x = e.target.closest('[data-tipoff]');
+  if (!x) return;
+  try { localStorage.setItem('t2:chipoff:' + x.dataset.tipoff, '1'); } catch {}
+  x.closest('.tabtip')?.classList.add('hide');
+});
+
 /* ── 국기 ─────────────────────────────────────────────────────────────
  * 나라 코드로 국기를 만듭니다. ISO 3166-1 두 글자를 지역표시기호로 옮기는
  * 규칙이라 나라마다 따로 적어둘 것이 없습니다 — 적어두면 언젠가 틀립니다.
@@ -203,7 +219,7 @@ let 깃발판 = null;                 /* null 아직 · false 실패 · true 됨
 export async function flagSprite(){
   if (깃발판 != null) return 깃발판;
   try {
-    const r = await fetch('./flags.svg?v=b806');
+    const r = await fetch('./flags.svg?v=b807');
     if (!r.ok) return (깃발판 = false);
     const 통 = document.createElement('div');
     통.id = 'flagsprite';

@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b806';
-import { sb } from './db.js?v=b806';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b806';
-import { dateRange } from './calc.js?v=b806';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b806';
+import { $, esc, josa, tipOff } from './dom.js?v=b807';
+import { sb } from './db.js?v=b807';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b807';
+import { dateRange } from './calc.js?v=b807';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b807';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b806';
+         countryInfo } from './cities.js?v=b807';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate } from './rate.js?v=b806';
-import { openCity } from './city.js?v=b806';
-import { loadCities } from './citysearch.js?v=b806';
+         removeRate, 별받음 } from './rate.js?v=b807';
+import { openCity } from './city.js?v=b807';
+import { loadCities } from './citysearch.js?v=b807';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -161,6 +161,36 @@ let rtCtry = 'all';   /* 나라 «코드» */
 const 모국 = c => c.cc || countryInfo[c.country]?.parent_code || c.country;
 const 대륙of = c => continentOf[모국(c)] || '기타';
 
+/* ── 제자리 안내 한 줄(b807, 사용자가 고른 시안 C) ─────────────────────────
+ * 왓챠처럼 **매긴 개수에 따라 말이 바뀝니다**(벤치마크: 왓챠는 별점 화면 맨 위 한 줄이 개수 따라 바뀜,
+ * Vivino 도 5개 문턱). 0곳이면 무엇을 누르는지, 1~4곳이면 몇 곳 남았는지. 5곳이 되면 사라집니다.
+ * ⚠ 「나와요」가 아니라 **「확정돼요」** — 성향 카드는 1곳부터 임시로 나오고 5곳에서 확정됩니다(persona.js 의
+ *   「도시 N곳만 더 매기면 성향이 확정돼요」와 같은 말). 설계 심사에서 「5곳이면 나와요」는 틀린 말로 걸렸습니다.
+ * ⚠ **별점을 서버에서 받기 전에는 안 띄웁니다**(`별받음`) — 안 받은 0 과 진짜 0 을 못 가리면 매긴 사람에게도
+ *   「가본 곳엔 별을…」이 뜹니다(b705 「모르면 안 띄운다」).
+ * ⚠ 문턱 5 는 persona.js · pshift.js 의 `문턱` 과 같은 값이어야 합니다.
+ * ⚠⚠ **목록의 별은 «조용히» 저장합니다(다시 안 그림) — 그래서 saveRate 가 조용할 때도 이걸 부릅니다**(b807 점검에서
+ *   잡음: 바로 밑 목록에서 별을 다섯 번 눌러도 줄이 「가본 곳엔 별을…」 그대로였습니다).
+ *   조용할 때는 **숨기지 않습니다** — 누르는 도중에 줄이 사라지면 목록이 한 줄 위로 올라가 다음 별을 잘못 누릅니다.
+ *   5곳이 되면 「확정됐어요」로 말만 바꿔 두고, 다음에 목록을 새로 그릴 때(탭 다시 열기·검색) 사라집니다. */
+const 성향문턱 = 5;
+function 제자리안내(조용){
+  const el = $('tip_rate');
+  if (!el) return;
+  const n = Object.values(myRates || {}).filter(r => r?.stars != null).length;
+  if (조용 && n >= 성향문턱 && 별받음 && !el.classList.contains('hide')){
+    $('tip_rate_t').innerHTML = '<b>여행 성향이 확정됐어요</b> · 분석 탭에서 볼 수 있어요';
+    return;
+  }
+  const 끔 = !별받음 || n >= 성향문턱 || tipOff('ratelist');
+  if (조용 && 끔) return;            /* 조용할 때는 보이던 줄을 걷지 않습니다(위 ⚠⚠) */
+  el.classList.toggle('hide', 끔);
+  if (끔) return;
+  $('tip_rate_t').innerHTML = n === 0
+    ? `가본 곳엔 별을, 가보고 싶은 곳엔 ♡를 눌러요 · <b>${성향문턱}곳이면 여행 성향이 확정돼요</b>`
+    : `<b>${성향문턱 - n}곳만 더</b> 매기면 여행 성향이 확정돼요`;
+}
+
 export function drawRatings(){
   const q = $('r_q').value.trim().toLowerCase();
   const cho = /^[ㄱ-ㅎ]+$/.test(q);
@@ -194,6 +224,7 @@ export function drawRatings(){
                    || a.name.localeCompare(b.name, 'ko'));
 
   $('r_head').textContent = '도시';
+  제자리안내();
   /* ⚠ 여기서 한 번 부릅니다 — 시트를 «안 열어도» 컨트롤 글자와 개수가
      맞아야 합니다. 시트 여는 쪽에서만 채우면 처음엔 늘 「전체」로 보입니다. */
   거르개채우기();
@@ -499,8 +530,9 @@ export async function saveRate(cityId, patch, quiet){
   /* 평균은 남들 것까지 합친 값이라 다시 받아야 맞습니다. */
   const s = await sb.rpc('city_stats', { p_city: cityId });
   putCityStat(cityId, s.data?.[0]);
-  /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다. */
-  if (!quiet) drawRatings();
+  /* 조용히 저장할 때는 다시 그리지 않습니다 — 누른 줄이 제자리에 있어야 합니다.
+     대신 위 안내 한 줄의 숫자만 고칩니다(b807 — 제자리안내 머리말). */
+  if (!quiet) drawRatings(); else 제자리안내(true);
   return true;
 }
 

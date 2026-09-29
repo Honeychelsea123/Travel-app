@@ -5057,13 +5057,22 @@ body:has(#tabdeck.hide) .gchips{ display:none; }
 .gchips .go{ flex:none; color:var(--ink-48); font-size:var(--f-xs); }
 /* 끄는 단추. ⚠ 보이는 동그라미는 22px 이지만 «닿는 자리»는 44px 입니다 —
    작은 ×가 손가락에 안 맞는 것은 이 저장소가 여러 번 겪은 일입니다. */
-.gchips .gx{
+.gchips .gx, .tabtip .gx{
   position:relative; flex:none; width:26px; height:26px; padding:0;
   display:grid; place-items:center; border:0; border-radius:50%;
   background:var(--hairline); color:var(--ink-48);
   font-size:17px; line-height:1; cursor:pointer;
 }
-.gchips .gx::before{ content:""; position:absolute; inset:-9px; }
+.gchips .gx::before, .tabtip .gx::before{ content:""; position:absolute; inset:-9px; }
+/* ── 제자리 안내 한 줄(b807, 사용자가 고른 시안 C) ──────────────────────
+ * 새 화면을 안 띄우고 탭의 그 자리에 한 줄. 선 하나로 나눕니다(종이 재설계 「선으로 나눈다」) — 상자·그림자 없음.
+ * ×는 기록 탭 칩의 것을 그대로 씁니다(바로 위 규칙 — 보이는 22px, 닿는 44px). */
+.tabtip{ display:flex; align-items:center; gap:8px; padding:9px 0; margin-bottom:4px;
+         border-bottom:1px solid var(--line); font-size:var(--f-md); color:var(--ink-80); word-break:keep-all; }
+.tabtip > span{ flex:1; min-width:0; }
+.tabtip b{ font-weight:700; color:var(--ink); }
+.tabtip .tipgo{ flex:none; min-height:32px; padding:2px 4px; white-space:nowrap; }
+#tip_name{ margin-top:12px; }
 /* ⚠⚠ **b535 에 `pan-y` 였다가 b545 에 `none` 으로 되돌렸습니다.** ⚠⚠
    `pan-y` 는 위아래를 브라우저에 돌려주는 것이라 **지구본을 위아래로
    기울일 수가 없었습니다**(사용자 지적: 「지금 좌우만 되네」).
