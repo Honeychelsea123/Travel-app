@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b805';
+import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b806';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b805';
+import { distKm, pScale, SEOUL } from './calc.js?v=b806';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -293,7 +293,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.webp?v=b805`;
+    img.src = `./persona/${code}.webp?v=b806`;
   });
 }
 
@@ -547,7 +547,8 @@ const rrect = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r);
  *   바닥과 뜯는 홈 · NEXT TRIP 알약.
  */
 const P16N = {
-  종이:'#F3F0E8', 잉크:'#1B1B1F', 흐림:'#807C74', 선:'#DFDAD0', 홈:'#E3DDD0',
+  /* 흐림은 화면 --ink-48 과 같은 값(b805 에 #807C74 → #6B675F, 종이 위 대비 3.65 → 4.94 — app.css 머리 주석). */
+  종이:'#F3F0E8', 잉크:'#1B1B1F', 흐림:'#6B675F', 선:'#DFDAD0', 홈:'#E3DDD0',
   주황:'#F25E26', 밝은주황:'#FF9166', 좋음:'#5A7A46', 나쁨:'#B0574E',
   /* 발자국 카드(b776) — 0 인 대륙의 값 · 지도 판 · 안 간 땅(판보다 한 단 짙게) */
   아주흐림:'#B5AFA3', 지도판:'#E6E0D3', 지도땅:'#D3CBBC',
@@ -561,7 +562,7 @@ function p16Thumb(code){
     const img = new Image();
     img.onload = () => ok(img);
     img.onerror = () => ok(null);      /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
-    img.src = `./persona/m/${code}.jpg?v=b805`;
+    img.src = `./persona/m/${code}.jpg?v=b806`;
   });
 }
 
@@ -721,7 +722,9 @@ async function drawP16(s, W, H, F){
      먹으면 남는 높이가 58(시안 px)뿐인데, 넷 줄(109)을 우겨 넣으면 0.53 배로
      눌려 글자가 6pt 가 됩니다(실제로 그려 보고 알았습니다). 한 줄이면
      1 배 그대로 들어갑니다. */
-  if (비 < 1.15) 조각.push({ h: 28, 그리기: 축한줄 });
+  /* 한 줄은 35(b805 스펙트럼 — 막대 밑에 두 극 이름이 한 줄 더 붙어 28 → 32, 「아직 모름」을 눈금에서
+     띄우느라 → 35). 정사각에 남는 58 안입니다. */
+  if (비 < 1.15) 조각.push({ h: 35, 그리기: 축한줄 });
   else 조각.push({ h: 4 * 22 + 3 * 7, 그리기: 축그리기 });
   if (궁합꼴 === '크게'){
     조각.push({ h: 25 + 7 + 그림높이 + 5 + 11 + 15 + 11, 그리기: 궁합크게 });
@@ -742,45 +745,80 @@ async function drawP16(s, W, H, F){
   let y = 위;
   for (const c of 조각){ c.그리기(y); y += bx(c.h + 11); }
 
-  /* ── 축 넷 ── 이름 · 작은 뜻 · 먹색 막대 · 값 ─────────────────────
-     ⚠ **작은 뜻은 `axisWords` 를 나눠 씁니다.** 부르는 쪽이 코드 글자
-       차례대로 「유명한 곳 · 여러 나라 · 멀리 · 까다로움」을 넘기는데, 그
-       차례가 `bars`(개척·단골·모험·만족)의 차례와 같습니다(persona.js).
-     ⚠ 막대 끝은 각집니다 — 화면(`.pbar`)과 같습니다. */
-  function 축그리기(y0){
-    const 뜻 = String(s.axisWords || '').split(' · ');
-    const 막대왼 = PX + 좌 + bx(54 + 10), 값폭 = bx(20), 막대오 = 우 - 값폭 - bx(10);
-    (s.bars || []).forEach(([name, v], i) => {
-      const ry = y0 + bx(i * (22 + 7));
-      g.textAlign = 'left';
-      g.font = F(800, bx(10.5)); g.fillStyle = P16N.잉크;
-      g.fillText(name, PX + 좌, ry + bx(10));
-      g.font = F(500, bx(8)); g.fillStyle = P16N.흐림;
-      g.fillText(뜻[i] || '', PX + 좌, ry + bx(20));
-      const th = bx(5), tyy = ry + bx(11) - th / 2;
-      g.fillStyle = P16N.홈; g.fillRect(막대왼, tyy, 막대오 - 막대왼, th);
+  /* ── 축 넷 ── 양쪽 스펙트럼(b805, 사용자: 「응 다 바꾸자」) ─────────────
+     ⚠⚠ **화면(axisSpectrum · app.css .axspec)과 같은 그림입니다.** 전에는 0 부터 차오르는 먹색 막대 +
+       오른쪽 숫자였는데, 화면을 스펙트럼으로 바꾸면서(밖에서 받은 리포트 시안 A · 숫자 빼기) 카드도 맞춥니다 —
+       보는 것과 올리는 것이 달라지면 안 됩니다(이 파일 머리말).
+     ⚠ 한 줄에 이름, 그 밑에 [왼쪽 극 · 막대 · 오른쪽 극]. 가운데(50) 눈금에서 기운 쪽으로 칠하고 기운 쪽
+       극만 진하게. 기운 쪽 규칙은 코드 글자와 같습니다(50 이상이면 H·L·D·G) — `축자리` 하나로 셉니다.
+     ⚠ `bars` 의 셋째 칸(참이면 해외가 모자라 50 으로 둔 축)은 칠하지 않고 「아직 모름」.
+       셋째 칸이 없는 옛 spec 도 그대로 그립니다(모름 = 아님).
+     ⚠ 극 이름은 AXIS_POLES · AXIS_WORD(아래 표)에서 꺼냅니다 — `axisWords` 는 기운 쪽 넷뿐이라 못 씁니다.
+     ⚠⚠ **`function` 선언이어야 합니다(const 화살표 금지).** 위 `for (const c of 조각)` 가 이 줄보다 «먼저»
+       돌면서 그리기를 부릅니다 — const 로 두면 TDZ 로 카드가 통째로 안 그려집니다(b805 에 그려보다 잡음). */
+  function 축자리(v, i, 모름){
+    const [왼, 오] = AXIS_POLES[i] || ['F', 'H'], 오른 = v >= 50;
+    const 폭 = Math.max(Math.abs(v - 50), 1.5);
+    return { 왼말: AXIS_WORD[왼], 오말: AXIS_WORD[오], 왼진: !모름 && !오른, 오진: !모름 && 오른,
+             시작: 오른 ? 50 : 50 - 폭, 폭 };
+  }
+  /* 막대 한 줄 — 바탕 · (모름이 아니면) 칠 · 가운데 눈금. x0~x1 은 막대 양끝, cy 는 막대 가운데. */
+  function 스펙트럼막대(x0, x1, cy, 자리, 모름){
+    const th = bx(5), w = x1 - x0;
+    g.fillStyle = P16N.홈; g.fillRect(x0, cy - th / 2, w, th);
+    if (!모름){
       g.fillStyle = P16N.잉크;
-      g.fillRect(막대왼, tyy, (막대오 - 막대왼) * Math.max(0, Math.min(100, v)) / 100, th);
-      g.font = F(800, bx(11)); g.textAlign = 'right';
-      g.fillText(String(v), 우, ry + bx(15));
+      g.fillRect(x0 + w * 자리.시작 / 100, cy - th / 2, w * 자리.폭 / 100, th);
+    }
+    const tw = Math.max(1, bx(.8)), tl = th + bx(5);
+    g.fillStyle = P16N.흐림; g.fillRect(x0 + w / 2 - tw / 2, cy - tl / 2, tw, tl);
+  }
+  function 축그리기(y0){
+    const 극폭 = bx(46), 틈 = bx(8);
+    const 막대왼 = PX + 좌 + 극폭 + 틈, 막대오 = 우 - 극폭 - 틈;
+    (s.bars || []).forEach(([name, v, 모름], i) => {
+      const ry = y0 + bx(i * (22 + 7)), 자리 = 축자리(v, i, 모름);
+      g.textAlign = 'left';
+      g.font = F(800, bx(10)); g.fillStyle = P16N.잉크;
+      g.fillText(name, PX + 좌, ry + bx(9.5));
+      if (모름){
+        const nx = PX + 좌 + g.measureText(name).width;
+        g.font = F(500, bx(8)); g.fillStyle = P16N.흐림;
+        g.fillText(' · 아직 모름', nx, ry + bx(9.5));
+      }
+      g.font = F(자리.왼진 ? 700 : 500, bx(8.5)); g.fillStyle = 자리.왼진 ? P16N.잉크 : P16N.흐림;
+      g.fillText(자리.왼말, PX + 좌, ry + bx(20.5));
+      g.textAlign = 'right';
+      g.font = F(자리.오진 ? 700 : 500, bx(8.5)); g.fillStyle = 자리.오진 ? P16N.잉크 : P16N.흐림;
+      g.fillText(자리.오말, 우, ry + bx(20.5));
+      스펙트럼막대(막대왼, 막대오, ry + bx(17.5), 자리, 모름);
     });
     g.textAlign = 'left';
   }
 
-  /* ── 축 넷을 한 줄로(정사각) ── 칸마다 이름·값, 그 밑에 막대 ── */
+  /* ── 축 넷을 한 줄로(정사각) ── 칸마다 이름, 그 밑에 막대, 그 밑에 두 극 ──
+     ⚠ 칸이 좁아(시안 약 73px) 극 이름을 막대 «밑» 양끝에 작게 둡니다. 「아직 모름」은 극 대신 가운데에. */
   function 축한줄(y0){
     const 폭 = 우 - (PX + 좌), 틈 = bx(12), 칸 = (폭 - 틈 * 3) / 4;
-    (s.bars || []).forEach(([name, v], i) => {
-      const x0 = PX + 좌 + i * (칸 + 틈);
+    (s.bars || []).forEach(([name, v, 모름], i) => {
+      const x0 = PX + 좌 + i * (칸 + 틈), 자리 = 축자리(v, i, 모름);
       g.textAlign = 'left';
-      g.font = F(700, bx(9.5)); g.fillStyle = P16N.잉크;
-      g.fillText(name, x0, y0 + bx(13));
+      g.font = F(800, bx(9.5)); g.fillStyle = P16N.잉크;
+      g.fillText(name, x0, y0 + bx(11));
+      스펙트럼막대(x0, x0 + 칸, y0 + bx(18.5), 자리, 모름);
+      const by = y0 + bx(30);
+      if (모름){
+        /* ⚠ 가운데 눈금 바로 밑이라 3 을 더 내립니다 — 30 이면 눈금 끝(18.5+5)과 글자 윗선이 1px 차로 붙어
+           「아직|모름」처럼 읽혔습니다(b805 점검에서 잡음). 칸 높이도 32 → 35(위 조각). */
+        g.textAlign = 'center'; g.font = F(500, bx(7.5)); g.fillStyle = P16N.흐림;
+        g.fillText('아직 모름', x0 + 칸 / 2, y0 + bx(33));
+        return;
+      }
+      g.font = F(자리.왼진 ? 700 : 500, bx(7.5)); g.fillStyle = 자리.왼진 ? P16N.잉크 : P16N.흐림;
+      g.fillText(자리.왼말, x0, by);
       g.textAlign = 'right';
-      g.font = F(800, bx(14)); g.fillText(String(v), x0 + 칸, y0 + bx(14));
-      const th = bx(5), ty0 = y0 + bx(21);
-      g.fillStyle = P16N.홈; g.fillRect(x0, ty0, 칸, th);
-      g.fillStyle = P16N.잉크;
-      g.fillRect(x0, ty0, 칸 * Math.max(0, Math.min(100, v)) / 100, th);
+      g.font = F(자리.오진 ? 700 : 500, bx(7.5)); g.fillStyle = 자리.오진 ? P16N.잉크 : P16N.흐림;
+      g.fillText(자리.오말, x0 + 칸, by);
     });
     g.textAlign = 'left';
   }
@@ -1801,7 +1839,8 @@ export const AXIS_NAME = ['개척력', '단골력', '모험력', '만족력'];
  * ⚠ 숫자는 막대에서 뺐습니다 — 근거와 같이 읽히는 「왜 ○○○○ 인가요」에만 남습니다.
  * ⚠ 기운 쪽은 코드 글자와 **같은 규칙**(50 이상이면 H·L·D·G)이라 막대와 네 글자가 어긋나지 않습니다.
  * ⚠ 해외가 모자라 50 으로 둔 축(`추정`)은 칠하지도 굵게 하지도 않고 「아직 모름」만 답니다.
- * ⚠ 공유 카드 그림(drawP16 의 축그리기)은 아직 옛 모양(0 부터 막대 + 숫자)입니다. */
+ * ⚠ 공유 카드 그림(drawP16 의 축그리기 · 축한줄)도 같은 스펙트럼입니다(b805, 사용자: 「응 다 바꾸자」) —
+ *   극 표(AXIS_POLES)와 기운 쪽 규칙을 같이 씁니다. 한쪽만 바꾸지 마십시오. */
 const AXIS_POLES = [['F', 'H'], ['M', 'L'], ['N', 'D'], ['P', 'G']];
 export function axisSpectrum(ax){
   const 모름 = new Set(ax.추정 || []);

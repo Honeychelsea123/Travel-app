@@ -21,11 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b805';
-import { sb } from './db.js?v=b805';
-import { cities, countryName, cityCountry, search } from './cities.js?v=b805';
-import { starsRo } from './stars.js?v=b805';
-import { openPhotos } from './photoview.js?v=b805';
+import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b806';
+import { sb } from './db.js?v=b806';
+import { cities, countryName, cityCountry, search } from './cities.js?v=b806';
+import { starsRo } from './stars.js?v=b806';
+import { openPhotos } from './photoview.js?v=b806';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -48,6 +48,10 @@ export async function openDiary(){
 
   $('diarybody').innerHTML =
     '<div class="card"><div class="empty"><span class="load">일기를 펴는 중…</span></div></div>';
+  /* ‹ n / N › 는 여기서 먼저 걷습니다(b805 점검) — 안 걷으면 불러오는 동안·못 불러왔을 때 지난번 「2 / 3」과
+     화살표가 남는데, 화살표는 이미 떨어져 나간 옛 줄기를 가리켜 눌러도 아무 일이 없습니다. 다 불러오면 아래에서 다시 켭니다. */
+  $('dgnav')?.classList.add('hide');
+  $('diarycount').textContent = '';
 
   await ctx.loadCities();
   const me = ctx.me();

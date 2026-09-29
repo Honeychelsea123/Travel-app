@@ -18,17 +18,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 planline.js · planmap.js · planview.js · review.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b805';
-import { sb } from './db.js?v=b805';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b805';
-import { dateRange, travel, legAt, legNear } from './calc.js?v=b805';
-import { cities, countryName, cityCountry } from './cities.js?v=b805';
-import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b805';
-import { arm } from './ui.js?v=b805';
-import { drawCats } from './planline.js?v=b805';
-import { drawPlanMap } from './planmap.js?v=b805';
-import { drawPlans } from './planview.js?v=b805';
-import { loadReview } from './review.js?v=b805';
+import { $, esc } from './dom.js?v=b806';
+import { sb } from './db.js?v=b806';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b806';
+import { dateRange, travel, legAt, legNear } from './calc.js?v=b806';
+import { cities, countryName, cityCountry } from './cities.js?v=b806';
+import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b806';
+import { arm } from './ui.js?v=b806';
+import { drawCats } from './planline.js?v=b806';
+import { drawPlanMap } from './planmap.js?v=b806';
+import { drawPlans } from './planview.js?v=b806';
+import { loadReview } from './review.js?v=b806';
 
 let ctx = { drawDays: () => {}, drawTripHeader: () => {}, fetchTrip: async () => {} };
 export function setLegsCtx(o){ ctx = { ...ctx, ...o }; }
