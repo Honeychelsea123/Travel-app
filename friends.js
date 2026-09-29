@@ -25,14 +25,14 @@
  * ⚠ 줄 전체를 단추 하나로 만들지 않습니다 — 오른쪽 사진·단추가 따로 눌려야 해서 «사람 단추 + 옆 단추»
  *   형제로 둡니다(단추 안에 단추는 안 됩니다). 그래서 누르기 처리는 도시·단추를 사람보다 «먼저» 봅니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b800';
-import { sb } from './db.js?v=b800';
-import { netTimeout } from './net.js?v=b800';
-import { cities, countryName } from './cities.js?v=b800';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b801';
+import { sb } from './db.js?v=b801';
+import { netTimeout } from './net.js?v=b801';
+import { cities, countryName } from './cities.js?v=b801';
 /* 소식의 도시 사진을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b800';
+import { openCity } from './city.js?v=b801';
 /* 「팔로잉」·「삭제」를 한 번 더 눌러 정하는 장치(b800). ui.js 는 dom.js 만 읽어 고리가 없습니다. */
-import { arm } from './ui.js?v=b800';
+import { arm } from './ui.js?v=b801';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -259,8 +259,12 @@ function 소식줄(g){
                   'width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none', 'thumb')}
       <span class="frtxt"><span class="l1"><b>${esc(이름)}</b>님이 ${말} <span class="t">· ${언제(g.at)}</span></span>${
         둘째 ? `<span class="l2">${둘째}</span>` : ''}</span></button>
-    <button class="frthumb" data-cityopen="${esc(대표)}" aria-label="${esc(c?.name || '도시')} 보기"${
-      사진 ? ` style="background-image:url('${esc(사진)}')"` : ''}>${사진 ? '' : esc((c?.name || '?').slice(0, 1))}</button>
+    <button class="frthumb" data-cityopen="${esc(대표)}" aria-label="${esc(c?.name || '도시')} 보기">${
+      /* ⚠ 배경 그림이 아니라 <img loading="lazy"> 입니다(b801, 라이브에서 재 봄) — 배경으로 두면 소식 60줄의
+         도시 사진(원본 크기)을 여는 순간 한꺼번에 받았습니다. 화면에 가까워질 때만 받습니다.
+         못 받으면 그림을 걷어 크림 칸만 남깁니다. */
+      사진 ? `<img src="${esc(사진)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
+           : esc((c?.name || '?').slice(0, 1))}</button>
   </div>`;
 }
 /* 시간 머리(인스타 알림처럼) — 오늘 · 이번 주(7일) · 이번 달(30일) · 이전 활동. */
