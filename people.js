@@ -10,7 +10,9 @@
  *   첫 판(#whosum): 머리 → 지구본 → 나라·도시·한줄평 세 칸 → 궁합과 「흥미로운 사실」 → 여행 분석(별점
  *     분포) → **맨 아래 「여행 성향」**(분석 탭의 히어로 + 네 축 막대 — b802, 사용자: 「명소검열관 위에
  *     여행성향 텍스트 달아주고 제일 아래로 내리자 … 저거만 덩그러니 있으니 톤앤매너가 안맞는데??」 → 시안 A).
- *   들어간 판(#whosub): 도시(별점 순·나라별·한줄평) · 나라 · 궁합 · 여행 분석(맨 아래 받은 배지).
+ *   들어간 판(#whosub): 도시(별점 순·나라별·한줄평) · 나라 · 궁합 · 여행 분석(맨 아래 받은 배지) ·
+ *     여행 성향(왜 ○○○○ 인가요 · 여행 궁합 — b804, 사용자: 「자세히 눌러도 위에 모든 분석이랑 같은
+ *     페이지로 이동되는거아냐?」 → 시안 「성향 화면 따로」. 「성향 네 축」은 여행 분석에서 뺐습니다).
  *   ⚠ 배지는 세 칸에서 뺐습니다(b802, 사용자: 「나라 도시 옆에 배지가 … 값어치가 비슷한 부분인가?」 → 한줄평).
  * ⚠ 들어간 판도 기록을 한 칸씩 쌓습니다(`whosub`) — 뒤로 한 번에 한 겹:
  *   나라 → (나라를 누름) 그 나라 도시 → 도시 화면 → 뒤로 셋이면 첫 판.
@@ -33,20 +35,20 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b803';
-import { sb } from './db.js?v=b803';
-import { netTimeout } from './net.js?v=b803';
-import { cities, countryName } from './cities.js?v=b803';
-import { myRates, visited, 별받음 } from './rate.js?v=b803';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b804';
+import { sb } from './db.js?v=b804';
+import { netTimeout } from './net.js?v=b804';
+import { cities, countryName, continentOf } from './cities.js?v=b804';
+import { myRates, visited, 별받음 } from './rate.js?v=b804';
 /* 내 별점이 아직 안 왔으면 받는 곳(b797 — 아래 `알맹이그림`). rating.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { loadRateData } from './rating.js?v=b803';
+import { loadRateData } from './rating.js?v=b804';
 import { PERSONA16, personaMatch, personaMateLine, personaAxes, personaRank,
-         AXIS_WORD, AXIS_NAME } from './card.js?v=b803';
-import { starsRo } from './stars.js?v=b803';
-import { mountGlobe } from './globe.js?v=b803';
-import { arm } from './ui.js?v=b803';
+         personaStats, personaMates, AXIS_WORD, AXIS_NAME } from './card.js?v=b804';
+import { starsRo } from './stars.js?v=b804';
+import { mountGlobe } from './globe.js?v=b804';
+import { arm } from './ui.js?v=b804';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b803';
+import { openCity } from './city.js?v=b804';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }
@@ -362,12 +364,13 @@ function 성향카드(h, 너, 발, b){
      막대는 보이는 별점으로 셉니다(personaAxes). 별점을 가린 사람이면 그림만 나옵니다. */
   const 별줄 = (b?.ratings || []).filter(r => r.stars != null);
   const ax = 별줄.length >= 문턱 ? personaAxes(별줄, { cities: cities || [] }) : null;
-  return `<div class="card whop16" data-whosub="stats" role="button" tabindex="0"
-      aria-label="${esc(h.self ? '나' : 이름(h))}의 여행 유형 ${esc(t.n)} — 여행 분석 보기">
+  /* 누르면 「여행 성향」 판(b804) — 전에는 「모든 분석 ›」과 같은 판으로 갔습니다(사용자가 찾음). */
+  return `<div class="card whop16" data-whosub="p16" role="button" tabindex="0"
+      aria-label="${esc(h.self ? '나' : 이름(h))}의 여행 유형 ${esc(t.n)} — 여행 성향 보기">
     <div class="whocardhd"><b>여행 성향</b><span class="whomore">자세히 ›</span></div>
     <div class="phero">
-      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b803')"></div>
-      <img src="./persona/m/${esc(너)}.jpg?v=b803" alt=""
+      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b804')"></div>
+      <img src="./persona/m/${esc(너)}.jpg?v=b804" alt=""
            onerror="this.closest('.phero').classList.add('noart')">
       <div class="pscrim"></div>
       <div class="ptxt">
@@ -387,7 +390,8 @@ function 성향카드(h, 너, 발, b){
 }
 
 /* 네 축 막대 — persona.js(분석 탭)와 **같은 마크업**(.axbars · 이름 밑 한 마디 AXIS_WORD).
-   성향 칸(첫 판 맨 아래)과 「여행 분석」 판이 같이 씁니다(b802). */
+   성향 칸(첫 판 맨 아래, b802)이 씁니다. 「여행 분석」 판의 「성향 네 축」은 b804 에 뺐습니다 —
+   요약에 같은 막대가 이미 있고, 근거는 「여행 성향」 판에 있습니다. */
 function 축막대(ax){
   return `<div class="axbars">${AXIS_NAME.map((축, i) => {
     const 값 = [ax.개척, ax.단골, ax.모험, ax.만족][i];
@@ -503,7 +507,7 @@ const 판그림 = {
     const { 둘다, 짝, 좋게, 엇갈림, 차이 } = 견주기(b);
     /* 그림은 작은 것(t/, 23KB) — 성향 탭 「여행 궁합」 칸과 같습니다. */
     const 사람 = (누, 코드) => `<div class="whomate">${코드 && PERSONA16[코드]
-        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b803" alt="" loading="lazy" decoding="async">
+        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b804" alt="" loading="lazy" decoding="async">
            <span class="memo">${esc(누)}</span><b>${esc(PERSONA16[코드].n)}</b><span class="memo">${esc(코드)}</span>`
         : `<span class="memo">${esc(누)}</span><b>아직 없어요</b>
            <span class="memo">${누 === '나' ? '도시를 5곳 매기면 나와요' : '별점이 더 쌓이면 나와요'}</span>`}</div>`;
@@ -530,12 +534,11 @@ const 판그림 = {
         ${둘다.length ? 둘다.map(가본줄).join('') : emptyDo('아직 둘 다 가 본 곳이 없어요.')}</div>`;
   },
 
-  /* 여행 분석 — 별점 분포 · 발자국 · 성향 네 축 · 제일 좋았던/아쉬웠던 곳. */
+  /* 여행 분석 — 별점 분포 · 발자국 · 제일 좋았던/아쉬웠던 곳 · 받은 배지.
+     ⚠ 「성향 네 축」은 b804 에 뺐습니다 — 요약의 성향 칸에 같은 막대가 있고, 근거는 「여행 성향」 판(p16). */
   stats(위, b){
     const 별들 = 별모음(b), 분 = 분포(별들), 발 = b.foot || {};
     const 누구 = 이름(머리);
-    const rows = (b.ratings || []).filter(r => r.stars != null);
-    const ax = rows.length >= 문턱 ? personaAxes(rows, { cities: cities || [] }) : null;
     const 대륙 = Object.entries(발.by_continent || {}).filter(([k]) => k !== '기타').sort((a, c) => c[1] - a[1]);
     const 대륙큰 = Math.max(1, ...대륙.map(([, n]) => n));
     const 매긴 = 도시목록(b).filter(x => 별값(x) != null);
@@ -558,13 +561,48 @@ const 판그림 = {
           `<div class="whocont"><span>${esc(k)}</span><span class="axbar"><i style="width:${Math.max(4, Math.round(n / 대륙큰 * 100))}%"></i></span>
             <b>${n}</b></div>`).join('')}` : ''}
       </div>` +
-      /* ⚠ 네 축은 persona.js 의 막대와 **같은 마크업**(.axbars) — 이름 밑 한 마디(AXIS_WORD)도 같습니다. */
-      (ax ? `<div class="card"><h2>성향 네 축</h2>${축막대(ax)}</div>` : '') +
       (좋은곳.length ? `<div class="card"><h2>제일 좋았던 곳 <span class="memo">★${높은}</span></h2>
           ${좋은곳.map(도시줄).join('')}</div>` : '') +
       (아쉬운곳.length ? `<div class="card"><h2>제일 아쉬웠던 곳 <span class="memo">★${낮은}</span></h2>
           ${아쉬운곳.map(도시줄).join('')}</div>` : '') +
       배지칸(b);
+  },
+
+  /* 여행 성향(b804) — 요약 맨 아래 성향 칸의 「자세히 ›」가 여기로 옵니다. 사용자: 「자세히 눌러도 위에
+     모든 분석이랑 같은 페이지로 이동되는거아냐?」 → 시안 「성향 화면 따로」.
+     ⚠ 분석 탭(persona.js)의 「왜 ○○○○ 인가요」 · 「여행 궁합」과 **같은 말 · 같은 마크업**(.row · .mates ·
+       환상의 메이트 · 극과 극 메이트). 한쪽 말만 바꾸지 마십시오.
+     ⚠ 근거 숫자는 **보이는 별점**으로 셉니다(personaStats · personaAxes). 별점을 가린 사람이면 궁합만.
+     ⚠ 네 글자는 요약 그림과 같은 코드(그사람코드 — 본인 앱이 서버에 올린 것)입니다. 점수는 보이는 별점으로
+       새로 세므로 본인이 앱을 한동안 안 열었으면 드물게 어긋날 수 있습니다(pshift.js 가 바뀔 때 올립니다). */
+  p16(위, b){
+    const 누구 = 이름(머리), 너 = 그사람코드(b);
+    if (!너 || !PERSONA16[너]) return 판머리('여행 성향') +
+      `<div class="card">${emptyDo(`${누구}님의 성향이 아직 안 나왔어요.`)}</div>`;
+    const rows = (b.ratings || []).filter(r => r.stars != null);
+    const ax = rows.length >= 문턱 ? personaAxes(rows, { cities: cities || [] }) : null;
+    const s = ax && personaStats(rows, { cities: cities || [], continentOf, countryName });
+    const 덜셈 = ax?.추정.length ? ' · 아직 모름' : '';
+    const 줄 = (축, 뜻, 글자) => `<div class="row"><span class="label">${축}
+        <div class="memo">${뜻}</div></span><span class="val">${esc(글자)}</span></div>`;
+    const 왜 = ax
+      ? (ax.추정.length ? `<div class="memo whonote">${ax.추정.join('·')}은 해외 도시로만 세는데 아직 적어서
+            가운데(50점)로 둬요</div>` : '') +
+        줄(`개척력 ${ax.개척}`, `유명한 곳(F) ↔ 숨은 곳(H) · 도시 유명도 평균 ${s.avgFame ? s.avgFame.toFixed(2) : '—'}`, 너[0]) +
+        줄(`단골력 ${ax.단골}${덜셈}`, `여러 나라(M) ↔ 한 나라(L) · 해외 한 나라당 ${ax.나라당.toFixed(1)}곳`, 너[1]) +
+        줄(`모험력 ${ax.모험}${덜셈}`, `가까이(N) ↔ 멀리(D) · 서울에서 평균 ${ax.avgDist ? Math.round(ax.avgDist).toLocaleString() + 'km' : '—'}`, 너[2]) +
+        줄(`만족력 ${ax.만족}`, `까다로움(P) ↔ 후함(G) · 별점 평균 ★${s.avgRating.toFixed(2)}`, 너[3])
+      : `<div class="memo whonote">${b.show_stars === false ? `${esc(누구)}님이 별점을 가려 두어서 근거는 안 보여요`
+                                                              : '별점이 더 쌓이면 근거가 나와요'}</div>`;
+    const m = personaMates(너);
+    const 짝 = (결, 말, 코드, 점) => `<div class="mate ${결}">
+        <img class="mateimg" src="./persona/t/${esc(코드)}.jpg?v=b804" alt="" loading="lazy" decoding="async">
+        <span class="ml">${말} · ${점}%</span>
+        <b>${esc(PERSONA16[코드]?.n || 코드)}</b><span class="mc">${esc(코드)}</span></div>`;
+    return 판머리('여행 성향') +
+      `<div class="card"><h2>왜 ${esc(너)} 인가요</h2>${왜}</div>` +
+      `<div class="card"><h2>여행 궁합</h2><div class="mates">${
+        짝('good', '환상의 메이트', m.best, m.bestScore)}${짝('bad', '극과 극 메이트', m.worst, m.worstScore)}</div></div>`;
   },
 };
 
