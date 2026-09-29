@@ -33,8 +33,8 @@
  *   성향 화면·카드 그림·친구 궁합이 다 쓰는 하나입니다. 여기서 따로 재면
  *   같은 두 유형이 화면마다 다른 점수를 냅니다.
  */
-import { $, esc, coverDeck, toTop } from './dom.js?v=b804';
-import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b804';
+import { $, esc, coverDeck, toTop } from './dom.js?v=b805';
+import { PERSONA16, AXIS_NAME, AXIS_WORD, personaMatch } from './card.js?v=b805';
 
 /* ⚠ 코드 열여섯의 «차례»는 PERSONA16 에 적힌 차례 그대로입니다 —
    FLNG → HMDP 로, 축 네 자리가 자리별로 뒤집히는 차례라 이웃끼리 한 글자만
@@ -68,8 +68,8 @@ function 카드(code, k, 시작){
       <div class="phero">
         <!-- 자리막이(b743). 큰 그림이 붙기 전까지 이 자리를 채웁니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b804')"></div>
-        <img src="./persona/m/${esc(code)}.jpg?v=b804" alt=""
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b805')"></div>
+        <img src="./persona/m/${esc(code)}.jpg?v=b805" alt=""
              loading="${언제}" decoding="async"
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
@@ -136,9 +136,13 @@ function 캐러셀(){
       <div class="p16track" id="p16track">${
         코드들.map((c, k) => 카드(c, k, 시작)).join('')}</div>
       <div class="p16dots" id="p16dots">${
-        코드들.map(() => '<i></i>').join('')}</div>
+        코드들.map(() => '<i></i>').join('')}<span class="p16n" id="p16n">${시작 + 1} / ${코드들.length}</span></div>
     </div>`;
 }
+/* ⚠ 위 「몇 / 16」(b805, 사용자 결정 — 밖에서 받은 리포트 P2-4). 점 열여섯은 지금 것만 알약이라
+   «어디쯤»은 보여도 «몇째»는 셀 수 없었습니다. 점은 그대로 두고 숫자를 옆에 작게 답니다.
+   ⚠ 점을 세는 코드(가운데바뀜)가 `점.children[k]` 로 칸을 짚습니다 — 이 span 은 **맨 끝**이라
+     0~15 칸은 그대로 점입니다. 점 «앞»에 넣으면 한 칸씩 밀립니다. */
 
 /* ── 모아보기(격자) ─────────────────────────────────────────────────
  * ⚠ 여기 그림은 **작은 것(t/)** 입니다. 열여섯이 한 화면에 서므로 중간
@@ -160,7 +164,7 @@ function 격자(){
        얹었기 때문입니다. `onerror` 로 «그림 없음» 표시를 답니다. */
     return `<button class="p16cell${나 ? ' mine' : ''}" data-p16go="${code}">
       <span class="sz"></span>
-      <img src="./persona/t/${code}.jpg?v=b804" alt="" loading="lazy" decoding="async"
+      <img src="./persona/t/${code}.jpg?v=b805" alt="" loading="lazy" decoding="async"
            onerror="this.closest('.p16cell').classList.add('noart')">
       <span class="sh"></span>${표}
       <span class="p16lb"><i>${code}</i><b>${esc(t.n)}</b></span>
@@ -200,7 +204,7 @@ function 이웃받기(){
   for (const d of [1, -1, 2, -2]){
     const c = 코드들[(i + d + 코드들.length) % 코드들.length];
     const im = new Image();
-    im.src = `./persona/m/${c}.jpg?v=b804`;
+    im.src = `./persona/m/${c}.jpg?v=b805`;
   }
 }
 
@@ -242,6 +246,8 @@ function 가운데바뀜(k){
     점.querySelector('i.on')?.classList.remove('on');
     점.children[k]?.classList.add('on');
   }
+  const 몇 = $('p16n');
+  if (몇) 몇.textContent = `${k + 1} / ${코드들.length}`;
 }
 
 

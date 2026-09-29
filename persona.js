@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 도전해볼 곳」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b804';
-import { sb } from './db.js?v=b804';
-import { cities, countryName, continentOf } from './cities.js?v=b804';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b805';
+import { sb } from './db.js?v=b805';
+import { cities, countryName, continentOf } from './cities.js?v=b805';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b804';
+import { similarPicks } from './rec.js?v=b805';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b804';
-import { visited } from './rate.js?v=b804';
-import { open16 } from './p16.js?v=b804';
+import { mateCode, mateHtml } from './mate.js?v=b805';
+import { visited } from './rate.js?v=b805';
+import { open16 } from './p16.js?v=b805';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
-         PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b804';
+         PERSONA16, AXIS_WORD, AXIS_NAME, axisSpectrum,
+         shareCard } from './card.js?v=b805';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -214,7 +214,7 @@ async function drawPersona(s, ax, rates){
        이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
        말할 것은 「예전엔 이랬다」 하나입니다. */
     return `<div class="pwas">
-      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b804"
+      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b805"
            alt="" loading="lazy" decoding="async">
       <span class="pwast"><b>성향이 바뀌었어요</b>
         <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i></span>
@@ -318,12 +318,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b804')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b805')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b804" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b805" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -391,15 +391,12 @@ async function drawPersona(s, ax, rates){
              여기는 **한눈에 보는 그림**이고 거기는 **왜 그런지 따지는 근거**
              (극 이름 · 원자료 평균)입니다. 하나만 남기려거든 여기가 아니라
              거기 숫자를 지우십시오. -->
-      <div class="axbars">${AXIS_NAME.map((이름, i) => {
-        const 값 = [ax.개척, ax.단골, ax.모험, ax.만족][i];
-        const 극 = AXIS_WORD[[값 >= 50 ? 'H' : 'F', 값 >= 50 ? 'L' : 'M',
-                              값 >= 50 ? 'D' : 'N', 값 >= 50 ? 'G' : 'P'][i]];
-        return `<div class="axrow"><span class="axn"><b>${esc(이름)}</b>
-          <span>${esc(극)}</span></span>
-          <span class="axbar"><i style="width:${Math.max(값, 2)}%"></i></span>
-          <span class="axv">${값}</span></div>`;
-      }).join('')}</div>
+      <!-- ⚠⚠ **양쪽 스펙트럼으로 바꿨습니다(b805, 사용자 결정 — 밖에서 받은 리포트 시안 A).**
+           0 부터 차오르는 막대라 12·18 이 낮은 점수처럼 읽혔습니다. 가로 막대 자체는 그대로(위 b465 · b551)
+           두고, 가운데 선에서 기운 쪽으로 칠합니다. 숫자는 막대에서 뺐습니다(사용자: 「숫자 빼기」) —
+           위 「하나만 남기려거든 거기 숫자를」 은 이제 반대로, **숫자는 「왜 인가요」에만** 있습니다.
+           그리는 것은 card.js 의 axisSpectrum 하나(사람 화면과 같이 씀). -->
+      ${axisSpectrum(ax)}
       <!-- ── 도감(b737, 사용자 요청) ────────────────────────────────
            사용자: 「카드 퀄리티가 좋아서 사람들이 다른 성향도 보고 싶을 것
            같은데」. 카드 «안»에 답니다 — 줄 하나로 새 영역을 안 먹습니다.
@@ -436,13 +433,13 @@ async function drawPersona(s, ax, rates){
              있었습니다 — 유형은 «그림으로» 기억됩니다.
            ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
-          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b804"
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b805"
                alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b804"
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b805"
                alt="" loading="lazy" decoding="async">
           <span class="ml">극과 극 메이트${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>

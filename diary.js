@@ -21,11 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b804';
-import { sb } from './db.js?v=b804';
-import { cities, countryName, cityCountry, search } from './cities.js?v=b804';
-import { starsRo } from './stars.js?v=b804';
-import { openPhotos } from './photoview.js?v=b804';
+import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b805';
+import { sb } from './db.js?v=b805';
+import { cities, countryName, cityCountry, search } from './cities.js?v=b805';
+import { starsRo } from './stars.js?v=b805';
+import { openPhotos } from './photoview.js?v=b805';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -87,6 +87,7 @@ export async function openDiary(){
       emptyDo('아직 쓴 일기가 없어요.', '일기 쓸 곳 고르기', 'dgadd',
               '다녀온 도시를 고르면 그 자리에서 쓸 수 있어요.') + '</div>';
     $('diarycount').textContent = '';
+    $('dgnav')?.classList.add('hide');
     return;
   }
 
@@ -228,10 +229,24 @@ export async function openDiary(){
       if (i === 마지막장) return;
       마지막장 = i;
       $('diarycount').textContent = `${i} / ${장들.length}`;
+      끝단추(i);
     });
   };
+  /* ‹ › (b805) — 처음·끝 장에서는 그쪽 단추를 끕니다. 한 장뿐이면 둘 다 숨깁니다(index.html 주석).
+     ⚠ 옮기는 것은 `scrollTo` 한 번뿐입니다 — 손으로 넘긴 것과 똑같이 스크롤이 일어나므로 숫자·기울기·
+       키 맞추기는 위 `세기` 가 그대로 합니다. 따로 고쳐 칠하지 않습니다(두 벌이 되면 갈라집니다). */
+  const 끝단추 = i => {
+    if ($('dgprev')) $('dgprev').disabled = i <= 1;
+    if ($('dgnext')) $('dgnext').disabled = i >= 장들.length;
+  };
+  $('dgnav')?.classList.toggle('hide', 장들.length < 2);
+  const 넘기기 = d => 줄기.scrollTo({
+    left: Math.max(0, Math.min(장들.length - 1, 몇째() - 1 + d)) * 칸폭(), behavior: 'smooth' });
+  if ($('dgprev')) $('dgprev').onclick = () => 넘기기(-1);
+  if ($('dgnext')) $('dgnext').onclick = () => 넘기기(1);
   마지막장 = 몇째();
   $('diarycount').textContent = `${마지막장} / ${장들.length}`;
+  끝단추(마지막장);
   키맞추기();
   기울이기();
   줄기.addEventListener('scroll', 세기, { passive:true });

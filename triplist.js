@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b804';
-import { sb } from './db.js?v=b804';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b804';
-import { todayYmd } from './calc.js?v=b804';
-import { cities } from './cities.js?v=b804';
-import { trip } from './trip.js?v=b804';
-import { tripSub } from './rating.js?v=b804';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b804';
-import { ROLE_KO } from './member.js?v=b804';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b805';
+import { sb } from './db.js?v=b805';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b805';
+import { todayYmd } from './calc.js?v=b805';
+import { cities } from './cities.js?v=b805';
+import { trip } from './trip.js?v=b805';
+import { tripSub } from './rating.js?v=b805';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b805';
+import { ROLE_KO } from './member.js?v=b805';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -212,6 +212,11 @@ export async function loadTrips(){
        여기서 id 로 찾지 말고 이 상자를 통해 찾습니다. */
     wrap.firstElementChild?.removeAttribute('id');
     wrap.onclick = () => ctx.openTrip(t.id);
+    /* ⚠ **누를 수 있다는 표시 ›(b805, 사용자 결정 — 밖에서 받은 리포트 P1-3).** 카드 전체가 원래
+       눌렸는데(바로 위 onclick) 표시가 없어서 리포트가 「안 눌린다」고 적었습니다. 목록 줄의 › 와
+       같은 말입니다. 홈 히어로(heroHtml)는 같이 쓰는 것이라 거기엔 안 넣고 여기서만 붙입니다. */
+    wrap.querySelector('.hrow')?.insertAdjacentHTML('beforeend',
+      '<span class="hgo" aria-hidden="true">›</span>');
     /* ⚠ **`#trips` 앞입니다(b435).** 전에는 「띠가 있으면 띠 앞」이었는데
        띠가 목록 **아래**로 내려갔으므로 이제 기준이 목록입니다. */
     $('trips').before(wrap);

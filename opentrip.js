@@ -17,21 +17,21 @@
  * `channel`·`bumpTimer`·`bumpPending` 은 실시간의 상태라 같이 왔습니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc } from './dom.js?v=b804';
-import { sb } from './db.js?v=b804';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b804';
-import { D1, asDate, dateRange, localTime } from './calc.js?v=b804';
+import { $, esc } from './dom.js?v=b805';
+import { sb } from './db.js?v=b805';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b805';
+import { D1, asDate, dateRange, localTime, todayYmd } from './calc.js?v=b805';
 import { trip, plans, legs, members, expenses, bookings,
-         setTrip, setPickedDay } from './trip.js?v=b804';
-import { loadCities } from './citysearch.js?v=b804';
-import { clearCityOpen } from './city.js?v=b804';
-import { loadReview } from './review.js?v=b804';
-import { loadMembers } from './member.js?v=b804';
-import { loadExpenses } from './expense.js?v=b804';
-import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b804';
-import { inTrip, showTab } from './tabs.js?v=b804';
-import { loadLegs, fillCityList } from './legs.js?v=b804';
-import { loadPlans, backToList } from './tripview.js?v=b804';
+         setTrip, setPickedDay } from './trip.js?v=b805';
+import { loadCities } from './citysearch.js?v=b805';
+import { clearCityOpen } from './city.js?v=b805';
+import { loadReview } from './review.js?v=b805';
+import { loadMembers } from './member.js?v=b805';
+import { loadExpenses } from './expense.js?v=b805';
+import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b805';
+import { inTrip, showTab } from './tabs.js?v=b805';
+import { loadLegs, fillCityList } from './legs.js?v=b805';
+import { loadPlans, backToList, openedOnToday } from './tripview.js?v=b805';
 
 let ctx = { me: () => null, appTab: () => '' };
 export function setOpenTripCtx(o){ ctx = { ...ctx, ...o }; }
@@ -116,7 +116,14 @@ export async function openTrip(id){
       ? '여행을 열지 못했어요.'
       : '연결이 없어서 못 열어요. 한 번이라도 열어본 여행은 비행기모드에서도 열립니다.',
       'trip');
-  setPickedDay(null);
+  /* ⚠ **여행 중이면 오늘 날짜부터 엽니다(b805, 사용자 결정 — 밖에서 받은 리포트 P1-5).** 전에는 늘
+     「모든 날」이라 여행 둘째 날에 열어도 나흘 치가 한꺼번에 펼쳐졌습니다. 여행 전후는 그대로
+     「모든 날」 — 계획을 짤 때는 전체가 보여야 합니다(리포트의 「출발 전엔 Day 1」은 안 따름).
+     오늘 일정이 하나도 없으면 첫 일정을 받자마자 「모든 날」로 돌립니다(tripview.js 의 openedOnToday). */
+  const 오늘 = todayYmd();
+  const 여행중 = !!trip?.start_date && trip.start_date <= 오늘 && 오늘 <= trip.end_date;
+  setPickedDay(여행중 ? 오늘 : null);
+  if (여행중) openedOnToday(trip.id);
   /* 기록을 하나 쌓아야 화면 밀어서 뒤로 가기가 됩니다.
      이미 여행 안이면(다른 여행으로 건너뛴 경우) 또 쌓지 않습니다. */
   if (history.state?.t2 !== 'trip') history.pushState({ t2:'trip' }, '');

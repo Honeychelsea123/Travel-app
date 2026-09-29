@@ -17,36 +17,36 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast, coverDeck } from './dom.js?v=b804';
-import { photosOpen, closePhotos } from './photoview.js?v=b804';
-import { sb } from './db.js?v=b804';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b804';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b804';
+import { $, esc, toast, coverDeck } from './dom.js?v=b805';
+import { photosOpen, closePhotos } from './photoview.js?v=b805';
+import { sb } from './db.js?v=b805';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b805';
+import { D1, asDate, ymd, dayLabel, todayYmd } from './calc.js?v=b805';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b804';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b804';
-import { drawPlanMap } from './planmap.js?v=b804';
-import { drawPlans } from './planview.js?v=b804';
-import { legIn, fillCityList } from './legs.js?v=b804';
-import { inTrip } from './tabs.js?v=b804';
-import { closeAi } from './aiscreen.js?v=b804';
-import { closeDraft } from './draft.js?v=b804';
-import { closeReview } from './home.js?v=b804';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b805';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b805';
+import { drawPlanMap } from './planmap.js?v=b805';
+import { drawPlans } from './planview.js?v=b805';
+import { legIn, fillCityList } from './legs.js?v=b805';
+import { inTrip } from './tabs.js?v=b805';
+import { closeAi } from './aiscreen.js?v=b805';
+import { closeDraft } from './draft.js?v=b805';
+import { closeReview } from './home.js?v=b805';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b804';
-import { closeCity, isCityOpen } from './city.js?v=b804';
-import { closeMap, closeCountries } from './map.js?v=b804';
-import { closePersona } from './persona.js?v=b804';
+import { closeSpree } from './spree.js?v=b805';
+import { closeCity, isCityOpen } from './city.js?v=b805';
+import { closeMap, closeCountries } from './map.js?v=b805';
+import { closePersona } from './persona.js?v=b805';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b804';
-import { closeShelf, 거르개닫기 } from './shelf.js?v=b804';
-import { 나라거르개닫기 } from './rating.js?v=b804';
-import { closeDiary } from './diary.js?v=b804';
-import { closeDocs } from './prep.js?v=b804';
-import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b804';
-import { isPersonOpen, personBack } from './people.js?v=b804';
-import { isFriendsOpen, closeFriends } from './friends.js?v=b804';
-import { isSetSubOpen, closeSetSub } from './setnav.js?v=b804';
+import { 시트닫기 } from './home.js?v=b805';
+import { closeShelf, 거르개닫기 } from './shelf.js?v=b805';
+import { 나라거르개닫기 } from './rating.js?v=b805';
+import { closeDiary } from './diary.js?v=b805';
+import { closeDocs } from './prep.js?v=b805';
+import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b805';
+import { isPersonOpen, personBack } from './people.js?v=b805';
+import { isFriendsOpen, closeFriends } from './friends.js?v=b805';
+import { isSetSubOpen, closeSetSub } from './setnav.js?v=b805';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
@@ -245,6 +245,13 @@ window.addEventListener('popstate', () => {
   if (trip) return backToList(true);
 });
 
+/* 여행 중이라 「오늘」로 연 여행(b805) — opentrip.js 의 openTrip 이 적습니다. 첫 일정이 오면 한 번만 봅니다:
+   오늘 일정이 하나도 없으면 「모든 날」로 돌립니다. 그대로 두면 여는 순간 「이 날은 아직 비어 있어요」 빈 판만
+   서고(위 오늘 카드도 일정이 없으면 안 뜹니다) 다른 날을 보려면 한 번 더 눌러야 합니다 — 예전처럼 전체가 낫습니다.
+   첫 번만 보는 이유 — 그 뒤에 사용자가 고른 날은 건드리지 않습니다. */
+let 오늘로연여행 = null;
+export function openedOnToday(id){ 오늘로연여행 = id; }
+
 export async function loadPlans(){
   $('planerr').classList.add('hide');
   /* ⚠ **늦은 답 막기(b799, GPT 리포트 P0-2).** 여행 A 를 열다 곧바로 B 로 가면 A 의 답이 늦게
@@ -258,6 +265,11 @@ export async function loadPlans(){
     .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
     .order('date').order('start_time', { nullsFirst:false }).order('sort_order'));
   if (trip?.id !== 그여행) return;
+  const 오늘확인 = rows => {
+    if (오늘로연여행 !== 그여행) return;
+    오늘로연여행 = null;
+    if (pickedDay && !(rows || []).some(p => p.date === pickedDay)) setPickedDay(null);
+  };
 
   /* 못 받아왔을 때 마지막으로 받아둔 것을 씁니다.
      여행 중에 데이터가 끊겼다고 일정이 빈 화면이 되면 안 됩니다.
@@ -267,11 +279,12 @@ export async function loadPlans(){
     let old = null;
     try { old = JSON.parse(localStorage.getItem(ck) || 'null'); } catch {}
     if (!old){ $('plans').innerHTML = ''; return fail(error, 'plan'); }
-    setPlans(old); drawDays(); drawCats(); drawPlans(); drawPlanMap(); drawOffbar();
+    setPlans(old); 오늘확인(old); drawDays(); drawCats(); drawPlans(); drawPlanMap(); drawOffbar();
     return;
   }
   try { localStorage.setItem(ck, JSON.stringify(data)); } catch {}
   setPlans(data);
+  오늘확인(data);
   drawDays();
   drawCats();
   drawPlans();
@@ -327,15 +340,18 @@ export function drawDays(){
     }
   }
 
+  /* 오늘 칩에는 「· 오늘」(b805) — 여행 중에 열면 이 칩이 켜진 채로 열립니다(opentrip.js). 왜 이 날이
+     골라져 있는지를 칩이 스스로 말합니다. */
+  const 오늘 = todayYmd(), 오늘말 = d => (d === 오늘 ? ' · 오늘' : '');
   if (list.length <= 12){
     $('days').innerHTML = all + list.map(d =>
       `<button class="day${pickedDay === d ? ' on' : ''}" data-day="${esc(d)}">` +
-      `${esc(shortLabel(d))}</button>`).join('');
+      `${esc(shortLabel(d) + 오늘말(d))}</button>`).join('');
   } else {
     $('days').innerHTML = all +
       `<select id="daysel"><option value="">날짜 고르기…</option>` +
       list.map(d => `<option value="${esc(d)}"${pickedDay === d ? ' selected' : ''}>` +
-                    `${esc(dayLabel(d, trip))}</option>`).join('') +
+                    `${esc(dayLabel(d, trip) + 오늘말(d))}</option>`).join('') +
       `</select>`;
   }
   /* 옆으로 굴러가는 줄이라, 고른 날이 화면 밖이면 안 보입니다.
