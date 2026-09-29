@@ -6000,6 +6000,8 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 .whost{ font-style:normal; color:var(--star); font-weight:700; font-variant-numeric:tabular-nums; }
 /* 별점 분포 — 제일 많이 준 칸만 진하게(왓챠). 0 인 칸은 바닥 선만. */
 .whostat .whohist{ margin-top:10px; }
+/* 맨 아래 「여행 성향」(b802) — 제목 밑에 그림, 그 밑에 네 축(.axbars 는 분석 탭 것 그대로). */
+.whop16 .phero{ margin-top:10px; }
 .whohist{ display:flex; align-items:flex-end; gap:3px; }
 .whohist i{ flex:1; background:var(--star); opacity:.42; }
 .whohist i.top{ opacity:1; }

@@ -7,9 +7,11 @@
  *   들어가면 주르륵 볼 수 있게 나와야지 첫판은 요약이 있어야해」 → 시안을 보고
  *   「시안대로 하돼 명소검열관 카드 만들었는데 그거도 보이게 하자」.
  *   b798 까지는 궁합 · 지구본 · 수 · 성향 · 배지 · 별점 77곳이 한 판에 세로로 다 나왔습니다.
- *   첫 판(#whosum): 머리 → 지구본 → 나라·도시·배지 세 칸 → 궁합과 「흥미로운 사실」 →
- *     성향 카드(분석 탭의 히어로와 **같은 모양** — persona.js 의 .phero) → 여행 분석(별점 분포).
- *   들어간 판(#whosub): 도시(별점 순·나라별·한줄평) · 나라 · 배지 · 궁합 · 여행 분석.
+ *   첫 판(#whosum): 머리 → 지구본 → 나라·도시·한줄평 세 칸 → 궁합과 「흥미로운 사실」 → 여행 분석(별점
+ *     분포) → **맨 아래 「여행 성향」**(분석 탭의 히어로 + 네 축 막대 — b802, 사용자: 「명소검열관 위에
+ *     여행성향 텍스트 달아주고 제일 아래로 내리자 … 저거만 덩그러니 있으니 톤앤매너가 안맞는데??」 → 시안 A).
+ *   들어간 판(#whosub): 도시(별점 순·나라별·한줄평) · 나라 · 궁합 · 여행 분석(맨 아래 받은 배지).
+ *   ⚠ 배지는 세 칸에서 뺐습니다(b802, 사용자: 「나라 도시 옆에 배지가 … 값어치가 비슷한 부분인가?」 → 한줄평).
  * ⚠ 들어간 판도 기록을 한 칸씩 쌓습니다(`whosub`) — 뒤로 한 번에 한 겹:
  *   나라 → (나라를 누름) 그 나라 도시 → 도시 화면 → 뒤로 셋이면 첫 판.
  *   tripview.js 의 사슬은 `personBack` 을 부릅니다(판이 있으면 판, 없으면 사람 화면을 닫음).
@@ -31,20 +33,20 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b801';
-import { sb } from './db.js?v=b801';
-import { netTimeout } from './net.js?v=b801';
-import { cities, countryName } from './cities.js?v=b801';
-import { myRates, visited, 별받음 } from './rate.js?v=b801';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b802';
+import { sb } from './db.js?v=b802';
+import { netTimeout } from './net.js?v=b802';
+import { cities, countryName } from './cities.js?v=b802';
+import { myRates, visited, 별받음 } from './rate.js?v=b802';
 /* 내 별점이 아직 안 왔으면 받는 곳(b797 — 아래 `알맹이그림`). rating.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { loadRateData } from './rating.js?v=b801';
+import { loadRateData } from './rating.js?v=b802';
 import { PERSONA16, personaMatch, personaMateLine, personaAxes, personaRank,
-         AXIS_WORD, AXIS_NAME } from './card.js?v=b801';
-import { starsRo } from './stars.js?v=b801';
-import { mountGlobe } from './globe.js?v=b801';
-import { arm } from './ui.js?v=b801';
+         AXIS_WORD, AXIS_NAME } from './card.js?v=b802';
+import { starsRo } from './stars.js?v=b802';
+import { mountGlobe } from './globe.js?v=b802';
+import { arm } from './ui.js?v=b802';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b801';
+import { openCity } from './city.js?v=b802';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }
@@ -305,16 +307,18 @@ async function 알맹이그림(h, b){
   const 표 = await 배지들();
   const 너 = 그사람코드(b);
   const 목록 = 도시목록(b);
-  const 칸 = (종류, 수, 말) => `<div class="card whotile" data-whosub="${종류}" role="button" tabindex="0">
-      <b>${수}</b><span>${말}</span></div>`;
+  /* 세 칸 — 나라 · 도시 · 한줄평(b802). 배지는 나라·도시 수에서 나온 보상이라 같은 줄에 두면 같은 무게로
+     읽혔습니다 — 「여행 분석」 판 맨 아래로 옮겼습니다. 한줄평 칸은 도시 판을 「한줄평」 거르기로 엽니다. */
+  const 칸 = (종류, 수, 말, 정렬) => `<div class="card whotile" data-whosub="${종류}"${
+      정렬 ? ` data-sort="${정렬}"` : ''} role="button" tabindex="0"><b>${수}</b><span>${말}</span></div>`;
   return `<div class="card whoglobe"><canvas id="whocanvas" aria-label="${esc(이름(h))}님이 다녀온 곳"></canvas></div>
     <div class="whotiles">
       ${칸('country', 나라묶음(목록).키.length, '나라')}${칸('city', 목록.length, '도시')}${
-        칸('badge', (b.badges || []).filter(x => 표[x.id]).length, '배지')}
+        칸('city', 목록.filter(x => x.r?.comment).length, '한줄평', 'comment')}
     </div>
     ${h.self ? '' : 궁합카드(h, b, 너)}
-    ${성향카드(h, 너, b.foot || {})}
-    ${분석카드(b)}`;
+    ${분석카드(b)}
+    ${성향카드(h, 너, b.foot || {}, b)}`;
 }
 
 /* ── 궁합 ── 성향 코드(원래 궁합 공식 그대로) + 「흥미로운 사실」(왓챠).
@@ -349,15 +353,21 @@ function 궁합카드(h, b, 너){
    ⚠ 그림은 중간 크기(m/, 77KB)와 자리막이 썸네일(t/)만 — 원본 webp 는 공유 카드 전용입니다.
    ⚠ 그림이 안 오면 .noart 로 먹색 글자(크림 바탕에 흰 글자는 안 보입니다).
    ⚠ 공유 단추 · 「다른 유형 15가지」는 안 답니다 — 남의 카드입니다. */
-function 성향카드(h, 너, 발){
+function 성향카드(h, 너, 발, b){
   const t = 너 && PERSONA16[너];
   if (!t) return '';
   const 축말 = [...너].map(ch => AXIS_WORD[ch]).join(' · ');
-  return `<div class="card quiet whop16" data-whosub="stats" role="button" tabindex="0"
+  /* ⚠ **그림만 덩그러니 두지 않습니다(b802, 사용자: 「톤앤매너가 안맞는데??」).** 밝은 종이 칸들 사이에
+     어두운 그림 한 장만 제목 없이 끼어 튀었습니다 — 분석 탭처럼 제목 · 그림 · 네 축 막대를 한 덩어리로.
+     막대는 보이는 별점으로 셉니다(personaAxes). 별점을 가린 사람이면 그림만 나옵니다. */
+  const 별줄 = (b?.ratings || []).filter(r => r.stars != null);
+  const ax = 별줄.length >= 문턱 ? personaAxes(별줄, { cities: cities || [] }) : null;
+  return `<div class="card whop16" data-whosub="stats" role="button" tabindex="0"
       aria-label="${esc(h.self ? '나' : 이름(h))}의 여행 유형 ${esc(t.n)} — 여행 분석 보기">
+    <div class="whocardhd"><b>여행 성향</b><span class="whomore">자세히 ›</span></div>
     <div class="phero">
-      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b801')"></div>
-      <img src="./persona/m/${esc(너)}.jpg?v=b801" alt=""
+      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b802')"></div>
+      <img src="./persona/m/${esc(너)}.jpg?v=b802" alt=""
            onerror="this.closest('.phero').classList.add('noart')">
       <div class="pscrim"></div>
       <div class="ptxt">
@@ -372,7 +382,33 @@ function 성향카드(h, 너, 발){
         </div>
       </div>
     </div>
+    ${ax ? 축막대(ax) : ''}
   </div>`;
+}
+
+/* 네 축 막대 — persona.js(분석 탭)와 **같은 마크업**(.axbars · 이름 밑 한 마디 AXIS_WORD).
+   성향 칸(첫 판 맨 아래)과 「여행 분석」 판이 같이 씁니다(b802). */
+function 축막대(ax){
+  return `<div class="axbars">${AXIS_NAME.map((축, i) => {
+    const 값 = [ax.개척, ax.단골, ax.모험, ax.만족][i];
+    const 극 = AXIS_WORD[[값 >= 50 ? 'H' : 'F', 값 >= 50 ? 'L' : 'M',
+                          값 >= 50 ? 'D' : 'N', 값 >= 50 ? 'G' : 'P'][i]];
+    return `<div class="axrow"><span class="axn"><b>${esc(축)}</b><span>${esc(극)}</span></span>
+      <span class="axbar"><i style="width:${Math.max(값, 2)}%"></i></span>
+      <span class="axv">${값}</span></div>`;
+  }).join('')}</div>`;
+}
+
+/* 받은 배지 — 「여행 분석」 판 맨 아래(b802, 세 칸에서 옮김). 최근에 받은 것부터. */
+function 배지칸(b){
+  const 받은 = (b.badges || []).map(x => ({ d: 배지표?.[x.id], at: x.at })).filter(x => x.d).reverse();
+  if (!받은.length) return '';
+  const 날 = t => { const d = new Date(t); return isNaN(d) ? '' : `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; };
+  return `<div class="card"><h2>받은 배지 <span class="memo">${받은.length}</span></h2>
+    <div class="whobadgegrid">${받은.map(x => `<div class="card whobadge">
+      <i aria-hidden="true">${esc(x.d.icon || '')}</i><b>${esc(x.d.name)}</b>
+      ${x.d.cat ? `<span class="memo">${esc(x.d.cat)}</span>` : ''}
+      ${x.at ? `<span class="memo">${날(x.at)}</span>` : ''}</div>`).join('')}</div></div>`;
 }
 
 /* ── 여행 분석(작게) ── 왓챠 「별점 분포」 + 「모든 분석 보기」. */
@@ -421,7 +457,10 @@ const 판그림 = {
       (!별보임 && 위.cc) && ['name', '이름순'],
       한줄.length && ['comment', `한줄평 ${한줄.length}`],
     ].filter(Boolean);
-    const 정렬 = 고를것.some(([k]) => k === 위.정렬) ? 위.정렬 : 고를것[0]?.[0] || 'name';
+    /* 한줄평 칸(b802)으로 들어왔는데 한줄평이 없으면 거르기 단추가 없어도 「한줄평」으로 둡니다 —
+       안 그러면 「한줄평 0」을 눌렀는데 도시가 전부 떴습니다. */
+    const 정렬 = 고를것.some(([k]) => k === 위.정렬) ? 위.정렬
+               : 위.정렬 === 'comment' ? 'comment' : 고를것[0]?.[0] || 'name';
     let 몸;
     if (정렬 === 'comment') 몸 = 한줄.sort(별순).map(도시줄).join('');
     else if (정렬 === 'country'){
@@ -433,12 +472,14 @@ const 판그림 = {
     }
     else if (정렬 === 'star') 몸 = 목록.sort(별순).map(도시줄).join('');
     else 몸 = 목록.sort((a, c) => 줄이름(a).localeCompare(줄이름(c), 'ko')).map(도시줄).join('');
-    const 제목 = 위.cc ? `${국기({ cc: 위.cc })}${esc(countryName[위.cc] || 위.cc)}` : '도시';
-    return 판머리(제목, 목록.length) +
+    const 제목 = 위.cc ? `${국기({ cc: 위.cc })}${esc(countryName[위.cc] || 위.cc)}`
+               : 정렬 === 'comment' ? '한줄평' : '도시';
+    return 판머리(제목, 정렬 === 'comment' && !위.cc ? 한줄.length : 목록.length) +
       (고를것.length > 1 ? `<div class="days whosort">${고를것.map(([k, 말]) =>
         `<button class="day${k === 정렬 ? ' on' : ''}" data-whosort="${k}">${말}</button>`).join('')}</div>` : '') +
       (별보임 ? '' : `<div class="memo whonote">${esc(이름(머리))}님이 별점은 가려 두었어요</div>`) +
-      `<div class="card">${몸 || emptyDo('아직 다녀온 도시가 없어요.')}</div>`;
+      `<div class="card">${몸 || emptyDo(정렬 === 'comment' ? '아직 남긴 한줄평이 없어요.'
+                                                    : '아직 다녀온 도시가 없어요.')}</div>`;
   },
 
   /* 나라 — 도시 수가 많은 순. 누르면 그 나라 도시만. */
@@ -455,18 +496,6 @@ const 판그림 = {
         || emptyDo('아직 다녀온 나라가 없어요.')}</div>`;
   },
 
-  /* 배지 — 최근에 받은 것부터. */
-  badge(위, b){
-    const 받은 = (b.badges || []).map(x => ({ d: 배지표?.[x.id], at: x.at })).filter(x => x.d).reverse();
-    const 날 = t => { const d = new Date(t); return isNaN(d) ? '' : `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`; };
-    return 판머리('배지', 받은.length) + (받은.length
-      ? `<div class="whobadgegrid">${받은.map(x => `<div class="card whobadge">
-          <i aria-hidden="true">${esc(x.d.icon || '')}</i><b>${esc(x.d.name)}</b>
-          ${x.d.cat ? `<span class="memo">${esc(x.d.cat)}</span>` : ''}
-          ${x.at ? `<span class="memo">${날(x.at)}</span>` : ''}</div>`).join('')}</div>`
-      : `<div class="card">${emptyDo('아직 받은 배지가 없어요.')}</div>`);
-  },
-
   /* 궁합 — 숫자 · 두 사람 성향 · 둘 다 좋게 본 곳 · 엇갈린 곳 · 둘 다 가 본 곳. */
   match(위, b){
     const 누구 = 이름(머리), 너 = 그사람코드(b), 나 = 내코드();
@@ -474,7 +503,7 @@ const 판그림 = {
     const { 둘다, 짝, 좋게, 엇갈림, 차이 } = 견주기(b);
     /* 그림은 작은 것(t/, 23KB) — 성향 탭 「여행 궁합」 칸과 같습니다. */
     const 사람 = (누, 코드) => `<div class="whomate">${코드 && PERSONA16[코드]
-        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b801" alt="" loading="lazy" decoding="async">
+        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b802" alt="" loading="lazy" decoding="async">
            <span class="memo">${esc(누)}</span><b>${esc(PERSONA16[코드].n)}</b><span class="memo">${esc(코드)}</span>`
         : `<span class="memo">${esc(누)}</span><b>아직 없어요</b>
            <span class="memo">${누 === '나' ? '도시를 5곳 매기면 나와요' : '별점이 더 쌓이면 나와요'}</span>`}</div>`;
@@ -530,18 +559,12 @@ const 판그림 = {
             <b>${n}</b></div>`).join('')}` : ''}
       </div>` +
       /* ⚠ 네 축은 persona.js 의 막대와 **같은 마크업**(.axbars) — 이름 밑 한 마디(AXIS_WORD)도 같습니다. */
-      (ax ? `<div class="card"><h2>성향 네 축</h2><div class="axbars">${AXIS_NAME.map((축, i) => {
-          const 값 = [ax.개척, ax.단골, ax.모험, ax.만족][i];
-          const 극 = AXIS_WORD[[값 >= 50 ? 'H' : 'F', 값 >= 50 ? 'L' : 'M',
-                                값 >= 50 ? 'D' : 'N', 값 >= 50 ? 'G' : 'P'][i]];
-          return `<div class="axrow"><span class="axn"><b>${esc(축)}</b><span>${esc(극)}</span></span>
-            <span class="axbar"><i style="width:${Math.max(값, 2)}%"></i></span>
-            <span class="axv">${값}</span></div>`;
-        }).join('')}</div></div>` : '') +
+      (ax ? `<div class="card"><h2>성향 네 축</h2>${축막대(ax)}</div>` : '') +
       (좋은곳.length ? `<div class="card"><h2>제일 좋았던 곳 <span class="memo">★${높은}</span></h2>
           ${좋은곳.map(도시줄).join('')}</div>` : '') +
       (아쉬운곳.length ? `<div class="card"><h2>제일 아쉬웠던 곳 <span class="memo">★${낮은}</span></h2>
-          ${아쉬운곳.map(도시줄).join('')}</div>` : '');
+          ${아쉬운곳.map(도시줄).join('')}</div>` : '') +
+      배지칸(b);
   },
 };
 
@@ -599,7 +622,8 @@ const 한번더 = { cancel: '한 번 더 누르면 요청을 거둬요', unfollo
 $('whobody')?.addEventListener('click', async e => {
   /* 들어가기(b799) — 세 칸 · 궁합 · 성향 · 분석 · 나라 줄. */
   const 판 = e.target.closest('[data-whosub]');
-  if (판) return 들어가기(판.dataset.whosub, 판.dataset.cc ? { cc: 판.dataset.cc } : {});
+  if (판) return 들어가기(판.dataset.whosub, { ...(판.dataset.cc ? { cc: 판.dataset.cc } : {}),
+                                              ...(판.dataset.sort ? { 정렬: 판.dataset.sort } : {}) });
   const 정렬 = e.target.closest('[data-whosort]');
   if (정렬){
     const 위 = 층[층.length - 1];
