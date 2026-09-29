@@ -31,20 +31,20 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b799';
-import { sb } from './db.js?v=b799';
-import { netTimeout } from './net.js?v=b799';
-import { cities, countryName } from './cities.js?v=b799';
-import { myRates, visited, 별받음 } from './rate.js?v=b799';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b800';
+import { sb } from './db.js?v=b800';
+import { netTimeout } from './net.js?v=b800';
+import { cities, countryName } from './cities.js?v=b800';
+import { myRates, visited, 별받음 } from './rate.js?v=b800';
 /* 내 별점이 아직 안 왔으면 받는 곳(b797 — 아래 `알맹이그림`). rating.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { loadRateData } from './rating.js?v=b799';
+import { loadRateData } from './rating.js?v=b800';
 import { PERSONA16, personaMatch, personaMateLine, personaAxes, personaRank,
-         AXIS_WORD, AXIS_NAME } from './card.js?v=b799';
-import { starsRo } from './stars.js?v=b799';
-import { mountGlobe } from './globe.js?v=b799';
-import { arm } from './ui.js?v=b799';
+         AXIS_WORD, AXIS_NAME } from './card.js?v=b800';
+import { starsRo } from './stars.js?v=b800';
+import { mountGlobe } from './globe.js?v=b800';
+import { arm } from './ui.js?v=b800';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b799';
+import { openCity } from './city.js?v=b800';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }
@@ -356,8 +356,8 @@ function 성향카드(h, 너, 발){
   return `<div class="card quiet whop16" data-whosub="stats" role="button" tabindex="0"
       aria-label="${esc(h.self ? '나' : 이름(h))}의 여행 유형 ${esc(t.n)} — 여행 분석 보기">
     <div class="phero">
-      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b799')"></div>
-      <img src="./persona/m/${esc(너)}.jpg?v=b799" alt=""
+      <div class="psizer" style="background-image:url('./persona/t/${esc(너)}.jpg?v=b800')"></div>
+      <img src="./persona/m/${esc(너)}.jpg?v=b800" alt=""
            onerror="this.closest('.phero').classList.add('noart')">
       <div class="pscrim"></div>
       <div class="ptxt">
@@ -474,7 +474,7 @@ const 판그림 = {
     const { 둘다, 짝, 좋게, 엇갈림, 차이 } = 견주기(b);
     /* 그림은 작은 것(t/, 23KB) — 성향 탭 「여행 궁합」 칸과 같습니다. */
     const 사람 = (누, 코드) => `<div class="whomate">${코드 && PERSONA16[코드]
-        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b799" alt="" loading="lazy" decoding="async">
+        ? `<img src="./persona/t/${esc(코드)}.jpg?v=b800" alt="" loading="lazy" decoding="async">
            <span class="memo">${esc(누)}</span><b>${esc(PERSONA16[코드].n)}</b><span class="memo">${esc(코드)}</span>`
         : `<span class="memo">${esc(누)}</span><b>아직 없어요</b>
            <span class="memo">${누 === '나' ? '도시를 5곳 매기면 나와요' : '별점이 더 쌓이면 나와요'}</span>`}</div>`;

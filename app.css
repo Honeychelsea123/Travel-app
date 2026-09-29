@@ -5886,13 +5886,51 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 .frrow b{ color:var(--ink); font-variant-numeric:tabular-nums; }
 .frrow .tabdot{ top:-2px; left:auto; right:-10px; margin-left:0; }
 
-/* 찾기 · 탭 · 줄 */
-.frfind{ display:flex; gap:8px; }
-.frfind input{ flex:1; min-width:0; }
-#fr_found:not(:empty){ margin-top:8px; }
-#fr_tabs{ margin:12px auto 0; }
-#fr_tabs .day{ position:relative; }
-#fr_tabs .tabdot{ top:2px; left:auto; right:4px; margin-left:0; }
+/* ── 친구 화면 — 인스타처럼(b800) ────────────────────────────────────────
+ * 사용자: 「이탭도 뭔가 지저분하고 어수선해, 인스타처럼 깔끔하게」. friends.js 머리말 참고.
+ * ⚠ 옛 네모 탭(.days/.day) · 칩 뭉치(.frfeed/.frchip…)는 걷었습니다. .frrow2 는 설정의 「차단한 사람」이 씁니다.
+ * ⚠ 탭은 판 폭 그대로(음수 여백 X) — `#friendview > *` 의 margin:auto(ID)가 클래스를 이깁니다
+ *   ([[overlay-pane-scroll]] 「ID가 클래스를 이긴다」). */
+/* 찾기 — 칸 안에 돋보기, 단추 없이 엔터로 */
+.frq{ display:flex; align-items:center; gap:8px; margin-top:12px; padding:0 12px;
+      background:var(--pearl); color:var(--ink-48); }
+.frq svg{ flex:none; }
+.frq input{ flex:1; min-width:0; border:0; background:transparent; padding:11px 0;
+            font-size:var(--f-md); color:var(--ink); -webkit-appearance:none; appearance:none; }
+.frq input:focus{ outline:none; box-shadow:none; }
+.frq:focus-within{ outline:2px solid var(--primary-focus); outline-offset:0; }
+#fr_found:not(:empty){ margin-top:6px; }
+/* 탭 — 밑줄, 숫자는 옆에 */
+.frtabs{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); margin-top:12px;
+         border-bottom:1px solid var(--line); }
+.frtabs button{ position:relative; border:0; background:none; padding:12px 0 10px;
+                font-size:var(--f-md); color:var(--ink-48);
+                border-bottom:2px solid transparent; margin-bottom:-1px; }
+.frtabs button:active{ transform:none; }
+.frtabs button.on{ color:var(--ink); font-weight:700; border-bottom-color:var(--ink); }
+.frtabs .n{ margin-left:4px; font-weight:400; font-variant-numeric:tabular-nums; }
+#fr_tabs .tabdot{ position:static; display:inline-block; margin:0 0 0 4px; vertical-align:2px; }
+/* 한 줄 — 사진 44 · 글(이름 + 흐린 둘째 줄) · 오른쪽(도시 사진 또는 단추) */
+.frline{ display:flex; align-items:center; gap:10px; padding:8px 0; }
+/* ⚠ 왼쪽부터 — 어딘가의 단추 규칙이 justify-content:center 를 줘서(재 봄) 글이 짧은 줄일수록
+     사진이 오른쪽으로 밀려 줄마다 들쭉날쭉했습니다. */
+.frline .frwho{ flex:1; justify-content:flex-start; }
+.frtxt{ display:flex; flex-direction:column; min-width:0; }
+.frtxt .l1{ font-size:var(--f-md); line-height:1.4; color:var(--ink); font-weight:400; }
+.frtxt .l1 b{ font-weight:700; }
+.frtxt .l1 .t{ color:var(--ink-48); }
+.frtxt .l2{ margin-top:2px; font-size:var(--f-sm); color:var(--ink-48);
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.frst{ font-style:normal; color:var(--star); font-weight:700; font-variant-numeric:tabular-nums; }
+.frthumb{ flex:none; width:44px; height:44px; padding:0; border:0; background:var(--pearl) center / cover no-repeat;
+          color:var(--ink-48); font-weight:700; }
+.frthumb:active, .frbtn:active{ transform:none; opacity:.7; }
+.frbtn{ padding:7px 12px; border:0; background:var(--pearl); color:var(--ink);
+        font-size:var(--f-sm); font-weight:600; white-space:nowrap; }
+.frbtn.ac{ background:var(--ink); color:var(--canvas); }
+/* 시간 머리 — 오늘 · 이번 주 · 이번 달 · 이전 활동 */
+.frsec{ margin:16px 0 2px; font-size:var(--f-sm); font-weight:700; color:var(--ink); }
+#fr_list > .frsec:first-child{ margin-top:12px; }
 .frrow2{ display:flex; align-items:center; justify-content:space-between; gap:10px;
          padding:8px 0; border-bottom:1px solid var(--divider-soft); }
 .frrow2:last-child{ border-bottom:0; }
@@ -5900,25 +5938,11 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
         color:var(--fg); }   /* .ghost 의 흐린 글자(--dim)를 이름에는 안 씁니다 */
 .frwho b{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .frbtns{ display:flex; gap:6px; flex:none; }
-
-/* 소식 */
-.frfeed{ padding:12px 0; border-bottom:1px solid var(--divider-soft); }
-.frfeed:last-child{ border-bottom:0; }
-.frwhat{ margin:6px 0 0 46px; font-size:var(--f-sm); color:var(--ink-80); }
-.frquote{ margin:6px 0 0 46px; font-size:var(--f-md); color:var(--ink); }
-.frchips{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0 46px; }
-.frfeed > .frchip{ margin:8px 0 0 46px; }
-.frchip{ display:inline-flex; align-items:center; gap:4px; padding:6px 11px;
-         border-radius:999px; background:var(--pearl); font-size:var(--f-sm);
-         border:0; }   /* 도시 칩은 단추입니다(b789) — 단추 기본 테두리를 빼고, 손가락에
-                          맞게 키웠습니다(24 → 30px) */
 /* 친구 기록의 도시 줄 — 누르면 그 도시(b789) */
 .whorow[data-cityopen]{ cursor:pointer; }
 .whorow[data-cityopen]:active{ background:var(--pearl); }
 /* 대시보드 사람 신고의 단추 둘 */
 .arow .abtns{ display:flex; gap:6px; flex:none; align-self:center; }
-.frchip i{ font-style:normal; color:var(--primary); font-weight:700;
-           font-variant-numeric:tabular-nums; }
 
 /* 남의 프로필 — 머리는 왓챠처럼 사진 왼쪽 · 이름과 수 오른쪽(b799, 옛 가운데 정렬) */
 .whohead{ display:flex; flex-direction:column; align-items:stretch; gap:8px; text-align:left; }
