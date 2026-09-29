@@ -24,6 +24,10 @@
 
 /* 내가 매긴 것. { city_id: {stars, want, comment, updated_at} } */
 export let myRates = {};
+/* 내 별점을 서버에서 한 번이라도 받았나(b797). ⚠ `myRates` 가 비었는지로는 «0곳»과 «아직 안
+   받음»을 못 가릅니다 — 도시 화면이 안 받은 채로 빈 일기 칸을 띄우면, 거기 써서 저장하는 순간
+   서버의 원래 일기를 덮습니다(SNS 점검에서 찾음: 링크로 들어와 친구가 매긴 도시를 열었을 때). */
+export let 별받음 = false;
 /* 남들까지 합친 평균. { city_id: {avg, n} } */
 export let cityStat = {};
 /* 다녀온 곳. 별점을 매겼거나 지난 여행의 구간 도시 — **저장하지 않고 셉니다.**
@@ -42,6 +46,7 @@ export let justRated = new Set();
 export function setRateData({ mine, stats, vis }){
   if (mine?.error || !mine?.data) return false;
   myRates  = Object.fromEntries(mine.data.map(r => [r.city_id, r]));
+  별받음 = true;
   /* 평균과 다녀온 곳은 **없어도 화면이 돌아갑니다**(평균은 안 보이고,
      다녀온 표시가 안 붙을 뿐). 그래서 여기서 받으면 넣고 아니면 그대로 둡니다 —
      내 별점만 왔는데 통째로 버리면 정작 볼 수 있는 것까지 못 보게 됩니다. */
@@ -107,7 +112,7 @@ export function clearJustRated(){ justRated.clear(); }
 /* ── 사람이 바뀔 때 ──────────────────────────────────────────────────
  * 2번 규칙. 로그아웃·로그인 양쪽에서 이 한 곳을 부릅니다. */
 export function clearRates(){
-  myRates = {}; cityStat = {};
+  myRates = {}; cityStat = {}; 별받음 = false;
   visited = new Set(); justRated = new Set();
 }
 

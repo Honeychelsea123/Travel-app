@@ -15,11 +15,11 @@
  * 하나가 틀리게 됩니다. 이유는 저쪽 주석에도 적혀 있습니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b797';
-import { sb } from './db.js?v=b797';
-import { fail, NOROW } from './net.js?v=b797';
+import { $, esc, avatarOf, toast, coverDeck, toTop } from './dom.js?v=b798';
+import { sb } from './db.js?v=b798';
+import { fail, NOROW } from './net.js?v=b798';
 /* 글자 크기를 바꾸면 탭바도 자랍니다 — 아래 여백을 다시 재게 합니다(b503). */
-import { fitTabBar } from './ui.js?v=b797';
+import { fitTabBar } from './ui.js?v=b798';
 
 let ctx = { me: () => null };
 export function setProfileCtx(o){ ctx = { ...ctx, ...o }; }
@@ -62,6 +62,31 @@ export function shrink(file, size = 256){
  * ⚠ 여닫기: 열 때 기록 'edit' 를 쌓고, 닫기는 뒤로가기 사슬(tripview.js)이
  *   합니다 — 「취소」·「확인」도 기록이 있으면 history.back() 으로 닫습니다. */
 export let myBio = '';
+/* ── 서버에 적힌 내 이름(b797) ────────────────────────────────────────
+ * ⚠⚠ **화면의 #name 글자로 판단하지 않습니다.** ⚠⚠ 로그인하면 app.js 가 먼저 메일 앞부분을
+ *   그려 두고(서버를 기다리지 않으려고) 서버 이름이 오면 덮는데, 가입 때 메일 앞부분이 이미 누가
+ *   쓰거나 못 쓰는 이름이면 서버 이름은 **비어 있습니다**(db/100 handle_new_user — 기로 서비스 계정
+ *   keyrotrip 이 그랬습니다: «keyro» 가 못 쓰는 이름). 그러면 본인 화면에는 메일 앞부분이 이름처럼
+ *   남고 남에게는 「이름 없음」이었습니다. 게다가 프로필 변경을 그 글자로 채워서 「확인」을 눌러도
+ *   «안 바뀜»으로 보고 저장을 안 한 채 「프로필을 바꿨어요」가 떴습니다(SNS 점검에서 찾음).
+ * → 서버 값을 여기 들고, 비었으면 머리에 「이름을 정해 주세요」(누르면 변경 화면). */
+export let myName = null;
+let 이름받음 = false;                /* 서버 대답이 왔나 — 안 왔으면(비행기모드) 화면 글자를 믿습니다 */
+export function setMyName(v){
+  myName = (v || '').trim() || null;
+  이름받음 = true;
+  const el = $('name');
+  if (!el) return;
+  el.textContent = myName || '이름을 정해 주세요';
+  el.classList.toggle('noname', !myName);
+}
+/* 로그인·계정 바꿈 — 앞사람 이름을 들고 있지 않게(app.js 가 메일 앞부분을 그리기 전에 부릅니다). */
+export function resetMyName(){
+  myName = null; 이름받음 = false;
+  $('name')?.classList.remove('noname');
+}
+/* 지금 내 이름 — 서버 값이 왔으면 그것(없으면 ''), 안 왔으면 화면 글자. */
+const 원래이름 = () => 이름받음 ? (myName || '') : $('name').textContent;
 /* 소개를 적어 두고 프로필 머리에도 보입니다(없으면 줄째 숨김). app.js 의 render 가
    로그인 때 서버 값으로, 여기 「확인」이 저장 뒤에 부릅니다. */
 export function setMyBio(v){
@@ -86,7 +111,7 @@ export function openProfileEdit(){
   사진버리기();
   ++이름물음; clearTimeout(이름타이머);
   $('ed_avatar').src = $('avatar').src;
-  const 지금이름 = $('name').textContent;
+  const 지금이름 = 원래이름();              /* 서버 이름이 비었으면 빈칸으로(b797 — 위 myName) */
   $('n_name').value = 지금이름 === '—' ? '' : 지금이름;
   $('ed_bio').value = myBio;
   글자수();
@@ -111,6 +136,8 @@ function 닫기(){
 
 $('avatarbtn')?.addEventListener('click', openProfileEdit);
 $('editprof')?.addEventListener('click', openProfileEdit);
+/* 「이름을 정해 주세요」를 누르면 바로 변경 화면(b797). 이름이 있으면 아무 일 없음. */
+$('name')?.addEventListener('click', () => { if ($('name').classList.contains('noname')) openProfileEdit(); });
 $('ed_cancel')?.addEventListener('click', 닫기);
 $('ed_photo')?.addEventListener('click', () => $('avatarfile').click());
 $('n_name')?.addEventListener('input', 글자수);
@@ -195,7 +222,7 @@ function 이름살피기(){
     const 말 = !r.error && 이름말[r.data];
     if (!말) return 이름알림('');
     /* 지금 쓰는 이름 그대로면 「쓸 수 있어요」는 군말입니다. */
-    if (r.data === 'ok' && 이름열쇠(v) === 이름열쇠($('name').textContent)) return 이름알림('');
+    if (r.data === 'ok' && 이름열쇠(v) === 이름열쇠(원래이름())) return 이름알림('');
     이름알림(...말);
   }, 350);
 }
@@ -211,7 +238,7 @@ $('ed_ok')?.addEventListener('click', async () => {
   b.disabled = true;
   try {
     const 바꿀 = {};
-    if (이름 !== $('name').textContent) 바꿀.display_name = 이름;
+    if (이름 !== 원래이름()) 바꿀.display_name = 이름;
     if (소개 !== myBio) 바꿀.bio = 소개 || null;
     if (Object.keys(바꿀).length){
       const r = await sb.from('profiles').update(바꿀).eq('id', ctx.me().id).select('id');
@@ -226,7 +253,7 @@ $('ed_ok')?.addEventListener('click', async () => {
         return fail(r.error, 'ed');
       }
       if (!r.data?.length) return fail(NOROW.edit, 'ed');
-      if ('display_name' in 바꿀) $('name').textContent = 이름;
+      if ('display_name' in 바꿀) setMyName(이름);
       if ('bio' in 바꿀) setMyBio(소개);
     }
     if (새사진){

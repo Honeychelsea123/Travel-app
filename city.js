@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b797';
-import { sb } from './db.js?v=b797';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b797';
-import { myRates, cityStat, visited } from './rate.js?v=b797';
-import { starHtml, starValue, starsRo } from './stars.js?v=b797';
-import { localTime } from './calc.js?v=b797';
-import { fail } from './net.js?v=b797';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b798';
+import { sb } from './db.js?v=b798';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b798';
+import { myRates, cityStat, visited, 별받음 } from './rate.js?v=b798';
+import { starHtml, starValue, starsRo } from './stars.js?v=b798';
+import { localTime } from './calc.js?v=b798';
+import { fail, netIsDown } from './net.js?v=b798';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -74,7 +74,7 @@ export function clearCityOpen(){ cityOpen = null; 층 = []; }
 
 let ctx = { me: () => null, saveRate: async () => {}, drawRatings: () => {},
             openTrip: async () => {}, loadHome: async () => {}, appTab: () => '',
-            openPerson: () => {} };
+            openPerson: () => {}, loadRateData: async () => ({}) };
 export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
 
 /* ── 도시 상세 ──────────────────────────────────────────────────────
@@ -84,6 +84,19 @@ export function setCityCtx(o){ ctx = { ...ctx, ...o }; }
 export async function openCity(id, 옵션 = {}){
   const c = (cities || []).find(x => x.id === id);
   if (!c) return;
+  /* ⚠⚠ **내 별점이 아직 안 왔으면 먼저 받습니다(b797, SNS 점검에서 찾음).** ⚠⚠
+   *   내 별·한줄평·일기·가고 싶은 곳은 `myRates` 에서 그리는데, 그건 평가 탭(이나 홈 지구본의
+   *   나라 카드)을 열어야 받아졌습니다. 친구 소식의 도시 칩 · 친구가 매긴 도시 · 프로필 링크로
+   *   들어온 뒤 연 도시는 **내 기록이 빈 채로** 떴고 — 도쿄에 별 4·한줄평·일기가 있는 계정인데
+   *   셋 다 빈칸(재 봄) — 그 빈 일기 칸에 써서 저장하면 **원래 일기를 덮었습니다.**
+   * ⚠ 홈의 나라 카드(home.js `나라카드`)와 같은 방식: 기다리는 사이 뒤로를 눌렀으면 그만둡니다.
+   * ⚠ 비행기모드면 안 기다립니다(매달리는 fetch — 서비스워커 머리말). 대신 아래에서 한줄평·
+   *   일기를 잠급니다. 다시 그리기(되돌림·다시)는 이미 받은 뒤라 건너뜁니다. */
+  if (!별받음 && !옵션.되돌림 && !옵션.다시 && !netIsDown()){
+    const 그때 = history.state?.t2 ?? null;
+    try { await ctx.loadRateData(); } catch {}
+    if ((history.state?.t2 ?? null) !== 그때) return;
+  }
   /* 위 겹을 닫고 아래 도시로 «돌아와서» 다시 그리는 중인가(closeCity 가 부름).
      그때는 기록도 판도 건드리지 않고, 그 겹에 적어 둔 스크롤·글을 되살립니다. */
   const 되돌림 = 옵션.되돌림 || null;
@@ -187,6 +200,11 @@ export async function openCity(id, 옵션 = {}){
     $('cv_note').value = 쓰던한줄;
   if (쓰던일기 != null && 쓰던일기.trim() !== (r.journal || '').trim())
     $('cv_journal').value = 쓰던일기;
+  /* 내 기록을 끝내 못 받았으면(비행기모드) 한줄평·일기를 잠급니다(b797 — 위 openCity 머리).
+     빈 칸에 써서 저장하면 연결이 돌아올 때 서버의 원래 글을 덮습니다. 별은 그 칸만 쓰므로 둡니다. */
+  const 잠금 = !별받음;
+  $('cv_note').readOnly = 잠금; $('cv_journal').readOnly = 잠금;
+  if (잠금 && !되돌림 && !다시) toast('연결이 없어 내 기록을 못 받았어요 — 한줄평·일기는 연결되면 쓸 수 있어요');
   cvNoteDirty();
   사진불러오기();
   일기바뀜();

@@ -16,17 +16,19 @@
  * ⚠ 지구본은 열 때마다 새로 띄우고 닫을 때 `끝()` 으로 치웁니다 — 안 치우면
  *   보이지도 않는 지구가 뒤에서 계속 돕니다.
  */
-import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b797';
-import { sb } from './db.js?v=b797';
-import { netTimeout } from './net.js?v=b797';
-import { cities, countryName } from './cities.js?v=b797';
-import { myRates, visited } from './rate.js?v=b797';
-import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b797';
-import { starsRo } from './stars.js?v=b797';
-import { mountGlobe } from './globe.js?v=b797';
-import { arm } from './ui.js?v=b797';
+import { $, esc, toast, avatarImg, flagOf, flagOk, emptyDo } from './dom.js?v=b798';
+import { sb } from './db.js?v=b798';
+import { netTimeout } from './net.js?v=b798';
+import { cities, countryName } from './cities.js?v=b798';
+import { myRates, visited, 별받음 } from './rate.js?v=b798';
+/* 내 별점이 아직 안 왔으면 받는 곳(b797 — 아래 `알맹이그림`). rating.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
+import { loadRateData } from './rating.js?v=b798';
+import { PERSONA16, personaMatch, personaMateLine, personaAxes } from './card.js?v=b798';
+import { starsRo } from './stars.js?v=b798';
+import { mountGlobe } from './globe.js?v=b798';
+import { arm } from './ui.js?v=b798';
 /* 친구가 매긴 도시를 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b797';
+import { openCity } from './city.js?v=b798';
 
 let ctx = { me: () => null, openFriends: () => {}, onFollowChange: () => {} };
 export function setPeopleCtx(o){ ctx = { ...ctx, ...o }; }
@@ -112,7 +114,10 @@ async function 그리기(){
   if (!머리){ 몸.innerHTML = emptyDo('찾을 수 없는 사람이에요.', '', '', '계정이 없어졌을 수 있어요'); return; }
   $('whomenu').classList.toggle('hide', !!머리.self);
   const 알 = 머리.can_see ? (b && !b.error ? b.data : null) : null;
-  몸.innerHTML = 머리그림(머리) + (알 ? await 알맹이그림(머리, 알) : 잠김그림(머리));
+  /* ⚠ 알맹이는 기다립니다(배지표 · 내 별점) — 그사이 다른 사람을 열었으면 늦은 그림을 버립니다(b797). */
+  const 아래 = 알 ? await 알맹이그림(머리, 알) : 잠김그림(머리);
+  if (이번 !== 차례) return;
+  몸.innerHTML = 머리그림(머리) + 아래;
   if (알) 지구본올리기(알);
 }
 
@@ -189,6 +194,11 @@ async function 배지들(){
 }
 
 async function 알맹이그림(h, b){
+  /* ⚠⚠ **내 별점부터 받습니다(b797, SNS 점검에서 찾음).** ⚠⚠ 궁합·「둘 다 매긴 도시」는 내 별점
+     (`myRates`)으로 세는데, 그건 평가 탭을 열어야 받아집니다. 평가 탭을 안 거치고 친구 프로필을
+     열면 — 별점 77곳·성향 FMDP 인 계정이 — 「도시를 5곳 매기면 궁합이 나와요」가 떴습니다.
+     홈의 나라 카드(home.js `나라카드`)와 같은 방식: 비었으면 한 번 받습니다(못 받아도 그립니다). */
+  if (!h.self && !별받음){ try { await loadRateData(); } catch {} }
   const 너 = 그사람코드(b), 나 = h.self ? null : 내코드();
   const 발 = b.foot || {};
   const 간것 = new Set(b.visited || []);
