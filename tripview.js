@@ -17,36 +17,36 @@
  * 여행 → 도시 → 지도처럼 쌓인 것을 한 번에 걷어내야 목록이 제대로 보입니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc, toast, coverDeck } from './dom.js?v=b798';
-import { photosOpen, closePhotos } from './photoview.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b798';
-import { D1, asDate, ymd, dayLabel } from './calc.js?v=b798';
+import { $, esc, toast, coverDeck } from './dom.js?v=b799';
+import { photosOpen, closePhotos } from './photoview.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, drawOffbar, NOROW } from './net.js?v=b799';
+import { D1, asDate, ymd, dayLabel } from './calc.js?v=b799';
 import { trip, plans, legs, pickedDay, catFilter,
-         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b798';
-import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b798';
-import { drawPlanMap } from './planmap.js?v=b798';
-import { drawPlans } from './planview.js?v=b798';
-import { legIn, fillCityList } from './legs.js?v=b798';
-import { inTrip } from './tabs.js?v=b798';
-import { closeAi } from './aiscreen.js?v=b798';
-import { closeDraft } from './draft.js?v=b798';
-import { closeReview } from './home.js?v=b798';
+         setPickedDay, setPlans, setCatFilter, clearTrip } from './trip.js?v=b799';
+import { drawCats, catsOpen, setCatsOpen } from './planline.js?v=b799';
+import { drawPlanMap } from './planmap.js?v=b799';
+import { drawPlans } from './planview.js?v=b799';
+import { legIn, fillCityList } from './legs.js?v=b799';
+import { inTrip } from './tabs.js?v=b799';
+import { closeAi } from './aiscreen.js?v=b799';
+import { closeDraft } from './draft.js?v=b799';
+import { closeReview } from './home.js?v=b799';
 /* 연속 평가(b409). 기록 탭을 통째로 덮으므로 뒤로가기가 여기를 먼저 닫습니다. */
-import { closeSpree } from './spree.js?v=b798';
-import { closeCity, isCityOpen } from './city.js?v=b798';
-import { closeMap, closeCountries } from './map.js?v=b798';
-import { closePersona } from './persona.js?v=b798';
+import { closeSpree } from './spree.js?v=b799';
+import { closeCity, isCityOpen } from './city.js?v=b799';
+import { closeMap, closeCountries } from './map.js?v=b799';
+import { closePersona } from './persona.js?v=b799';
 /* 지구본 나라 카드(b555). 뒤로가기 사슬이 이것부터 닫습니다. */
-import { 시트닫기 } from './home.js?v=b798';
-import { closeShelf, 거르개닫기 } from './shelf.js?v=b798';
-import { 나라거르개닫기 } from './rating.js?v=b798';
-import { closeDiary } from './diary.js?v=b798';
-import { closeDocs } from './prep.js?v=b798';
-import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b798';
-import { isPersonOpen, closePerson } from './people.js?v=b798';
-import { isFriendsOpen, closeFriends } from './friends.js?v=b798';
-import { isSetSubOpen, closeSetSub } from './setnav.js?v=b798';
+import { 시트닫기 } from './home.js?v=b799';
+import { closeShelf, 거르개닫기 } from './shelf.js?v=b799';
+import { 나라거르개닫기 } from './rating.js?v=b799';
+import { closeDiary } from './diary.js?v=b799';
+import { closeDocs } from './prep.js?v=b799';
+import { is16Open, is16Grid, close16, close16Grid } from './p16.js?v=b799';
+import { isPersonOpen, personBack } from './people.js?v=b799';
+import { isFriendsOpen, closeFriends } from './friends.js?v=b799';
+import { isSetSubOpen, closeSetSub } from './setnav.js?v=b799';
 
 let ctx = { appTab: () => '', showApp: () => {},
             openTrip: async () => {}, drawToday: () => {} };
@@ -168,7 +168,7 @@ window.addEventListener('popstate', () => {
   /* 0-1) 다른 사람 화면·친구 화면(b789). 도시 화면·멤버·알림 **위에서**
         열리고, 거기서 다른 판을 더 열지 않습니다 — 그래서 사진 바로 다음입니다.
         사람 화면은 친구 화면 위에서도 열리므로 사람을 먼저 묻습니다. */
-  if (isPersonOpen()) return closePerson(true);
+  if (isPersonOpen()) return personBack(true);   /* 들어간 판(b799)이 있으면 한 겹만 */
   if (isFriendsOpen()) return closeFriends(true);
   /* 1) 화면 위에 떠 있는 것 */
   /* 지구본에서 나라를 눌러 뜬 카드가 제일 위입니다(b555) — 다른 무엇보다
@@ -247,16 +247,22 @@ window.addEventListener('popstate', () => {
 
 export async function loadPlans(){
   $('planerr').classList.add('hide');
+  /* ⚠ **늦은 답 막기(b799, GPT 리포트 P0-2).** 여행 A 를 열다 곧바로 B 로 가면 A 의 답이 늦게
+     와서 B 화면에 그려지고, 저장 열쇠도 기다린 «뒤의» trip.id(=B)로 만들어져 B 이름으로
+     담겼습니다. 묻기 전에 여행을 잡아 두고, 답이 오면 아직 그 여행인지 봅니다.
+     (지출·일행·예약·준비물·링크·구간 불러오기도 같은 수법 — 거기엔 짧게만 적었습니다.) */
+  const 그여행 = trip.id;
   const { data, error } = await netTimeout(sb.from('plans')
     .select('id,date,start_time,end_time,category,title,memo,move_note,sort_order,lat,lng')
-    .eq('trip_id', trip.id)
+    .eq('trip_id', 그여행)
     .is('deleted_at', null)                     /* 숨긴 것은 빼고 봅니다 */
     .order('date').order('start_time', { nullsFirst:false }).order('sort_order'));
+  if (trip?.id !== 그여행) return;
 
   /* 못 받아왔을 때 마지막으로 받아둔 것을 씁니다.
      여행 중에 데이터가 끊겼다고 일정이 빈 화면이 되면 안 됩니다.
      대신 오래된 것을 보고 있다고 위에 띄웁니다 (offbar). */
-  const ck = 't2:cache:plans:' + trip.id;
+  const ck = 't2:cache:plans:' + 그여행;
   if (error){
     let old = null;
     try { old = JSON.parse(localStorage.getItem(ck) || 'null'); } catch {}

@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b798';
-import { myRates, cityStat, visited, 별받음 } from './rate.js?v=b798';
-import { starHtml, starValue, starsRo } from './stars.js?v=b798';
-import { localTime } from './calc.js?v=b798';
-import { fail, netIsDown } from './net.js?v=b798';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b799';
+import { myRates, cityStat, visited, 별받음 } from './rate.js?v=b799';
+import { starHtml, starValue, starsRo } from './stars.js?v=b799';
+import { localTime } from './calc.js?v=b799';
+import { fail, netIsDown } from './net.js?v=b799';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -256,9 +256,9 @@ export async function openCity(id, 옵션 = {}){
       친구.map(x =>
         `<div class="rrow" style="padding:8px 0">
            <button class="ghost frwho" data-person="${esc(x.user_id)}">
-             ${avatarImg(x.avatar_url, x.user_id, x.name || '이름 없음',
+             ${avatarImg(x.avatar_url, x.user_id, x.name || '여행자',
                          'width:36px; height:36px; border-radius:50%; object-fit:cover; flex:none', 'thumb')}
-             <span class="t"><b>${esc(x.name || '이름 없음')}</b>
+             <span class="t"><b>${esc(x.name || '여행자')}</b>
                ${x.comment ? `<span class="memo">${esc(x.comment)}</span>` : ''}
                ${x.stars != null ? starsRo(x.stars) : '<span class="memo">다녀왔어요</span>'}</span>
            </button>

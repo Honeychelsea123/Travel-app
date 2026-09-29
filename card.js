@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b798';
+import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b799';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b798';
+import { distKm, pScale, SEOUL } from './calc.js?v=b799';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -293,7 +293,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.webp?v=b798`;
+    img.src = `./persona/${code}.webp?v=b799`;
   });
 }
 
@@ -561,7 +561,7 @@ function p16Thumb(code){
     const img = new Image();
     img.onload = () => ok(img);
     img.onerror = () => ok(null);      /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
-    img.src = `./persona/m/${code}.jpg?v=b798`;
+    img.src = `./persona/m/${code}.jpg?v=b799`;
   });
 }
 
@@ -800,8 +800,10 @@ async function drawP16(s, W, H, F){
        분석 탭 화면(persona.js)과 **같은 말**입니다. 한쪽만 바꾸지 마십시오. */
     g.fillText('여행 궁합', PX + 좌, y0 + bx(10 + 11));
     const top = y0 + bx(25 + 7);
+    /* 「극과 극 메이트」 — b799 에 「최악의 조합」에서 바꿨습니다(사용자, GPT 리포트 제안 — 사람을
+       깎아내리는 말이라서). 분석 탭(persona.js)과 같은 말 — 한쪽만 바꾸지 마십시오. */
     [[s.best, '환상의 메이트', P16N.좋음, 좋은그림],
-     [s.worst, '최악의 조합',  P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
+     [s.worst, '극과 극 메이트', P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
       const cx0 = PX + 좌 + i * (칸폭 + px(10));
       const ih = bx(그림높이), iw = ih * 1.5, ix = cx0 + bx(10);
       g.fillStyle = 색; g.fillRect(cx0, top, Math.max(1.5, bx(2)), ih + bx(5 + 11 + 15 + 11));
@@ -824,8 +826,10 @@ async function drawP16(s, W, H, F){
   function 궁합작게(y0){
     윗선(y0);
     const top = y0 + bx(1 + 9), th = bx(38);
+    /* 「극과 극 메이트」 — b799 에 「최악의 조합」에서 바꿨습니다(사용자, GPT 리포트 제안 — 사람을
+       깎아내리는 말이라서). 분석 탭(persona.js)과 같은 말 — 한쪽만 바꾸지 마십시오. */
     [[s.best, '환상의 메이트', P16N.좋음, 좋은그림],
-     [s.worst, '최악의 조합',  P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
+     [s.worst, '극과 극 메이트', P16N.나쁨, 나쁜그림]].forEach(([m, 딱지, 색, 그림], i) => {
       const cx0 = PX + 좌 + i * (칸폭 + px(10));
       if (그림) 덮어그리기(g, 그림, cx0, top, th, th);
       else { g.fillStyle = P16_PANEL[m.code[0] === 'H' ? 'H' : 'F']; g.fillRect(cx0, top, th, th); }

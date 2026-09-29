@@ -18,7 +18,7 @@ const TILECAP = 400;                  /* 타일이 무한정 쌓이지 않게 */
 const SHELL_FILES = [
   './', './index.html', './app.css', './app.js', './world.js',
   './manifest.json', './icons/apple-touch-icon.png', './icons/keyro-512.png', './icons/keyro-icon-orange.svg',
-  './privacy.html', './privacy-2026-08-05.html', './privacy-2026-09-08.html', './terms.html',
+  './privacy.html', './privacy-2026-08-05.html', './privacy-2026-09-08.html', './privacy-2026-09-29.html', './terms.html',
 ];
 
 /* 앱 화면은 index.html 하나뿐입니다. 약관·처리방침은 **다른 문서**입니다.

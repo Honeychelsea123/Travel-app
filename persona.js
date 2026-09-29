@@ -19,21 +19,21 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 도전해볼 곳」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { cities, countryName, continentOf } from './cities.js?v=b798';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { cities, countryName, continentOf } from './cities.js?v=b799';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b798';
+import { similarPicks } from './rec.js?v=b799';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b798';
-import { visited } from './rate.js?v=b798';
-import { open16 } from './p16.js?v=b798';
+import { mateCode, mateHtml } from './mate.js?v=b799';
+import { visited } from './rate.js?v=b799';
+import { open16 } from './p16.js?v=b799';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME,
-         shareCard } from './card.js?v=b798';
+         shareCard } from './card.js?v=b799';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -126,46 +126,6 @@ async function drawPersona(s, ax, rates){
      안 떴습니다(「성향을 계산하는 중」에서 멈춤). 쓰는 곳과 만드는 곳은
      같은 함수 안이어야 합니다.
    ⚠ 자료는 매개변수 `rates` 입니다(openPersona 가 넘긴 city_ratings). */
-  /* ── 성향이 바뀌었을 때 ── (b748, 사용자 결정) ──────────────────────
-   * ⚠⚠ **「처음 20곳 / 최근 20곳」을 걷었습니다.** ⚠⚠
-   *   b519~b747 은 처음 스물과 최근 스물을 견줘 **다른 코드**를 한 줄 더
-   *   보여줬습니다. 그런데 바로 위 큰 글자는 «전체 별점»으로 낸 유형이라,
-   *   한 화면에 코드가 둘 떠서 어느 것이 내 유형인지 헷갈렸습니다
-   *   (사용자: 「처음 20개가 왜 아직도 보이고 있는거지? 최종 성향은 최근
-   *   20개가 아니라 내가 매긴 총합으로 늘 분석해줘야지」).
-   * ⚠ 성향은 **늘 전체 별점**으로 냅니다(card.js 의 personaAxes). 여기서
-   *   견주는 것은 자료 조각이 아니라 «시간»입니다 — 그 전체 코드가 지난번과
-   *   달라졌을 때만 「예전 → 지금」 한 줄을 붙입니다.
-   * ⚠ 확정 전(임시)에는 적지도 보여주지도 않습니다. 흔들리는 코드로
-   *   「바뀌었다」고 하면 한 곳 매길 때마다 바뀝니다.
-   * ⚠ 기기마다 따로 적습니다(localStorage). pshift.js 의 홈 알림과 열쇠를
-   *   **나눠** 씁니다 — 거기는 「봤다」에 지워지고 여기는 기록이라 남습니다.
-   * ⚠ 배지 하나 때문에 리포트가 통째로 안 뜨면 안 됩니다(b521 의 교훈) —
-   *   무슨 일이 나든 배지만 빠지고 나머지는 나옵니다. */
-  const 바뀜배지 = (() => { try {
-    if (임시) return '';
-    const uid = ctx.me()?.id;
-    if (!uid) return '';
-    const 열쇠 = 't2:p16:' + uid, 기록열쇠 = 't2:p16was:' + uid;
-    const 옛 = localStorage.getItem(열쇠) || '';
-    if (옛 !== code){
-      if (옛 && PERSONA16[옛]) localStorage.setItem(기록열쇠, 옛 + '>' + code);
-      localStorage.setItem(열쇠, code);
-    }
-    const [앞, 뒤] = (localStorage.getItem(기록열쇠) || '').split('>');
-    if (!앞 || 뒤 !== code || !PERSONA16[앞]) return '';
-    /* ⚠ **그림은 «예전 것» 한 장뿐입니다(b749, 사용자 지적).** 둘을 이어
-       붙이면 오른쪽 것이 **바로 위 히어로와 같은 그림**이라 한 화면에 같은
-       그림이 두 번 나옵니다 — 사용자: 「그림 둘로 이어붙이면 레이아웃이
-       이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
-       말할 것은 「예전엔 이랬다」 하나입니다. */
-    return `<div class="pwas">
-      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b798"
-           alt="" loading="lazy" decoding="async">
-      <span class="pwast"><b>성향이 바뀌었어요</b>
-        <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i></span>
-    </div>`;
-  } catch (e){ console.warn('바뀜 배지', e); return ''; } })();
   /* ⚠ **문턱을 3곳에서 5곳으로 올렸습니다(b381).** 축이 넷이라 3곳으로는
      한 곳만 바뀌어도 코드가 통째로 뒤집힙니다 — "어제는 골목 탐험가였는데
      오늘은 명소 검열관" 이면 아무도 안 믿습니다. 5곳이면 나라도 대개
@@ -215,6 +175,51 @@ async function drawPersona(s, ax, rates){
   const type = PERSONA16[code] || { n:'여행자', d:'' };
   const rank = personaRank(s.countries);
   const mate = personaMates(code);
+  /* ⚠⚠ **이 조각은 `code`·`임시` 를 만든 «뒤»여야 합니다(b799, GPT 리포트 P0-1 로 찾음).** ⚠⚠
+   *   b748 에 함수 맨 위에 두었는데, 안에서 읽는 `임시`(아래 문턱)와 `code` 가 40~70줄 «뒤에서»
+   *   만들어져서 `Cannot access '임시' before initialization` 이 났습니다. try 가 그 오류를
+   *   삼켜 콘솔 경고만 남았고, **「성향이 바뀌었어요」는 만든 뒤로 한 번도 안 떴습니다**
+   *   (라이브 콘솔에서 재 봄). 이제 잡은 오류는 오류 기록(client_errors)에도 갑니다. */
+  /* ── 성향이 바뀌었을 때 ── (b748, 사용자 결정) ──────────────────────
+   * ⚠⚠ **「처음 20곳 / 최근 20곳」을 걷었습니다.** ⚠⚠
+   *   b519~b747 은 처음 스물과 최근 스물을 견줘 **다른 코드**를 한 줄 더
+   *   보여줬습니다. 그런데 바로 위 큰 글자는 «전체 별점»으로 낸 유형이라,
+   *   한 화면에 코드가 둘 떠서 어느 것이 내 유형인지 헷갈렸습니다
+   *   (사용자: 「처음 20개가 왜 아직도 보이고 있는거지? 최종 성향은 최근
+   *   20개가 아니라 내가 매긴 총합으로 늘 분석해줘야지」).
+   * ⚠ 성향은 **늘 전체 별점**으로 냅니다(card.js 의 personaAxes). 여기서
+   *   견주는 것은 자료 조각이 아니라 «시간»입니다 — 그 전체 코드가 지난번과
+   *   달라졌을 때만 「예전 → 지금」 한 줄을 붙입니다.
+   * ⚠ 확정 전(임시)에는 적지도 보여주지도 않습니다. 흔들리는 코드로
+   *   「바뀌었다」고 하면 한 곳 매길 때마다 바뀝니다.
+   * ⚠ 기기마다 따로 적습니다(localStorage). pshift.js 의 홈 알림과 열쇠를
+   *   **나눠** 씁니다 — 거기는 「봤다」에 지워지고 여기는 기록이라 남습니다.
+   * ⚠ 배지 하나 때문에 리포트가 통째로 안 뜨면 안 됩니다(b521 의 교훈) —
+   *   무슨 일이 나든 배지만 빠지고 나머지는 나옵니다. */
+  const 바뀜배지 = (() => { try {
+    if (임시) return '';
+    const uid = ctx.me()?.id;
+    if (!uid) return '';
+    const 열쇠 = 't2:p16:' + uid, 기록열쇠 = 't2:p16was:' + uid;
+    const 옛 = localStorage.getItem(열쇠) || '';
+    if (옛 !== code){
+      if (옛 && PERSONA16[옛]) localStorage.setItem(기록열쇠, 옛 + '>' + code);
+      localStorage.setItem(열쇠, code);
+    }
+    const [앞, 뒤] = (localStorage.getItem(기록열쇠) || '').split('>');
+    if (!앞 || 뒤 !== code || !PERSONA16[앞]) return '';
+    /* ⚠ **그림은 «예전 것» 한 장뿐입니다(b749, 사용자 지적).** 둘을 이어
+       붙이면 오른쪽 것이 **바로 위 히어로와 같은 그림**이라 한 화면에 같은
+       그림이 두 번 나옵니다 — 사용자: 「그림 둘로 이어붙이면 레이아웃이
+       이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
+       말할 것은 「예전엔 이랬다」 하나입니다. */
+    return `<div class="pwas">
+      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b799"
+           alt="" loading="lazy" decoding="async">
+      <span class="pwast"><b>성향이 바뀌었어요</b>
+        <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i></span>
+    </div>`;
+  } catch (e){ console.warn('바뀜 배지', e); self.reportError?.(e); return ''; } })();
 
   /* ⚠ **한 벌만 그립니다.** 아래 pcardwrap 에 들어가는 것은 저장·공유로
      나가는 **바로 그 파일**입니다. 화면용 HTML 카드를 따로 만들었다가
@@ -313,12 +318,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b798')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b799')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b798" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b799" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -431,15 +436,15 @@ async function drawPersona(s, ax, rates){
              있었습니다 — 유형은 «그림으로» 기억됩니다.
            ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
-          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b798"
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b799"
                alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b798"
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b799"
                alt="" loading="lazy" decoding="async">
-          <span class="ml">최악의 조합${임시 ? '' : ` · ${mate.worstScore}%`}</span>
+          <span class="ml">극과 극 메이트${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
           <span class="mc">${esc(mate.worst)}</span></div>
       </div>

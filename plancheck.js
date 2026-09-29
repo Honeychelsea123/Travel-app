@@ -17,13 +17,13 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js 와 이미 떼어낸
  *     ai.js · cards.js 를 씁니다. */
-import { $, esc, josa } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail } from './net.js?v=b798';
-import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd, 같은곳, 붙은칸, 이동줄인가 } from './calc.js?v=b798';
-import { trip } from './trip.js?v=b798';
-import { aiTripId } from './ai.js?v=b798';
-import { runReview } from './cards.js?v=b798';
+import { $, esc, josa } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail } from './net.js?v=b799';
+import { D1, asDate, ymd, hm, dayLabel, hop, todayYmd, 같은곳, 붙은칸, 이동줄인가 } from './calc.js?v=b799';
+import { trip } from './trip.js?v=b799';
+import { aiTripId } from './ai.js?v=b799';
+import { runReview } from './cards.js?v=b799';
 
 let ctx = { loadChats: async () => {} };
 
@@ -45,6 +45,8 @@ export function setPlanCheckCtx(o){ ctx = { ...ctx, ...o }; }
  * 지금은 이동 시간을 못 잽니다 — 일정에 좌표가 안 붙어 있습니다.
  * 좌표가 붙으면 trips 의 이동 상수로 "이 하루가 물리적으로 가능한가"까지 봅니다. */
 export const STAY_MIN = { 식사:60, 카페:40, 관광:60, 쇼핑:60, 이동:0, 숙소:0, 기타:30 };
+/* 「하루에 너무 많아요」에서 안 세는 분류(b799) — 먹고 쉬고 옮기는 줄은 «다닐 곳»이 아닙니다. */
+const 안세는분류 = new Set(['식사', '카페', '이동', '숙소']);
 export const mins  = t => { const [h,m] = String(t).split(':'); return +h*60 + +m; };
 const fmtM  = v => String(Math.floor(v/60)).padStart(2,'0') + ':' +
                    String(v%60).padStart(2,'0');
@@ -68,10 +70,14 @@ export function review(t, ps, lgs){
   for (const [d, list] of Object.entries(byDay)){
     const lab = dayLabel(d, t).split(' · ')[0];
 
-    /* 문서: 하루 4~5개만. 8~10개를 욱여넣는 것이 "그럴듯한데 못 쓴다"의 원인이다. */
-    if (list.length >= 6) out.push({ lv:'주의',
-      t:`${lab}에 ${list.length}개가 잡혀 있어요`,
-      s:'하루 4~5개를 넘기면 대개 못 지켜요. 빈 시간을 남기는 편이 나아요.' });
+    /* 문서: 하루 4~5곳만. 8~10곳을 욱여넣는 것이 "그럴듯한데 못 쓴다"의 원인이다.
+       ⚠ **다닐 곳만 셉니다(b799, GPT 리포트에서 찾음).** 전에는 이동·숙소(체크인)·식사·카페까지
+         다 세서 「3일째에 8개」처럼 떴습니다 — 공항→호텔, 체크인, 점심은 «다닐 곳»이 아닙니다.
+         관광·쇼핑·기타(분류 없음 포함)만 셉니다. 아래 시간 겹침 검사는 그대로 모든 줄을 봅니다. */
+    const 다닐곳 = list.filter(p => !안세는분류.has(p.category)).length;
+    if (다닐곳 >= 6) out.push({ lv:'주의',
+      t:`${lab}에 다닐 곳이 ${다닐곳}곳 잡혀 있어요`,
+      s:'식사·카페·이동·숙소는 빼고 셌어요. 하루 4~5곳을 넘기면 대개 못 지켜요.' });
 
     const timed = list.filter(p => p.start_time)
                       .sort((a,b) => a.start_time.localeCompare(b.start_time));

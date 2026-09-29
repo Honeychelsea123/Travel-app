@@ -18,17 +18,17 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 planline.js · planmap.js · planview.js · review.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b798';
-import { dateRange, travel, legAt, legNear } from './calc.js?v=b798';
-import { cities, countryName, cityCountry } from './cities.js?v=b798';
-import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b798';
-import { arm } from './ui.js?v=b798';
-import { drawCats } from './planline.js?v=b798';
-import { drawPlanMap } from './planmap.js?v=b798';
-import { drawPlans } from './planview.js?v=b798';
-import { loadReview } from './review.js?v=b798';
+import { $, esc } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b799';
+import { dateRange, travel, legAt, legNear } from './calc.js?v=b799';
+import { cities, countryName, cityCountry } from './cities.js?v=b799';
+import { trip, legs, setLegs, transitLines, setTransitLines } from './trip.js?v=b799';
+import { arm } from './ui.js?v=b799';
+import { drawCats } from './planline.js?v=b799';
+import { drawPlanMap } from './planmap.js?v=b799';
+import { drawPlans } from './planview.js?v=b799';
+import { loadReview } from './review.js?v=b799';
 
 let ctx = { drawDays: () => {}, drawTripHeader: () => {}, fetchTrip: async () => {} };
 export function setLegsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -37,6 +37,7 @@ export function setLegsCtx(o){ ctx = { ...ctx, ...o }; }
  * 여행 하나가 여러 도시·나라를 도는 경우입니다.
  * 일정과 지출은 날짜로 저절로 구간에 붙습니다 — 하나하나 고를 필요가 없습니다. */
 export async function loadLegs(){
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   const { data, error } = await netTimeout(sb.from('trip_legs')
     /* 도보 상수 둘을 빼먹어서 "도보 약 NaN분" 이 나왔습니다.
        travel() 이 쓰는 다섯 개를 다 가져와야 합니다. */
@@ -47,9 +48,10 @@ export async function loadLegs(){
     .select('id,city_id,destination,country,start_date,end_date,timezone,currency,' +
             'center_lat,center_lng,' +
             'walk_max_km,walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
-    .eq('trip_id', trip.id).order('start_date'));
+    .eq('trip_id', 그여행).order('start_date'));
+  if (trip?.id !== 그여행) return;
   /* 구간이 없으면 날짜 칩에 도시가 안 붙고 이동 시간도 못 잽니다. 캐시로 버팁니다. */
-  const ck = 'legs:' + trip.id;
+  const ck = 'legs:' + 그여행;
   if (error){
     const old = cacheGet(ck);
     if (!old) return fail(error, 'leg');
@@ -102,7 +104,7 @@ function drawLegs(){
        <div class="memo">${esc(dateRange(l.start_date, l.end_date))} ·
          ${esc(l.currency)}</div></span>
      ${legs.length > 1
-       ? `<button class="ghost" data-lact="del" data-id="${esc(l.id)}"
+       ? `<button class="ghost" aria-label="지우기" data-lact="del" data-id="${esc(l.id)}"
                   style="color:var(--bad)">×</button>` : ''}</div>`).join('')
     || '<div class="empty">구간이 없어요.</div>';
 }

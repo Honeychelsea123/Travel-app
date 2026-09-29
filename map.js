@@ -13,15 +13,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b798';
-import { openCity } from './city.js?v=b798';
-import { distKm } from './calc.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { cities, countryName, continentOf } from './cities.js?v=b798';
+         coverDeck } from './dom.js?v=b799';
+import { openCity } from './city.js?v=b799';
+import { distKm } from './calc.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { cities, countryName, continentOf } from './cities.js?v=b799';
 /* ⚠ `PERSONA_ICON` 은 b649 에 안 쓰게 됐습니다 — 발자국 카드가 여권 스탬프
    면으로 바뀌면서 선 아이콘 자리가 없어졌습니다(큰 수와 지도가 그 일을
    합니다). 안 쓰는 것을 가져오면 나중에 "여기도 쓰나" 하고 헷갈립니다. */
-import { shareCard } from './card.js?v=b798';
+import { shareCard } from './card.js?v=b799';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -130,7 +130,7 @@ $('mapbig').addEventListener('click', () => {
   };
   const close = add('mapclose', '닫기');
   const zoom  = add('mapzoombtns',
-    '<button data-z="in">+</button><button data-z="out">−</button>' +
+    '<button data-z="in" aria-label="크게">+</button><button data-z="out" aria-label="작게">−</button>' +
     '<button data-z="fit">전체</button>');
 
   /* 손가락이 안 먹는 기기도 있고 마우스만 있는 화면도 있습니다.

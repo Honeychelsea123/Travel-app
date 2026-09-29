@@ -12,12 +12,12 @@
  * ⚠ SQL(101)을 아직 안 돌렸으면 친구 줄 · 설정 카드를 통째로 숨깁니다 —
  *   눌러도 안 되는 단추를 두면 안 됩니다.
  */
-import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { netTimeout } from './net.js?v=b798';
-import { cities } from './cities.js?v=b798';
+import { $, esc, toast, avatarImg, copyText, flagOf, flagOk, josa, emptyDo } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { netTimeout } from './net.js?v=b799';
+import { cities } from './cities.js?v=b799';
 /* 소식의 도시 칩을 누르면 여는 화면(b789). city.js 는 이 파일을 안 읽으므로 고리가 없습니다. */
-import { openCity } from './city.js?v=b798';
+import { openCity } from './city.js?v=b799';
 
 let ctx = { me: () => null, openPerson: () => {} };
 export function setFriendsCtx(o){ ctx = { ...ctx, ...o }; }
@@ -61,8 +61,15 @@ export async function loadSocialCounts(){
   if (!h) return;
   $('fr_followers').textContent = h.followers ?? 0;
   $('fr_following').textContent = h.following ?? 0;
-  /* 잠가 두었으면 여기서 늘 보이게(b789) — 잠근 걸 잊고 「왜 아무도 안 보지」가 안 되게. */
-  $('fr_locked')?.classList.toggle('hide', !h.locked);
+  /* 공개 범위가 기본(비공개)이 아니면 여기서 늘 보이게(b789 → b799) — 비활성화한 걸 잊고
+     「왜 아무도 안 보지」, 공개한 걸 잊고 「모르는 사람이 왜 보지」가 안 되게.
+     옛 서버(db/106 전)는 visibility 를 안 보내므로 잠금에서 셉니다. */
+  const 범 = h.visibility || (h.locked ? 'off' : 'private');
+  const 표 = $('fr_locked');
+  if (표){
+    표.textContent = 범 === 'public' ? '🌐 공개' : '🔒 비활성화';
+    표.classList.toggle('hide', 범 === 'private');
+  }
   const 요청 = (h.requests || 0) > 0;
   $('frdot')?.classList.toggle('hide', !요청);
   $('frreqdot')?.classList.toggle('hide', !요청);
@@ -82,7 +89,7 @@ function 탭칠하기(){
 }
 
 function 사람줄(p, 오른쪽 = ''){
-  const 이름 = p.name || '이름 없음';
+  const 이름 = p.name || '여행자';
   return `<div class="frrow2">
     <button class="ghost frwho" data-person="${esc(p.user_id)}">
       ${avatarImg(p.avatar_url, p.user_id, 이름,
@@ -178,7 +185,7 @@ function 도시칩(r){
     r.stars != null ? ` <i>★${Number(r.stars).toFixed(1).replace(/\.0$/, '')}</i>` : ''}</button>`;
 }
 function 소식줄(g){
-  const 이름 = g.name || '이름 없음';
+  const 이름 = g.name || '여행자';
   const 사람 = `<button class="ghost frwho" data-person="${esc(g.user_id)}">
       ${avatarImg(g.avatar_url, g.user_id, 이름,
                   'width:36px;height:36px;border-radius:50%;object-fit:cover;flex:none', 'thumb')}
@@ -295,44 +302,64 @@ async function 링크보내기(){
   toast(await copyText(url) ? '링크를 복사했어요' : url);
 }
 
-/* ── 설정: 공개 범위(b790 에 이름을 바꿈) ──────────────────────────────────────────────────
- * 팔로우 받기(승인 / 누구나) · 팔로워에게 별점 보이기 · 팔로우 알림 · 차단한 사람.
+/* ── 설정: 공개 범위(b790 에 이름을 바꿈 · 세 가지는 b799) ─────────────────────────────────
+ * 공개 계정 / 비공개 계정 / 비활성화(db/106) · 별점 보이기 · 팔로우 알림 · 차단한 사람.
+ * ⚠ 옛 「비공개로 잠그기」 스위치와 「팔로우 받기(승인/누구나)」를 이 셋으로 합쳤습니다.
+ *   서버는 옛 칸(locked · follow_mode)을 새 칸(visibility)에 맞춰 둡니다 — 옛 판 폰을 위해.
  * 톱니 설정 화면이 열릴 때 app.js 가 부릅니다. */
 export async function loadSocialPrefs(){
   const me = ctx.me();
   if (!me) return;
   const [p, u, bl] = await Promise.all([
-    netTimeout(sb.from('profiles').select('follow_mode,show_stars,locked,link_code').eq('id', me.id).maybeSingle()),
+    netTimeout(sb.from('profiles').select('visibility,show_stars,link_code').eq('id', me.id).maybeSingle()),
     netTimeout(sb.from('user_prefs').select('*').eq('user_id', me.id).maybeSingle()),
     netTimeout(sb.rpc('my_blocks')),
   ]);
   const 카드 = $('socialcard');
   if (!p || p.error || !p.data){ 카드?.classList.add('hide'); return; }
   카드?.classList.remove('hide');
-  모드칠하기(p.data.follow_mode || 'approve');
+  범위칠하기(p.data.visibility || 'public');   /* 기본은 공개(b799, db/108) */
   if (p.data.link_code){ 내코드 = p.data.link_code; 코드주인 = me.id; }   /* 공유용(b791, 위 내링크) */
-  $('sc_lock').checked = p.data.locked === true;
-  잠금표시(p.data.locked === true);
   $('sc_stars').checked = p.data.show_stars !== false;
   $('sc_notify').checked = u?.data?.notify_social !== false;
   const 막음 = bl?.data || [];
   $('sc_blocks').innerHTML = 막음.length
-    ? 막음.map(x => `<div class="frrow2"><span>${esc(x.name || '이름 없음')}</span>
+    ? 막음.map(x => `<div class="frrow2"><span>${esc(x.name || '여행자')}</span>
         <button class="small" data-unblock="${esc(x.user_id)}">차단 풀기</button></div>`).join('')
     : '<span class="memo">차단한 사람이 없어요.</span>';
 }
-function 모드칠하기(m){
-  document.querySelectorAll('#sc_mode [data-fm]').forEach(b => b.classList.toggle('on', b.dataset.fm === m));
+function 범위칠하기(v){
+  document.querySelectorAll('#sc_vis [data-vis]').forEach(b => {
+    const on = b.dataset.vis === v;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+  범위표시(v);
 }
+/* 넓게 여는 것(공개)과 다 닫는 것(비활성화)은 한 번 더 눌러 정합니다. 칸 안의 `.visask` 가
+   그때만 보입니다(app.css). ⚠ ui.js 의 arm 을 안 씁니다 — arm 은 글자를 통째로 갈아서
+   칸 안의 제목·설명 모양이 깨집니다. `data-armed` 만 씁니다: 다른 데를 누르면 ui.js 가
+   알아서 풉니다(disarm 은 dataset.orig 가 없으면 글자를 안 건드립니다). */
+const 한번더범위 = new Set(['public', 'off']);
+const 범위말 = {
+  public:  '공개 계정으로 바꿨어요 — 로그인한 누구나 볼 수 있어요',
+  private: '비공개 계정으로 바꿨어요 — 승인한 팔로워만 봐요',
+  off:     '비활성화했어요 — 이제 아무에게도 안 보여요',
+};
 $('socialcard')?.addEventListener('click', async e => {
-  const m = e.target.closest('#sc_mode [data-fm]');
-  if (m){
-    const 전 = document.querySelector('#sc_mode .on')?.dataset.fm;
-    모드칠하기(m.dataset.fm);
-    const r = await netTimeout(sb.from('profiles').update({ follow_mode: m.dataset.fm })
-      .eq('id', ctx.me().id).select('follow_mode'));
-    if (!r || r.error || !r.data?.length){ 모드칠하기(전 || 'approve'); toast('저장하지 못했어요'); return; }
-    toast(m.dataset.fm === 'anyone' ? '이제 누구나 바로 팔로우할 수 있어요' : '이제 내가 승인한 사람만 팔로우해요');
+  const v = e.target.closest('#sc_vis [data-vis]');
+  if (v){
+    const 전 = document.querySelector('#sc_vis .on')?.dataset.vis || 'private';
+    const 새 = v.dataset.vis;
+    if (새 === 전) return;
+    if (한번더범위.has(새) && v.dataset.armed !== '1'){ v.dataset.armed = '1'; return; }
+    v.dataset.armed = '';
+    범위칠하기(새);
+    const r = await netTimeout(sb.from('profiles').update({ visibility: 새 })
+      .eq('id', ctx.me().id).select('visibility'));
+    if (!r || r.error || !r.data?.length){ 범위칠하기(전); toast('저장하지 못했어요'); return; }
+    toast(범위말[새]);
+    loadSocialCounts();       /* 프로필 머리의 🌐/🔒 표시 · 공개로 바꾸며 수락된 요청 점 */
     return;
   }
   const u = e.target.closest('[data-unblock]');
@@ -345,23 +372,12 @@ $('socialcard')?.addEventListener('click', async e => {
   }
 });
 $('socialcard')?.addEventListener('change', async e => {
-  /* 비공개로 잠그기(b789). 거르는 것은 서버입니다(db/102) — 여기는 칸 하나만 씁니다. */
-  if (e.target.id === 'sc_lock'){
-    const on = e.target.checked;
-    const r = await netTimeout(sb.from('profiles').update({ locked: on })
-      .eq('id', ctx.me().id).select('locked'));
-    if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
-    toast(on ? '비공개로 잠갔어요 — 이제 아무에게도 안 보여요' : '잠금을 풀었어요 — 팔로워에게 다시 보여요');
-    잠금표시(on);
-    loadSocialCounts();
-    return;
-  }
   if (e.target.id === 'sc_stars'){
     const on = e.target.checked;
     const r = await netTimeout(sb.from('profiles').update({ show_stars: on })
       .eq('id', ctx.me().id).select('show_stars'));
     if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
-    toast(on ? '팔로워에게 별점을 보여요' : '팔로워에게 별점을 숨겨요');
+    toast(on ? '별점을 보여요' : '별점을 숨겨요 — 별 개수만 가려요');
   }
 });
 /* 팔로우 알림 — **알림 칸으로 옮겨 갔습니다(b790).** 그래서 위 `#socialcard`
@@ -373,5 +389,7 @@ $('sc_notify')?.addEventListener('change', async e => {
   if (!r || r.error || !r.data?.length){ e.target.checked = !on; toast('저장하지 못했어요'); return; }
   toast(on ? '팔로우 알림을 받아요' : '팔로우 알림을 껐어요');
 });
-/* 설정 목록의 「공개 범위」 줄 오른쪽 값(b790) — 잠갔을 때만 「비공개」. */
-function 잠금표시(on){ if ($('sv_open')) $('sv_open').textContent = on ? '비공개' : ''; }
+/* 설정 목록의 「공개 범위」 줄 오른쪽 값(b790 → b799) — 지금 고른 것. */
+function 범위표시(v){
+  if ($('sv_open')) $('sv_open').textContent = ({ public: '공개', private: '비공개', off: '비활성화' })[v] || '';
+}

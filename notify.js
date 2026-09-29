@@ -14,9 +14,11 @@
  * 밖으로 나가는 길은 `loadNotifPrefs` 하나입니다.
  *
  * 층: dom.js · db.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b798';
+import { $, esc, toast } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, netIsDown, NOROW } from './net.js?v=b799';
+/* 「읽은 알림 지우기」를 한 번 더 눌러 정하는 장치(b799). ui.js 는 dom.js 만 읽어 고리가 없습니다. */
+import { arm, disarm } from './ui.js?v=b799';
 
 let ctx = { me: () => null, openPerson: () => {}, openFriends: () => {} };
 export function setNotifyCtx(o){ ctx = { ...ctx, ...o }; }
@@ -279,11 +281,20 @@ export async function loadNotifs(본것){
     $('readall').classList.add('hide');
     return;
   }
-  /* 읽은 것만 있으면 "모두 읽음" 대신 "지우기"를 답니다.
-     읽어도 목록에 계속 쌓이면 결국 아무도 안 봅니다. */
-  $('readall').classList.remove('hide');
-  $('readall').textContent = unread ? '모두 읽음' : '지우기';
-  $('readall').dataset.act = unread ? 'read' : 'clear';
+  /* ── 「읽은 알림 지우기」 하나(b799, GPT 리포트에서 찾음) ─────────────────
+   * ⚠⚠ **전에는 이 단추가 보는 사이에 바뀌었습니다.** 안 읽은 것이 있으면 「모두 읽음」,
+   *   없으면 「지우기」였는데 — 알림을 열면 1.2초 뒤 저절로 모두 읽음 처리(위 `읽음처리`)가
+   *   되면서 다시 그려져, 「모두 읽음」을 누르려던 손가락 밑에서 「지우기」로 바뀌었습니다.
+   *   그리고 「지우기」는 확인 없이 **영구 삭제**였습니다.
+   * → 이름을 고정하고 한 번 더 눌러야 지웁니다(ui.js 의 arm). 「모두 읽음」은 뺐습니다 —
+   *   열면 저절로 되므로 단추로 둘 이유가 없습니다.
+   * ⚠ 다시 그릴 때는 눌러 둔 것을 풉니다(disarm) — 숫자가 바뀌었을 수 있으니 다시 누르게. */
+  const 읽은 = data.filter(n => n.read_at).length;
+  const 단추 = $('readall');
+  disarm(단추);
+  단추.textContent = '읽은 알림 지우기';
+  단추.dataset.n = String(읽은);
+  단추.classList.toggle('hide', !읽은);
 
   /* 팔로우 알림(b789)은 누를 수 있습니다 — 요청이면 받은 요청 목록, 아니면 그 사람. */
   $('notifs').innerHTML = data.map(n => {
@@ -303,7 +314,11 @@ $('notifs')?.addEventListener('click', e => {
 $('readall').addEventListener('click', async e => {
   e.stopPropagation();
   const b = $('readall');
-  if (b.dataset.act === 'clear'){
+  /* 한 번 더 눌러야 지웁니다(b799, 위 머리말) — 지운 것은 되돌릴 수 없습니다. */
+  if (b.dataset.armed !== '1'){ arm(b, `한 번 더 누르면 읽은 알림 ${b.dataset.n || ''}개를 지워요`); return; }
+  disarm(b);
+  b.disabled = true;           /* 지우는 동안 두 번 안 가게 */
+  try {
     /* 읽은 것만 지웁니다. 안 읽은 것이 사이에 있으면 그건 남깁니다. */
     const r = await netTimeout(sb.from('notifications').delete()
       .not('read_at', 'is', null).select('id'));
@@ -311,11 +326,8 @@ $('readall').addEventListener('click', async e => {
     /* 039 를 안 올렸으면 정책이 없어 0건이 지워집니다. 조용히 넘어가면
        버튼이 고장 난 것처럼 보입니다. */
     if (!r.data?.length) return toast('지우지 못했어요. 잠시 뒤 다시 해주세요.');
-  } else {
-    const r = await netTimeout(sb.from('notifications')
-      .update({ read_at: new Date().toISOString() }).is('read_at', null).select('id'));
-    if (r.error) return fail(r.error);
-  }
+    toast(`읽은 알림 ${r.data.length}개를 지웠어요`);
+  } finally { b.disabled = false; }
   loadNotifs();
 });
 

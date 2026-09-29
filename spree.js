@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { cities } from './cities.js?v=b798';
-import { loadCities } from './citysearch.js?v=b798';
-import { paintStars } from './stars.js?v=b798';
-import { rateHero, starValue } from './rateui.js?v=b798';
-import { saveRate } from './rating.js?v=b798';
-import { resetHomeSig } from './home.js?v=b798';
+import { $, esc } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { cities } from './cities.js?v=b799';
+import { loadCities } from './citysearch.js?v=b799';
+import { paintStars } from './stars.js?v=b799';
+import { rateHero, starValue } from './rateui.js?v=b799';
+import { saveRate } from './rating.js?v=b799';
+import { resetHomeSig } from './home.js?v=b799';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -103,6 +103,16 @@ function 그리기(){
        키우고 글자·별을 사진 밖으로 뺍니다 — 여기서 사진은 장식이 아니라
        **판단 근거**입니다(rateui.js 의 모양 주석). */
     모양:'square' });
+  /* ⚠ **다음 사진을 미리 받아 둡니다(b799, GPT 리포트에서 찾음).** 전에는 별을 누르고
+     0.26초(넘기면 0.19초) 뒤 카드를 갈아끼울 때에야 다음 사진을 받기 시작해서, 넘길 때마다
+     사진 칸이 비었다 채워졌습니다. 같은 주소로 받아 두면 갈아끼울 때 캐시에서 바로 뜹니다.
+     한 장만 — 넘기지 않고 나가면 받은 것이 헛일이 되니까요. */
+  const 다음도시 = 주머니[1];
+  if (다음도시?.image_url){
+    const 미리 = new Image();
+    미리.decoding = 'async';
+    미리.src = 다음도시.image_url;
+  }
 }
 
 /* 몇 곳 매겼는지. **이게 없으면 언제 그만둘지 모릅니다** — 끝이 없는 화면은

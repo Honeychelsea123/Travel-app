@@ -15,12 +15,12 @@
  * 하나입니다 — 일행 목록도, 정산 송금 줄도 같은 것을 씁니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b798';
-import { dateRange } from './calc.js?v=b798';
-import { trip, members, setMembers, nameOf } from './trip.js?v=b798';
-import { arm } from './ui.js?v=b798';
+import { $, esc, toast, copyText, avatarImg } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, offNote, drawOffbar, isOffline, NOROW } from './net.js?v=b799';
+import { dateRange } from './calc.js?v=b799';
+import { trip, members, setMembers, nameOf } from './trip.js?v=b799';
+import { arm } from './ui.js?v=b799';
 
 /* app.js 만 아는 것 셋. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -66,10 +66,12 @@ export const ROLE_KO = { owner:'만든 사람', editor:'편집자', viewer:'보�
 
 export async function loadMembers(){
   $('memerr').classList.add('hide');
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   const { data, error } = await netTimeout(sb.from('trip_members')
     .select('user_id,role,nickname,left_at,joined_at,profiles(display_name,avatar_url)')
-    .eq('trip_id', trip.id)
+    .eq('trip_id', 그여행)
     .order('joined_at'));
+  if (trip?.id !== 그여행) return;
   if (error){
     if (isOffline(error)){ offNote('members'); drawOffbar(); return; }
     $('members').innerHTML = ''; return fail(error, 'mem'); }
@@ -161,13 +163,14 @@ async function drawInvites(){
 
 $('i_list').addEventListener('click', async e => {
   const b = e.target.closest('[data-ikill]'); if (!b) return;
-  if (b.dataset.armed !== '1'){ arm(b, '정말 지울까요?'); return; }
+  if (b.dataset.armed !== '1'){ arm(b, '한 번 더 누르면 이 초대 링크가 더는 안 열려요'); return; }
   b.disabled = true;
   const r = await sb.from('trip_invites').delete()
     .eq('code', b.dataset.ikill).select('code');
   b.disabled = false;
   if (r.error) return fail(r.error, 'mem');
-  if (!r.data?.length) return fail('일행에서 빼지 못했어요. 만든 사람만 뺄 수 있어요.', 'mem');
+  /* ⚠ 초대 링크 지우기입니다 — 예전 문구가 「일행에서 빼지 못했어요」였습니다(b799 에 바로잡음). */
+  if (!r.data?.length) return fail('초대 링크를 지우지 못했어요. 만든 사람만 지울 수 있어요.', 'mem');
   toast('그 링크로는 이제 못 들어와요.');
   drawInvites();
 });
@@ -253,7 +256,8 @@ $('members').addEventListener('click', async e => {
 
   if (b.dataset.mact === 'kick'){
     if (b.dataset.armed !== '1'){       /* 확인창을 안 쓰는 이유는 앞과 같습니다 */
-      arm(b, `정말 ${b.dataset.name} 빼기?`); return;
+      /* 누구를 빼고 무엇이 달라지는지(b799, GPT 리포트) — 이름은 원래 있었고, 결과를 더했습니다. */
+      arm(b, `한 번 더 누르면 ${b.dataset.name}님이 이 여행을 못 봐요`); return;
     }
     b.disabled = true;
     /* 지우지 않고 나간 것으로 표시합니다. 지출에 이름이 남아야 정산이 맞습니다. */

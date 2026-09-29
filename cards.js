@@ -12,13 +12,13 @@
  * 보내야 해서 저쪽을 부를 일이 생깁니다.
  *
  * 층: dom.js · db.js · calc.js · trip.js · net.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b798';
-import { asDate, D1, ymd } from './calc.js?v=b798';
-import { setAiTripId, setSuggested, suggested } from './ai.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, NOROW } from './net.js?v=b798';
-import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b798';
-import { arm } from './ui.js?v=b798';
+import { $, esc, toast } from './dom.js?v=b799';
+import { asDate, D1, ymd } from './calc.js?v=b799';
+import { setAiTripId, setSuggested, suggested } from './ai.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, NOROW } from './net.js?v=b799';
+import { trip, plans, legs, setPlans, pickedDay, setPlanSeedGeo } from './trip.js?v=b799';
+import { arm } from './ui.js?v=b799';
 
 /* 검토 결과의 등급 색. **app.js 에도 같은 표가 있었는데 여기서 내보냅니다** —
    두 곳에 적어두면 언젠가 한쪽만 고칩니다(D1·asDate 에서 겪은 것과 같은 일). */
@@ -350,7 +350,11 @@ $('reviewbtn').addEventListener('click', () => {
 });
 $('reviewclose').addEventListener('click', () => $('reviewcard').classList.add('hide'));
 
+/* 늦은 답 막기(b799, GPT 리포트 P0-2) — AI 화면에서 여행을 바꾸면 앞 여행의 검토가 늦게 와서
+   새 여행 아래에 그려질 수 있었습니다. 부를 때마다 차례를 매기고, 받은 뒤 아직 내 차례인지 봅니다. */
+let 검토차례 = 0;
 export async function runReview(id){
+  const 이번 = ++검토차례;
   setAiTripId(id);
   /* 여행을 안 골랐으면 검토할 것이 없습니다. 배지도 지웁니다. */
   if (!id){
@@ -368,6 +372,7 @@ export async function runReview(id){
       'walk_min_per_km,walk_base_min,transit_factor,transit_base_min')
       .eq('trip_id', id).order('start_date')
   ]);
+  if (이번 !== 검토차례) return;
   if (!t) return;
   const found = ctx.review(t, ps || [], lg || []);
   const noCoord = (ps || []).filter(p => p.lat == null).length;

@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b798';
-import { todayYmd } from './calc.js?v=b798';
-import { cities } from './cities.js?v=b798';
-import { trip } from './trip.js?v=b798';
-import { tripSub } from './rating.js?v=b798';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b798';
-import { ROLE_KO } from './member.js?v=b798';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b799';
+import { todayYmd } from './calc.js?v=b799';
+import { cities } from './cities.js?v=b799';
+import { trip } from './trip.js?v=b799';
+import { tripSub } from './rating.js?v=b799';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b799';
+import { ROLE_KO } from './member.js?v=b799';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -84,7 +84,26 @@ async function fillTripPhotos(rows){
   for (const t of need) t._photo = byTrip[t.id] || rep[legCountry[t.id] || t.country] || null;
 }
 
+/* ── 늦게 온 답은 버립니다(b799, GPT 리포트 P0-2) ─────────────────────────
+ * ⚠⚠ 「다가오는 → 다녀온」을 누르면 **옛 머리 카드(후쿠오카 D-38)가 몇 초 남았습니다.**
+ *   목록 · 사진 · 후기 띠를 차례로 기다리는 동안(최대 아홉 번) 아무것도 안 치웠기 때문입니다.
+ *   더 나쁜 것: 기다린 «뒤에» `tripFilter` 를 다시 읽어서, 먼저 보낸 「다가오는」 답이 늦게
+ *   오면 **「다녀온」 칸에 그려지고 오프라인 저장본(`trips:past`)에도 그 이름으로 담겼습니다.**
+ * → ① 부르는 순간의 갈래(`갈래`)만 씁니다. ② 기다릴 때마다 차례를 봐서 늦은 답은 버립니다
+ *   (people.js 의 `차례` 와 같은 수법). ③ 갈래가 바뀌면 옛 머리 카드·띠·목록을 곧바로 치우고
+ *   「불러오는 중」을 답니다 — 같은 갈래를 다시 부를 때(탭 다시 누름·지운 뒤)는 안 치웁니다.
+ *   깜빡일 이유가 없습니다. */
+let 목록차례 = 0;
+let 그린갈래 = null;      /* 지금 #trips 에 그려진 갈래 */
+
 export async function loadTrips(){
+  const 이번 = ++목록차례;
+  const 갈래 = tripFilter;
+  if (그린갈래 !== 갈래){
+    $('triphero')?.remove(); $('tripsrv')?.remove();
+    dropHtml('trips');
+    $('trips').innerHTML = '<div class="empty"><span class="load">불러오는 중…</span></div>';
+  }
   /* RLS 가 참여 중인 것만 내려줍니다. 만든 사람이 owner 로 자동 등록되지
      않으면 방금 만든 여행조차 여기 안 나옵니다. */
   const today = todayYmd();
@@ -94,24 +113,29 @@ export async function loadTrips(){
     'transit_factor,city_id,country,cities(image_url),' +
             'trip_members(user_id,role),trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
-  if (tripFilter === 'past')
+  if (갈래 === 'past')
     q = q.lt('end_date', today)
          .order('start_date', { ascending:false });
   else
     q = q.gte('end_date', today)
          .order('start_date', { ascending:true });
   let { data, error } = await netTimeout(q);
+  if (이번 !== 목록차례) return;          /* 그사이 다른 갈래(나 같은 갈래)를 또 불렀습니다 */
 
   /* 못 받아왔으면 지난번 목록을 씁니다. 여행 목록이 안 나오면 여행 중에
      일정으로 들어갈 길 자체가 없어집니다. */
-  const ck = 'trips:' + tripFilter;
+  const ck = 'trips:' + 갈래;
   if (error){
     const old = cacheGet(ck);
-    if (!old){ dropHtml('trips'); $('trips').innerHTML = '<div class="empty">불러오지 못했어요</div>';
-               return fail(error); }
+    /* ⚠ 옛 머리 카드·띠도 치웁니다(b799) — 안 치우면 「불러오지 못했어요」 위에 앞 갈래의
+       「D-38」이 계속 남았습니다. */
+    if (!old){ $('triphero')?.remove(); $('tripsrv')?.remove();
+               dropHtml('trips'); $('trips').innerHTML = '<div class="empty">불러오지 못했어요</div>';
+               그린갈래 = null; return fail(error); }
     data = old; error = null; drawOffbar();
   } else {
     await fillTripPhotos(data);
+    if (이번 !== 목록차례) return;
     cacheSet(ck, data);   /* 사진까지 담아둡니다 — 비행기모드에서도 같은 줄이 나옵니다 */
     /* 목록에 있는 여행은 **열어본 적 없어도** 비행기모드에서 열려야 합니다.
        한 줄씩 미리 담아둡니다 — 목록을 받을 때 이미 필요한 값이 다 왔습니다.
@@ -138,8 +162,9 @@ export async function loadTrips(){
        갈아끼울 때 같이 지워집니다.
      ⚠ **받아온 뒤에 지웁니다**(b435). 순서를 되돌리면 탭을 옮길 때마다
        띠가 사라졌다 나타나며 화면이 깜빡입니다. */
-  if (tripFilter === 'past'){
+  if (갈래 === 'past'){
     const bar = await reviewBar();
+    if (이번 !== 목록차례) return;
     $('tripsrv')?.remove();
     if (bar){ bar.id = 'tripsrv'; $('trips').before(bar); }
   } else {
@@ -160,6 +185,7 @@ export async function loadTrips(){
      ⚠ 사진은 `fillTripPhotos` 가 이미 채워둔 `_photo` 를 씁니다 — 여기서
        또 받아오면 목록을 그릴 때마다 질의가 늡니다. */
   $('triphero')?.remove();
+  그린갈래 = 갈래;          /* 여기부터 이 갈래를 그립니다(b799) */
   /* ── 히어로에 건 여행도 **목록에 그대로 둡니다**(b436) ────────────────
      b410 에서 뺐다가 b436 에서 되돌렸습니다. 그 사이의 판단을 남겨 둡니다 —
        · b410: "바로 위아래로 같은 도쿄가 두 번" 이라 중복만 보인다며 뺌.
@@ -171,7 +197,7 @@ export async function loadTrips(){
      맡습니다. 중복은 알고 두는 것입니다(사용자 결정).
      ⚠ 되돌리려거든 위 두 줄을 먼저 읽으십시오. 한 번 갔다 온 길입니다. */
   const 목록 = data;
-  if (tripFilter !== 'past' && data.length){
+  if (갈래 !== 'past' && data.length){
     const t = data[0];
     const dd = Math.round((new Date(t.start_date) - new Date(today)) / 864e5);
     const days = Math.round((new Date(t.end_date) - new Date(t.start_date)) / 864e5) + 1;
@@ -196,7 +222,7 @@ export async function loadTrips(){
       /* 지난 여행은 만들 수 있는 것이 아니라 단추가 없습니다. 앞으로 갈
          여행은 **글로 '새 여행을 눌러보세요' 라고 가리키고 있었습니다** —
          가리키는 대신 그 단추를 여기 답니다. */
-      tripFilter === 'past'
+      갈래 === 'past'
         ? emptyDo('아직 다녀온 여행이 없어요.', null, null,
                   '여행이 끝나면 여기로 옮겨져요.')
         : emptyDo('어디로 떠나볼까요?', '새 여행 만들기', 'newtripbtn',

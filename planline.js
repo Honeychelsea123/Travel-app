@@ -18,10 +18,10 @@
  * 누르는 손잡이는 app.js 의 날짜 줄에 있어 `setCatsOpen` 으로 넣습니다.
  *
  * 층: dom.js · calc.js · trip.js 와 이미 떼어낸 planmap.js 를 씁니다. */
-import { $, esc } from './dom.js?v=b798';
-import { hop } from './calc.js?v=b798';
-import { plans, legs, transitLines, catFilter, setCatFilter } from './trip.js?v=b798';
-import { drawPlanMap, splitParts } from './planmap.js?v=b798';
+import { $, esc } from './dom.js?v=b799';
+import { hop } from './calc.js?v=b799';
+import { plans, legs, transitLines, catFilter, setCatFilter } from './trip.js?v=b799';
+import { drawPlanMap, splitParts } from './planmap.js?v=b799';
 
 let ctx = { drawDays: () => {}, drawPlans: () => {} };
 export function setPlanLineCtx(o){ ctx = { ...ctx, ...o }; }
@@ -115,7 +115,10 @@ export function dayStat(date){
   /* fmtM 은 시:분 표기라 걸리는 시간에는 안 맞습니다. "2시간 10분"으로 적습니다. */
   const dur = m => m >= 60 ? `${Math.floor(m/60)}시간${m % 60 ? ' ' + (m%60) + '분' : ''}`
                            : `${m}분`;
-  return [ `${list.length}곳`,
+  /* 「N곳」에서 이동·숙소 줄은 뺍니다(b799, GPT 리포트) — 공항→호텔이나 체크인은 «곳»이 아닙니다.
+     식사·카페는 실제로 들르는 곳이라 셉니다(plancheck 의 「너무 많아요」는 그것도 빼고 셉니다). */
+  const 곳 = list.filter(p => p.category !== '이동' && p.category !== '숙소').length;
+  return [ `${곳}곳`,
            min ? `이동 ${dur(min)}` : null,
            km  ? `${km.toFixed(1)}km` : null ].filter(Boolean).join(' · ');
 }

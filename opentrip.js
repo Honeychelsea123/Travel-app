@@ -17,21 +17,21 @@
  * `channel`·`bumpTimer`·`bumpPending` 은 실시간의 상태라 같이 왔습니다.
  *
  * 층: 아래층과 이미 떼어낸 조각 여럿을 씁니다. 그쪽은 이 파일을 안 부릅니다. */
-import { $, esc } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b798';
-import { D1, asDate, dateRange, localTime } from './calc.js?v=b798';
+import { $, esc } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, netIsDown, drawOffbar, cacheGet, cacheSet } from './net.js?v=b799';
+import { D1, asDate, dateRange, localTime } from './calc.js?v=b799';
 import { trip, plans, legs, members, expenses, bookings,
-         setTrip, setPickedDay } from './trip.js?v=b798';
-import { loadCities } from './citysearch.js?v=b798';
-import { clearCityOpen } from './city.js?v=b798';
-import { loadReview } from './review.js?v=b798';
-import { loadMembers } from './member.js?v=b798';
-import { loadExpenses } from './expense.js?v=b798';
-import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b798';
-import { inTrip, showTab } from './tabs.js?v=b798';
-import { loadLegs, fillCityList } from './legs.js?v=b798';
-import { loadPlans, backToList } from './tripview.js?v=b798';
+         setTrip, setPickedDay } from './trip.js?v=b799';
+import { loadCities } from './citysearch.js?v=b799';
+import { clearCityOpen } from './city.js?v=b799';
+import { loadReview } from './review.js?v=b799';
+import { loadMembers } from './member.js?v=b799';
+import { loadExpenses } from './expense.js?v=b799';
+import { loadBookings, loadPacking, loadLinks } from './prep.js?v=b799';
+import { inTrip, showTab } from './tabs.js?v=b799';
+import { loadLegs, fillCityList } from './legs.js?v=b799';
+import { loadPlans, backToList } from './tripview.js?v=b799';
 
 let ctx = { me: () => null, appTab: () => '' };
 export function setOpenTripCtx(o){ ctx = { ...ctx, ...o }; }
@@ -105,6 +105,8 @@ export function drawTripHeader(){
   /* 보기만 가능한 사람에겐 고치는 버튼을 숨깁니다. 막는 것은 RLS 입니다. */
   $('addplanbtn').classList.toggle('hide', trip.myRole === 'viewer');
   $('addexpbtn').classList.toggle('hide', trip.myRole === 'viewer');
+  /* 예약 「추가」도 같이(b799) — 여기만 빠져 있어 보기 전용 일행이 눌렀다 저장에서 실패했습니다. */
+  $('addbookbtn')?.classList.toggle('hide', trip.myRole === 'viewer');
   $('editbtn').classList.toggle('hide', trip.myRole === 'viewer');
 }
 

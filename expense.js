@@ -16,13 +16,13 @@
  * 이렇게 하니 ctx 가 둘로 줄었습니다. **떼어낼수록 얽힘이 줄어드는 자리입니다.**
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b798';
-import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b798';
+import { $, esc, toast, emptyDo } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, offNote, isOffline, write, drawOffbar } from './net.js?v=b799';
+import { money, NO_CENTS, settleMath, dayLabel, legNear, todayYmd, hm } from './calc.js?v=b799';
 import { trip, plans, legs, members, expenses, setExpenses, nameOf,
-         pickedDay, tab, setSettleOn } from './trip.js?v=b798';
-import { arm } from './ui.js?v=b798';
+         pickedDay, tab, setSettleOn } from './trip.js?v=b799';
+import { arm } from './ui.js?v=b799';
 
 /* app.js 만 아는 것 둘. **`me` 는 값이 아니라 함수로 받습니다** —
    로그인할 때마다 바뀌는데 값으로 받으면 처음 것을 붙들고 있습니다. */
@@ -87,14 +87,16 @@ async function rateOf(cur, home, date){
 
 export async function loadExpenses(){
   $('experr').classList.add('hide');
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   const { data, error } = await netTimeout(sb.from('expenses')
     /* expense_shares 는 "이건 나랑 지훈만" 같은 지출에만 줄이 생깁니다.
        비어 있으면 참여자 균등입니다. 표는 처음부터 있었는데 아무도 안 읽고 있었습니다. */
     .select('id,date,title,amount,currency,amount_home,fx_rate,category,payer_id,memo,method,' +
             'plan_id,expense_shares(user_id,weight)')
-    .eq('trip_id', trip.id)
+    .eq('trip_id', 그여행)
     .is('deleted_at', null)
     .order('date', { ascending:false }).order('created_at', { ascending:false }));
+  if (trip?.id !== 그여행) return;
   if (error){
     if (isOffline(error)){ offNote('expenses'); $('exptotal').innerHTML = ''; drawOffbar(); return; }
     $('expenses').innerHTML = ''; return fail(error, 'exp'); }
@@ -110,8 +112,12 @@ export async function loadExpenses(){
 function drawExpenses(){
   if (!expenses.length){
     $('exptotal').innerHTML = '';
-    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.', '첫 지출 넣기', 'addexpbtn',
-                                      '넣어두면 일행과 나눠 낼 몫이 자동으로 계산돼요.');
+    /* ⚠ 보기 전용 일행에게는 단추를 안 답니다(b799, GPT 리포트에서 찾음) — 머리의 「추가」는
+       숨겼는데(opentrip.js) 빈 화면 단추가 숨은 단추를 대신 눌러 폼이 열리고, 저장은 막혀 실패했습니다. */
+    const 보기만 = trip.myRole === 'viewer';
+    $('expenses').innerHTML = emptyDo('아직 지출이 없어요.',
+      보기만 ? null : '첫 지출 넣기', 보기만 ? null : 'addexpbtn',
+      보기만 ? '일행이 넣으면 여기에 모여요.' : '넣어두면 일행과 나눠 낼 몫이 자동으로 계산돼요.');
     return;
   }
   const byCur = {};
@@ -189,7 +195,7 @@ function drawExpenses(){
       ${trip.myRole === 'viewer' ? '' :
         `<button class="ghost" data-xact="edit" data-id="${esc(e.id)}"
                  style="align-self:start; padding:2px 6px">수정</button>
-         <button class="ghost" data-xact="del" data-id="${esc(e.id)}"
+         <button class="ghost" aria-label="지우기" data-xact="del" data-id="${esc(e.id)}"
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
   }
   $('expenses').innerHTML = html;

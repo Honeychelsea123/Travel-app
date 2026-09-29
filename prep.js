@@ -12,12 +12,12 @@
  * closeDocs. 서류는 시트로 열리므로 닫는 길만 밖에서 필요합니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast, emptyDo } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b798';
-import { hm } from './calc.js?v=b798';
-import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b798';
-import { arm } from './ui.js?v=b798';
+import { $, esc, toast, emptyDo } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, offNote, drawOffbar, cacheGet, cacheSet, NOROW } from './net.js?v=b799';
+import { hm } from './calc.js?v=b799';
+import { trip, bookings, setBookings, members, nameOf } from './trip.js?v=b799';
+import { arm } from './ui.js?v=b799';
 
 /* ── 예약 ───────────────────────────────────────────────────────────
  * 여행 중에 제일 자주 열어보는 것입니다 — 항공편 번호, 숙소 예약번호.
@@ -27,13 +27,15 @@ const KIND_K = { 항공:'이동', 기차:'이동', 렌터카:'이동', 숙소:'�
 
 export async function loadBookings(){
   $('bookerr').classList.add('hide');
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   let { data, error } = await netTimeout(sb.from('bookings')
     .select('id,kind,title,ref,start_date,start_time,end_date,end_time,address,tel,memo')
-    .eq('trip_id', trip.id).is('deleted_at', null)
+    .eq('trip_id', 그여행).is('deleted_at', null)
     .order('start_date', { nullsFirst:false }).order('start_time', { nullsFirst:false }));
+  if (trip?.id !== 그여행) return;
   /* 항공편 번호와 호텔 예약번호는 **여행 중에 제일 자주 여는 것**입니다.
      공항에서 연결이 안 된다고 못 보면 그때가 제일 곤란합니다. 받아둡니다. */
-  const bck = 'book:' + trip.id;
+  const bck = 'book:' + 그여행;
   if (error){
     const old = cacheGet(bck);
     if (!old){ offNote('bookings'); drawOffbar(); return; }
@@ -55,12 +57,15 @@ export async function loadBookings(){
         ${b.ref ? `<span class="refno">${esc(b.ref)}</span>` : ''}
         ${sub ? `<span class="memo">${esc(sub)}</span>` : ''}</div>
       ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-bact="del" data-id="${esc(b.id)}"
+        `<button class="ghost" aria-label="지우기" data-bact="del" data-id="${esc(b.id)}"
                  style="color:var(--bad); align-self:start; padding:2px 6px">×</button>`}</div>`;
   }).join('')
-    /* 예약은 `추가` 를 눌러야 폼이 열립니다 — 숨어 있으니 단추를 답니다. */
-    : emptyDo('아직 넣어둔 예약이 없어요.', '첫 예약 넣기', 'addbookbtn',
-              '항공권·숙소를 넣어두면 여행 중에 찾기 쉬워요.');
+    /* 예약은 `추가` 를 눌러야 폼이 열립니다 — 숨어 있으니 단추를 답니다.
+       ⚠ 보기 전용 일행에게는 안 답니다(b799) — 저장이 막혀 있어 눌러도 실패합니다. */
+    : trip.myRole === 'viewer'
+      ? emptyDo('아직 넣어둔 예약이 없어요.', null, null, '일행이 넣으면 여기에 모여요.')
+      : emptyDo('아직 넣어둔 예약이 없어요.', '첫 예약 넣기', 'addbookbtn',
+                '항공권·숙소를 넣어두면 여행 중에 찾기 쉬워요.');
 }
 
 /* ── 여행 서류 ──────────────────────────────────────────────────────
@@ -168,11 +173,13 @@ $('bookings').addEventListener('click', e => softDel(e, 'bact', 'bookings', load
  * 도쿄 앱은 문자열이라 그게 안 됐습니다. */
 export async function loadPacking(){
   $('packerr').classList.add('hide');
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   let { data, error } = await netTimeout(sb.from('packing')
     .select('id,title,done,assignee_id,category')
-    .eq('trip_id', trip.id).is('deleted_at', null)
+    .eq('trip_id', 그여행).is('deleted_at', null)
     .order('sort_order').order('created_at'));
-  const pck = 'pack:' + trip.id;
+  if (trip?.id !== 그여행) return;
+  const pck = 'pack:' + 그여행;
   if (error){
     const old = cacheGet(pck);
     if (!old){ offNote('packing'); $('packcount').textContent = ''; drawOffbar(); return; }
@@ -213,7 +220,7 @@ export async function loadPacking(){
               ${esc(p.title)}</span>
             ${p.assignee_id ? `<span class="badge">${esc(nameOf(p.assignee_id))}</span>` : ''}
             ${trip.myRole === 'viewer' ? '' :
-              `<button class="ghost" data-kact="del" data-id="${esc(p.id)}"
+              `<button class="ghost" aria-label="지우기" data-kact="del" data-id="${esc(p.id)}"
                        style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
       ).join('')
     /* 입력폼이 바로 아래 늘 보입니다 — 단추를 달지 않습니다. */
@@ -276,10 +283,12 @@ $('packing').addEventListener('click', e => softDel(e, 'kact', 'packing', loadPa
 /* ── 링크 ── 예약 확인 페이지, 블로그, 지도 같은 것 */
 export async function loadLinks(){
   $('linkerr').classList.add('hide');
+  const 그여행 = trip.id;          /* 늦은 답 막기(b799) — tripview.js 의 loadPlans 머리말 */
   let { data, error } = await netTimeout(sb.from('links')
-    .select('id,title,url,category').eq('trip_id', trip.id)
+    .select('id,title,url,category').eq('trip_id', 그여행)
     .is('deleted_at', null).order('created_at'));
-  const lck = 'link:' + trip.id;
+  if (trip?.id !== 그여행) return;
+  const lck = 'link:' + 그여행;
   if (error){
     const old = cacheGet(lck);
     if (!old){ offNote('links'); drawOffbar(); return; }
@@ -291,7 +300,7 @@ export async function loadLinks(){
            style="color:var(--primary)"><b>${esc(l.title)}</b></a>
         <div class="memo" style="word-break:break-all">${esc(l.url)}</div></span>
       ${trip.myRole === 'viewer' ? '' :
-        `<button class="ghost" data-lkact="del" data-id="${esc(l.id)}"
+        `<button class="ghost" aria-label="지우기" data-lkact="del" data-id="${esc(l.id)}"
                  style="color:var(--bad); padding:2px 6px">×</button>`}</div>`).join('')
     /* 여기도 입력폼이 늘 보입니다. */
     : emptyDo('아직 담아둔 링크가 없어요.', null, null,

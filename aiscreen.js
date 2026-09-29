@@ -15,14 +15,14 @@
  *
  * 층: dom.js · db.js · net.js · trip.js · ui.js 와 이미 떼어낸
  *     ai.js · aiui.js · cards.js · plancheck.js 를 씁니다. */
-import { $, esc, toast, md } from './dom.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { fail, netTimeout, netIsDown } from './net.js?v=b798';
-import { trip, plans } from './trip.js?v=b798';
-import { arm, disarm, syncSheets } from './ui.js?v=b798';
-import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b798';
-import { loadAi } from './plancheck.js?v=b798';
-import { clearLastTake } from './cards.js?v=b798';
+import { $, esc, toast, md } from './dom.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { fail, netTimeout, netIsDown } from './net.js?v=b799';
+import { trip, plans } from './trip.js?v=b799';
+import { arm, disarm, syncSheets } from './ui.js?v=b799';
+import { aiTripId, setAiTripId, clearSuggested } from './ai.js?v=b799';
+import { loadAi } from './plancheck.js?v=b799';
+import { clearLastTake } from './cards.js?v=b799';
 
 let ctx = { me: () => null };
 export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
@@ -31,7 +31,11 @@ export function setAiScreenCtx(o){ ctx = { ...ctx, ...o }; }
  * 키는 화면에 없습니다. Edge Function 뒤에 있고 우리는 그 함수만 부릅니다.
  * 대화는 사람별로 나눠 저장합니다 — 섞이면 AI 가 남의 질문을 맥락으로 씁니다
  * ("아까 말한 그 라멘집"이 다른 사람 대화일 수 있습니다). */
+/* 늦은 답 막기(b799) — 여행을 바꾸면 앞 여행의 대화가 늦게 와서 새 여행 아래 그려질 수 있었습니다
+   (cards.js 의 runReview 와 같은 수법). */
+let 대화차례 = 0;
 export async function loadChats(tripId){
+  const 이번 = ++대화차례;
   /* AI 는 서버가 있어야 합니다. 오프라인이면 물어봐도 답이 안 옵니다.
      "불러오는 중…"을 남겨두면 하루 종일 기다리게 됩니다. 못 쓴다고 적습니다.
      입력칸도 막습니다 — 쓸 수 있게 두면 써 보고 나서야 안 되는 걸 압니다. */
@@ -48,6 +52,7 @@ export async function loadChats(tripId){
   let q = sb.from('chats').select('role,content').eq('user_id', ctx.me().id);
   q = tripId ? q.eq('trip_id', tripId) : q.is('trip_id', null);
   const { data } = await netTimeout(q.order('created_at').limit(40));
+  if (이번 !== 대화차례) return;
   drawChats(data || []);
   /* 쓴 횟수와 **남은 횟수를 따로** 적습니다. 전에는 "3/15회"였는데,
      이건 읽는 사람이 빼야 남은 수가 나옵니다 — 정작 궁금한 쪽을 안 알려준
@@ -144,11 +149,20 @@ $('ai_close').addEventListener('click', () => closeAi());
 /* 대화 지우기. 여행 없이 나눈 것은 trip_id 가 비어 있어 is 로 지웁니다. */
 $('ai_wipe').addEventListener('click', async e => {
   const b = e.currentTarget;
-  if (b.dataset.armed !== '1'){ arm(b, '정말 지울까요?'); return; }
   const id = $('ai_trip').value;
+  /* ⚠ **무엇을 지우는지 적습니다(b799, GPT 리포트).** 전에는 「정말 지울까요?」뿐이었는데, 화면에
+     보이는 최근 40개가 아니라 **이 여행에서 나눈 내 대화 전부**가 지워집니다(AI 가 기억하는
+     앞 대화도 같이). 숫자는 못 적습니다 — 화면은 40개까지만 받아서 몇 개인지 모릅니다. */
+  if (b.dataset.armed !== '1'){
+    arm(b, id ? '한 번 더 누르면 이 여행의 AI 대화를 모두 지워요'
+              : '한 번 더 누르면 여행 없이 나눈 AI 대화를 모두 지워요');
+    return;
+  }
   let q = sb.from('chats').delete().eq('user_id', ctx.me().id);
   q = id ? q.eq('trip_id', id) : q.is('trip_id', null);
+  b.disabled = true;                 /* 지우는 동안 두 번 안 가게(b799) */
   const r = await q.select('id');
+  b.disabled = false;
   disarm(b);
   if (r.error) return fail(r.error, 'ai');
   await loadChats(id);

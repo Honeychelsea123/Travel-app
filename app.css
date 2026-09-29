@@ -5099,6 +5099,9 @@ body:has(#tabdeck.hide) .gchips{ display:none; }
         padding:8px 10px; font-size:var(--f-sm); font-weight:600;
         color:var(--primary); }
 .gmore:active{ opacity:.55; }
+/* 누르는 자리만 넓힙니다(b799, GPT 리포트) — 재 보니 56×34px 이라 손가락 최소(44px)에 못 미쳤습니다.
+   글자 크기·자리는 그대로 두고 보이지 않는 테두리로 위아래 5px씩(→ 44px) 늘립니다. */
+.gmore::after{ content:''; position:absolute; inset:-5px -4px; }
 
 /* ── 나라 카드 ── 지구본에서 나라를 누르면 뜨는 아래 시트(b555) ────────
  * ⚠ `main` 밖에 삽니다(home.js 머리말) — 탭 덱의 가로 스크롤에 안 딸려
@@ -5870,7 +5873,8 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 #friendview{ z-index:1140; }
 #whoview{ z-index:1150; }
 #friendview > *, #whoview > *, #whobody > *{ max-width:480px; margin-left:auto; margin-right:auto; }
-#friendview > .card, #whobody > .card{ margin-top:10px; }
+/* 첫 판·들어간 판(b799)은 #whobody 안의 한 겹 더 안쪽입니다 — 카드 사이 간격을 거기에도. */
+#friendview > .card, #whobody > .card, #whosum > .card, #whosub > .card{ margin-top:10px; }
 .frhead{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .frhead h2{ margin:0; font-size:var(--f-xl); flex:1; }
 #whomenu{ font-size:var(--f-xl); padding:2px 10px; }
@@ -5916,12 +5920,15 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 .frchip i{ font-style:normal; color:var(--primary); font-weight:700;
            font-variant-numeric:tabular-nums; }
 
-/* 남의 프로필 */
-.whohead{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; }
-.whoname{ font-size:calc(22px * var(--ts)); font-weight:700; }
+/* 남의 프로필 — 머리는 왓챠처럼 사진 왼쪽 · 이름과 수 오른쪽(b799, 옛 가운데 정렬) */
+.whohead{ display:flex; flex-direction:column; align-items:stretch; gap:8px; text-align:left; }
+.whotop{ display:flex; align-items:center; gap:14px; }
+.whoid{ min-width:0; display:flex; flex-direction:column; gap:6px; }
+.whoname{ font-size:calc(22px * var(--ts)); font-weight:700; overflow-wrap:anywhere; }
 .whocounts{ display:flex; gap:14px; font-size:var(--f-sm); color:var(--ink-80); }
 .whocounts b{ color:var(--ink); font-variant-numeric:tabular-nums; }
-.whobtns{ display:flex; gap:8px; justify-content:center; margin-top:4px; }
+.whobtns{ display:flex; gap:8px; margin-top:2px; }
+.whobtns > *{ flex:1; }
 .whobtns .on{ font-weight:700; }
 .whoask{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
          margin-top:8px; padding:10px 12px; border-radius:var(--r-sm); background:var(--pearl);
@@ -5934,22 +5941,86 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 .whomatch .whopct b{ font-size:calc(30px * var(--ts)); color:var(--primary);
                      font-variant-numeric:tabular-nums; }
 .whomatch .memo{ margin-top:6px; }
-.whoglobe{ height:300px; padding:0; overflow:hidden; }
+/* 지구본 — 첫 판이 짧아지도록 300 → 260(b799, 시안의 비율). */
+.whoglobe{ height:260px; padding:0; overflow:hidden; }
 .whoglobe canvas{ width:100%; height:100%; display:block; }
-.whostats{ display:grid; grid-template-columns:repeat(4, 1fr); text-align:center; }
-.whostats b{ display:block; font-size:var(--f-xl); font-variant-numeric:tabular-nums; }
-.whostats span{ font-size:var(--f-xs); color:var(--ink-48); }
-.whopersona b{ font-size:var(--f-lg); }
-.whopersona .code{ margin-left:6px; font-size:var(--f-xs); letter-spacing:.1em; color:var(--ink-48); }
-.whopersona p{ margin:4px 0 0; color:var(--ink-80); }
-.whobadges{ display:flex; flex-wrap:wrap; gap:6px; }
-.whobadges span{ display:inline-flex; align-items:center; gap:4px; padding:3px 9px;
-                 border-radius:999px; background:var(--pearl); font-size:var(--f-sm); }
-.whobadges i{ font-style:normal; }
 .whorow{ display:flex; align-items:center; justify-content:space-between; gap:10px;
          padding:9px 0; border-bottom:1px solid var(--divider-soft); }
 .whorow:last-child{ border-bottom:0; }
 .whorow .t{ display:flex; flex-direction:column; min-width:0; }
+
+/* ── 남의 프로필 — 요약 첫 판과 들어간 판(b799) ─────────────────────────
+ * 사용자: 「왓챠처럼 그 항목에 들어가면 주르륵 볼 수 있게 … 첫판은 요약이 있어야해」.
+ * 첫 판 #whosum · 들어간 판 #whosub(people.js 머리말). 성향 카드는 분석 탭의 .phero 그대로.
+ * ⚠ 옛 .whostats(네 칸) · .whopersona · .whobadges 는 첫 판에서 빠지며 지웠습니다. */
+[data-whosub]{ cursor:pointer; }
+.card[data-whosub]:active, .whorow[data-whosub]:active{ background:var(--pearl); }
+/* ⚠ 세 칸은 카드지만 «밑줄»을 칸마다 긋지 않습니다 — `.card` 의 「마지막 카드는 밑줄 없음」
+     (.card:not(:has(~ .card)))에 걸려 셋째 칸만 줄이 빠졌습니다(재 봄). 줄은 묶음에 한 번,
+     칸 사이는 세로줄(왓챠 「평가 | 코멘트 | 컬렉션」). */
+.whotiles{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); margin-top:10px;
+           border-bottom:1px solid var(--line); }
+.whotile{ margin:0; padding:10px 6px 14px; text-align:center; border-bottom:0; }
+.whotile + .whotile{ border-left:1px solid var(--divider-soft); }
+.whotile b{ display:block; font-size:var(--f-xl); font-variant-numeric:tabular-nums; }
+.whotile span{ font-size:var(--f-xs); color:var(--ink-48); }
+.whocardhd{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+.whomore{ flex:none; font-size:var(--f-sm); color:var(--ink-48); }
+/* 흥미로운 사실(왓챠) — 이름표 왼쪽, 내용 오른쪽. */
+.whofacts{ margin-top:10px; padding-top:8px; border-top:1px solid var(--divider-soft); }
+.whofact{ display:flex; gap:8px; align-items:baseline; margin-top:6px; font-size:var(--f-sm); }
+.whofact > b{ flex:none; }
+.whofact i{ font-style:normal; }
+/* 별 하나를 글자로(나 ★4.5 · 너 ★3) — 별 다섯 그림 두 벌은 줄이 넘칩니다. */
+.whost{ font-style:normal; color:var(--star); font-weight:700; font-variant-numeric:tabular-nums; }
+/* 별점 분포 — 제일 많이 준 칸만 진하게(왓챠). 0 인 칸은 바닥 선만. */
+.whostat .whohist{ margin-top:10px; }
+.whohist{ display:flex; align-items:flex-end; gap:3px; }
+.whohist i{ flex:1; background:var(--star); opacity:.42; }
+.whohist i.top{ opacity:1; }
+.whohist i.zero{ background:var(--line); opacity:1; }
+.whohistx{ display:flex; gap:3px; margin:3px 0 6px; font-size:var(--f-xs); color:var(--ink-48);
+           font-variant-numeric:tabular-nums; }
+.whohistx span{ flex:1; text-align:center; }
+/* 들어간 판 */
+.whosubhd h2{ margin:6px 0 0; font-size:var(--f-3xl); font-weight:800; }   /* 판 제목(화면 제목 크기) — 카드 제목(--f-2xl)보다 커야 위계가 맞습니다 */
+.whosort{ margin:10px 0 0; }
+.whonote{ margin-top:8px; }
+.whogrp{ display:flex; align-items:baseline; gap:6px; padding:14px 0 6px; font-weight:700;
+         border-bottom:1px solid var(--divider-soft); }
+.whogrp:first-child{ padding-top:0; }
+.whovs{ flex:none; font-size:var(--f-sm); color:var(--ink-80); }
+.whomates{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; margin-top:12px; }
+.whomate{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.whomate img{ width:100%; aspect-ratio:3 / 2; object-fit:cover; display:block; margin-bottom:4px;
+              background:var(--pearl); }
+.whobadgegrid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-top:10px; }
+.whobadge{ margin:0; display:flex; flex-direction:column; gap:3px; }
+.whobadge i{ font-style:normal; font-size:24px; }
+.whokv{ display:flex; justify-content:space-between; gap:10px; padding:8px 0;
+        border-bottom:1px solid var(--divider-soft); }
+.whokv b{ font-variant-numeric:tabular-nums; }
+.whocont{ display:flex; align-items:center; gap:9px; margin-top:8px; }
+.whocont > span:first-child{ flex:none; width:74px; font-size:var(--f-sm); color:var(--ink-80); }
+.whocont b{ flex:none; width:26px; text-align:right; font-variant-numeric:tabular-nums; }
+
+/* ── 설정 › 공개 범위 세 가지(b799) ── 라디오처럼 한 줄에 제목과 설명.
+ * ⚠ 단추 기본의 「누를 때 줄어듦」을 뺍니다 — 넓은 줄이 통째로 줄면 흔들려 보입니다(.setrow 와 같음).
+ * ⚠ 한 번 더 눌러야 하는 둘(공개·비활성화)은 `data-armed` 때 .visask 가 보입니다(friends.js). */
+.visopts{ display:flex; flex-direction:column; gap:8px; margin:8px 0 12px; }
+.visopt{ display:grid; grid-template-columns:20px minmax(0,1fr); column-gap:10px; row-gap:3px;
+         align-items:start; width:100%; padding:12px; text-align:left;
+         background:transparent; color:var(--ink); }
+.visopt:active{ transform:none; }
+.visopt::before{ content:''; grid-row:1 / span 3; width:18px; height:18px; margin-top:2px;
+                 box-sizing:border-box; border:2px solid var(--ink-48); border-radius:50%; }
+.visopt > *{ grid-column:2; }
+.visopt .memo{ line-height:1.45; }
+.visopt.on, .visopt[data-armed="1"]{ border-color:var(--primary); }
+.visopt.on::before{ border-color:var(--primary);
+                    background:radial-gradient(circle, var(--primary) 0 4px, transparent 4.5px); }
+.visask{ display:none; color:var(--primary); font-weight:700; font-size:var(--f-sm); }
+.visopt[data-armed="1"] .visask{ display:block; }
 
 /* 도시 화면 「팔로우하는 사람들」 */
 .cvfr .frwho{ flex:1; }
@@ -6017,5 +6088,5 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 .edmeta > span:last-child{ margin-top:6px; flex:none; }
 .ednote{ margin-top:18px; line-height:1.5; }
 /* 남의 프로필 머리의 소개(people.js) */
-.whobio{ margin:4px 0 0; color:var(--ink-80); font-size:var(--f-lg); text-align:center;
+.whobio{ margin:0; color:var(--ink-80); font-size:var(--f-lg); text-align:left;
          overflow-wrap:anywhere; }

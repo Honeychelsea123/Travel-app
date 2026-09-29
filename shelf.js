@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck, backLabel,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b798';
-import { openCity } from './city.js?v=b798';
-import { sb } from './db.js?v=b798';
-import { cities, countryName, cityCountry } from './cities.js?v=b798';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b798';
-import { starHtml, paintStars, markRated, starValue, 별갈래, BAND_NAME } from './stars.js?v=b798';
-import { fail } from './net.js?v=b798';
-import { arm } from './ui.js?v=b798';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b799';
+import { openCity } from './city.js?v=b799';
+import { sb } from './db.js?v=b799';
+import { cities, countryName, cityCountry } from './cities.js?v=b799';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b799';
+import { starHtml, paintStars, markRated, starValue, 별갈래, BAND_NAME } from './stars.js?v=b799';
+import { fail } from './net.js?v=b799';
+import { arm } from './ui.js?v=b799';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b798';
-import { shareCard } from './card.js?v=b798';
-import { todayYmd } from './calc.js?v=b798';
+import { 발자국스펙 } from './map.js?v=b799';
+import { shareCard } from './card.js?v=b799';
+import { todayYmd } from './calc.js?v=b799';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b798';
-import { loadCities } from './citysearch.js?v=b798';
-import { loadRateData, saveRate } from './rating.js?v=b798';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b799';
+import { loadCities } from './citysearch.js?v=b799';
+import { loadRateData, saveRate } from './rating.js?v=b799';
 
 let ctx = {
   me: () => null,
@@ -89,9 +89,13 @@ const SHELF_HINT = {
 };
 /* **두 곳에서 씁니다**(그릴 때 · 마지막 줄을 지웠을 때). 문구를 양쪽에
    적으면 한쪽만 고치는 날이 옵니다. */
+/* ⚠ 「가보고 싶은 곳」만 단추를 답니다(b799, GPT 리포트 · 빈 화면 규칙) — ♡ 는 이 화면이 아니라
+   평가 탭·도시 화면에 있어서 «여기서 못 하는 일»입니다. 단추는 하단바의 평가 탭(`#tabrate`)을
+   대신 눌러줍니다(dom.js 의 data-go — 여는 방법을 두 벌로 만들지 않습니다). */
 const shelfEmpty = () =>
   emptyDo(`아직 ${josa(SHELF[shelfKind] || '담아둔 것', '이', '가')} 없어요.`,
-          null, null, SHELF_HINT[shelfKind]);
+          shelfKind === 'want' ? '도시 둘러보기' : null,
+          shelfKind === 'want' ? 'tabrate' : null, SHELF_HINT[shelfKind]);
 /* ⚠⚠ **`been` 을 넣었습니다(b671).** 기록 탭 타일이 「다녀온 도시」로
    바뀌면서 `mine` 대신 `been` 을 열게 됐는데, `been` 이 여기 없어서
    **별점도 정렬칩도 통째로 사라졌습니다.** 이름을 바꾸면 그 이름이 여는
@@ -240,7 +244,7 @@ async function openPlaceShelf(kind){
           <span class="memo">${esc(p.trips?.title || '')} · ${esc(p.date)}</span></div>
         <span class="stars" data-plan="${esc(p.id)}">${starHtml(rate[p.id])}</span>
         ${rate[p.id] != null
-          ? `<button class="ghost" data-pdel="${esc(p.id)}"
+          ? `<button class="ghost" aria-label="지우기" data-pdel="${esc(p.id)}"
                      style="color:var(--bad); flex:none">×</button>`
           : '<span style="width:26px; flex:none"></span>'}
       </div>`).join('')
@@ -438,7 +442,7 @@ async function openBadgeShelf(){
   for (const b of list) now[b.cat] = b.have;
   const line = Object.entries(now)
     .map(([c, v]) => `${c} ${v}${{ '평가':'곳', '다녀온 곳':'개국',
-                                   '여행':'일', '후기':'개' }[c] || ''}`)
+                                   '여행':'일', '후기':'개', '여행 후기':'개' }[c] || ''}`)
     .join(' · ');
 
   /* 갈래끼리 묶습니다. 스물일곱 개를 한 줄로 늘어놓으면 훑을 수가 없습니다. */
@@ -547,7 +551,9 @@ export async function openShelf(kind){
   const all = (cities || []).filter(c => {
     const r = myRates[c.id];
     if (kind === 'been')    return visited.has(c.id);
-    if (kind === 'want')    return !!r?.want;
+    /* ⚠ 별점을 매긴(다녀온) 곳은 뺍니다(b799, 사용자: 「목록에서 빼기」) — 분석 탭 「다음 여행」·
+       보관함 숫자(my_footprint, db/107)와 같은 셈. ♡ 는 그대로라 별점을 지우면 다시 나옵니다. */
+    if (kind === 'want')    return !!r?.want && r?.stars == null;
     if (kind === 'mine')    return r?.stars != null;
     if (kind === 'comment') return !!r?.comment;
     return false;
@@ -626,7 +632,7 @@ export async function openShelf(kind){
             <span class="memo">${esc(cityCountry(c))}${
               avgTail(cityStat[c.id], r)}</span></div>
           <span class="stars" data-city="${esc(c.id)}">${starHtml(r.stars)}</span>
-          <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}">♡</button>
+          <button class="ghost want${r.want ? ' on' : ''}" data-want="${esc(c.id)}" aria-label="가보고 싶어요">♡</button>
         </div>`;
         /* ── 한줄평 목록은 문장이 주인공입니다(b513) ─────────────────
            사용자 지적: 「한줄평이 제대로 보이지도 않는다」.
