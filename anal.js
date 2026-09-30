@@ -14,35 +14,35 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc } from './dom.js?v=b810';
-import { sb } from './db.js?v=b810';
-import { cities, cityCountry } from './cities.js?v=b810';
+import { $, esc, emptyDo } from './dom.js?v=b811';
+import { sb } from './db.js?v=b811';
+import { cities, cityCountry } from './cities.js?v=b811';
 /* 별 갈래와 그 이름. ⚠ **보관함 시트와 같은 것을 씁니다**(b727) — 따로 세면
    「★4점대 32곳」이 두 화면에서 달라집니다. 규칙은 stars.js 한 곳입니다. */
-import { 별갈래, BAND_NAME } from './stars.js?v=b810';
+import { 별갈래, BAND_NAME } from './stars.js?v=b811';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b810';
+import { cityStat } from './rate.js?v=b811';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b810';
+import { loadRateData } from './rating.js?v=b811';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b810';
+import { renderPersona } from './persona.js?v=b811';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b810';
+import { similarPicks } from './rec.js?v=b811';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b810';
-import { pickCity } from './citysearch.js?v=b810';
+import { openNew } from './newtrip.js?v=b811';
+import { pickCity } from './citysearch.js?v=b811';
 /* 「내 별점」 밑 카드 셋(b810) — 도시 어워즈 · 거리별 별점 · 진짜 최애. mycity.js 는 anal.js 를 모르므로 고리가 없습니다. */
-import { drawMyCities } from './mycity.js?v=b810';
+import { drawMyCities } from './mycity.js?v=b811';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -84,6 +84,28 @@ function 줄(제목, 밑, 오른쪽, 눌렀을때){
   return el;
 }
 
+/* ── 「성향 | 별점」 칸 고르기(b811) ── 칸 줄(#an_tabs)은 index.html 에 있고, 두 칸(#an_p · #an_m)은 loadAnal 이
+   그릴 때마다 새로 만듭니다. 고른 칸은 앱이 켜 있는 동안 기억합니다 — 다른 탭에 갔다 와도 그 칸 그대로.
+   ⚠ 칸을 바꿀 때 칸 줄이 화면 위로 올라가 있으면 칸 줄까지만 되돌립니다 — 긴 성향 칸 아래에서 「별점」을 누르면
+     새 칸의 중간에 떨어지지 않게. */
+let 지금칸 = 'p';
+function 칸보이기(){
+  $('an_p')?.classList.toggle('hide', 지금칸 !== 'p');
+  $('an_m')?.classList.toggle('hide', 지금칸 !== 'm');
+  document.querySelectorAll('#an_tabs [data-an]').forEach(b => {
+    const on = b.dataset.an === 지금칸;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+  });
+}
+$('an_tabs')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-an]');
+  if (!b || b.dataset.an === 지금칸) return;
+  지금칸 = b.dataset.an;
+  칸보이기();
+  const 줄 = $('an_tabs');
+  if (줄 && 줄.getBoundingClientRect().top < 0) 줄.scrollIntoView({ block: 'start' });
+});
+
 export async function loadAnal(){
   const box = $('analbox');
   if (!box || !ctx.me()) return;
@@ -107,6 +129,17 @@ export async function loadAnal(){
   const 리포트 = $('personabox');
   box.innerHTML = '';
 
+  /* ══ 두 칸 — 「성향 | 별점」(b811, 2026-10-01 사용자 결정) ═══════════════════════════════
+   * 사용자: 「분석탭이 너무 길어지는데」 → 로컬 시안 A(두 칸) · B(접기) → A. 이름은 「내 도시」 대신 「별점」(사용자).
+   * 재 보니 한 장에 폰 화면 4.4장(3,596px)이었습니다 — 성향 2.4장 · 별점 1.6장으로 갈렸습니다.
+   * ⚠ 접기(B)를 안 고른 까닭: 「두 걸음 깊은 것은 아무도 안 본다」(b457·b503). 칸은 한 번 누르면 다 펼쳐져 있습니다.
+   * ⚠ 어느 칸에 무엇이: 성향 = 리포트(성향 카드 · 다시 간 도시 · 궁합 · 다음 여행 · 왜 ○○○○) ·
+   *   별점 = 내 별점 · 도시 어워즈 · 거리별 별점 · 진짜 최애(mycity.js). 칸 줄은 index.html 의 #an_tabs. */
+  const 성향칸 = document.createElement('div'), 별점칸 = document.createElement('div');
+  성향칸.id = 'an_p'; 별점칸.id = 'an_m';
+  box.append(성향칸, 별점칸);
+  칸보이기();
+
   /* ══ ① 성향 리포트 ═══════════════════════════════════════════════════
    * ⚠⚠ **요약 카드를 걷고 «리포트 그 자체»를 놓습니다(b547, 사용자 결정).** ⚠⚠
    *   b447 부터 여기는 요약(유형 · 축 막대 넷)이었고, 제목 줄의
@@ -125,13 +158,13 @@ export async function loadAnal(){
    *   그래서 위에서 미리 잡아 둡니다(`리포트`).
    * ⚠ 매긴 곳이 문턱(5곳)에 못 미쳐도 그냥 그립니다 — 리포트가 스스로
    *   「도시 N곳만 더 매기면」과 「평가하러 가기」를 냅니다(persona.js 의 `임시`). */
-  /* ⚠⚠ **`await` 가 있어야 합니다(b736).** 아래 ②·③ 이 리포트 «안»의
-     자리(#statspot · #nextspot)를 찾아 들어갑니다 — 리포트가 다 그려지기
-     전에는 그 칸이 없어서, 안 기다리면 둘 다 탭 맨 아래로 떨어집니다.
+  /* ⚠⚠ **`await` 가 있어야 합니다(b736).** 아래 ③(다음 여행)이 리포트 «안»의
+     자리(#nextspot)를 찾아 들어갑니다 — 리포트가 다 그려지기 전에는 그 칸이 없어서,
+     안 기다리면 성향 칸 맨 아래로 떨어집니다. (② 내 별점은 b811 부터 「별점」 칸이라 리포트를 안 기다려도 됩니다.)
      ⚠ 터져도 나머지는 그립니다 — 리포트 하나 때문에 탭 전체가 비면
        안 됩니다. */
   if (리포트){
-    box.appendChild(리포트);
+    성향칸.appendChild(리포트);
     try { await renderPersona(); } catch (e) { console.error('@persona', e); }
   }
 
@@ -318,15 +351,19 @@ export async function loadAnal(){
     }
 
     /* 리포트 안 「내 별점」 자리로. 리포트가 없으면 제자리(탭 맨 아래). */
-    if (뭔가) ($('statspot') || box).appendChild(카드);
+    if (뭔가) 별점칸.appendChild(카드);   /* 「별점」 칸 맨 위(b811 — 전에는 리포트 안 #statspot) */
   }
 
   /* ══ ②-2 내 도시 이야기(b810, 2026-10-01) ══════════════════════════════
    * 도시 어워즈 · 거리별 별점 · 진짜 최애 고르기 — 「내 별점」 바로 밑(사용자가 시안 넷에서 고름).
    * 그리는 것은 mycity.js. 국내도 셉니다(성향과 다름 — 거기 머리말 참고).
    * ⚠ 터져도 탭은 그대로 둡니다 — 카드 셋 때문에 아래 「다음 여행」까지 안 그려지면 안 됩니다. */
-  try { await drawMyCities(전부, $('statspot') || box, ctx.me().id); }
+  try { await drawMyCities(전부, 별점칸, ctx.me().id); }
   catch (e) { console.error('@mycity', e); }
+  /* 별점 칸이 비면(매긴 곳이 적으면) 무엇을 하면 채워지는지 한 줄 — 빈 화면 규칙(emptyDo). */
+  if (!별점칸.children.length)
+    별점칸.innerHTML = `<div class="card">${emptyDo('도시를 5곳 넘게 매기면 여기에 별점 이야기가 나와요', '평가하러 가기', 'tabrate',
+      '도시 어워즈 · 거리별 별점 · 진짜 최애')}</div>`;
 
   /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
      b542 에 지도 화면에서 여기로 꺼냈던 것인데, 실기기에서 보니 「가장
@@ -393,7 +430,7 @@ export async function loadAnal(){
     줄내기('가보고 싶어요', 위시,
            위시.length > 8 ? `${위시.length}곳 중 8곳` : '');
     /* 리포트 안 「막대」 바로 밑으로(b736 시안 순서). 칸이 없으면 제자리. */
-    ($('nextspot') || box).appendChild(갈곳);
+    ($('nextspot') || 성향칸).appendChild(갈곳);
   }
 }
 

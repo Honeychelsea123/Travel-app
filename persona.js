@@ -19,25 +19,25 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 도전해볼 곳」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b810';
-import { sb } from './db.js?v=b810';
-import { cities, countryName, continentOf } from './cities.js?v=b810';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b811';
+import { sb } from './db.js?v=b811';
+import { cities, countryName, continentOf } from './cities.js?v=b811';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b810';
+import { similarPicks } from './rec.js?v=b811';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b810';
-import { visited } from './rate.js?v=b810';
-import { open16 } from './p16.js?v=b810';
+import { mateCode, mateHtml } from './mate.js?v=b811';
+import { visited } from './rate.js?v=b811';
+import { open16 } from './p16.js?v=b811';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
          PERSONA16, AXIS_WORD, AXIS_NAME, axisSpectrum, personaWhyHtml, personaShiftWhy,
-         shareCard } from './card.js?v=b810';
+         shareCard } from './card.js?v=b811';
 /* 성향 v2(2026-09-30): 지난번 코드(흔들림 막기)와 올리기는 pshift.js 한 곳 — 홈 알림과 같은 기준이어야
    두 화면이 다른 유형을 붙잡지 않습니다. 다시 간 도시 시트는 visits.js. */
-import { prevPersona, savePersona } from './pshift.js?v=b810';
-import { openVisits } from './visits.js?v=b810';
+import { prevPersona, savePersona } from './pshift.js?v=b811';
+import { openVisits } from './visits.js?v=b811';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -226,7 +226,7 @@ async function drawPersona(s, ax, rates){
        이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
        말할 것은 「예전엔 이랬다」 하나입니다. */
     return `<div class="pwas">
-      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b810"
+      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b811"
            alt="" loading="lazy" decoding="async">
       <span class="pwast"><b>성향이 바뀌었어요</b>
         <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i>
@@ -344,12 +344,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b810')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b811')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b810" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b811" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -467,13 +467,13 @@ async function drawPersona(s, ax, rates){
              있었습니다 — 유형은 «그림으로» 기억됩니다.
            ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
-          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b810"
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b811"
                alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b810"
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b811"
                alt="" loading="lazy" decoding="async">
           <span class="ml">극과 극 메이트${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
@@ -510,7 +510,8 @@ async function drawPersona(s, ax, rates){
       <div class="row"><span class="label">매긴 도시</span>
         <span class="val">${s.cities}곳 · ${s.countries}개국 · ${s.continents}대륙</span></div>
       <!-- 다시 간 도시 — 알려준 적이 있으면 고치기, 없으면 알려주기(위 카드를 「나중에」로 닫았어도 여기로 들어옵니다). -->
-      ${임시 ? '' : `<button class="p16open" id="pv_edit">${ax.사실?.알려줌 ? '다시 간 도시 고치기 ›' : '다시 간 도시 알려주기 ›'}</button>`}
+      <!-- ⚠ 위 카드(방문카드)가 떠 있으면 안 답니다 — 같은 길이 두 번 나왔습니다(사용자: 「다시간 도시 알려주기도 2번 나오네」). -->
+      ${임시 || 방문카드 ? '' : `<button class="p16open" id="pv_edit">${ax.사실?.알려줌 ? '다시 간 도시 고치기 ›' : '다시 간 도시 알려주기 ›'}</button>`}
       <!-- ⚠ **「그중 해외」 줄을 뺐습니다(b459).** 74곳 중 50곳이 해외라는
            것은 **우리가 계산하려고 쓰는 표본**이지, 읽는 사람에게 자랑도
            재미도 아닙니다. 「단골력·모험력은 이 50곳으로만 셉니다」는
@@ -563,10 +564,7 @@ async function drawPersona(s, ax, rates){
        ⚠ **확정 전에는 공유 단추를 안 답니다(b408).** 흔들리는 코드가
          남에게 가면 안 됩니다. -->
 
-    <!-- 「내 별점」(anal.js ②)이 여기로 들어옵니다(b736). 위 「나의 여행
-         성향」이 유형 이야기라면 여기는 **나에 대한 숫자**입니다 — 유형
-         이야기를 다 읽은 뒤에 오는 것이 맞습니다. -->
-    <div id="statspot"></div>
+    <!-- ⚠ 「내 별점」 자리(#statspot, b736)는 걷었습니다 — b811 에 「별점」 칸(anal.js #an_m)으로 옮겼습니다. -->
     `;
 
   /* ⚠ 여기 「공유」 단추가 따로 있었습니다(b393 에서 합침). 그 글은 버리지

@@ -9,11 +9,11 @@
  *   것만 씁니다. ★4.5 가 ★5 를 이기는 식으로 별점과 어긋나는 순위도 안 만듭니다 — 같은 별점끼리만 겨룹니다.
  * ⚠ **국내도 셉니다**(사용자). 성향(card.js)은 국내를 빼지만, 여기는 «내가 매긴 도시» 이야기입니다.
  * 층: dom · db · cities · calc · city(도시 화면). anal.js 가 부릅니다(drawMyCities). persona.js 는 모릅니다. */
-import { $, esc, toast, josa } from './dom.js?v=b810';
-import { sb } from './db.js?v=b810';
-import { cities } from './cities.js?v=b810';
-import { distKm, SEOUL } from './calc.js?v=b810';
-import { openCity } from './city.js?v=b810';
+import { $, esc, toast, josa } from './dom.js?v=b811';
+import { sb } from './db.js?v=b811';
+import { cities } from './cities.js?v=b811';
+import { distKm, SEOUL } from './calc.js?v=b811';
+import { openCity } from './city.js?v=b811';
 
 const 국내 = 'KR';
 const 셋말 = n => ['', '한', '두', '세', '네', '다섯'][n] || String(n);
@@ -102,7 +102,7 @@ function 어워즈(목록){
  * 막대는 ★1~★5 전체 폭입니다(차이를 부풀리지 않음). 숫자가 주인공입니다. */
 const 띠들 = [
   { 이름: '국내', 말: '국내', 맞나: x => x.kr },
-  { 이름: '가까운 해외 · 1,500km 안', 말: '1,500km 안 해외', 맞나: x => !x.kr && x.km != null && x.km < 1500 },
+  { 이름: '1,500km 안 해외', 말: '1,500km 안 해외', 맞나: x => !x.kr && x.km != null && x.km < 1500 },
   { 이름: '1,500~4,500km', 말: '1,500~4,500km', 맞나: x => !x.kr && x.km >= 1500 && x.km < 4500 },
   { 이름: '4,500~8,000km', 말: '4,500~8,000km', 맞나: x => !x.kr && x.km >= 4500 && x.km < 8000 },
   { 이름: '8,000km 넘게', 말: '8,000km 넘게 간 곳', 맞나: x => !x.kr && x.km >= 8000 },
@@ -122,13 +122,15 @@ function 거리별(목록){
     : `${높.말}에서 별이 가장 높아요 · ${josa(낮.말, '이', '가')} 가장 낮아요`;
 
   const el = 카드('거리별 별점');
+  /* 한 줄에 [띠 · 막대 · 별(곳 수)] — b811 에 분석 탭을 두 칸으로 나누며 줄였습니다(사용자가 고른 시안 A). 전에는
+     띠마다 이름 줄 · 막대 줄 · 예시 도시 줄의 세 줄이라 카드가 491px 였습니다. 곳 수는 남겨 둡니다 — 여섯 곳과
+     스물여덟 곳의 평균은 무게가 다릅니다. */
   el.insertAdjacentHTML('beforeend', 띠.map(b => {
     const 위 = 벌어짐 >= 0.2 && b === 높;
-    const 예 = [...b.xs].sort((a, c) => c.stars - a.stars || 이름순(a, c)).slice(0, 3).map(x => x.name);
     return `<div class="dbr${위 ? ' top' : ''}">
-      <div class="dbh"><b>${esc(b.이름)}</b><span>★${b.평균.toFixed(1)}</span></div>
+      <b>${esc(b.이름)}</b>
       <div class="dbt"><i style="width:${Math.round((b.평균 - 1) / 4 * 100)}%"></i></div>
-      <div class="dbs">${b.xs.length}곳 · ${esc(예.join(' · '))}${b.xs.length > 3 ? ' …' : ''}</div></div>`;
+      <span><em>★${b.평균.toFixed(1)}</em><small>${b.xs.length}곳</small></span></div>`;
   }).join('') + (말 ? `<div class="memo" style="margin-top:10px">${esc(말)}</div>` : ''));
   return el;
 }
