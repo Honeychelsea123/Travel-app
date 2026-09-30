@@ -14,18 +14,18 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · cities.js · rate.js ·
  *     city.js · citysearch.js 를 씁니다. */
-import { $, esc, josa, tipOff } from './dom.js?v=b808';
-import { sb } from './db.js?v=b808';
-import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b808';
-import { dateRange } from './calc.js?v=b808';
-import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b808';
+import { $, esc, josa, tipOff } from './dom.js?v=b809';
+import { sb } from './db.js?v=b809';
+import { fail, netTimeout, netIsDown, drawOffbar, NOROW } from './net.js?v=b809';
+import { dateRange } from './calc.js?v=b809';
+import { starHtml, paintStars, markRated, starValue } from './stars.js?v=b809';
 import { cities, countryName, cityCountry, continentOf,
-         countryInfo } from './cities.js?v=b808';
+         countryInfo } from './cities.js?v=b809';
 import { myRates, cityStat, visited, justRated, avgTail,
          setRateData, setVisited, applyRate, putCityStat, clearJustRated,
-         removeRate, 별받음 } from './rate.js?v=b808';
-import { openCity } from './city.js?v=b808';
-import { loadCities } from './citysearch.js?v=b808';
+         removeRate, 별받음 } from './rate.js?v=b809';
+import { openCity } from './city.js?v=b809';
+import { loadCities } from './citysearch.js?v=b809';
 
 let ctx = { me: () => null, fillCityList: () => {}, showApp: () => {} };
 export function setRatingCtx(o){ ctx = { ...ctx, ...o }; }
@@ -177,7 +177,9 @@ const 성향문턱 = 5;
 function 제자리안내(조용){
   const el = $('tip_rate');
   if (!el) return;
-  const n = Object.values(myRates || {}).filter(r => r?.stars != null).length;
+  /* v2: 성향은 **해외** 도시로만 셉니다(card.js personaAxes 머리) — 여기 세는 것도 해외만. */
+  const 국내 = new Set((cities || []).filter(c => c.country === 'KR').map(c => c.id));
+  const n = Object.entries(myRates || {}).filter(([id, r]) => r?.stars != null && !국내.has(id)).length;
   if (조용 && n >= 성향문턱 && 별받음 && !el.classList.contains('hide')){
     $('tip_rate_t').innerHTML = '<b>여행 성향이 확정됐어요</b> · 분석 탭에서 볼 수 있어요';
     return;
@@ -186,9 +188,11 @@ function 제자리안내(조용){
   if (조용 && 끔) return;            /* 조용할 때는 보이던 줄을 걷지 않습니다(위 ⚠⚠) */
   el.classList.toggle('hide', 끔);
   if (끔) return;
-  $('tip_rate_t').innerHTML = n === 0
-    ? `가본 곳엔 별을, 가보고 싶은 곳엔 ♡를 눌러요 · <b>${성향문턱}곳이면 여행 성향이 확정돼요</b>`
-    : `<b>${성향문턱 - n}곳만 더</b> 매기면 여행 성향이 확정돼요`;
+  /* 처음 안내는 **아무것도 안 매긴** 사람에게만 — 국내만 매긴 사람에게 「가본 곳엔 별을…」은 틀린 말입니다. */
+  const 매긴수 = Object.values(myRates || {}).filter(r => r?.stars != null).length;
+  $('tip_rate_t').innerHTML = 매긴수 === 0
+    ? `가본 곳엔 별을, 가보고 싶은 곳엔 ♡를 눌러요 · <b>해외 도시 ${성향문턱}곳이면 여행 성향이 확정돼요</b>`
+    : `<b>해외 도시 ${성향문턱 - n}곳만 더</b> 매기면 여행 성향이 확정돼요`;
 }
 
 export function drawRatings(){

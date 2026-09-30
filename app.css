@@ -4325,12 +4325,15 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
  * 값은 두 성향 사이의 «자리»입니다. 가운데(50) 선에서 기운 쪽으로 칠하고 기운 쪽 이름만 진하게.
  * 그리는 것은 card.js 의 axisSpectrum 하나(분석 탭 · 사람 화면).
  * ⚠ 양끝 이름 칸은 **em 으로 못박습니다** — 글자 크기 설정(--ts)을 따라 같이 커져야 네 줄의 막대
- *   시작·끝이 맞습니다. 「유명한 곳」·「여러 나라」가 제일 깁니다(12px 에서 약 51px < 4.6em). */
-.axspec{ margin:10px 0 4px; display:flex; flex-direction:column; gap:9px; }
-.axsname{ font-size:var(--f-sm); font-weight:600; color:var(--ink); }
+ *   시작·끝이 맞습니다. 「유명한 곳」·「익숙한 곳」이 제일 깁니다(11px 에서 약 47px < 4.6em).
+ * ⚠ **축 이름은 크게·굵게, 양끝 말은 작게(2026-09-30, 사용자: 「개척력…이 사이즈가 밑 항목이랑 같아서 구별이
+ *   전혀 안되네」).** 둘 다 12px·600 이라 제목과 눈금이 한 줄처럼 읽혔습니다. 공유 카드(축그리기)는 처음부터
+ *   이름 10 · 극 8.5 로 갈라 두었습니다 — 화면도 같은 위계로. */
+.axspec{ margin:12px 0 4px; display:flex; flex-direction:column; gap:14px; }
+.axsname{ font-size:var(--f-lg); font-weight:700; color:var(--ink); }
 .axsname span{ font-weight:400; color:var(--ink-48); }
-.axsline{ display:flex; align-items:center; gap:8px; margin-top:3px; }
-.axsp{ flex:none; width:4.6em; font-size:var(--f-sm); color:var(--ink-48); white-space:nowrap; }
+.axsline{ display:flex; align-items:center; gap:8px; margin-top:6px; }
+.axsp{ flex:none; width:4.6em; font-size:var(--f-xs); color:var(--ink-48); white-space:nowrap; }
 .axsp.r{ text-align:right; }
 .axsp.on{ color:var(--ink); font-weight:600; }
 .axstrk{ position:relative; flex:1; height:8px; background:var(--line); }
@@ -4447,6 +4450,38 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
           color:var(--ink); word-break:keep-all; }
 .pwast em{ font-style:normal; font-weight:800; letter-spacing:.03em;
            color:var(--ink-48); margin-right:2px; }
+/* 무엇이 바뀌었는지 한 줄(성향 v2 · card.js personaShiftWhy). */
+.pwast small{ font-size:calc(12px * var(--ts)); color:var(--ink-48); word-break:keep-all; line-height:1.45; }
+
+/* ── 성향 v2(2026-09-30) ── 다시 간 도시 카드 · 그 시트(visits.js) ──
+   ⚠ 시트 뼈대는 기존 `.sheet` 그대로(보관함·평가 탭과 같은 규칙) — 여기는 안쪽만.
+   ⚠ 「분석 상태 한 줄」(.pstate)은 넣었다가 뺐습니다(사용자: 「문구도 그냥 빼버리자」). */
+.pvisit{ background:var(--primary-soft); }
+.pvisit > b{ display:block; font-size:var(--f-md); font-weight:700; color:var(--ink); }
+.pvisit .memo{ margin-top:4px; word-break:keep-all; }
+.pvbtns{ display:flex; gap:8px; margin-top:12px; }
+/* 막지 않는 카드라 단추도 한 단계 작게 — 기본 .primary 는 화면의 주인공 단추 크기입니다. */
+.pvbtns button{ padding:9px 14px; font-size:var(--f-md); }
+.vsbody{ padding:10px 16px 6px; }
+.vsbody > .memo{ word-break:keep-all; }
+.vsbody input[type=search]{ width:100%; margin:10px 0 4px; }
+.vsrow{ display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:9px 0; border-bottom:1px solid var(--divider-soft); }
+.vsname{ min-width:0; font-size:var(--f-md); color:var(--ink); word-break:keep-all; }
+.vsname i{ font-style:normal; font-size:var(--f-sm); color:var(--star); margin-left:6px;
+           font-variant-numeric:tabular-nums; }
+/* − 1번 + ── 손가락 칸 40px(기본 글자에서). 다시 간 곳(2번 넘게)은 테두리를 진하게 · 숫자를 앱 주황으로. */
+.vsstep{ flex:none; display:flex; align-items:center; border:1px solid var(--line-hard); }
+.vsstep button{ appearance:none; border:0; background:none; cursor:pointer; font:inherit;
+                width:40px; height:36px; font-size:var(--f-lg); color:var(--ink); }
+.vsstep button:disabled{ color:var(--line-hard); cursor:default; }
+.vsstep b{ min-width:44px; text-align:center; font-size:var(--f-sm); font-weight:700;
+           color:var(--ink-48); font-variant-numeric:tabular-nums; }
+.vsrow.up .vsstep{ border-color:var(--ink); }
+.vsrow.up .vsstep b{ color:var(--brand); }
+.vsfoot{ position:sticky; bottom:0; padding:10px 16px 14px; background:var(--canvas);
+         border-top:1px solid var(--divider-soft); }
+.vsfoot .primary{ width:100%; }
 
 /* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
    으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이

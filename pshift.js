@@ -24,11 +24,11 @@
  *   누르는 것이 곧 봤다는 증거입니다. 그전까지는 홈을 그릴 때마다 다시
  *   붙습니다 — 그게 「다시 열 이유」의 뜻이기도 합니다.
  */
-import { $, esc } from './dom.js?v=b808';
-import { sb } from './db.js?v=b808';
-import { netTimeout } from './net.js?v=b808';
-import { cities } from './cities.js?v=b808';
-import { personaAxes, PERSONA16 } from './card.js?v=b808';
+import { $, esc } from './dom.js?v=b809';
+import { sb } from './db.js?v=b809';
+import { netTimeout } from './net.js?v=b809';
+import { cities } from './cities.js?v=b809';
+import { personaAxes, personaShiftWhy, PERSONA16 } from './card.js?v=b809';
 
 let ctx = { me: () => null, 열기: () => {} };
 export function setShiftCtx(o){ ctx = { ...ctx, ...o }; }
@@ -63,11 +63,47 @@ export function clearPcode(){ 대기 = null; }
  *   다시 해 봅니다(101_follow.sql 을 돌리기 전에도 조용히 넘어갑니다).
  * ⚠ 문턱(5곳) 아래로 내려가면 지웁니다 — 남겨 두면 옛 성향이 계속 보입니다. */
 const 올린열쇠 = uid => 't2:psrv:' + uid;
-function 서버성향(uid, code){
-  try { if ((localStorage.getItem(올린열쇠(uid)) ?? '') === (code || '')) return; } catch { return; }
-  sb.from('profiles').update({ persona: code }).eq('id', uid)
-    .then(r => { if (!r.error) try { localStorage.setItem(올린열쇠(uid), code || ''); } catch {} })
+/* ⚠ v2(110): 코드와 함께 **네 축 숫자**(profiles.persona_ax)도 올립니다 — 사람 화면이 막대를 그 사람 것과
+   똑같이 그리려면 필요합니다(다시 간 횟수는 남에게 안 가서 거기서 새로 세면 어긋납니다).
+   기기에 적는 값은 「코드|네 숫자」입니다. 110 을 아직 안 돌렸으면 숫자 칸이 없다고 거절되므로 코드만 다시
+   보냅니다 — 그 앱 켜 있는 동안은 숫자를 더 안 보내 봅니다(`숫자칸없음`). */
+let 숫자칸없음 = false;
+export function savePersona(uid, code, ax = null){
+  const 숫자 = code && ax ? [ax.개척, ax.단골, ax.모험, ax.만족].map(v => Math.round(v)) : null;
+  const 값 = (code || '') + (숫자 && !숫자칸없음 ? '|' + 숫자.join(',') : '');
+  try { if ((localStorage.getItem(올린열쇠(uid)) ?? '') === 값) return; } catch { return; }
+  서버코드 = { uid, code: code || null };
+  const 보냄 = 숫자칸없음 ? { persona: code } : { persona: code, persona_ax: 숫자 };
+  sb.from('profiles').update(보냄).eq('id', uid)
+    .then(r => {
+      if (r.error && !숫자칸없음 && /persona_ax/.test(r.error.message || '')){
+        숫자칸없음 = true;
+        return sb.from('profiles').update({ persona: code }).eq('id', uid)
+          .then(r2 => { if (!r2.error) try { localStorage.setItem(올린열쇠(uid), code || ''); } catch {} });
+      }
+      if (!r.error) try { localStorage.setItem(올린열쇠(uid), 값); } catch {}
+    })
     .catch(() => {});
+}
+
+/* ── 지난번 코드(v2 흔들림 막기) ──────────────────────────────────────
+ * 성향은 이제 **지난번 코드**를 알아야 셉니다 — 가운데 근처에서는 글자를 붙잡습니다(card.js personaAxes).
+ * 기준은 **서버에 적힌 것**(profiles.persona) 하나입니다. 기기마다 따로 두면 폰과 PC 가 다른 유형을
+ * 붙잡습니다. 못 받아오면 이 기기가 마지막으로 올린 것(`t2:psrv:`)을 씁니다.
+ * ⚠ 한 번 받으면 앱이 켜 있는 동안 기억합니다 — 홈과 분석 탭이 자주 다시 그려집니다. 올릴 때 같이 고칩니다. */
+let 서버코드 = { uid: null, code: undefined };
+/* 이미 받아 둔 것만(기다리지 않음) — 사람 화면(people.js)의 「내 코드」가 궁합을 셀 때 씁니다. 없으면 null. */
+export const knownPersona = uid =>
+  (uid && 서버코드.uid === uid && 서버코드.code !== undefined) ? 서버코드.code : null;
+export async function prevPersona(uid){
+  if (!uid) return null;
+  if (서버코드.uid === uid && 서버코드.code !== undefined) return 서버코드.code;
+  const r = await netTimeout(sb.from('profiles').select('persona').eq('id', uid).maybeSingle());
+  if (r && !r.error){
+    서버코드 = { uid, code: r.data?.persona || null };
+    return 서버코드.code;
+  }
+  try { return (localStorage.getItem(올린열쇠(uid)) || '').split('|')[0] || null; } catch { return null; }
 }
 
 /* ── 재고, 바뀌었으면 알린다 ──────────────────────────────────────────
@@ -81,15 +117,20 @@ export async function checkPersonaShift(){
   if (대기) return 그리기();
   const me = ctx.me();
   if (!me) return;
-  const r = await netTimeout(sb.from('city_ratings')
-    .select('city_id,stars').eq('user_id', me.id).not('stars', 'is', null));
+  /* v2: 다시 간 횟수(visits)도 받고, 지난번 코드(서버)를 넘겨 흔들림을 막습니다. */
+  const [r, 전코드] = await Promise.all([
+    netTimeout(sb.from('city_ratings')
+      .select('city_id,stars,visits').eq('user_id', me.id).not('stars', 'is', null)),
+    prevPersona(me.id)]);
   if (!r || r.error || !Array.isArray(r.data)) return;
-  if (r.data.length < 문턱){ 서버성향(me.id, null); return; }
-
-  const ax = personaAxes(r.data, { cities });
+  /* ⚠ 도시 목록이 아직 없으면 해외를 못 가립니다 — 그때 세면 해외 0곳으로 보고 서버 코드를 지워 버립니다. */
+  if (!(cities || []).length) return;
+  const ax = personaAxes(r.data, { cities, prev: 전코드 });
+  /* v2: 문턱은 **해외** 5곳(국내는 성향에 안 들어감 — card.js personaAxes 머리). */
+  if (ax.해외 < 문턱){ savePersona(me.id, null); return; }
   const 지금 = ax?.code;
   if (!지금 || 지금.length !== 4) return;
-  서버성향(me.id, 지금);
+  savePersona(me.id, 지금, ax);
 
   const 전 = 읽기(me.id);
   if (!전){ 쓰기(me.id, 지금); return; }   /* 처음 본 코드는 견줄 기준일 뿐입니다 */
@@ -119,7 +160,7 @@ function 그리기(){
       <i class="psh-ar">→</i>
       <span class="psh-new"><b>${esc(지금)}</b><span>${esc(뒤)}</span></span>
     </div>
-    <div class="memo">최근에 매긴 곳들이 그렇게 말해요.</div>
+    <div class="memo">${esc(personaShiftWhy(전, 지금) || '최근에 매긴 곳들이 그렇게 말해요.')}</div>
     <div class="psh-btns">
       <button class="primary psh-go">뭐가 달라졌는지 보기</button>
       <button class="small psh-x">닫기</button>

@@ -49,15 +49,23 @@ export const pScale = (v, lo, hi) =>
    맞춘 값입니다(card.js 의 축 설명 참고). */
 export const cityFameP = c =>
   c?.fame == null ? 50 : pScale(Number(c.fame), 1.10, 2.55);
+/* 같은 자를 **자르지도 반올림하지도 않고** 0~1 로 냅니다(성향 v2, 2026-09-30).
+   card.js personaAxes 가 여러 도시를 섞어 잰 뒤에 한 번만 자릅니다 — 도시마다 먼저
+   자르고 반올림하면 끝자리가 쌓여 가운데(50) 근처에서 글자가 헛갈립니다.
+   ⚠ 상수는 바로 위 cityFameP 와 같습니다. 고치면 둘 다 고치십시오. */
+export const fameN = f => (Number(f) - 1.10) / (2.55 - 1.10);
 
 /* 서울에서의 거리. **로그를 씁니다** — 선형이면 유럽·남미가 전부 100 에
    몰립니다. 한국에서는 웬만한 데가 다 멀어서, 가까운 구간(일본~동남아)에서
-   갈려야 뜻이 있습니다. 700km 아래는 다 같이 봅니다. */
+   갈려야 뜻이 있습니다. 700km 아래는 다 같이 봅니다.
+   `distN` 은 같은 자를 0~1 로 냅니다(성향 v2 의 가운뎃값이 씁니다). */
+export const distN = km =>
+  Math.max(0, Math.min(1, Math.log(Math.max(km, 700) / 700) / Math.log(9500 / 700)));
 export const cityDistP = c => {
   if (c?.center_lat == null || c?.center_lng == null) return 50;
   const d = distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng);
   if (d == null) return 50;
-  return pScale(Math.log(Math.max(d, 700) / 700), 0, Math.log(9500 / 700));
+  return pScale(distN(d) * 100, 0, 100);
 };
 
 /* 도쿄에서 실제로 재서 쓰던 식입니다. 상수는 그날 있는 구간에서 옵니다 —

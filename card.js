@@ -8,10 +8,10 @@
  * 이 파일도 앱 전체를 알아야 합니다.
  *
  * 층: dom.js 만 씁니다. */
-import { $, esc, toast, flagSprite, flagSvgOf } from './dom.js?v=b808';
+import { $, esc, toast, josa, flagSprite, flagSvgOf } from './dom.js?v=b809';
 /* 모험력이 서울에서의 거리를 씁니다. calc.js 는 아무것도 import 하지 않는
    잎이라 고리가 안 생깁니다. */
-import { distKm, pScale, SEOUL } from './calc.js?v=b808';
+import { distKm, distN, fameN, SEOUL } from './calc.js?v=b809';
 
 /* ── 성향 카드 ───────────────────────────────────────────────────────
  * "나는 뭐로 나올까"가 궁금해서 평가를 더 하게 만드는 것이 목적입니다.
@@ -293,7 +293,7 @@ function p16Image(code){
     /* 꼬리표를 붙입니다 — 서비스워커의 `versioned` 갈래가 **본 것만** 담고
        옛 판을 지웁니다(sw.js). 열여섯 장 612KB 를 미리 담을 이유가 없습니다.
        한 사람은 자기 유형 하나만 봅니다. */
-    img.src = `./persona/${code}.webp?v=b808`;
+    img.src = `./persona/${code}.webp?v=b809`;
   });
 }
 
@@ -562,7 +562,7 @@ function p16Thumb(code){
     const img = new Image();
     img.onload = () => ok(img);
     img.onerror = () => ok(null);      /* 그림 하나 때문에 카드를 못 만들면 안 됩니다 */
-    img.src = `./persona/m/${code}.jpg?v=b808`;
+    img.src = `./persona/m/${code}.jpg?v=b809`;
   });
 }
 
@@ -1752,84 +1752,252 @@ export function personaStats(rows, world = {}){
  *   같이 내보냅니다. */
 const 국내 = 'KR';
 
-/* 해외가 이보다 적으면 두 축을 50 으로 두고 **화면에서 밝힙니다.**
+/* 해외가 이보다 적으면 **나라 몰림**과 **거리**를 못 정한 것으로 두고 화면에서 밝힙니다.
    1곳이면 「제일 많이 간 나라 ÷ 전체」가 1.0 이라 단골력이 100 으로 튑니다 —
    해외 한 번 다녀온 사람이 '한 나라 순정파' 가 됩니다. 3곳이면 다 다른
    나라일 때 0.33(→M), 한 나라일 때 1.0(→L) 이라 비로소 갈립니다. */
 const 해외문턱 = 3;
 
+/* ══ 성향 v2 (2026-09-30) ══════════════════════════════════════════════
+ * 사용자: 「성향은 여러번 똑같은 도시까지 녹일 수 있고 좀 더 다양성있게 로직을 짜보자」
+ *   + 밖에서 받은 명세(KIRO_PERSONA_AND_ANALYTICS_ENHANCEMENT_SPEC) → 재 보고 시안 → 사용자가 고름.
+ * 바뀐 것 넷 — 코드 네 글자·유형 이름·그림은 **그대로**입니다(명세 0장 · 사용자 결정).
+ *   ① 여러 번 간 도시(city_ratings.visits, 109)를 셉니다. 유명도·거리에는 무게(방문무게)로,
+ *      단골력에는 「다시 간 비율」로. **별점은 도시마다 한 번만** 셉니다 — 다섯 번 갔다고
+ *      별 하나를 다섯 번 세면 만족력이 그 도시 하나로 기웁니다(명세 9장).
+ *   ② 단골력의 뜻 — 「익숙한 곳」 = **한 나라에 몰려 가거나, 같은 도시를 다시 가거나. 더 강한 쪽.**
+ *      (사용자가 고름. 명세 그대로 「다시 간 도시 위주」로 하면 일본 도시 스무 곳을 한 번씩 간
+ *       사람이 「새로운 곳」이 되어 '한 나라 순정파'·'깊이 파는 사람' 이름과 어긋났습니다.)
+ *      다시 간 도시를 **안 알려줬으면 나라 몰림만** 봅니다 — 안 알려줬다고 M 으로 몰지 않습니다.
+ *      알려줬는데 다시 간 곳이 없어도 나라 몰림은 그대로 남습니다(둘 중 큰 쪽이라).
+ *   ③ 모험력 — 평균이 아니라 **가운뎃값** 60 + 먼 곳(4,500km 넘게) 비율 30 + 가장 먼 곳 10.
+ *      평균이면 유럽 한 번이 일본 다섯 번을 덮었습니다(도쿄5·후쿠오카3·파리·싱가포르가 D 로 나왔음).
+ *   ④ 흔들림 막기 — 지난번 코드(서버 profiles.persona)가 있으면, 반대쪽으로 `흔들림폭` 넘게
+ *      넘어가야 글자가 바뀝니다(명세 11장). 재 보니 평생 바뀌는 횟수가 한 사람당 2.6 → 0.7번.
+ * 잰 것(지어낸 여행자 2,000명 · 실제 도시 721곳, 스크래치 p2/sim.html):
+ *   가장 많은 유형 19.6% → 13%, 가장 적은 유형 0.5% → 2%, 숨은 성향 맞힘 단골 62→67~73% · 모험 72→89%.
+ *   만족력은 **별점 평균 그대로**입니다 — 명세의 「낮은 별점 비율·편차」를 섞으니 덜 맞고(94→83%)
+ *   후한 쪽으로 쏠렸습니다(67%).
+ * ⚠ 막대에 그리는 값(개척·단골·모험·만족)은 **표본이 적을수록 가운데로 당긴** 값입니다(믿음).
+ *   글자는 당기기 전 값으로 정합니다 — 당겨도 가운데를 넘지 않으므로 같은 쪽입니다.
+ * ⚠ 막대와 글자는 **어긋나지 않게** 만듭니다(b805 규칙) — 흔들림 막기로 붙잡힌 축은 글자 쪽으로
+ *   살짝(2) 기울여 그립니다(`경계` 에도 넣지만 화면에는 안 적습니다 — 「거의 가운데」 딱지는 사용자가 뺐습니다, 2026-09-30). */
+const 방문무게 = [1, 1, 1.3, 1.5, 1.65, 1.8];   /* 1~5번(5 = 5번 이상). 명세 6.2 표 */
+export const 흔들림폭 = 8;
+const 믿음 = n => n / (n + 4);                    /* 5곳 0.56 · 10곳 0.71 · 20곳 0.83 · 50곳 0.93 */
+const 먼거리 = 4500;
+/* 만족력의 가운데 — **★3.6(2026-09-30 사용자 결정).** 그 날 앱 전체 별점 254개(139개 도시)의 평균이 3.60 이었습니다.
+   v1 은 3.20~4.85(가운데 약 4.0)로 「사람들은 대체로 후하게 준다」고 보고 잡았는데, 우리 앱에서는 대부분이
+   P 로 나왔습니다(사용자: 「★3.5가 왜 P야?」). 「1~2점대만 주면 P」(가운데 3.0)도 견줬지만 그러면 거의 다 G 라
+   P 로 끝나는 여덟 유형이 사라져서 안 골랐습니다. 폭은 전과 같게(1.6) — 2.8 이면 끝까지 까다로움, 4.4 면 끝까지 후함.
+   ⚠ 사람이 늘면 다시 재 볼 자리입니다(명세 12장: 판을 올리고 견준 뒤에). */
+export const 별가운데 = 3.6;
+const 별낮은끝 = 2.8, 별높은끝 = 4.4;
+const 백분 = x => Math.max(0, Math.min(100, x * 100));
+const 비율 = (v, lo, hi) => 백분((v - lo) / (hi - lo));
+const 극 = ['FH', 'ML', 'ND', 'PG'];
+export const PERSONA_VER = 2;
+
 export function personaAxes(rows, world = {}){
-  const cities = world.cities || [];
-  const info = id => cities.find(c => c.id === id);
+  const 표 = new Map((world.cities || []).map(c => [c.id, c]));
   const rated = (rows || []).filter(r => r.stars != null);
+  /* ⚠⚠ **국내는 네 축 어디에도 안 셉니다(v2, 2026-09-30 사용자 결정 — 「국내 빼고 문구도 그냥 빼버리자」).**
+     b394 는 나라 몰림·모험력에서만 뺐고 유명도·별점은 국내도 셌습니다. 그러면 화면의 「도시 77곳」과 축마다
+     센 곳이 달라 앞뒤가 안 맞았습니다(사용자: 「도시77곳으로 내기엔 한국도시 다 빼야하는거아냐?」).
+     재 보니 사용자 기록에서 개척 41→45 · 만족 44→47 로만 움직이고 코드는 그대로였습니다.
+     목록에 없는 도시도 나라를 모르니 뺍니다. 그래서 성향 확정 문턱도 **해외 5곳**입니다(persona·pshift·people·rating). */
+  const 해외줄 = rated.filter(r => { const c = 표.get(r.city_id); return c && c.country !== 국내; });
+  /* 다시 간 도시를 **한 번이라도 알려줬는가.** 시트(visits.js)에서 저장하면 해외 줄마다 숫자(1 이상)가
+     적힙니다. 하나도 없으면 「안 알려줌」 — 없는 것을 「한 번도 안 갔다」로 읽지 않습니다. */
+  const 알려줌 = 해외줄.some(r => r.visits != null);
 
-  const fames = [], dists = [], stars = [], byCountry = {};
-  let 해외N = 0;
-  for (const r of rated){
-    /* ↓ 만족력. 도시 목록에 없는 곳도 별점은 별점이라 셉니다. */
+  let 유명합 = 0, 유명무게 = 0, 유명수 = 0, 이름난 = 0, 숨은 = 0, 방문합 = 0, 다시간곳 = 0;
+  const stars = [], 해외 = [], byCountry = {};
+  for (const r of 해외줄){
+    const c = 표.get(r.city_id);
+    /* ↓ 만족력 — 도시마다 한 번(여러 번 갔다고 별을 여러 번 세지 않습니다). */
     stars.push(Number(r.stars));
-    const c = info(r.city_id);
-    if (!c) continue;
-    /* ↓ 개척력. 국내도 셉니다 — 위 설명 참고. */
-    if (c.fame != null) fames.push(Number(c.fame));
-
-    /* ↓ 여기부터 **해외만**입니다(단골력·모험력). */
-    if (c.country === 국내) continue;
-    해외N++;
-    if (c.center_lat != null && c.center_lng != null){
-      const d = distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng);
-      if (d != null) dists.push(d);
+    const v = Math.min(5, Math.max(1, Math.round(Number(r.visits) || 1))), w = 방문무게[v];
+    방문합 += v; if (v >= 2) 다시간곳++;
+    /* ↓ 개척력 */
+    if (c.fame != null){
+      const f = Number(c.fame);
+      유명합 += w * f; 유명무게 += w; 유명수++;
+      if (f <= 1) 이름난++; else if (f >= 3) 숨은++;
     }
+    /* ↓ 나라 몰림 · 모험력 */
+    const km = (c.center_lat != null && c.center_lng != null)
+      ? distKm(SEOUL[0], SEOUL[1], c.center_lat, c.center_lng) : null;
+    해외.push({ km, w, name: c.name });
     if (c.country) byCountry[c.country] = (byCountry[c.country] || 0) + 1;
   }
-  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
-  const cityN = rated.length, countryN = Object.keys(byCountry).length;
-  /* 해외가 문턱을 넘어야 두 축을 셉니다. 넘지 못하면 50 으로 두고,
-     무엇이 안 정해졌는지 아래 `추정` 으로 알려 화면이 밝히게 합니다. */
-  const 셀만함 = 해외N >= 해외문턱;
+  const n = stars.length, U = 해외.length, countryN = Object.keys(byCountry).length;
 
-  /* 개척력 — 유명도 평균(도시마다 1~3 등급이 매겨져 있습니다. 469곳 전부). */
-  const fAvg = mean(fames);
-  /* 단골력 — 제일 많이 간 **해외** 나라가 해외 전체의 몇 할인가.
-     일본만 스물이면 100. 국내는 세지 않습니다(위 설명). */
-  const topN = countryN ? Math.max(...Object.values(byCountry)) : 0;
-  /* 모험력 — 서울에서 평균 몇 km. **로그를 씁니다** — 선형이면 유럽·남미가
-     전부 100 에 몰립니다. 한국에서는 웬만한 데가 다 멀어서, 가까운 구간
-     (일본~동남아)에서 갈려야 뜻이 있습니다. */
-  const dAvg = mean(dists);
-  /* 만족력 — 별점 평균. **하한이 3.2 입니다** — 사람들은 대체로 후하게 줍니다.
-     1.0~5.0 으로 잡으면 거의 다 80점대라 변별이 안 됩니다. */
-  const sAvg = mean(stars);
+  /* 개척력 — 유명도(1~3 등급, 1 이 이름난 쪽) 평균. 여러 번 간 도시는 무겁게. */
+  const 유명평균 = 유명무게 ? 유명합 / 유명무게 : null;
+  const 개척원 = 유명평균 == null ? 50 : 백분(fameN(유명평균));
 
-  const 개척 = fAvg == null ? 50 : pScale(fAvg, 1.10, 2.55);
-  const 단골 = 셀만함 ? pScale(topN / 해외N, 0.10, 0.70) : 50;
-  const 모험 = (!셀만함 || dAvg == null) ? 50
-    : pScale(Math.log(Math.max(dAvg, 700) / 700), 0, Math.log(9500 / 700));
-  const 만족 = sAvg == null ? 50 : pScale(sAvg, 3.20, 4.85);
+  /* 단골력 — 나라 몰림(제일 많이 간 해외 나라의 몫)과 다시 간 비율(전체 방문 중 두 번째부터의 몫).
+     다시 간 비율도 해외만입니다(위 ⚠⚠ — 국내는 네 축 어디에도 안 셉니다).
+     ⚠ 30% 에서 꽉 찹니다: 열 번 중 세 번이 다시 간 곳이면 뚜렷한 단골입니다. */
+  const [최다나라, 최다수] = Object.entries(byCountry).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+  const 나라몰림 = U >= 해외문턱 ? 비율(최다수 / U, 0.10, 0.70) : null;
+  const 다시점수 = 알려줌 && n ? 비율((방문합 - n) / 방문합, 0, 0.30) : null;
+  let 단골원 = 50, 단골믿음 = 0, 단골근거 = null;
+  if ((다시점수 ?? -1) > (나라몰림 ?? -1)){ 단골원 = 다시점수; 단골믿음 = 믿음(n); 단골근거 = '다시'; }
+  else if (나라몰림 != null){ 단골원 = 나라몰림; 단골믿음 = 믿음(U); 단골근거 = '나라'; }
 
-  const code = (개척 >= 50 ? 'H' : 'F') + (단골 >= 50 ? 'L' : 'M')
-             + (모험 >= 50 ? 'D' : 'N') + (만족 >= 50 ? 'G' : 'P');
+  /* 모험력 — 서울에서의 거리(로그 자, calc.js distN). 여러 번 간 곳은 무겁게 센 가운뎃값. */
+  const 거리 = 해외.filter(x => x.km != null).sort((a, b) => a.km - b.km);
+  let 모험원 = 0, 가운데 = null, 멀리몫 = 0, 가장먼 = null;
+  if (거리.length){
+    const 합 = 거리.reduce((s, x) => s + x.w, 0);
+    let 누적 = 0;
+    for (const x of 거리){ 누적 += x.w; if (누적 >= 합 / 2){ 가운데 = x; break; } }
+    가운데 = 가운데 || 거리[거리.length - 1];
+    멀리몫 = 거리.filter(x => x.km >= 먼거리).reduce((s, x) => s + x.w, 0) / 합;
+    가장먼 = 거리[거리.length - 1];
+    모험원 = 60 * distN(가운데.km) + 30 * 멀리몫 + 10 * distN(가장먼.km);
+  }
 
-  return { code, 개척, 단골, 모험, 만족,
-           cities: cityN, countries: countryN,
-           /* ↓ 화면이 근거를 적을 때 씁니다. 축을 해외로 세면 근거도
-              해외로 적혀야 앞뒤가 맞습니다(위 ⚠ 참고). */
-           해외: 해외N, 해외문턱,
-           나라당: countryN ? 해외N / countryN : 0,
-           /* 문턱을 못 넘어 50 으로 둔 축들. 비어 있으면 다 셌다는 뜻입니다. */
-           추정: 셀만함 ? [] : ['단골력', '모험력'],
-           avgFame: fAvg, avgStar: sAvg,
-           /* 해외가 모자라면 거리 평균도 안 내놓습니다 — 축은 50 인데
-              옆에 "평균 230km" 가 적혀 있으면 그게 더 헷갈립니다. */
-           avgDist: 셀만함 ? dAvg : null };
+  /* 만족력 — 별점 평균. 가운데는 앱 평균 ★3.6(위 `별가운데`). */
+  const 별평균 = n ? stars.reduce((a, b) => a + b, 0) / n : null;
+  const 만족원 = 별평균 == null ? 50 : 비율(별평균, 별낮은끝, 별높은끝);
+
+  const 원 = [개척원, 단골원, 모험원, 만족원];
+  const 믿음값 = [믿음(유명수), 단골믿음, 믿음(거리.length), 믿음(n)];
+  const 보정 = 원.map((x, i) => 50 + (x - 50) * 믿음값[i]);
+
+  /* 못 정한 축 — 막대를 칠하지 않고 「아직 모름」. 글자는 그래도 하나 골라야 합니다:
+     해외가 0곳이면 「가까이(N)」(원점수 0), 단골을 모르면 「새로운 곳(M)」(가운데 50 은 낮은 쪽).
+     ⚠ v1 은 모르는 축을 50 → L·D 로 냈습니다. 해외에 한 번도 안 간 사람이 '먼 길 마다않는
+       외골수' 가 되던 자리입니다. */
+  const 추정 = [];
+  if (나라몰림 == null && !알려줌) 추정.push('단골력');
+  if (U < 해외문턱) 추정.push('모험력');
+
+  let 글자 = 원.map((x, i) => 극[i][x > 50 ? 1 : 0]);
+  const 전 = /^[FH][ML][ND][GP]$/.test(world.prev || '') ? world.prev : null;
+  const 붙잡음 = [];
+  if (전) 글자 = 글자.map((ch, i) => {
+    if (ch === 전[i] || Math.abs(보정[i] - 50) >= 흔들림폭) return ch;
+    붙잡음.push(AXIS_NAME[i]);
+    return 전[i];
+  });
+  const code = 글자.join('');
+
+  /* 막대에 그릴 값 — 글자 쪽으로 적어도 2 기울입니다(50 은 「아직 모름」만 씁니다). */
+  const 보임 = 보정.map((x, i) => {
+    if (추정.includes(AXIS_NAME[i])) return 50;
+    const 쪽 = code[i] === 극[i][1] ? 1 : -1;
+    const 크기 = Math.sign(x - 50) === 쪽 ? Math.max(Math.abs(x - 50), 2) : 2;
+    return Math.round(50 + 쪽 * 크기);
+  });
+  const 경계 = AXIS_NAME.filter((이름, i) => !추정.includes(이름) && Math.abs(보정[i] - 50) < 흔들림폭);
+
+  return { code, 개척: 보임[0], 단골: 보임[1], 모험: 보임[2], 만족: 보임[3],
+           판: PERSONA_VER, 원, 보정, 경계, 붙잡음, 추정,
+           cities: rated.length, countries: countryN,   /* cities 는 매긴 곳 전부(국내 포함) — 축은 해외만 */
+           /* ↓ 화면이 근거를 적을 때 씁니다(personaWhyHtml). 축을 해외로 세면 근거도 해외로 적혀야
+                앞뒤가 맞습니다. */
+           해외: U, 해외문턱,
+           나라당: countryN ? U / countryN : 0,
+           avgFame: 유명평균, avgStar: 별평균,
+           사실: { n, 유명수, 이름난, 숨은, 알려줌, 다시간곳, 다시간번: 방문합 - n,
+                   최다나라, 최다수, 단골근거,
+                   /* 해외가 모자라면 거리를 안 내놓습니다 — 막대는 「아직 모름」인데 옆에 km 가 적혀
+                      있으면 그게 더 헷갈립니다. */
+                   가운뎃값km: U >= 해외문턱 ? (가운데?.km ?? null) : null,
+                   멀리몫, 가장먼곳: 가장먼?.name || null, 가장먼km: 가장먼?.km ?? null,
+                   높은별: stars.filter(s => s >= 4.5).length, 낮은별: stars.filter(s => s <= 2).length } };
 }
 
-/* 축이 뜻하는 말. 코드 밑에 한 줄로 깝니다. */
+/* 축이 뜻하는 말. 코드 밑에 한 줄로 깝니다.
+   ⚠ M·L 은 v2 에 「여러 나라 · 한 나라」 → 「새로운 곳 · 익숙한 곳」(사용자 결정) — 다시 간 도시까지
+     담습니다. 코드 글자(M·L)와 유형 이름은 그대로입니다. */
 export const AXIS_WORD = {
-  F:'유명한 곳', H:'숨은 곳', M:'여러 나라', L:'한 나라',
+  F:'유명한 곳', H:'숨은 곳', M:'새로운 곳', L:'익숙한 곳',
   N:'가까이', D:'멀리', P:'까다로움', G:'후함',
 };
 export const AXIS_NAME = ['개척력', '단골력', '모험력', '만족력'];
+
+/* ── 남이 올린 성향(b808 뒤, 110) ──────────────────────────────────────
+ * 사람 화면(people.js)은 그 사람의 별점을 다 받아도 **다시 간 횟수는 못 받습니다**(109 — 남에게 안 보냄).
+ * 그래서 막대를 거기서 새로 세면 본인 화면과 어긋납니다 — 본인 앱이 올린 네 숫자(profiles.persona_ax)를
+ * 그대로 씁니다. 50 은 본인 화면에서 「아직 모름」이었던 축입니다(위 `보임` 규칙). */
+export function personaSaved(code, arr){
+  if (!/^[FH][ML][ND][GP]$/.test(code || '') || !Array.isArray(arr) || arr.length !== 4) return null;
+  const v = arr.map(Number);
+  if (v.some(x => !Number.isFinite(x))) return null;
+  const 보임 = v.map((x, i) => {
+    if (x === 50) return 50;
+    const 쪽 = code[i] === 극[i][1] ? 1 : -1;
+    return Math.sign(x - 50) === 쪽 ? Math.round(x) : 50 + 쪽 * 2;
+  });
+  return { code, 개척: 보임[0], 단골: 보임[1], 모험: 보임[2], 만족: 보임[3],
+           추정: AXIS_NAME.filter((_, i) => 보임[i] === 50),
+           경계: AXIS_NAME.filter((_, i) => 보임[i] !== 50 && Math.abs(보임[i] - 50) < 흔들림폭) };
+}
+
+/* ── 「왜 ○○○○ 인가요」 줄 넷(v2) ── 분석 탭(persona.js)과 사람 화면(people.js)이 **같이 씁니다** ──
+ * 전에는 두 화면이 같은 줄을 따로 적고 「같은 말 · 같은 마크업」 주석으로만 묶었습니다. 한 벌로 모읍니다.
+ * 근거는 **실제 기록 문장**입니다(명세 14.4). 「도시 유명도 평균 1.69」 같은 날숫자는 사용자가
+ * 「41 이라는 숫자가 어떤걸 의미하는거야」라고 물었던 자리라 문장으로 바꿨습니다(값 숫자는 이 카드에만 — b805).
+ * `ax` 는 personaAxes 결과(사실은 여기서 읽음), `보임` 은 막대에 그린 값 — 남의 화면이면 그 사람이 올린
+ * 값(personaSaved)입니다. 남의 화면은 다시 간 횟수를 못 받으므로(109) 문장은 보이는 별점으로 센 `ax` 에서,
+ * 값은 올린 것에서 씁니다.
+ * ⚠ 남의 화면(`남`)에서는 다시 간 도시 이야기를 안 합니다 — 그 숫자는 본인만 봅니다. */
+export function personaWhyHtml(ax, code, { 보임 = ax, 나라이름 = {}, 남 = false } = {}){
+  const s = ax.사실 || {};
+  const 퍼 = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const km = x => Math.round(x).toLocaleString() + 'km';
+  const 모름 = new Set(보임.추정 || []);
+  const 나라 = 나라이름[s.최다나라] || s.최다나라 || '';
+  const 문턱까지 = Math.max(1, (ax.해외문턱 || 3) - (ax.해외 || 0));
+
+  const 개척말 = !s.유명수 ? '유명도를 아는 해외 도시가 아직 없어요'
+    : code[0] === 'H' ? `해외 ${s.유명수}곳 중 ${s.숨은}곳(${퍼(s.숨은, s.유명수)}%)이 덜 알려진 도시예요`
+    : `해외 ${s.유명수}곳 중 ${s.이름난}곳(${퍼(s.이름난, s.유명수)}%)이 이름난 관광 도시예요`;
+  let 단골말;
+  if (모름.has('단골력')) 단골말 = 남 ? '해외 도시가 더 쌓이면 정해져요'
+    : `해외 도시 ${문턱까지}곳을 더 매기거나 다시 간 도시를 알려주면 정해져요`;
+  /* 다시 간 이야기가 앞에 서는 것은 **L 일 때만** — M 인데 「다시 간 도시 4곳」만 적으면 왜 M 인지가 안 보입니다
+     (처음 그려 보고 잡음). M 이면 넓게 다닌 이야기 뒤에 꼬리로 붙습니다(맨 아래 줄). */
+  else if (!남 && s.단골근거 === '다시' && code[1] === 'L') 단골말 = `다시 간 도시 ${s.다시간곳}곳 · 모두 ${s.다시간번}번 더 다녀왔어요`;
+  /* 남의 L 이 다시 간 횟수에서 왔으면 보이는 별점으로는 설명이 안 됩니다 — 숫자 없이 말만. */
+  else if (남 && code[1] === 'L' && !((ax.원?.[1] ?? 0) > 50)) 단골말 = '익숙한 곳을 다시 찾는 편이에요';
+  else if (code[1] === 'L') 단골말 = `해외 ${ax.해외}곳 중 ${s.최다수}곳이 ${josa(나라, '이에요', '예요')}`;
+  else 단골말 = `해외 ${ax.해외}곳을 ${ax.countries}개 나라에서 — 제일 많이 간 ${나라}도 ${s.최다수}곳이에요` +
+    (!남 && s.알려줌 && s.다시간곳 ? ` · 다시 간 도시 ${s.다시간곳}곳` : '');
+  const 모험말 = 모름.has('모험력')
+    ? (ax.해외 ? `해외 도시 ${문턱까지}곳을 더 매기면 정해져요` : '아직 해외 도시가 없어요')
+    : `해외 도시까지 가운뎃값 ${km(s.가운뎃값km)} · 4,500km 넘는 곳이 ${Math.round((s.멀리몫 || 0) * 100)}%예요`;
+  /* 왜 P·G 인지가 보이게 가운데(★3.6)와 견줍니다 — 사용자: 「★3.5가 왜 P야?」(2026-09-30). */
+  const 별차 = ax.avgStar == null ? 0 : ax.avgStar - 별가운데;
+  /* 가운데와 가까우면 둘째 자리까지 보여 줍니다 — ★3.6 과 ★3.6 을 나란히 두고 「낮아요」라고 하면 거짓말 같습니다. */
+  const 만족말 = ax.avgStar == null ? '별점이 아직 없어요'
+    : `해외 별점 평균 ★${ax.avgStar.toFixed(Math.abs(별차) < 0.1 ? 2 : 1)} · ` + (Math.abs(별차) < 0.005
+      ? `가운데(★${별가운데})와 같아요`
+      : `가운데(★${별가운데})보다 ${Math.abs(별차) < 0.25 ? '조금 ' : ''}${별차 < 0 ? '낮아요' : '높아요'}`);
+
+  const 값 = [보임.개척, 보임.단골, 보임.모험, 보임.만족];
+  const 줄 = [개척말, 단골말, 모험말, 만족말].map((말, i) => {
+    const 이름 = AXIS_NAME[i];
+    const 딱지 = 모름.has(이름) ? ' · 아직 모름' : '';
+    return `<div class="row"><span class="label">${esc(이름)}${모름.has(이름) ? '' : ' ' + 값[i]}${딱지}
+        <div class="memo">${esc(말)}</div></span>
+      <span class="val">${esc(code[i])}</span></div>`;
+  }).join('');
+  return 줄;
+}
+
+/* 유형이 바뀐 이유 한 줄(명세 11장) — 홈 알림(pshift.js)과 분석 탭 배지(persona.js)가 같이 씁니다.
+   바뀐 글자 자리마다 「○○력이 「…」 쪽으로 넘어갔어요」. 네 축 이름이 다 「력」(받침)이라 「이」 로 둡니다. */
+export function personaShiftWhy(전, 지금){
+  if (!/^[FH][ML][ND][GP]$/.test(전 || '') || !/^[FH][ML][ND][GP]$/.test(지금 || '')) return '';
+  const 바뀜 = [0, 1, 2, 3].filter(i => 전[i] !== 지금[i]);
+  return 바뀜.map(i => `${AXIS_NAME[i]}이 「${AXIS_WORD[지금[i]]}」 쪽으로 넘어갔어요`).join(' · ');
+}
 
 /* ── 네 축 스펙트럼(b805) ── 분석 탭(persona.js)과 사람 화면(people.js)이 **같이 씁니다.**
  * 밖에서 받은 리포트: 「12·18 이 낮은 성적처럼 보인다」 → 시안 A 「양쪽 스펙트럼」 + 「숫자 빼기」(사용자 결정).
@@ -1913,7 +2081,7 @@ export const personaMatch = (a, b) => Math.max(10, Math.min(99, matchRaw(a, b)))
 const CLASH = {
   개척: '한 명은 인증샷, 한 명은 골목. 둘 다 만족하는 코스가 없음',
   모험: '비행기 표 끊는 순간부터 의견이 갈림',
-  단골L: '둘 다 같은 나라만 감. 새로운 데는 영영 못 갈 듯',
+  단골L: '둘 다 가던 데만 감. 새로운 데는 영영 못 갈 듯',   /* v2: 「한 나라」 → 「익숙한 곳」 */
   단골M: '둘 다 찍고 다녀서 아무것도 깊이 못 봄',
   만족G: '둘 다 다 좋다고 함. 망한 식당도 별 다섯',
   만족P: '둘 다 까다로워서 뭘 먹어도 불만',
@@ -2041,7 +2209,7 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
       if (!/^[FH][ML][ND][GP]$/.test(a?.code || '')) msgs.push(`${name}: 코드가 '${a?.code}'`);
       else if (!PERSONA16[a.code]) msgs.push(`${name}: ${a.code} 가 표에 없음`);
       for (const k of ['개척', '단골', '모험', '만족'])
-        if (!(a?.[k] >= 5 && a?.[k] <= 100)) msgs.push(`${name}: ${k}=${a?.[k]} 가 5~100 밖`);
+        if (!(a?.[k] >= 0 && a?.[k] <= 100)) msgs.push(`${name}: ${k}=${a?.[k]} 가 0~100 밖`);
     }
     bad('빈 자료·모르는 도시에서도 코드가 나오는가', msgs);
   }
@@ -2065,7 +2233,7 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     bad('personaStats 세는 규칙', msgs);
   }
 
-  /* 3-b. **국내는 네 축 중 둘에서만 빠집니다(b394).** 축마다 표본이 달라졌으니
+  /* 3-b. **국내는 네 축 모두에서 빠집니다(v2 · 2026-09-30, b394 에는 둘에서만).** 축마다 표본이 달랐으니
         어느 축이 무엇을 세는지 한 자리에서 못 박습니다.
 
         ⚠ **글자가 뒤집히는 자료를 일부러 고릅니다.** 국내를 세느냐 마느냐로
@@ -2089,10 +2257,13 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     if (a.code[1] !== 'M') msgs.push(`단골력 ${a.code[1]} — 국내를 세고 있습니다(M 기대)`);
     /* 국내 열 곳(약 120km)이 평균에 들어가면 9,400km 가 2,265km 로 눌려 N 이 됩니다. */
     if (a.code[2] !== 'D') msgs.push(`모험력 ${a.code[2]} — 국내를 세고 있습니다(D 기대)`);
-    /* 반대로 개척력은 국내를 **세야** 합니다. 다 세면 평균 2.54 → H,
-       해외만 세면 1.0 → F 입니다. 즉 이 줄은 방향이 반대입니다. */
-    if (a.code[0] !== 'H') msgs.push(`개척력 ${a.code[0]} — 국내를 빠뜨렸습니다(H 기대)`);
-    bad('국내가 단골력·모험력에서만 빠지는가', msgs);
+    /* ⚠ v2(2026-09-30 사용자 결정): **개척력·만족력도 국내를 안 셉니다**(b394 에는 셌습니다 — 이 줄의 방향이
+       반대였습니다). 다 세면 평균 2.54 → H, 해외만 세면 1.0 → F. 만족력도 국내 별(1점)을 섞으면 P 로 기웁니다. */
+    if (a.code[0] !== 'F') msgs.push(`개척력 ${a.code[0]} — 국내를 세고 있습니다(F 기대)`);
+    const b = personaAxes(fake.map(c => ({ city_id:c.id, stars: c.country === 'KR' ? 1 : 5 })), { cities: fake });
+    if (b.code[3] !== 'G') msgs.push(`만족력 ${b.code[3]} — 국내 별점을 세고 있습니다(G 기대)`);
+    if (b.avgStar !== 5) msgs.push(`별 평균 ${b.avgStar} — 해외 셋의 5 만 세야 합니다`);
+    bad('국내가 네 축 모두에서 빠지는가', msgs);
   }
 
   /* 3-c. 문턱. 해외가 세 곳에 못 미치면 두 축을 50 으로 두고 **그 사실을
@@ -2113,7 +2284,7 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
     if (a.모험 !== 50)   msgs.push(`모험력 ${a.모험} (50 기대)`);
     if (a.추정.length !== 2) msgs.push(`추정 ${JSON.stringify(a.추정)} (둘 기대)`);
     /* 안 센 축 옆에 "평균 230km" 가 적혀 있으면 50 인 것이 더 헷갈립니다. */
-    if (a.avgDist != null) msgs.push(`거리 평균 ${a.avgDist} — 안 셌으면 안 내놔야 합니다`);
+    if (a.사실?.가운뎃값km != null) msgs.push(`거리 가운뎃값 ${a.사실.가운뎃값km} — 안 셌으면 안 내놔야 합니다`);
     /* 문턱이 **엉뚱한 축까지** 얼리지 않는지. 개척력은 다섯 곳을 다 셉니다. */
     if (a.개척 === 50)   msgs.push('개척력까지 50 — 문턱이 남의 축을 얼렸습니다');
     bad('해외가 모자라면 두 축만 50 으로 두고 밝히는가', msgs);
@@ -2191,7 +2362,7 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
        경계값을 넣으면 이 검사가 반올림 다툼이 되어 버립니다. */
     const FAME  = { F:1.0,  H:3.0 };                       /* 1 이 이름난 쪽입니다 */
     const COORD = { N:[35.7, 139.7], D:[-33.9, 151.2] };   /* 도쿄 ↔ 시드니 */
-    const STAR  = { P:3.0,  G:5.0 };
+    const STAR  = { P:2.6,  G:5.0 };   /* 가운데 ★3.6 기준 양 끝 바깥 */
     for (const a of 'FH') for (const b of 'ML') for (const c of 'ND') for (const d of 'GP'){
       const want = a + b + c + d;
       const rows = [], fake = [];
@@ -2208,6 +2379,122 @@ if (typeof window !== 'undefined') window.__cardCheck = () => {
       if (got !== want) msgs.push(`${want} 를 겨냥했는데 ${got}`);
     }
     bad('열여섯 자리에 다 닿는가 (자리마다 겨냥해서 확인)', msgs);
+  }
+
+  /* 5-c. **고정 프로필 112개(v2, 명세 13장).** 열여섯 유형마다 일곱 가지 — 전형 셋(8·15·30곳) ·
+        약하게 기운 것 둘 · 헷갈리게 만든 것 둘(국내 네 곳 섞기 + 익숙한 곳은 «다시 간 횟수로만» L).
+        하나라도 다른 코드가 나오면 틀림입니다 — 자를 고치다 한 칸이 무너지면 여기서 빨갛게 뜹니다. */
+  {
+    const msgs = [];
+    const 먼 = [48.9, 2.35], 가까운 = [35.7, 139.7];
+    const 변형 = [{ n: 8, 약: false }, { n: 15, 약: false }, { n: 30, 약: false },
+                  { n: 10, 약: true }, { n: 20, 약: true },
+                  { n: 12, 약: false, 섞기: true }, { n: 12, 약: true, 섞기: true }];
+    let 셈 = 0;
+    for (const a of 'FH') for (const b of 'ML') for (const c of 'ND') for (const d of 'GP'){
+      const want = a + b + c + d;
+      for (const { n, 약, 섞기 } of 변형){
+        const fake = [], rows = [];
+        const 별 = d === 'G' ? (약 ? 4.0 : 5) : (약 ? 3.3 : 2.6);   /* 가운데 ★3.6 */
+        for (let i = 0; i < n; i++){
+          const fame = a === 'F' ? (약 ? [1, 2, 2][i % 3] : 1) : (약 ? [2, 2, 3][i % 3] : 3);
+          const country = b === 'L'
+            ? (섞기 ? 'C' + i : 약 ? (i % 2 ? 'JP' : 'C' + i) : 'JP')    /* 섞기면 나라는 흩고 다시 간 횟수로 */
+            /* 약한 M = 셋에 하나꼴(30%)만 한 나라. ⚠ `i % 10 < 3` 으로 두었다가 12곳에서 i=10·11 이 또
+               일본이 되어 5/12(42%) → L 이 나왔습니다(처음 돌린 날 잡음). 곳 수에 맞춰 셉니다. */
+            : (약 ? (i < Math.round(n * 0.3) ? 'JP' : 'C' + i) : 'C' + i);
+          const 멀리 = c === 'D' ? (약 ? i % 10 >= 3 : true) : (약 ? i % 10 >= 7 : false);
+          const [la, ln] = 멀리 ? 먼 : 가까운;
+          fake.push({ id: 'p' + i, name: 'p' + i, fame, country, center_lat: la, center_lng: ln });
+          rows.push({ city_id: 'p' + i, stars: 별, visits: 섞기 ? (b === 'L' ? 3 : 1) : null });
+        }
+        if (섞기) for (let k = 0; k < 4; k++){
+          /* 국내 네 곳 — 유명도는 목표와 같게(개척력은 국내도 셉니다), 단골·모험에는 안 들어가야 합니다. */
+          fake.push({ id: 'k' + k, name: 'k' + k, fame: a === 'F' ? 1 : 3, country: 'KR',
+                      center_lat: 36.5, center_lng: 127.5 });
+          rows.push({ city_id: 'k' + k, stars: 별, visits: 1 });
+        }
+        셈++;
+        let got;
+        try { got = personaAxes(rows, { cities: fake }).code; }
+        catch (e){ msgs.push(`${want}(${n}${약 ? '·약' : ''}${섞기 ? '·섞기' : ''}): 터짐 ${e.message}`); continue; }
+        if (got !== want) msgs.push(`${want}(${n}${약 ? '·약' : ''}${섞기 ? '·섞기' : ''}) → ${got}`);
+      }
+    }
+    bad(`고정 프로필 ${셈}개가 다 제 유형으로 나오는가`, msgs.slice(0, 6));
+  }
+
+  /* 5-d. **다시 간 도시(v2).** 명세 7.3 예시와 출시 차단 조건(28장 3·4번)을 그대로 겨냥합니다. */
+  {
+    const msgs = [];
+    const W = [{ id: 'tokyo', country: 'JP', fame: 1, center_lat: 35.68, center_lng: 139.69 },
+               { id: 'fukuoka', country: 'JP', fame: 1, center_lat: 33.59, center_lng: 130.40 },
+               { id: 'paris', country: 'FR', fame: 1, center_lat: 48.86, center_lng: 2.35 },
+               { id: 'singapore', country: 'SG', fame: 1, center_lat: 1.35, center_lng: 103.82 }];
+    const 줄 = v => [['tokyo', v[0]], ['fukuoka', v[1]], ['paris', v[2]], ['singapore', v[3]]]
+      .map(([id, x]) => ({ city_id: id, stars: 4, visits: x }));
+    const 여러번 = personaAxes(줄([5, 3, 1, 1]), { cities: W });
+    /* 도쿄 다섯 번·후쿠오카 세 번이면 뚜렷한 「익숙한 곳」, 그리고 가운뎃값이 일본이라 「가까이」. */
+    if (여러번.code[1] !== 'L' || 여러번.원[1] < 90) msgs.push(`도쿄5·후쿠오카3 → 단골 ${여러번.원[1]} ${여러번.code}`);
+    if (여러번.code[2] !== 'N') msgs.push(`도쿄5·후쿠오카3 → 모험 ${여러번.code[2]} (파리 한 번이 거리를 덮음)`);
+    /* 별점은 도시마다 한 번 — 다섯 번 갔다고 별 하나를 다섯 번 세지 않습니다. */
+    const 한번 = personaAxes(줄([1, 1, 1, 1]), { cities: W });
+    if (여러번.avgStar !== 한번.avgStar) msgs.push(`별 평균이 방문 횟수로 바뀜 ${여러번.avgStar} vs ${한번.avgStar}`);
+    /* 안 알려줬다고 M 으로 몰지 않습니다 — 나라 몰림만 봅니다(여기서는 일본 둘/넷 → L). */
+    const 모름 = personaAxes(줄([null, null, null, null]), { cities: W });
+    if (모름.사실.알려줌) msgs.push('비어 있는데 「알려줌」');
+    if (모름.code[1] !== 'L') msgs.push(`횟수 없이 → ${모름.code[1]} (나라 몰림 L 기대)`);
+    /* 알려줬는데 다시 간 곳이 없어도 나라 몰림은 남습니다(둘 중 큰 쪽 — 사용자가 고른 뜻). */
+    const JP20 = Array.from({ length: 20 }, (_, i) => ({ id: 'j' + i, country: 'JP', fame: 2, center_lat: 35 + i / 10, center_lng: 135 }));
+    const 일본만 = personaAxes(JP20.map(c => ({ city_id: c.id, stars: 4, visits: 1 })), { cities: JP20 });
+    if (일본만.code[1] !== 'L') msgs.push(`일본 스무 곳 한 번씩 → ${일본만.code[1]} (L 기대)`);
+    /* 알려줬으면 해외가 적어도 단골력은 정해집니다 — 모험력만 「아직 모름」. */
+    const 적음 = personaAxes([{ city_id: 'tokyo', stars: 4, visits: 1 }, { city_id: 'paris', stars: 4, visits: 1 }], { cities: W });
+    if (적음.추정.includes('단골력') || !적음.추정.includes('모험력')) msgs.push(`해외 둘·알려줌 → 추정 ${JSON.stringify(적음.추정)}`);
+    /* 해외 0곳이면 「가까이」(v1 은 50 → D 였음). */
+    const 국내만 = personaAxes([{ city_id: 'x', stars: 4 }], { cities: [{ id: 'x', country: 'KR', fame: 2, center_lat: 36, center_lng: 128 }] });
+    if (국내만.code[2] !== 'N') msgs.push(`해외 0곳 → ${국내만.code[2]} (N 기대)`);
+    bad('다시 간 도시 · 별 한 번만 · 안 알려줌은 M 이 아님 · 해외 0곳은 N', msgs);
+  }
+
+  /* 5-e. **흔들림 막기 · 막대와 글자가 안 어긋나기(v2).** 지난 코드가 있으면 가운데 근처에서는 글자를
+        붙잡고, 멀리 넘어가면 바꿉니다. 어느 경우든 막대가 기운 쪽(50 이상 = H·L·D·G)은 글자와 같아야
+        합니다 — b805 규칙. 쏠림 격자(위 5)와 같은 식으로 여러 자료 × 여러 지난 코드를 훑습니다. */
+  {
+    const msgs = [];
+    const 조금 = [], 많이 = [];
+    for (let i = 0; i < 10; i++){
+      조금.push({ id: 'a' + i, country: 'C' + i, fame: i < 6 ? 2 : 1.6, center_lat: 48.9, center_lng: 2.35 });
+      많이.push({ id: 'b' + i, country: 'C' + i, fame: 3, center_lat: 48.9, center_lng: 2.35 });
+    }
+    const 약H = personaAxes(조금.map(c => ({ city_id: c.id, stars: 4 })), { cities: 조금, prev: 'FMDG' });
+    if (약H.원[0] <= 50) msgs.push(`약한 H 자료가 H 가 아님(원 ${약H.원[0]})`);
+    else if (약H.code[0] !== 'F') msgs.push(`가운데 근처인데 글자가 바뀜 ${약H.code}`);
+    else if (!약H.경계.includes('개척력') || !약H.붙잡음.includes('개척력')) msgs.push('붙잡았는데 경계·붙잡음에 없음');
+    const 강H = personaAxes(많이.map(c => ({ city_id: c.id, stars: 4 })), { cities: 많이, prev: 'FMDG' });
+    if (강H.code[0] !== 'H') msgs.push(`멀리 넘어갔는데 안 바뀜 ${강H.code}`);
+    const fake = [];
+    let id = 0;
+    for (const fame of [1, 1.5, 2, 2.5, 3])
+      for (const [la, ln] of [[35.7, 139.7], [22.3, 114.2], [13.7, 100.5], [48.9, 2.35], [40.7, -74.0], [-33.9, 151.2]])
+        fake.push({ id: ++id, name: 'c' + id, country: 'C' + (id % 7), fame, center_lat: la, center_lng: ln });
+    let 틀림 = 0, 본 = 0;
+    for (const take of [1, 3, 5, 8, 14, 30]) for (const step of [1, 5, 11]) for (const star of [2.5, 3.8, 4.4, 5])
+      for (const prev of [null, 'FMNP', 'HLDG', 'FLDP', 'HMNG']) for (const 번 of [null, 1, 3]){
+        const rows = [];
+        for (let i = 0; i < take; i++) rows.push({ city_id: fake[(i * step) % fake.length].id, stars: star, visits: 번 });
+        const a = personaAxes(rows, { cities: fake, prev });
+        [a.개척, a.단골, a.모험, a.만족].forEach((v, k) => {
+          본++;
+          if (a.추정.includes(AXIS_NAME[k])){ if (v !== 50) 틀림++; return; }
+          if ((v >= 50) !== (a.code[k] === 'HLDG'[k])) 틀림++;
+        });
+        const s = personaSaved(a.code, [a.개척, a.단골, a.모험, a.만족]);
+        if (!s || [s.개척, s.단골, s.모험, s.만족].join() !== [a.개척, a.단골, a.모험, a.만족].join()) 틀림++;
+        try { personaWhyHtml(a, a.code); personaWhyHtml(a, a.code, { 남: true }); } catch (e){ msgs.push('근거 줄 터짐 ' + e.message); }
+      }
+    if (틀림) msgs.push(`막대와 글자가 어긋난 곳 ${틀림}/${본}`);
+    bad('흔들림 막기 · 막대=글자 · 올린 값 되읽기 · 근거 줄', [...new Set(msgs)].slice(0, 5));
   }
 
   /* 6. 궁합. **표를 안 적고 계산으로 뽑으므로 성질만 봅니다.**

@@ -19,21 +19,25 @@
  *     rec·rate 는 b395 에서 늘었습니다 — 「어울리는 곳 · 도전해볼 곳」을
  *     뽑느라 추천 계산과 다녀온 곳이 필요해졌습니다. city.js 는 b399 에서
  *     다시 뺐습니다 — 추천이 카드 그림 안으로 들어가 누를 줄이 없어졌습니다. */
-import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b808';
-import { sb } from './db.js?v=b808';
-import { cities, countryName, continentOf } from './cities.js?v=b808';
+import { $, esc, backLabel, toTop, coverDeck } from './dom.js?v=b809';
+import { sb } from './db.js?v=b809';
+import { cities, countryName, continentOf } from './cities.js?v=b809';
 /* 닮은 도시로 다음 갈 곳을 고릅니다. **AI 를 안 씁니다** — 오프라인에서도
    돌아야 하고 같은 자료에는 늘 같은 답이 나와야 합니다(rec.js 맨 위 참고). */
-import { similarPicks } from './rec.js?v=b808';
+import { similarPicks } from './rec.js?v=b809';
 /* 친구와 궁합. **받는 쪽만 남았습니다(b551)** — 보내는 단추를 걷으면서
    shareMate 를 뗐습니다. mate.js 에는 그대로 있으니 되살리려면 가져다
    쓰면 됩니다(b408 의 「유입이 유입을 만드는 고리」, 그 머리말 참고). */
-import { mateCode, mateHtml } from './mate.js?v=b808';
-import { visited } from './rate.js?v=b808';
-import { open16 } from './p16.js?v=b808';
+import { mateCode, mateHtml } from './mate.js?v=b809';
+import { visited } from './rate.js?v=b809';
+import { open16 } from './p16.js?v=b809';
 import { personaStats, personaAxes, personaRank, personaMates, personaMrz,
-         PERSONA16, AXIS_WORD, AXIS_NAME, axisSpectrum,
-         shareCard } from './card.js?v=b808';
+         PERSONA16, AXIS_WORD, AXIS_NAME, axisSpectrum, personaWhyHtml, personaShiftWhy,
+         shareCard } from './card.js?v=b809';
+/* 성향 v2(2026-09-30): 지난번 코드(흔들림 막기)와 올리기는 pshift.js 한 곳 — 홈 알림과 같은 기준이어야
+   두 화면이 다른 유형을 붙잡지 않습니다. 다시 간 도시 시트는 visits.js. */
+import { prevPersona, savePersona } from './pshift.js?v=b809';
+import { openVisits } from './visits.js?v=b809';
 
 let ctx = { me: () => null, loadCities: async () => {}, showApp: () => {} };
 export function setPersonaCtx(o){ ctx = { ...ctx, ...o }; }
@@ -63,8 +67,11 @@ export async function openPersona(){
  *   정하고, 여기는 **받아온 것을 그리기만** 합니다. */
 export async function renderPersona(){
   await ctx.loadCities();
-  const { data, error } = await sb.from('city_ratings')
-    .select('city_id,stars,want,comment,created_at').eq("user_id", ctx.me().id);
+  /* v2: 다시 간 횟수(visits)를 같이 받고, 지난번 코드(서버)를 나란히 받습니다 — 흔들림 막기. */
+  const uid = ctx.me().id;
+  const [{ data, error }, 전코드] = await Promise.all([
+    sb.from('city_ratings').select('city_id,stars,want,comment,created_at,visits').eq("user_id", uid),
+    prevPersona(uid)]);
   if (error){
     $('personabox').innerHTML =
       `<div class="card"><div class="empty">불러오지 못했어요.</div></div>`;
@@ -77,7 +84,10 @@ export async function renderPersona(){
      '왜 이렇게 나왔나요' 에 그대로 보여줄 숫자들이고, `personaAxes` 는
      그 숫자를 0~100 점 네 개와 코드 네 글자로 옮깁니다. 화면에 날것을
      같이 두는 이유는, 점수만 있으면 왜 그렇게 나왔는지 따질 수가 없어서입니다. */
-  const ax = personaAxes(data || [], { cities });
+  const ax = personaAxes(data || [], { cities, prev: 전코드 });
+  /* 확정(5곳)이면 서버에도 바로 올립니다 — 홈(pshift)이 다음에 그려질 때까지 기다리면 그사이 친구
+     화면에 옛 코드가 보입니다. 같은 값이면 savePersona 가 안 보냅니다. */
+  if (ax.해외 >= 문턱) savePersona(uid, ax.code, ax);
 
   /* ⚠ **「첫 기록으로부터 N일째」를 뺐습니다(b455).** 머리말 꼬리표와
      아래 표, 두 자리에 같은 숫자가 있었습니다. 둘 다 뺍니다 — 성향은
@@ -143,8 +153,9 @@ async function drawPersona(s, ax, rates){
 
      ⚠ 맛보기(try.js)의 문턱은 **그대로 5곳**입니다. 거기는 카드가 목표라
        "다섯 곳만 채우면" 이 동기입니다. 여기는 이미 들어온 사람입니다. */
-  const 임시 = s.cities < 문턱;
-  const 남은곳 = Math.max(0, 문턱 - s.cities);
+  /* ⚠ v2: 문턱은 **해외** 5곳입니다 — 국내는 네 축 어디에도 안 셉니다(card.js personaAxes 머리 ⚠⚠). */
+  const 임시 = ax.해외 < 문턱;
+  const 남은곳 = Math.max(0, 문턱 - ax.해외);
 
   /* ⚠⚠ **한 곳도 안 매긴 사람에게는 성향을 «안» 냅니다(b717, b698 점검 셋째).** ⚠⚠
    *   실측: 자료가 0인 계정에 **HLDG · 상위 80% · 환상의 메이트 99%** 가
@@ -156,14 +167,14 @@ async function drawPersona(s, ax, rates){
    *   네 곳 매긴 사람 이야기였습니다 — 반쯤 채워진 카드에는 근거가 있고
    *   0곳에는 없습니다. 1~4곳은 아래에서 지금처럼 내되 숫자에 딱지를 답니다.
    * ⚠ 못 받아온 것과는 다릅니다 — 그쪽은 renderPersona 가 먼저 거릅니다. */
-  if (!s.cities){
+  if (!ax.해외){
     $('personabox').innerHTML = `<div class="card"><div class="empty"
         style="padding:30px 14px">
       <b>아직 성향을 낼 자료가 없어요</b>
       <div class="memo" style="margin-top:6px">
         <!-- b807(사용자가 고른 시안 C) — 벤치마크: 몇 개면 무엇을 주는지 숫자로 말하기(왓챠 「3개 이상만 평가해도 ~를
              드려요」). 「확정」은 5곳 — 1곳부터 임시 카드가 나옵니다. -->
-        ${문턱}곳만 평가해도 16가지 여행 성향 중<br>내 유형을 알려드려요.
+        해외 도시 ${문턱}곳만 평가해도 16가지 여행 성향 중<br>내 유형을 알려드려요.
       </div>
       <div style="margin-top:14px">
         <button class="primary" id="pgo">평가하러 가기</button></div>
@@ -215,10 +226,12 @@ async function drawPersona(s, ax, rates){
        이상하지 않겠어?」. 지금 성향은 위에 크게 떠 있으므로, 여기서 새로
        말할 것은 「예전엔 이랬다」 하나입니다. */
     return `<div class="pwas">
-      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b808"
+      <img class="pwasim" src="./persona/t/${esc(앞)}.jpg?v=b809"
            alt="" loading="lazy" decoding="async">
       <span class="pwast"><b>성향이 바뀌었어요</b>
-        <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i></span>
+        <i>예전엔 <em>${esc(앞)}</em> ${esc(PERSONA16[앞]?.n || 앞)}</i>
+        <!-- 무엇이 바뀌었는지 한 줄(v2, 명세 11장) — 홈 알림(pshift)과 같은 말(card.js personaShiftWhy). -->
+        ${personaShiftWhy(앞, code) ? `<small class="pwasw">${esc(personaShiftWhy(앞, code))}</small>` : ''}</span>
     </div>`;
   } catch (e){ console.warn('바뀜 배지', e); self.reportError?.(e); return ''; } })();
 
@@ -249,8 +262,19 @@ async function drawPersona(s, ax, rates){
      첫 카드를 못 보면 평가를 더 할 마음도 안 생깁니다. 대신 **덜 센 것을
      숨기지 않습니다.** 한 번도 해외에 안 간 사람에게 '먼 길 마다않는 외골수'
      라고 해 놓고 아무 말이 없으면, 맞는 줄 알거나 카드를 통째로 안 믿습니다.
-     둘 다 나쁩니다. */
-  const 덜셈 = ax.추정.length ? ' · 아직 모름' : '';
+     둘 다 나쁩니다.
+     ⚠ v2: 「아직 모름」 딱지는 이제 줄마다 personaWhyHtml 이 답니다(무엇을 더 하면 정해지는지까지).
+       해외가 0곳이면 글자는 「가까이(N)」입니다 — 위 외골수 이야기가 v1 에서 실제로 났던 자리입니다. */
+
+  /* ⚠ 「도시 N곳으로 낸 성향이에요」 한 줄(명세 10장)은 넣었다가 **뺐습니다**(2026-09-30, 사용자: 「국내 빼고 문구도
+     그냥 빼버리자」). 몇 곳으로 냈는지는 아래 「왜 인가요」 줄마다 이미 적혀 있습니다(해외 53곳 중…). */
+
+  /* ── 다시 간 도시 카드(v2, 명세 2.2 · 시안 ①) ── 확정된 사람 중 아직 안 알려준 사람에게만.
+     막지 않습니다 — 「나중에」를 누르면 30일 동안 안 뜹니다(아래 「왜 인가요」 끝 줄로는 늘 들어갈 수 있음). */
+  const 나중열쇠 = 't2:pvlater:' + (ctx.me()?.id || '');
+  const 나중에 = (() => { try { return Date.now() - Number(localStorage.getItem(나중열쇠) || 0) < 30 * 864e5; }
+                         catch { return false; } })();
+  const 방문카드 = !임시 && !ax.사실?.알려줌 && !나중에;
 
   /* ── 다음에 갈 만한 곳 ────────────────────────────────────────────
      ⚠ **두 줄의 성격이 다릅니다.** 「어울리는 곳」은 감추고-맞히기로 재서
@@ -320,12 +344,12 @@ async function drawPersona(s, ax, rates){
              깔아 둡니다 — 원본이 붙기 전까지 그 자리를 채웁니다.
            ⚠ 원본 webp 를 여기 깔면 안 됩니다. 같은 그림을 두 번 받습니다. -->
         <div class="psizer"
-             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b808')"></div>
+             style="background-image:url('./persona/t/${esc(code)}.jpg?v=b809')"></div>
         <!-- ⚠ 원본(webp, 장당 약 490KB)이 아니라 **중간 크기**(m/, 77KB)
              입니다(b744). 이 자리는 폭 356 이라 720px 이면 2배까지 충분합니다.
              원본은 공유 카드 그림(card.js)에서만 씁니다 — 거기는 1080 폭
              캔버스에 그리므로 큰 것이 필요합니다. -->
-        <img src="./persona/m/${esc(code)}.jpg?v=b808" alt=""
+        <img src="./persona/m/${esc(code)}.jpg?v=b809" alt=""
              onerror="this.closest('.phero').classList.add('noart')">
         <div class="pscrim"></div>
         <!-- ⚠⚠ **공유 아이콘은 히어로 «안»에 있어야 합니다(b741).** ⚠⚠
@@ -413,13 +437,21 @@ async function drawPersona(s, ax, rates){
 
     ${임시 ? `<div class="card" style="margin-bottom:var(--s-sm)">
       <div class="empty" style="padding:14px 10px">
-        <b>도시 ${남은곳}곳</b>만 더 매기면 성향이 확정돼요.
+        <b>해외 도시 ${남은곳}곳</b>만 더 매기면 성향이 확정돼요.
         <div class="memo" style="margin-top:5px">
           지금 카드는 흔들릴 수 있어서 아직 공유는 못 해요
         </div>
         <div style="margin-top:12px">
           <button class="primary" id="pgo">평가하러 가기</button></div>
       </div></div>` : ''}
+
+    <!-- 다시 간 도시(v2 · 시안 ①) — 막지 않는 카드. 문구는 사용자가 본 시안 그대로입니다. -->
+    ${방문카드 ? `<div class="card pvisit">
+      <b>다시 찾은 도시도 여행 취향이에요</b>
+      <div class="memo">두 번 넘게 간 도시를 알려주면, 새로운 곳을 넓혀 가는지 익숙한 곳을 깊게 가는지 더 정확히 봐요.</div>
+      <div class="pvbtns"><button class="primary" id="pv_go">다시 간 도시 알려주기</button>
+        <button class="small" id="pv_later">나중에</button></div>
+    </div>` : ''}
 
     <!-- ── 궁합 ── 카드 그림 안에만 있던 것을 화면으로도 꺼냅니다(b450).
          그림 안에 있으면 작게 눌러 담겨 읽기 어렵습니다. -->
@@ -435,13 +467,13 @@ async function drawPersona(s, ax, rates){
              있었습니다 — 유형은 «그림으로» 기억됩니다.
            ⚠ 작은 것(t/, 23KB)입니다. 칸이 160px 이라 360px 이면 넉넉합니다. -->
         <div class="mate good">
-          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b808"
+          <img class="mateimg" src="./persona/t/${esc(mate.best)}.jpg?v=b809"
                alt="" loading="lazy" decoding="async">
           <span class="ml">환상의 메이트${임시 ? '' : ` · ${mate.bestScore}%`}</span>
           <b>${esc(PERSONA16[mate.best]?.n || mate.best)}</b>
           <span class="mc">${esc(mate.best)}</span></div>
         <div class="mate bad">
-          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b808"
+          <img class="mateimg" src="./persona/t/${esc(mate.worst)}.jpg?v=b809"
                alt="" loading="lazy" decoding="async">
           <span class="ml">극과 극 메이트${임시 ? '' : ` · ${mate.worstScore}%`}</span>
           <b>${esc(PERSONA16[mate.worst]?.n || mate.worst)}</b>
@@ -469,32 +501,16 @@ async function drawPersona(s, ax, rates){
          무엇을 더 하면 바뀌는지 알면 평가를 더 하게 됩니다. -->
     <div class="card">
       <h2>왜 ${esc(code)} 인가요</h2>
-      ${ax.추정.length ? `<div class="empty" style="text-align:left; padding:4px 0 12px">
-        <b>${ax.추정.join('·')}은 아직 못 정했어요.</b> 이 둘은 <b>해외 도시로만</b>
-        셉니다 — 국내 여행은 나라를 고르는 일이 아니니까요.
-        해외 <b>${Math.max(1, ax.해외문턱 - ax.해외)}곳</b>만 더 매기면 정해져요.
-        <div class="memo" style="margin-top:4px">그때까지는 50점(가운데)으로 둡니다</div>
-      </div>` : ''}
-      <div class="row"><span class="label">개척력 ${ax.개척}
-        <div class="memo">유명한 곳(F) ↔ 숨은 곳(H) · 도시 유명도 평균 ${s.avgFame ? s.avgFame.toFixed(2) : '—'}</div></span>
-        <span class="val">${esc(code[0])}</span></div>
-      <!-- ⚠ **아래 둘은 해외만 셉니다(b394).** 그래서 근거 숫자도 s(전체)가
-           아니라 ax(해외) 에서 가져옵니다 — 축은 해외로 세는데 옆에 적힌
-           근거가 전체면, 왜 이렇게 나왔는지 따져보는 사람에게 앞뒤가 안 맞습니다.
-           s.citiesPerCountry 를 여기 쓰지 마십시오.
-           ⚠ **이 주석에 백틱을 쓰지 마십시오.** 여기는 템플릿 문자열 안이라
-              백틱 하나로 문자열이 끊기고 파일 전체가 안 읽힙니다(b394 에서 겪음). -->
-      <div class="row"><span class="label">단골력 ${ax.단골}${덜셈}
-        <div class="memo">여러 나라(M) ↔ 한 나라(L) · 해외 한 나라당 ${ax.나라당.toFixed(1)}곳</div></span>
-        <span class="val">${esc(code[1])}</span></div>
-      <div class="row"><span class="label">모험력 ${ax.모험}${덜셈}
-        <div class="memo">가까이(N) ↔ 멀리(D) · 서울에서 평균 ${ax.avgDist ? Math.round(ax.avgDist).toLocaleString() + 'km' : '—'}</div></span>
-        <span class="val">${esc(code[2])}</span></div>
-      <div class="row"><span class="label">만족력 ${ax.만족}
-        <div class="memo">까다로움(P) ↔ 후함(G) · 별점 평균 ★${s.avgRating.toFixed(2)}</div></span>
-        <span class="val">${esc(code[3])}</span></div>
+      <!-- ⚠⚠ **v2(2026-09-30): 네 줄을 card.js personaWhyHtml 하나로 모았습니다.** 사람 화면(people.js)과
+           같은 말·같은 마크업이어야 해서입니다. 근거는 날숫자(유명도 평균 1.69 · 한 나라당 곳수) 대신
+           실제 기록 문장입니다(명세 14.4 — 「매긴 77곳 중 38곳이 이름난 관광 도시예요」).
+           못 정한 축(아직 모름)은 그 줄이 무엇을 더 하면 정해지는지 말합니다 — 따로 두던 안내 칸을 걷었습니다.
+           ⚠ 모험력·단골력의 나라 몰림은 여전히 해외만 셉니다(b394). 이 주석에 백틱을 쓰지 마십시오. -->
+      ${personaWhyHtml(ax, code, { 나라이름: countryName })}
       <div class="row"><span class="label">매긴 도시</span>
         <span class="val">${s.cities}곳 · ${s.countries}개국 · ${s.continents}대륙</span></div>
+      <!-- 다시 간 도시 — 알려준 적이 있으면 고치기, 없으면 알려주기(위 카드를 「나중에」로 닫았어도 여기로 들어옵니다). -->
+      ${임시 ? '' : `<button class="p16open" id="pv_edit">${ax.사실?.알려줌 ? '다시 간 도시 고치기 ›' : '다시 간 도시 알려주기 ›'}</button>`}
       <!-- ⚠ **「그중 해외」 줄을 뺐습니다(b459).** 74곳 중 50곳이 해외라는
            것은 **우리가 계산하려고 쓰는 표본**이지, 읽는 사람에게 자랑도
            재미도 아닙니다. 「단골력·모험력은 이 50곳으로만 셉니다」는
@@ -571,6 +587,18 @@ async function drawPersona(s, ax, rates){
      내 코드를 쓰므로, 흔들리는 동안에는 p16.js 가 그 둘을 뗍니다. */
   $('p16go').onclick = () => open16(code);
   if (임시) $('pgo').onclick = () => { closePersona(); ctx.showApp('rate'); };
+  /* 다시 간 도시(v2) — 시트를 열고, 저장하면 리포트를 통째로 다시 그립니다(성향·근거·카드가 같이 바뀜).
+     ⚠ 둘 다 있을 때만 답니다 — 확정 전에는 안 그려지고, 「나중에」면 위 카드가 없습니다. */
+  /* 해외만 — 국내는 성향에 안 들어가므로 여기서 물을 까닭이 없습니다. */
+  const 방문열기 = () => openVisits(ctx.me()?.id,
+    rates.filter(r => r.stars != null && (cities || []).some(c => c.id === r.city_id && c.country !== 'KR')),
+    () => renderPersona());
+  if ($('pv_go')) $('pv_go').onclick = 방문열기;
+  if ($('pv_edit')) $('pv_edit').onclick = 방문열기;
+  if ($('pv_later')) $('pv_later').onclick = () => {
+    try { localStorage.setItem(나중열쇠, String(Date.now())); } catch {}
+    $('pv_later').closest('.pvisit')?.remove();
+  };
   else $('p_img').onclick = () => shareCard(spec, `기로-${code}`);
 
   /* ── 친구가 보낸 궁합(b408) ────────────────────────────────────────
