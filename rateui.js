@@ -18,9 +18,9 @@
  *   이 이름을 바꾸면 세 화면이 같이 멈춥니다.
  *
  * 층: dom.js · cities.js · stars.js 만 씁니다(전부 잎). */
-import { esc } from './dom.js?v=b807';
-import { countryName, cityCountry } from './cities.js?v=b807';
-import { starHtml } from './stars.js?v=b807';
+import { esc } from './dom.js?v=b808';
+import { countryName, cityCountry } from './cities.js?v=b808';
+import { starHtml } from './stars.js?v=b808';
 /**
  * @param city  도시 한 줄(image_url · name · country · id). **사진이 있어야 합니다** —
  *              히어로는 사진이 주인공이라 없으면 빈 색 덩어리만 남습니다.
@@ -79,10 +79,13 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
     <button class="ghost" data-rate="want">♡ 가보고 싶어요</button>
   </div>` : '';
 
+  /* 사진은 **큰 판(image_lg, 세로 1080)** 을 먼저 씁니다(2026-09-30 사진 개편, db/109). 예전 image_url 은
+     세로 350 이라 폰 폭 가득한 이 칸에서 뭉개졌습니다. 큰 판을 못 받으면 작은 판(data-s)으로 한 번 갈아
+     끼우고, 그것도 안 되면 예전처럼 비웁니다. 큰 판이 없는 도시는 처음부터 작은 판이라 한 번에 끝납니다. */
   if (모양 === 'square')
     return `<div class="rateq" id="${esc(id)}">
-      <div class="rqimg"><img src="${esc(c.image_url)}" alt=""
-        onerror="this.closest('.rqimg').classList.add('ph')"></div>
+      <div class="rqimg"><img src="${esc(c.image_lg || c.image_url)}" data-s="${esc(c.image_url)}" alt=""
+        onerror="if(this.dataset.s&amp;&amp;this.src!==this.dataset.s){this.src=this.dataset.s}else{this.closest('.rqimg').classList.add('ph')}"></div>
       <div class="ht">${esc(c.name)} <i>(${esc(cityCountry(c))})</i></div>
       ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
       ${별}
@@ -98,7 +101,8 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
        가운데 선 하나면 둘이라는 것은 충분히 보입니다. */
   return `<div class="ratecard">
     <div class="hero rateh" id="${esc(id)}">
-      <img src="${esc(c.image_url)}" alt="" onerror="this.remove()">
+      <img src="${esc(c.image_lg || c.image_url)}" data-s="${esc(c.image_url)}" alt=""
+        onerror="if(this.dataset.s&amp;&amp;this.src!==this.dataset.s){this.src=this.dataset.s}else{this.remove()}">
       <div class="ht">${esc(c.name)} <i>(${esc(cityCountry(c))})</i></div>
       ${ask ? `<div class="hask">${esc(ask)}</div>` : ''}
       ${별}
@@ -112,4 +116,4 @@ export function rateHero(city, { ask = '', id = 'ratehero', bar = true,
      있었습니다 — 그 셋은 rateui 를 import 하지 않기 때문입니다. 별을 쓰는
      여섯 화면이 다 닿는 아래층은 stars.js 입니다.
      이름은 여기서도 그대로 나갑니다(home·spree·try 가 여기서 가져갑니다). */
-export { starValue } from './stars.js?v=b807';
+export { starValue } from './stars.js?v=b808';

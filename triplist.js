@@ -15,15 +15,15 @@
  *
  * 층: dom.js · db.js · net.js · calc.js · cities.js · trip.js 와 이미
  *     떼어낸 rating.js · home.js · member.js 를 씁니다. */
-import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b807';
-import { sb } from './db.js?v=b807';
-import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b807';
-import { todayYmd } from './calc.js?v=b807';
-import { cities } from './cities.js?v=b807';
-import { trip } from './trip.js?v=b807';
-import { tripSub } from './rating.js?v=b807';
-import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b807';
-import { ROLE_KO } from './member.js?v=b807';
+import { $, esc, putHtml, dropHtml, emptyDo } from './dom.js?v=b808';
+import { sb } from './db.js?v=b808';
+import { fail, netTimeout, drawOffbar, cacheGet, cacheSet } from './net.js?v=b808';
+import { todayYmd } from './calc.js?v=b808';
+import { cities } from './cities.js?v=b808';
+import { trip } from './trip.js?v=b808';
+import { tripSub } from './rating.js?v=b808';
+import { heroTint, openTripReport, reviewBar, heroHtml } from './home.js?v=b808';
+import { ROLE_KO } from './member.js?v=b808';
 
 let ctx = { me: () => null, openTrip: async () => {}, logError: () => {} };
 export function setTripListCtx(o){ ctx = { ...ctx, ...o }; }
@@ -55,33 +55,44 @@ async function fillTripPhotos(rows){
   const need = (rows || []).filter(t => !t.cities?.image_url);
   if (!need.length) return;
 
+  /* 큰 판(image_lg)도 같이 받습니다 — 맨 위 머리 카드는 폭 가득이라 그것을 씁니다(아래 `_photoLg`). */
   const lg = await netTimeout(sb.from('trip_legs')
-    .select('trip_id,country,start_date,cities(image_url)')
+    .select('trip_id,country,start_date,cities(image_url,image_lg)')
     .in('trip_id', need.map(t => t.id)).order('start_date'));
 
-  const byTrip = {}, legCountry = {};
+  const byTrip = {}, byTripLg = {}, legCountry = {};
   for (const l of (lg.data || [])){
-    if (!byTrip[l.trip_id] && l.cities?.image_url) byTrip[l.trip_id] = l.cities.image_url;
+    if (!byTrip[l.trip_id] && l.cities?.image_url){
+      byTrip[l.trip_id] = l.cities.image_url;
+      byTripLg[l.trip_id] = l.cities.image_lg || l.cities.image_url;
+    }
     if (!legCountry[l.trip_id] && l.country)       legCountry[l.trip_id] = l.country;
   }
 
   /* 구간에서 못 찾은 것만 나라로 갑니다. 나라는 겹치므로 한 번에 묻습니다. */
   const rest = need.filter(t => !byTrip[t.id]);
   const countries = [...new Set(rest.map(t => legCountry[t.id] || t.country).filter(Boolean))];
-  const rep = {};
+  const rep = {}, repLg = {};
   if (countries.length){
     /* 같은 여행은 열 때마다 같은 사진이어야 합니다 — 다르면 "내 여행"으로
        안 읽힙니다. pop_rank › fame › 이름 순으로 **늘 같은 것**을 고릅니다. */
     const c = await netTimeout(sb.from('cities')
-      .select('country,image_url,pop_rank,fame,name')
+      .select('country,image_url,image_lg,pop_rank,fame,name')
       .in('country', countries).not('image_url', 'is', null)
       .order('pop_rank', { ascending:true, nullsFirst:false })
       .order('fame',     { ascending:true, nullsFirst:false })
       .order('name',     { ascending:true }));
-    for (const row of (c.data || [])) if (!rep[row.country]) rep[row.country] = row.image_url;
+    for (const row of (c.data || [])) if (!rep[row.country]){
+      rep[row.country] = row.image_url;
+      repLg[row.country] = row.image_lg || row.image_url;
+    }
   }
 
-  for (const t of need) t._photo = byTrip[t.id] || rep[legCountry[t.id] || t.country] || null;
+  for (const t of need){
+    const 나라 = legCountry[t.id] || t.country;
+    t._photo   = byTrip[t.id]   || rep[나라]   || null;
+    t._photoLg = byTripLg[t.id] || repLg[나라] || t._photo;
+  }
 }
 
 /* ── 늦게 온 답은 버립니다(b799, GPT 리포트 P0-2) ─────────────────────────
@@ -110,7 +121,7 @@ export async function loadTrips(){
   let q = sb.from('trips')
     .select('id,title,destination,start_date,end_date,currency,timezone,' +
             /* `country` 는 사진 대체에 씁니다(아래 fillTripPhotos). */
-    'transit_factor,city_id,country,cities(image_url),' +
+    'transit_factor,city_id,country,cities(image_url,image_lg),' +
             'trip_members(user_id,role),trip_reviews(user_id,stars)');
   /* 날짜가 지나면 저절로 "다녀온"으로 넘어갑니다 — 손으로 옮길 일이 없습니다. */
   if (갈래 === 'past')
@@ -205,7 +216,8 @@ export async function loadTrips(){
                 : `Day ${Math.round((new Date(today) - new Date(t.start_date)) / 864e5) + 1}`;
     const wrap = document.createElement('div');
     wrap.id = 'triphero';
-    wrap.innerHTML = heroHtml(t.cities?.image_url || t._photo || '',
+    /* 머리 카드는 폭 가득이라 큰 판(image_lg)을 씁니다. 목록 줄의 작은 네모(아래)는 예전 image_url 그대로. */
+    wrap.innerHTML = heroHtml(t.cities?.image_lg || t.cities?.image_url || t._photoLg || t._photo || '',
                               badge, t.title, tripSub(t, days), '');
     /* heroHtml 이 안쪽에 `id="hero"` 를 답니다. **홈의 히어로와 같은 id 라
        한 화면에 둘이 뜨면 안 됩니다** — 탭이 갈려 있어 지금은 괜찮지만,

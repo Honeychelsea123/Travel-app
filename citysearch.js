@@ -19,11 +19,11 @@
  * 사전이 아는 것입니다. 사전 세우기도 거기입니다(`useCities`).
  *
  * 층: dom.js · db.js · net.js · cities.js 만 씁니다. */
-import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b807';
-import { sb } from './db.js?v=b807';
+import { $, esc, emptyDo, flagOf, flagOk } from './dom.js?v=b808';
+import { sb } from './db.js?v=b808';
 import { fail, netTimeout, netIsDown, isOffline, drawOffbar,
-         cacheGet, cacheSet } from './net.js?v=b807';
-import { cities, countryName, countryInfo, search, useCities, cityCountry } from './cities.js?v=b807';
+         cacheGet, cacheSet } from './net.js?v=b808';
+import { cities, countryName, countryInfo, search, useCities, cityCountry } from './cities.js?v=b808';
 
 /* ── 도시 검색 ──────────────────────────────────────────────────── */
 /* 도시 고르개가 지금 무엇을 보여주고 있나. **app.js 의 let 뭉치 안에 있던
@@ -117,7 +117,11 @@ async function refreshCities(){
   /* `tags` 는 추천 계산이 씁니다(rec.js). **제일 앞 시도에만 넣습니다** —
      아직 db/068 을 안 돌린 곳에서는 이 줄이 실패하고 아래 단계별 후퇴가
      tags 없이 받아옵니다. 그러면 추천만 조용히 비고 앱은 그대로 돕니다. */
-  let cs = await 도시받기(BASE + ',image_url,summary,summary_url,fame,pop_rank,tags');
+  /* `image_lg` 는 큰 칸(넘기며 매기기·도시 화면 맨 위…)에 쓰는 세로 1080 사진입니다(db/109, 사진 개편).
+     없는 도시는 비어 있고, 그때는 어디서나 image_url 로 갑니다. 아래 후퇴 단계에서는 뺍니다. */
+  let cs = await 도시받기(BASE + ',image_url,image_lg,summary,summary_url,fame,pop_rank,tags');
+  if (cs.error && !isOffline(cs.error))
+    cs = await 도시받기(BASE + ',image_url,summary,summary_url,fame,pop_rank,tags');
   if (cs.error && !isOffline(cs.error))
     cs = await 도시받기(BASE + ',image_url,summary,summary_url,fame');
   /* 연결 문제로 실패한 것이면 아래 단계별 후퇴를 돌 이유가 없습니다.
@@ -268,7 +272,10 @@ export function pickCity(c){
   /* 사진이 없는 도시가 아직 많습니다. 그때는 첫 글자를 큼직하게 둡니다 —
      빈 회색 네모만 있으면 안 불러온 것인지 없는 것인지 모릅니다. */
   const im = $('pc_img');
-  im.style.backgroundImage = c.image_url ? `url("${c.image_url}")` : '';
+  /* 폭 가득한 정사각형이라 큰 사진(image_lg)을 위에, 작은 것을 밑에 깝니다 — 큰 것이 오기 전·못 받았을 때
+     밑의 작은 것이 보입니다(city.js 의 cv_hero 와 같은 수법). */
+  im.style.backgroundImage = [...new Set([c.image_lg, c.image_url].filter(Boolean))]
+    .map(u => `url("${u}")`).join(', ');
   im.textContent = c.image_url ? '' : c.name.slice(0, 1);
   $('p_name').textContent = c.name;
   $('p_country').textContent =

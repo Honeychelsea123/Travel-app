@@ -20,14 +20,14 @@
  *
  * 층: dom.js · db.js · cities.js · citysearch.js · stars.js · rateui.js ·
  *     rate.js · rating.js · home.js(지문 비우기만). */
-import { $, esc } from './dom.js?v=b807';
-import { sb } from './db.js?v=b807';
-import { cities } from './cities.js?v=b807';
-import { loadCities } from './citysearch.js?v=b807';
-import { paintStars } from './stars.js?v=b807';
-import { rateHero, starValue } from './rateui.js?v=b807';
-import { saveRate } from './rating.js?v=b807';
-import { resetHomeSig } from './home.js?v=b807';
+import { $, esc } from './dom.js?v=b808';
+import { sb } from './db.js?v=b808';
+import { cities } from './cities.js?v=b808';
+import { loadCities } from './citysearch.js?v=b808';
+import { paintStars } from './stars.js?v=b808';
+import { rateHero, starValue } from './rateui.js?v=b808';
+import { saveRate } from './rating.js?v=b808';
+import { resetHomeSig } from './home.js?v=b808';
 
 /* ⚠ showApp 은 **기본값에도 둡니다.** 없으면 위 돌아가기() 가 조용히
    아무 일도 안 하는데, 그게 b423~b425 동안 그대로 나가 있었습니다. */
@@ -111,7 +111,8 @@ function 그리기(){
   if (다음도시?.image_url){
     const 미리 = new Image();
     미리.decoding = 'async';
-    미리.src = 다음도시.image_url;
+    /* 카드가 실제로 쓸 주소여야 캐시에서 뜹니다 — 카드는 큰 판을 먼저 씁니다(rateui.js). */
+    미리.src = 다음도시.image_lg || 다음도시.image_url;
   }
 }
 

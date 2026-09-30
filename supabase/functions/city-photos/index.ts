@@ -45,11 +45,67 @@ Deno.serve(async (req) => {
     const mode = String(body?.mode ?? 'search');
 
     // ── 고른 것 넣기 ──
+    /* ⚠⚠ **두 가지 모양을 받습니다(2026-09-30 사진 개편, db/109).** ⚠⚠
+       · 글자 하나(옛 모양): { id: 주소 } — 예전처럼 `${id}.jpg` 한 장을 같은 이름에 덮어씁니다.
+       · 묶음(새 모양): { id: { small, large, page, by, license } }
+           small → `${id}-${표}.jpg`   목록 같은 작은 칸(image_url)
+           large → `${id}-${표}-l.webp` 넘기며 매기기·도시 화면 맨 위 같은 큰 칸(image_lg)
+         «표»는 큰 사진 주소로 만든 짧은 지문이라 **사진이 바뀌면 파일 이름도 바뀝니다** — 같은 이름에
+         덮어쓰면 1년 보관(cacheControl) 때문에 이미 본 폰에는 옛 사진이 남았습니다(도쿄가 그랬음).
+         출처 페이지·찍은 사람·라이선스는 앱의 「사진 출처」 화면이 읽습니다(위키미디어는 표시 의무).
+       ⚠ 올리기가 다 된 뒤에 주소를 바꿉니다 — 반쯤 올라간 채 주소만 바뀌면 사진이 깨집니다.
+       ⚠ 옛 파일은 지우지 않습니다(되돌릴 길). */
     if (mode === 'apply') {
-      const picks: Record<string, string> = body?.picks ?? {};
+      const picks: Record<string, unknown> = body?.picks ?? {};
       const done: string[] = [];
       const failed: { id: string; why: string }[] = [];
-      for (const [id, src] of Object.entries(picks)) {
+      /* 위키미디어는 이름표(User-Agent) 없는 요청을 403 으로 막고, 정해진 폭(500·960·1280·1920…)이 아니면
+         400 을 줍니다(2026-09-30 재 봄). 그래서 이름표를 붙이고, 폭은 고르는 쪽에서 정해진 값으로 보냅니다. */
+      const grab = async (src: string) => {
+        const res = await fetch(src, { signal: AbortSignal.timeout(25000),
+          headers: { 'User-Agent': 'KiroCityPhotos/1.0 (https://honeychelsea123.github.io/Travel-app/)' } });
+        if (!res.ok) throw new Error(`받기 ${res.status}`);
+        const type = (res.headers.get('content-type') || 'image/jpeg').split(';')[0];
+        const buf = new Uint8Array(await res.arrayBuffer());
+        if (!buf.length) throw new Error('빈 파일');
+        return { type, buf };
+      };
+      const put = async (path: string, f: { type: string; buf: Uint8Array }) => {
+        const { error } = await admin.storage.from(BUCKET)
+          .upload(path, f.buf, { contentType: f.type, upsert: true, cacheControl: '31536000' });
+        if (error) throw new Error('올리기 ' + error.message);
+        return `${url}${MARK}${path}`;
+      };
+      const 지문 = async (s: string) => {
+        const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+        return [...new Uint8Array(h)].slice(0, 4).map(b => b.toString(16).padStart(2, '0')).join('');
+      };
+      for (const [id, pick] of Object.entries(picks)) {
+        if (!/^[a-z0-9_-]+$/.test(id)) { failed.push({ id, why: '이름이 이상함' }); continue; }
+        if (pick && typeof pick === 'object') {
+          const p = pick as { small?: string; large?: string; page?: string; by?: string; license?: string };
+          try {
+            if (!p.small || !p.large) throw new Error('small·large 가 둘 다 있어야 해요');
+            /* 받는 곳을 못박습니다 — 관리자만 부르긴 해도, 아무 주소나 서버가 대신 받아 오게 두면 안 됩니다. */
+            const 허용 = (s: string) => { try { const h = new URL(s).hostname;
+              return h === 'images.pexels.com' || h === 'upload.wikimedia.org' || h === 'thumb.wikimedia.org'; } catch { return false; } };
+            if (!허용(p.small) || !허용(p.large)) throw new Error('Pexels·위키미디어 사진만 받아요');
+            const 표 = await 지문(p.large);
+            const [s, l] = await Promise.all([grab(p.small), grab(p.large)]);
+            const smallUrl = await put(`${id}-${표}.${s.type === 'image/png' ? 'png' : s.type === 'image/webp' ? 'webp' : 'jpg'}`, s);
+            const largeUrl = await put(`${id}-${표}-l.${l.type === 'image/jpeg' ? 'jpg' : l.type === 'image/png' ? 'png' : 'webp'}`, l);
+            const { error: updErr } = await admin.from('cities').update({
+              image_url: smallUrl, image_lg: largeUrl, image_url_src: p.small,
+              image_page: p.page ?? null, image_credit: p.by ?? null, image_license: p.license ?? null,
+            }).eq('id', id).select('id');
+            if (updErr) throw new Error('주소 갱신 ' + updErr.message);
+            done.push(id);
+          } catch (e) {
+            failed.push({ id, why: String((e as Error)?.message ?? e).slice(0, 80) });
+          }
+          continue;
+        }
+        const src = String(pick ?? '');
         try {
           const res = await fetch(src, { signal: AbortSignal.timeout(20000) });
           if (!res.ok) { failed.push({ id, why: `받기 ${res.status}` }); continue; }
@@ -73,6 +129,29 @@ Deno.serve(async (req) => {
         }
       }
       return json({ done: done.length, doneIds: done, failed });
+    }
+
+    // ── 사진 번호로 정보 받기 ──
+    /* { pids:[…] } → { photos: { pid: { by, page, alt, w, h } } }. 넣을 때 «찍은 사람»을 정확히 적으려고 둡니다
+       (2026-09-30 사진 개편) — 검색을 다시 돌려 이름을 줍는 것보다 한 장에 한 번이라 정확하고 쌉니다. 올리지 않습니다. */
+    if (mode === 'info') {
+      if (!key) return json({ error: '사진 검색이 아직 준비되지 않았어요.' }, 500);
+      const pids: number[] = (Array.isArray(body?.pids) ? body.pids : [])
+        .slice(0, 60).map((x: unknown) => Number(x)).filter((x: number) => Number.isInteger(x) && x > 0);
+      const photos: Record<string, unknown> = {};
+      for (const pid of pids) {
+        try {
+          const r = await fetch(`https://api.pexels.com/v1/photos/${pid}`,
+            { headers: { Authorization: key }, signal: AbortSignal.timeout(15000) });
+          if (!r.ok) { photos[String(pid)] = { error: r.status }; continue; }
+          const p = await r.json();
+          photos[String(pid)] = { by: p.photographer ?? null, page: p.url ?? null, alt: p.alt ?? '',
+                                  w: p.width ?? null, h: p.height ?? null };
+        } catch (e) {
+          photos[String(pid)] = { error: String((e as Error)?.message ?? e).slice(0, 60) };
+        }
+      }
+      return json({ photos });
     }
 
     // ── 후보 찾기 ──
@@ -116,8 +195,11 @@ Deno.serve(async (req) => {
       if (!r.ok) throw new Error(`pexels ${r.status}`);
       const j = await r.json();
       return (j.photos ?? []).map((p: any) => ({
-        // large 는 가로 940 정도라 목록 썸네일과 상세 배경에 둘 다 씁니다.
-        src: p.src?.large ?? p.src?.medium, by: p.photographer, page: p.url,
+        // large 는 가로 940 정도 — 고르는 화면의 미리보기로 씁니다.
+        // 넣을 때는 original 에 크기를 붙여 두 판(작은 것·세로 1080)을 따로 받습니다(apply 의 묶음 모양).
+        src: p.src?.large ?? p.src?.medium, orig: p.src?.original ?? null,
+        pid: p.id ?? null, w: p.width ?? null, h: p.height ?? null, alt: p.alt ?? '',
+        by: p.photographer, page: p.url,
       }));
     };
 
@@ -133,9 +215,11 @@ Deno.serve(async (req) => {
     for (const c of rows ?? []) {
       const base = qs[c.id] ?? `${c.name_en ?? c.id} ${ccName[c.country] ?? c.country}`;
       try {
+        /* 명소 이름을 줬으면(queries) 그 이름 하나로만 찾습니다 — 'Eiffel Tower cityscape' 는 탑이 작게
+           나오는 도시 풍경을 섞어 옵니다(2026-09-30 사진 개편: 「관광지 어디다라는게 직관적으로」). */
         const [a, b] = await Promise.all([
           hunt(base),
-          hunt(`${base} cityscape`).catch(() => []),
+          qs[c.id] ? Promise.resolve([]) : hunt(`${base} cityscape`).catch(() => []),
         ]);
         /* 같은 사진이 양쪽에 나오는 일이 흔합니다. 주소로 걸러냅니다. */
         const seen = new Set<string>();

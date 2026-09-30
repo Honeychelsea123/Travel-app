@@ -13,13 +13,13 @@
  * 자료를 건드리므로 여기로 가져오면 안 됩니다.
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
-import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b807';
-import { sb } from './db.js?v=b807';
-import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b807';
-import { myRates, cityStat, visited, 별받음 } from './rate.js?v=b807';
-import { starHtml, starValue, starsRo } from './stars.js?v=b807';
-import { localTime } from './calc.js?v=b807';
-import { fail, netIsDown } from './net.js?v=b807';
+import { $, esc, avatarImg, emptyDo, fitImage, toast } from './dom.js?v=b808';
+import { sb } from './db.js?v=b808';
+import { cities, countryName, countryInfo, continentOf, cityCountry } from './cities.js?v=b808';
+import { myRates, cityStat, visited, 별받음 } from './rate.js?v=b808';
+import { starHtml, starValue, starsRo } from './stars.js?v=b808';
+import { localTime } from './calc.js?v=b808';
+import { fail, netIsDown } from './net.js?v=b808';
 
 /* 지금 열려 있는 도시. **app.js 에 있던 것을 여기로 옮겼습니다(b329)** —
    여닫는 것은 이 파일이 하는데 변수만 저쪽에 있어서, 떼어낸 뒤
@@ -151,7 +151,10 @@ export async function openCity(id, 옵션 = {}){
   window.scrollTo({ top:0 });
 
   const r = myRates[id] || {}, s = cityStat[id];
-  $('cv_hero').style.backgroundImage = c.image_url ? `url("${c.image_url}")` : '';
+  /* 큰 사진(image_lg, 사진 개편 db/109)을 위층에, 작은 것을 아래층에 둡니다. 큰 것이 오는 동안이나
+     못 받았을 때 아래 작은 것이 비칩니다. 둘 다 `center/cover` 를 받습니다(값 하나가 층마다 되풀이). */
+  $('cv_hero').style.backgroundImage = [...new Set([c.image_lg, c.image_url].filter(Boolean))]
+    .map(u => `url("${u}")`).join(', ');
   $('cv_hero').classList.toggle('ph', !c.image_url);
   $('cv_hero').textContent = c.image_url ? '' : c.name.slice(0, 1);
   $('cv_name').textContent = c.name;

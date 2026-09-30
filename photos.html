@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>도시 사진 · 기로</title>
+<meta name="description" content="기로에 쓴 도시 사진의 출처와 이용 조건">
+<!-- ══ 도시 사진 출처(2026-09-30 사진 개편, db/109) ══════════════════════════
+     사용자: 「사진 가장 중요한건 관광지 어디다라는게 직관적으로 바로 알 수 있고 좀 이쁘게 해줘」
+     → 유명 도시 사진을 Pexels 와 위키미디어 공용에서 다시 골랐습니다. **위키미디어 사진은 찍은 사람과
+       라이선스를 밝혀야 쓸 수 있습니다**(CC BY · CC BY-SA). 그 자리가 여기입니다.
+     ⚠ 표는 **열 때마다 cities 에서 읽습니다** — 사진을 바꾸면(city-photos 함수의 apply) 여기는 저절로
+       따라옵니다. 손으로 적은 표였다면 바꿀 때마다 두 곳을 고쳐야 합니다.
+     ⚠ 읽는 칸: image_credit(찍은 사람) · image_page(원본 페이지) · image_license(라이선스).
+       옛 사진(개편 전)은 image_credit 만 있습니다 — 「Photo: 이름 / Pexels」 모양이 섞여 있어 다듬어 보여 줍니다.
+     ⚠ 설정 → 약관과 정보 → 「도시 사진」 이 여기로 옵니다(index.html). credits.html(지도 자료)과 같은 모양입니다. -->
+<style>
+  :root{ --ink:#1c1c1e; --dim:#6b6b70; --line:#e5e5ea; --bg:#f5f5f7; --acc:#0066cc; }
+  @media (prefers-color-scheme:dark){
+    :root{ --ink:#f2f2f7; --dim:#9a9aa0; --line:#2c2c2e; --bg:#000; --acc:#4d9fff; }
+  }
+  *{ box-sizing:border-box }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+        font:16px/1.75 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+        word-break:keep-all; overflow-wrap:anywhere;
+        padding:env(safe-area-inset-top) env(safe-area-inset-right)
+                env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  main{ max-width:720px; margin:0 auto; padding:28px 20px 80px }
+  a{ color:var(--acc) }
+  h1{ font-size:24px; letter-spacing:-.5px; margin:0 0 6px }
+  h2{ font-size:18px; letter-spacing:-.3px; margin:38px 0 10px;
+      padding-top:20px; border-top:1px solid var(--line) }
+  p,li{ margin:8px 0 }
+  .lead{ color:var(--dim); font-size:14px; margin:0 0 4px }
+  .back{ display:inline-block; margin-bottom:20px; font-size:14px; text-decoration:none }
+  .box{ background:rgba(127,127,127,.09); border-radius:12px; padding:12px 16px; margin:14px 0 }
+  .tw{ overflow-x:auto; -webkit-overflow-scrolling:touch; margin:12px 0 }
+  table{ border-collapse:collapse; width:100%; min-width:480px; font-size:14px }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top }
+  th{ background:rgba(127,127,127,.09); font-weight:600; white-space:nowrap }
+  td:first-child{ white-space:nowrap }
+  .dim{ color:var(--dim); font-size:14px }
+  footer{ margin-top:44px; padding-top:18px; border-top:1px solid var(--line);
+          color:var(--dim); font-size:13px }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="./">← 기로</a>
+
+<h1>도시 사진</h1>
+<p class="lead">기로에 쓴 도시 사진의 출처와 이용 조건</p>
+
+<div class="box">
+  <p style="margin:0">도시 사진은 두 곳에서 가져왔습니다.
+  <b>위키미디어 공용</b>(Wikimedia Commons)의 사진은 사진마다 정해진 라이선스를 따르며,
+  아래에 찍은 사람·라이선스·원본을 밝힙니다.
+  <b>Pexels</b> 사진은 <a href="https://www.pexels.com/license/">Pexels 라이선스</a>로 자유롭게 쓸 수 있고,
+  찍은 분을 함께 적었습니다.
+  모든 사진은 화면에 맞게 <b>크기를 줄이고 가운데를 잘라</b> 보여 드립니다.</p>
+</div>
+
+<h2>위키미디어 공용</h2>
+<div class="tw" id="wk"><p class="dim">불러오는 중…</p></div>
+
+<h2>Pexels</h2>
+<div class="tw" id="px"><p class="dim">불러오는 중…</p></div>
+
+<footer>잘못된 출처나 빠진 표기를 보셨다면 앱 설정의 「버그 신고 · 의견 보내기」로 알려 주세요.</footer>
+</main>
+
+<script type="module">
+import { sb } from './db.js?v=b808';
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+/* 「Photo: 이름 / Pexels」·「이름 / Wikimedia Commons (CC BY-SA 3.0)」 같은 옛 표기를 이름만 남깁니다. */
+const 이름만 = s => String(s || '').replace(/^Photo:\s*/i, '')
+  .replace(/\s*\/\s*(Pexels|Wikimedia Commons)\b.*$/i, '').trim();
+
+/* 라이선스 약칭 → 원문 주소. 모르는 것은 글자만 둡니다. */
+function 라이선스(lic){
+  const t = String(lic || '').trim();
+  if (!t) return '';
+  let m = t.match(/^CC (BY(?:-SA)?) (\d\.\d)(?: ([a-z]{2}))?$/i);
+  if (m) return `<a href="https://creativecommons.org/licenses/${m[1].toLowerCase()}/${m[2]}/${m[3] ? m[3].toLowerCase() + '/' : ''}">${esc(t)}</a>`;
+  if (/^CC0/i.test(t)) return `<a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0</a>`;
+  if (/^public domain$/i.test(t)) return '퍼블릭 도메인';
+  if (/^FAL$/i.test(t)) return `<a href="https://artlibre.org/licence/lal/en/">Free Art License</a>`;
+  return esc(t);
+}
+
+const 위키냐 = c => /wikimedia|wikipedia/i.test(c.image_page || '') || /wikimedia/i.test(c.image_credit || '')
+  || (c.image_license && !/^pexels$/i.test(c.image_license));
+
+const { data, error } = await sb.from('cities')
+  .select('id,name,image_credit,image_page,image_license')
+  .not('image_url', 'is', null).order('name').range(0, 4999);
+
+if (error || !data){
+  for (const id of ['wk', 'px'])
+    document.getElementById(id).innerHTML = '<p class="dim">지금은 목록을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</p>';
+} else {
+  const 위키 = data.filter(위키냐), 펙셀 = data.filter(c => !위키냐(c));
+  document.getElementById('wk').innerHTML = 위키.length ? `<table>
+    <tr><th>도시</th><th>찍은 사람</th><th>라이선스</th><th>원본</th></tr>
+    ${위키.map(c => {
+      /* 옛 표기에만 라이선스가 괄호로 들어 있습니다(독도). 칸이 비었으면 거기서 꺼냅니다. */
+      const 괄호 = (String(c.image_credit || '').match(/\(([^)]+)\)\s*$/) || [])[1];
+      return `<tr><td>${esc(c.name)}</td><td>${esc(이름만(c.image_credit))}</td>
+        <td>${라이선스(c.image_license || 괄호)}</td>
+        <td>${c.image_page ? `<a href="${esc(c.image_page)}">보기</a>` : ''}</td></tr>`;
+    }).join('')}</table>` : '<p class="dim">없어요.</p>';
+  document.getElementById('px').innerHTML = 펙셀.length ? `<table>
+    <tr><th>도시</th><th>찍은 사람</th></tr>
+    ${펙셀.map(c => `<tr><td>${esc(c.name)}</td><td>${c.image_page
+        ? `<a href="${esc(c.image_page)}">${esc(이름만(c.image_credit))}</a>`
+        : esc(이름만(c.image_credit))}</td></tr>`).join('')}</table>` : '<p class="dim">없어요.</p>';
+}
+</script>
+</body>
+</html>
