@@ -4494,41 +4494,39 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
      옆으로 스크롤 하면서 보게해줘」). 상은 세로로, 상 안의 도시는 가로로. */
 .awgrid{ display:flex; flex-direction:column; margin-top:4px; }
 .awgrid .aws{ margin-top:4px; font-size:var(--f-md); }
-/* 상 하나 = 머리 줄(단추) + 몸(사진 줄 · 한 줄 말). 상끼리는 가는 선으로 가릅니다. */
+/* 상 하나 = 이름(h3) + 사진 줄 + 한 줄 말. 상끼리는 가는 선으로 가릅니다.
+   ⚠ b813 에는 상마다 접혔습니다(머리 줄 단추 · 접힘 줄) — b815 에 카드 통째로 접기로 바꾸며 걷었습니다
+     (사용자: 「도시어워즈 전체를 폈다 접을 수 있게 해줘 하나씩 다 할필요가 없어」). */
 .awt{ padding:4px 0 18px; }
 .awt + .awt{ border-top:1px solid var(--divider-soft); padding-top:12px; }
-.awt.fold{ padding-bottom:6px; }
-/* 접기(b813, 사용자: 「각 항목마다 기본은 펼쳐져 있고 접는 기능도」) — 상 머리 줄과 여행지 월드컵 제목이 같은 단추(.awh).
-   접히면 몸(.awbody)을 숨기고, 상 머리에는 「★5 · 대구 · 로바니에미 · 방콕」 한 줄이 나옵니다(펼쳐 있을 땐 사진 밑에 이름이 있어 숨김). */
+.awname{ margin:6px 0 10px; font-size:var(--f-lg); font-weight:700; color:var(--ink); }
+/* 접는 카드(b815) — 도시 어워즈 · 여행지 월드컵(mycity.js 접는카드) · 지도 화면 「국가별 방문한 도시」(map.js).
+   제목(h2) 안의 단추(.awh)를 누르면 몸(.awbody)이 접혀 제목 줄만 남습니다. 제목 글꼴은 h2 그대로 물려받습니다. */
 .awh{ display:flex; width:100%; align-items:center; justify-content:space-between; gap:10px;
       padding:6px 0 10px; border:0; background:none; text-align:left; font:inherit; color:inherit; cursor:pointer; }
 .awh:active{ transform:none; }
 .awht{ min-width:0; }
-.awht b{ display:block; font-size:var(--f-lg); font-weight:700; color:var(--ink); }
-.awht small{ display:none; margin-top:2px; font-size:var(--f-sm); color:var(--ink-48);
-             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.awht small em{ font-style:normal; color:var(--star); font-weight:700; }
-.fold .awht small{ display:block; }
+.foldcard > h2{ margin-bottom:0; }
+.foldcard > h2 .awh{ padding:0 0 4px; font-size:inherit; font-weight:inherit; }
 /* 꺾쇠 — 펼침 ⌃ · 접힘 ⌄. 글꼴 기호 대신 선 두 개(어느 글꼴에서도 같은 모양). */
 .awchev{ flex:none; width:9px; height:9px; margin-right:4px; border-right:2px solid var(--ink-48);
          border-bottom:2px solid var(--ink-48); transform:translateY(2px) rotate(-135deg); }
 .fold .awchev{ transform:translateY(-2px) rotate(45deg); }
 .fold > .awbody{ display:none; }
-/* 여행지 월드컵 제목은 카드 제목(h2) 모양 그대로 — 단추가 글꼴을 물려받습니다. */
-.fvcard > h2{ margin-bottom:0; }
-.fvcard > h2 .awh{ padding:0 0 4px; font-size:inherit; font-weight:inherit; }
-/* 국가별 다녀온 도시(지도 화면) — 나라 하나 = 머리 줄(누르면 접힘) + 도시 칩. 접는 규칙은 위와 같습니다(b813, map.js).
-   머리 줄 모양은 옛 줄(.row · 이름 600 · 곳 수 회색) 그대로 — 단추가 되며 붙는 테두리·배경·눌림만 걷습니다. */
+/* 국가별 방문한 도시(지도 화면) — 나라 하나 = 이름 줄 + 도시 칩. 접기는 카드 통째로(b815, 위 접는 카드).
+   ⚠ b813 에는 나라마다 접히고 「모두 접기」가 있었습니다 — 사용자: 「국가별로 하지말고 그냥 통으로」로 걷었습니다. */
 .ctryblk{ padding:9px 0; border-top:1px solid var(--line); }
-.ctryh{ width:100%; padding:0; margin:0; border:0; background:none; text-align:left; color:inherit; }
-.ctryh:active{ transform:none; opacity:.6; }
 .ctryh .label{ font-weight:600; }
-/* 사진 줄(b813) — 한 곳이면 꽉 차게, 둘 넘으면 86% 로 다음 장이 살짝 보이게. 규칙은 .crow 와 같습니다
-   (음수 여백 없음 b597·b736 · 스냅 proximity · 스크롤바 숨김). 어워즈와 여행지 월드컵의 1·2·3위가 같이 씁니다. */
-.awrow{ display:flex; gap:8px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity;
+/* 사진 줄(b813) — 한 곳이면 꽉 차게, 둘 넘으면 86% 로 다음 장이 살짝 보이게. 음수 여백 없음(b597·b736) ·
+   스크롤바 숨김은 .crow 와 같습니다. 어워즈와 여행지 월드컵의 1·2·3위가 같이 씁니다.
+   ⚠⚠ **스냅은 mandatory 입니다(b815).** b813 은 .crow 를 따라 proximity 였는데, 손을 떼면 사진이 중간에 걸쳐
+     멈췄습니다(사용자: 「좌우 스크롤이 중간에 멈추는게 아니라 딱딱 맞아야하는거아냐??」). .crow 는 넉 장을 «훑는»
+     자리라 proximity 가 맞고, 여기는 한 장씩 «보는» 사진이라 반대입니다(성향 캐러셀 .p16 과 같은 쪽).
+     scroll-snap-stop:always — 세게 밀어도 한 장씩만 넘어갑니다. */
+.awrow{ display:flex; gap:8px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory;
         scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .awrow::-webkit-scrollbar{ display:none; }
-.awslide{ position:relative; flex:0 0 100%; min-width:0; scroll-snap-align:start; cursor:pointer; }
+.awslide{ position:relative; flex:0 0 100%; min-width:0; scroll-snap-align:start; scroll-snap-stop:always; cursor:pointer; }
 .awrow.many .awslide{ flex-basis:86%; }
 .awslide i{ display:flex; align-items:center; justify-content:center; aspect-ratio:2 / 1;
             background:var(--line) center / cover no-repeat; font-style:normal;
@@ -6285,3 +6283,101 @@ body:has(#whoview:not(.hide)) .tabbar{ display:none; }
 /* 남의 프로필 머리의 소개(people.js) */
 .whobio{ margin:0; color:var(--ink-80); font-size:var(--f-lg); text-align:left;
          overflow-wrap:anywhere; }
+
+/* ══ 관리자 「사용 | 비용 | 문제」(b815) ════════════════════════════════════════════════════
+   칸 줄은 분석 탭(.antabs)과 같은 모양 — 셋. 「문제」에 볼 것(오늘 오류·안 읽은 신고)이 있으면 빨간 점. */
+.admtabs{ grid-template-columns:repeat(3, minmax(0,1fr)); margin:0 0 var(--s-sm); }
+.admtabs button.hasdot::after{ content:''; display:inline-block; width:6px; height:6px; margin-left:5px;
+  vertical-align:2px; border-radius:50%; background:var(--bad); }
+
+/* ── 「사용」 칸(adminuse.js) — 유튜브 스튜디오 「분석 › 개요」처럼 ──────────────────────────
+   사용자: 「유튜브 스튜디오 참고해서 잘 만들어봐」. 가져온 것: 기간 칩 · 한 줄 요약 · 지표 카드(고른 것은
+   위에 굵은 선, 누르면 아래 그래프가 바뀜) · 짚으면 그날 값이 뜨는 선 그래프 · 실시간 막대 · 인기 목록.
+   ⚠ 종이 앱이라 둥글기·그림자·파란색은 안 가져옵니다(b588·b612) — 선은 먹(--ink), 늘면 초록, 줄면 빨강. */
+.auc h2{ font-size:var(--f-xl); }
+.auhead{ display:flex; align-items:center; gap:8px; }
+.auper{ display:flex; border:1px solid var(--hairline); }
+.auper button{ border:0; background:none; padding:7px 13px; font-size:var(--f-md); color:var(--ink-48); }
+.auper button + button{ border-left:1px solid var(--hairline); }
+.auper button.on{ background:var(--ink); color:var(--canvas); font-weight:700; }
+.auper button:active, .aukpi button:active{ transform:none; }
+.aurf{ margin-left:auto; padding:6px 0; font-size:var(--f-sm); color:var(--ink-48); }
+.ausum{ margin:14px 0 12px; font-size:var(--f-xl); line-height:1.45; letter-spacing:calc(-.3px * var(--ts));
+        text-wrap:balance; }
+.ausum b{ font-weight:800; }
+/* 지표 카드 넷 — 2×2. 틈 1px 에 바닥색을 비춰 선을 긋습니다(칸마다 테두리를 주면 가운데가 두 겹). */
+.aukpi{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:1px;
+        background:var(--hairline); border:1px solid var(--hairline); }
+.aukpi button{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; min-width:0;
+               padding:9px 12px 11px; border:0; border-top:3px solid transparent;
+               background:var(--canvas); color:var(--ink); text-align:left; }
+.aukpi button.on{ background:var(--pearl); border-top-color:var(--ink); }
+.aukpi .l{ font-size:var(--f-sm); color:var(--ink-48); }
+.aukpi b{ font-size:var(--f-3xl); font-weight:800; line-height:1.15; letter-spacing:calc(-.6px * var(--ts));
+          font-variant-numeric:tabular-nums; }
+.aukpi b small{ margin-left:2px; font-size:var(--f-md); font-weight:600; color:var(--ink-48); letter-spacing:0; }
+.aukpi .dt{ font-size:var(--f-sm); font-weight:600; color:var(--ink-48); font-variant-numeric:tabular-nums; }
+.aukpi .dt.up{ color:var(--ok); }
+.aukpi .dt.down{ color:var(--bad); }
+.aukpi .dt.na{ font-weight:400; }
+.aunote{ margin:8px 0 0; font-size:var(--f-xs); line-height:1.5; color:var(--ink-48); }
+.aucap{ min-height:1.45em; margin:14px 0 4px; font-size:var(--f-md); font-weight:600; font-variant-numeric:tabular-nums; }
+/* 그래프 — viewBox 320 폭을 칸 폭으로 늘립니다. 세로로 굴리는 손가락은 그대로 둡니다(pan-y). */
+.auchart{ display:block; width:100%; height:auto; touch-action:pan-y; user-select:none; -webkit-user-select:none; }
+.auchart .g{ stroke:var(--divider-soft); stroke-width:1; }
+.auchart .yt, .auchart .pt{ font-size:10px; fill:var(--ink-48); font-family:inherit; }
+.auchart .ar{ fill:var(--ink); fill-opacity:.07; }
+.auchart .ln{ fill:none; stroke:var(--ink); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+.auchart .end{ fill:var(--ink); }
+.auchart .pre{ fill:var(--pearl); }
+.auchart .hair{ stroke:var(--ink-48); stroke-width:1; stroke-dasharray:3 3; }
+.auchart .dot{ fill:var(--canvas); stroke:var(--ink); stroke-width:2; }
+/* 날짜 줄 — 오른쪽 눈금 글자 자리(34/320 = 10.6%)만큼 비워 그래프 끝과 맞춥니다. 실시간 막대는 끝까지. */
+.aux{ display:flex; justify-content:space-between; margin-top:4px; padding-right:10.6%;
+      font-size:var(--f-xs); color:var(--ink-48); font-variant-numeric:tabular-nums; }
+.aubars + .aux{ padding-right:0; }
+/* 실시간 */
+.aulv{ display:inline-flex; align-items:center; gap:6px; font-size:var(--f-xs); font-weight:400; color:var(--ink-48); }
+.aulv i{ width:7px; height:7px; border-radius:50%; background:var(--ok); animation:aulv 1.6s ease-in-out infinite; }
+@keyframes aulv{ 50%{ opacity:.25; } }
+@media (prefers-reduced-motion:reduce){ .aulv i{ animation:none; } }
+.aulvn{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin:4px 0 12px; }
+.aulvn div{ display:flex; flex-direction:column; min-width:0; }
+.aulvn b{ font-size:var(--f-2xl); font-weight:800; font-variant-numeric:tabular-nums; }
+.aulvn span{ font-size:var(--f-xs); color:var(--ink-48); }
+.aubars{ display:block; width:100%; height:auto; }
+.aubars .r{ fill:var(--ink); }
+.aubars .s{ fill:var(--star); }
+.aubars .z{ fill:var(--divider-soft); }
+.aulg{ display:flex; flex-wrap:wrap; gap:4px 14px; margin-top:8px; font-size:var(--f-xs); color:var(--ink-48); }
+.aulg i{ display:inline-block; width:8px; height:8px; margin-right:5px; }
+.aulg i.r, .aulg i.b, .ausplit .b{ background:var(--ink); }
+.aulg i.s, .aulg i.n, .ausplit .n{ background:var(--star); }
+/* 사람들 — 새로 온 / 다시 온 한 줄 막대 · 가입 주별 표 */
+.ausplit{ display:flex; height:10px; margin-top:10px; background:var(--divider-soft); }
+.ausplit i{ display:block; height:100%; }
+.autw{ overflow-x:auto; }
+.aucoh{ width:100%; border-collapse:collapse; font-size:var(--f-md); font-variant-numeric:tabular-nums; }
+.aucoh th, .aucoh td{ padding:7px 4px; text-align:right; white-space:nowrap; border-top:1px solid var(--divider-soft); }
+.aucoh thead th{ border-top:0; font-size:var(--f-xs); font-weight:600; color:var(--ink-48); }
+.aucoh th:first-child, .aucoh td:first-child{ text-align:left; }
+.aucoh tbody th{ font-weight:600; }
+.aucoh td small{ margin-left:4px; font-size:var(--f-xs); color:var(--ink-48); }
+.aucoh td.na{ font-size:var(--f-sm); color:var(--ink-48); }
+/* 어디까지 가나 · 기능별 쓰임 — 한 줄에 [이름 · 막대 · 숫자] */
+.aufun{ display:flex; flex-direction:column; gap:9px; margin-top:10px; }
+.aust{ display:grid; grid-template-columns:5.6em minmax(0,1fr) auto; align-items:center; gap:10px; font-size:var(--f-md); }
+.aust .l{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.aust .bar{ height:10px; background:var(--divider-soft); }
+.aust .bar i{ display:block; height:100%; min-width:2px; background:var(--ink); }
+.aust .v{ min-width:4.4em; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+.aust .v small{ display:block; font-size:var(--f-xs); font-weight:400; color:var(--ink-48); }
+.aust.drop .bar i{ background:var(--bad); }
+.aust.zero{ color:var(--ink-48); }
+.aust.zero .bar i{ min-width:0; }
+/* 지금까지 쌓인 것 — 넷씩 두 줄 */
+.autot{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 8px; margin-top:6px; }
+.autot div{ display:flex; flex-direction:column; min-width:0; }
+.autot b{ font-size:var(--f-xl); font-weight:800; font-variant-numeric:tabular-nums; }
+.autot b small{ margin-left:1px; font-size:var(--f-xs); font-weight:600; color:var(--ink-48); }
+.autot span{ font-size:var(--f-xs); line-height:1.35; color:var(--ink-48); word-break:keep-all; }

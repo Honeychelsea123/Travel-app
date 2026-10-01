@@ -11,13 +11,35 @@
  * 화면을 뜯어도 남의 자료는 안 나옵니다. 서버 쪽 함수가 is_admin() 을
  * 확인하므로 여기서 막는 것은 그저 안 보여주는 것뿐입니다.
  */
-import { $, esc, toast, copyText, toTop, coverDeck, emptyDo } from './dom.js?v=b814';
-import { sb } from './db.js?v=b814';
-import { fail, netTimeout } from './net.js?v=b814';
+import { $, esc, toast, copyText, toTop, coverDeck, emptyDo } from './dom.js?v=b815';
+import { sb } from './db.js?v=b815';
+import { fail, netTimeout } from './net.js?v=b815';
 /* 사람 신고의 「보기」(b789) — 그 사람 화면을 대시보드 위에 엽니다. */
-import { openPerson } from './people.js?v=b814';
+import { openPerson } from './people.js?v=b815';
 /* 기능 스위치를 바꾸면 그 자리에서 화면에 먹입니다(b491) — flags.js 머리말. */
-import { reapplyFeatures } from './flags.js?v=b814';
+import { reapplyFeatures } from './flags.js?v=b815';
+/* 「사용」 칸(b815) — 유튜브 스튜디오처럼. 관리자 화면을 열 때 받습니다(로그인마다 세지 않게). */
+import { loadUsage } from './adminuse.js?v=b815';
+
+/* ── 칸 셋 「사용 | 비용 | 문제」(b815, 사용자가 고름) ─────────────────────────
+ * 분석 탭의 「성향 | 별점 | 어워즈」(anal.js)와 같은 모양·같은 규칙 — 고른 칸은 앱이 켜져 있는 동안 기억합니다.
+ * 사용 = 가입·쓴 사람·별점·흐름(adminuse.js) · 비용 = AI·검색 한도와 「조절」 · 문제 = 오류·신고·로그인 시험. */
+let 지금칸 = 'use';
+function 칸보이기(){
+  for (const [k, id] of [['use', 'adm_use'], ['cost', 'adm_cost'], ['prob', 'adm_prob']])
+    $(id)?.classList.toggle('hide', 지금칸 !== k);
+  document.querySelectorAll('#adm_tabs [data-adm]').forEach(b => {
+    const on = b.dataset.adm === 지금칸;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+  });
+}
+$('adm_tabs')?.addEventListener('click', e => {
+  const b = e.target.closest('[data-adm]');
+  if (!b || b.dataset.adm === 지금칸) return;
+  지금칸 = b.dataset.adm;
+  칸보이기();
+  if (지금칸 === 'use') loadUsage();
+});
 
 /* ── 관리자 대시보드 ────────────────────────────────────────────────
  * 표를 하나씩 열어보게 하면 결국 안 봅니다. 한 화면에 모읍니다.
@@ -132,26 +154,11 @@ export async function loadAdmin(){
       구글·Tavily가 알려주는 실제 잔여량이 아닙니다 — 그건 각 콘솔에서만 볼 수 있어서,
       거기서 확인한 뒤 <code>app_config</code> 에 옮겨 적어야 맞습니다.</div>` +
 
-    grp('쓰는 사람', [
-      ['전체 가입자', n(d.users_total) + '명'],
-      ['오늘 가입', n(d.users_today) + '명'],
-      ['최근 30일 가입', n(d.users_30d) + '명'],
-      ['최근 7일 앱을 쓴 사람', n(d.touched_7d) + '명',
-       '일정·지출·별점 중 하나라도 건드린 사람'],
-      ['그중 AI까지 쓴 사람', n(d.active_7d) + '명'],
-      ['가입만 하고 안 쓴 사람', n(d.users_idle) + '명',
-       '여행을 하나도 안 만든 계정. 많으면 첫 화면이 문제입니다'],
-    ]) +
-    grp('쌓인 자료', [
-      ['여행', n(d.trips_total) + '개', `최근 7일에 ${n(d.trips_7d)}개 늘었습니다`],
-      ['지금 여행 중', n(d.trips_now) + '개', `출발을 앞둔 여행 ${n(d.trips_soon)}개`],
-      ['일행과 함께 쓰는 여행', n(d.trips_shared) + '개',
-       '혼자 쓰는 앱인지 같이 쓰는 앱인지가 여기서 갈립니다'],
-      ['일정', n(d.plans_total) + '개'],
-      ['지출', n(d.expenses_total) + '건'],
-      ['도시 별점', n(d.ratings_total) + '개'],
-      ['여행 후기', n(d.reviews_total) + '개'],
-    ]) +
+    /* ⚠⚠ **「쓰는 사람」·「쌓인 자료」 두 묶음을 걷었습니다(b815).** ⚠⚠
+       「사용」 칸(adminuse.js · db/112)이 더 정확히 말합니다. 여기 숫자는 틀린 데가 있었습니다 —
+       「최근 7일 쓴 사람」은 일정·지출·별점을 «고친» 사람만(보기만 한 사람 0), 「가입만 하고 안 쓴 사람」은
+       여행 0개로 셌습니다(별점만 매긴 사람도 «안 쓴 사람»). 이제 이 칸은 **돈 드는 것**(AI·검색)만 봅니다.
+       여행 쪽 숫자(지금 여행 중 · 일행과 함께 쓰는 여행)는 사용 칸 「지금까지 쌓인 것」으로 갔습니다. */
     grp('AI · Gemini', [
       ['오늘', n(d.ai_today) + '회', `어제는 ${n(d.ai_yday)}회였습니다`],
       ['최근 7일', n(d.ai_7d) + '회', `하루 평균 ${n(d.ai_avg)}회`],
@@ -173,11 +180,16 @@ export async function loadAdmin(){
        '같은 검색을 다시 안 해서 아낀 크레딧입니다'],
       ['지금 담아둔 검색', n(d.se_cached) + '건',
        '6시간이 지나면 지웁니다. 누적이 아니라 현재 보관량입니다'],
-    ]) +
-    grp('문제', [
+    ]);
+  /* 「문제」 칸의 숫자 둘(b815 — 대시보드를 「사용 | 비용 | 문제」로 나누며 비용 칸에서 옮김). */
+  const 문제칸 = $('adm_probnum');
+  if (문제칸) 문제칸.innerHTML = grp('오류와 신고', [
       ['앱이 터진 횟수', `오늘 ${n(d.errors_today)}건 · 7일 ${n(d.errors_7d)}건`],
       ['아직 안 읽은 신고', n(d.reports_open) + '건', `지금까지 받은 신고 ${n(d.reports_total)}건`],
     ]);
+  /* 문제가 있으면 칸 이름에 점 하나 — 다른 칸을 보고 있어도 «여기 볼 것이 있다»가 보이게. */
+  $('adm_tabs')?.querySelector('[data-adm="prob"]')?.classList.toggle('hasdot',
+    num(d.errors_today) > 0 || num(d.reports_open) > 0);
 
   /* 빨간 상자의 두 단추. 다시 그릴 때마다 새로 달아야 하므로 여기 둡니다. */
   $('adm_goset')?.addEventListener('click', () => setPane(true));
@@ -245,6 +257,7 @@ export async function loadAdmin(){
 }
 
 $('adm_refresh').addEventListener('click', loadAdmin);
+$('adm_probrefresh')?.addEventListener('click', loadAdmin);   /* 문제 칸(b815) */
 
 /* ── 사람 신고(b789) ─────────────────────────────────────────────────
  * 팔로우가 생기면서 받기 시작한 신고입니다(db/101). **처리 안 한 것만**
@@ -556,6 +569,10 @@ $('dashbtn').addEventListener('click', () => {
   $('admpane').classList.remove('hide');
   coverDeck(true);
   toTop($('admpane'));
+  칸보이기();
+  /* 「사용」 숫자는 여기서 받습니다(b815) — loadAdmin 은 로그인마다 돌아서(관리자인지 보려고) 거기 두면
+     관리자가 아닌 사람까지 세는 함수를 부르게 됩니다. */
+  if (지금칸 === 'use') loadUsage();
 });
 /* 조절은 한 겹 안입니다. 관리자 화면을 열 때마다 스위치 다섯이 맨 위를
    먹었는데, 실제로 바꾸는 일은 몇 달에 한 번입니다.

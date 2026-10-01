@@ -11,11 +11,11 @@
  *   것만 씁니다. ★4.5 가 ★5 를 이기는 식으로 별점과 어긋나는 순위도 안 만듭니다 — 같은 별점끼리만 겨룹니다.
  * ⚠ **국내도 셉니다**(사용자). 성향(card.js)은 국내를 빼지만, 여기는 «내가 매긴 도시» 이야기입니다.
  * 층: dom · db · cities · calc · city(도시 화면). anal.js 가 부릅니다(drawMyCities). persona.js 는 모릅니다. */
-import { $, esc, toast, josa } from './dom.js?v=b814';
-import { sb } from './db.js?v=b814';
-import { cities } from './cities.js?v=b814';
-import { distKm, SEOUL } from './calc.js?v=b814';
-import { openCity } from './city.js?v=b814';
+import { $, esc, toast, josa } from './dom.js?v=b815';
+import { sb } from './db.js?v=b815';
+import { cities } from './cities.js?v=b815';
+import { distKm, SEOUL } from './calc.js?v=b815';
+import { openCity } from './city.js?v=b815';
 
 const 국내 = 'KR';
 const 셋말 = n => ['', '한', '두', '세', '네', '다섯'][n] || String(n);
@@ -53,9 +53,10 @@ const 사진줄 = (xs, 딱지) => `<div class="awrow${xs.length > 1 ? ' many' : 
     ${글 ? `<b>${esc(글)}</b>` : ''}<span>${esc(x.name)}</span></div>`;
 }).join('')}</div>`;
 
-/* ── 접기(b813) ── 사용자: 「어워즈 탭은 세로가 기니까 각 항목마다 기본은 펼쳐져 있고 접는 기능도 넣어줘」.
-   상 하나(.awt)와 여행지 월드컵 카드(.fvcard)가 같은 규칙입니다 — 처음엔 펼쳐 있고, 머리 줄을 누르면 접힙니다.
-   접은 것은 기기에 기억합니다(`t2:awfold:<이름>`). 로그아웃하면 forgetLocal 이 t2: 를 다 지우므로 다시 펼쳐집니다.
+/* ── 접기 ── 카드 통째로(b815). 도시 어워즈와 여행지 월드컵이 같은 규칙입니다(접는카드) — 처음엔 펼쳐 있고,
+   제목 줄을 누르면 접힙니다. 접은 것은 기기에 기억합니다(`t2:awfold:<카드 이름>`). 로그아웃하면 forgetLocal 이 지웁니다.
+   ⚠⚠ **b813 에는 상마다 따로 접혔습니다** — 사용자: 「도시어워즈 전체를 폈다 접을 수 있게 해줘 하나씩 다 할필요가
+     없어」(b815)로 걷었습니다. 상 이름은 이제 그냥 제목(h3)입니다. 되살리지 마십시오.
    ⚠ 「두 걸음 깊은 것은 아무도 안 본다」(b457·b503) 때문에 **기본은 펼침**입니다 — 접는 것은 사용자가 고른 것만. */
 const 접힘열쇠 = 이름 => 't2:awfold:' + 이름;
 const 접혔나 = 이름 => { try { return localStorage.getItem(접힘열쇠(이름)) === '1'; } catch { return false; } };
@@ -81,6 +82,21 @@ function 카드(제목){
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role="button"]')){ e.preventDefault(); e.target.click(); }
   });
   return el;
+}
+
+/* 접는 카드 — 제목(h2) 안에 단추(.awh)를 넣고(h2 를 단추 안에 넣으면 문법이 틀립니다), 그 밑을 몸(.awbody)으로.
+   접히면 제목 줄만 남습니다. { el, 몸 } 을 돌려줍니다 — 그리는 쪽은 몸에만 넣습니다. */
+function 접는카드(제목){
+  const el = 카드(제목), 접힘 = 접혔나(제목);
+  el.dataset.fold = 제목;
+  el.classList.add('foldcard');
+  el.classList.toggle('fold', 접힘);
+  el.querySelector('h2').innerHTML = `<button type="button" class="awh" aria-expanded="${!접힘}">
+    <span class="awht">${esc(제목)}</span><i class="awchev" aria-hidden="true"></i></button>`;
+  const 몸 = document.createElement('div');
+  몸.className = 'awbody';
+  el.appendChild(몸);
+  return { el, 몸 };
 }
 
 /* ══ ① 도시 어워즈 ══════════════════════════════════════════════════════
@@ -114,20 +130,14 @@ function 어워즈(목록){
     '1,500km 안 해외에서 가장 좋았어요');
   if (상.length < 2) return null;
 
-  const el = 카드('도시 어워즈');
-  el.insertAdjacentHTML('beforeend', `<div class="awgrid">${상.map(a => {
+  /* 카드 통째로 접힙니다(b815 — 위 「접기」). 상 이름은 그냥 제목이고, 사진에는 딱지를 안 붙입니다(b813). */
+  const { el, 몸 } = 접는카드('도시 어워즈');
+  몸.insertAdjacentHTML('beforeend', `<div class="awgrid">${상.map(a => {
     /* 동점이 많아도 여덟 장까지 — 그 뒤는 「외 N곳」. */
     const 보일 = a.xs.slice(0, 8), 더 = a.xs.length - 보일.length;
-    const 접힘 = 접혔나(a.이름);
-    /* 머리 줄 = 상 이름(+ 접혔을 때만 「★5 · 대구 · 로바니에미 · 방콕」 한 줄) · 오른쪽 꺾쇠. 상 이름이 머리에 있으므로
-       사진에는 딱지를 안 붙입니다(b813). */
-    return `<div class="awt${접힘 ? ' fold' : ''}" data-fold="${esc(a.이름)}">
-      <button type="button" class="awh" aria-expanded="${!접힘}">
-        <span class="awht"><b>${esc(a.이름)}</b>
-          <small><em>★${별글(a.xs[0].stars)}</em> · ${esc(a.xs.map(x => x.name).join(' · '))}</small></span>
-        <i class="awchev" aria-hidden="true"></i></button>
-      <div class="awbody">${사진줄(보일)}
-        <div class="aws"><em>★${별글(a.xs[0].stars)}</em>${a.말 ? ` · ${esc(a.말)}` : ''}${더 ? ` · 외 ${더}곳` : ''}</div></div></div>`;
+    return `<div class="awt"><h3 class="awname">${esc(a.이름)}</h3>
+      ${사진줄(보일)}
+      <div class="aws"><em>★${별글(a.xs[0].stars)}</em>${a.말 ? ` · ${esc(a.말)}` : ''}${더 ? ` · 외 ${더}곳` : ''}</div></div>`;
   }).join('')}</div>`);
   return el;
 }
@@ -234,18 +244,8 @@ async function 최애(목록, uid){
     const r = await sb.from('city_ratings').select('city_id,fav_rank').eq('user_id', uid).not('fav_rank', 'is', null);
     if (!r.error) for (const x of r.data || []) if (x.fav_rank != null) 순위표[x.city_id] = x.fav_rank;
   }
-  /* 이름은 「진짜 최애」 → 「여행지 월드컵」(2026-10-01 사용자). */
-  const el = 카드('여행지 월드컵');
-  /* 접기(b813) — 상 하나와 같은 규칙(위 「접기」). 카드 제목 안에 단추를 넣습니다(h2 를 단추 안에 넣으면 문법이 틀립니다). */
-  const 이름표 = '여행지 월드컵', 접힘 = 접혔나(이름표);
-  el.dataset.fold = 이름표;
-  el.classList.add('fvcard');
-  el.classList.toggle('fold', 접힘);
-  el.querySelector('h2').innerHTML = `<button type="button" class="awh" aria-expanded="${!접힘}">
-    <span class="awht">${esc(이름표)}</span><i class="awchev" aria-hidden="true"></i></button>`;
-  const 몸 = document.createElement('div');
-  몸.className = 'awbody';
-  el.appendChild(몸);
+  /* 이름은 「진짜 최애」 → 「여행지 월드컵」(2026-10-01 사용자). 접기는 도시 어워즈와 같은 접는카드(위 「접기」). */
+  const { el, 몸 } = 접는카드('여행지 월드컵');
 
   /* 1·2·3위 — 어워즈와 같은 사진 줄(옆으로 넘겨 보기, b813). 딱지에 순위와 별점. */
   const 시상 = (셋, 다시) => {
