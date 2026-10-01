@@ -21,11 +21,11 @@
  *   `visited_on` 칸은 b536 에 만들었다가 화면을 걷어서 지금 비어 있습니다.
  *   나중에 다녀온 날짜를 다시 받게 되면 그때 이 순서를 바꾸십시오.
  */
-import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b813';
-import { sb } from './db.js?v=b813';
-import { cities, countryName, cityCountry, search } from './cities.js?v=b813';
-import { starsRo } from './stars.js?v=b813';
-import { openPhotos } from './photoview.js?v=b813';
+import { $, esc, toTop, coverDeck, backLabel, emptyDo } from './dom.js?v=b814';
+import { sb } from './db.js?v=b814';
+import { cities, countryName, cityCountry, search } from './cities.js?v=b814';
+import { starsRo } from './stars.js?v=b814';
+import { openPhotos } from './photoview.js?v=b814';
 
 let ctx = { me: () => null, loadCities: async () => {}, openCity: () => {} };
 export function setDiaryCtx(o){ ctx = { ...ctx, ...o }; }
@@ -89,7 +89,7 @@ export async function openDiary(){
        `data-go` 가 위 `#dgadd` 를 대신 눌러 줍니다(dom.js). */
     $('diarybody').innerHTML = '<div class="card">' +
       emptyDo('아직 쓴 일기가 없어요.', '일기 쓸 곳 고르기', 'dgadd',
-              '다녀온 도시를 고르면 그 자리에서 쓸 수 있어요.') + '</div>';
+              '방문한 도시를 고르면 그 자리에서 쓸 수 있어요.') + '</div>';
     $('diarycount').textContent = '';
     $('dgnav')?.classList.add('hide');
     return;
@@ -346,7 +346,7 @@ async function 고를거리받기(){
   return 고를거리;
 }
 
-const 빈말 = '다녀온 곳이 아직 없어요. 위에서 찾아보세요.';
+const 빈말 = '방문한 도시가 아직 없어요. 위에서 찾아보세요.';
 
 function 줄그리기(것들, 비었을때){
   const 통 = $('dghits');

@@ -12,14 +12,14 @@
  * 안 됩니다 — 얼굴은 잘라도 되고 풍경은 자르면 찍은 것이 잘려 나갑니다.
  *
  * 층: dom.js · db.js · net.js · calc.js · stars.js · trip.js · ui.js 만 씁니다. */
-import { $, esc, toast } from './dom.js?v=b813';
-import { sb } from './db.js?v=b813';
-import { fail } from './net.js?v=b813';
-import { todayYmd } from './calc.js?v=b813';
-import { starHtml, starValue, starsRo } from './stars.js?v=b813';
-import { trip, legs, nameOf } from './trip.js?v=b813';
-import { arm, disarm } from './ui.js?v=b813';
-import { openPhotos } from './photoview.js?v=b813';
+import { $, esc, toast } from './dom.js?v=b814';
+import { sb } from './db.js?v=b814';
+import { fail } from './net.js?v=b814';
+import { todayYmd } from './calc.js?v=b814';
+import { starHtml, starValue, starsRo } from './stars.js?v=b814';
+import { trip, legs, nameOf } from './trip.js?v=b814';
+import { arm, disarm } from './ui.js?v=b814';
+import { openPhotos } from './photoview.js?v=b814';
 
 let ctx = { me: () => null };
 export function setReviewCtx(o){ ctx = { ...ctx, ...o }; }
@@ -56,7 +56,7 @@ export async function loadReview(){
 
   const got = Object.fromEntries((rates.data || []).map(r => [r.city_id, r.stars]));
   $('rv_cities').innerHTML = ids.length
-    ? `<div class="daysep">다녀온 곳</div>` + legs.filter(l => l.city_id).map(l =>
+    ? `<div class="daysep">방문한 도시</div>` + legs.filter(l => l.city_id).map(l =>
         `<div class="rrow" style="padding:9px 0">
            <div class="t"><b>${esc(l.destination)}</b>
              <span class="stars" data-rvcity="${esc(l.city_id)}">${

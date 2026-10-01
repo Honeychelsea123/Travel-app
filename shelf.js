@@ -15,27 +15,27 @@
  *
  * 층: dom.js · db.js · cities.js · rate.js · stars.js · net.js 만 씁니다. */
 import { $, esc, toast, emptyDo, josa, toTop, coverDeck, backLabel,
-         flagOf, flagOk, flagSprite } from './dom.js?v=b813';
-import { openCity } from './city.js?v=b813';
-import { sb } from './db.js?v=b813';
-import { cities, countryName, cityCountry } from './cities.js?v=b813';
-import { myRates, cityStat, visited, avgTail } from './rate.js?v=b813';
-import { starHtml, paintStars, markRated, starValue, 별갈래, BAND_NAME } from './stars.js?v=b813';
-import { fail } from './net.js?v=b813';
-import { arm } from './ui.js?v=b813';
+         flagOf, flagOk, flagSprite } from './dom.js?v=b814';
+import { openCity } from './city.js?v=b814';
+import { sb } from './db.js?v=b814';
+import { cities, countryName, cityCountry } from './cities.js?v=b814';
+import { myRates, cityStat, visited, avgTail } from './rate.js?v=b814';
+import { starHtml, paintStars, markRated, starValue, 별갈래, BAND_NAME } from './stars.js?v=b814';
+import { fail } from './net.js?v=b814';
+import { arm } from './ui.js?v=b814';
 /* 깃발 벽의 공유는 지도·나라 목록과 **같은 카드**입니다(b649) — 셋 다
    「몇 개국 다녀왔다」를 말합니다. map.js 가 만들고 여기서 부르기만
    합니다. ⚠ map.js 는 shelf.js 를 안 가져오므로 고리가 안 생깁니다. */
-import { 발자국스펙 } from './map.js?v=b813';
-import { shareCard } from './card.js?v=b813';
-import { todayYmd } from './calc.js?v=b813';
+import { 발자국스펙 } from './map.js?v=b814';
+import { shareCard } from './card.js?v=b814';
+import { todayYmd } from './calc.js?v=b814';
 /* ⚠ `flagOf`·`flagOk` 는 **dom.js 것**입니다(위 줄) — un.js 에 또 만들었다가
      걷었습니다. `UN_CONT`·`UN_TOTAL` 도 un.js 가 «세어서» 줍니다. map.js 를
      끌어오지 않는 이유가 이것입니다 — 195 라는 수를 두 곳에서 적으면
      언젠가 갈라집니다. 두 곳이 같은지는 un.js 의 `검산()` 이 봅니다. */
-import { UN_CODES, UN_TOTAL } from './un.js?v=b813';
-import { loadCities } from './citysearch.js?v=b813';
-import { loadRateData, saveRate } from './rating.js?v=b813';
+import { UN_CODES, UN_TOTAL } from './un.js?v=b814';
+import { loadCities } from './citysearch.js?v=b814';
+import { loadRateData, saveRate } from './rating.js?v=b814';
 
 let ctx = {
   me: () => null,
@@ -55,7 +55,7 @@ export function setShelfCtx(o){ ctx = { ...ctx, ...o }; }
    그리고 '다녀온 곳'이 도시(been)와 관광지(spot) 둘을 가리키고 있었습니다 —
    보관함 안에 '다녀온 맛집' 옆에 '다녀온 곳'이 나란히 있으니 더 헷갈립니다.
    도시는 '다녀온 도시', 관광지는 '다녀온 관광지'로 갈랐습니다. */
-const SHELF = { been:'다녀온 도시', want:'가보고 싶은 곳', mine:'내가 매긴 곳',
+const SHELF = { been:'방문한 도시', want:'가보고 싶은 곳', mine:'내가 매긴 곳',
                 comment:'한줄평 남긴 곳', place:'다녀온 맛집', spot:'다녀온 관광지',
                 review:'여행 후기', badge:'여행 배지', flag:'나라 깃발' };
 /* 맛집과 관광지는 같은 방식으로 다룹니다 — 분류만 다릅니다. */
@@ -248,7 +248,7 @@ async function openPlaceShelf(kind){
                      style="color:var(--bad); flex:none">×</button>`
           : '<span style="width:26px; flex:none"></span>'}
       </div>`).join('')
-    : `<div class="empty">다녀온 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
+    : `<div class="empty">지난 여행에 ${esc(cats.join(' · '))} 일정이 아직 없어요.<br>
            일정에 넣어두면 여행이 끝난 뒤 여기서 평가할 수 있어요.</div>`;
 }
 
