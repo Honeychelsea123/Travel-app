@@ -1,5 +1,7 @@
 /* ── 내 도시 이야기(b810, 2026-10-01) ─────────────────────────────────
- * 분석 탭 「내 별점」 밑 카드 셋 — 도시 어워즈 · 거리별 별점 · 진짜 최애 고르기.
+ * 분석 탭 카드 셋 — 도시 어워즈 · 거리별 별점 · 여행지 월드컵(옛 이름 「진짜 최애」).
+ * ⚠ b812: 「성향 | 별점 | 어워즈」 세 칸 — 거리별 별점은 「별점」 칸, 어워즈 · 월드컵은 「어워즈」 칸(drawMyCities 의 `칸`).
+ *   어워즈는 그 칸에서 **세로로 한 장씩 다 펼칩니다**(사용자: 「다 펼쳐놓자 세로로」 — b811 의 가로 넘기기를 걷음).
  * 사용자: 「1번부터 시안가자」 → 로컬 앱 분석 탭에 끼운 시안 넷(사용자 기록 77곳) → 고름:
  *   셋 다 · 순위는 B(최애 월드컵) · 국내도 넣기.
  * 명세(KIRO_PERSONA_AND_ANALYTICS_ENHANCEMENT_SPEC 17장)에서 다른 화면과 겹치는 것은 모양을 바꿨습니다:
@@ -9,11 +11,11 @@
  *   것만 씁니다. ★4.5 가 ★5 를 이기는 식으로 별점과 어긋나는 순위도 안 만듭니다 — 같은 별점끼리만 겨룹니다.
  * ⚠ **국내도 셉니다**(사용자). 성향(card.js)은 국내를 빼지만, 여기는 «내가 매긴 도시» 이야기입니다.
  * 층: dom · db · cities · calc · city(도시 화면). anal.js 가 부릅니다(drawMyCities). persona.js 는 모릅니다. */
-import { $, esc, toast, josa } from './dom.js?v=b811';
-import { sb } from './db.js?v=b811';
-import { cities } from './cities.js?v=b811';
-import { distKm, SEOUL } from './calc.js?v=b811';
-import { openCity } from './city.js?v=b811';
+import { $, esc, toast, josa } from './dom.js?v=b812';
+import { sb } from './db.js?v=b812';
+import { cities } from './cities.js?v=b812';
+import { distKm, SEOUL } from './calc.js?v=b812';
+import { openCity } from './city.js?v=b812';
 
 const 국내 = 'KR';
 const 셋말 = n => ['', '한', '두', '세', '네', '다섯'][n] || String(n);
@@ -135,7 +137,7 @@ function 거리별(목록){
   return el;
 }
 
-/* ══ ③ 진짜 최애 고르기 ═════════════════════════════════════════════════
+/* ══ ③ 여행지 월드컵(옛 「진짜 최애」) ═════════════════════════════════════════════════
  * 별점 높은 순으로 세 자리를 채우고, **같은 별점끼리만** 둘씩 보여 줘 가르게 합니다(명세 17.2 「동점 비교만」).
  * 가른 결과는 city_ratings.fav_rank 에 적습니다(111) — 1·2·3 = 순위, 0 = 같이 겨뤘지만 셋 밖, 빈칸 = 안 겨룸.
  * ⚠ 동점 층에 **안 겨룬 도시가 하나라도 있으면**(새로 ★5 를 줬다든가) 다시 고르라고 합니다. 옛 순위가 새 도시를
@@ -197,7 +199,8 @@ async function 최애(목록, uid){
     const r = await sb.from('city_ratings').select('city_id,fav_rank').eq('user_id', uid).not('fav_rank', 'is', null);
     if (!r.error) for (const x of r.data || []) if (x.fav_rank != null) 순위표[x.city_id] = x.fav_rank;
   }
-  const el = 카드('진짜 최애');
+  /* 이름은 「진짜 최애」 → 「여행지 월드컵」(2026-10-01 사용자). */
+  const el = 카드('여행지 월드컵');
   const 몸 = document.createElement('div');
   el.appendChild(몸);
 
@@ -268,14 +271,16 @@ async function 최애(목록, uid){
 
 /* ── 부르는 곳(anal.js) ── 「내 별점」 카드 바로 밑에 차례대로 붙입니다.
  * ⚠ 하나가 터져도 나머지는 붙입니다 — 카드 하나 때문에 탭 끝이 비면 안 됩니다. */
-export async function drawMyCities(rows, where, uid){
-  if (!where) return;
+export async function drawMyCities(rows, 칸 = {}, uid){
+  /* b812: 칸이 둘로 갈렸습니다 — 거리별 별점은 「별점」 칸, 도시 어워즈 · 여행지 월드컵은 「어워즈」 칸(anal.js). */
   const 목록 = 줄들(rows);
-  for (const 만들기 of [어워즈, 거리별]){
-    try { const el = 만들기(목록); if (el) where.appendChild(el); }
+  const 붙이기 = (곳, 만들기) => {
+    try { const el = 만들기(); if (곳 && el) 곳.appendChild(el); }
     catch (e){ console.error('@mycity', e); self.reportError?.(e); }
-  }
-  try { const el = await 최애(목록, uid); if (el) where.appendChild(el); }
+  };
+  붙이기(칸.어워즈, () => 어워즈(목록));
+  붙이기(칸.별점, () => 거리별(목록));
+  try { const el = await 최애(목록, uid); if (칸.어워즈 && el) 칸.어워즈.appendChild(el); }
   catch (e){ console.error('@mycity', e); self.reportError?.(e); }
 }
 

@@ -4486,14 +4486,14 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 /* ── 내 도시 이야기(b810) ── 도시 어워즈 · 거리별 별점 · 진짜 최애(mycity.js) ──
    사용자가 로컬 시안(분석 탭에 끼운 넷)에서 고른 모양 그대로. 사진 칸은 셋이 한 부품(.awph) —
    동점이면 칸을 나눠 다 보여 줍니다(순서를 지어내지 않기, 명세 17.2). */
-/* 어워즈는 가로로 넘깁니다(b811 — 분석 탭을 「성향 | 별점」 두 칸으로 줄이며, 사용자가 고른 시안 A. 2열 격자는 630px 였음).
-   ⚠ 규칙은 「다음 여행」 사진 줄(.crow)과 같습니다 — 끝까지 음수 여백으로 빼면 판이 가로로 흔들리고(b597·b736),
-     «구경하는» 자리라 스냅은 proximity. */
-.awgrid{ display:flex; gap:10px; margin-top:12px; padding-bottom:2px;
-         overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity;
-         scrollbar-width:none; -webkit-overflow-scrolling:touch; }
-.awgrid::-webkit-scrollbar{ display:none; }
-.awt{ flex:0 0 148px; min-width:0; scroll-snap-align:start; }
+/* 어워즈는 「어워즈」 칸에서 **세로로 한 장씩 다 펼칩니다**(b812, 사용자: 「도시어워즈랑, 진짜 최애는 … 탭하나 더 만들어서
+   빼고 다 펼쳐놓자 세로로」). b811 의 가로 넘기기는 걷었습니다 — 제 칸이 생겨 줄일 까닭이 없어졌습니다.
+   ⚠ 사진은 2:1 — 도시 화면 머리와 같은 모양입니다. 사진 개편 때 467장을 그 모양으로 잘라 보고 골라 뒀습니다
+     (메모 core-homework: 「사진은 1:1 과 2:1 둘 다로 잘라 보고 고를 것」). 동점이면 2:1 을 둘·셋으로 나눕니다. */
+.awgrid{ display:flex; flex-direction:column; gap:22px; margin-top:12px; }
+.awgrid .awph{ aspect-ratio:2 / 1; }
+.awgrid .awn{ margin-top:8px; font-size:var(--f-lg); }
+.awgrid .aws{ font-size:var(--f-md); }
 .awph{ position:relative; aspect-ratio:4 / 3; display:flex; overflow:hidden; background:var(--line); }
 .awph i{ flex:1; min-width:0; background-size:cover; background-position:center; cursor:pointer;
          display:flex; align-items:center; justify-content:center; font-style:normal;
@@ -4526,8 +4526,8 @@ svg.fg{ display:block; width:100%; aspect-ratio:1 / 1; height:auto; }
 .fvx{ font-size:var(--f-md); font-weight:800; color:var(--ink-48); }
 .fvpod{ display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:12px; }
 .fvpod .awph{ aspect-ratio:1; }
-/* 「성향 | 별점」 칸 줄(b811) — 친구 화면 밑줄 탭(.frtabs) 그대로, 두 칸. */
-.antabs{ grid-template-columns:1fr 1fr; margin:0 0 var(--s-md); }
+/* 「성향 | 별점 | 어워즈」 칸 줄(b811 · b812) — 친구 화면 밑줄 탭(.frtabs) 그대로. */
+.antabs{ grid-template-columns:repeat(3, 1fr); margin:0 0 var(--s-md); }   /* b812 셋째 칸 「어워즈」 */
 
 /* ⚠ `.bignum` 은 죽었습니다(b464) — 「가보고 싶어요」 카드를 「다음 여행」
    으로 합치면서 큰 숫자를 안 씁니다. `.bnrow`/`.bnsub` 는 홈 캐러셀이

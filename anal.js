@@ -14,35 +14,35 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · map.js 만 씁니다.
  *     app.js 는 import 하지 않습니다 — ctx 로 받습니다(persona.js 머리말). */
-import { $, esc, emptyDo } from './dom.js?v=b811';
-import { sb } from './db.js?v=b811';
-import { cities, cityCountry } from './cities.js?v=b811';
+import { $, esc, emptyDo } from './dom.js?v=b812';
+import { sb } from './db.js?v=b812';
+import { cities, cityCountry } from './cities.js?v=b812';
 /* 별 갈래와 그 이름. ⚠ **보관함 시트와 같은 것을 씁니다**(b727) — 따로 세면
    「★4점대 32곳」이 두 화면에서 달라집니다. 규칙은 stars.js 한 곳입니다. */
-import { 별갈래, BAND_NAME } from './stars.js?v=b811';
+import { 별갈래, BAND_NAME } from './stars.js?v=b812';
 /* 도시 평균과 인원(`{avg_stars, n_rated}`). ⚠ **`n_rated` 에는 내가
    들어 있습니다**(rate.js 의 avgTail 주석) — 남들과 견줄 때는 나를 빼야 합니다. */
-import { cityStat } from './rate.js?v=b811';
+import { cityStat } from './rate.js?v=b812';
 /* `cityStat` 이 비어 있을 때 한 번 싣습니다. ⚠ rate.js·rating.js 는
    anal.js 를 모르므로 고리가 안 생깁니다(확인함). */
-import { loadRateData } from './rating.js?v=b811';
+import { loadRateData } from './rating.js?v=b812';
 /* 리포트는 persona.js 가 그립니다 — 여기는 자리만 내줍니다(b547).
    ⚠ `personaAxes`·`PERSONA16`·`AXIS_NAME`·`AXIS_WORD` 를 여기서 뗐습니다.
      요약 카드가 없어져서 이 파일은 성향을 **한 번도 안 셉니다** — 세는
      것은 persona.js 한 곳입니다. */
-import { renderPersona } from './persona.js?v=b811';
+import { renderPersona } from './persona.js?v=b812';
 /* ⚠ `funRows` 는 **계산만** 합니다 — 그리는 것은 여기 몫입니다. 지도
    화면과 같은 함수를 써야 같은 물음에 같은 답이 나옵니다(map.js 머리말). */
 /* 추천과 궁합은 성향 리포트에서 꺼내온 것입니다(b461) — 계산은 원래
    있던 곳(rec.js · mate.js) 그대로 씁니다. 여기서 다시 세면 두 화면이
    다른 답을 내놓습니다. */
-import { similarPicks } from './rec.js?v=b811';
+import { similarPicks } from './rec.js?v=b812';
 /* 여행 만들기로 바로 잇습니다(b463) — newtrip.js 는 anal.js 를 모르므로
    고리가 안 생깁니다(확인함). */
-import { openNew } from './newtrip.js?v=b811';
-import { pickCity } from './citysearch.js?v=b811';
-/* 「내 별점」 밑 카드 셋(b810) — 도시 어워즈 · 거리별 별점 · 진짜 최애. mycity.js 는 anal.js 를 모르므로 고리가 없습니다. */
-import { drawMyCities } from './mycity.js?v=b811';
+import { openNew } from './newtrip.js?v=b812';
+import { pickCity } from './citysearch.js?v=b812';
+/* 카드 셋(b810) — 도시 어워즈 · 거리별 별점 · 여행지 월드컵(옛 「진짜 최애」). mycity.js 는 anal.js 를 모르므로 고리가 없습니다. */
+import { drawMyCities } from './mycity.js?v=b812';
 
 let ctx = { me: () => null, showApp: () => {} };
 export function setAnalCtx(o){ ctx = { ...ctx, ...o }; }
@@ -84,7 +84,7 @@ function 줄(제목, 밑, 오른쪽, 눌렀을때){
   return el;
 }
 
-/* ── 「성향 | 별점」 칸 고르기(b811) ── 칸 줄(#an_tabs)은 index.html 에 있고, 두 칸(#an_p · #an_m)은 loadAnal 이
+/* ── 「성향 | 별점 | 어워즈」 칸 고르기(b811 · 셋째 칸 b812) ── 칸 줄(#an_tabs)은 index.html 에 있고, 세 칸(#an_p · #an_m · #an_a)은 loadAnal 이
    그릴 때마다 새로 만듭니다. 고른 칸은 앱이 켜 있는 동안 기억합니다 — 다른 탭에 갔다 와도 그 칸 그대로.
    ⚠ 칸을 바꿀 때 칸 줄이 화면 위로 올라가 있으면 칸 줄까지만 되돌립니다 — 긴 성향 칸 아래에서 「별점」을 누르면
      새 칸의 중간에 떨어지지 않게. */
@@ -92,6 +92,7 @@ let 지금칸 = 'p';
 function 칸보이기(){
   $('an_p')?.classList.toggle('hide', 지금칸 !== 'p');
   $('an_m')?.classList.toggle('hide', 지금칸 !== 'm');
+  $('an_a')?.classList.toggle('hide', 지금칸 !== 'a');
   document.querySelectorAll('#an_tabs [data-an]').forEach(b => {
     const on = b.dataset.an === 지금칸;
     b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
@@ -134,10 +135,12 @@ export async function loadAnal(){
    * 재 보니 한 장에 폰 화면 4.4장(3,596px)이었습니다 — 성향 2.4장 · 별점 1.6장으로 갈렸습니다.
    * ⚠ 접기(B)를 안 고른 까닭: 「두 걸음 깊은 것은 아무도 안 본다」(b457·b503). 칸은 한 번 누르면 다 펼쳐져 있습니다.
    * ⚠ 어느 칸에 무엇이: 성향 = 리포트(성향 카드 · 다시 간 도시 · 궁합 · 다음 여행 · 왜 ○○○○) ·
-   *   별점 = 내 별점 · 도시 어워즈 · 거리별 별점 · 진짜 최애(mycity.js). 칸 줄은 index.html 의 #an_tabs. */
-  const 성향칸 = document.createElement('div'), 별점칸 = document.createElement('div');
-  성향칸.id = 'an_p'; 별점칸.id = 'an_m';
-  box.append(성향칸, 별점칸);
+   *   별점 = 내 별점 · 거리별 별점 · 어워즈 = 도시 어워즈 · 여행지 월드컵(mycity.js, b812). 칸 줄은 index.html 의 #an_tabs. */
+  /* ⚠ b812: 셋째 칸 「어워즈」(사용자: 「도시어워즈랑, 진짜 최애는 … 탭하나 더 만들어서 빼고 다 펼쳐놓자 세로로」 ·
+     차례 「성향 별점 어워즈 순으로 가자」). 별점 = 내 별점 · 거리별 별점, 어워즈 = 도시 어워즈(세로로 다 펼침) · 여행지 월드컵(옛 「진짜 최애」, 사용자가 바꿈). */
+  const 성향칸 = document.createElement('div'), 별점칸 = document.createElement('div'), 어워즈칸 = document.createElement('div');
+  성향칸.id = 'an_p'; 별점칸.id = 'an_m'; 어워즈칸.id = 'an_a';
+  box.append(성향칸, 별점칸, 어워즈칸);
   칸보이기();
 
   /* ══ ① 성향 리포트 ═══════════════════════════════════════════════════
@@ -355,15 +358,18 @@ export async function loadAnal(){
   }
 
   /* ══ ②-2 내 도시 이야기(b810, 2026-10-01) ══════════════════════════════
-   * 도시 어워즈 · 거리별 별점 · 진짜 최애 고르기 — 「내 별점」 바로 밑(사용자가 시안 넷에서 고름).
+   * 도시 어워즈 · 거리별 별점 · 여행지 월드컵 — b812 부터 거리별은 「별점」 칸, 어워즈·월드컵은 「어워즈」 칸.
    * 그리는 것은 mycity.js. 국내도 셉니다(성향과 다름 — 거기 머리말 참고).
    * ⚠ 터져도 탭은 그대로 둡니다 — 카드 셋 때문에 아래 「다음 여행」까지 안 그려지면 안 됩니다. */
-  try { await drawMyCities(전부, 별점칸, ctx.me().id); }
+  try { await drawMyCities(전부, { 별점: 별점칸, 어워즈: 어워즈칸 }, ctx.me().id); }
   catch (e) { console.error('@mycity', e); }
   /* 별점 칸이 비면(매긴 곳이 적으면) 무엇을 하면 채워지는지 한 줄 — 빈 화면 규칙(emptyDo). */
   if (!별점칸.children.length)
     별점칸.innerHTML = `<div class="card">${emptyDo('도시를 5곳 넘게 매기면 여기에 별점 이야기가 나와요', '평가하러 가기', 'tabrate',
-      '도시 어워즈 · 거리별 별점 · 진짜 최애')}</div>`;
+      '내 별점 · 거리별 별점')}</div>`;
+  if (!어워즈칸.children.length)
+    어워즈칸.innerHTML = `<div class="card">${emptyDo('도시를 5곳 넘게 매기면 여기에 도시 어워즈와 여행지 월드컵이 나와요', '평가하러 가기',
+      'tabrate', '최애 도시 · 숨은 보석 · 1·2·3위')}</div>`;
 
   /* ⚠ **진기록은 기록 탭으로 갔습니다(b546, 사용자 결정).**
      b542 에 지도 화면에서 여기로 꺼냈던 것인데, 실기기에서 보니 「가장
