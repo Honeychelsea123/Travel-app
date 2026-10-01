@@ -11,11 +11,11 @@
  *   것만 씁니다. ★4.5 가 ★5 를 이기는 식으로 별점과 어긋나는 순위도 안 만듭니다 — 같은 별점끼리만 겨룹니다.
  * ⚠ **국내도 셉니다**(사용자). 성향(card.js)은 국내를 빼지만, 여기는 «내가 매긴 도시» 이야기입니다.
  * 층: dom · db · cities · calc · city(도시 화면). anal.js 가 부릅니다(drawMyCities). persona.js 는 모릅니다. */
-import { $, esc, toast, josa } from './dom.js?v=b812';
-import { sb } from './db.js?v=b812';
-import { cities } from './cities.js?v=b812';
-import { distKm, SEOUL } from './calc.js?v=b812';
-import { openCity } from './city.js?v=b812';
+import { $, esc, toast, josa } from './dom.js?v=b813';
+import { sb } from './db.js?v=b813';
+import { cities } from './cities.js?v=b813';
+import { distKm, SEOUL } from './calc.js?v=b813';
+import { openCity } from './city.js?v=b813';
 
 const 국내 = 'KR';
 const 셋말 = n => ['', '한', '두', '세', '네', '다섯'][n] || String(n);
@@ -41,11 +41,38 @@ const 사진칸 = (xs, 딱지) => `<div class="awph">${xs.map(x =>
     ? ` style="background-image:url('${esc(x.img)}')"` : ''}>${x.img ? '' : esc(x.name.slice(0, 1))}</i>`).join('')}${
   딱지 ? `<b>${esc(딱지)}</b>` : ''}</div>`;
 
+/* 사진 줄 — **도시마다 한 장씩, 옆으로 넘겨 봅니다**(b813, 사용자: 「한곳에 다 넣지말고 옆으로 스크롤 하면서 보게해줘」).
+   b810~b812 는 동점 도시를 한 칸에 둘·셋으로 나눠 넣었는데 사진이 좁게 잘렸습니다. 한 곳이면 꽉 차게, 둘 넘으면
+   86% 폭으로 다음 장이 살짝 보이게 — 넘길 수 있다는 것을 그림이 말합니다. 딱지(상 이름 · 순위)는 장마다 왼쪽 위,
+   도시 이름은 장마다 사진 밑. 누르면 그 도시 화면(아래 카드의 click).
+   ⚠ 규칙은 「다음 여행」 사진 줄(.crow)과 같습니다 — 음수 여백 없음(b597·b736), 스냅 proximity. */
+const 사진줄 = (xs, 딱지) => `<div class="awrow${xs.length > 1 ? ' many' : ''}">${xs.map((x, i) => {
+  const 글 = typeof 딱지 === 'function' ? 딱지(x, i) : 딱지;
+  return `<div class="awslide" data-city="${esc(x.id)}" role="button" tabindex="0" aria-label="${esc(x.name)} 보기">
+    <i${x.img ? ` style="background-image:url('${esc(x.img)}')"` : ''}>${x.img ? '' : esc(x.name.slice(0, 1))}</i>
+    ${글 ? `<b>${esc(글)}</b>` : ''}<span>${esc(x.name)}</span></div>`;
+}).join('')}</div>`;
+
+/* ── 접기(b813) ── 사용자: 「어워즈 탭은 세로가 기니까 각 항목마다 기본은 펼쳐져 있고 접는 기능도 넣어줘」.
+   상 하나(.awt)와 여행지 월드컵 카드(.fvcard)가 같은 규칙입니다 — 처음엔 펼쳐 있고, 머리 줄을 누르면 접힙니다.
+   접은 것은 기기에 기억합니다(`t2:awfold:<이름>`). 로그아웃하면 forgetLocal 이 t2: 를 다 지우므로 다시 펼쳐집니다.
+   ⚠ 「두 걸음 깊은 것은 아무도 안 본다」(b457·b503) 때문에 **기본은 펼침**입니다 — 접는 것은 사용자가 고른 것만. */
+const 접힘열쇠 = 이름 => 't2:awfold:' + 이름;
+const 접혔나 = 이름 => { try { return localStorage.getItem(접힘열쇠(이름)) === '1'; } catch { return false; } };
+function 접기바꾸기(칸, 이름){
+  const 접힘 = !칸.classList.contains('fold');
+  칸.classList.toggle('fold', 접힘);
+  칸.querySelector('.awh')?.setAttribute('aria-expanded', String(!접힘));
+  try { 접힘 ? localStorage.setItem(접힘열쇠(이름), '1') : localStorage.removeItem(접힘열쇠(이름)); } catch {}
+}
+
 function 카드(제목){
   const el = document.createElement('div');
   el.className = 'card quiet mycard';
   el.innerHTML = `<h2>${esc(제목)}</h2>`;
   el.addEventListener('click', e => {
+    const 머리 = e.target.closest('.awh');
+    if (머리){ const 칸 = 머리.closest('[data-fold]'); if (칸) 접기바꾸기(칸, 칸.dataset.fold); return; }
     const t = e.target.closest('[data-city]');
     if (t && !t.closest('.fvvs')) openCity(t.dataset.city);
   });
@@ -89,10 +116,18 @@ function 어워즈(목록){
 
   const el = 카드('도시 어워즈');
   el.insertAdjacentHTML('beforeend', `<div class="awgrid">${상.map(a => {
-    const 보일 = a.xs.slice(0, 3), 더 = a.xs.length - 보일.length;
-    return `<div class="awt">${사진칸(보일, a.이름)}
-      <div class="awn">${esc(보일.map(x => x.name).join(' · '))}${더 ? ` 외 ${더}곳` : ''}</div>
-      <div class="aws"><em>★${별글(a.xs[0].stars)}</em>${a.말 ? ` · ${esc(a.말)}` : ''}</div></div>`;
+    /* 동점이 많아도 여덟 장까지 — 그 뒤는 「외 N곳」. */
+    const 보일 = a.xs.slice(0, 8), 더 = a.xs.length - 보일.length;
+    const 접힘 = 접혔나(a.이름);
+    /* 머리 줄 = 상 이름(+ 접혔을 때만 「★5 · 대구 · 로바니에미 · 방콕」 한 줄) · 오른쪽 꺾쇠. 상 이름이 머리에 있으므로
+       사진에는 딱지를 안 붙입니다(b813). */
+    return `<div class="awt${접힘 ? ' fold' : ''}" data-fold="${esc(a.이름)}">
+      <button type="button" class="awh" aria-expanded="${!접힘}">
+        <span class="awht"><b>${esc(a.이름)}</b>
+          <small><em>★${별글(a.xs[0].stars)}</em> · ${esc(a.xs.map(x => x.name).join(' · '))}</small></span>
+        <i class="awchev" aria-hidden="true"></i></button>
+      <div class="awbody">${사진줄(보일)}
+        <div class="aws"><em>★${별글(a.xs[0].stars)}</em>${a.말 ? ` · ${esc(a.말)}` : ''}${더 ? ` · 외 ${더}곳` : ''}</div></div></div>`;
   }).join('')}</div>`);
   return el;
 }
@@ -201,42 +236,46 @@ async function 최애(목록, uid){
   }
   /* 이름은 「진짜 최애」 → 「여행지 월드컵」(2026-10-01 사용자). */
   const el = 카드('여행지 월드컵');
+  /* 접기(b813) — 상 하나와 같은 규칙(위 「접기」). 카드 제목 안에 단추를 넣습니다(h2 를 단추 안에 넣으면 문법이 틀립니다). */
+  const 이름표 = '여행지 월드컵', 접힘 = 접혔나(이름표);
+  el.dataset.fold = 이름표;
+  el.classList.add('fvcard');
+  el.classList.toggle('fold', 접힘);
+  el.querySelector('h2').innerHTML = `<button type="button" class="awh" aria-expanded="${!접힘}">
+    <span class="awht">${esc(이름표)}</span><i class="awchev" aria-hidden="true"></i></button>`;
   const 몸 = document.createElement('div');
+  몸.className = 'awbody';
   el.appendChild(몸);
 
+  /* 1·2·3위 — 어워즈와 같은 사진 줄(옆으로 넘겨 보기, b813). 딱지에 순위와 별점. */
   const 시상 = (셋, 다시) => {
-    몸.innerHTML = `<div class="fvpod">${셋.map((x, i) => `<div>${사진칸([x], `${i + 1}위`)}
-        <div class="awn">${esc(x.name)}</div><div class="aws"><em>★${별글(x.stars)}</em></div></div>`).join('')}</div>` +
+    몸.innerHTML = 사진줄(셋, (x, i) => `${i + 1}위 · ★${별글(x.stars)}`) +
       (다시 ? `<button class="p16open" data-fv="again">다시 고르기 ›</button>` : '');
-    몸.querySelector('[data-fv="again"]')?.addEventListener('click', 시작);
+    몸.querySelector('[data-fv="again"]')?.addEventListener('click', () => 시작(''));
   };
-  const 처음 = 순위없음 => {
+
+  /* ⚠⚠ **「고르기 시작」 단추 없이 첫 대결이 바로 펼쳐집니다(b813, 사용자: 「여행지 월드컵도 펼쳐줘」).** ⚠⚠
+     b810~b812 는 안내 한 줄 + 단추였습니다. 그래서 「그만하기」도 걷었습니다 — 돌아갈 «시작 전» 화면이 없습니다.
+     고르다 다른 탭에 가면 다음에 처음부터(저장은 끝까지 골랐을 때 한 번).
+     ⚠ 두 도시는 **위아래로** 크게 놓습니다 — 둘을 한눈에 봐야 고를 수 있어서 여기만은 옆으로 넘기지 않습니다. */
+  async function 시작(안내){
+    let 번 = 0;
     const 층 = 자리.filter(z => z.xs.length > 1);
     const 말 = 층.length === 1
       ? `★${별글(층[0].별)} 준 ${층[0].xs.length}곳 중 ${층[0].뽑을 === 1 ? '진짜 1위' : '1·2·3위'}를 골라 주세요`
       : '별점이 같은 곳끼리 두 곳씩 골라 1·2·3위를 정해요';
-    몸.innerHTML = `<div class="memo">${esc(순위없음 ? '새로 매긴 곳이 생겨서 다시 골라야 해요 · ' : '')}${esc(말)}</div>
-      <div class="fvgo"><button class="primary" data-fv="go">고르기 시작</button></div>`;
-    몸.querySelector('[data-fv="go"]').addEventListener('click', 시작);
-  };
-
-  async function 시작(){
-    let 번 = 0, 그만 = false;
     const 묻기 = (a, b) => new Promise(res => {
       번++;
-      몸.innerHTML = `<div class="fvvs">
+      몸.innerHTML = `<div class="memo">${esc((안내 || '') + 말)}</div>
+        <div class="fvvs">
           <div class="fvc" data-pick="a" role="button" tabindex="0" aria-label="${esc(a.name)} 고르기">${사진칸([a])}<div class="awn">${esc(a.name)}</div></div>
           <div class="fvx">VS</div>
           <div class="fvc" data-pick="b" role="button" tabindex="0" aria-label="${esc(b.name)} 고르기">${사진칸([b])}<div class="awn">${esc(b.name)}</div></div>
         </div>
-        <div class="memo" style="text-align:center">어디가 더 좋았어요? · ${번}번째</div>
-        <button class="p16open" data-fv="stop">그만하기</button>`;
-      몸.querySelector('[data-fv="stop"]').addEventListener('click', () => { 그만 = true; 처음(false); res(null); });
+        <div class="memo" style="text-align:center">어디가 더 좋았어요? · ${번}번째</div>`;
       몸.querySelectorAll('[data-pick]').forEach(p => p.addEventListener('click', () => res(p.dataset.pick === 'a' ? a : b)));
     });
-    /* 그만하면 묻기가 null 을 돌려줍니다 — 가르기가 끝까지 돌아도 아래에서 버립니다. */
-    const 셋 = await 가르기(자리, async (a, b) => (그만 ? a : ((await 묻기(a, b)) ?? a)));
-    if (그만) return;
+    const 셋 = await 가르기(자리, 묻기);
     await 저장(셋);
     시상(셋, true);
   }
@@ -265,7 +304,9 @@ async function 최애(목록, uid){
   if (!동점){ 시상(자리.flatMap(z => z.xs), false); return el; }
   const 있던 = 저장순위(자리, 순위표);
   if (있던) 시상(있던, true);
-  else 처음(Object.keys(순위표).length > 0);
+  /* 기다리지 않습니다 — 고르기는 사용자가 누를 때까지 안 끝나므로, 여기서 기다리면 탭 전체가 멈춥니다. */
+  else 시작(Object.keys(순위표).length ? '새로 매긴 곳이 생겨서 다시 골라야 해요 · ' : '')
+    .catch(e => { console.error('@mycity', e); self.reportError?.(e); });
   return el;
 }
 
@@ -321,7 +362,9 @@ if (typeof window !== 'undefined') window.__myCityCheck = async () => {
     const 글 = el ? el.textContent : '';
     if (!el) msgs.push('카드가 안 나옴');
     else {
-      if ((글.match(/\bp\b/g) || []).length > 1) msgs.push('한 도시가 두 상을 받음');
+      /* 사진 장으로 셉니다 — 글자로 세면 접힘 줄(b813, 머리의 「★5 · p · q」)과 사진 밑 이름이 같이 걸립니다. */
+      const 장 = [...el.querySelectorAll('.awslide')].map(s => s.dataset.city);
+      if (new Set(장).size !== 장.length) msgs.push('한 도시가 두 상을 받음');
       if (!/가장 아쉬웠던 곳/.test(글)) msgs.push('★1 이 있는데 「가장 아쉬웠던 곳」이 없음');
       if (!/가까운 최애/.test(글)) msgs.push('1,000km ★4.5 가 있는데 「가까운 최애」가 없음');
     }

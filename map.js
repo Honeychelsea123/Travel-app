@@ -13,15 +13,15 @@
  *
  * 층: dom.js · db.js · cities.js · card.js · net.js 만 씁니다. */
 import { $, esc, toast, flagOf, flagOk, emptyDo, backLabel, toTop,
-         coverDeck } from './dom.js?v=b812';
-import { openCity } from './city.js?v=b812';
-import { distKm } from './calc.js?v=b812';
-import { sb } from './db.js?v=b812';
-import { cities, countryName, continentOf } from './cities.js?v=b812';
+         coverDeck } from './dom.js?v=b813';
+import { openCity } from './city.js?v=b813';
+import { distKm } from './calc.js?v=b813';
+import { sb } from './db.js?v=b813';
+import { cities, countryName, continentOf } from './cities.js?v=b813';
 /* ⚠ `PERSONA_ICON` 은 b649 에 안 쓰게 됐습니다 — 발자국 카드가 여권 스탬프
    면으로 바뀌면서 선 아이콘 자리가 없어졌습니다(큰 수와 지도가 그 일을
    합니다). 안 쓰는 것을 가져오면 나중에 "여기도 쓰나" 하고 헷갈립니다. */
-import { shareCard } from './card.js?v=b812';
+import { shareCard } from './card.js?v=b813';
 
 /* UN 회원 193 + 옵서버 2. 여행앱들이 쓰는 기준값입니다.
    **app.js 도 씁니다**(발자국 막대) — 두 곳에 적으면 언젠가 한쪽만 고칩니다.
@@ -573,21 +573,26 @@ export async function openMap(){
   }).join('');
 
   /* ── 국가별 ── 많이 간 나라부터 ── */
+  /* 나라 줄을 누르면 그 나라 도시가 접힙니다(b813 — 아래 「국가별 접기」). */
   const byC = {};
   mapCities.forEach(c => (byC[c.cc] = byC[c.cc] || []).push(c));
   const order = Object.entries(byC).sort((a, b) => b[1].length - a[1].length);
+  const 접힌 = 접은나라();
   $('m_country').innerHTML = order.length
-    ? order.map(([code, cs]) => `<div style="padding:9px 0; border-top:1px solid var(--line)">
-        <div class="row" style="border:0; padding:0; margin:0">
-          <span class="label" style="font-weight:600">${
-            esc(countryName[code] || code)}</span>
-          <span class="val">${cs.length}곳</span></div>
-        <div class="cchips">${cs.map(c =>
+    ? order.map(([code, cs]) => {
+        const 접힘 = 접힌.has(code);
+        return `<div class="ctryblk${접힘 ? ' fold' : ''}" data-ctry="${esc(code)}">
+        <button type="button" class="row ctryh" aria-expanded="${!접힘}">
+          <span class="label">${esc(countryName[code] || code)}</span>
+          <span class="val">${cs.length}곳</span><i class="awchev" aria-hidden="true"></i></button>
+        <div class="cchips awbody">${cs.map(c =>
           `<button data-pin="${esc(c.id)}">${esc(c.name)}${
             stars[c.id] ? ` ★${stars[c.id]}` : ''}</button>`).join('')}</div>
-      </div>`).join('')
+      </div>`;
+      }).join('')
     : emptyDo('아직 다녀온 곳이 없어요.', null, null,
               '도시에 별점을 매기면 그 나라가 칠해져요.');
+  모두단추();
 
   /* ── 분석 ── 대륙별 카드 바로 밑입니다(b550, 사용자 결정) ────────────
    * 별점 분포 · 가장 많이 간 나라 · 최북단 · 가장 먼 두 도시.
@@ -700,6 +705,38 @@ export function funRows(도시들, 별점표){
   ];
 }
 
+/* ── 국가별 접기(b813) ─────────────────────────────────────────────────
+ * 사용자: 「국가별 다녀온 도시도 세로로 너무 길어서 이것도 접을 수 있게 해줘」.
+ * 분석 탭 어워즈(mycity.js)와 같은 규칙입니다 — 처음엔 펼쳐 있고, 나라 줄을 누르면 그 나라 도시가 접힙니다.
+ * 제목 오른쪽 「모두 접기」 한 번이면 나라 이름만 남습니다 — 나라가 스물여덟이면 하나씩 접는 것은 일입니다.
+ * 접은 나라는 기기에 기억합니다(`t2:ctryfold` = 나라 코드 목록). 새로 간 나라는 펼친 채로 나옵니다.
+ * 로그아웃하면 forgetLocal 이 t2: 를 다 지우므로 다시 다 펼쳐집니다.
+ * ⚠ 위 「대륙별」에서 나라 칩을 누르면 그 나라를 **펴고** 거기로 데려갑니다(접힌 채로 데려가면 빈손입니다). */
+const 접은나라열쇠 = 't2:ctryfold';
+function 접은나라(){
+  try { return new Set(JSON.parse(localStorage.getItem(접은나라열쇠) || '[]')); } catch { return new Set(); }
+}
+function 나라접기(블록, 접기){
+  블록.classList.toggle('fold', 접기);
+  블록.querySelector('.ctryh')?.setAttribute('aria-expanded', String(!접기));
+}
+/* 지금 화면에 접혀 있는 나라를 그대로 적습니다 — 목록에서 빠진 나라의 옛 코드는 저절로 지워집니다. */
+function 접은나라적기(){
+  const 코드 = [...document.querySelectorAll('#m_country .ctryblk.fold')].map(b => b.dataset.ctry);
+  try { 코드.length ? localStorage.setItem(접은나라열쇠, JSON.stringify(코드)) : localStorage.removeItem(접은나라열쇠); }
+  catch {}
+}
+/* 「모두 접기 ↔ 모두 펼치기」 — 하나라도 펼쳐 있으면 접기. 나라가 하나면 숨깁니다(나라 줄 하나가 같은 일을 합니다). */
+function 모두단추(){
+  const 단추 = $('m_ctryall');
+  if (!단추) return;
+  const 블록 = [...document.querySelectorAll('#m_country .ctryblk')];
+  const 다접힘 = 블록.length > 0 && 블록.every(b => b.classList.contains('fold'));
+  단추.classList.toggle('hide', 블록.length < 2);
+  단추.textContent = 다접힘 ? '모두 펼치기' : '모두 접기';
+  단추.dataset.all = 다접힘 ? 'open' : 'fold';
+}
+
 export function closeMap(fromPop){
   if (!fromPop && history.state?.t2 === 'map'){ history.back(); return; }
   shutBigMap();
@@ -759,13 +796,32 @@ $('mappane').addEventListener('click', e => {
      둘 다 "이 대륙을 보고 싶다"는 같은 뜻이라 한 번에 합니다.
      **국가 칩(data-czoom)이 먼저입니다** — 칩은 대륙 줄 밖에 있지만
      아래 data-zoom 이 그 위를 먼저 잡으면 칩이 안 눌립니다. */
+  /* 국가별 접기(b813) — 「모두 접기」와 나라 줄. */
+  const 모두 = e.target.closest('#m_ctryall');
+  if (모두){
+    const 접기 = 모두.dataset.all !== 'open';
+    document.querySelectorAll('#m_country .ctryblk').forEach(b => 나라접기(b, 접기));
+    접은나라적기(); 모두단추();
+    return;
+  }
+  const 나라줄 = e.target.closest('.ctryh');
+  if (나라줄){
+    const b = 나라줄.closest('.ctryblk');
+    나라접기(b, !b.classList.contains('fold'));
+    접은나라적기(); 모두단추();
+    return;
+  }
   const cz = e.target.closest('[data-czoom]');
   if (cz){
     /* 그 나라의 도시들을 아래 '국가별' 목록에서 찾아 보여줍니다.
        지도를 나라 단위로 당기는 것은 setMapView 가 대륙까지만 알아서
-       지금은 못 합니다 — 대륙으로만 당기고 목록으로 데려갑니다. */
+       지금은 못 합니다 — 대륙으로만 당기고 목록으로 데려갑니다.
+       b813: 나라 줄이 접힐 수 있어서, 그 나라를 펴고 그 줄로 데려갑니다(가운데 — 위 끝은 iOS 흐림 밑입니다). */
     setMapView(continentOf[cz.dataset.czoom] || '전체');
-    $('m_country')?.scrollIntoView({ behavior:'smooth', block:'start' });
+    const 블록 = $('m_country')?.querySelector(`.ctryblk[data-ctry="${CSS.escape(cz.dataset.czoom)}"]`);
+    if (블록?.classList.contains('fold')){ 나라접기(블록, false); 접은나라적기(); 모두단추(); }
+    if (블록) 블록.scrollIntoView({ behavior:'smooth', block:'center' });
+    else $('m_country')?.scrollIntoView({ behavior:'smooth', block:'start' });
     return;
   }
   const row = e.target.closest('[data-cont]');
